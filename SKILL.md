@@ -92,10 +92,14 @@ Defaults: `max_files=1`, `max_lines=15`, plus blocklist conservativ (`auth/`, `s
 
 Gate-ul **eșuează deschis**: dacă probe-ul git crapă (no repo, bad ref), `should_skip: false` și treci la Generator. Mai bine deliberezi în plus decât sari în gol.
 
+**Notă pentru task-uri non-diff** (audit de cod existent, architecture review, planning, design questions): scope_gate e un mecanism de cost-control specific pentru code-change pe un diff inspectabil. Când nu există diff (ex: "auditează folder-ul X", "ce abordare pentru feature Y?"), gate-ul fails open și e efectiv no-op — comportament intenționat, nu bug. Pentru aceste task-uri poți sări Step 1.5 explicit dacă vrei să eviți zgomotul în output.
+
 ### 2. Generator — produce alternative
 Folosește `prompts/generator.md`. Cere **3–5 abordări candidate**, inclusiv "do nothing" ca baseline. Stil divergent — nu auto-cenzura pentru risc în acest pas.
 
 Output per candidate: `{id, summary, sketch, rationale}`.
+
+**Adversarial e conditional**, nu obligatoriu (vezi `prompts/generator.md` Constraints). Se include doar dacă (a) clarity gate-ul la Step 1 a întors 2+ interpretări plauzibile SAU (b) schimbarea atinge shared/core code. Altfel Generator emite `"adversarial_skipped": "<reason>"` și sare peste. Pentru task-uri trivial-bounded cu goal unambiguu, costul adversarial-ului depășește valoarea — skip-ul e by design.
 
 ### 3. Control — verifică corectitudine
 Folosește `prompts/control.md`. Pentru fiecare candidate verifică:
@@ -332,6 +336,26 @@ Așadar pattern-ul real e:
 4. Agregi local (`scripts/aggregator.py`) pe output-ul `dialectic_merge` și produci raportul final.
 
 Maximum 3 sub-agenți activi simultan; în practică folosești 1 + 2.
+
+**Captură telemetry per voce (responsabilitatea orchestratorului, nu a sub-agentului).** Sub-agenții nu-și pot măsura tokens cu acuratețe. Orchestratorul (agentul principal) îi măsoară la fiecare Agent call și injectează în bundle:
+
+- `tokens_in` ≈ `len(prompt) / 4` (lungimea prompt-ului trimis sub-agentului, în chars / 4 = aproximare tokens)
+- `tokens_out` ≈ `len(response) / 4` (la fel pentru output-ul JSON al sub-agentului)
+- `latency_ms` = wall-clock între dispatch și răspuns (timpul real, măsurat de orchestrator)
+
+Output în bundle:
+```json
+"telemetry": {
+  "mode": "parallel",
+  "voices": {
+    "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
+    "control":     {"tokens_in":  800, "tokens_out": 200, "latency_ms": 2100},
+    "conservator": {"tokens_in":  900, "tokens_out": 180, "latency_ms": 1800}
+  }
+}
+```
+
+Best-effort: aproximările sunt sub-tokens-API, dar `usage.py` rollup-ul rămâne util pentru tendințe (p50/p95 per voce). Mai bine telemetry aproximat decât zero — fără capturare, parallel mode runs apar ca "0 tokens" în statistici și nu poți justifica costul vs sequential.
 
 ### Prompt template pentru un sub-agent
 ```

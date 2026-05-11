@@ -28,7 +28,13 @@ Produce **3 to 5 candidate approaches** that could address the goal. For each ca
 ## Constraints
 
 - **Always include `do_nothing`** as one of the candidates. Sometimes the change shouldn't happen.
-- **Always include one `adversarial_*` candidate.** Read the user's goal in the most uncharitable way possible — what's the worst-but-still-plausible interpretation? Propose the candidate that interpretation would imply. This isn't a strawman; it's a stress test. If the goal genuinely is unambiguous, the adversarial candidate becomes a near-duplicate of the main one and that's fine — the contrast is the value. Name it `adversarial_<short_id>` so downstream voices can spot it.
+- **Include one `adversarial_*` candidate** when EITHER:
+  - (a) the clarity gate at Step 1 surfaced 2+ plausible readings of the user's goal, OR
+  - (b) the change touches shared/core code (`auth/`, `migrations/`, `security/`, public APIs, dependency files)
+
+  Read the goal in the most uncharitable way — what's the worst-but-still-plausible interpretation? Propose the candidate that interpretation would imply. It's a stress test, not a strawman. Name it `adversarial_<short_id>` so downstream voices can spot it.
+
+  Otherwise (unambiguous goal AND bounded blast radius), skip it and emit `"adversarial_skipped": "<one-line reason>"` as a sibling field next to `candidates` in your output. Downstream voices interpret an absent adversarial as deliberate, not missing.
 - Candidates must be **meaningfully different** — not three flavors of the same idea. Vary on at least one axis: scope, abstraction level, timing, or mechanism.
 - Don't pre-filter for "feasibility" or "risk". The next two voices will handle that.
 

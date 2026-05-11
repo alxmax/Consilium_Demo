@@ -378,13 +378,13 @@
       <div class="step aux">
         <div class="n">STEP 1.5</div>
         <h4>Scope gate</h4>
-        <div>Auto-skip dacă scope-ul e trivial (≤1 fișier / ≤15 linii, blocklist clear).</div>
+        <div>Auto-skip dacă scope-ul e trivial (≤1 fișier / ≤15 linii, blocklist clear). No-op pe task-uri non-diff (audit/planning) — fails open by design.</div>
         <div class="io">out: skipped report</div>
       </div>
       <div class="step gen">
         <div class="n">STEP 2</div>
         <h4>Generator</h4>
-        <div>3-5 abordări candidate, inclusiv do_nothing + adversarial.</div>
+        <div>3-5 abordări candidate, inclusiv do_nothing. Adversarial conditional — doar la clarity gate 2+ readings sau shared/core; altfel <code>adversarial_skipped</code>.</div>
         <div class="io">out: { candidates: [...] }</div>
       </div>
       <div class="step ctl">
@@ -562,6 +562,9 @@
           <div class="wall" title="chinese wall — sub-agenții nu se văd"></div>
           <div class="ok">
             ✓ Independență reală — sub-agenții returnează doar JSON final, fără reasoning comun.
+          </div>
+          <div class="ok">
+            ✓ Telemetry capturat de orchestrator per voce: <code>tokens_in/out ≈ len(prompt|response)/4</code>, <code>latency_ms</code> = wall-clock per Agent call. Best-effort, dar non-zero — altfel runs paralele apar ca 0 tokens în <code>usage.py</code>.
           </div>
         </div>
 
