@@ -1,0 +1,247 @@
+[
+  {
+    "name": "aggregator/majority picks highest mean",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "majority"],
+    "stdin_json": {
+      "candidates": [
+        {"id": "a", "scores": {"generator": 0.9, "control": 0.9, "conservator": 0.2}},
+        {"id": "b", "scores": {"generator": 0.5, "control": 0.5, "conservator": 0.5}}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "majority", "chosen": "a"}
+  },
+  {
+    "name": "aggregator/weighted winner shifts when control is heavily weighted",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "weighted"],
+    "stdin_json": {
+      "candidates": [
+        {"id": "a", "scores": {"generator": 0.9, "control": 0.3, "conservator": 0.2}},
+        {"id": "b", "scores": {"generator": 0.3, "control": 0.9, "conservator": 0.2}}
+      ],
+      "weights": {"generator": 0.1, "control": 0.8, "conservator": 0.1}
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "weighted", "chosen": "b"}
+  },
+  {
+    "name": "aggregator/conservative_override vetoes risky candidate",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "conservative_override"],
+    "stdin_json": {
+      "candidates": [
+        {"id": "safe", "scores": {"generator": 0.7, "control": 0.7, "conservator": 0.3}},
+        {"id": "risky", "scores": {"generator": 0.95, "control": 0.95, "conservator": 0.85}}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "conservative_override", "chosen": "safe"}
+  },
+  {
+    "name": "aggregator/conservative_override veto-all attaches retry_suggested",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "conservative_override"],
+    "stdin_json": {
+      "candidates": [
+        {"id": "a", "scores": {"generator": 0.9, "control": 0.9, "conservator": 0.8}},
+        {"id": "b", "scores": {"generator": 0.7, "control": 0.7, "conservator": 0.75}}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "chosen": null,
+      "retry_suggested": {"would_survive_relaxed": true}
+    }
+  },
+  {
+    "name": "aggregator/risk_adjusted_utility prefers safe over high-utility-but-risky",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "risk_adjusted_utility"],
+    "stdin_json": {
+      "candidates": [
+        {"id": "safe_modest", "scores": {"generator": 0.6, "control": 0.6, "conservator": 0.2}},
+        {"id": "risky_brilliant", "scores": {"generator": 0.95, "control": 0.95, "conservator": 0.85}}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "risk_adjusted_utility", "chosen": "safe_modest"}
+  },
+  {
+    "name": "confidence/well-aligned chosen returns numeric confidence",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "candidates": [
+        {"id": "x", "scores": {"generator": 0.9, "control": 0.85, "conservator": 0.1}},
+        {"id": "y", "scores": {"generator": 0.4, "control": 0.4, "conservator": 0.6}}
+      ],
+      "chosen": "x"
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {}
+  },
+  {
+    "name": "confidence/null chosen returns null confidence with reason",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "candidates": [],
+      "chosen": null
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"confidence": null}
+  },
+  {
+    "name": "validate_report/full report with required fields passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x is y",
+      "verification": "run pytest",
+      "chosen_approach": "approach_a"
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "validate_report/skipped report with skip_reason passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "skipped",
+      "skipped": true,
+      "skip_reason": "1 file, 4 lines, no sensitive paths"
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "validate_report/skipped without skip_reason fails with explicit message",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "skipped",
+      "skipped": true
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["skip_reason"]
+  },
+  {
+    "name": "validate_report/missing success_criterion fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "verification": "y",
+      "chosen_approach": "approach_a"
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["success_criterion"]
+  },
+  {
+    "name": "validate_report/telemetry with malformed token count fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "telemetry": {
+        "voices": {"generator": {"tokens_in": -5}}
+      }
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["tokens_in"]
+  },
+  {
+    "name": "validate_report/well-formed telemetry passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "telemetry": {
+        "mode": "parallel",
+        "passes": 1,
+        "voices": {
+          "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
+          "control":     {"tokens_in":  800, "tokens_out": 200, "latency_ms": 2100},
+          "conservator": {"tokens_in":  900, "tokens_out": 180, "latency_ms": 1800}
+        }
+      }
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "strip_context/for control drops rationale",
+    "tool": "scripts/strip_context.py",
+    "args": ["--for", "control"],
+    "stdin_json": {
+      "candidates": [
+        {"id": "a", "summary": "do x", "sketch": "code", "rationale": "must not leak"}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "candidates": [{"id": "a", "summary": "do x", "sketch": "code"}]
+    }
+  },
+  {
+    "name": "strip_context/for conservator drops invalid verdicts and issue text",
+    "tool": "scripts/strip_context.py",
+    "args": ["--for", "conservator"],
+    "stdin_json": {
+      "candidates": [
+        {"id": "a", "summary": "ok", "sketch": "good"},
+        {"id": "b", "summary": "bad", "sketch": "broken"}
+      ],
+      "verdicts": [
+        {"id": "a", "valid": true, "issues": []},
+        {"id": "b", "valid": false, "issues": ["broken"]}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "candidates": [{"id": "a", "summary": "ok", "sketch": "good"}]
+    }
+  },
+  {
+    "name": "dialectic_merge/full pass2 marks fallback false everywhere",
+    "tool": "scripts/dialectic_merge.py",
+    "stdin_json": {
+      "pass1": {
+        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.4}]}
+      },
+      "pass2": {
+        "generator":   {"candidates": [{"id": "a", "summary": "v2"}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "revision_log": {
+        "pass2_received": true,
+        "fallback_to_pass1": {"generator": false, "control": false, "conservator": false}
+      }
+    }
+  },
+  {
+    "name": "dialectic_merge/partial pass2 falls back per missing voice",
+    "tool": "scripts/dialectic_merge.py",
+    "stdin_json": {
+      "pass1": {
+        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.4}]}
+      },
+      "pass2": {
+        "generator": {"candidates": [{"id": "a", "summary": "v2"}]}
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "revision_log": {
+        "fallback_to_pass1": {"generator": false, "control": true, "conservator": true}
+      }
+    }
+  }
+]
