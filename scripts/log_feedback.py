@@ -5,8 +5,8 @@ feedback line, and appends it to FEEDBACK.md (creating the file with a
 header if missing). Removes the friction of asking the user for the line
 at end of Step 6 — the agent calls this directly.
 
-Line format (unchanged from the manual convention):
-    - YYYY-MM-DD | <context> | <chosen> | PEND | <note>
+Line format:
+    - YYYY-MM-DD | <context> | <chosen> | <outcome> | <note>[; override=<id>][; <user-note>]
 
 The leading `- ` is the markdown bullet that ENTRY_RE in feedback.py
 expects (and that priors.py inherits via parse_feedback). Skipping it
@@ -16,12 +16,16 @@ Auto-fill rules:
 - data    : today's date in ISO format
 - context : success_criterion truncated to 60 chars (with `...`)
 - chosen  : chosen_approach (or literal "null" / "skipped")
-- outcome : always PEND. The user updates PEND -> OK / BAD / OVR later
-            by editing FEEDBACK.md directly when the outcome is known.
-- note    : derived from report shape, max 80 chars:
+- outcome : controlled by --outcome flag (default PEND). The Step 6
+            workflow in SKILL.md drives this: confidence >= 0.7 -> OK,
+            confidence < 0.7 + user picks alt -> OVR with --override-target,
+            confidence < 0.7 + user says no -> OK, skip / null -> PEND.
+- note    : auto-derived from report shape, max 80 chars:
             * skipped report      -> "skipped: <skip_reason>"
             * all-vetoed (chosen=null) -> "all vetoed; relaxed=<X>"
             * normal              -> "<N> cand, <K> vetoed, conf=<X>, mode=<Y>"
+            When --outcome=OVR and --override-target is set, "; override=<id>"
+            is appended. When --user-note is non-empty, it is appended too.
 
 Pipe ``|`` and newlines inside text fields are stripped/replaced so the
 appended line stays parseable.
@@ -32,6 +36,9 @@ malformed JSON. Otherwise exits 0 and prints the appended line to stdout.
 
 CLI:
     cat runs/<file>.json | python scripts/log_feedback.py
+    cat runs/<file>.json | python scripts/log_feedback.py --outcome OK
+    cat runs/<file>.json | python scripts/log_feedback.py --outcome OVR \\
+        --override-target alt_b --user-note "preferred safer rollback"
     python scripts/log_feedback.py --feedback path/to/FEEDBACK.md < report.json
     python scripts/log_feedback.py --dry-run < report.json
 """
