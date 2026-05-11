@@ -770,9 +770,97 @@ a new deliberation."
 
 ---
 
+## Task 5: Update `docs/architecture.html` to reflect the new feedback flow
+
+**Why last:** the HTML is documentation; it should describe the *implemented* behavior. Updating it after Tasks 1-4 land ensures the diagram and prose match what's actually shipped.
+
+**Files:**
+- Modify: `docs/architecture.html` — 2 prose blocks + 1 rail caption
+
+### Subtask 5.1 — Update the rail caption for `log_feedback.py`
+
+- [ ] **Step 1: Edit the rail caption (line ~471-472)**
+
+Find in `docs/architecture.html`:
+```html
+          <div class="col">
+            <code>log_feedback.py</code>
+            <div class="opt">step 6 — append PEND la FEEDBACK.md</div>
+          </div>
+```
+
+Replace the `<div class="opt">` line with:
+```html
+            <div class="opt">step 6 — append outcome (OK auto / OVR / PEND) la FEEDBACK.md</div>
+```
+
+### Subtask 5.2 — Update the feedback-loop prose block
+
+- [ ] **Step 1: Replace the prose at lines 500-507**
+
+Find:
+```html
+      <div class="text">
+        <b>Feedback loop</b> — la finalul fiecărei deliberări, <code>build_report.py</code>
+        asamblează raportul canonic, <code>validate_report.py</code> verifică Principle #4,
+        iar <code>log_feedback.py</code> appendează automat o linie PEND în <code>FEEDBACK.md</code>
+        (user-ul o închide ulterior cu OK/BAD/OVR). La începutul următoarei rulări,
+        <code>priors.py</code> citește <code>runs/</code> + <code>FEEDBACK.md</code> și încarcă
+        semnalele agregate (override_rate, veto_rate, top keywords) ca priori soft pentru step 1.
+      </div>
+```
+
+Replace with:
+```html
+      <div class="text">
+        <b>Feedback loop</b> — la finalul fiecărei deliberări, <code>build_report.py</code>
+        asamblează raportul canonic, <code>validate_report.py</code> verifică Principle #4
+        (shape + telemetry.mode + deliberation_log), iar <code>log_feedback.py</code> appendează
+        outcome-ul în <code>FEEDBACK.md</code> gate-uit pe confidence: <b>auto-OK</b> la
+        <code>confidence &ge; 0.7</code>, prompt user pentru <b>OVR</b>/no/skip la
+        <code>confidence &lt; 0.7</code>. La începutul rulării următoare, <code>priors.py</code>
+        citește <code>runs/</code> + <code>FEEDBACK.md</code> și încarcă priorii soft
+        (override_rate, veto_rate, top keywords) plus <code>stale_pendings</code> — entries
+        PEND mai vechi de 7 zile pe care agentul le prezintă user-ului pentru închidere
+        retrospectivă înainte de step 1.
+      </div>
+```
+
+### Subtask 5.3 — Verify and commit
+
+- [ ] **Step 1: Open architecture.html in a browser to confirm rendering**
+
+```bash
+# from repo root
+start docs/architecture.html   # Windows
+# or: xdg-open docs/architecture.html  # Linux
+# or: open docs/architecture.html  # macOS
+```
+
+Expected: page renders without HTML errors. The "Feedback loop" callout in the pipeline tab shows the new prose. The rail under `log_feedback.py` shows the new caption.
+
+If the page fails to render (broken tag, etc.), use a strict HTML check:
+```bash
+python -c "from html.parser import HTMLParser; HTMLParser(convert_charrefs=True).feed(open('docs/architecture.html', encoding='utf-8').read()); print('OK')"
+```
+Exit 0 = no parse error. The check is lenient but catches gross malformation.
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add docs/architecture.html
+git commit -m "docs(architecture.html): reflect confidence-gated outcome + stale_pendings
+
+Updates the Feedback loop callout to describe auto-OK at conf >= 0.7,
+OVR prompt at conf < 0.7, and the new stale_pendings signal at Step 0.
+log_feedback.py rail caption shows that outcome is no longer always PEND."
+```
+
+---
+
 ## Self-Review
 
-After implementing all 4 tasks, run:
+After implementing all 5 tasks, run:
 
 ```bash
 python scripts/run_evals.py
@@ -782,7 +870,7 @@ git status
 
 Expected:
 - `run_evals.py` exits 0 — all 30 scenarios pass.
-- 4 new commits visible (one per task) on top of the spec commit (`e1b945b`).
+- 5 new commits visible (one per task) on top of the spec commit (`e1b945b`).
 - Working tree clean.
 
 Then validate end-to-end with one synthetic deliberation:
