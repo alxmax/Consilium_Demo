@@ -91,7 +91,7 @@
   .agg { margin-top: 32px; background: var(--card-bg); border: 1px solid var(--line);
     border-radius: 10px; padding: 18px; }
   .agg h3 { margin: 0 0 12px; font-size: 15px; }
-  .schemes { display: grid; gap: 12px; grid-template-columns: repeat(3, 1fr); }
+  .schemes { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
   .scheme { padding: 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
   .scheme b { display: block; margin-bottom: 4px; }
   .scheme.default { border-color: var(--con); background: var(--con-soft); }
@@ -99,7 +99,7 @@
     color: #0f1419; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; border-radius: 3px; }
 
   /* ============== FLOW ============== */
-  .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; align-items: stretch;
+  .flow { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0; align-items: stretch;
     margin-bottom: 28px; }
   .step { position: relative; background: var(--card-bg); border: 1px solid var(--line);
     border-radius: 8px; padding: 14px 12px; font-size: 13px; margin-right: 18px; }
@@ -116,15 +116,33 @@
   .step.ctl { border-top: 3px solid var(--ctl); }
   .step.con { border-top: 3px solid var(--con); }
   .step.agg-step { border-top: 3px solid var(--accent); }
+  .step.aux { border-top: 2px dashed var(--muted); opacity: 0.92;
+    padding: 10px 9px; font-size: 12px; background: var(--inset); }
+  .step.aux .n { color: var(--gold); }
+  .step.aux h4 { font-size: 12.5px; }
   .step .io { background: var(--inset); border-radius: 4px; padding: 6px 8px; margin-top: 8px;
     font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted);
     overflow: hidden; text-overflow: ellipsis; }
+  .step .sub { display: inline-block; margin-top: 6px; padding: 1px 6px; border-radius: 3px;
+    background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em; }
 
   .rail { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
     padding: 16px; }
   .rail h3 { margin: 0 0 10px; font-size: 14px; }
-  .rail-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+  .rail-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px;
     font-size: 12px; }
+  .rail-grid .col.alt { background: var(--gold-soft); border: 1px solid var(--gold-border); }
+  .rail-grid .col.alt code { color: var(--gold); }
+  .rail-maint { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .rail-maint h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase; }
+  .rail-maint .maint-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+    font-size: 11.5px; }
+  .rail-maint .col { padding: 7px 8px; border-radius: 6px; background: var(--inset);
+    border: 1px dashed var(--line); }
+  .rail-maint code { display: block; font-size: 11.5px; color: var(--ink); }
+  .rail-maint .opt { font-size: 10px; color: var(--muted); margin-top: 2px; }
   .rail-grid .col { padding: 8px; border-radius: 6px; min-height: 56px;
     background: var(--inset); border: 1px dashed var(--line); }
   .rail-grid .col.empty { background: transparent; border-style: dotted; opacity: 0.5; }
@@ -151,6 +169,7 @@
   .mode-badge.default { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border); }
   .mode-badge.opt { background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--accent-border); }
   .mode-badge.advanced { background: var(--ctl-soft); color: var(--ctl-text); border: 1px solid var(--ctl-border); }
+  .mode-badge.spec { background: var(--inset); color: var(--muted); border: 1px dashed var(--line); }
   .mode-badge.legacy { background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad-border); }
   .strip-tag { display: inline-block; padding: 2px 6px; border-radius: 3px;
     background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border);
@@ -305,7 +324,7 @@
     </div>
 
     <div class="agg">
-      <h3>Aggregation — 3 scheme de votare</h3>
+      <h3>Aggregation — 4 scheme de votare</h3>
       <div class="schemes">
         <div class="scheme">
           <b>majority</b>
@@ -317,14 +336,22 @@
         </div>
         <div class="scheme default">
           <b>conservative_override <span style="color:var(--muted);font-weight:400;">(default)</span></b>
-          Medie ponderată, dar Conservator are veto unilateral.
+          Medie ponderată cu <code>safety = 1 − conservator</code>; Conservator are veto unilateral.
           <span class="veto">VETO la risk_score &gt; 0.7</span>
+        </div>
+        <div class="scheme">
+          <b>risk_adjusted_utility</b>
+          <code>utility = mean(gen, ctrl, 1−cons)</code> cu penalty sigmoidal centrat la risc=0.5.
+          Fără veto rigid — un candidate cu risc 0.7 e penalizat ~21%, nu disqualified.
+          Folosește când mai mulți candidates sunt strânși în jurul pragului.
         </div>
       </div>
       <div class="note">
         Separation of powers: fiecare voce e împiedicată prin prompt să facă jobul celorlalți.
-        Constitution bate orice voce în caz de conflict. Conservator are putere de veto, dar dacă
-        veto-iește tot → <code>chosen: null</code> și raportul declară explicit „all vetoed”.
+        Constitution bate orice voce în caz de conflict. Dacă toți candidates sunt vetoiți →
+        aggregator-ul atașează un bloc <code>retry_suggested</code> cu pragul minim sub care
+        candidatul cu risc minim ar fi supraviețuit (capped la 0.85). Decizia (re-roll cu constraint
+        mai strict, accept <code>chosen: null</code>, sau întreabă user-ul) revine agentului principal.
       </div>
     </div>
 
@@ -333,31 +360,43 @@
   <!-- ============== TAB 2 ============== -->
   <section class="tab" id="flow">
 
-    <h2>Pașii 1 → 6</h2>
+    <h2>Pașii 0 → 6 (cu aux 1.5 + 5b)</h2>
     <div class="flow">
+      <div class="step aux">
+        <div class="n">STEP 0</div>
+        <h4>Bootstrap</h4>
+        <div>Citește <code>prompts/*.md</code> + rulează <code>priors.py</code>.</div>
+        <div class="io">out: soft priors</div>
+      </div>
       <div class="step">
         <div class="n">STEP 1</div>
         <h4>Goal</h4>
-        <div>Restate ca <b>success_criterion</b> testabil.</div>
+        <div>Restate ca <b>success_criterion</b> testabil. Clarity gate.</div>
         <div class="io">in: diff + context</div>
         <div class="io">out: 1-sentence criterion</div>
+      </div>
+      <div class="step aux">
+        <div class="n">STEP 1.5</div>
+        <h4>Scope gate</h4>
+        <div>Auto-skip dacă scope-ul e trivial (≤1 fișier / ≤15 linii, blocklist clear).</div>
+        <div class="io">out: skipped report</div>
       </div>
       <div class="step gen">
         <div class="n">STEP 2</div>
         <h4>Generator</h4>
-        <div>3-5 abordări candidate, inclusiv do_nothing.</div>
+        <div>3-5 abordări candidate, inclusiv do_nothing + adversarial.</div>
         <div class="io">out: { candidates: [...] }</div>
       </div>
       <div class="step ctl">
         <div class="n">STEP 3</div>
         <h4>Control</h4>
-        <div>Verdict tehnic per candidate.</div>
+        <div>Verdict tehnic per candidate + tests_to_write.</div>
         <div class="io">out: { verdicts: [...] }</div>
       </div>
       <div class="step con">
         <div class="n">STEP 4</div>
         <h4>Conservator</h4>
-        <div>Risk score per candidate valid.</div>
+        <div>Risk score + rollback_recipe pentru candidates valid.</div>
         <div class="io">out: { scores: [...] }</div>
       </div>
       <div class="step agg-step">
@@ -365,35 +404,89 @@
         <h4>Aggregate</h4>
         <div>Aplică schema aleasă; veto dacă necesar.</div>
         <div class="io">out: { chosen, ranking }</div>
+        <span class="sub">+5b confidence</span>
       </div>
       <div class="step">
         <div class="n">STEP 6</div>
         <h4>Report</h4>
-        <div>JSON final cu verification.</div>
-        <div class="io">out: full report</div>
+        <div><code>build_report.py</code> + <code>validate_report.py</code> + <code>log_feedback.py</code>.</div>
+        <div class="io">out: canonical JSON</div>
       </div>
     </div>
 
     <div class="rail">
-      <h3>Scripts atinse</h3>
+      <h3>Scripts pe pași</h3>
       <div class="rail-grid">
         <div class="col">
           <code>priors.py</code>
-          <div class="opt">soft priors din FEEDBACK + runs</div>
+          <div class="opt">step 0 — soft priors</div>
         </div>
         <div class="col empty"></div>
+        <div class="col alt">
+          <code>scope_gate.py</code>
+          <div class="opt">step 1.5 — auto-skip</div>
+        </div>
         <div class="col empty"></div>
         <div class="col">
+          <code>strip_context.py</code>
+          <div class="opt">step 3-4 — blind context (sequential)</div>
+        </div>
+        <div class="col">
           <code>probe_change.py</code>
-          <div class="opt">opțional — anchor diff_size</div>
+          <div class="opt">step 4 — anchor diff_size</div>
         </div>
         <div class="col">
           <code>aggregator.py</code>
-          <div class="opt">3 scheme votare</div>
+          <div class="opt">step 5 — 4 scheme</div>
+        </div>
+        <div class="col">
+          <code>build_report.py</code>
+          <div class="opt">step 6 — canonical JSON</div>
+        </div>
+      </div>
+      <div class="rail-grid" style="margin-top: 10px;">
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col">
+          <code>confidence.py</code>
+          <div class="opt">step 5b — variance + separation</div>
         </div>
         <div class="col">
           <code>validate_report.py</code>
-          <div class="opt">gate Principle #4</div>
+          <div class="opt">step 6 — gate Principle #4</div>
+        </div>
+      </div>
+      <div class="rail-maint">
+        <h4>Maintenance & extra-pipeline scripts</h4>
+        <div class="maint-grid">
+          <div class="col">
+            <code>dialectic_merge.py</code>
+            <div class="opt">parallel/dialectic mode</div>
+          </div>
+          <div class="col">
+            <code>log_feedback.py</code>
+            <div class="opt">step 6 — append PEND la FEEDBACK.md</div>
+          </div>
+          <div class="col">
+            <code>run_evals.py</code>
+            <div class="opt">regression suite (17+ scenarii)</div>
+          </div>
+          <div class="col">
+            <code>usage.py</code>
+            <div class="opt">telemetry rollup pe runs/</div>
+          </div>
+          <div class="col">
+            <code>feedback.py</code>
+            <div class="opt">audit FEEDBACK.md (stats + recent)</div>
+          </div>
+          <div class="col" style="grid-column: 1 / 2;">
+            <code>personalities.py</code>
+            <div class="opt">ensemble mode (rejection sampling)</div>
+          </div>
         </div>
       </div>
     </div>
@@ -405,10 +498,12 @@
         <polygon points="50,32 52,28 54,32" fill="#b8860b"/>
       </svg>
       <div class="text">
-        <b>Feedback loop</b> — la finalul fiecărei deliberări, scrie JSON în <code>runs/</code> și
-        adaugă o linie în <code>FEEDBACK.md</code>. La începutul următoarei rulări,
-        <code>priors.py</code> încarcă semnalele agregate (override_rate, veto_rate, top keywords)
-        ca priori soft pentru step 1.
+        <b>Feedback loop</b> — la finalul fiecărei deliberări, <code>build_report.py</code>
+        asamblează raportul canonic, <code>validate_report.py</code> verifică Principle #4,
+        iar <code>log_feedback.py</code> appendează automat o linie PEND în <code>FEEDBACK.md</code>
+        (user-ul o închide ulterior cu OK/BAD/OVR). La începutul următoarei rulări,
+        <code>priors.py</code> citește <code>runs/</code> + <code>FEEDBACK.md</code> și încarcă
+        semnalele agregate (override_rate, veto_rate, top keywords) ca priori soft pentru step 1.
       </div>
     </div>
 
@@ -417,7 +512,7 @@
   <!-- ============== TAB 3 ============== -->
   <section class="tab" id="modes">
 
-    <h2>Flow models — 3 moduri de a reduce contaminarea</h2>
+    <h2>Flow models — 5 moduri (4 active + 1 SPEC)</h2>
     <div class="modes">
 
       <div class="mode sequential-blind">
@@ -511,6 +606,49 @@
         </div>
       </div>
 
+      <div class="mode dialectic">
+        <h3>Dialectic — iterative (1-3 runde) <span class="mode-badge spec">SPEC</span></h3>
+        <div class="subtitle">Extensie a dialectic two-pass cu N revision rounds și convergence detection.</div>
+
+        <div class="stage">
+          <div class="label">pass 1 — independent (ca parallel)</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ 1 + 2 pattern</div>
+          <span class="actor gen">Generator</span>
+          <span class="actor ctl">Control</span>
+          <span class="actor con">Conservator</span>
+          <div class="wall" title="chinese wall"></div>
+        </div>
+
+        <div class="stage">
+          <div class="label">pass 2 … pass N+1 — revision loop (N ∈ {1,2,3})</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ fiecare voce vede outputs-urile celorlalți din round-ul anterior</div>
+          <div class="parallel-row">
+            <div class="parallel-col"><span class="actor gen">Gen rev.</span></div>
+            <div class="parallel-col"><span class="actor ctl">Ctrl rev.</span></div>
+            <div class="parallel-col"><span class="actor con">Cons rev.</span></div>
+          </div>
+          <div class="ok">
+            ✓ <b>Convergence stop</b> — early-exit dacă în round-ul curent: (a) lista de
+            candidate <code>id</code>-uri identică, (b) niciun <code>valid</code> n-a flipat,
+            (c) niciun <code>risk_score</code> n-a variat cu &gt;0.05. Hard cap N=3.
+          </div>
+          <div class="warning">
+            ⚠ Nu e încă implementat — <code>dialectic_merge.py</code> trebuie să accepte
+            <code>{rounds: [pass1, pass2, ...]}</code> și să returneze <code>revision_log</code>
+            per round. Schema veche <code>{pass1, pass2}</code> rămâne backward-compat.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> decizii high-stakes unde Conservator-ul flag-uiește un risc neașteptat
+          și vrei să dai Generator-ului șansa de a propune candidate ce evită explicit acel risc —
+          apoi Conservator-ul șansa de a rescore. Cost: <code>1 + 3·(N+1)</code> sub-agenți
+          (4 / 7 / 10 pentru N = 0 / 1 / 2 / 3).
+        </div>
+      </div>
+
       <div class="mode sequential">
         <h3>Sequential — naive <span class="mode-badge legacy">LEGACY</span></h3>
         <div class="subtitle">Original mode — păstrat pentru referință.</div>
@@ -538,7 +676,7 @@
 
     <div class="flowmap">
       <h3>Cum circulă informația între voci</h3>
-      <svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flow comparison across four modes">
+      <svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flow comparison across five modes">
         <defs>
           <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
             <path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/>
@@ -627,12 +765,35 @@
         <line x1="410" y1="402" x2="688" y2="402" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)" opacity="0.6"/>
         <line x1="530" y1="395" x2="778" y2="395" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)" opacity="0.6"/>
         <text x="540" y="442" fill="#93c5fd" font-size="9" text-anchor="middle" opacity="0.8">each pass-2 voice receives the other two pass-1 outputs</text>
+
+        <!-- Row 5: Dialectic iterative (SPEC) -->
+        <text x="20" y="500" fill="#9ca3af" font-size="12" font-weight="700" letter-spacing="0.08em">DIALECTIC — ITERATIVE</text>
+        <text x="20" y="516" fill="#9ca3af" font-size="10">pass 1 → pass N (N ≤ 3, early-stop on convergence) — SPEC</text>
+        <rect x="180" y="480" width="90" height="40" rx="6" fill="#1a1f29" stroke="#3a4150" stroke-dasharray="3,3"/>
+        <text x="225" y="505" fill="#fbbf24" font-size="12" text-anchor="middle">pass 1</text>
+        <rect x="290" y="480" width="90" height="40" rx="6" fill="#1a1f29" stroke="#3a4150" stroke-dasharray="3,3"/>
+        <text x="335" y="505" fill="#93c5fd" font-size="12" text-anchor="middle">pass 2</text>
+        <rect x="400" y="480" width="90" height="40" rx="6" fill="#1a1f29" stroke="#3a4150" stroke-dasharray="3,3"/>
+        <text x="445" y="505" fill="#93c5fd" font-size="12" text-anchor="middle">pass 3</text>
+        <rect x="510" y="480" width="90" height="40" rx="6" fill="#1a1f29" stroke="#3a4150" stroke-dasharray="3,3"/>
+        <text x="555" y="505" fill="#93c5fd" font-size="12" text-anchor="middle">pass 4</text>
+        <line x1="270" y1="500" x2="288" y2="500" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)"/>
+        <line x1="380" y1="500" x2="398" y2="500" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)"/>
+        <line x1="490" y1="500" x2="508" y2="500" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)"/>
+        <!-- Convergence loop arrow back -->
+        <path d="M 445 480 Q 335 450 225 480" stroke="#34d399" stroke-width="1.5" fill="none" stroke-dasharray="3,2" opacity="0.6"/>
+        <text x="335" y="448" fill="#6ee7b7" font-size="9" text-anchor="middle" opacity="0.8">stop if converged</text>
+        <line x1="600" y1="500" x2="660" y2="500" stroke="#34d399" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+        <text x="700" y="504" fill="#6ee7b7" font-size="10">→ aggregator (last pass)</text>
+        <text x="225" y="546" fill="#9ca3af" font-size="9" text-anchor="middle">independent</text>
+        <text x="445" y="546" fill="#9ca3af" font-size="9" text-anchor="middle">each round: sees peers from prev round</text>
       </svg>
       <div class="legend">
         <div class="item"><span class="swatch" style="background:#f87171;"></span>contaminated path (rationale/issues leak)</div>
         <div class="item"><span class="swatch" style="background:#fbbf24;"></span>stripped path (minimum fields only)</div>
         <div class="item"><span class="swatch" style="background:#34d399;"></span>independent sub-agent (true isolation)</div>
         <div class="item"><span class="swatch" style="background:#60a5fa;"></span>controlled cross-context (dialectic pass 2)</div>
+        <div class="item"><span class="swatch" style="background:#34d399; border-top: 1px dashed #34d399;"></span>convergence loop back (iterative — early-stop)</div>
       </div>
     </div>
 
