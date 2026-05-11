@@ -33,3 +33,6 @@ runs/*.json
 
 # Personal feedback journal (local-only, not shared between machines)
 FEEDBACK.md
+
+# Claude Code session metadata (permissions, local settings)
+.claude/
