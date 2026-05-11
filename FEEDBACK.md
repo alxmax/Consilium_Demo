@@ -21,4 +21,4 @@ YYYY-MM-DD | context           | chosen          | outcome | note
 
 <!-- newest at top -->
 
-- 2026-05-11 | (template entry — delete after first real use) | example_id | PEND | scaffolding only
+- 2026-05-11 | dashboard_v3 overview review | C2+C3 | OK | C1 dropped (build-output dup, not real); C2 (skip legacy renderers on Summary) + C3 (targets to config.js) shipped; C5 vetoed
