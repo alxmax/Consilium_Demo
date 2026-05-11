@@ -1,0 +1,237 @@
+"""Decide whether a change is small enough to bypass full deliberation.
+
+Reads diff signals via probe_change.py, checks them against thresholds and a
+sensitive-path blocklist, then returns a JSON decision the caller uses to
+either skip Generator/Control/Conservator or proceed normally.
+
+Defaults (override via --config PATH or scope_gate.json in cwd):
+  max_files = 1
+  max_lines = 15            # added + removed
+  blocklist = [auth/, security/, migrations/, .github/workflows/,
+               **/secrets*, .env*, Dockerfile, *.tf, *.tfvars,
+               package.json, requirements.txt, go.mod, Cargo.toml, pom.xml]
+
+Escape hatch: env MAX_AGENT_FORCE_FULL=1 always returns should_skip=false
+(useful when you want full deliberation regardless of probe size).
+
+Output (always to stdout, exit 0 on success):
+  {
+    "should_skip": bool,
+    "reason": str,
+    "signals": {
+      "files_changed": int,
+      "lines_changed": int,
+      "blocklist_hits": [{"path": str, "pattern": str}, ...]
+    },
+    "config_used": {"max_files": int, "max_lines": int, "blocklist": [...]}
+  }
+
+Probe failure (no git, not a repo, bad ref) -> should_skip=false with the
+underlying error in `reason`. The gate fails OPEN: when in doubt, deliberate.
+
+CLI:
+    python scripts/scope_gate.py
+    python scripts/scope_gate.py --ref main
+    python scripts/scope_gate.py --range origin/main..HEAD
+    python scripts/scope_gate.py --files src/foo.py
+    python scripts/scope_gate.py --config my_gate.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import fnmatch
+import importlib.util
+import json
+import os
+import sys
+from pathlib import Path
+
+
+DEFAULT_CONFIG: dict = {
+    "max_files": 1,
+    "max_lines": 15,
+    "blocklist": [
+        "auth/",
+        "security/",
+        "migrations/",
+        ".github/workflows/",
+        "**/secrets*",
+        ".env*",
+        "Dockerfile",
+        "*.tf",
+        "*.tfvars",
+        "package.json",
+        "requirements.txt",
+        "go.mod",
+        "Cargo.toml",
+        "pom.xml",
+    ],
+}
+
+
+def _load_probe_module():
+    here = Path(__file__).resolve().parent
+    spec = importlib.util.spec_from_file_location("probe_change", here / "probe_change.py")
+    if spec is None or spec.loader is None:
+        raise RuntimeError("could not load probe_change.py from sibling path")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _path_matches(path: str, pattern: str) -> bool:
+    """Match a forward-slash path against one of the supported pattern forms.
+
+    Supported:
+      - "dir/"        directory prefix at any depth (auth/foo, src/auth/foo)
+      - "**/glob"     glob applied to any path component (basename-style)
+      - "glob"        fnmatch on full path AND on basename (Dockerfile, *.tf)
+    """
+    path = path.replace("\\", "/")
+    if pattern.endswith("/"):
+        return path.startswith(pattern) or f"/{pattern}" in f"/{path}"
+    if pattern.startswith("**/"):
+        tail = pattern[3:]
+        return any(fnmatch.fnmatchcase(p, tail) for p in path.split("/"))
+    base = path.rsplit("/", 1)[-1]
+    return fnmatch.fnmatchcase(path, pattern) or fnmatch.fnmatchcase(base, pattern)
+
+
+def find_blocklist_hits(paths: list[str], blocklist: list[str]) -> list[dict]:
+    hits: list[dict] = []
+    for p in paths:
+        for pat in blocklist:
+            if _path_matches(p, pat):
+                hits.append({"path": p, "pattern": pat})
+                break
+    return hits
+
+
+def load_config(path: str | None) -> dict:
+    if path is None:
+        candidate = Path.cwd() / "scope_gate.json"
+        if not candidate.exists():
+            return {k: (list(v) if isinstance(v, list) else v) for k, v in DEFAULT_CONFIG.items()}
+        path = str(candidate)
+    with open(path, "r", encoding="utf-8") as f:
+        user = json.load(f)
+    if not isinstance(user, dict):
+        raise RuntimeError(f"config {path} must be a JSON object")
+    cfg = {k: (list(v) if isinstance(v, list) else v) for k, v in DEFAULT_CONFIG.items()}
+    for k, v in user.items():
+        if k in DEFAULT_CONFIG:
+            cfg[k] = v
+    return cfg
+
+
+def _gather_signals(probe_mod, ref, range_, files):
+    git_args: list[str] = []
+    if range_:
+        git_args = [range_]
+    elif ref:
+        git_args = [f"{ref}..HEAD"]
+    else:
+        git_args = ["HEAD"]
+    if files:
+        git_args += ["--", *files]
+    text = probe_mod._run_numstat(git_args)
+    summary, paths = probe_mod.parse_numstat(text)
+    return summary, paths
+
+
+def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
+    if "error" in summary:
+        return {
+            "should_skip": False,
+            "reason": f"probe failed: {summary['error']}",
+            "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": []},
+        }
+    files = summary.get("files_changed", 0)
+    lines = summary.get("lines_added", 0) + summary.get("lines_removed", 0)
+    hits = find_blocklist_hits(paths, cfg["blocklist"])
+    signals = {"files_changed": files, "lines_changed": lines, "blocklist_hits": hits}
+
+    if files == 0:
+        return {"should_skip": False, "reason": "no changes detected", "signals": signals}
+    if hits:
+        joined = ", ".join(sorted({h["pattern"] for h in hits}))
+        return {
+            "should_skip": False,
+            "reason": f"sensitive path matched: {joined}",
+            "signals": signals,
+        }
+    if files > cfg["max_files"]:
+        return {
+            "should_skip": False,
+            "reason": f"{files} files > max_files={cfg['max_files']}",
+            "signals": signals,
+        }
+    if lines > cfg["max_lines"]:
+        return {
+            "should_skip": False,
+            "reason": f"{lines} lines > max_lines={cfg['max_lines']}",
+            "signals": signals,
+        }
+    return {
+        "should_skip": True,
+        "reason": f"{files} file(s), {lines} lines, no sensitive paths",
+        "signals": signals,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--ref", help="diff <ref>..HEAD")
+    mode.add_argument("--range", dest="range_", help="diff <A>..<B>")
+    ap.add_argument("--files", nargs="+", help="restrict to specific paths")
+    ap.add_argument("--config", help="path to scope_gate.json (default: ./scope_gate.json if exists)")
+    args = ap.parse_args(argv)
+
+    try:
+        cfg = load_config(args.config)
+    except (OSError, json.JSONDecodeError, RuntimeError) as exc:
+        json.dump(
+            {
+                "should_skip": False,
+                "reason": f"config load failed: {exc}",
+                "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": []},
+                "config_used": DEFAULT_CONFIG,
+            },
+            sys.stdout,
+            indent=2,
+        )
+        sys.stdout.write("\n")
+        return 0
+
+    if os.environ.get("MAX_AGENT_FORCE_FULL") == "1":
+        json.dump(
+            {
+                "should_skip": False,
+                "reason": "MAX_AGENT_FORCE_FULL=1 (override)",
+                "signals": {"files_changed": None, "lines_changed": None, "blocklist_hits": []},
+                "config_used": cfg,
+            },
+            sys.stdout,
+            indent=2,
+        )
+        sys.stdout.write("\n")
+        return 0
+
+    try:
+        probe_mod = _load_probe_module()
+        summary, paths = _gather_signals(probe_mod, args.ref, args.range_, args.files)
+    except RuntimeError as exc:
+        summary = {"error": str(exc)}
+        paths = []
+
+    result = decide(summary, paths, cfg)
+    result["config_used"] = cfg
+    json.dump(result, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
