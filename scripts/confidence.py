@@ -111,7 +111,17 @@ def derive(candidates: list[dict], chosen: str | None) -> dict:
     }
 
 
+def _force_utf8_streams() -> None:
+    # Windows default stdin/stdout encoding is cp1252; piping UTF-8 JSON
+    # through that mangles non-ASCII (ț, ș, ă) before any script sees it.
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure:
+            reconfigure(encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
+    _force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--input",
