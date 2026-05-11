@@ -40,6 +40,19 @@
     "expect_stdout_subset": {"scheme": "conservative_override", "chosen": "safe"}
   },
   {
+    "name": "aggregator/conservative_override survivor ranking prefers lower risk at gen+ctrl tie",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "conservative_override"],
+    "stdin_json": {
+      "candidates": [
+        {"id": "lower_risk",  "scores": {"generator": 0.8, "control": 0.8, "conservator": 0.4}},
+        {"id": "higher_risk", "scores": {"generator": 0.8, "control": 0.8, "conservator": 0.6}}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "conservative_override", "chosen": "lower_risk"}
+  },
+  {
     "name": "aggregator/conservative_override veto-all attaches retry_suggested",
     "tool": "scripts/aggregator.py",
     "args": ["--scheme", "conservative_override"],

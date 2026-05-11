@@ -142,7 +142,7 @@ Rulează:
 ```bash
 python scripts/aggregator.py --scheme conservative_override
 ```
-Default: **conservative_override** — orice candidate cu `risk_score > 0.7` primește veto, indiferent de scorurile celorlalți.
+Default: **conservative_override** — orice candidate cu `risk_score > 0.7` primește veto, indiferent de scorurile celorlalți. În rândul candidate-urilor non-vetoiți, ranking-ul folosește media ponderată `(generator + control + safety)` unde `safety = 1 - conservator` — așa că la egalitate pe celelalte voci, candidatul mai sigur câștigă.
 
 Alte scheme disponibile: `majority`, `weighted`, `risk_adjusted_utility`.
 

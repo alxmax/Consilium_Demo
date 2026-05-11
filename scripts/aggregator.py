@@ -5,8 +5,11 @@ Four schemes:
 - weighted: weighted average using personality weights. NOTE: treats every
   voice as utility (higher = better), which is wrong for conservator —
   kept for backward compatibility, prefer risk_adjusted_utility.
-- conservative_override: weighted average, BUT any candidate with conservator
-  risk > veto_threshold is disqualified regardless of other voices.
+- conservative_override: vetoes any candidate with conservator risk >
+  veto_threshold; survivors ranked by weighted average of (generator,
+  control, 1-conservator) so safer candidates outrank riskier ones when
+  other voices tie. (Earlier versions reused aggregate_weighted directly,
+  which treated conservator as utility — fixed via audit C.)
 - risk_adjusted_utility: flip conservator into safety, blend utility with
   a sigmoid risk penalty. No hard veto — risk degrades the score smoothly.
 
@@ -135,14 +138,33 @@ def aggregate_conservative_override(
             }
         return result
 
-    base = aggregate_weighted(survivors, weights)
+    # Rank survivors by weighted average of (generator, control, safety)
+    # where safety = 1 - conservator. Flipping conservator into safety
+    # is the whole point of *conservative* override — without it, a
+    # higher-risk survivor (risk=0.6) would outrank a lower-risk one
+    # (risk=0.3) when other voices tie, defeating the scheme's name.
+    # See aggregator audit C in branch claude/wonderful-dhawan-c83211.
+    w = [float(weights[v]) for v in VOICES]
+    s = sum(w)
+    if s <= 0:
+        raise ValueError("weights must sum to a positive value")
+    w = [x / s for x in w]
+    ranked: list[tuple[float, dict]] = []
+    for c in survivors:
+        gen = float(c["scores"]["generator"])
+        ctrl = float(c["scores"]["control"])
+        safety = 1.0 - float(c["scores"]["conservator"])
+        score = w[0] * gen + w[1] * ctrl + w[2] * safety
+        ranked.append((score, c))
+    ranked.sort(key=lambda t: t[0], reverse=True)
+    winner = ranked[0][1]
     return {
         "scheme": "conservative_override",
         "veto_threshold": veto_threshold,
-        "chosen": base["chosen"],
-        "ranking": base["ranking"],
+        "chosen": winner["id"],
+        "ranking": [{"id": c["id"], "score": s} for s, c in ranked],
         "vetoed": vetoed,
-        "weights": base["weights"],
+        "weights": dict(zip(VOICES, w)),
     }
 
 
