@@ -4,9 +4,16 @@ Reads a deliberation report (JSON) from stdin. Exits 0 iff:
 - success_criterion is a non-empty string (str.strip() length > 0)
 - verification is a non-empty string
 - chosen_approach is EITHER a non-empty string OR null
+- if skipped is true, skip_reason is a non-empty string
 
-The null case is legitimate: conservative_override with veto_threshold can
-produce chosen: null when every candidate is vetoed (see aggregator.py).
+The null chosen_approach case is legitimate: conservative_override with
+veto_threshold can produce chosen: null when every candidate is vetoed
+(see aggregator.py).
+
+The skipped case (chosen_approach: "skipped", skipped: true) is legitimate
+and emitted by the scope gate (see scripts/scope_gate.py). Principle #4
+still applies — success_criterion + verification remain required even for
+skipped reports — and skip_reason must justify the bypass.
 
 On failure, prints each problem to stderr and exits 1. Malformed JSON exits 2.
 
@@ -47,6 +54,10 @@ def validate(report: dict) -> list[str]:
             continue
         if not _is_non_empty_str(value):
             problems.append(f"field {field} must be null or a non-empty string (got {type(value).__name__})")
+
+    if report.get("skipped") is True:
+        if not _is_non_empty_str(report.get("skip_reason")):
+            problems.append("skipped=true requires non-empty skip_reason")
 
     return problems
 

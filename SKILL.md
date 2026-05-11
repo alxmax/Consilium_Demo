@@ -57,6 +57,35 @@ Semnale roșii care declanșează clarity gate:
 
 Dacă **toate** sunt clare → continuă la pasul 2 fără să întrebi. Clarity gate **nu** e o scuză să întrebi de rutină — întrebatul are cost. Folosește-l doar când interpretările diferă semnificativ în scope sau cod produs.
 
+### 1.5. Scope gate (auto)
+Înainte de Generator, rulează:
+```bash
+python scripts/scope_gate.py            # working tree vs HEAD
+python scripts/scope_gate.py --ref main # main..HEAD
+```
+Întoarce `{should_skip, reason, signals, config_used}`. Dacă `should_skip: true`, deliberarea completă e overkill (cost-of-deliberation > stakes-of-change) — sari direct la raportul minimal de mai jos și oprește-te:
+
+```json
+{
+  "success_criterion": "<din pasul 1>",
+  "verification": "<pas concret>",
+  "chosen_approach": "skipped",
+  "skipped": true,
+  "skip_reason": "<reason din scope_gate>",
+  "signals": {"files_changed": 1, "lines_changed": 4, "blocklist_hits": []},
+  "voice_scores": null,
+  "confidence": null,
+  "alternatives": [],
+  "deliberation_log": []
+}
+```
+
+Constitution Principle #4 rămâne — `success_criterion` și `verification` sunt obligatorii și pe raportul skipped (validate_report.py le verifică, plus `skip_reason` non-gol).
+
+Defaults: `max_files=1`, `max_lines=15`, plus blocklist conservativ (`auth/`, `security/`, `migrations/`, `.github/workflows/`, `**/secrets*`, `.env*`, `Dockerfile`, `*.tf`, fișiere de dependențe). Scopul: o linie schimbată în `migrations/` nu sare gate-ul, oricât de mic e diff-ul. Override prin `scope_gate.json` în root cu schema `{max_files, max_lines, blocklist}` — vezi docstring-ul script-ului. Escape hatch: `MAX_AGENT_FORCE_FULL=1` în environment forțează `should_skip=false` indiferent de scope (când vrei deliberare oricum).
+
+Gate-ul **eșuează deschis**: dacă probe-ul git crapă (no repo, bad ref), `should_skip: false` și treci la Generator. Mai bine deliberezi în plus decât sari în gol.
+
 ### 2. Generator — produce alternative
 Folosește `prompts/generator.md`. Cere **3–5 abordări candidate**, inclusiv "do nothing" ca baseline. Stil divergent — nu auto-cenzura pentru risc în acest pas.
 
@@ -176,6 +205,7 @@ Exit 0 = OK. Exit 1 = field lipsă/gol; tipărește detaliile pe stderr. Exit 2 
 - `scripts/probe_change.py` — ancorare diff_size la `git diff --numstat`
 - `scripts/confidence.py` — derivă confidence din variance inter-voci + separation față de runner-up
 - `scripts/strip_context.py` — proiectează output-ul voci anterioare la minimul necesar (reduce contaminarea în sequential mode)
+- `scripts/scope_gate.py` — auto-detect dacă scope-ul e suficient de mic ca să sari deliberarea (Step 1.5)
 - `scripts/dialectic_merge.py` — combină outputs Pass-1 + Pass-2 din dialectic mode într-un payload aggregator-ready, cu `revision_log` per voce
 
 ## Feedback loop
