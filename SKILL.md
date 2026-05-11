@@ -41,7 +41,21 @@ Citește schimbarea propusă (diff, fișiere atinse). Identifică:
 - Tipul schimbării: bugfix, feature, refactor, cleanup
 - Blast radius: cod intern, cod shared, API public
 
-**Apoi formulează `success_criterion`** — o propoziție testabilă care descrie ce înseamnă "schimbarea a reușit". Dacă requestul e ambiguu, **oprește-te și întreabă** (Principle #1) înainte de a continua. Acest criteriu condiționează toate candidate-urile de mai jos.
+**Apoi formulează `success_criterion`** — o propoziție testabilă care descrie ce înseamnă "schimbarea a reușit". Acest criteriu condiționează toate candidate-urile de mai jos.
+
+**Clarity gate.** Înainte de a continua la pasul 2, fă acest exercițiu mental: *poți tu, acum, scrie 2+ interpretări plauzibile distincte ale request-ului user-ului?* Dacă da, ești în zona de ambiguitate și Principle #1 e activ:
+
+- **Stop.** Nu trece la Generator.
+- Listează interpretările (2-4) într-un mesaj scurt user-ului.
+- Întreabă explicit care e cea reală — sau dacă vrea ambele tratate ca candidate separate.
+
+Semnale roșii care declanșează clarity gate:
+- Verbe vagi ("fix", "improve", "clean up") fără obiect concret
+- Pronume sau referințe nedezambiguate ("the bug", "this issue") când există mai multe candidate
+- Scope implicit: user spune "refactor X" — vrea doar X sau și call sites?
+- Unități/limite lipsă: "make it faster" fără benchmark sau prag
+
+Dacă **toate** sunt clare → continuă la pasul 2 fără să întrebi. Clarity gate **nu** e o scuză să întrebi de rutină — întrebatul are cost. Folosește-l doar când interpretările diferă semnificativ în scope sau cod produs.
 
 ### 2. Generator — produce alternative
 Folosește `prompts/generator.md`. Cere **3–5 abordări candidate**, inclusiv "do nothing" ca baseline. Stil divergent — nu auto-cenzura pentru risc în acest pas.
@@ -78,12 +92,13 @@ echo '{"candidates": [...], "verdicts": [...]}' | python scripts/strip_context.p
 ```
 Conservator primește doar `{id, summary, sketch}` pentru candidates marcate `valid: true` — fără `issues` și fără `rationale`. Scorează riscul pe baza sketch-ului, nu a poveștii pe care a spus-o Control. În parallel mode pasul e omis.
 
-**Opțional — diff_size autoprobe.** Pentru schimbări pe cod commited / staged, rulează:
+**Opțional — diff_size + churn autoprobe.** Pentru schimbări pe cod commited / staged, rulează:
 ```bash
-python scripts/probe_change.py            # working tree vs HEAD
-python scripts/probe_change.py --ref main # main..HEAD
+python scripts/probe_change.py                       # working tree vs HEAD
+python scripts/probe_change.py --ref main            # main..HEAD
+python scripts/probe_change.py --ref main --churn 30 # + commit count per file last 30 days
 ```
-Returnează `{files_changed, lines_added, lines_removed}` din `git diff --numstat`. Când probe-ul e prezent, ancorează `diff_size` la el în loc să estimezi. Probe-ul e advisory — `prompts/conservator.md` rămâne autoritativ și nu îl referențiază direct (probe-ul se injectează în context, nu în prompt).
+Returnează `{files_changed, lines_added, lines_removed}` din `git diff --numstat`. Cu `--churn N`, adaugă `churn.commits_per_file` — semnal pentru `regression_risk` (un fișier cu 8+ commit-uri în ultimele 14 zile e fragil; unul cu 0 e stabil). Când probe-ul e prezent, ancorează `diff_size` la `files_changed/lines_*` și `regression_risk` la distribuția de churn în loc să estimezi. Probe-ul e advisory — `prompts/conservator.md` rămâne autoritativ și nu îl referențiază direct (probe-ul se injectează în context, nu în prompt).
 
 ### 5. Aggregate
 Rulează:
@@ -92,7 +107,13 @@ python scripts/aggregator.py --scheme conservative_override
 ```
 Default: **conservative_override** — orice candidate cu `risk_score > 0.7` primește veto, indiferent de scorurile celorlalți.
 
-Alte scheme disponibile: `majority`, `weighted`.
+Alte scheme disponibile: `majority`, `weighted`, `risk_adjusted_utility`.
+
+**`risk_adjusted_utility`** — alternativă la `conservative_override` când pragul binar la 0.7 e prea brutal:
+```bash
+python scripts/aggregator.py --scheme risk_adjusted_utility
+```
+Calculează `utility(c) = mean(gen, ctrl, 1-cons)` (cu Conservator flip-uit la safety) și aplică penalty sigmoidal centrat la risc=0.5. Fără veto rigid — un candidate cu risc 0.7 nu e disqualified, doar penalizat (~79%). Folosește când ai mulți candidates strânși în jurul pragului de veto și preferi un tiebreaker neted.
 
 **Auto-relax la veto total.** Dacă toți candidates sunt vetoiți, aggregator-ul atașează un bloc `retry_suggested` cu:
 - `relaxed_threshold` — prag-ul minim sub care candidate-ul cu cel mai mic risc ar fi supraviețuit (capped la 0.85)
@@ -149,7 +170,7 @@ Exit 0 = OK. Exit 1 = field lipsă/gol; tipărește detaliile pe stderr. Exit 2 
 - `prompts/control.md` — template pentru voce analitică
 - `prompts/conservator.md` — template pentru voce skeptică
 - `scripts/personalities.py` — rejection sampling pentru ensemble mode
-- `scripts/aggregator.py` — 3 scheme de voting + auto-relax la veto total
+- `scripts/aggregator.py` — 4 scheme de voting + auto-relax la veto total
 - `scripts/priors.py` — extrage priori soft din FEEDBACK + runs înainte de step 1
 - `scripts/validate_report.py` — gate Principle #4 (success_criterion + verification + chosen_approach)
 - `scripts/probe_change.py` — ancorare diff_size la `git diff --numstat`

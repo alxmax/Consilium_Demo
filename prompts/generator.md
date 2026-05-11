@@ -28,6 +28,7 @@ Produce **3 to 5 candidate approaches** that could address the goal. For each ca
 ## Constraints
 
 - **Always include `do_nothing`** as one of the candidates. Sometimes the change shouldn't happen.
+- **Always include one `adversarial_*` candidate.** Read the user's goal in the most uncharitable way possible — what's the worst-but-still-plausible interpretation? Propose the candidate that interpretation would imply. This isn't a strawman; it's a stress test. If the goal genuinely is unambiguous, the adversarial candidate becomes a near-duplicate of the main one and that's fine — the contrast is the value. Name it `adversarial_<short_id>` so downstream voices can spot it.
 - Candidates must be **meaningfully different** — not three flavors of the same idea. Vary on at least one axis: scope, abstraction level, timing, or mechanism.
 - Don't pre-filter for "feasibility" or "risk". The next two voices will handle that.
 
@@ -41,6 +42,12 @@ Produce **3 to 5 candidate approaches** that could address the goal. For each ca
       "summary": "Reject the change; keep current behavior.",
       "sketch": "No code changes. Close PR with rationale.",
       "rationale": "Baseline for comparison. Forces us to articulate what we gain."
+    },
+    {
+      "id": "adversarial_full_rewrite",
+      "summary": "Read 'fix the auth bug' as 'rewrite the auth module' and propose the largest reasonable scope.",
+      "sketch": "Replace auth/ with new implementation backed by lib X; keep public API.",
+      "rationale": "Stress-test for scope creep. If the user actually wanted this, downstream voices will surface it; if not, Conservator's scope_drift will tank it cleanly."
     },
     {
       "id": "...",

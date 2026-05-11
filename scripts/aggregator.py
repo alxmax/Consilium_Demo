@@ -1,10 +1,14 @@
 """Aggregate voice scores into a final decision.
 
-Three schemes:
+Four schemes:
 - majority: average of voices; pick highest mean. Ties broken by lowest variance.
-- weighted: weighted average using personality weights.
+- weighted: weighted average using personality weights. NOTE: treats every
+  voice as utility (higher = better), which is wrong for conservator —
+  kept for backward compatibility, prefer risk_adjusted_utility.
 - conservative_override: weighted average, BUT any candidate with conservator
   risk > veto_threshold is disqualified regardless of other voices.
+- risk_adjusted_utility: flip conservator into safety, blend utility with
+  a sigmoid risk penalty. No hard veto — risk degrades the score smoothly.
 
 Input format on stdin (JSON):
     {
@@ -26,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import statistics
 import sys
 from typing import Any
@@ -33,6 +38,9 @@ from typing import Any
 VOICES = ("generator", "control", "conservator")
 DEFAULT_VETO = 0.7
 RELAXED_VETO_CAP = 0.85
+# Sigmoid risk penalty parameters: 50% at risk=0.5, ~0.79 at 0.7, ~0.93 at 0.85
+SIGMOID_MIDPOINT = 0.5
+SIGMOID_STEEPNESS = 10.0
 
 
 def _voice_vec(scores: dict) -> list[float]:
@@ -138,6 +146,56 @@ def aggregate_conservative_override(
     }
 
 
+def _sigmoid_penalty(risk: float) -> float:
+    """Smooth [0,1] penalty curve. Centered at SIGMOID_MIDPOINT."""
+    return 1.0 / (1.0 + math.exp(-SIGMOID_STEEPNESS * (risk - SIGMOID_MIDPOINT)))
+
+
+def aggregate_risk_adjusted_utility(candidates: list[dict]) -> dict:
+    """Pick the candidate with the highest risk-adjusted utility.
+
+    utility(c)  = mean(generator, control, 1 - conservator)
+                  # flip conservator: 1 = safe, 0 = risky
+    penalty(c)  = sigmoid((conservator - 0.5) * STEEPNESS)
+                  # smooth ramp; 0.5 risk = 0.5 penalty; 0.85 risk = ~0.97 penalty
+    final(c)    = utility(c) * (1 - penalty(c))
+
+    No hard veto — high-risk candidates can still win if their utility
+    is dramatically higher than alternatives. In practice the sigmoid
+    is steep enough that risk > 0.7 candidates lose unless they're
+    nearly perfect on the other axes.
+
+    Use this scheme when conservative_override's binary cutoff feels
+    too coarse (e.g. you have many candidates clustered near the veto
+    threshold and want a smooth tiebreaker instead of a cliff).
+    """
+    ranked = []
+    for c in candidates:
+        gen = float(c["scores"]["generator"])
+        ctrl = float(c["scores"]["control"])
+        cons = float(c["scores"]["conservator"])
+        utility = (gen + ctrl + (1.0 - cons)) / 3.0
+        penalty = _sigmoid_penalty(cons)
+        final = utility * (1.0 - penalty)
+        ranked.append((final, utility, penalty, c))
+    ranked.sort(key=lambda t: t[0], reverse=True)
+
+    winner = ranked[0][3]
+    return {
+        "scheme": "risk_adjusted_utility",
+        "chosen": winner["id"],
+        "ranking": [
+            {
+                "id": c["id"],
+                "score": round(final, 4),
+                "utility": round(util, 4),
+                "risk_penalty": round(pen, 4),
+            }
+            for final, util, pen, c in ranked
+        ],
+    }
+
+
 SCHEMES = {
     "majority": lambda data: aggregate_majority(data["candidates"]),
     "weighted": lambda data: aggregate_weighted(data["candidates"], data["weights"]),
@@ -145,6 +203,9 @@ SCHEMES = {
         data["candidates"],
         data.get("weights"),
         data.get("veto_threshold", DEFAULT_VETO),
+    ),
+    "risk_adjusted_utility": lambda data: aggregate_risk_adjusted_utility(
+        data["candidates"]
     ),
 }
 
