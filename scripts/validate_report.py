@@ -19,12 +19,14 @@ and emitted by the scope gate (see scripts/scope_gate.py). Principle #4
 still applies — success_criterion + verification remain required even for
 skipped reports — and skip_reason must justify the bypass.
 
-The telemetry block is optional. When present it should carry per-voice
-token + latency counts so scripts/usage.py can roll up cost statistics
-across runs/. Validator only checks shape (non-negative ints for counts,
-positive int for passes, str for mode); fields may be omitted individually
-because the agent can't always measure them all (e.g. sequential mode
-can't isolate per-voice tokens).
+The telemetry block is required for non-skipped reports (mode field
+must be a non-empty string). For skipped reports it should be omitted.
+When present it should carry per-voice token + latency counts so
+scripts/usage.py can roll up cost statistics across runs/. Validator
+checks shape (non-negative ints for counts, positive int for passes,
+str for mode); fields beyond mode may be omitted individually because
+the agent can't always measure them all (e.g. sequential mode can't
+isolate per-voice tokens).
 
 The deliberation_log + telemetry.mode requirements catch a class of bugs
 where reports were manually assembled (bypassing build_report.py) and ended
