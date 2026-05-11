@@ -41,6 +41,8 @@ Două acțiuni, în ordine, **înainte** de a explora codul user-ului:
 1. **Citește contractele celor 3 voci** — `prompts/generator.md`, `prompts/control.md`, `prompts/conservator.md`. Sunt scurte (sub 100 linii fiecare) și definesc exact ce câmpuri produce fiecare voce. Fără ele, gather-context-ul de la Step 1 rulează orb: framezi `success_criterion` într-un vocabular care s-ar putea să nu se mapeze pe `scope_drift` / `tests_to_write` / `rollback_recipe` etc. Cost: ~500 tokeni; previne re-explorare după ce ajungi la Step 3 și realizezi ce întreabă Control. **Notă pentru parallel/dialectic mode:** acolo conținutul fiecărui prompt trebuie *inline-uit* în dispatch-ul către sub-agentul respectiv (vezi secțiunea Parallel voices mode → "Conținutul integral al prompt-ului vocii sale"). Citirea la Step 0 nu e suficientă — sub-agenții n-au cum să acceseze fișierele.
 2. **Rulează `python scripts/priors.py`.** Întoarce un JSON cu ultimele ~10 entries din `FEEDBACK.md`, `override_rate`, `bad_rate`, `conservator_veto_rate` (din `runs/`) și top keywords din note. Tratează ca **priori soft** pentru deliberarea curentă: dacă apar tipare clare (ex: `override_rate > 0.3` cu keyword "conservator", "agresiv"), ajustează strategia (ex: relaxează pragul veto la 0.8, marchează explicit unde Conservator e probabil supra-prudent). Nu modifica fișierele skill-ului; doar prompts-urile rămân autoritative.
 
+   Dacă `priors.py` raportează `stale_pendings` non-empty (PEND-uri mai vechi de 7 zile, max 5 entries), oprește **înainte** de Step 1 și întreabă user-ul: *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid acum (OK/BAD/skip per entry) sau să continuăm cu deliberarea nouă?"* Update-ul se face cu `Edit` tool pe `FEEDBACK.md` (înlocuiește literalul `PEND` din linia respectivă cu `OK` sau `BAD`), **nu** prin `log_feedback.py` — acela appendează o linie nouă, ducând la istoric dublu pentru aceeași deliberare. Dacă user-ul răspunde "skip", continuă la Step 1 fără modificări.
+
 ### 1. Gather context & state the goal
 Citește schimbarea propusă (diff, fișiere atinse). Identifică:
 - Scope: câte fișiere, câte module, câte linii
@@ -239,11 +241,23 @@ Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat; tipărește deta
 
 **Acțiuni finale (obligatorii — fără ele deliberarea nu e completă):**
 1. **Persistă raportul.** Scrie JSON-ul complet în `runs/YYYY-MM-DD_HHMM_<short-label>.json`. Schema în `runs/README.md`. Fără asta, `priors.py` la deliberarea următoare nu te vede; pierdem feedback loop-ul.
-2. **Loghează automat în `FEEDBACK.md`.** Rulează:
-   ```bash
-   cat runs/<file>.json | python scripts/log_feedback.py
-   ```
-   Script-ul derivă linia (`data | context | chosen | PEND | note`) din raport și o appendează (creează FEEDBACK.md cu header dacă lipsește). `note` e auto-extras: `"skipped: <reason>"`, `"all vetoed; relaxed=<X>"`, sau `"<N> cand, <K> vetoed, conf=<X>, mode=<Y>"`. Outcome rămâne `PEND` — user-ul îl actualizează la `OK`/`BAD`/`OVR` ulterior, prin editare manuală a fișierului, când rezultatul e cunoscut. Dacă vrei doar să previzualizezi linia fără să scrii, foloseste `--dry-run`.
+2. **Loghează automat în `FEEDBACK.md` cu outcome confidence-gated.** La finalul Step 6, citește `confidence` din raport și alege calea:
+
+   - **`confidence >= 0.7`** — pickul are agreement și separation suficient; auto-OK fără să întrebi user-ul:
+     ```bash
+     cat runs/<file>.json | python scripts/log_feedback.py --outcome OK
+     ```
+
+   - **`confidence < 0.7`** — întreabă user-ul: *"Confidence sub prag (`<X>`). Vrei să override-ezi `<chosen>`? Alternative din raport: `<alt_id list>`. Răspunde alt_id, 'no', sau 'skip'."* Apoi:
+     - `no` → `python scripts/log_feedback.py --outcome OK`
+     - `<alt_id>` → `python scripts/log_feedback.py --outcome OVR --override-target <alt_id>` (cu `--user-note "<motiv>"` opțional)
+     - `skip` → `python scripts/log_feedback.py` (PEND, default — user-ul închide manual mai târziu)
+
+   - **`confidence` is null** (toți candidates vetoiți) — `python scripts/log_feedback.py` fără flag. Veto total = no decision = no outcome to rate.
+
+   Pragul `0.7` e o decizie de workflow în acest fișier, nu config în script. Schimbarea pragului = o editare aici. `--dry-run` previzualizează linia fără să scrie, în orice combinație de flag-uri.
+
+   Script-ul derivă coloana note automat: `"skipped: <reason>"`, `"all vetoed; relaxed=<X>"`, sau `"<N> cand, <K> vetoed, conf=<X>, mode=<Y>"`. Când outcome e OVR, se append-ează `; override=<target>` și (opțional) nota user-ului.
 
 ## Skill maintenance
 
