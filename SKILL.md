@@ -176,6 +176,15 @@ Output JSON final:
     "conservator": 0.4
   },
   "confidence": 0.85,
+  "telemetry": {
+    "mode": "parallel",
+    "passes": 1,
+    "voices": {
+      "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
+      "control":     {"tokens_in":  800, "tokens_out": 200, "latency_ms": 2100},
+      "conservator": {"tokens_in":  900, "tokens_out": 180, "latency_ms": 1800}
+    }
+  },
   "deliberation_log": [
     {"step": "generator", "candidates": [...]},
     {"step": "control", "verdicts": [...]},
@@ -187,11 +196,28 @@ Output JSON final:
 
 Câmpurile `success_criterion` și `verification` sunt **obligatorii** — sunt cerute de Principle #4 din Constitution.
 
+**Telemetry e opțional dar încurajat.** Umple ce poți măsura, omite ce nu poți. În parallel/dialectic mode ai latențe per sub-agent; în sequential nu poți izola token-ii pe voce — pune doar `mode` + total `latency_ms` pe ce ai (sau omite voices). Validator-ul acceptă fields parțiale; `scripts/usage.py` agregă pe ce găsește. Pentru raporte skipped, omite blocul telemetry complet (nu există voci de măsurat — scope_gate-ul e neglijabil).
+
 **Gate de validare** (înainte de a considera raportul final):
 ```bash
 cat runs/<file>.json | python scripts/validate_report.py
 ```
-Exit 0 = OK. Exit 1 = field lipsă/gol; tipărește detaliile pe stderr. Exit 2 = JSON malformat. `chosen_approach: null` e legitim (cazul "all candidates vetoed").
+Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat; tipărește detaliile pe stderr. Exit 2 = JSON malformat. `chosen_approach: null` e legitim (cazul "all candidates vetoed").
+
+### 6b. Eval harness (la editarea skill-ului)
+Când modifici orice script deterministic (`aggregator.py`, `confidence.py`, `validate_report.py`, `strip_context.py`, `dialectic_merge.py`), rulează:
+```bash
+python scripts/run_evals.py
+```
+17+ scenarii fixate în `evals/scenarios.json` exersează schemele de aggregator, derivare confidence, validare raport (incluzând skipped + telemetry), proiecția strip_context și merge-ul dialectic. Exit 0 = toate trec; non-zero = ai stricat ceva. Schema scenariilor + cum adaugi cazuri noi: vezi `evals/README.md`. Eval-ul **nu** acoperă vocile LLM (`prompts/*.md`) — pentru regresia lor încă nu există un harness de replay.
+
+### 6c. Usage rollup (audit periodic)
+Când ai acumulat ~10+ runs cu telemetry:
+```bash
+python scripts/usage.py                # toate runs/
+python scripts/usage.py --last 50      # ultimele 50
+```
+Returnează totaluri per voce (sum/mean/p50/p95 pentru tokens_in, tokens_out, latency_ms), breakdown per mode (sequential/parallel/dialectic) și câte runs au fost skipped. Util pentru a dovedi că scope_gate salvează cost real, sau a justifica costul 2× al dialectic mode pe schimbări care contează.
 
 ## Resources
 
@@ -207,6 +233,8 @@ Exit 0 = OK. Exit 1 = field lipsă/gol; tipărește detaliile pe stderr. Exit 2 
 - `scripts/strip_context.py` — proiectează output-ul voci anterioare la minimul necesar (reduce contaminarea în sequential mode)
 - `scripts/scope_gate.py` — auto-detect dacă scope-ul e suficient de mic ca să sari deliberarea (Step 1.5)
 - `scripts/dialectic_merge.py` — combină outputs Pass-1 + Pass-2 din dialectic mode într-un payload aggregator-ready, cu `revision_log` per voce
+- `scripts/run_evals.py` + `evals/scenarios.json` — regression suite pentru scripturile deterministice (Step 6b)
+- `scripts/usage.py` — rollup telemetry across `runs/*.json` (Step 6c)
 
 ## Feedback loop
 
