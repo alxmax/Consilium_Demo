@@ -139,16 +139,18 @@
   .loop .text b { color: var(--gold); }
 
   /* ============== MODES ============== */
-  .modes { display: grid; gap: 20px; grid-template-columns: repeat(3, 1fr); }
+  .modes { display: grid; gap: 20px; grid-template-columns: repeat(2, 1fr); }
   .mode { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
     padding: 20px; display: flex; flex-direction: column; }
   .mode.sequential-blind { border-top: 4px solid var(--gold); }
   .mode.parallel { border-top: 4px solid var(--accent); }
+  .mode.dialectic { border-top: 4px solid var(--ctl); }
   .mode.sequential { border-top: 4px solid var(--neutral); opacity: 0.78; }
   .mode-badge { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 4px;
     font-size: 10px; font-weight: 700; letter-spacing: 0.08em; vertical-align: 2px; }
   .mode-badge.default { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border); }
   .mode-badge.opt { background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--accent-border); }
+  .mode-badge.advanced { background: var(--ctl-soft); color: var(--ctl-text); border: 1px solid var(--ctl-border); }
   .mode-badge.legacy { background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad-border); }
   .strip-tag { display: inline-block; padding: 2px 6px; border-radius: 3px;
     background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border);
@@ -474,6 +476,41 @@
         </div>
       </div>
 
+      <div class="mode dialectic">
+        <h3>Dialectic — two-pass <span class="mode-badge advanced">OPT-IN</span></h3>
+        <div class="subtitle">Două runde paralele cu revizuire cross-context controlată.</div>
+
+        <div class="stage">
+          <div class="label">pass 1 — independent (ca parallel)</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ 1 + 2 pattern</div>
+          <span class="actor gen">Generator</span>
+          <span class="actor ctl">Control</span>
+          <span class="actor con">Conservator</span>
+          <div class="wall" title="chinese wall"></div>
+        </div>
+
+        <div class="stage">
+          <div class="label">pass 2 — revision round (3 paraleli)</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ fiecare voce vede outputs-urile celorlalți</div>
+          <div class="parallel-row">
+            <div class="parallel-col"><span class="actor gen">Gen revised</span></div>
+            <div class="parallel-col"><span class="actor ctl">Ctrl revised</span></div>
+            <div class="parallel-col"><span class="actor con">Cons revised</span></div>
+          </div>
+          <div class="ok">
+            ✓ Independență în pass 1 + șansă de update în pass 2. <code>revision_log</code>
+            auditează ce s-a schimbat. Merge via <code>scripts/dialectic_merge.py</code>.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> decizii subtile unde o voce ar putea schimba opinia
+          dacă vede ce-au zis celelalte. Cost: 2× parallel (6 sub-agenți total).
+        </div>
+      </div>
+
       <div class="mode sequential">
         <h3>Sequential — naive <span class="mode-badge legacy">LEGACY</span></h3>
         <div class="subtitle">Original mode — păstrat pentru referință.</div>
@@ -501,7 +538,7 @@
 
     <div class="flowmap">
       <h3>Cum circulă informația între voci</h3>
-      <svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flow comparison across three modes">
+      <svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flow comparison across four modes">
         <defs>
           <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
             <path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/>
@@ -511,6 +548,9 @@
           </marker>
           <marker id="arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
             <path d="M0,0 L10,5 L0,10 z" fill="#f87171"/>
+          </marker>
+          <marker id="arrow-ctl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#60a5fa"/>
           </marker>
         </defs>
 
@@ -562,11 +602,37 @@
         <line x1="480" y1="240" x2="580" y2="240" stroke="#9ca3af" stroke-width="1" stroke-dasharray="2,3"/>
         <line x1="480" y1="330" x2="580" y2="330" stroke="#9ca3af" stroke-width="1" stroke-dasharray="2,3"/>
         <text x="530" y="288" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.7">no shared context</text>
+
+        <!-- Row 4: Dialectic (two-pass) -->
+        <text x="20" y="400" fill="#93c5fd" font-size="12" font-weight="700" letter-spacing="0.08em">DIALECTIC</text>
+        <text x="20" y="416" fill="#9ca3af" font-size="10">pass 1 → pass 2</text>
+        <!-- Pass 1 boxes -->
+        <rect x="180" y="380" width="100" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="230" y="405" fill="#fbbf24" font-size="13" text-anchor="middle">Generator</text>
+        <rect x="320" y="380" width="90" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="365" y="405" fill="#93c5fd" font-size="12" text-anchor="middle">Control</text>
+        <rect x="430" y="380" width="100" height="40" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="480" y="405" fill="#fca5a5" font-size="12" text-anchor="middle">Conservator</text>
+        <text x="355" y="372" fill="#6ee7b7" font-size="9" text-anchor="middle">PASS 1 — independent (parallel)</text>
+        <!-- Pass 2 boxes -->
+        <rect x="600" y="380" width="80" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="640" y="405" fill="#fbbf24" font-size="11" text-anchor="middle">Gen rev.</text>
+        <rect x="690" y="380" width="80" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="730" y="405" fill="#93c5fd" font-size="11" text-anchor="middle">Ctrl rev.</text>
+        <rect x="780" y="380" width="90" height="40" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="825" y="405" fill="#fca5a5" font-size="11" text-anchor="middle">Cons rev.</text>
+        <text x="735" y="372" fill="#93c5fd" font-size="9" text-anchor="middle">PASS 2 — sees peers' pass-1</text>
+        <!-- Cross arrows pass1 -> pass2 (showing all 3 voices feed forward) -->
+        <line x1="280" y1="395" x2="598" y2="395" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)" opacity="0.6"/>
+        <line x1="410" y1="402" x2="688" y2="402" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)" opacity="0.6"/>
+        <line x1="530" y1="395" x2="778" y2="395" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)" opacity="0.6"/>
+        <text x="540" y="442" fill="#93c5fd" font-size="9" text-anchor="middle" opacity="0.8">each pass-2 voice receives the other two pass-1 outputs</text>
       </svg>
       <div class="legend">
         <div class="item"><span class="swatch" style="background:#f87171;"></span>contaminated path (rationale/issues leak)</div>
         <div class="item"><span class="swatch" style="background:#fbbf24;"></span>stripped path (minimum fields only)</div>
         <div class="item"><span class="swatch" style="background:#34d399;"></span>independent sub-agent (true isolation)</div>
+        <div class="item"><span class="swatch" style="background:#60a5fa;"></span>controlled cross-context (dialectic pass 2)</div>
       </div>
     </div>
 
