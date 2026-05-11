@@ -35,6 +35,12 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 
 ## Workflow
 
+### 0. Bootstrap (înainte de orice grep / Read pe codebase)
+Două acțiuni, în ordine, **înainte** de a explora codul user-ului:
+
+1. **Citește contractele celor 3 voci** — `prompts/generator.md`, `prompts/control.md`, `prompts/conservator.md`. Sunt scurte (sub 100 linii fiecare) și definesc exact ce câmpuri produce fiecare voce. Fără ele, gather-context-ul de la Step 1 rulează orb: framezi `success_criterion` într-un vocabular care s-ar putea să nu se mapeze pe `scope_drift` / `tests_to_write` / `rollback_recipe` etc. Cost: ~500 tokeni; previne re-explorare după ce ajungi la Step 3 și realizezi ce întreabă Control.
+2. **Rulează `python scripts/priors.py`.** Întoarce un JSON cu ultimele ~10 entries din `FEEDBACK.md`, `override_rate`, `bad_rate`, `conservator_veto_rate` (din `runs/`) și top keywords din note. Tratează ca **priori soft** pentru deliberarea curentă: dacă apar tipare clare (ex: `override_rate > 0.3` cu keyword "conservator", "agresiv"), ajustează strategia (ex: relaxează pragul veto la 0.8, marchează explicit unde Conservator e probabil supra-prudent). Nu modifica fișierele skill-ului; doar prompts-urile rămân autoritative.
+
 ### 1. Gather context & state the goal
 Citește schimbarea propusă (diff, fișiere atinse). Identifică:
 - Scope: câte fișiere, câte module, câte linii
@@ -204,20 +210,34 @@ cat runs/<file>.json | python scripts/validate_report.py
 ```
 Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat; tipărește detaliile pe stderr. Exit 2 = JSON malformat. `chosen_approach: null` e legitim (cazul "all candidates vetoed").
 
-### 6b. Eval harness (la editarea skill-ului)
-Când modifici orice script deterministic (`aggregator.py`, `confidence.py`, `validate_report.py`, `strip_context.py`, `dialectic_merge.py`), rulează:
+**Acțiuni finale (obligatorii — fără ele deliberarea nu e completă):**
+1. **Persistă raportul.** Scrie JSON-ul complet în `runs/YYYY-MM-DD_HHMM_<short-label>.json`. Schema în `runs/README.md`. Fără asta, `priors.py` la deliberarea următoare nu te vede; pierdem feedback loop-ul.
+2. **Cere user-ului o linie pentru `FEEDBACK.md`.** Format: `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND` dacă încă nu se ştie rezultatul. O singură linie, scurt — costul micii întreruperi e justificat de calitatea priors viitoare.
+
+## Skill maintenance
+
+Următoarele se aplică doar când lucrezi *la* skill (editezi `scripts/*.py`, `prompts/*.md`, `SKILL.md`), **nu** la fiecare deliberare. Sări peste secțiune dacă doar folosești `/max-agent` pe un task.
+
+### Eval harness (la editarea oricărui script deterministic)
+Când modifici `aggregator.py`, `confidence.py`, `validate_report.py`, `strip_context.py` sau `dialectic_merge.py`, rulează:
 ```bash
 python scripts/run_evals.py
 ```
 17+ scenarii fixate în `evals/scenarios.json` exersează schemele de aggregator, derivare confidence, validare raport (incluzând skipped + telemetry), proiecția strip_context și merge-ul dialectic. Exit 0 = toate trec; non-zero = ai stricat ceva. Schema scenariilor + cum adaugi cazuri noi: vezi `evals/README.md`. Eval-ul **nu** acoperă vocile LLM (`prompts/*.md`) — pentru regresia lor încă nu există un harness de replay.
 
-### 6c. Usage rollup (audit periodic)
-Când ai acumulat ~10+ runs cu telemetry:
+### Usage rollup (când ai ~10+ runs cu telemetry)
 ```bash
 python scripts/usage.py                # toate runs/
 python scripts/usage.py --last 50      # ultimele 50
 ```
 Returnează totaluri per voce (sum/mean/p50/p95 pentru tokens_in, tokens_out, latency_ms), breakdown per mode (sequential/parallel/dialectic) și câte runs au fost skipped. Util pentru a dovedi că scope_gate salvează cost real, sau a justifica costul 2× al dialectic mode pe schimbări care contează.
+
+### Audit periodic feedback
+```bash
+python scripts/feedback.py            # stats globale
+python scripts/feedback.py --recent 10 --runs
+```
+Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit cel mai des. Ține ca semnal pentru când să ajustezi `prompts/*.md` sau `veto_threshold` (ex: dacă `bad_rate > 0.25` cu keyword recurent în note, ai un tipar real de eșec, nu zgomot).
 
 ## Resources
 
@@ -236,30 +256,12 @@ Returnează totaluri per voce (sum/mean/p50/p95 pentru tokens_in, tokens_out, la
 - `scripts/run_evals.py` + `evals/scenarios.json` — regression suite pentru scripturile deterministice (Step 6b)
 - `scripts/usage.py` — rollup telemetry across `runs/*.json` (Step 6c)
 
-## Feedback loop
+## Feedback loop (artefacte)
 
-Skill-ul învață din uz real prin două artefacte:
+Skill-ul învață din uz real prin două artefacte. Aici e descrierea lor; *cum* sunt folosite (citite la Step 0, scrise la Step 6, auditate periodic) e prescris în Workflow și Skill maintenance.
 
-- **`runs/`** — la sfârșitul fiecărei deliberări, scrie întregul output (candidates + verdicts + scores + aggregation) ca JSON în `runs/YYYY-MM-DD_HHMM_<short-label>.json`. Schema în `runs/README.md`. Fișierele sunt gitignored (personale).
-- **`FEEDBACK.md`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Local/personal — gitignored (la fel ca `runs/*.json`), nu shared între mașini.
-
-### La începutul fiecărei deliberări
-Rulează:
-```bash
-python scripts/priors.py
-```
-Întoarce un JSON cu ultimele ~10 entries din `FEEDBACK.md`, `override_rate`, `bad_rate`, `conservator_veto_rate` (din `runs/`) și top keywords din note. Tratează ca **priori soft** pentru deliberarea curentă: dacă apar tipare clare (ex: `override_rate > 0.3` cu keyword "conservator", "agresiv"), ajustează strategia (ex: relaxează pragul veto la 0.8, marchează explicit unde Conservator e probabil supra-prudent). Nu modifica fișierele skill-ului; doar prompts-urile rămân autoritative.
-
-### La sfârșitul fiecărei deliberări
-1. Scrie JSON-ul complet în `runs/`.
-2. Cere utilizatorului o singură linie pentru `FEEDBACK.md` (cu `outcome: PEND` dacă încă nu se ştie rezultatul).
-
-### Auditare periodică
-```bash
-python scripts/feedback.py            # stats globale
-python scripts/feedback.py --recent 10 --runs
-```
-Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit cel mai des. Ține ca semnal pentru când să ajustezi `prompts/*.md` sau `veto_threshold`.
+- **`runs/`** — JSON complet per deliberare în `runs/YYYY-MM-DD_HHMM_<short-label>.json` (schema în `runs/README.md`). Fișierele sunt gitignored (personale). Citite de `priors.py` (Step 0) și `usage.py` / `feedback.py` (Skill maintenance). Scrise la finalul Step 6.
+- **`FEEDBACK.md`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Local/personal — gitignored (la fel ca `runs/*.json`), nu shared între mașini. User-ul îl scrie când e cerut la finalul Step 6.
 
 ## Parallel voices mode (opt-in)
 
