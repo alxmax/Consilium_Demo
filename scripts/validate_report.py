@@ -6,6 +6,9 @@ Reads a deliberation report (JSON) from stdin. Exits 0 iff:
 - chosen_approach is EITHER a non-empty string OR null
 - if skipped is true, skip_reason is a non-empty string
 - if telemetry is present, its shape is well-formed (see _validate_telemetry)
+- for non-skipped reports, deliberation_log is an array containing an aggregate
+  step whose result is a dict (not a string narrative)
+- for non-skipped reports, telemetry is a dict with a non-empty string mode field
 
 The null chosen_approach case is legitimate: conservative_override with
 veto_threshold can produce chosen: null when every candidate is vetoed
@@ -22,6 +25,12 @@ across runs/. Validator only checks shape (non-negative ints for counts,
 positive int for passes, str for mode); fields may be omitted individually
 because the agent can't always measure them all (e.g. sequential mode
 can't isolate per-voice tokens).
+
+The deliberation_log + telemetry.mode requirements catch a class of bugs
+where reports were manually assembled (bypassing build_report.py) and ended
+up with shape drift — e.g., aggregate.result as a narrative string instead
+of the canonical dict. Manual assembly is no longer accepted by this gate;
+use build_report.py to produce the canonical shape.
 
 On failure, prints each problem to stderr and exits 1. Malformed JSON exits 2.
 
