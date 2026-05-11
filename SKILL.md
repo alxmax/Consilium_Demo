@@ -66,6 +66,13 @@ Folosește `prompts/conservator.md`. Pentru fiecare candidate **valid**, scoreaz
 
 Output per candidate: `{id, risk_score: 0.0–1.0, factors: {...}}`.
 
+**Opțional — diff_size autoprobe.** Pentru schimbări pe cod commited / staged, rulează:
+```bash
+python scripts/probe_change.py            # working tree vs HEAD
+python scripts/probe_change.py --ref main # main..HEAD
+```
+Returnează `{files_changed, lines_added, lines_removed}` din `git diff --numstat`. Când probe-ul e prezent, ancorează `diff_size` la el în loc să estimezi. Probe-ul e advisory — `prompts/conservator.md` rămâne autoritativ și nu îl referențiază direct (probe-ul se injectează în context, nu în prompt).
+
 ### 5. Aggregate
 Rulează:
 ```bash
@@ -104,6 +111,12 @@ Output JSON final:
 
 Câmpurile `success_criterion` și `verification` sunt **obligatorii** — sunt cerute de Principle #4 din Constitution.
 
+**Gate de validare** (înainte de a considera raportul final):
+```bash
+cat runs/<file>.json | python scripts/validate_report.py
+```
+Exit 0 = OK. Exit 1 = field lipsă/gol; tipărește detaliile pe stderr. Exit 2 = JSON malformat. `chosen_approach: null` e legitim (cazul "all candidates vetoed").
+
 ## Resources
 
 - `prompts/generator.md` — template pentru voce creativă
@@ -111,16 +124,23 @@ Câmpurile `success_criterion` și `verification` sunt **obligatorii** — sunt 
 - `prompts/conservator.md` — template pentru voce skeptică
 - `scripts/personalities.py` — rejection sampling pentru ensemble mode
 - `scripts/aggregator.py` — 3 scheme de voting
+- `scripts/priors.py` — extrage priori soft din FEEDBACK + runs înainte de step 1
+- `scripts/validate_report.py` — gate Principle #4 (success_criterion + verification + chosen_approach)
+- `scripts/probe_change.py` — ancorare diff_size la `git diff --numstat`
 
 ## Feedback loop
 
 Skill-ul învață din uz real prin două artefacte:
 
 - **`runs/`** — la sfârșitul fiecărei deliberări, scrie întregul output (candidates + verdicts + scores + aggregation) ca JSON în `runs/YYYY-MM-DD_HHMM_<short-label>.json`. Schema în `runs/README.md`. Fișierele sunt gitignored (personale).
-- **`FEEDBACK.md`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Committed în repo ca să persiste între maşini.
+- **`FEEDBACK.md`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Local/personal — gitignored (la fel ca `runs/*.json`), nu shared între mașini.
 
 ### La începutul fiecărei deliberări
-Citește **ultimele ~10 intrări** din `FEEDBACK.md`. Dacă apar tipare clare (ex: 3× `OVR` cu nota "Conservator prea agresiv"), ajustează priorii **în deliberarea curentă** (ex: relaxează pragul veto la 0.8, sau marchează explicit unde Conservator e probabil supra-prudent). Nu modifica fișierele skill-ului; doar prompts-urile rămân autoritative.
+Rulează:
+```bash
+python scripts/priors.py
+```
+Întoarce un JSON cu ultimele ~10 entries din `FEEDBACK.md`, `override_rate`, `bad_rate`, `conservator_veto_rate` (din `runs/`) și top keywords din note. Tratează ca **priori soft** pentru deliberarea curentă: dacă apar tipare clare (ex: `override_rate > 0.3` cu keyword "conservator", "agresiv"), ajustează strategia (ex: relaxează pragul veto la 0.8, marchează explicit unde Conservator e probabil supra-prudent). Nu modifica fișierele skill-ului; doar prompts-urile rămân autoritative.
 
 ### La sfârșitul fiecărei deliberări
 1. Scrie JSON-ul complet în `runs/`.
@@ -133,6 +153,54 @@ python scripts/feedback.py --recent 10 --runs
 ```
 Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit cel mai des. Ține ca semnal pentru când să ajustezi `prompts/*.md` sau `veto_threshold`.
 
+## Parallel voices mode (opt-in)
+
+Default-ul e secvențial: agentul principal joacă toate cele 3 voci în același context. Riscul e cross-contamination — Generator vede ce zice Control înainte de a fi terminat, etc.
+
+Pentru independență reală, dispatch vocile ca **până la 3 sub-agenți Claude rulând în paralel** (tool-ul `Agent`, `subagent_type=general-purpose`).
+
+### Când să folosești
+- Schimbarea e suficient de subtilă încât contaminarea între voci ar afecta decizia
+- Ai timp/budget să aștepți 3 rulări paralele
+- User-ul cere explicit "in paralel" / "parallel voices"
+
+Default-ul (secvențial) rămâne potrivit pentru deliberări rapide și schimbări mici.
+
+### Cum
+Un singur message cu **3 Agent calls** (regula superpowers:dispatching-parallel-agents — calls independente într-un singur turn). Fiecare sub-agent primește:
+1. `success_criterion` din pasul 1
+2. Diff-ul / contextul schimbării
+3. Conținutul integral al prompt-ului vocii sale (`prompts/generator.md`, `prompts/control.md`, sau `prompts/conservator.md`)
+4. Instrucția de a returna **strict** JSON-ul specificat în prompt — nimic în plus
+
+Sub-agenții nu se văd între ei (asta e ideea). De aceea:
+- Generator-ul rulează **primul** (singur sau în paralel cu nimeni — el nu depinde de nimic).
+- Control + Conservator pot rula **în paralel între ei** după ce Generator a terminat, primind output-ul lui.
+
+Așadar pattern-ul real e:
+1. **Turn 1**: dispatch Generator (1 Agent call). Aștepți candidates.
+2. **Turn 2**: dispatch Control + Conservator în paralel (2 Agent calls în același message), ambii primind candidates din Turn 1.
+3. Agregi local (`scripts/aggregator.py`) și produci raportul final.
+
+Maximum 3 sub-agenți activi simultan; în practică folosești 1 + 2.
+
+### Prompt template pentru un sub-agent
+```
+Goal: <success_criterion>
+Change under review: <diff sau descriere>
+Codebase context: <fișiere atinse, limbaj, framework>
+
+Your role and instructions:
+<conținutul integral al prompts/<voice>.md>
+
+Return STRICTLY the JSON specified in the "Output format" section above. No prose before or after.
+```
+
+### Skip dacă
+- Schimbarea e trivială (<10 linii, modul izolat) — overhead-ul nu merită
+- Nu ai tool-ul `Agent` disponibil în sesiune
+- Vrei să auditezi raționamentul intermediar pe parcurs (sub-agenții returnează doar JSON final)
+
 ## Ensemble mode (opțional)
 
 Pentru schimbări **high-stakes** (migrări DB, modificări de security, refactor mare):
@@ -141,6 +209,6 @@ Pentru schimbări **high-stakes** (migrări DB, modificări de security, refacto
 python scripts/personalities.py 5
 ```
 
-Generează N=4–6 personalități cu weights random `w ∈ [0.2, 0.4]`, sum = 1.0. Rulează skill-ul de N ori cu personalități diferite, apoi agregă cross-agent prin `--scheme weighted`.
+Generează N=4–6 personalități cu weights random `w ∈ [0.2, 0.49]`, sum = 1.0. Rulează skill-ul de N ori cu personalități diferite, apoi agregă cross-agent prin `--scheme weighted`.
 
 Folosește când o singură deliberare nu e suficientă și vrei diversitate suplimentară.

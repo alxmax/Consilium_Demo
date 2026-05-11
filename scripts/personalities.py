@@ -5,7 +5,7 @@ Each personality is a weight vector (w_G, w_C, w_K) over three voices:
 - C = Control (analytic)
 - K = Conservator (skeptic)
 
-Constraints: each w in [0.2, 0.4], sum = 1.0. Rejection sampling ensures
+Constraints: each w in [0.2, 0.49], sum = 1.0. Rejection sampling ensures
 no single voice dominates and none is silenced.
 
 CLI:
@@ -21,7 +21,7 @@ import sys
 from typing import List, Tuple
 
 WMIN = 0.2
-WMAX = 0.4
+WMAX = 0.49
 TOL = 1e-6
 MAX_TRIES = 10_000
 
@@ -29,7 +29,7 @@ Weights = Tuple[float, float, float]
 
 
 def sample_personality(rng: random.Random | None = None) -> Weights:
-    """Rejection-sample a weight triple (G, C, K) with each w in [0.2, 0.4],
+    """Rejection-sample a weight triple (G, C, K) with each w in [0.2, 0.49],
     summing to 1.0.
 
     Strategy: sample two weights uniformly in [WMIN, WMAX], derive the third,
