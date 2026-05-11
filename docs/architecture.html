@@ -469,7 +469,7 @@
           </div>
           <div class="col">
             <code>log_feedback.py</code>
-            <div class="opt">step 6 — append PEND la FEEDBACK.md</div>
+            <div class="opt">step 6 — append outcome (OK auto / OVR / PEND) la FEEDBACK.md</div>
           </div>
           <div class="col">
             <code>run_evals.py</code>
@@ -499,11 +499,15 @@
       </svg>
       <div class="text">
         <b>Feedback loop</b> — la finalul fiecărei deliberări, <code>build_report.py</code>
-        asamblează raportul canonic, <code>validate_report.py</code> verifică Principle #4,
-        iar <code>log_feedback.py</code> appendează automat o linie PEND în <code>FEEDBACK.md</code>
-        (user-ul o închide ulterior cu OK/BAD/OVR). La începutul următoarei rulări,
-        <code>priors.py</code> citește <code>runs/</code> + <code>FEEDBACK.md</code> și încarcă
-        semnalele agregate (override_rate, veto_rate, top keywords) ca priori soft pentru step 1.
+        asamblează raportul canonic, <code>validate_report.py</code> verifică Principle #4
+        (shape + telemetry.mode + deliberation_log), iar <code>log_feedback.py</code> appendează
+        outcome-ul în <code>FEEDBACK.md</code> gate-uit pe confidence: <b>auto-OK</b> la
+        <code>confidence &ge; 0.7</code>, prompt user pentru <b>OVR</b>/no/skip la
+        <code>confidence &lt; 0.7</code>. La începutul rulării următoare, <code>priors.py</code>
+        citește <code>runs/</code> + <code>FEEDBACK.md</code> și încarcă priorii soft
+        (override_rate, veto_rate, top keywords) plus <code>stale_pendings</code> — entries
+        PEND mai vechi de 7 zile pe care agentul le prezintă user-ului pentru închidere
+        retrospectivă înainte de step 1.
       </div>
     </div>
 
