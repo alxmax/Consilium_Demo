@@ -30,3 +30,6 @@ Thumbs.db
 
 # Personal deliberation logs (schema in runs/README.md)
 runs/*.json
+
+# Personal feedback journal (local-only, not shared between machines)
+FEEDBACK.md

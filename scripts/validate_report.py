@@ -1,0 +1,83 @@
+"""Validate that a deliberation report satisfies Constitution Principle #4.
+
+Reads a deliberation report (JSON) from stdin. Exits 0 iff:
+- success_criterion is a non-empty string (str.strip() length > 0)
+- verification is a non-empty string
+- chosen_approach is EITHER a non-empty string OR null
+
+The null case is legitimate: conservative_override with veto_threshold can
+produce chosen: null when every candidate is vetoed (see aggregator.py).
+
+On failure, prints each problem to stderr and exits 1. Malformed JSON exits 2.
+
+CLI:
+    cat runs/2026-05-11_1500_foo.json | python scripts/validate_report.py
+    python scripts/validate_report.py < report.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+
+
+REQUIRED_NON_EMPTY = ("success_criterion", "verification")
+NULLABLE_NON_EMPTY = ("chosen_approach",)
+
+
+def _is_non_empty_str(value: object) -> bool:
+    return isinstance(value, str) and len(value.strip()) > 0
+
+
+def validate(report: dict) -> list[str]:
+    problems: list[str] = []
+    for field in REQUIRED_NON_EMPTY:
+        if field not in report:
+            problems.append(f"missing required field: {field}")
+        elif not _is_non_empty_str(report[field]):
+            problems.append(f"field {field} must be a non-empty string (got {type(report[field]).__name__})")
+
+    for field in NULLABLE_NON_EMPTY:
+        if field not in report:
+            problems.append(f"missing required field: {field}")
+            continue
+        value = report[field]
+        if value is None:
+            continue
+        if not _is_non_empty_str(value):
+            problems.append(f"field {field} must be null or a non-empty string (got {type(value).__name__})")
+
+    return problems
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument(
+        "--input",
+        type=argparse.FileType("r", encoding="utf-8"),
+        default=sys.stdin,
+        help="JSON input file (default: stdin)",
+    )
+    args = ap.parse_args(argv)
+
+    try:
+        report = json.load(args.input)
+    except json.JSONDecodeError as exc:
+        print(f"invalid JSON: {exc}", file=sys.stderr)
+        return 2
+
+    if not isinstance(report, dict):
+        print("report must be a JSON object", file=sys.stderr)
+        return 2
+
+    problems = validate(report)
+    if problems:
+        for p in problems:
+            print(p, file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
