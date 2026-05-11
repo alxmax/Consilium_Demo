@@ -297,7 +297,17 @@ Sub-agenții nu se văd între ei (asta e ideea). De aceea:
 Așadar pattern-ul real e:
 1. **Turn 1**: dispatch Generator (1 Agent call). Aștepți candidates.
 2. **Turn 2**: dispatch Control + Conservator în paralel (2 Agent calls în același message), ambii primind candidates din Turn 1.
-3. Agregi local (`scripts/aggregator.py`) și produci raportul final.
+3. **Construire input aggregator**: rulează `dialectic_merge.py` cu `pass2` omis — funcționează identic pentru plain parallel mode, dă `control_score=0.0` candidate-urilor pe care Control le-a marcat `valid: false` și le păstrează în ranking cu scor scăzut. Fără pasul ăsta, ai construi input-ul agregator-ului manual și ai risca să ranchezi un candidate invalid (Conservator, rulând simultan cu Control, l-a scorat — nu știa că e respins). Schema pentru `pass1`-only:
+   ```json
+   {
+     "pass1": {
+       "generator":   {"candidates": [...]},
+       "control":     {"verdicts":   [...]},
+       "conservator": {"scores":     [...]}
+     }
+   }
+   ```
+4. Agregi local (`scripts/aggregator.py`) pe output-ul `dialectic_merge` și produci raportul final.
 
 Maximum 3 sub-agenți activi simultan; în practică folosești 1 + 2.
 
