@@ -12,6 +12,9 @@ Signals computed:
 - conservator_veto_rate: from runs/*.json, fraction of runs whose aggregation
   vetoed at least one candidate (or chose None)
 - top_note_keywords: top 5 alpha tokens (len >= 4, lowercased) from recent notes
+- stale_pendings: up to STALE_PEND_CAP entries from the *full* FEEDBACK list
+  (not just recent) whose outcome is PEND and whose date is older than
+  STALE_PEND_DAYS — surfaces entries needing retrospective close at step 0
 
 The priors are advisory. Prompts in prompts/*.md remain authoritative.
 
