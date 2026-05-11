@@ -110,7 +110,14 @@
     "stdin_json": {
       "success_criterion": "x is y",
       "verification": "run pytest",
-      "chosen_approach": "approach_a"
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {"step": "generator",   "candidates": []},
+        {"step": "control",     "verdicts":   []},
+        {"step": "conservator", "scores":     []},
+        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+      ],
+      "telemetry": {"mode": "sequential"}
     },
     "expect_exit": 0
   },
@@ -155,7 +162,14 @@
       "success_criterion": "x",
       "verification": "y",
       "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {"step": "generator",   "candidates": []},
+        {"step": "control",     "verdicts":   []},
+        {"step": "conservator", "scores":     []},
+        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+      ],
       "telemetry": {
+        "mode": "parallel",
         "voices": {"generator": {"tokens_in": -5}}
       }
     },
@@ -169,6 +183,12 @@
       "success_criterion": "x",
       "verification": "y",
       "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {"step": "generator",   "candidates": []},
+        {"step": "control",     "verdicts":   []},
+        {"step": "conservator", "scores":     []},
+        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+      ],
       "telemetry": {
         "mode": "parallel",
         "passes": 1,
@@ -396,5 +416,70 @@
         "fallback_to_pass1": {"generator": false, "control": true, "conservator": true}
       }
     }
+  },
+  {
+    "name": "validate_report/non-skipped missing deliberation_log fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "telemetry": {"mode": "sequential"}
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["deliberation_log"]
+  },
+  {
+    "name": "validate_report/deliberation_log aggregate result as string fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {"step": "generator",   "candidates": []},
+        {"step": "control",     "verdicts":   []},
+        {"step": "conservator", "scores":     []},
+        {"step": "aggregate",   "scheme": "majority", "result": "narrative string instead of dict"}
+      ],
+      "telemetry": {"mode": "sequential"}
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["result must be an object"]
+  },
+  {
+    "name": "validate_report/non-skipped missing telemetry fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {"step": "generator",   "candidates": []},
+        {"step": "control",     "verdicts":   []},
+        {"step": "conservator", "scores":     []},
+        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+      ]
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["telemetry block required"]
+  },
+  {
+    "name": "validate_report/telemetry without mode fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {"step": "generator",   "candidates": []},
+        {"step": "control",     "verdicts":   []},
+        {"step": "conservator", "scores":     []},
+        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+      ],
+      "telemetry": {"passes": 1}
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["telemetry.mode required"]
   }
 ]

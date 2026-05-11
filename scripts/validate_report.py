@@ -77,6 +77,38 @@ def _validate_telemetry(telemetry: object) -> list[str]:
     return problems
 
 
+def _validate_deliberation_log(log: object, skipped: bool) -> list[str]:
+    if skipped:
+        return []
+    if not isinstance(log, list):
+        return ["deliberation_log must be an array"]
+    aggregate_step = next(
+        (s for s in log if isinstance(s, dict) and s.get("step") == "aggregate"),
+        None,
+    )
+    if aggregate_step is None:
+        return ["deliberation_log missing 'aggregate' step"]
+    result = aggregate_step.get("result")
+    if not isinstance(result, dict):
+        return [
+            f"deliberation_log[aggregate].result must be an object "
+            f"(got {type(result).__name__}) — did you bypass build_report.py?"
+        ]
+    return []
+
+
+def _validate_telemetry_required(report: dict) -> list[str]:
+    if report.get("skipped") is True:
+        return []
+    telemetry = report.get("telemetry")
+    if not isinstance(telemetry, dict):
+        return ["telemetry block required for non-skipped reports"]
+    mode = telemetry.get("mode")
+    if not isinstance(mode, str) or not mode.strip():
+        return ["telemetry.mode required (non-empty string) for non-skipped reports"]
+    return []
+
+
 def validate(report: dict) -> list[str]:
     problems: list[str] = []
     for field in REQUIRED_NON_EMPTY:
@@ -101,6 +133,12 @@ def validate(report: dict) -> list[str]:
 
     if "telemetry" in report:
         problems.extend(_validate_telemetry(report["telemetry"]))
+
+    problems.extend(_validate_deliberation_log(
+        report.get("deliberation_log"),
+        report.get("skipped") is True,
+    ))
+    problems.extend(_validate_telemetry_required(report))
 
     return problems
 
