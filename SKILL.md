@@ -95,6 +95,27 @@ Output JSON final:
 - `scripts/personalities.py` — rejection sampling pentru ensemble mode
 - `scripts/aggregator.py` — 3 scheme de voting
 
+## Feedback loop
+
+Skill-ul învață din uz real prin două artefacte:
+
+- **`runs/`** — la sfârșitul fiecărei deliberări, scrie întregul output (candidates + verdicts + scores + aggregation) ca JSON în `runs/YYYY-MM-DD_HHMM_<short-label>.json`. Schema în `runs/README.md`. Fișierele sunt gitignored (personale).
+- **`FEEDBACK.md`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Committed în repo ca să persiste între maşini.
+
+### La începutul fiecărei deliberări
+Citește **ultimele ~10 intrări** din `FEEDBACK.md`. Dacă apar tipare clare (ex: 3× `OVR` cu nota "Conservator prea agresiv"), ajustează priorii **în deliberarea curentă** (ex: relaxează pragul veto la 0.8, sau marchează explicit unde Conservator e probabil supra-prudent). Nu modifica fișierele skill-ului; doar prompts-urile rămân autoritative.
+
+### La sfârșitul fiecărei deliberări
+1. Scrie JSON-ul complet în `runs/`.
+2. Cere utilizatorului o singură linie pentru `FEEDBACK.md` (cu `outcome: PEND` dacă încă nu se ştie rezultatul).
+
+### Auditare periodică
+```bash
+python scripts/feedback.py            # stats globale
+python scripts/feedback.py --recent 10 --runs
+```
+Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit cel mai des. Ține ca semnal pentru când să ajustezi `prompts/*.md` sau `veto_threshold`.
+
 ## Ensemble mode (opțional)
 
 Pentru schimbări **high-stakes** (migrări DB, modificări de security, refactor mare):

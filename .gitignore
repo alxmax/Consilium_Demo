@@ -27,3 +27,6 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Personal deliberation logs (schema in runs/README.md)
+runs/*.json
