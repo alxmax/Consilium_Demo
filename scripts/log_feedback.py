@@ -6,7 +6,11 @@ header if missing). Removes the friction of asking the user for the line
 at end of Step 6 — the agent calls this directly.
 
 Line format (unchanged from the manual convention):
-    YYYY-MM-DD | <context> | <chosen> | PEND | <note>
+    - YYYY-MM-DD | <context> | <chosen> | PEND | <note>
+
+The leading `- ` is the markdown bullet that ENTRY_RE in feedback.py
+expects (and that priors.py inherits via parse_feedback). Skipping it
+makes auto-written entries invisible to the priors loop — so don't.
 
 Auto-fill rules:
 - data    : today's date in ISO format
@@ -106,7 +110,7 @@ def build_line(report: dict) -> str:
         raise ValueError("chosen_approach must be null or a non-empty string")
 
     today = date.today().isoformat()
-    return f"{today} | {truncate(sc, CONTEXT_MAX)} | {chosen_s} | PEND | {derive_note(report)}"
+    return f"- {today} | {truncate(sc, CONTEXT_MAX)} | {chosen_s} | PEND | {derive_note(report)}"
 
 
 def append_line(feedback_path: Path, line: str) -> None:
