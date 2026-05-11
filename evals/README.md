@@ -46,6 +46,7 @@ stderr substring).
   Recursive: every key/value in expected must appear in actual; lists must
   match exactly. Use `{}` to assert "stdout is valid JSON" without pinning fields.
 - `expect_stderr_contains` — optional list of substrings; all must appear in stderr
+- `expect_stdout_contains` — optional list of substrings; all must appear in stdout (for scripts that emit plain text, not JSON)
 
 ## Adding cases
 

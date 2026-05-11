@@ -212,7 +212,11 @@ Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat; tipărește deta
 
 **Acțiuni finale (obligatorii — fără ele deliberarea nu e completă):**
 1. **Persistă raportul.** Scrie JSON-ul complet în `runs/YYYY-MM-DD_HHMM_<short-label>.json`. Schema în `runs/README.md`. Fără asta, `priors.py` la deliberarea următoare nu te vede; pierdem feedback loop-ul.
-2. **Cere user-ului o linie pentru `FEEDBACK.md`.** Format: `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND` dacă încă nu se ştie rezultatul. O singură linie, scurt — costul micii întreruperi e justificat de calitatea priors viitoare.
+2. **Loghează automat în `FEEDBACK.md`.** Rulează:
+   ```bash
+   cat runs/<file>.json | python scripts/log_feedback.py
+   ```
+   Script-ul derivă linia (`data | context | chosen | PEND | note`) din raport și o appendează (creează FEEDBACK.md cu header dacă lipsește). `note` e auto-extras: `"skipped: <reason>"`, `"all vetoed; relaxed=<X>"`, sau `"<N> cand, <K> vetoed, conf=<X>, mode=<Y>"`. Outcome rămâne `PEND` — user-ul îl actualizează la `OK`/`BAD`/`OVR` ulterior, prin editare manuală a fișierului, când rezultatul e cunoscut. Dacă vrei doar să previzualizezi linia fără să scrii, foloseste `--dry-run`.
 
 ## Skill maintenance
 
@@ -253,8 +257,9 @@ Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit c
 - `scripts/strip_context.py` — proiectează output-ul voci anterioare la minimul necesar (reduce contaminarea în sequential mode)
 - `scripts/scope_gate.py` — auto-detect dacă scope-ul e suficient de mic ca să sari deliberarea (Step 1.5)
 - `scripts/dialectic_merge.py` — combină outputs Pass-1 + Pass-2 din dialectic mode într-un payload aggregator-ready, cu `revision_log` per voce
-- `scripts/run_evals.py` + `evals/scenarios.json` — regression suite pentru scripturile deterministice (Step 6b)
-- `scripts/usage.py` — rollup telemetry across `runs/*.json` (Step 6c)
+- `scripts/run_evals.py` + `evals/scenarios.json` — regression suite pentru scripturile deterministice (Skill maintenance)
+- `scripts/usage.py` — rollup telemetry across `runs/*.json` (Skill maintenance)
+- `scripts/log_feedback.py` — auto-append linie în FEEDBACK.md la finalul Step 6 (outcome=PEND, user-ul închide ulterior)
 
 ## Feedback loop (artefacte)
 
