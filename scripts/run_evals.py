@@ -12,6 +12,9 @@ Subset-match semantics for expect_stdout_subset:
 
 Use `{}` as expected to assert "stdout parses as JSON" without pinning fields.
 
+For non-JSON stdout (e.g., a script that emits a plain line), use
+`expect_stdout_contains` instead — list of substrings, all must appear.
+
 CLI:
     python scripts/run_evals.py
     python scripts/run_evals.py --filter aggregator
@@ -72,6 +75,10 @@ def run_one(scenario: dict, repo_root: Path) -> list[str]:
     for needle in scenario.get("expect_stderr_contains", []):
         if needle not in proc.stderr:
             failures.append(f"stderr missing substring {needle!r}; got: {proc.stderr[:200]!r}")
+
+    for needle in scenario.get("expect_stdout_contains", []):
+        if needle not in proc.stdout:
+            failures.append(f"stdout missing substring {needle!r}; got: {proc.stdout[:200]!r}")
 
     return failures
 

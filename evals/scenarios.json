@@ -225,6 +225,64 @@
     }
   },
   {
+    "name": "log_feedback/normal report emits PEND line with cand+vetoed counts",
+    "tool": "scripts/log_feedback.py",
+    "args": ["--dry-run"],
+    "stdin_json": {
+      "success_criterion": "scope_gate skips truly-trivial diffs without bypassing sensitive paths",
+      "verification": "run scope_gate.py on synthetic inputs",
+      "chosen_approach": "approach_a",
+      "confidence": 0.82,
+      "telemetry": {"mode": "parallel"},
+      "deliberation_log": [
+        {"step": "generator", "candidates": [{"id": "approach_a"}, {"id": "approach_b"}, {"id": "do_nothing"}]},
+        {"step": "aggregate", "result": {"vetoed": [{"id": "approach_b", "risk": 0.85}]}}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": ["- ", "PEND", "approach_a", "3 cand", "1 vetoed", "conf=0.82", "mode=parallel"]
+  },
+  {
+    "name": "log_feedback/skipped report emits skipped note",
+    "tool": "scripts/log_feedback.py",
+    "args": ["--dry-run"],
+    "stdin_json": {
+      "success_criterion": "trivial change to docstring",
+      "verification": "n/a",
+      "chosen_approach": "skipped",
+      "skipped": true,
+      "skip_reason": "1 file, 4 lines, no sensitive paths"
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": ["- ", "PEND", "skipped", "skipped: 1 file"]
+  },
+  {
+    "name": "log_feedback/all-vetoed report emits null chosen with relaxed threshold",
+    "tool": "scripts/log_feedback.py",
+    "args": ["--dry-run"],
+    "stdin_json": {
+      "success_criterion": "every candidate breached veto",
+      "verification": "human review",
+      "chosen_approach": null,
+      "deliberation_log": [
+        {"step": "aggregate", "result": {"retry_suggested": {"relaxed_threshold": 0.78}}}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": ["- ", "PEND", "| null |", "all vetoed", "relaxed=0.78"]
+  },
+  {
+    "name": "log_feedback/missing success_criterion fails with explicit message",
+    "tool": "scripts/log_feedback.py",
+    "args": ["--dry-run"],
+    "stdin_json": {
+      "verification": "y",
+      "chosen_approach": "approach_a"
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["success_criterion"]
+  },
+  {
     "name": "dialectic_merge/partial pass2 falls back per missing voice",
     "tool": "scripts/dialectic_merge.py",
     "stdin_json": {

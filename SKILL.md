@@ -121,6 +121,8 @@ Folosește `prompts/conservator.md`. Pentru fiecare candidate **valid**, scoreaz
 
 Output per candidate: `{id, risk_score: 0.0–1.0, factors: {...}, rollback_recipe: [...]}`. `rollback_recipe` e obligatoriu pentru orice candidate cu `risk_score >= 0.3` — 2-5 pași concreți (comenzi, acțiuni) pe care un on-call îi poate executa fără context suplimentar.
 
+**Aggregation rule (din `prompts/conservator.md`, autoritar):** `risk_score` e media celor 4 factori, **cu o excepție** — dacă `reversibility > 0.7`, irreversibilitatea domină și `risk_score` nu poate cădea sub `reversibility`. Asta previne "diluarea" unui factor critic de către media celorlalți (un schema migration cu `reversibility=0.85` și ceilalți 3 factori la 0.1 nu trebuie să primească 0.29).
+
 **Sequential blind context.** Înainte de a apela Conservator în sequential mode, rulează:
 ```bash
 echo '{"candidates": [...], "verdicts": [...]}' | python scripts/strip_context.py --for conservator
@@ -212,7 +214,11 @@ Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat; tipărește deta
 
 **Acțiuni finale (obligatorii — fără ele deliberarea nu e completă):**
 1. **Persistă raportul.** Scrie JSON-ul complet în `runs/YYYY-MM-DD_HHMM_<short-label>.json`. Schema în `runs/README.md`. Fără asta, `priors.py` la deliberarea următoare nu te vede; pierdem feedback loop-ul.
-2. **Cere user-ului o linie pentru `FEEDBACK.md`.** Format: `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND` dacă încă nu se ştie rezultatul. O singură linie, scurt — costul micii întreruperi e justificat de calitatea priors viitoare.
+2. **Loghează automat în `FEEDBACK.md`.** Rulează:
+   ```bash
+   cat runs/<file>.json | python scripts/log_feedback.py
+   ```
+   Script-ul derivă linia (`data | context | chosen | PEND | note`) din raport și o appendează (creează FEEDBACK.md cu header dacă lipsește). `note` e auto-extras: `"skipped: <reason>"`, `"all vetoed; relaxed=<X>"`, sau `"<N> cand, <K> vetoed, conf=<X>, mode=<Y>"`. Outcome rămâne `PEND` — user-ul îl actualizează la `OK`/`BAD`/`OVR` ulterior, prin editare manuală a fișierului, când rezultatul e cunoscut. Dacă vrei doar să previzualizezi linia fără să scrii, foloseste `--dry-run`.
 
 ## Skill maintenance
 
@@ -253,8 +259,9 @@ Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit c
 - `scripts/strip_context.py` — proiectează output-ul voci anterioare la minimul necesar (reduce contaminarea în sequential mode)
 - `scripts/scope_gate.py` — auto-detect dacă scope-ul e suficient de mic ca să sari deliberarea (Step 1.5)
 - `scripts/dialectic_merge.py` — combină outputs Pass-1 + Pass-2 din dialectic mode într-un payload aggregator-ready, cu `revision_log` per voce
-- `scripts/run_evals.py` + `evals/scenarios.json` — regression suite pentru scripturile deterministice (Step 6b)
-- `scripts/usage.py` — rollup telemetry across `runs/*.json` (Step 6c)
+- `scripts/run_evals.py` + `evals/scenarios.json` — regression suite pentru scripturile deterministice (Skill maintenance)
+- `scripts/usage.py` — rollup telemetry across `runs/*.json` (Skill maintenance)
+- `scripts/log_feedback.py` — auto-append linie în FEEDBACK.md la finalul Step 6 (outcome=PEND, user-ul închide ulterior)
 
 ## Feedback loop (artefacte)
 
@@ -290,7 +297,17 @@ Sub-agenții nu se văd între ei (asta e ideea). De aceea:
 Așadar pattern-ul real e:
 1. **Turn 1**: dispatch Generator (1 Agent call). Aștepți candidates.
 2. **Turn 2**: dispatch Control + Conservator în paralel (2 Agent calls în același message), ambii primind candidates din Turn 1.
-3. Agregi local (`scripts/aggregator.py`) și produci raportul final.
+3. **Construire input aggregator**: rulează `dialectic_merge.py` cu `pass2` omis — funcționează identic pentru plain parallel mode, dă `control_score=0.0` candidate-urilor pe care Control le-a marcat `valid: false` și le păstrează în ranking cu scor scăzut. Fără pasul ăsta, ai construi input-ul agregator-ului manual și ai risca să ranchezi un candidate invalid (Conservator, rulând simultan cu Control, l-a scorat — nu știa că e respins). Schema pentru `pass1`-only:
+   ```json
+   {
+     "pass1": {
+       "generator":   {"candidates": [...]},
+       "control":     {"verdicts":   [...]},
+       "conservator": {"scores":     [...]}
+     }
+   }
+   ```
+4. Agregi local (`scripts/aggregator.py`) pe output-ul `dialectic_merge` și produci raportul final.
 
 Maximum 3 sub-agenți activi simultan; în practică folosești 1 + 2.
 
