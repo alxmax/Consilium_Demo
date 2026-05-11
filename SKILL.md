@@ -1,9 +1,9 @@
 ---
-name: code-deliberation
+name: max-agent
 description: Evaluate code changes through Generator/Control/Conservator deliberation. Use when reviewing PRs, planning refactors, assessing risk of proposed changes, before committing non-trivial changes, or when uncertain between multiple implementation approaches.
 ---
 
-# Code Deliberation Skill
+# Max Agent — Code Deliberation Skill
 
 Pattern de deliberare multi-perspectivă pentru orice modificare de cod. Trei voci independente colaborează pentru a evalua o schimbare:
 
