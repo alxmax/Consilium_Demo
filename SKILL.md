@@ -38,7 +38,7 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 ### 0. Bootstrap (înainte de orice grep / Read pe codebase)
 Două acțiuni, în ordine, **înainte** de a explora codul user-ului:
 
-1. **Citește contractele celor 3 voci** — `prompts/generator.md`, `prompts/control.md`, `prompts/conservator.md`. Sunt scurte (sub 100 linii fiecare) și definesc exact ce câmpuri produce fiecare voce. Fără ele, gather-context-ul de la Step 1 rulează orb: framezi `success_criterion` într-un vocabular care s-ar putea să nu se mapeze pe `scope_drift` / `tests_to_write` / `rollback_recipe` etc. Cost: ~500 tokeni; previne re-explorare după ce ajungi la Step 3 și realizezi ce întreabă Control.
+1. **Citește contractele celor 3 voci** — `prompts/generator.md`, `prompts/control.md`, `prompts/conservator.md`. Sunt scurte (sub 100 linii fiecare) și definesc exact ce câmpuri produce fiecare voce. Fără ele, gather-context-ul de la Step 1 rulează orb: framezi `success_criterion` într-un vocabular care s-ar putea să nu se mapeze pe `scope_drift` / `tests_to_write` / `rollback_recipe` etc. Cost: ~500 tokeni; previne re-explorare după ce ajungi la Step 3 și realizezi ce întreabă Control. **Notă pentru parallel/dialectic mode:** acolo conținutul fiecărui prompt trebuie *inline-uit* în dispatch-ul către sub-agentul respectiv (vezi secțiunea Parallel voices mode → "Conținutul integral al prompt-ului vocii sale"). Citirea la Step 0 nu e suficientă — sub-agenții n-au cum să acceseze fișierele.
 2. **Rulează `python scripts/priors.py`.** Întoarce un JSON cu ultimele ~10 entries din `FEEDBACK.md`, `override_rate`, `bad_rate`, `conservator_veto_rate` (din `runs/`) și top keywords din note. Tratează ca **priori soft** pentru deliberarea curentă: dacă apar tipare clare (ex: `override_rate > 0.3` cu keyword "conservator", "agresiv"), ajustează strategia (ex: relaxează pragul veto la 0.8, marchează explicit unde Conservator e probabil supra-prudent). Nu modifica fișierele skill-ului; doar prompts-urile rămân autoritative.
 
 ### 1. Gather context & state the goal
@@ -167,7 +167,28 @@ echo '{"candidates": [...], "chosen": "approach_id"}' | python scripts/confidenc
 Returnează `{confidence, agreement, separation}`. Folosește valoarea `confidence` în raport — nu mai seta număr magic. Dacă `chosen` e `null` (toți vetoiți), `confidence` e `null` și raportul o lasă așa.
 
 ### 6. Report
-Output JSON final:
+Asamblează raportul cu:
+```bash
+cat bundle.json | python scripts/build_report.py | python scripts/validate_report.py
+```
+unde `bundle.json` combină output-urile de la step 2-5b plus `success_criterion`/`verification` din step 1. Schema bundle-ului:
+```json
+{
+  "success_criterion": "...",
+  "verification": "...",
+  "generator":   {"candidates": [...]},
+  "control":     {"verdicts":   [...]},
+  "conservator": {"scores":     [...]},
+  "aggregate":   {"scheme": "...", "chosen": "...", ...},
+  "confidence":  {"confidence": 0.85, ...},
+  "telemetry":   {...}
+}
+```
+`build_report.py` derivă `voice_scores` din scoruri brute, asamblează `alternatives` din candidates non-chosen (cu `why_not` din issues Control / risk Conservator), construiește `deliberation_log` în formatul corect, și emite raportul canonic. Asta elimină asamblarea manuală — și clasa de bug-uri "report shape drift" pe care o producea (e.g., câmpuri ratate, log mis-nested).
+
+Pentru raporte skipped (când scope_gate la Step 1.5 a zis `should_skip: true`), bundle-ul e mai scurt: doar `success_criterion`, `verification`, `skipped: true`, `skip_reason`, `signals`. `build_report.py` short-circuitează la shape-ul skipped.
+
+Output JSON final (ce produce `build_report.py`):
 
 ```json
 {
@@ -262,6 +283,7 @@ Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit c
 - `scripts/run_evals.py` + `evals/scenarios.json` — regression suite pentru scripturile deterministice (Skill maintenance)
 - `scripts/usage.py` — rollup telemetry across `runs/*.json` (Skill maintenance)
 - `scripts/log_feedback.py` — auto-append linie în FEEDBACK.md la finalul Step 6 (outcome=PEND, user-ul închide ulterior)
+- `scripts/build_report.py` — asamblează raportul canonic dintr-un bundle de output-uri intermediare (Step 6); elimină clasa de bug-uri "report shape drift"
 
 ## Feedback loop (artefacte)
 

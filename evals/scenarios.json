@@ -225,6 +225,88 @@
     }
   },
   {
+    "name": "build_report/full bundle produces canonical report with chosen + alternatives",
+    "tool": "scripts/build_report.py",
+    "stdin_json": {
+      "success_criterion": "introduce scope_gate auto without false-skip on sensitive paths",
+      "verification": "run scope_gate on synthetic scenarios and run_evals 21/21",
+      "generator": {"candidates": [
+        {"id": "gate_with_blocklist", "summary": "files+lines+blocklist"},
+        {"id": "path_aware_only", "summary": "blocklist only, no max_lines"},
+        {"id": "do_nothing", "summary": "keep manual hint"}
+      ]},
+      "control": {"verdicts": [
+        {"id": "gate_with_blocklist", "valid": true, "issues": []},
+        {"id": "path_aware_only", "valid": true, "issues": [{"category": "logic", "detail": "PR mari false-skipped"}]},
+        {"id": "do_nothing", "valid": true, "issues": []}
+      ]},
+      "conservator": {"scores": [
+        {"id": "gate_with_blocklist", "risk_score": 0.30},
+        {"id": "path_aware_only", "risk_score": 0.55},
+        {"id": "do_nothing", "risk_score": 0.0}
+      ]},
+      "aggregate": {"scheme": "risk_adjusted_utility", "chosen": "gate_with_blocklist"},
+      "confidence": {"confidence": 0.79}
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "success_criterion": "introduce scope_gate auto without false-skip on sensitive paths",
+      "chosen_approach": "gate_with_blocklist",
+      "confidence": 0.79,
+      "voice_scores": {"generator": 1.0, "control": 1.0, "conservator": 0.30}
+    }
+  },
+  {
+    "name": "build_report/skipped bundle short-circuits to skipped report",
+    "tool": "scripts/build_report.py",
+    "stdin_json": {
+      "success_criterion": "trivial change to docstring",
+      "verification": "n/a",
+      "skipped": true,
+      "skip_reason": "1 file, 4 lines, no sensitive paths",
+      "signals": {"files_changed": 1, "lines_changed": 4, "blocklist_hits": []}
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "chosen_approach": "skipped",
+      "skipped": true,
+      "skip_reason": "1 file, 4 lines, no sensitive paths",
+      "voice_scores": null,
+      "confidence": null,
+      "alternatives": []
+    }
+  },
+  {
+    "name": "build_report/missing success_criterion fails fast",
+    "tool": "scripts/build_report.py",
+    "stdin_json": {
+      "verification": "y",
+      "generator": {"candidates": []},
+      "aggregate": {"chosen": "x"}
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["success_criterion"]
+  },
+  {
+    "name": "build_report/output validates cleanly via validate_report contract",
+    "tool": "scripts/build_report.py",
+    "stdin_json": {
+      "success_criterion": "any non-empty sentence",
+      "verification": "any non-empty step",
+      "generator": {"candidates": [{"id": "x", "summary": "x"}]},
+      "control": {"verdicts": [{"id": "x", "valid": true, "issues": []}]},
+      "conservator": {"scores": [{"id": "x", "risk_score": 0.2}]},
+      "aggregate": {"scheme": "majority", "chosen": "x"},
+      "confidence": {"confidence": 0.7}
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "success_criterion": "any non-empty sentence",
+      "verification": "any non-empty step",
+      "chosen_approach": "x"
+    }
+  },
+  {
     "name": "log_feedback/normal report emits PEND line with cand+vetoed counts",
     "tool": "scripts/log_feedback.py",
     "args": ["--dry-run"],
