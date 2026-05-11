@@ -176,6 +176,7 @@ Exit 0 = OK. Exit 1 = field lipsă/gol; tipărește detaliile pe stderr. Exit 2 
 - `scripts/probe_change.py` — ancorare diff_size la `git diff --numstat`
 - `scripts/confidence.py` — derivă confidence din variance inter-voci + separation față de runner-up
 - `scripts/strip_context.py` — proiectează output-ul voci anterioare la minimul necesar (reduce contaminarea în sequential mode)
+- `scripts/dialectic_merge.py` — combină outputs Pass-1 + Pass-2 din dialectic mode într-un payload aggregator-ready, cu `revision_log` per voce
 
 ## Feedback loop
 
@@ -249,6 +250,61 @@ Return STRICTLY the JSON specified in the "Output format" section above. No pros
 - Schimbarea e trivială (<10 linii, modul izolat) — overhead-ul nu merită
 - Nu ai tool-ul `Agent` disponibil în sesiune
 - Vrei să auditezi raționamentul intermediar pe parcurs (sub-agenții returnează doar JSON final)
+
+## Dialectic mode (opt-in, two-pass)
+
+Parallel mode evită contaminarea, dar plătește o altă taxă: vocile **nu se aud niciodată una pe alta**. Dacă Conservator-ul vede ceva ce Generator-ul a ratat, Generator-ul nu mai are șansa să revizuiască. Dialectic mode adaugă o a doua trecere cross-context controlată, fără să sacrifice independența primei runde.
+
+### Pattern
+Două passes, fiecare cu 3 sub-agenți paraleli (6 sub-agenți total în 2 turn-uri):
+
+1. **Pass 1 — independent**: identic cu parallel mode (1 + 2 pattern). Cele 3 voci produc output-urile lor inițiale fără să se vadă.
+2. **Pass 2 — revision**: fiecare voce primește output-urile *celorlalte două voci* din Pass 1 și răspunde la întrebarea: "Vezi ceva ce vrei să schimbi în propriul output?" Output-ul revizuit (sau confirmarea) e autoritar.
+
+Un singur round de revizuire — fără bucle infinite, fără așteptare de "convergență". Goal-ul nu e consens; e ca fiecare voce să aibă șansa să updateze pe baza evidenței celorlalți.
+
+### Când să folosești
+- Decizii subtile unde **o singură voce ar putea schimba opinia** dacă vede ce-au zis celelalte (ex: Conservator-ul flag-uiește un risk score mare → Control-ul, văzând asta, realizează că issue-ul corespunde unei edge case nedeclarate)
+- High-stakes unde costul 2× parallel e acceptabil
+- Auditare: `revision_log` arată ce a schimbat fiecare voce între passes — evidence că dialectic-ul a mișcat ceva
+
+### Skip dacă
+- Schimbarea e simplă — parallel mode e mai ieftin și sufficient
+- Vocile sunt deja unanime în Pass 1 (te poți opri opțional, marcând `pass2: null`)
+- Nu ai budget pentru 6 sub-agent calls
+
+### Cum
+1. **Turn 1**: dispatch Generator (1 Agent call). Aștepți candidates.
+2. **Turn 2**: dispatch Control + Conservator în paralel (2 Agent calls). Ambii primesc candidates Pass-1. Salvezi cele 3 outputs ca `pass1`.
+3. **Turn 3 (revision)**: dispatch 3 sub-agenți paraleli — câte unul per voce. Fiecare primește:
+   - Outputurile **celorlalte două voci** din Pass 1 (nu propriul output — îl re-derivă)
+   - Instrucțiunea: "Given what your peers concluded, produce a revised output OR re-emit your original unchanged."
+   Salvezi rezultatele ca `pass2`.
+4. **Merge & aggregate**:
+   ```bash
+   cat dialectic_payload.json | python scripts/dialectic_merge.py | python scripts/aggregator.py --scheme risk_adjusted_utility
+   ```
+   `dialectic_merge.py` folosește Pass-2 ca autoritar (sau cade pe Pass-1 cu flag `fallback_to_pass1` dacă lipsește), generează formatul aggregator-ready și emite `revision_log` cu diff-ul per voce.
+
+### Payload format pentru merge
+```json
+{
+  "pass1": {
+    "generator":   {"candidates": [...]},
+    "control":     {"verdicts":   [...]},
+    "conservator": {"scores":     [...]}
+  },
+  "pass2": {
+    "generator":   {"candidates": [...]},
+    "control":     {"verdicts":   [...]},
+    "conservator": {"scores":     [...]}
+  }
+}
+```
+`pass2` (sau orice voce individuală din el) e opțional — fallback transparent la Pass-1. Pentru a sări revizia complet pentru o voce dacă deja era unanimă, pur și simplu nu o include în `pass2`.
+
+### Cost
+Max 6 sub-agent calls în 3 turn-uri (1 + 2 + 3). În practică: 2× parallel mode. Folosește doar când justificat.
 
 ## Ensemble mode (opțional)
 
