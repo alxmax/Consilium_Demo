@@ -32,6 +32,7 @@ from typing import Any
 
 VOICES = ("generator", "control", "conservator")
 DEFAULT_VETO = 0.7
+RELAXED_VETO_CAP = 0.85
 
 
 def _voice_vec(scores: dict) -> list[float]:
@@ -82,10 +83,18 @@ def aggregate_conservative_override(
     candidates: list[dict],
     weights: dict | None = None,
     veto_threshold: float = DEFAULT_VETO,
+    auto_relax: bool = True,
 ) -> dict:
     """Weighted-average ranking, but veto any candidate whose conservator
     voice scored above ``veto_threshold`` (interpreting conservator as a
     risk signal: higher = riskier).
+
+    If every candidate is vetoed and ``auto_relax`` is True, emit a
+    ``retry_suggested`` block with a relaxed threshold and the
+    lowest-risk candidate that would survive it. The caller decides
+    whether to re-run Generator with the relaxation hint or to accept
+    chosen=None. We do not pick automatically — that would defeat the
+    veto's purpose.
     """
     weights = weights or {v: 1 / 3 for v in VOICES}
 
@@ -99,13 +108,24 @@ def aggregate_conservative_override(
             survivors.append(c)
 
     if not survivors:
-        return {
+        result: dict = {
             "scheme": "conservative_override",
             "veto_threshold": veto_threshold,
             "chosen": None,
             "reason": "all candidates vetoed by conservator",
             "vetoed": vetoed,
         }
+        if auto_relax and candidates:
+            lowest = min(candidates, key=lambda c: float(c["scores"]["conservator"]))
+            lowest_risk = float(lowest["scores"]["conservator"])
+            relaxed_threshold = min(RELAXED_VETO_CAP, lowest_risk)
+            result["retry_suggested"] = {
+                "reason": "every candidate vetoed; consider relaxing or re-running Generator with a 'stay under risk X' constraint",
+                "relaxed_threshold": relaxed_threshold,
+                "lowest_risk_candidate": {"id": lowest["id"], "risk": lowest_risk},
+                "would_survive_relaxed": lowest_risk <= relaxed_threshold,
+            }
+        return result
 
     base = aggregate_weighted(survivors, weights)
     return {

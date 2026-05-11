@@ -33,6 +33,8 @@ Decompose the score across four factors (each in `[0.0, 1.0]`):
 
 Aggregate the factors into a single `risk_score`. Default weighting: average all four equally, **unless** `reversibility > 0.7` — in that case, irreversibility dominates and the final score should not fall below `reversibility`.
 
+For any candidate with `risk_score >= 0.3` (i.e. not trivially safe), produce a `rollback_recipe` — 2–5 concrete steps a human could follow to undo the change if it fails in production. Reference real commands or actions (`git revert <sha>`, "restore row in `users` where id=X from backup taken at <timestamp>", "redeploy previous container tag `v1.4.2`") — not abstractions like "roll back the change". For `do_nothing` and other zero-risk candidates, use `rollback_recipe: []`.
+
 ## Output format
 
 ```json
@@ -47,18 +49,25 @@ Aggregate the factors into a single `risk_score`. Default weighting: average all
         "regression_risk": 0.0,
         "reversibility": 0.0
       },
+      "rollback_recipe": [],
       "notes": "Baseline. No change, no risk — but also no progress on the stated goal."
     },
     {
-      "id": "...",
-      "risk_score": 0.0,
+      "id": "schema_migration",
+      "risk_score": 0.85,
       "factors": {
-        "diff_size": 0.0,
-        "scope_drift": 0.0,
-        "regression_risk": 0.0,
-        "reversibility": 0.0
+        "diff_size": 0.4,
+        "scope_drift": 0.2,
+        "regression_risk": 0.7,
+        "reversibility": 0.85
       },
-      "notes": "..."
+      "rollback_recipe": [
+        "Run `psql -f migrations/down/0042_revert.sql` against prod replica first, confirm row counts match pre-migration snapshot",
+        "Apply same script to prod primary during low-traffic window",
+        "Redeploy app at previous tag `api-v3.7.1` so code no longer references new column",
+        "Verify `/health` endpoint returns 200 and `users.last_login` reads succeed"
+      ],
+      "notes": "Reversibility dominates — schema change with no backfill table; rollback requires both DB and app revert in order."
     }
   ]
 }
@@ -70,3 +79,4 @@ Aggregate the factors into a single `risk_score`. Default weighting: average all
 - Conflating "I don't like this approach" with "this is risky". Aesthetic objections belong to Control, not you.
 - Re-validating correctness. Trust Control's verdict — if it said `valid: true`, score the risk and move on.
 - Letting one bad factor dominate without saying so. If `reversibility` is what's killing the score, your `notes` should say it explicitly.
+- Hand-waving `rollback_recipe` entries like "revert the PR" or "undo migration". If a future on-call engineer can't execute the step at 3am without context, rewrite it.

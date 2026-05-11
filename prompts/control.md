@@ -27,6 +27,8 @@ For **each** candidate, produce a verdict. Check, in order:
 
 If a candidate is the `do_nothing` baseline, mark it `valid: true` with a note explaining what the codebase loses by not acting.
 
+For each candidate marked `valid: true` **except `do_nothing`**, also produce a `tests_to_write` list — concrete tests that should exist before the change ships. 1–4 entries, each with a short imperative name and a one-line assertion. These are **acceptance tests for this candidate specifically**, not a full coverage plan. If the existing suite already covers it, write `[]` and explain in `notes`.
+
 ## Output format
 
 ```json
@@ -36,10 +38,21 @@ If a candidate is the `do_nothing` baseline, mark it `valid: true` with a note e
       "id": "do_nothing",
       "valid": true,
       "issues": [],
+      "tests_to_write": [],
       "notes": "Baseline. Current behavior preserved; the goal stated by the user remains unaddressed."
     },
     {
-      "id": "...",
+      "id": "inline_fix",
+      "valid": true,
+      "issues": [],
+      "tests_to_write": [
+        {"name": "rejects empty input", "assert": "fn('') raises ValueError"},
+        {"name": "preserves order for duplicate keys", "assert": "fn([{k:1},{k:1}]) returns input order"}
+      ],
+      "notes": "Straightforward; existing suite covers happy path, new tests pin the edge cases."
+    },
+    {
+      "id": "broken_candidate",
       "valid": false,
       "issues": [
         {"category": "types", "detail": "..."},
@@ -53,7 +66,7 @@ If a candidate is the `do_nothing` baseline, mark it `valid: true` with a note e
 }
 ```
 
-`category` must be one of: `types`, `logic`, `tests`, `style`.
+`category` must be one of: `types`, `logic`, `tests`, `style`. Omit `tests_to_write` for candidates marked `valid: false` — there's no point writing tests for a candidate that won't ship.
 
 ## Anti-patterns to avoid
 
@@ -61,3 +74,4 @@ If a candidate is the `do_nothing` baseline, mark it `valid: true` with a note e
 - Vague issues like "could have bugs" — name the bug or drop the issue.
 - Inventing requirements the user didn't ask for. Validate against the **stated** goal, not your idealized version of it.
 - Tiebreaking on aesthetics. If two candidates are both correct, both are `valid: true` — let the Conservator and the aggregator pick.
+- Stuffing `tests_to_write` with redundant happy-path tests. Pick the 1–4 that would actually catch a regression specific to this candidate.

@@ -55,7 +55,13 @@ Folosește `prompts/control.md`. Pentru fiecare candidate verifică:
 - Logică validă (edge cases, error paths)?
 - Style consistent cu codebase-ul?
 
-Output per candidate: `{id, valid: bool, issues: [...]}`.
+Output per candidate: `{id, valid: bool, issues: [...], tests_to_write: [...]}`. `tests_to_write` e obligatoriu pentru candidate marcat `valid: true` (cu excepția `do_nothing`) — 1-4 teste de acceptanță cu `name` + `assert`.
+
+**Sequential blind context.** Înainte de a apela Control în sequential mode, rulează:
+```bash
+cat generator_out.json | python scripts/strip_context.py --for control
+```
+Control primește doar `{id, summary, sketch}` per candidate — fără `rationale`. Asta reduce contaminarea: Control validează ce vede în sketch, nu se lasă convins de retorica Generator-ului. În parallel mode pasul nu e necesar (sub-agenții n-au cum să vadă unul output-ul celuilalt).
 
 ### 4. Conservator — assess risc
 Folosește `prompts/conservator.md`. Pentru fiecare candidate **valid**, scorează:
@@ -64,7 +70,13 @@ Folosește `prompts/conservator.md`. Pentru fiecare candidate **valid**, scoreaz
 - Regression risk (probabilitate de a sparge ceva)
 - Reversibilitate (cât de ușor revii dacă merge prost)
 
-Output per candidate: `{id, risk_score: 0.0–1.0, factors: {...}}`.
+Output per candidate: `{id, risk_score: 0.0–1.0, factors: {...}, rollback_recipe: [...]}`. `rollback_recipe` e obligatoriu pentru orice candidate cu `risk_score >= 0.3` — 2-5 pași concreți (comenzi, acțiuni) pe care un on-call îi poate executa fără context suplimentar.
+
+**Sequential blind context.** Înainte de a apela Conservator în sequential mode, rulează:
+```bash
+echo '{"candidates": [...], "verdicts": [...]}' | python scripts/strip_context.py --for conservator
+```
+Conservator primește doar `{id, summary, sketch}` pentru candidates marcate `valid: true` — fără `issues` și fără `rationale`. Scorează riscul pe baza sketch-ului, nu a poveștii pe care a spus-o Control. În parallel mode pasul e omis.
 
 **Opțional — diff_size autoprobe.** Pentru schimbări pe cod commited / staged, rulează:
 ```bash
@@ -81,6 +93,20 @@ python scripts/aggregator.py --scheme conservative_override
 Default: **conservative_override** — orice candidate cu `risk_score > 0.7` primește veto, indiferent de scorurile celorlalți.
 
 Alte scheme disponibile: `majority`, `weighted`.
+
+**Auto-relax la veto total.** Dacă toți candidates sunt vetoiți, aggregator-ul atașează un bloc `retry_suggested` cu:
+- `relaxed_threshold` — prag-ul minim sub care candidate-ul cu cel mai mic risc ar fi supraviețuit (capped la 0.85)
+- `lowest_risk_candidate` — candidatul cu risc minim și `would_survive_relaxed` (bool)
+- `reason` — sugestie să re-rulezi Generator cu constraint "stay under risk X"
+
+Acțiunea pe `retry_suggested` e a ta (agentul principal), nu automată — un veto total e un semnal important că request-ul poate fi prost formulat sau că toate abordările sunt prea riscante. Decide: re-roll cu constraint mai strict (acceptă mai puține candidate, dar cu risc mai mic), acceptă `chosen: null` (oprește deliberarea), sau întreabă user-ul.
+
+### 5b. Confidence
+După aggregation, derivă `confidence` din variance + separation:
+```bash
+echo '{"candidates": [...], "chosen": "approach_id"}' | python scripts/confidence.py
+```
+Returnează `{confidence, agreement, separation}`. Folosește valoarea `confidence` în raport — nu mai seta număr magic. Dacă `chosen` e `null` (toți vetoiți), `confidence` e `null` și raportul o lasă așa.
 
 ### 6. Report
 Output JSON final:
@@ -123,10 +149,12 @@ Exit 0 = OK. Exit 1 = field lipsă/gol; tipărește detaliile pe stderr. Exit 2 
 - `prompts/control.md` — template pentru voce analitică
 - `prompts/conservator.md` — template pentru voce skeptică
 - `scripts/personalities.py` — rejection sampling pentru ensemble mode
-- `scripts/aggregator.py` — 3 scheme de voting
+- `scripts/aggregator.py` — 3 scheme de voting + auto-relax la veto total
 - `scripts/priors.py` — extrage priori soft din FEEDBACK + runs înainte de step 1
 - `scripts/validate_report.py` — gate Principle #4 (success_criterion + verification + chosen_approach)
 - `scripts/probe_change.py` — ancorare diff_size la `git diff --numstat`
+- `scripts/confidence.py` — derivă confidence din variance inter-voci + separation față de runner-up
+- `scripts/strip_context.py` — proiectează output-ul voci anterioare la minimul necesar (reduce contaminarea în sequential mode)
 
 ## Feedback loop
 
