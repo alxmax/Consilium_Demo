@@ -74,7 +74,10 @@ def derive_note(report: dict) -> str:
 
     log = report.get("deliberation_log") or []
     aggregate_step = next((s for s in log if isinstance(s, dict) and s.get("step") == "aggregate"), {})
-    aggregate_result = aggregate_step.get("result") or {}
+    raw_result = aggregate_step.get("result")
+    # Manual-assembled runs may put a narrative string in `result` instead of
+    # the canonical aggregate dict; coerce to {} so note derivation keeps going.
+    aggregate_result = raw_result if isinstance(raw_result, dict) else {}
 
     chosen = report.get("chosen_approach")
     if chosen is None:
@@ -94,7 +97,12 @@ def derive_note(report: dict) -> str:
     )
 
 
-def build_line(report: dict) -> str:
+def build_line(
+    report: dict,
+    outcome: str = "PEND",
+    override_target: str | None = None,
+    user_note: str | None = None,
+) -> str:
     sc = report.get("success_criterion")
     if not isinstance(sc, str) or not sc.strip():
         raise ValueError("report missing non-empty success_criterion")
@@ -109,8 +117,16 @@ def build_line(report: dict) -> str:
     else:
         raise ValueError("chosen_approach must be null or a non-empty string")
 
+    auto_note = derive_note(report)
+    extras: list[str] = []
+    if outcome == "OVR" and override_target:
+        extras.append(f"override={_clean(override_target)}")
+    if user_note and user_note.strip():
+        extras.append(_clean(user_note))
+    note = "; ".join([auto_note] + extras) if extras else auto_note
+
     today = date.today().isoformat()
-    return f"- {today} | {truncate(sc, CONTEXT_MAX)} | {chosen_s} | PEND | {derive_note(report)}"
+    return f"- {today} | {truncate(sc, CONTEXT_MAX)} | {chosen_s} | {outcome} | {note}"
 
 
 def append_line(feedback_path: Path, line: str) -> None:
@@ -135,6 +151,22 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--feedback", default=None, help="path to FEEDBACK.md (default: ./FEEDBACK.md)")
     ap.add_argument("--dry-run", action="store_true", help="print line to stdout, don't write file")
+    ap.add_argument(
+        "--outcome",
+        choices=("OK", "BAD", "OVR", "PEND"),
+        default="PEND",
+        help="outcome to record (default: PEND; set OK/OVR after confidence-gated user prompt)",
+    )
+    ap.add_argument(
+        "--override-target",
+        default=None,
+        help="alt_id when --outcome=OVR; ignored otherwise",
+    )
+    ap.add_argument(
+        "--user-note",
+        default=None,
+        help="optional user-supplied note appended to auto-note",
+    )
     args = ap.parse_args(argv)
 
     try:
@@ -147,7 +179,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        line = build_line(report)
+        line = build_line(
+            report,
+            outcome=args.outcome,
+            override_target=args.override_target,
+            user_note=args.user_note,
+        )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1
