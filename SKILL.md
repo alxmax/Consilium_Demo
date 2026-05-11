@@ -11,6 +11,17 @@ Pattern de deliberare multi-perspectivă pentru orice modificare de cod. Trei vo
 - **Control** (analitic) — verifică corectitudine tehnică
 - **Conservator** (prudent) — evaluează risc și reversibilitate
 
+## Constitution
+
+Patru principii care guvernează **fiecare** deliberare. Au prioritate când o voce dă o recomandare ce intră în conflict cu ele.
+
+1. **Think before coding.** Nu presupune. Nu ascunde confuzia. Expune tradeoff-urile explicit. Dacă requestul are 2 interpretări plauzibile, listează-le pe ambele ca `candidates` separate — nu alege tăcut.
+2. **Simplicity first.** Minimum de cod care rezolvă problema. Refuză abstracții speculative, feature-uri nesolicitate, error handling pentru cazuri imposibile. `do_nothing` e în lista de candidați tocmai pentru asta.
+3. **Surgical changes.** Atinge doar ce cere goal-ul. Fără refactor în zone adiacente "cât suntem aici". Conservator-ul măsoară asta prin factor-ul `scope_drift` — respectă un scor mare.
+4. **Goal-driven execution.** Înainte de a genera candidate, restate goal-ul ca **success criterion** într-o singură propoziție testabilă. Output-ul final trebuie să includă un pas de **verification** ("cum știm că a funcționat").
+
+*(Adaptat după CLAUDE.md al lui Andrej Karpathy, via [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CLAUDE.md).)*
+
 ## When to use
 
 Activează acest skill când:
@@ -24,11 +35,13 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 
 ## Workflow
 
-### 1. Gather context
+### 1. Gather context & state the goal
 Citește schimbarea propusă (diff, fișiere atinse). Identifică:
 - Scope: câte fișiere, câte module, câte linii
 - Tipul schimbării: bugfix, feature, refactor, cleanup
 - Blast radius: cod intern, cod shared, API public
+
+**Apoi formulează `success_criterion`** — o propoziție testabilă care descrie ce înseamnă "schimbarea a reușit". Dacă requestul e ambiguu, **oprește-te și întreabă** (Principle #1) înainte de a continua. Acest criteriu condiționează toate candidate-urile de mai jos.
 
 ### 2. Generator — produce alternative
 Folosește `prompts/generator.md`. Cere **3–5 abordări candidate**, inclusiv "do nothing" ca baseline. Stil divergent — nu auto-cenzura pentru risc în acest pas.
@@ -67,8 +80,10 @@ Output JSON final:
 
 ```json
 {
+  "success_criterion": "propoziție testabilă din pasul 1",
   "chosen_approach": "approach_id",
   "reasoning": "scurt rezumat al deciziei",
+  "verification": "pasul concret prin care confirmi că success_criterion e îndeplinit (ex: rulează `npm test`, verifică endpoint X răspunde 200, măsoară timp de render)",
   "alternatives": [
     {"id": "...", "summary": "...", "why_not": "..."}
   ],
@@ -86,6 +101,8 @@ Output JSON final:
   ]
 }
 ```
+
+Câmpurile `success_criterion` și `verification` sunt **obligatorii** — sunt cerute de Principle #4 din Constitution.
 
 ## Resources
 
