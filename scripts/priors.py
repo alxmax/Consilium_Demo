@@ -29,6 +29,7 @@ import json
 import re
 import sys
 from collections import Counter
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,6 +51,9 @@ STOPWORDS = {
     "for", "into", "than", "what", "when", "where", "after", "before",
     "still", "just", "not", "are", "shipped", "dropped", "real", "fine",
 }
+
+STALE_PEND_DAYS = 7
+STALE_PEND_CAP = 5
 
 
 def _outcome_counts(entries: list[dict]) -> Counter:
@@ -113,6 +117,15 @@ def _top_keywords(entries: list[dict], k: int = 5) -> list[str]:
     return [w for w, _ in tokens.most_common(k)]
 
 
+def find_stale_pendings(entries: list[dict], days_old: int = STALE_PEND_DAYS) -> list[dict]:
+    cutoff = (date.today() - timedelta(days=days_old)).isoformat()
+    return [
+        {"date": e["date"], "context": e["context"], "chosen": e["chosen"]}
+        for e in entries
+        if e.get("outcome") == "PEND" and e.get("date", "") < cutoff
+    ][:STALE_PEND_CAP]
+
+
 def build_priors(n: int = 10, include_runs: bool = True) -> dict:
     entries = parse_feedback(FEEDBACK)
     recent = entries[:n]
@@ -126,6 +139,7 @@ def build_priors(n: int = 10, include_runs: bool = True) -> dict:
         "counts": dict(_outcome_counts(recent)),
         **_rates(recent),
         "top_note_keywords": _top_keywords(recent),
+        "stale_pendings": find_stale_pendings(entries),
     }
     if include_runs:
         runs = parse_runs(RUNS)
