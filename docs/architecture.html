@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>max-agent — Architecture Poster</title>
+<style>
+  :root {
+    /* Dark theme (default) */
+    --bg: #0f1419;
+    --ink: #e5e7eb;
+    --muted: #9ca3af;
+    --line: #2d3441;
+    --card-bg: #181d27;
+    --inset: #11151c;
+    --gold: #fbbf24;
+    --gold-soft: #2a2410;
+    --gold-border: #5c4a14;
+    --gen: #fbbf24;
+    --gen-soft: #2a2410;
+    --gen-border: #5c4a14;
+    --gen-text: #fbbf24;
+    --ctl: #60a5fa;
+    --ctl-soft: #182338;
+    --ctl-border: #2a3f5f;
+    --ctl-text: #93c5fd;
+    --con: #f87171;
+    --con-soft: #2a1818;
+    --con-border: #5c2a2a;
+    --con-text: #fca5a5;
+    --accent: #34d399;
+    --accent-soft: #0a2e23;
+    --accent-border: #145c45;
+    --accent-text: #6ee7b7;
+    --bad: #fca5a5;
+    --bad-soft: #2a1818;
+    --bad-border: #5c2a2a;
+    --neutral: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  header { padding: 28px 40px 0; }
+  h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; }
+  nav.tabs { display: flex; gap: 4px; padding: 22px 40px 0; border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  nav.tabs button { appearance: none; background: transparent; border: 0; padding: 12px 18px;
+    font: inherit; font-weight: 500; color: var(--muted); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  nav.tabs button:hover { color: var(--ink); }
+  nav.tabs button.active { color: var(--ink); border-bottom-color: var(--ink); }
+  main { padding: 32px 40px 80px; max-width: 1240px; margin: 0 auto; }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+  h2 { margin: 0 0 18px; font-size: 16px; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--muted); }
+  .note { color: var(--muted); font-size: 13px; margin-top: 24px; }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; }
+
+  /* ============== ARCHITECTURE ============== */
+  .constitution { background: var(--gold-soft); border: 1px solid var(--gold-border);
+    border-radius: 10px; padding: 16px 20px; margin-bottom: 28px; }
+  .constitution .label { color: var(--gold); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase; }
+  .constitution .principles { display: grid; gap: 8px 24px;
+    grid-template-columns: repeat(2, 1fr); margin-top: 10px; }
+  .constitution .p { display: flex; gap: 10px; font-size: 13px; }
+  .constitution .p b { color: var(--gold); min-width: 18px; }
+
+  .voices { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+  .card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .card .top { display: flex; align-items: baseline; justify-content: space-between; }
+  .card h3 { margin: 0; font-size: 17px; }
+  .card .tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.06em; }
+  .card.gen { border-top: 3px solid var(--gen); }
+  .card.gen .tag { background: var(--gen-soft); color: var(--gen-text); }
+  .card.ctl { border-top: 3px solid var(--ctl); }
+  .card.ctl .tag { background: var(--ctl-soft); color: var(--ctl-text); }
+  .card.con { border-top: 3px solid var(--con); }
+  .card.con .tag { background: var(--con-soft); color: var(--con-text); }
+  .card ul { margin: 4px 0 0; padding-left: 18px; font-size: 13.5px; }
+  .card ul li { margin-bottom: 4px; }
+  .card .cant { background: var(--inset); border-left: 3px solid var(--line);
+    padding: 8px 10px; font-size: 12.5px; color: var(--muted); border-radius: 4px; }
+  .card .cant b { color: var(--ink); }
+
+  .agg { margin-top: 32px; background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px; }
+  .agg h3 { margin: 0 0 12px; font-size: 15px; }
+  .schemes { display: grid; gap: 12px; grid-template-columns: repeat(3, 1fr); }
+  .scheme { padding: 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+  .scheme b { display: block; margin-bottom: 4px; }
+  .scheme.default { border-color: var(--con); background: var(--con-soft); }
+  .veto { display: inline-block; margin-top: 6px; padding: 2px 8px; background: var(--con);
+    color: #0f1419; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; border-radius: 3px; }
+
+  /* ============== FLOW ============== */
+  .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; align-items: stretch;
+    margin-bottom: 28px; }
+  .step { position: relative; background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 14px 12px; font-size: 13px; margin-right: 18px; }
+  .step:last-child { margin-right: 0; }
+  .step::after { content: ""; position: absolute; right: -14px; top: 50%; width: 12px; height: 2px;
+    background: var(--ink); transform: translateY(-50%); }
+  .step:last-child::after { display: none; }
+  .step::before { content: ""; position: absolute; right: -18px; top: 50%;
+    border: 5px solid transparent; border-left-color: var(--ink); transform: translateY(-50%); }
+  .step:last-child::before { display: none; }
+  .step .n { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; }
+  .step h4 { margin: 4px 0 6px; font-size: 14px; }
+  .step.gen { border-top: 3px solid var(--gen); }
+  .step.ctl { border-top: 3px solid var(--ctl); }
+  .step.con { border-top: 3px solid var(--con); }
+  .step.agg-step { border-top: 3px solid var(--accent); }
+  .step .io { background: var(--inset); border-radius: 4px; padding: 6px 8px; margin-top: 8px;
+    font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; }
+
+  .rail { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px; }
+  .rail h3 { margin: 0 0 10px; font-size: 14px; }
+  .rail-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+    font-size: 12px; }
+  .rail-grid .col { padding: 8px; border-radius: 6px; min-height: 56px;
+    background: var(--inset); border: 1px dashed var(--line); }
+  .rail-grid .col.empty { background: transparent; border-style: dotted; opacity: 0.5; }
+  .rail-grid code { display: block; font-size: 11.5px; color: var(--ink); }
+  .rail-grid .opt { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .loop { margin-top: 28px; display: flex; align-items: center; gap: 16px;
+    background: var(--gold-soft); border: 1px solid var(--gold-border);
+    border-radius: 10px; padding: 14px 18px; }
+  .loop svg { flex-shrink: 0; }
+  .loop .text { font-size: 13px; }
+  .loop .text b { color: var(--gold); }
+
+  /* ============== MODES ============== */
+  .modes { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; }
+  .mode { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px; }
+  .mode.sequential { border-top: 4px solid var(--neutral); }
+  .mode.parallel { border-top: 4px solid var(--accent); }
+  .mode h3 { margin: 0 0 4px; font-size: 17px; }
+  .mode .subtitle { color: var(--muted); font-size: 12.5px; margin-bottom: 14px; }
+  .stage { background: var(--inset); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .stage .label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .actor { display: inline-block; padding: 8px 12px; border-radius: 8px; font-size: 12.5px;
+    background: var(--card-bg); border: 1px solid var(--line); margin: 3px; }
+  .actor.main { background: var(--accent-soft); border-color: var(--accent-border);
+    color: var(--accent-text); font-weight: 600; }
+  .actor.gen { background: var(--gen-soft); border-color: var(--gen-border); color: var(--gen-text); }
+  .actor.ctl { background: var(--ctl-soft); border-color: var(--ctl-border); color: var(--ctl-text); }
+  .actor.con { background: var(--con-soft); border-color: var(--con-border); color: var(--con-text); }
+  .arrow-down { text-align: center; color: var(--muted); margin: 6px 0; font-size: 18px; }
+  .warning { background: var(--bad-soft); border: 1px solid var(--bad-border); border-radius: 6px;
+    padding: 8px 10px; margin-top: 8px; font-size: 11.5px; color: var(--bad); }
+  .ok { background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 6px;
+    padding: 8px 10px; margin-top: 8px; font-size: 11.5px; color: var(--accent-text); }
+  .use-when { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted); }
+  .use-when b { color: var(--ink); }
+
+  .wall {
+    background: repeating-linear-gradient(45deg, transparent 0 4px, var(--line) 4px 5px);
+    height: 4px; margin: 6px 12px; border-radius: 2px;
+  }
+  .parallel-row { display: flex; gap: 10px; align-items: stretch; }
+  .parallel-col { flex: 1; }
+
+  /* ============== PRINT ============== */
+  @media print {
+    /* Light palette override for paper — saves ink */
+    :root {
+      --bg: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --card-bg: #ffffff;
+      --inset: #f9fafb;
+      --gold: #b8860b;
+      --gold-soft: #fef3c7;
+      --gold-border: #f0d785;
+      --gen: #f59e0b;
+      --gen-soft: #fef3c7;
+      --gen-border: #fde68a;
+      --gen-text: #92400e;
+      --ctl: #2563eb;
+      --ctl-soft: #dbeafe;
+      --ctl-border: #93c5fd;
+      --ctl-text: #1e40af;
+      --con: #dc2626;
+      --con-soft: #fee2e2;
+      --con-border: #fca5a5;
+      --con-text: #991b1b;
+      --accent: #0f766e;
+      --accent-soft: #ecfdf5;
+      --accent-border: #6ee7b7;
+      --accent-text: #065f46;
+      --bad: #b91c1c;
+      --bad-soft: #fef2f2;
+      --bad-border: #fecaca;
+      --neutral: #94a3b8;
+    }
+    nav.tabs { display: none; }
+    section.tab { display: block !important; page-break-before: always; }
+    section.tab:first-of-type { page-break-before: avoid; }
+    .card, .agg, .rail, .loop, .mode, .stage { break-inside: avoid; }
+    .veto { color: #fff; }
+  }
+  @media (max-width: 900px) {
+    .voices, .schemes, .modes, .flow, .rail-grid { grid-template-columns: 1fr; }
+    .step { margin-right: 0; margin-bottom: 18px; }
+    .step::after, .step::before { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>max-agent</h1>
+  <div class="sub">Pattern de deliberare multi-perspectivă pentru evaluarea schimbărilor de cod</div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="active" data-tab="architecture">Architecture</button>
+  <button data-tab="flow">Flow</button>
+  <button data-tab="modes">Modes</button>
+</nav>
+
+<main>
+
+  <!-- ============== TAB 1 ============== -->
+  <section class="tab active" id="architecture">
+
+    <div class="constitution">
+      <div class="label">Constitution — guvernează fiecare deliberare</div>
+      <div class="principles">
+        <div class="p"><b>1.</b> Think before coding — expune tradeoff-uri, nu presupune.</div>
+        <div class="p"><b>2.</b> Simplicity first — minimum de cod care rezolvă problema.</div>
+        <div class="p"><b>3.</b> Surgical changes — atinge doar ce cere goal-ul.</div>
+        <div class="p"><b>4.</b> Goal-driven — success_criterion + verification obligatorii.</div>
+      </div>
+    </div>
+
+    <h2>Cele 3 voci</h2>
+    <div class="voices">
+      <div class="card gen">
+        <div class="top"><h3>Generator</h3><span class="tag">Creativ</span></div>
+        <div>Produce 3-5 abordări candidate prin gândire divergentă. Include mereu <code>do_nothing</code> ca baseline.</div>
+        <ul>
+          <li>Curios, nu prudent — riscul e jobul altcuiva</li>
+          <li>Cantitate înainte de calitate</li>
+          <li>Fără auto-cenzură</li>
+        </ul>
+        <div class="cant"><b>Nu are voie:</b> să filtreze pentru risc sau fezabilitate.</div>
+      </div>
+
+      <div class="card ctl">
+        <div class="top"><h3>Control</h3><span class="tag">Analitic</span></div>
+        <div>Verifică tehnic fiecare candidate: types, logică, tests, style. Marchează <code>valid: true/false</code>.</div>
+        <ul>
+          <li>Pedant, nu pesimist</li>
+          <li>Concret peste abstract</li>
+          <li>Verifică, nu speculează</li>
+        </ul>
+        <div class="cant"><b>Nu are voie:</b> să respingă pentru risc — pass through dacă e corect.</div>
+      </div>
+
+      <div class="card con">
+        <div class="top"><h3>Conservator</h3><span class="tag">Sceptic</span></div>
+        <div>Scorează risc pentru fiecare candidate valid: diff_size, scope_drift, regression_risk, reversibility.</div>
+        <ul>
+          <li>Reversibilitatea peste deșteptăciune</li>
+          <li>Blast radius contează</li>
+          <li>Poate recomanda <code>do_nothing</code></li>
+        </ul>
+        <div class="cant"><b>Nu are voie:</b> să re-valideze correctness — trust Control.</div>
+      </div>
+    </div>
+
+    <div class="agg">
+      <h3>Aggregation — 3 scheme de votare</h3>
+      <div class="schemes">
+        <div class="scheme">
+          <b>majority</b>
+          Media voturilor; tiebreak pe varianță minimă.
+        </div>
+        <div class="scheme">
+          <b>weighted</b>
+          Medie ponderată cu weights ∈ [0.2, 0.49], sum=1.0.
+        </div>
+        <div class="scheme default">
+          <b>conservative_override <span style="color:var(--muted);font-weight:400;">(default)</span></b>
+          Medie ponderată, dar Conservator are veto unilateral.
+          <span class="veto">VETO la risk_score &gt; 0.7</span>
+        </div>
+      </div>
+      <div class="note">
+        Separation of powers: fiecare voce e împiedicată prin prompt să facă jobul celorlalți.
+        Constitution bate orice voce în caz de conflict. Conservator are putere de veto, dar dacă
+        veto-iește tot → <code>chosen: null</code> și raportul declară explicit „all vetoed”.
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============== TAB 2 ============== -->
+  <section class="tab" id="flow">
+
+    <h2>Pașii 1 → 6</h2>
+    <div class="flow">
+      <div class="step">
+        <div class="n">STEP 1</div>
+        <h4>Goal</h4>
+        <div>Restate ca <b>success_criterion</b> testabil.</div>
+        <div class="io">in: diff + context</div>
+        <div class="io">out: 1-sentence criterion</div>
+      </div>
+      <div class="step gen">
+        <div class="n">STEP 2</div>
+        <h4>Generator</h4>
+        <div>3-5 abordări candidate, inclusiv do_nothing.</div>
+        <div class="io">out: { candidates: [...] }</div>
+      </div>
+      <div class="step ctl">
+        <div class="n">STEP 3</div>
+        <h4>Control</h4>
+        <div>Verdict tehnic per candidate.</div>
+        <div class="io">out: { verdicts: [...] }</div>
+      </div>
+      <div class="step con">
+        <div class="n">STEP 4</div>
+        <h4>Conservator</h4>
+        <div>Risk score per candidate valid.</div>
+        <div class="io">out: { scores: [...] }</div>
+      </div>
+      <div class="step agg-step">
+        <div class="n">STEP 5</div>
+        <h4>Aggregate</h4>
+        <div>Aplică schema aleasă; veto dacă necesar.</div>
+        <div class="io">out: { chosen, ranking }</div>
+      </div>
+      <div class="step">
+        <div class="n">STEP 6</div>
+        <h4>Report</h4>
+        <div>JSON final cu verification.</div>
+        <div class="io">out: full report</div>
+      </div>
+    </div>
+
+    <div class="rail">
+      <h3>Scripts atinse</h3>
+      <div class="rail-grid">
+        <div class="col">
+          <code>priors.py</code>
+          <div class="opt">soft priors din FEEDBACK + runs</div>
+        </div>
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col">
+          <code>probe_change.py</code>
+          <div class="opt">opțional — anchor diff_size</div>
+        </div>
+        <div class="col">
+          <code>aggregator.py</code>
+          <div class="opt">3 scheme votare</div>
+        </div>
+        <div class="col">
+          <code>validate_report.py</code>
+          <div class="opt">gate Principle #4</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="loop">
+      <svg width="56" height="40" viewBox="0 0 56 40" fill="none">
+        <path d="M 4 36 Q 4 4, 28 4 Q 52 4, 52 28" stroke="#b8860b" stroke-width="2" fill="none"/>
+        <path d="M 48 24 L 52 28 L 52 32 L 56 28" stroke="#b8860b" stroke-width="2" fill="none"/>
+        <polygon points="50,32 52,28 54,32" fill="#b8860b"/>
+      </svg>
+      <div class="text">
+        <b>Feedback loop</b> — la finalul fiecărei deliberări, scrie JSON în <code>runs/</code> și
+        adaugă o linie în <code>FEEDBACK.md</code>. La începutul următoarei rulări,
+        <code>priors.py</code> încarcă semnalele agregate (override_rate, veto_rate, top keywords)
+        ca priori soft pentru step 1.
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============== TAB 3 ============== -->
+  <section class="tab" id="modes">
+
+    <h2>Sequential vs Parallel voices</h2>
+    <div class="modes">
+
+      <div class="mode sequential">
+        <h3>Sequential <span style="color:var(--muted);font-weight:400;font-size:13px;">(default)</span></h3>
+        <div class="subtitle">Un singur context joacă toate 3 vocile pe rând.</div>
+
+        <div class="stage">
+          <div class="label">turn 1 — singur, dintr-un context</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ joacă pe rând</div>
+          <span class="actor gen">Generator</span>
+          <span class="actor ctl">Control</span>
+          <span class="actor con">Conservator</span>
+          <div class="warning">
+            ⚠ Risc de cross-contamination — Generator-ul „știe” deja ce va spune Control.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> deliberări mici/rapide, schimbări izolate,
+          când overhead-ul a 3 sub-agenți nu se justifică.
+        </div>
+      </div>
+
+      <div class="mode parallel">
+        <h3>Parallel voices <span style="color:var(--accent);font-weight:600;font-size:13px;">(opt-in)</span></h3>
+        <div class="subtitle">Până la 3 sub-agenți Claude independenți, 1 + 2 pattern.</div>
+
+        <div class="stage">
+          <div class="label">turn 1 — 1 sub-agent</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ Agent call</div>
+          <span class="actor gen">Generator (sub-agent)</span>
+        </div>
+
+        <div class="stage">
+          <div class="label">turn 2 — 2 sub-agenți în paralel</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ 2 Agent calls în același message</div>
+          <div class="parallel-row">
+            <div class="parallel-col"><span class="actor ctl">Control (sub-agent)</span></div>
+            <div class="parallel-col"><span class="actor con">Conservator (sub-agent)</span></div>
+          </div>
+          <div class="wall" title="chinese wall — sub-agenții nu se văd"></div>
+          <div class="ok">
+            ✓ Independență reală — sub-agenții returnează doar JSON final, fără reasoning comun.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> decizii subtile unde contaminarea contează, high-stakes
+          (migrări DB, security, refactor mare), sau când user-ul cere explicit „in paralel”.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="note">
+      Max 3 sub-agenți activi simultan; în practică 1 + 2 pentru că Control și Conservator
+      depind de output-ul Generator-ului. Prompts-urile <code>prompts/*.md</code> sunt deja
+      self-contained — pot fi date direct unui sub-agent fără ajustări.
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+  (function() {
+    var tabs = document.querySelectorAll('nav.tabs button');
+    var sections = document.querySelectorAll('section.tab');
+    tabs.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var target = btn.getAttribute('data-tab');
+        tabs.forEach(function(b) { b.classList.toggle('active', b === btn); });
+        sections.forEach(function(s) { s.classList.toggle('active', s.id === target); });
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
