@@ -81,11 +81,31 @@ def report(entries: list[dict], runs: list[dict] | None = None) -> str:
 
     if runs:
         out.append(f"\nDeliberation runs on disk: {len(runs)}")
-        schemes = Counter(r.get("aggregation", {}).get("scheme", "?") for r in runs)
+        schemes = Counter(_run_scheme(r) for r in runs)
         for s, n in schemes.most_common():
             out.append(f"  scheme={s}: {n}")
 
     return "\n".join(out)
+
+
+def _run_scheme(run: dict) -> str:
+    """Read the aggregation scheme from a run, tolerating both the legacy
+    top-level ``aggregation`` shape and the current ``deliberation_log``
+    step shape (matches what priors.py:_run_had_veto walks)."""
+    agg = run.get("aggregation")
+    if isinstance(agg, dict) and agg.get("scheme"):
+        return agg["scheme"]
+    for step in run.get("deliberation_log") or []:
+        if not isinstance(step, dict):
+            continue
+        if step.get("step") != "aggregate":
+            continue
+        if step.get("scheme"):
+            return step["scheme"]
+        result = step.get("result")
+        if isinstance(result, dict) and result.get("scheme"):
+            return result["scheme"]
+    return "?"
 
 
 def main(argv: list[str] | None = None) -> int:

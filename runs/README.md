@@ -1,37 +1,93 @@
 # Deliberation Runs
 
-Each time the skill is invoked, it should write the full deliberation as a JSON file here.
+Each time the skill is invoked on a real task, the agent writes the full
+deliberation as a JSON file here at the end of Step 6. Files are
+gitignored — they're personal logs that feed the priors loop, not
+part of the skill itself.
 
 Filename: `YYYY-MM-DD_HHMM_<short-label>.json`
 Example: `2026-05-12_1430_pr42-extract-helper.json`
 
 ## Schema
 
+The exact shape is enforced by `scripts/validate_report.py`. Required
+fields are marked **REQUIRED**; the rest are recommended but not blocking.
+
+### Full deliberation report
+
 ```json
 {
-  "timestamp": "2026-05-12T14:30:00Z",
-  "context": {
-    "repo": "...",
-    "ref": "commit hash or PR number",
-    "scope": "files touched, brief description"
+  "success_criterion": "REQUIRED — testable sentence from Step 1",
+  "verification": "REQUIRED — concrete check that proves success_criterion",
+  "chosen_approach": "approach_id OR null (if all candidates vetoed)",
+  "reasoning": "short summary of why chosen won",
+  "alternatives": [
+    {"id": "...", "summary": "...", "why_not": "..."}
+  ],
+  "voice_scores": {
+    "generator": 0.8,
+    "control": 0.9,
+    "conservator": 0.4
   },
-  "candidates": [
-    {"id": "...", "summary": "...", "sketch": "...", "rationale": "..."}
-  ],
-  "verdicts": [
-    {"id": "...", "valid": true, "issues": [], "notes": "..."}
-  ],
-  "scores": [
-    {"id": "...", "risk_score": 0.0, "factors": {...}, "notes": "..."}
-  ],
-  "aggregation": {
-    "scheme": "conservative_override",
-    "chosen": "...",
-    "vetoed": [...]
+  "confidence": 0.85,
+  "telemetry": {
+    "mode": "sequential | parallel | dialectic | ensemble",
+    "passes": 1,
+    "voices": {
+      "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
+      "control":     {"tokens_in":  800, "tokens_out": 200, "latency_ms": 2100},
+      "conservator": {"tokens_in":  900, "tokens_out": 180, "latency_ms": 1800}
+    }
   },
-  "recommended": "...",
-  "confidence": 0.85
+  "deliberation_log": [
+    {"step": "generator",   "candidates": [...]},
+    {"step": "control",     "verdicts":   [...]},
+    {"step": "conservator", "scores":     [...]},
+    {"step": "aggregate",   "scheme": "conservative_override", "result": {...}}
+  ]
 }
 ```
 
-The `*.json` files in this directory are gitignored — they are personal logs, not part of the skill itself. The directory exists as scaffolding; the schema above is what `scripts/feedback.py` expects to read.
+### Skipped report (scope_gate said the change is too small to deliberate)
+
+```json
+{
+  "success_criterion": "REQUIRED",
+  "verification": "REQUIRED",
+  "chosen_approach": "skipped",
+  "skipped": true,
+  "skip_reason": "REQUIRED when skipped=true — e.g. '1 file, 4 lines, no sensitive paths'",
+  "signals": {
+    "files_changed": 1,
+    "lines_changed": 4,
+    "blocklist_hits": []
+  },
+  "voice_scores": null,
+  "confidence": null,
+  "alternatives": [],
+  "deliberation_log": []
+}
+```
+
+## Field notes
+
+- **`telemetry`** is optional. Fill what you can measure (parallel/dialectic
+  give per-voice latencies; sequential mode often can't isolate per-voice
+  tokens) and omit the rest. `scripts/usage.py` aggregates whatever it finds.
+- **`chosen_approach`** can be `null` legitimately when `aggregator.py`
+  with `conservative_override` vetoes every candidate. In that case
+  `deliberation_log[aggregate].result` should carry `retry_suggested`.
+- **`deliberation_log[aggregate].result`** is what `scripts/priors.py`
+  inspects to compute `conservator_veto_rate` — if you change its shape,
+  update the `_run_had_veto` helper in `scripts/priors.py` to match.
+
+## Consumers
+
+- **`scripts/priors.py`** — at start of each new deliberation, summarizes
+  recent runs to surface patterns (override rate, veto rate, repeating
+  keywords).
+- **`scripts/usage.py`** — periodic rollup of `telemetry` blocks.
+- **`scripts/feedback.py`** — counts schemes used across runs (reads from
+  `deliberation_log[aggregate].scheme`).
+- **`scripts/validate_report.py`** — shape-check before persisting a
+  report; fails fast if `success_criterion`/`verification` are missing.

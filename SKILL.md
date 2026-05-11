@@ -121,6 +121,8 @@ Folosește `prompts/conservator.md`. Pentru fiecare candidate **valid**, scoreaz
 
 Output per candidate: `{id, risk_score: 0.0–1.0, factors: {...}, rollback_recipe: [...]}`. `rollback_recipe` e obligatoriu pentru orice candidate cu `risk_score >= 0.3` — 2-5 pași concreți (comenzi, acțiuni) pe care un on-call îi poate executa fără context suplimentar.
 
+**Aggregation rule (din `prompts/conservator.md`, autoritar):** `risk_score` e media celor 4 factori, **cu o excepție** — dacă `reversibility > 0.7`, irreversibilitatea domină și `risk_score` nu poate cădea sub `reversibility`. Asta previne "diluarea" unui factor critic de către media celorlalți (un schema migration cu `reversibility=0.85` și ceilalți 3 factori la 0.1 nu trebuie să primească 0.29).
+
 **Sequential blind context.** Înainte de a apela Conservator în sequential mode, rulează:
 ```bash
 echo '{"candidates": [...], "verdicts": [...]}' | python scripts/strip_context.py --for conservator
