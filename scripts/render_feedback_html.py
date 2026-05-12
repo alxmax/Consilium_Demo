@@ -106,6 +106,98 @@ def _row_html(idx: int, e: Entry, drill_inner: str) -> str:
     )
 
 
+def _risk_class(score: float) -> str:
+    if score < 0.3:
+        return "low"
+    if score < 0.6:
+        return "mid"
+    return "high"
+
+
+def _gen_panel(run: dict, chosen_id: str) -> str:
+    log = run.get("deliberation_log") or []
+    gen_step = next((s for s in log if isinstance(s, dict) and s.get("step") == "generator"), {})
+    cands = gen_step.get("candidates") or []
+    parts = [f'<div class="voice"><h4>Generator <span class="count">{len(cands)} candidates</span></h4>']
+    for c in cands:
+        cid = _esc(c.get("id", ""))
+        chosen_badge = ' <span class="badge valid">CHOSEN</span>' if c.get("id") == chosen_id else ""
+        summary = _esc(c.get("summary", ""))
+        sketch = _esc(c.get("sketch", ""))
+        parts.append(
+            f'<div class="cand"><div><span class="cid">{cid}</span>{chosen_badge}</div>'
+            f'<div class="csum">{summary}</div>'
+            f'<div class="csketch">{sketch}</div></div>'
+        )
+    parts.append("</div>")
+    return "".join(parts)
+
+
+def _ctrl_panel(run: dict) -> str:
+    log = run.get("deliberation_log") or []
+    ctrl_step = next((s for s in log if isinstance(s, dict) and s.get("step") == "control"), {})
+    verdicts = ctrl_step.get("verdicts") or []
+    n_valid = sum(1 for v in verdicts if v.get("valid"))
+    n_invalid = len(verdicts) - n_valid
+    parts = [f'<div class="voice"><h4>Control <span class="count">{n_valid} valid, {n_invalid} invalid</span></h4>']
+    for v in verdicts:
+        cid = _esc(v.get("id", ""))
+        badge_cls = "valid" if v.get("valid") else "invalid"
+        badge_txt = "valid" if v.get("valid") else "invalid"
+        parts.append(
+            f'<div class="cand"><div><span class="cid">{cid}</span> '
+            f'<span class="badge {badge_cls}">{badge_txt}</span></div>'
+        )
+        for issue in v.get("issues") or []:
+            cat = _esc(issue.get("category", ""))
+            detail = _esc(issue.get("detail", ""))
+            parts.append(f'<div class="issue">{cat}: {detail}</div>')
+        for t in v.get("tests_to_write") or []:
+            name = _esc(t.get("name", ""))
+            assertion = _esc(t.get("assert", ""))
+            parts.append(f'<div class="test">{name}: {assertion}</div>')
+        parts.append("</div>")
+    parts.append("</div>")
+    return "".join(parts)
+
+
+def _cons_panel(run: dict) -> str:
+    log = run.get("deliberation_log") or []
+    cons_step = next((s for s in log if isinstance(s, dict) and s.get("step") == "conservator"), {})
+    scores = cons_step.get("scores") or []
+    n_vetoed = sum(1 for s in scores if (s.get("risk_score") or 0) >= 0.7)
+    parts = [f'<div class="voice"><h4>Conservator <span class="count">{len(scores)} scored, {n_vetoed} vetoed</span></h4>']
+    for s in scores:
+        cid = _esc(s.get("id", ""))
+        rs = s.get("risk_score") or 0.0
+        rcls = _risk_class(rs)
+        vetoed_badge = ' <span class="badge invalid">VETOED</span>' if rs >= 0.7 else ""
+        f = s.get("factors") or {}
+        parts.append(
+            f'<div class="cand">'
+            f'<span class="risk {rcls}">{rs:.2f}</span>'
+            f'<div><span class="cid">{cid}</span>{vetoed_badge}</div>'
+            f'<div class="factors">'
+            f'<span><b>diff:</b> {(f.get("diff_size") or 0):.2f}</span>'
+            f'<span><b>scope:</b> {(f.get("scope_drift") or 0):.2f}</span>'
+            f'<span><b>regr:</b> {(f.get("regression_risk") or 0):.2f}</span>'
+            f'<span><b>rev:</b> {(f.get("reversibility") or 0):.2f}</span>'
+            f'</div></div>'
+        )
+    parts.append("</div>")
+    return "".join(parts)
+
+
+def render_drill(run: dict, chosen_id: str) -> str:
+    return (
+        '<div class="drill-grid">'
+        + _gen_panel(run, chosen_id)
+        + _ctrl_panel(run)
+        + _cons_panel(run)
+        + "</div>"
+    )
+
+
 def _legacy_stub() -> str:
     return '<div class="stub">no detailed run data — older entry pre-runs/</div>'
 
@@ -113,7 +205,18 @@ def _legacy_stub() -> str:
 def render(entries: list[Entry], runs_dir: Path) -> str:
     rows = []
     for idx, e in enumerate(entries):
-        drill = _legacy_stub()  # drill-down filled in Task 3
+        run_dict = None
+        if e.run_path:
+            run_file = runs_dir.parent / e.run_path if not Path(e.run_path).is_absolute() else Path(e.run_path)
+            # Accept both repo-relative ("runs/foo.json") and direct ("foo.json") forms.
+            if not run_file.exists():
+                run_file = runs_dir / Path(e.run_path).name
+            if run_file.exists():
+                try:
+                    run_dict = json.loads(run_file.read_text(encoding="utf-8"))
+                except json.JSONDecodeError:
+                    run_dict = None
+        drill = render_drill(run_dict, e.chosen) if run_dict else _legacy_stub()
         rows.append(_row_html(idx, e, drill))
     rows_html = "".join(rows)
     return (

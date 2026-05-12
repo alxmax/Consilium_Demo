@@ -58,6 +58,48 @@ def test_render_escapes_html_in_user_text():
     assert "&amp;" in html_out
 
 
+def test_render_drill_from_real_run_file():
+    e = rfh.Entry(
+        date="2026-05-11",
+        context="Click pe sageata Rerun din topbar",
+        chosen="disable_when_unreachable",
+        outcome="PEND",
+        note="5 cand, 1 vetoed, conf=0.62",
+        run_path="runs/2026-05-11_2030_live-rerun-resilience.json",
+    )
+    html_out = rfh.render([e], runs_dir=ROOT / "runs")
+    # Generator section
+    assert "Generator" in html_out
+    assert "do_nothing" in html_out
+    assert "disable_when_unreachable" in html_out
+    assert "adversarial_url_protocol_handler" in html_out
+    # CHOSEN badge on the picked candidate
+    assert "CHOSEN" in html_out
+    # Control section: valid/invalid badges
+    assert ">valid<" in html_out
+    assert ">invalid<" in html_out
+    # Tests rendered
+    assert "probe_success_enables" in html_out
+    # Conservator section: factor breakdown
+    assert "diff:" in html_out
+    assert "scope:" in html_out
+    assert "0.14" in html_out  # disable_when_unreachable risk_score
+    assert "no detailed run data" not in html_out
+
+
+def test_render_drill_missing_run_file_falls_back_to_stub():
+    e = rfh.Entry(
+        date="2026-05-11",
+        context="x",
+        chosen="y",
+        outcome="PEND",
+        note="",
+        run_path="runs/does_not_exist.json",
+    )
+    html_out = rfh.render([e], runs_dir=ROOT / "runs")
+    assert "no detailed run data" in html_out
+
+
 def _run_tests():
     funcs = [v for k, v in globals().items() if k.startswith("test_") and callable(v)]
     failed = 0
