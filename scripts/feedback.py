@@ -19,28 +19,50 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-FEEDBACK = ROOT / "FEEDBACK.md"
+FEEDBACK = ROOT / "FEEDBACK.html"
 RUNS = ROOT / "runs"
 
 OUTCOMES = ("OK", "BAD", "OVR", "PEND")
 
-ENTRY_RE = re.compile(
-    r"^- (?P<date>\d{4}-\d{2}-\d{2})\s*\|\s*"
-    r"(?P<context>[^|]+?)\s*\|\s*"
-    r"(?P<chosen>[^|]+?)\s*\|\s*"
-    r"(?P<outcome>OK|BAD|OVR|PEND)\s*\|\s*"
-    r"(?P<note>.*)$"
+ROW_RE = re.compile(
+    r'<tr class="entry"[^>]*>(?P<body>.*?)</tr>',
+    re.DOTALL,
 )
+CELL_RE = re.compile(r'<td[^>]*>(?P<text>.*?)</td>', re.DOTALL)
+TAG_RE = re.compile(r'<[^>]+>')
+
+
+def _strip_tags(s: str) -> str:
+    s = TAG_RE.sub('', s)
+    # html.unescape is in the stdlib; avoids extra deps.
+    import html as _html
+    return _html.unescape(s).strip()
 
 
 def parse_feedback(path: Path) -> list[dict]:
     entries = []
     if not path.exists():
         return entries
-    for line in path.read_text(encoding="utf-8").splitlines():
-        m = ENTRY_RE.match(line)
-        if m:
-            entries.append(m.groupdict())
+    text = path.read_text(encoding="utf-8")
+    for m in ROW_RE.finditer(text):
+        cells = CELL_RE.findall(m.group("body"))
+        if len(cells) < 6:
+            continue
+        # cells order: [chev, date, context, chosen, outcome, note]
+        date = _strip_tags(cells[1])
+        context = _strip_tags(cells[2])
+        chosen = _strip_tags(cells[3])
+        outcome = _strip_tags(cells[4])
+        note = _strip_tags(cells[5])
+        if outcome not in ("OK", "BAD", "OVR", "PEND"):
+            continue
+        entries.append({
+            "date": date,
+            "context": context,
+            "chosen": chosen,
+            "outcome": outcome,
+            "note": note,
+        })
     return entries
 
 

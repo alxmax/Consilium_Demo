@@ -100,6 +100,44 @@ def test_render_drill_missing_run_file_falls_back_to_stub():
     assert "no detailed run data" in html_out
 
 
+def test_parse_feedback_roundtrip_html():
+    # Build entries, render to HTML, parse back, expect same fields.
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import feedback  # noqa: E402
+
+    original = [
+        rfh.Entry(date="2026-05-11", context="ctx one", chosen="approach_a",
+                  outcome="OK", note="5 cand, conf=0.65"),
+        rfh.Entry(date="2026-05-12", context="ctx <two> & special",
+                  chosen="approach_b", outcome="OVR",
+                  note="override=alt; conf=0.43"),
+    ]
+    html_out = rfh.render(original, runs_dir=ROOT / "runs")
+
+    with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as f:
+        f.write(html_out)
+        tmp_path = Path(f.name)
+    try:
+        parsed = feedback.parse_feedback(tmp_path)
+    finally:
+        tmp_path.unlink()
+
+    assert len(parsed) == 2, f"got {len(parsed)} entries, want 2"
+    assert parsed[0]["date"] == "2026-05-11"
+    assert parsed[0]["context"] == "ctx one"
+    assert parsed[0]["chosen"] == "approach_a"
+    assert parsed[0]["outcome"] == "OK"
+    assert "5 cand" in parsed[0]["note"]
+    assert parsed[1]["context"] == "ctx <two> & special"  # unescaped on parse
+    assert parsed[1]["outcome"] == "OVR"
+
+
+def test_parse_feedback_returns_empty_for_missing_file():
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import feedback  # noqa: E402
+    assert feedback.parse_feedback(Path("/nonexistent/FEEDBACK.html")) == []
+
+
 def _run_tests():
     funcs = [v for k, v in globals().items() if k.startswith("test_") and callable(v)]
     failed = 0
