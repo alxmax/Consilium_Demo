@@ -2,6 +2,7 @@
 name: max-subagent
 description: Dialectical code-change review (Generator/Control/Conservator). Returns a canonical runs/<file>.json report. Use when an orchestrator needs an isolated-context deliberation on a diff, refactor, or proposed change without polluting its own context with intermediate voice output.
 tools: Read, Bash, Grep, Glob
+model: sonnet
 ---
 
 # Max Subagent
