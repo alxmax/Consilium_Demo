@@ -39,9 +39,9 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 Două acțiuni, în ordine, **înainte** de a explora codul user-ului:
 
 1. **Citește contractele celor 3 voci** — `prompts/generator.md`, `prompts/control.md`, `prompts/conservator.md`. Sunt scurte (sub 100 linii fiecare) și definesc exact ce câmpuri produce fiecare voce. Fără ele, gather-context-ul de la Step 1 rulează orb: framezi `success_criterion` într-un vocabular care s-ar putea să nu se mapeze pe `scope_drift` / `tests_to_write` / `rollback_recipe` etc. Cost: ~500 tokeni; previne re-explorare după ce ajungi la Step 3 și realizezi ce întreabă Control. **Notă pentru parallel/dialectic mode:** acolo conținutul fiecărui prompt trebuie *inline-uit* în dispatch-ul către sub-agentul respectiv (vezi secțiunea Parallel voices mode → "Conținutul integral al prompt-ului vocii sale"). Citirea la Step 0 nu e suficientă — sub-agenții n-au cum să acceseze fișierele.
-2. **Rulează `python scripts/priors.py`.** Întoarce un JSON cu ultimele ~10 entries din `FEEDBACK.md`, `override_rate`, `bad_rate`, `conservator_veto_rate` (din `runs/`) și top keywords din note. Tratează ca **priori soft** pentru deliberarea curentă: dacă apar tipare clare (ex: `override_rate > 0.3` cu keyword "conservator", "agresiv"), ajustează strategia (ex: relaxează pragul veto la 0.8, marchează explicit unde Conservator e probabil supra-prudent). Nu modifica fișierele skill-ului; doar prompts-urile rămân autoritative.
+2. **Rulează `python scripts/priors.py`.** Întoarce un JSON cu ultimele ~10 entries din `FEEDBACK.html`, `override_rate`, `bad_rate`, `conservator_veto_rate` (din `runs/`) și top keywords din note. Tratează ca **priori soft** pentru deliberarea curentă: dacă apar tipare clare (ex: `override_rate > 0.3` cu keyword "conservator", "agresiv"), ajustează strategia (ex: relaxează pragul veto la 0.8, marchează explicit unde Conservator e probabil supra-prudent). Nu modifica fișierele skill-ului; doar prompts-urile rămân autoritative.
 
-   Dacă `priors.py` raportează `stale_pendings` non-empty (PEND-uri mai vechi de 7 zile, max 5 entries), oprește **înainte** de Step 1 și întreabă user-ul: *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid acum (OK/BAD/skip per entry) sau să continuăm cu deliberarea nouă?"* Update-ul se face cu `Edit` tool pe `FEEDBACK.md` (înlocuiește literalul `PEND` din linia respectivă cu `OK` sau `BAD`), **nu** prin `log_feedback.py` — acela appendează o linie nouă, ducând la istoric dublu pentru aceeași deliberare. Dacă user-ul răspunde "skip", continuă la Step 1 fără modificări.
+   Dacă `priors.py` raportează `stale_pendings` non-empty (PEND-uri mai vechi de 7 zile, max 5 entries), oprește **înainte** de Step 1 și întreabă user-ul: *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid acum (OK/BAD/skip per entry) sau să continuăm cu deliberarea nouă?"* Update-ul se face cu `Edit` tool pe `FEEDBACK.html` (înlocuiește literalul `PEND` din linia respectivă cu `OK` sau `BAD`), **nu** prin `log_feedback.py` — acela appendează o linie nouă, ducând la istoric dublu pentru aceeași deliberare. Dacă user-ul răspunde "skip", continuă la Step 1 fără modificări.
 
 ### 1. Gather context & state the goal
 Citește schimbarea propusă (diff, fișiere atinse). Identifică:
@@ -241,23 +241,25 @@ Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat; tipărește deta
 
 **Acțiuni finale (obligatorii — fără ele deliberarea nu e completă):**
 1. **Persistă raportul.** Scrie JSON-ul complet în `runs/YYYY-MM-DD_HHMM_<short-label>.json`. Schema în `runs/README.md`. Fără asta, `priors.py` la deliberarea următoare nu te vede; pierdem feedback loop-ul.
-2. **Loghează automat în `FEEDBACK.md` cu outcome confidence-gated.** La finalul Step 6, citește `confidence` din raport și alege calea:
+2. **Loghează automat în `FEEDBACK.html` cu outcome confidence-gated.** La finalul Step 6, citește `confidence` din raport și alege calea:
 
    - **`confidence >= 0.7`** — pickul are agreement și separation suficient; auto-OK fără să întrebi user-ul:
      ```bash
-     cat runs/<file>.json | python scripts/log_feedback.py --outcome OK
+     cat runs/<file>.json | python scripts/log_feedback.py --outcome OK --run-path runs/<file>.json
      ```
 
    - **`confidence < 0.7`** — întreabă user-ul: *"Confidence sub prag (`<X>`). Vrei să override-ezi `<chosen>`? Alternative din raport: `<alt_id list>`. Răspunde alt_id, 'no', sau 'skip'."* Apoi:
-     - `no` → `python scripts/log_feedback.py --outcome OK`
-     - `<alt_id>` → `python scripts/log_feedback.py --outcome OVR --override-target <alt_id>` (cu `--user-note "<motiv>"` opțional)
-     - `skip` → `python scripts/log_feedback.py` (PEND, default — user-ul închide manual mai târziu)
+     - `no` → `python scripts/log_feedback.py --outcome OK --run-path runs/<file>.json`
+     - `<alt_id>` → `python scripts/log_feedback.py --outcome OVR --override-target <alt_id> --run-path runs/<file>.json` (cu `--user-note "<motiv>"` opțional)
+     - `skip` → `python scripts/log_feedback.py --run-path runs/<file>.json` (PEND, default — user-ul închide manual mai târziu)
 
-   - **`confidence` is null** (toți candidates vetoiți) — `python scripts/log_feedback.py` fără flag. Veto total = no decision = no outcome to rate.
+   - **`confidence` is null** (toți candidates vetoiți) — `python scripts/log_feedback.py --run-path runs/<file>.json` fără flag outcome. Veto total = no decision = no outcome to rate.
 
    Pragul `0.7` e o decizie de workflow în acest fișier, nu config în script. Schimbarea pragului = o editare aici. `--dry-run` previzualizează linia fără să scrie, în orice combinație de flag-uri.
 
    Script-ul derivă coloana note automat: `"skipped: <reason>"`, `"all vetoed; relaxed=<X>"`, sau `"<N> cand, <K> vetoed, conf=<X>, mode=<Y>"`. Când outcome e OVR, se append-ează `; override=<target>` și (opțional) nota user-ului.
+
+   **Windows note:** Use `python -X utf8 ...` or feed the JSON via `python` directly — PowerShell's `Get-Content | ...` adds a UTF-8 BOM that breaks `json.load(sys.stdin)`.
 
 ## Skill maintenance
 
@@ -291,7 +293,7 @@ Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit c
 - `prompts/conservator.md` — template pentru voce skeptică
 - `scripts/personalities.py` — rejection sampling pentru ensemble mode
 - `scripts/aggregator.py` — 4 scheme de voting + auto-relax la veto total
-- `scripts/priors.py` — extrage priori soft din FEEDBACK + runs înainte de step 1
+- `scripts/priors.py` — extrage priori soft din FEEDBACK.html + runs înainte de step 1
 - `scripts/validate_report.py` — gate Principle #4 (success_criterion + verification + chosen_approach)
 - `scripts/probe_change.py` — ancorare diff_size la `git diff --numstat`
 - `scripts/confidence.py` — derivă confidence din variance inter-voci + separation față de runner-up
@@ -300,7 +302,7 @@ Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit c
 - `scripts/dialectic_merge.py` — combină outputs Pass-1 + Pass-2 din dialectic mode într-un payload aggregator-ready, cu `revision_log` per voce
 - `scripts/run_evals.py` + `evals/scenarios.json` — regression suite pentru scripturile deterministice (Skill maintenance)
 - `scripts/usage.py` — rollup telemetry across `runs/*.json` (Skill maintenance)
-- `scripts/log_feedback.py` — auto-append linie în FEEDBACK.md la finalul Step 6 (outcome=PEND, user-ul închide ulterior)
+- `scripts/log_feedback.py` — auto-append linie în FEEDBACK.html la finalul Step 6 (outcome=PEND, user-ul închide ulterior)
 - `scripts/build_report.py` — asamblează raportul canonic dintr-un bundle de output-uri intermediare (Step 6); elimină clasa de bug-uri "report shape drift"
 - `agents/max-subagent.md` — definiție de subagent Claude Code pentru invocare prin `Agent(subagent_type="max-subagent", ...)` în context izolat. Delegă la SKILL.md (non-interactive overrides pentru Step 0/1/6). Install: symlink la `~/.claude/agents/max-subagent.md` (vezi fișierul).
 
@@ -309,7 +311,7 @@ Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit c
 Skill-ul învață din uz real prin două artefacte. Aici e descrierea lor; *cum* sunt folosite (citite la Step 0, scrise la Step 6, auditate periodic) e prescris în Workflow și Skill maintenance.
 
 - **`runs/`** — JSON complet per deliberare în `runs/YYYY-MM-DD_HHMM_<short-label>.json` (schema în `runs/README.md`). Fișierele sunt gitignored (personale). Citite de `priors.py` (Step 0) și `usage.py` / `feedback.py` (Skill maintenance). Scrise la finalul Step 6.
-- **`FEEDBACK.md`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Local/personal — gitignored (la fel ca `runs/*.json`), nu shared între mașini. User-ul îl scrie când e cerut la finalul Step 6.
+- **`FEEDBACK.html`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Local/personal — gitignored (la fel ca `runs/*.json`), nu shared între mașini. User-ul îl scrie când e cerut la finalul Step 6. **Drill-down note:** When `log_feedback.py` appends a new entry, existing rows lose their drill-down (parser doesn't persist `run_path` between renders); only the freshly-logged row keeps it. Use the `migrate_feedback_md_to_html.py` script for bulk re-population if needed.
 
 ## Parallel voices mode (opt-in)
 

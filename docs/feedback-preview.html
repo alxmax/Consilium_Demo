@@ -1,0 +1,355 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>max-agent feedback (preview)</title>
+<style>
+  :root{
+    --bg:#16161a;
+    --bg-alt:#1c1c22;
+    --bg-row:#1a1a20;
+    --bg-row-alt:#1e1e25;
+    --bg-drill:#121216;
+    --fg:#d6d6d6;
+    --fg-dim:#8a8a92;
+    --fg-soft:#b4b4bc;
+    --border:#2a2a32;
+    --border-soft:#23232b;
+    --accent:#7fb3ff;
+    --mono:#9fc7ff;
+    --ok:#5ec27a;
+    --bad:#e36868;
+    --ovr:#e0a85c;
+    --pend:#787884;
+    --chip-bg:#22222a;
+    --valid:#5ec27a;
+    --invalid:#e36868;
+  }
+  *{box-sizing:border-box}
+  body{
+    font:13px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
+    margin:1.5em;color:var(--fg);max-width:1400px;
+    background:var(--bg);
+  }
+  h2{margin:0 0 .25em;font-size:18px;font-weight:600;color:#fff}
+  .sub{color:var(--fg-dim);font-size:12px;margin-bottom:1.25em}
+  table{border-collapse:collapse;width:100%}
+  th,td{border-bottom:1px solid var(--border-soft);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--bg-alt);font-weight:600;color:var(--fg-soft);white-space:nowrap;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  tbody tr.entry{cursor:pointer;background:var(--bg-row);transition:background .12s}
+  tbody tr.entry:nth-child(4n+3){background:var(--bg-row-alt)}
+  tbody tr.entry:hover{background:#252530}
+  tbody tr.entry.open{background:#2b2b36}
+  td.outcome{font-weight:600;text-align:center;white-space:nowrap;font-size:12px;letter-spacing:.05em}
+  .OK{color:var(--ok)}
+  .BAD{color:var(--bad)}
+  .OVR{color:var(--ovr)}
+  .PEND{color:var(--pend)}
+  td.date{white-space:nowrap;color:var(--fg-dim);font-variant-numeric:tabular-nums}
+  td.chosen{font-family:Consolas,Menlo,monospace;font-size:12px;color:var(--mono)}
+  td.note{color:var(--fg-soft);font-size:12px}
+  td.chev{width:18px;color:var(--fg-dim);text-align:center;font-family:monospace}
+  tr.entry.open td.chev{color:var(--accent)}
+
+  /* drill-down row */
+  tr.drill{display:none;background:var(--bg-drill)}
+  tr.drill.open{display:table-row}
+  tr.drill td{border-bottom:1px solid var(--border);padding:14px 18px}
+  .drill-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+  .voice{background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:6px;padding:12px 14px}
+  .voice h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}
+  .voice h4 .count{color:var(--fg-dim);font-weight:400;margin-left:6px}
+  .cand{padding:8px 0;border-top:1px dashed var(--border-soft)}
+  .cand:first-of-type{border-top:none;padding-top:2px}
+  .cand .cid{font-family:Consolas,Menlo,monospace;font-size:11px;color:var(--mono);font-weight:600}
+  .cand .csum{color:var(--fg);font-size:12px;margin:2px 0}
+  .cand .csketch{color:var(--fg-dim);font-size:11px;font-style:italic;margin-top:2px}
+  .badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.03em;margin-left:6px;vertical-align:middle}
+  .badge.valid{background:rgba(94,194,122,.15);color:var(--valid)}
+  .badge.invalid{background:rgba(227,104,104,.15);color:var(--invalid)}
+  .issue{color:var(--bad);font-size:11px;margin-top:3px}
+  .issue::before{content:"✕ ";color:var(--bad)}
+  .test{color:var(--fg-dim);font-size:11px;margin-top:2px;font-family:Consolas,Menlo,monospace}
+  .test::before{content:"✓ ";color:var(--ok)}
+  .risk{font-family:Consolas,Menlo,monospace;font-size:13px;font-weight:600;float:right}
+  .risk.low{color:var(--ok)}
+  .risk.mid{color:var(--ovr)}
+  .risk.high{color:var(--bad)}
+  .factors{display:grid;grid-template-columns:repeat(2,1fr);gap:1px 10px;font-size:10px;color:var(--fg-dim);margin-top:3px;font-family:Consolas,Menlo,monospace}
+  .factors b{color:var(--fg-soft);font-weight:400}
+  .stub{color:var(--fg-dim);font-style:italic;font-size:12px;text-align:center;padding:8px}
+</style>
+
+<h2>max-agent feedback</h2>
+<div class="sub">13 entries · skills/max-agent/FEEDBACK.html · click pe rând pentru detalii voci</div>
+
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Data</th>
+      <th>Context</th>
+      <th>Chosen</th>
+      <th>Outcome</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-11</td>
+      <td>dashboard_v3 AI review (dialectic, 6 sub-agents)</td>
+      <td class="chosen">xss_hardening_pass + 2 follow-ups</td>
+      <td class="outcome OK">OK</td>
+      <td class="note">Pass-2 a corectat 3 bug-uri reale Pass-1. 3 PR-uri într-un commit (089e282).</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">no detailed run data — older entry pre-runs/</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-11</td>
+      <td>Identific ~10-20% din conținutul Max_Skill (linii sau fișiere)</td>
+      <td class="chosen">nuke_orphans_and_stale_readme</td>
+      <td class="outcome PEND">PEND</td>
+      <td class="note">5 cand, 1 vetoed, conf=0.63, mode=parallel</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/2026-05-11_1620_audit-reduction.json</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-11</td>
+      <td>Correl Risk vs Patterns thematic audit (dashboard)</td>
+      <td class="chosen">move_greseli_to_patterns</td>
+      <td class="outcome PEND">PEND</td>
+      <td class="note">5 cand, 1 vetoed, conf=0.86, mode=sequential</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/2026-05-11_1800_correl-patterns-risk-audit.json</div></td></tr>
+
+    <tr class="entry open" onclick="toggleDrill(this)">
+      <td class="chev">▾</td>
+      <td class="date">2026-05-11</td>
+      <td>Click pe sageata Rerun din topbar reporneste polling-ul Live</td>
+      <td class="chosen">disable_when_unreachable</td>
+      <td class="outcome PEND">PEND</td>
+      <td class="note">5 cand, 1 vetoed, conf=0.62, mode=sequential</td>
+    </tr>
+    <tr class="drill open">
+      <td colspan="6">
+        <div class="drill-grid">
+
+          <div class="voice">
+            <h4>Generator <span class="count">5 candidates</span></h4>
+            <div class="cand">
+              <div><span class="cid">do_nothing</span></div>
+              <div class="csum">Accept current state — error alert is actionable.</div>
+              <div class="csketch">Just-shipped fix in live_ctrl.js: file:// early-out + NetworkError alert mentions serve_dashboard.py.</div>
+            </div>
+            <div class="cand">
+              <div><span class="cid">disable_when_unreachable</span> <span class="badge valid">CHOSEN</span></div>
+              <div class="csum">Periodic /api/live/status probe disables Rerun visually when server unreachable.</div>
+              <div class="csketch">Add 10s setInterval; on fail or file: opacity=0.4, disabled=true, title='Server offline'. ~20 lines.</div>
+            </div>
+            <div class="cand">
+              <div><span class="cid">force_serve_mode_banner</span></div>
+              <div class="csum">Persistent banner in file:// mode.</div>
+              <div class="csketch">On load if location.protocol==='file:' inject sticky banner with copy-able command. ~30 lines.</div>
+            </div>
+            <div class="cand">
+              <div><span class="cid">unified_status_probe</span></div>
+              <div class="csum">One probe drives button + badge + banner via state machine.</div>
+              <div class="csketch">Combines both: 10s probe → {UP, DOWN, FILE_PROTOCOL}. ~60-80 lines.</div>
+            </div>
+            <div class="cand">
+              <div><span class="cid">adversarial_url_protocol_handler</span></div>
+              <div class="csum">Register Windows fx-live:// protocol for 1-click cold start.</div>
+              <div class="csketch">register_fx_protocol.reg → HKCR\fx-live\shell\open\command. User runs .reg once (admin).</div>
+            </div>
+          </div>
+
+          <div class="voice">
+            <h4>Control <span class="count">4 valid, 1 invalid</span></h4>
+            <div class="cand">
+              <div><span class="cid">do_nothing</span> <span class="badge valid">valid</span></div>
+              <div class="csketch">Baseline; reactive feedback only.</div>
+            </div>
+            <div class="cand">
+              <div><span class="cid">disable_when_unreachable</span> <span class="badge valid">valid</span></div>
+              <div class="test">probe_success_enables: 200 → opacity=1, !disabled</div>
+              <div class="test">probe_fail_disables: reject → opacity=0.4, title contains 'offline'</div>
+              <div class="test">file_protocol_disables: protocol=file: → disabled without fetch</div>
+              <div class="test">recovery_re_enables: fail then success → enabled in ~10s</div>
+            </div>
+            <div class="cand">
+              <div><span class="cid">force_serve_mode_banner</span> <span class="badge valid">valid</span></div>
+              <div class="issue">logic: Doesn't address http+server-down case.</div>
+              <div class="test">banner_in_file_mode: protocol=file: → #fx-mode-banner exists</div>
+              <div class="test">copy_button_works: navigator.clipboard.writeText called with exact cmd</div>
+            </div>
+            <div class="cand">
+              <div><span class="cid">unified_status_probe</span> <span class="badge valid">valid</span></div>
+              <div class="issue">style: 60-80 lines vs 20 for discrete; refactor-y for same outcome.</div>
+              <div class="test">state_UP_normal: probe 200 → btn enabled, no banner</div>
+              <div class="test">transition_DOWN_to_UP: fail then success → badge cleared &lt;10s</div>
+            </div>
+            <div class="cand">
+              <div><span class="cid">adversarial_url_protocol_handler</span> <span class="badge invalid">invalid</span></div>
+              <div class="issue">logic: Registry write irreversible without manual unregister. Browser behavior varies.</div>
+              <div class="issue">tests: Cannot unit-test; depends on OS+browser policy.</div>
+              <div class="issue">style: Requires admin + .reg run; leaves project pure-code boundary.</div>
+            </div>
+          </div>
+
+          <div class="voice">
+            <h4>Conservator <span class="count">4 scored, 1 vetoed</span></h4>
+            <div class="cand">
+              <span class="risk low">0.00</span>
+              <div><span class="cid">do_nothing</span></div>
+              <div class="factors">
+                <span><b>diff:</b> 0.00</span><span><b>scope:</b> 0.00</span>
+                <span><b>regr:</b> 0.00</span><span><b>rev:</b> 0.00</span>
+              </div>
+            </div>
+            <div class="cand">
+              <span class="risk low">0.14</span>
+              <div><span class="cid">disable_when_unreachable</span></div>
+              <div class="factors">
+                <span><b>diff:</b> 0.15</span><span><b>scope:</b> 0.05</span>
+                <span><b>regr:</b> 0.30</span><span><b>rev:</b> 0.05</span>
+              </div>
+              <div class="csketch">~20 lines; setInterval main vector.</div>
+            </div>
+            <div class="cand">
+              <span class="risk low">0.18</span>
+              <div><span class="cid">force_serve_mode_banner</span></div>
+              <div class="factors">
+                <span><b>diff:</b> 0.20</span><span><b>scope:</b> 0.10</span>
+                <span><b>regr:</b> 0.30</span><span><b>rev:</b> 0.10</span>
+              </div>
+            </div>
+            <div class="cand">
+              <span class="risk mid">0.42</span>
+              <div><span class="cid">unified_status_probe</span></div>
+              <div class="factors">
+                <span><b>diff:</b> 0.55</span><span><b>scope:</b> 0.40</span>
+                <span><b>regr:</b> 0.45</span><span><b>rev:</b> 0.25</span>
+              </div>
+              <div class="csketch">Refactor scope larger; touches multiple sites.</div>
+            </div>
+            <div class="cand">
+              <span class="risk high">0.78</span>
+              <div><span class="cid">adversarial_url_protocol_handler</span> <span class="badge invalid">VETOED</span></div>
+              <div class="factors">
+                <span><b>diff:</b> 0.50</span><span><b>scope:</b> 0.80</span>
+                <span><b>regr:</b> 0.70</span><span><b>rev:</b> 0.85</span>
+              </div>
+              <div class="csketch">Reversibility dominates; registry write requires admin unregister.</div>
+            </div>
+          </div>
+
+        </div>
+      </td>
+    </tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-11</td>
+      <td>Button work + server start in file:// mode</td>
+      <td class="chosen">cors_plus_autostart_no_poll</td>
+      <td class="outcome PEND">PEND</td>
+      <td class="note">6 cand, 1 vetoed, conf=0.45, mode=sequential</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/2026-05-11_2100_cors-plus-autostart-nopoll.json</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-11</td>
+      <td>smoke test legacy shape</td>
+      <td class="chosen">approach_a</td>
+      <td class="outcome PEND">PEND</td>
+      <td class="note">2 cand, 0 vetoed, conf=0.65, mode=sequential</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/*.json corespunzător</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-12</td>
+      <td>Există un mecanism prin care max-agent poate fi invocat ca subagent</td>
+      <td class="chosen">thin_wrapper_agent</td>
+      <td class="outcome OVR">OVR</td>
+      <td class="note">5 cand, conf=0.27, mode=parallel; override=thin_wrapper_agent</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/2026-05-12_*.json corespunzător</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-12</td>
+      <td>docs/architecture.html accurately reflects the confidence-gated</td>
+      <td class="chosen">add_null_confidence_branch</td>
+      <td class="outcome PEND">PEND</td>
+      <td class="note">4 cand, 0 vetoed, conf=0.66, mode=sequential</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/2026-05-12_0758_arch-html-audit.json</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-12</td>
+      <td>User receives a ranked list of concrete follow-up actions</td>
+      <td class="chosen">minimal_hygiene</td>
+      <td class="outcome OK">OK</td>
+      <td class="note">5 cand, 1 vetoed, conf=0.53, mode=parallel</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/*.json corespunzător</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-12</td>
+      <td>Diagrams and worked example in docs/architecture.html accurate</td>
+      <td class="chosen">recompute_aggregation_table</td>
+      <td class="outcome PEND">PEND</td>
+      <td class="note">5 cand, 0 vetoed, conf=0.67, mode=sequential</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/2026-05-12_1150_arch_diagrams_fidelity.json</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-12</td>
+      <td>After this change, max-agent is presentable to a non-Romanian</td>
+      <td class="chosen">do_nothing</td>
+      <td class="outcome OK">OK</td>
+      <td class="note">5 cand, 1 vetoed, conf=0.41, mode=parallel</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/*.json corespunzător</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-12</td>
+      <td>Identify the smallest-scope intervention that meaningfully</td>
+      <td class="chosen">do_nothing</td>
+      <td class="outcome OVR">OVR</td>
+      <td class="note">6 cand, conf=0.43, mode=parallel; override=drop_f1_keep_f2_f3</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/*.json corespunzător</div></td></tr>
+
+    <tr class="entry" onclick="toggleDrill(this)">
+      <td class="chev">▸</td>
+      <td class="date">2026-05-12</td>
+      <td>Determine the next action for branch feat/progress-voices-k</td>
+      <td class="chosen">push_as_is</td>
+      <td class="outcome OK">OK</td>
+      <td class="note">5 cand, 0 vetoed, conf=0.51, mode=parallel; push_as_is wins 0.90 (sep 0.067)</td>
+    </tr>
+    <tr class="drill"><td colspan="6"><div class="stub">drill-down va încărca runs/*.json corespunzător</div></td></tr>
+
+  </tbody>
+</table>
+
+<script>
+function toggleDrill(row){
+  var next = row.nextElementSibling;
+  var chev = row.querySelector('.chev');
+  if(next && next.classList.contains('drill')){
+    var open = next.classList.toggle('open');
+    row.classList.toggle('open', open);
+    if(chev) chev.textContent = open ? '▾' : '▸';
+  }
+}
+</script>
