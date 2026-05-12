@@ -30,6 +30,8 @@ Thumbs.db
 
 # Personal deliberation logs (schema in runs/README.md)
 runs/*.json
+# Drill-down sidecar (auto-managed by log_feedback.py)
+runs/.run_path_map.json
 
 # Personal feedback journal (local-only, not shared between machines)
 FEEDBACK.md

@@ -547,5 +547,27 @@
         "dissent_fallbacks": {}
       }
     }
+  },
+  {
+    "name": "dialectic_merge/silent_drop_recovered_from_pass1: pass2 generator omits a pass1 candidate; recovery lists it in silently_dropped",
+    "tool": "scripts/dialectic_merge.py",
+    "stdin_json": {
+      "pass1": {
+        "generator":   {"candidates": [{"id": "a", "summary": "kept"}, {"id": "b", "summary": "pass1-only"}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}, {"id": "b", "valid": true, "issues": []}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.2}, {"id": "b", "risk_score": 0.4}]}
+      },
+      "pass2": {
+        "generator":   {"candidates": [{"id": "a", "summary": "kept", "maintained": {"peer_claim": "Control: valid", "dissent": "No change."}}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": [], "maintained": {"peer_claim": "Generator confirmed", "dissent": "No change."}}, {"id": "b", "valid": true, "issues": [], "maintained": {"peer_claim": "Generator confirmed", "dissent": "No change."}}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.2, "maintained": {"peer_claim": "Control: valid", "dissent": "Risk unchanged."}}, {"id": "b", "risk_score": 0.4, "maintained": {"peer_claim": "Control: valid", "dissent": "Risk unchanged."}}]}
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "revision_log": {
+        "silently_dropped": ["b"]
+      }
+    }
   }
 ]

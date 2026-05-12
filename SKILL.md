@@ -325,6 +325,8 @@ Skill-ul învață din uz real prin două artefacte. Aici e descrierea lor; *cum
 
 Pentru independență reală, dispatch vocile ca **până la 3 sub-agenți Claude rulând în paralel** (tool-ul `Agent`, `subagent_type=general-purpose`).
 
+**Notă:** `consilium-subagent` rulează **întotdeauna sequential**, indiferent de mode hint din orchestrator (vezi `agents/consilium-subagent.md` rule 1 și secțiunea Sequential mode de mai jos). Dispatch-uiește vocile tu însuți cu `subagent_type=general-purpose` când vrei paralelism real; folosește `consilium-subagent` doar când vrei deliberarea completă într-un context izolat fără control de mode la orchestrator.
+
 ### Când să folosești
 - Orice deliberare non-trivială — acesta e modul default
 - Când independența reală între voci contează (schimbări subtile sau high-stakes)

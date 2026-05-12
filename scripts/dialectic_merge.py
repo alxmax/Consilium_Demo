@@ -20,6 +20,13 @@ script falls back to that voice's Pass-1 output and tags the entry with
 the script degrades cleanly to a single-pass payload with a warning
 flag, rather than crashing.
 
+If Pass-2 generator silently drops a Pass-1 candidate (omits it from
+its output without re-emitting it — neither compliant nor non-compliant),
+the candidate is recovered from Pass-1 data, tagged
+``pass2_status: "dropped_silently"`` on the merged entry, and listed in
+``revision_log.silently_dropped``. Without this recovery the candidate
+would vanish from merged output entirely — a silent data loss.
+
 Input format on stdin (JSON):
     {
       "pass1": {
@@ -189,10 +196,34 @@ def merge(payload: dict) -> dict:
             },
         })
 
+    # Recover candidates the Pass-2 generator dropped silently. Only triggers when
+    # Pass-2 generator was actually consulted — when the whole voice fell back to
+    # Pass-1, every candidate is already in merged_candidates from the loop above.
+    silently_dropped: list[str] = []
+    if pass2 is not None and not fallbacks["generator"]:
+        seen = {c["id"] for c in merged_candidates}
+        for cid, p1_cand in p1_gen_by_id.items():
+            if cid in seen:
+                continue
+            silently_dropped.append(cid)
+            p1_verdict = p1_ctrl_by_id.get(cid, {})
+            p1_risk = p1_cons_by_id.get(cid, {})
+            merged_candidates.append({
+                "id": cid,
+                "summary": p1_cand.get("summary", ""),
+                "scores": {
+                    "generator": _generator_score(p1_cand),
+                    "control": _voice_score_from_verdict(p1_verdict),
+                    "conservator": float(p1_risk.get("risk_score", 0.5)),
+                },
+                "pass2_status": "dropped_silently",
+            })
+
     revision_log = {
         "pass2_received": pass2 is not None,
         "fallback_to_pass1": fallbacks,
         "dissent_fallbacks": dissent_fallbacks,
+        "silently_dropped": silently_dropped,
         "diffs": {},
     }
     if pass2 is not None:
