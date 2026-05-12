@@ -23,6 +23,41 @@ def test_render_empty_entries_produces_skeleton():
     assert "0 entries" in html
 
 
+def test_render_single_legacy_entry_no_drill():
+    e = rfh.Entry(
+        date="2026-05-11",
+        context="audit-reduction",
+        chosen="nuke_orphans_and_stale_readme",
+        outcome="PEND",
+        note="5 cand, conf=0.63",
+        run_path=None,
+    )
+    html_out = rfh.render([e], runs_dir=ROOT / "runs")
+    assert "1 entries" in html_out
+    assert "2026-05-11" in html_out
+    assert "nuke_orphans_and_stale_readme" in html_out
+    assert "PEND" in html_out
+    assert 'class="outcome PEND"' in html_out
+    assert "no detailed run data" in html_out
+    assert 'class="entry"' in html_out
+    assert 'class="drill"' in html_out
+
+
+def test_render_escapes_html_in_user_text():
+    e = rfh.Entry(
+        date="2026-05-11",
+        context="<script>alert(1)</script>",
+        chosen="x",
+        outcome="OK",
+        note="& \"quoted\"",
+        run_path=None,
+    )
+    html_out = rfh.render([e], runs_dir=ROOT / "runs")
+    assert "<script>alert(1)</script>" not in html_out
+    assert "&lt;script&gt;" in html_out
+    assert "&amp;" in html_out
+
+
 def _run_tests():
     funcs = [v for k, v in globals().items() if k.startswith("test_") and callable(v)]
     failed = 0

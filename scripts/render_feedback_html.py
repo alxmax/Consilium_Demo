@@ -87,8 +87,35 @@ function toggleDrill(row){
 """
 
 
+def _esc(text: str) -> str:
+    return html.escape(text or "", quote=True)
+
+
+def _row_html(idx: int, e: Entry, drill_inner: str) -> str:
+    chev = "▸"
+    return (
+        f'<tr class="entry" onclick="toggleDrill(this)">'
+        f'<td class="chev">{chev}</td>'
+        f'<td class="date">{_esc(e.date)}</td>'
+        f'<td>{_esc(e.context)}</td>'
+        f'<td class="chosen">{_esc(e.chosen)}</td>'
+        f'<td class="outcome {_esc(e.outcome)}">{_esc(e.outcome)}</td>'
+        f'<td class="note">{_esc(e.note)}</td>'
+        f'</tr>\n'
+        f'<tr class="drill"><td colspan="6">{drill_inner}</td></tr>\n'
+    )
+
+
+def _legacy_stub() -> str:
+    return '<div class="stub">no detailed run data — older entry pre-runs/</div>'
+
+
 def render(entries: list[Entry], runs_dir: Path) -> str:
-    rows_html = ""
+    rows = []
+    for idx, e in enumerate(entries):
+        drill = _legacy_stub()  # drill-down filled in Task 3
+        rows.append(_row_html(idx, e, drill))
+    rows_html = "".join(rows)
     return (
         "<!doctype html>\n"
         "<meta charset=\"utf-8\">\n"
