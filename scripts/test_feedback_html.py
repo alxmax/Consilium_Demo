@@ -138,6 +138,44 @@ def test_parse_feedback_returns_empty_for_missing_file():
     assert feedback.parse_feedback(Path("/nonexistent/FEEDBACK.html")) == []
 
 
+def test_log_feedback_appends_html_entry():
+    import subprocess
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import feedback  # noqa: E402
+
+    with tempfile.TemporaryDirectory() as td:
+        feedback_path = Path(td) / "FEEDBACK.html"
+        # Pre-populate with one entry via render.
+        e0 = rfh.Entry(date="2026-05-01", context="pre", chosen="x",
+                       outcome="OK", note="seed")
+        feedback_path.write_text(rfh.render([e0], runs_dir=ROOT / "runs"), encoding="utf-8")
+
+        report = {
+            "success_criterion": "fix the test",
+            "chosen_approach": "approach_a",
+            "confidence": 0.81,
+            "telemetry": {"mode": "parallel"},
+            "deliberation_log": [{"step": "generator", "candidates": [{"id": "a"}, {"id": "b"}]}],
+        }
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "log_feedback.py"),
+             "--feedback", str(feedback_path),
+             "--outcome", "OK"],
+            input=json.dumps(report).encode("utf-8"),
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 0, f"stderr: {result.stderr.decode()}"
+
+        parsed = feedback.parse_feedback(feedback_path)
+        assert len(parsed) == 2, f"expected 2 entries (1 seed + 1 appended), got {len(parsed)}"
+        assert parsed[1]["chosen"] == "approach_a"
+        assert parsed[1]["outcome"] == "OK"
+
+
+import json  # noqa: E402 (used by the test above)
+
+
 def _run_tests():
     funcs = [v for k, v in globals().items() if k.startswith("test_") and callable(v)]
     failed = 0

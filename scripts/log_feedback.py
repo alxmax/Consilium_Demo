@@ -1,16 +1,12 @@
-"""Auto-append a one-line entry to FEEDBACK.md from a deliberation report.
+"""Auto-append an entry to FEEDBACK.html from a deliberation report.
 
 Reads a deliberation report (JSON) from stdin, derives the standard
-feedback line, and appends it to FEEDBACK.md (creating the file with a
-header if missing). Removes the friction of asking the user for the line
-at end of Step 6 — the agent calls this directly.
+feedback entry, and appends it to FEEDBACK.html (creating the file if
+missing). Removes the friction of asking the user for the entry at end
+of Step 6 — the agent calls this directly.
 
-Line format:
-    - YYYY-MM-DD | <context> | <chosen> | <outcome> | <note>[; override=<id>][; <user-note>]
-
-The leading `- ` is the markdown bullet that ENTRY_RE in feedback.py
-expects (and that priors.py inherits via parse_feedback). Skipping it
-makes auto-written entries invisible to the priors loop — so don't.
+Entry format:
+    {date, context, chosen, outcome, note} appended as <tr> to FEEDBACK.html.
 
 Auto-fill rules:
 - data    : today's date in ISO format
@@ -28,18 +24,18 @@ Auto-fill rules:
             is appended. When --user-note is non-empty, it is appended too.
 
 Pipe ``|`` and newlines inside text fields are stripped/replaced so the
-appended line stays parseable.
+appended entry stays parseable.
 
 Exits 1 if the report lacks success_criterion or chosen_approach (run
 validate_report.py first to catch shape issues earlier). Exits 2 on
-malformed JSON. Otherwise exits 0 and prints the appended line to stdout.
+malformed JSON. Otherwise exits 0 and prints the appended entry summary to stdout.
 
 CLI:
     cat runs/<file>.json | python scripts/log_feedback.py
     cat runs/<file>.json | python scripts/log_feedback.py --outcome OK
     cat runs/<file>.json | python scripts/log_feedback.py --outcome OVR \\
         --override-target alt_b --user-note "preferred safer rollback"
-    python scripts/log_feedback.py --feedback path/to/FEEDBACK.md < report.json
+    python scripts/log_feedback.py --feedback path/to/FEEDBACK.html < report.json
     python scripts/log_feedback.py --dry-run < report.json
 """
 
@@ -54,13 +50,7 @@ from pathlib import Path
 
 CONTEXT_MAX = 60
 NOTE_MAX = 80
-HEADER_LINES = (
-    "# FEEDBACK\n",
-    "#\n",
-    "# data | context | chosen | outcome | note\n",
-    "# outcome: OK | BAD | OVR (override) | PEND (pending)\n",
-    "\n",
-)
+HEADER_LINES = ()  # legacy MD header no longer used
 
 
 def _clean(text: str) -> str:
@@ -104,12 +94,12 @@ def derive_note(report: dict) -> str:
     )
 
 
-def build_line(
+def build_entry(
     report: dict,
     outcome: str = "PEND",
     override_target: str | None = None,
     user_note: str | None = None,
-) -> str:
+) -> dict:
     sc = report.get("success_criterion")
     if not isinstance(sc, str) or not sc.strip():
         raise ValueError("report missing non-empty success_criterion")
@@ -132,16 +122,51 @@ def build_line(
         extras.append(_clean(user_note))
     note = "; ".join([auto_note] + extras) if extras else auto_note
 
-    today = date.today().isoformat()
-    return f"- {today} | {truncate(sc, CONTEXT_MAX)} | {chosen_s} | {outcome} | {note}"
+    return {
+        "date": date.today().isoformat(),
+        "context": truncate(sc, CONTEXT_MAX),
+        "chosen": chosen_s,
+        "outcome": outcome,
+        "note": note,
+    }
 
 
-def append_line(feedback_path: Path, line: str) -> None:
-    is_new = not feedback_path.exists()
-    with open(feedback_path, "a", encoding="utf-8", newline="\n") as f:
-        if is_new:
-            f.writelines(HEADER_LINES)
-        f.write(line + "\n")
+def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None:
+    """Round-trip the HTML: parse existing rows, append, re-render."""
+    import importlib.util
+    here = Path(__file__).resolve().parent
+    import sys as _sys
+
+    feedback_spec = importlib.util.spec_from_file_location("max_agent_feedback", here / "feedback.py")
+    assert feedback_spec and feedback_spec.loader
+    feedback_mod = importlib.util.module_from_spec(feedback_spec)
+    _sys.modules["max_agent_feedback"] = feedback_mod
+    feedback_spec.loader.exec_module(feedback_mod)
+
+    render_spec = importlib.util.spec_from_file_location("max_agent_render", here / "render_feedback_html.py")
+    assert render_spec and render_spec.loader
+    render_mod = importlib.util.module_from_spec(render_spec)
+    _sys.modules["max_agent_render"] = render_mod
+    render_spec.loader.exec_module(render_mod)
+
+    existing = feedback_mod.parse_feedback(feedback_path)
+    # parse_feedback returns dicts WITHOUT run_path (not persisted in HTML cells).
+    # On rerender, drill-down for existing rows would degrade to legacy stub unless
+    # we keep their original drill HTML. Simplest faithful approach: re-derive
+    # run_path from a sidecar JSON map if present; otherwise stub. For Phase 1
+    # we accept stub for legacy rows — the migrate script handles initial population.
+    entries = [render_mod.Entry(**row, run_path=None) for row in existing]
+    new_entry = render_mod.Entry(
+        date=entry["date"],
+        context=entry["context"],
+        chosen=entry["chosen"],
+        outcome=entry["outcome"],
+        note=entry["note"],
+        run_path=run_path,
+    )
+    entries.append(new_entry)
+    runs_dir = feedback_path.parent / "runs"
+    feedback_path.write_text(render_mod.render(entries, runs_dir), encoding="utf-8")
 
 
 def _force_utf8_streams() -> None:
@@ -156,24 +181,17 @@ def _force_utf8_streams() -> None:
 def main(argv: list[str] | None = None) -> int:
     _force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.md (default: ./FEEDBACK.md)")
-    ap.add_argument("--dry-run", action="store_true", help="print line to stdout, don't write file")
+    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: ./FEEDBACK.html)")
+    ap.add_argument("--dry-run", action="store_true", help="print summary, don't write file")
     ap.add_argument(
         "--outcome",
         choices=("OK", "BAD", "OVR", "PEND"),
         default="PEND",
         help="outcome to record (default: PEND; set OK/OVR after confidence-gated user prompt)",
     )
-    ap.add_argument(
-        "--override-target",
-        default=None,
-        help="alt_id when --outcome=OVR; ignored otherwise",
-    )
-    ap.add_argument(
-        "--user-note",
-        default=None,
-        help="optional user-supplied note appended to auto-note",
-    )
+    ap.add_argument("--override-target", default=None, help="alt_id when --outcome=OVR")
+    ap.add_argument("--user-note", default=None, help="optional user-supplied note appended to auto-note")
+    ap.add_argument("--run-path", default=None, help="relative path to runs/*.json for drill-down (e.g. runs/2026-05-12_foo.json)")
     args = ap.parse_args(argv)
 
     try:
@@ -186,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        line = build_line(
+        entry = build_entry(
             report,
             outcome=args.outcome,
             override_target=args.override_target,
@@ -197,10 +215,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if not args.dry_run:
-        feedback_path = Path(args.feedback) if args.feedback else Path.cwd() / "FEEDBACK.md"
-        append_line(feedback_path, line)
+        feedback_path = Path(args.feedback) if args.feedback else Path.cwd() / "FEEDBACK.html"
+        append_entry(feedback_path, entry, args.run_path)
 
-    print(line)
+    print(f"{entry['date']} | {entry['context']} | {entry['chosen']} | {entry['outcome']} | {entry['note']}")
     return 0
 
 
