@@ -46,6 +46,8 @@ td.outcome{font-weight:600;text-align:center;white-space:nowrap;font-size:12px;l
 td.date{white-space:nowrap;color:var(--fg-dim);font-variant-numeric:tabular-nums}
 td.chosen{font-family:Consolas,Menlo,monospace;font-size:12px;color:var(--mono)}
 td.note{color:var(--fg-soft);font-size:12px}
+td.tokens{font-family:Consolas,Menlo,monospace;font-size:12px;color:var(--fg-dim);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.tokens.na{color:var(--border)}
 td.chev{width:18px;color:var(--fg-dim);text-align:center;font-family:monospace}
 tr.entry.open td.chev{color:var(--accent)}
 tr.drill{display:none;background:var(--bg-drill)}
@@ -91,8 +93,9 @@ def _esc(text: str) -> str:
     return html.escape(text or "", quote=True)
 
 
-def _row_html(idx: int, e: Entry, drill_inner: str) -> str:
+def _row_html(idx: int, e: Entry, drill_inner: str, tokens_str: str) -> str:
     chev = "▸"
+    tokens_cls = "tokens" if tokens_str != "—" else "tokens na"
     return (
         f'<tr class="entry" onclick="toggleDrill(this)">'
         f'<td class="chev">{chev}</td>'
@@ -100,10 +103,42 @@ def _row_html(idx: int, e: Entry, drill_inner: str) -> str:
         f'<td>{_esc(e.context)}</td>'
         f'<td class="chosen">{_esc(e.chosen)}</td>'
         f'<td class="outcome {_esc(e.outcome)}">{_esc(e.outcome)}</td>'
+        f'<td class="{tokens_cls}">{tokens_str}</td>'
         f'<td class="note">{_esc(e.note)}</td>'
         f'</tr>\n'
-        f'<tr class="drill"><td colspan="6">{drill_inner}</td></tr>\n'
+        f'<tr class="drill"><td colspan="7">{drill_inner}</td></tr>\n'
     )
+
+
+def _total_tokens(run: dict | None) -> str:
+    """Sum tokens_in + tokens_out across all voices in run.telemetry.voices.
+
+    Returns compact format: integer below 1000, X.Yk for 1000-9999,
+    rounded Nk for >=10000. Returns '—' if telemetry is missing/empty.
+    """
+    if not run:
+        return "—"
+    voices = ((run.get("telemetry") or {}).get("voices") or {})
+    if not voices:
+        return "—"
+    total = 0
+    for v in voices.values():
+        if not isinstance(v, dict):
+            continue
+        ti = v.get("tokens_in") or 0
+        to = v.get("tokens_out") or 0
+        if isinstance(ti, (int, float)):
+            total += int(ti)
+        if isinstance(to, (int, float)):
+            total += int(to)
+    if total <= 0:
+        return "—"
+    if total < 1000:
+        return str(total)
+    formatted = f"{total/1000:.1f}"
+    if formatted.endswith(".0"):
+        formatted = formatted[:-2]
+    return f"{formatted}k"
 
 
 def _risk_class(score: float) -> str:
@@ -217,7 +252,8 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
                 except json.JSONDecodeError:
                     run_dict = None
         drill = render_drill(run_dict, e.chosen) if run_dict else _legacy_stub()
-        rows.append(_row_html(idx, e, drill))
+        tokens_str = _total_tokens(run_dict)
+        rows.append(_row_html(idx, e, drill, tokens_str))
     rows_html = "".join(rows)
     return (
         "<!doctype html>\n"
@@ -227,7 +263,7 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
         "<h2>Consilium feedback</h2>\n"
         f"<div class=\"sub\">{len(entries)} entries · skills/consilium/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
         "<table>\n"
-        "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Note</th></tr></thead>\n"
+        "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Tokens</th><th>Note</th></tr></thead>\n"
         f"<tbody>\n{rows_html}</tbody>\n"
         "</table>\n"
         f"<script>{JS}</script>\n"
