@@ -37,6 +37,7 @@ Produce **3 to 5 candidate approaches** that could address the goal. For each ca
   Otherwise (unambiguous goal AND bounded blast radius), skip it and emit `"adversarial_skipped": "<one-line reason>"` as a sibling field next to `candidates` in your output. Downstream voices interpret an absent adversarial as deliberate, not missing.
 - Candidates must be **meaningfully different** — not three flavors of the same idea. Vary on at least one axis: scope, abstraction level, timing, or mechanism.
 - Don't pre-filter for "feasibility" or "risk". The next two voices will handle that.
+- **Goal-fit articulation in rationale.** For each candidate, `rationale` must include a one-clause answer to: *"How does this advance `success_criterion`?"* For `do_nothing`, explicitly articulate what part of the goal goes unaddressed — or, rarely, why inaction satisfies the goal (e.g., verification target already correct).
 
 ## Output format
 
