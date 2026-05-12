@@ -42,6 +42,7 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from datetime import date
@@ -51,6 +52,30 @@ from pathlib import Path
 CONTEXT_MAX = 60
 NOTE_MAX = 80
 HEADER_LINES = ()  # legacy MD header no longer used
+RUN_PATH_MAP = ".run_path_map.json"
+
+
+def _fingerprint(date_str: str, chosen: str, context: str) -> str:
+    """16-char hex fingerprint for a feedback entry (used as sidecar map key)."""
+    raw = f"{date_str}|{chosen}|{context[:30]}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
+def _load_map(runs_dir: Path) -> dict[str, str]:
+    map_path = runs_dir / RUN_PATH_MAP
+    if not map_path.exists():
+        return {}
+    try:
+        return json.loads(map_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_map(runs_dir: Path, run_map: dict[str, str]) -> None:
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    (runs_dir / RUN_PATH_MAP).write_text(
+        json.dumps(run_map, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
 
 def _clean(text: str) -> str:
@@ -150,12 +175,17 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None
     render_spec.loader.exec_module(render_mod)
 
     existing = feedback_mod.parse_feedback(feedback_path)
-    # parse_feedback returns dicts WITHOUT run_path (not persisted in HTML cells).
-    # On rerender, drill-down for existing rows would degrade to legacy stub unless
-    # we keep their original drill HTML. Simplest faithful approach: re-derive
-    # run_path from a sidecar JSON map if present; otherwise stub. For Phase 1
-    # we accept stub for legacy rows — the migrate script handles initial population.
-    entries = [render_mod.Entry(**row, run_path=None) for row in existing]
+    runs_dir = feedback_path.parent / "runs"
+    run_map = _load_map(runs_dir)
+
+    # Restore run_path for existing rows from sidecar map so drill-down survives re-renders.
+    entries = [
+        render_mod.Entry(
+            **row,
+            run_path=run_map.get(_fingerprint(row["date"], row["chosen"], row["context"])),
+        )
+        for row in existing
+    ]
     new_entry = render_mod.Entry(
         date=entry["date"],
         context=entry["context"],
@@ -165,7 +195,13 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None
         run_path=run_path,
     )
     entries.append(new_entry)
-    runs_dir = feedback_path.parent / "runs"
+
+    # Persist run_path for the new entry so future re-renders can recover it.
+    if run_path:
+        fp = _fingerprint(entry["date"], entry["chosen"], entry["context"])
+        run_map[fp] = run_path
+        _save_map(runs_dir, run_map)
+
     feedback_path.write_text(render_mod.render(entries, runs_dir), encoding="utf-8")
 
 

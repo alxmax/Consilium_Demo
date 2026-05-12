@@ -103,6 +103,13 @@ def _generator_score(candidate: dict) -> float:
     return 1.0
 
 
+def _is_dissent_compliant(item: dict) -> bool:
+    """Return True if a Pass-2 voice item has revision or maintained field (non-empty)."""
+    revision = item.get("revision")
+    maintained = item.get("maintained")
+    return bool(revision) or bool(maintained)
+
+
 def _diff_candidates(p1: list[dict], p2: list[dict]) -> list[dict]:
     """Per-id field diff between two candidate lists."""
     p1_by_id = _items_by_id(p1)
@@ -136,6 +143,27 @@ def merge(payload: dict) -> dict:
         final[voice] = out
         fallbacks[voice] = fell_back
 
+    # Pass-1 lookups kept for per-candidate dissent fallback
+    p1_gen_by_id = _items_by_id((pass1.get("generator") or {}).get("candidates", []))
+    p1_ctrl_by_id = _items_by_id((pass1.get("control") or {}).get("verdicts", []))
+    p1_cons_by_id = _items_by_id((pass1.get("conservator") or {}).get("scores", []))
+
+    # Per-voice, per-candidate dissent fallback: pass2 item lacks both revision and maintained
+    dissent_fallbacks: dict[str, list[str]] = {}
+    if pass2 is not None:
+        for voice in VOICES:
+            if fallbacks[voice]:
+                continue  # entire voice already fell back to pass1
+            key = VOICE_KEY[voice]
+            p2_items = (pass2.get(voice) or {}).get(key, [])
+            bad_ids = [
+                item["id"]
+                for item in p2_items
+                if item.get("id") and not _is_dissent_compliant(item)
+            ]
+            if bad_ids:
+                dissent_fallbacks[voice] = bad_ids
+
     gen_candidates = final["generator"].get("candidates", [])
     ctrl_verdicts = _items_by_id(final["control"].get("verdicts", []))
     cons_scores = _items_by_id(final["conservator"].get("scores", []))
@@ -145,13 +173,17 @@ def merge(payload: dict) -> dict:
         cid = cand.get("id")
         if not cid:
             continue
-        verdict = ctrl_verdicts.get(cid, {})
-        risk_entry = cons_scores.get(cid, {})
+
+        # Use pass1 data for voices where this candidate had a dissent fallback
+        gen_cand = p1_gen_by_id.get(cid, cand) if cid in dissent_fallbacks.get("generator", []) else cand
+        verdict = p1_ctrl_by_id.get(cid, {}) if cid in dissent_fallbacks.get("control", []) else ctrl_verdicts.get(cid, {})
+        risk_entry = p1_cons_by_id.get(cid, {}) if cid in dissent_fallbacks.get("conservator", []) else cons_scores.get(cid, {})
+
         merged_candidates.append({
             "id": cid,
-            "summary": cand.get("summary", ""),
+            "summary": gen_cand.get("summary", ""),
             "scores": {
-                "generator": _generator_score(cand),
+                "generator": _generator_score(gen_cand),
                 "control": _voice_score_from_verdict(verdict),
                 "conservator": float(risk_entry.get("risk_score", 0.5)),
             },
@@ -160,6 +192,7 @@ def merge(payload: dict) -> dict:
     revision_log = {
         "pass2_received": pass2 is not None,
         "fallback_to_pass1": fallbacks,
+        "dissent_fallbacks": dissent_fallbacks,
         "diffs": {},
     }
     if pass2 is not None:

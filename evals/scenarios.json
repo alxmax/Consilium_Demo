@@ -481,5 +481,71 @@
     },
     "expect_exit": 1,
     "expect_stderr_contains": ["telemetry.mode required"]
+  },
+  {
+    "name": "dialectic_merge/dissent_both_absent: candidate missing revision and maintained triggers dissent fallback",
+    "tool": "scripts/dialectic_merge.py",
+    "stdin_json": {
+      "pass1": {
+        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+      },
+      "pass2": {
+        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "revision_log": {
+        "dissent_fallbacks": {"generator": ["a"], "control": ["a"], "conservator": ["a"]}
+      }
+    }
+  },
+  {
+    "name": "dialectic_merge/dissent_only_maintained: candidate with maintained field is compliant",
+    "tool": "scripts/dialectic_merge.py",
+    "stdin_json": {
+      "pass1": {
+        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+      },
+      "pass2": {
+        "generator":   {"candidates": [{"id": "a", "summary": "v1", "maintained": {"peer_claim": "Control: valid", "dissent": "No change needed."}}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": [], "maintained": {"peer_claim": "Generator confirmed sketch", "dissent": "No change."}}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3, "maintained": {"peer_claim": "Control: valid, no issues", "dissent": "Risk unchanged."}}]}
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "revision_log": {
+        "dissent_fallbacks": {}
+      }
+    }
+  },
+  {
+    "name": "dialectic_merge/dissent_only_revision: candidate with revision field is compliant",
+    "tool": "scripts/dialectic_merge.py",
+    "stdin_json": {
+      "pass1": {
+        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+      },
+      "pass2": {
+        "generator":   {"candidates": [{"id": "a", "summary": "v2", "revision": {"what_changed": "Updated sketch.", "peer_evidence": "Control flagged type mismatch."}}]},
+        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": [], "revision": {"what_changed": "Removed stale issue.", "peer_evidence": "Generator fixed type in sketch."}}]},
+        "conservator": {"scores":     [{"id": "a", "risk_score": 0.2, "revision": {"what_changed": "Reduced regression_risk by 0.1.", "peer_evidence": "Control added tests_to_write covering regression class."}}]}
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "revision_log": {
+        "dissent_fallbacks": {}
+      }
+    }
   }
 ]
