@@ -503,7 +503,10 @@
         (shape + telemetry.mode + deliberation_log), iar <code>log_feedback.py</code> appendează
         outcome-ul în <code>FEEDBACK.md</code> gate-uit pe confidence: <b>auto-OK</b> la
         <code>confidence &ge; 0.7</code>, prompt user pentru <b>OVR</b>/no/skip la
-        <code>confidence &lt; 0.7</code>. La începutul rulării următoare, <code>priors.py</code>
+        <code>confidence &lt; 0.7</code>. Dacă <code>confidence</code> e <code>null</code>
+        (toți candidates vetoiți), <code>log_feedback.py</code> rulează fără flag (default
+        <b>PEND</b>) — veto total = no decision = no outcome to rate.
+        La începutul rulării următoare, <code>priors.py</code>
         citește <code>runs/</code> + <code>FEEDBACK.md</code> și încarcă priorii soft
         (override_rate, veto_rate, top keywords) plus <code>stale_pendings</code> — entries
         PEND mai vechi de 7 zile pe care agentul le prezintă user-ului pentru închidere
