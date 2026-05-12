@@ -1,7 +1,7 @@
 # Progress Voices — Design (F2 + F3, drop F1)
 
 **Date:** 2026-05-12
-**Topic:** Reduce stagnation bias and minimum-effort bias in max-agent voice prompts.
+**Topic:** Reduce stagnation bias and minimum-effort bias in Consilium voice prompts.
 **Source deliberations:** `runs/2026-05-12_1820_progress-voices-selfreview.json`, `runs/2026-05-12_1900_progress-voices-keep2.json`.
 
 ## Problem
@@ -100,7 +100,7 @@ No JSON schema changes. Voice outputs retain identical keys. Behavioral deltas:
 
 ### Smoke test (post-implementation)
 
-Run `/max-agent` on the very branch implementing this design (self-improvement loop per CLAUDE.md). Expect:
+Run `/consilium` on the very branch implementing this design (self-improvement loop per CLAUDE.md). Expect:
 - chosen != `do_nothing` on this action-shaped goal (implement F2+F3)
 - confidence ≥ 0.7 OR principled override path with low score-gap
 
@@ -110,7 +110,7 @@ Run `/max-agent` on the very branch implementing this design (self-improvement l
 2. Restore `prompts/conservator.md` and `prompts/control.md` from main; restore `prompts/generator.md` if goal-fit clause was added there.
 3. If SKILL.md workflow text references new gate semantics, restore those too.
 4. `python scripts/run_evals.py` to confirm green.
-5. Run `/max-agent` on `runs/2026-05-12_1640_public-readiness.json` input and `runs/2026-05-12_1700_audit-last3.json` input to confirm `chosen_approach` reverts to prior values.
+5. Run `/consilium` on `runs/2026-05-12_1640_public-readiness.json` input and `runs/2026-05-12_1700_audit-last3.json` input to confirm `chosen_approach` reverts to prior values.
 6. Add `FEEDBACK.md` line `BAD | progress-voices-keep2 | drop_f1_keep_f2_f3 | reverted | <reason>` for `priors.py` signal in subsequent deliberations.
 
 ## Risks and Mitigations
@@ -120,7 +120,7 @@ Run `/max-agent` on the very branch implementing this design (self-improvement l
 | **Overfitting on n=2** (3 sessions agreed razor-thin is the pattern, but evidence base is 2 explicit + 2 derived runs out of 12 archived) | Track `FEEDBACK.md` outcomes on next 5-10 runs post-implementation. If `override_rate` doesn't drop materially relative to baseline, revert per recipe above. |
 | **F3 gate too aggressive** (rejects legitimate `do_nothing` on misjudged action-shape) | Documented exception for verification-only goals. SKILL.md Step 6 confidence-gate prompts user for override when below 0.7 — preserves manual escape hatch. |
 | **F2 ratchet game** (Generator name-drops tests/rollback to game the reducer) | Conservator's `notes` must cite which of (a)/(b)/(c) triggered the reduction. `priors.py` keyword scan can catch repeated game pattern across runs. |
-| **Authoritative-zone touch** (CLAUDE.md regression_risk warning on `prompts/*.md`) | Single branch + single amended commit per CLAUDE.md. Smoke test = `/max-agent` on the change itself. F1 dropped specifically to reduce blast radius. |
+| **Authoritative-zone touch** (CLAUDE.md regression_risk warning on `prompts/*.md`) | Single branch + single amended commit per CLAUDE.md. Smoke test = `/consilium` on the change itself. F1 dropped specifically to reduce blast radius. |
 | **F3 fallback path under-tested** (`_no_viable_candidate` only triggers on degenerate input — never seen in 12 historical runs) | Aggregator already handles `chosen: null` (all-vetoed case) gracefully. `_no_viable_candidate` is just a typed signal of that state; no aggregator change required. |
 
 ## Out of Scope
@@ -142,7 +142,7 @@ Per brainstorming flow, next step is `superpowers:writing-plans` to produce an i
 
 - Branch creation (`feat/progress-voices-keep2`)
 - The three prompt edits (~18 lines)
-- Self-improvement `/max-agent` run as smoke test (recorded in `runs/`)
+- Self-improvement `/consilium` run as smoke test (recorded in `runs/`)
 - `FEEDBACK.md` outcome logging post-smoke-test
 - User-driven PR (no `gh pr create` per repo convention)
 

@@ -1,9 +1,9 @@
 ---
-name: max-agent
+name: consilium
 description: Evaluate code changes through Generator/Control/Conservator deliberation. Use when reviewing PRs, planning refactors, assessing risk of proposed changes, before committing non-trivial changes, or when uncertain between multiple implementation approaches.
 ---
 
-# Max Agent — Code Deliberation Skill
+# Consilium — Code Deliberation Skill
 
 Pattern de deliberare multi-perspectivă pentru orice modificare de cod. Trei voci independente colaborează pentru a evalua o schimbare:
 
@@ -90,7 +90,7 @@ python scripts/scope_gate.py --ref main # main..HEAD
 
 Constitution Principle #4 rămâne — `success_criterion` și `verification` sunt obligatorii și pe raportul skipped (validate_report.py le verifică, plus `skip_reason` non-gol).
 
-Defaults: `max_files=1`, `max_lines=15`, plus blocklist conservativ (`auth/`, `security/`, `migrations/`, `.github/workflows/`, `**/secrets*`, `.env*`, `Dockerfile`, `*.tf`, fișiere de dependențe). Scopul: o linie schimbată în `migrations/` nu sare gate-ul, oricât de mic e diff-ul. Override prin `scope_gate.json` în root cu schema `{max_files, max_lines, blocklist}` — vezi docstring-ul script-ului. Escape hatch: `MAX_AGENT_FORCE_FULL=1` în environment forțează `should_skip=false` indiferent de scope (când vrei deliberare oricum).
+Defaults: `max_files=1`, `max_lines=15`, plus blocklist conservativ (`auth/`, `security/`, `migrations/`, `.github/workflows/`, `**/secrets*`, `.env*`, `Dockerfile`, `*.tf`, fișiere de dependențe). Scopul: o linie schimbată în `migrations/` nu sare gate-ul, oricât de mic e diff-ul. Override prin `scope_gate.json` în root cu schema `{max_files, max_lines, blocklist}` — vezi docstring-ul script-ului. Escape hatch: `CONSILIUM_FORCE_FULL=1` în environment forțează `should_skip=false` indiferent de scope (când vrei deliberare oricum).
 
 Gate-ul **eșuează deschis**: dacă probe-ul git crapă (no repo, bad ref), `should_skip: false` și treci la Generator. Mai bine deliberezi în plus decât sari în gol.
 
@@ -263,7 +263,7 @@ Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat; tipărește deta
 
 ## Skill maintenance
 
-Următoarele se aplică doar când lucrezi *la* skill (editezi `scripts/*.py`, `prompts/*.md`, `SKILL.md`), **nu** la fiecare deliberare. Sări peste secțiune dacă doar folosești `/max-agent` pe un task.
+Următoarele se aplică doar când lucrezi *la* skill (editezi `scripts/*.py`, `prompts/*.md`, `SKILL.md`), **nu** la fiecare deliberare. Sări peste secțiune dacă doar folosești `/consilium` pe un task.
 
 ### Eval harness (la editarea oricărui script deterministic)
 Când modifici `aggregator.py`, `confidence.py`, `validate_report.py`, `strip_context.py` sau `dialectic_merge.py`, rulează:
@@ -304,7 +304,7 @@ Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit c
 - `scripts/usage.py` — rollup telemetry across `runs/*.json` (Skill maintenance)
 - `scripts/log_feedback.py` — auto-append linie în FEEDBACK.html la finalul Step 6 (outcome=PEND, user-ul închide ulterior)
 - `scripts/build_report.py` — asamblează raportul canonic dintr-un bundle de output-uri intermediare (Step 6); elimină clasa de bug-uri "report shape drift"
-- `agents/max-subagent.md` — definiție de subagent Claude Code pentru invocare prin `Agent(subagent_type="max-subagent", ...)` în context izolat. Delegă la SKILL.md (non-interactive overrides pentru Step 0/1/6). Install: symlink la `~/.claude/agents/max-subagent.md` (vezi fișierul).
+- `agents/consilium-subagent.md` — definiție de subagent Claude Code pentru invocare prin `Agent(subagent_type="consilium-subagent", ...)` în context izolat. Delegă la SKILL.md (non-interactive overrides pentru Step 0/1/6). Install: symlink la `~/.claude/agents/consilium-subagent.md` (vezi fișierul).
 
 ## Feedback loop (artefacte)
 

@@ -1,13 +1,13 @@
 ---
-name: max-subagent
+name: consilium-subagent
 description: Dialectical code-change review (Generator/Control/Conservator). Returns a canonical runs/<file>.json report. Use when an orchestrator needs an isolated-context deliberation on a diff, refactor, or proposed change without polluting its own context with intermediate voice output.
 tools: Read, Bash, Grep, Glob
 model: sonnet
 ---
 
-# Max Subagent
+# Consilium Subagent
 
-Isolated-context wrapper over the `max-agent` skill. Runs the full 6-step deliberation in a fresh context and returns the canonical JSON report as your final assistant message. The skill (`SKILL.md`) remains the single source of truth for workflow; this file only specifies the deviations forced by subagent execution.
+Isolated-context wrapper over the `consilium` skill. Runs the full 6-step deliberation in a fresh context and returns the canonical JSON report as your final assistant message. The skill (`SKILL.md`) remains the single source of truth for workflow; this file only specifies the deviations forced by subagent execution.
 
 ## Working directory
 
@@ -15,18 +15,18 @@ Your CWD on dispatch is the orchestrator's project, **not** the skill install di
 
 ```bash
 # Pick whichever resolves on your platform; check both.
-export MAX_AGENT_PATH="$HOME/.claude/skills/max-agent"          # Unix
-export MAX_AGENT_PATH="$USERPROFILE/.claude/skills/max-agent"   # Windows (Git Bash)
-test -f "$MAX_AGENT_PATH/SKILL.md" || { echo "max-agent skill not found at $MAX_AGENT_PATH" >&2; exit 1; }
+export CONSILIUM_PATH="$HOME/.claude/skills/consilium"          # Unix
+export CONSILIUM_PATH="$USERPROFILE/.claude/skills/consilium"   # Windows (Git Bash)
+test -f "$CONSILIUM_PATH/SKILL.md" || { echo "consilium skill not found at $CONSILIUM_PATH" >&2; exit 1; }
 ```
 
-All subsequent script calls use `cd "$MAX_AGENT_PATH" && python scripts/<name>.py ...`. Prompt reads use `"$MAX_AGENT_PATH/prompts/<voice>.md"`.
+All subsequent script calls use `cd "$CONSILIUM_PATH" && python scripts/<name>.py ...`. Prompt reads use `"$CONSILIUM_PATH/prompts/<voice>.md"`.
 
-If `MAX_AGENT_PATH/SKILL.md` is missing, return a single-line error JSON `{"error": "max-agent skill not installed at expected path", "expected": "<path>"}` and stop — do not fabricate a report.
+If `CONSILIUM_PATH/SKILL.md` is missing, return a single-line error JSON `{"error": "consilium skill not installed at expected path", "expected": "<path>"}` and stop — do not fabricate a report.
 
 ## Authoritative workflow
 
-Follow `$MAX_AGENT_PATH/SKILL.md` steps 0 through 6 exactly. The deviations below override SKILL.md only where conflict — everything else applies as written.
+Follow `$CONSILIUM_PATH/SKILL.md` steps 0 through 6 exactly. The deviations below override SKILL.md only where conflict — everything else applies as written.
 
 ## Subagent-specific rules
 
@@ -49,7 +49,7 @@ The orchestrator's prompt should include:
 
 - A diff, file paths, or natural-language description of the change under review.
 - A `success_criterion` candidate (or context sufficient for you to formulate one).
-- Optional: `verification` hint, `MAX_AGENT_PATH` override, `mode` (ignored — see rule 1).
+- Optional: `verification` hint, `CONSILIUM_PATH` override, `mode` (ignored — see rule 1).
 
 If the input is too vague to formulate a testable `success_criterion`, emit clarity branches as Generator candidates (rule 2) rather than asking.
 
@@ -65,29 +65,29 @@ If the input is too vague to formulate a testable `success_criterion`, emit clar
 From an orchestrator session in any repo:
 
 ```
-Agent(subagent_type="max-subagent",
+Agent(subagent_type="consilium-subagent",
       prompt="Review the staged diff. Success criterion: <one testable sentence>.")
 ```
 
 Pass criteria:
 1. Final message parses as JSON.
 2. `python scripts/validate_report.py < <that_json>` exits 0.
-3. Exactly one new file appears under `$MAX_AGENT_PATH/runs/` matching `YYYY-MM-DD_HHMM_*.json` with contents equal to the final message.
+3. Exactly one new file appears under `$CONSILIUM_PATH/runs/` matching `YYYY-MM-DD_HHMM_*.json` with contents equal to the final message.
 4. Low-confidence input (3+ close candidates) does not stall — completes within bounded turn count, outcome=PEND in `FEEDBACK.md`.
 
 ## Install
 
-This file is part of the `max-agent` repo. To make it discoverable by Claude Code, symlink it into your user agents directory:
+This file is part of the `consilium` repo. To make it discoverable by Claude Code, symlink it into your user agents directory:
 
 ```powershell
 # Windows (PowerShell, junction — no admin needed)
-New-Item -ItemType Junction -Path $HOME\.claude\agents\max-subagent.md `
-                            -Target $HOME\dev\max-agent\agents\max-subagent.md
+New-Item -ItemType Junction -Path $HOME\.claude\agents\consilium-subagent.md `
+                            -Target $HOME\dev\consilium\agents\consilium-subagent.md
 ```
 
 ```bash
 # Unix
-ln -s ~/dev/max-agent/agents/max-subagent.md ~/.claude/agents/max-subagent.md
+ln -s ~/dev/consilium/agents/consilium-subagent.md ~/.claude/agents/consilium-subagent.md
 ```
 
 Or copy the file in place of the symlink if you prefer.

@@ -137,16 +137,16 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None
     here = Path(__file__).resolve().parent
     import sys as _sys
 
-    feedback_spec = importlib.util.spec_from_file_location("max_agent_feedback", here / "feedback.py")
+    feedback_spec = importlib.util.spec_from_file_location("consilium_feedback", here / "feedback.py")
     assert feedback_spec and feedback_spec.loader
     feedback_mod = importlib.util.module_from_spec(feedback_spec)
-    _sys.modules["max_agent_feedback"] = feedback_mod
+    _sys.modules["consilium_feedback"] = feedback_mod
     feedback_spec.loader.exec_module(feedback_mod)
 
-    render_spec = importlib.util.spec_from_file_location("max_agent_render", here / "render_feedback_html.py")
+    render_spec = importlib.util.spec_from_file_location("consilium_render", here / "render_feedback_html.py")
     assert render_spec and render_spec.loader
     render_mod = importlib.util.module_from_spec(render_spec)
-    _sys.modules["max_agent_render"] = render_mod
+    _sys.modules["consilium_render"] = render_mod
     render_spec.loader.exec_module(render_mod)
 
     existing = feedback_mod.parse_feedback(feedback_path)

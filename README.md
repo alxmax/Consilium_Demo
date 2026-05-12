@@ -1,6 +1,6 @@
-# Max Agent
+# Consilium
 
-Pattern de deliberare multi-perspectivă pentru evaluarea modificărilor de cod. Skill pentru Claude Code (identifier: `max-agent`) care folosește trei voci independente:
+Pattern de deliberare multi-perspectivă pentru evaluarea modificărilor de cod. Skill pentru Claude Code (identifier: `consilium`) care folosește trei voci independente:
 
 - **Generator** (creativ) — propune alternative
 - **Control** (analitic) — verifică corectitudine
@@ -19,9 +19,9 @@ Pattern de deliberare multi-perspectivă pentru evaluarea modificărilor de cod.
 ### Linux / macOS
 
 ```bash
-git clone https://github.com/alxmax/Max_Skill.git ~/dev/max-agent
+git clone https://github.com/alxmax/Consilium.git ~/dev/consilium
 mkdir -p ~/.claude/skills
-ln -s ~/dev/max-agent ~/.claude/skills/max-agent
+ln -s ~/dev/consilium ~/.claude/skills/consilium
 ```
 
 ### Windows (PowerShell)
@@ -29,29 +29,29 @@ ln -s ~/dev/max-agent ~/.claude/skills/max-agent
 Junction (recomandat — nu cere admin):
 
 ```powershell
-git clone https://github.com/alxmax/Max_Skill.git $HOME\dev\max-agent
+git clone https://github.com/alxmax/Consilium.git $HOME\dev\consilium
 New-Item -ItemType Directory -Force -Path $HOME\.claude\skills
-New-Item -ItemType Junction -Path $HOME\.claude\skills\max-agent -Target $HOME\dev\max-agent
+New-Item -ItemType Junction -Path $HOME\.claude\skills\consilium -Target $HOME\dev\consilium
 ```
 
 Sau symlink (PowerShell ca Administrator):
 
 ```powershell
-New-Item -ItemType SymbolicLink -Path $HOME\.claude\skills\max-agent -Target $HOME\dev\max-agent
+New-Item -ItemType SymbolicLink -Path $HOME\.claude\skills\consilium -Target $HOME\dev\consilium
 ```
 
 ## Verifică instalarea
 
 ```bash
-ls -la ~/.claude/skills/max-agent/SKILL.md
+ls -la ~/.claude/skills/consilium/SKILL.md
 ```
 
-Apoi în Claude Code (sesiune nouă): `Review the last commit using the max-agent skill`.
+Apoi în Claude Code (sesiune nouă): `Review the last commit using the consilium skill`.
 
 ## Structură
 
 ```
-max-agent/
+consilium/
 ├── SKILL.md             # YAML frontmatter + workflow
 ├── README.md
 ├── FEEDBACK.md          # jurnal manual de uz real

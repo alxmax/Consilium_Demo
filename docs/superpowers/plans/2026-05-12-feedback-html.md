@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the Markdown feedback journal at `skills/max-agent/FEEDBACK.md` with a dark-themed `FEEDBACK.html` table that supports row-level drill-down into the corresponding `runs/*.json` voice outputs, while keeping `priors.py` / `feedback.py` / `log_feedback.py` working against the new format.
+**Goal:** Replace the Markdown feedback journal at `skills/consilium/FEEDBACK.md` with a dark-themed `FEEDBACK.html` table that supports row-level drill-down into the corresponding `runs/*.json` voice outputs, while keeping `priors.py` / `feedback.py` / `log_feedback.py` working against the new format.
 
 **Architecture:** Add a new pure-render module `scripts/render_feedback_html.py` (entries list → HTML string). Modify `feedback.py` parser to read `<tr class="entry">` rows from HTML. Modify `log_feedback.py` to round-trip through render. Add a one-shot migration script. `runs/*.json` schema unchanged; drill-down content is statically embedded at render time. Spec: `docs/superpowers/specs/2026-05-12-feedback-html-design.md`.
 
@@ -60,7 +60,7 @@ import render_feedback_html as rfh  # noqa: E402
 def test_render_empty_entries_produces_skeleton():
     html = rfh.render(entries=[], runs_dir=ROOT / "runs")
     assert "<!doctype html>" in html
-    assert "max-agent feedback" in html
+    assert "consilium feedback" in html
     assert "<tbody>" in html and "</tbody>" in html
     assert "0 entries" in html
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
 - [ ] **Step 1.2: Run test to verify it fails**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `ModuleNotFoundError: No module named 'render_feedback_html'`
 
 - [ ] **Step 1.3: Create minimal renderer to pass the test**
@@ -190,10 +190,10 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
     return (
         "<!doctype html>\n"
         "<meta charset=\"utf-8\">\n"
-        "<title>max-agent feedback</title>\n"
+        "<title>consilium feedback</title>\n"
         f"<style>{CSS}</style>\n"
-        "<h2>max-agent feedback</h2>\n"
-        f"<div class=\"sub\">{len(entries)} entries · skills/max-agent/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
+        "<h2>consilium feedback</h2>\n"
+        f"<div class=\"sub\">{len(entries)} entries · skills/consilium/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
         "<table>\n"
         "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Note</th></tr></thead>\n"
         f"<tbody>\n{rows_html}</tbody>\n"
@@ -219,13 +219,13 @@ if __name__ == "__main__":
 
 - [ ] **Step 1.4: Run test to verify it passes**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `PASS test_render_empty_entries_produces_skeleton` and `1/1 passed`. Exit 0.
 
 - [ ] **Step 1.5: Commit**
 
 ```bash
-cd C:/Users/ALEX/.claude/skills/max-agent
+cd C:/Users/ALEX/.claude/skills/consilium
 git add scripts/render_feedback_html.py scripts/test_feedback_html.py
 git commit -m "feat(feedback-html): renderer skeleton + first test"
 ```
@@ -280,7 +280,7 @@ def test_render_escapes_html_in_user_text():
 
 - [ ] **Step 2.2: Run tests to verify they fail**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `FAIL test_render_single_legacy_entry_no_drill` (`'1 entries' not in html_out`) and `FAIL test_render_escapes_html_in_user_text`.
 
 - [ ] **Step 2.3: Implement entry row rendering with HTML escaping**
@@ -320,10 +320,10 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
     return (
         "<!doctype html>\n"
         "<meta charset=\"utf-8\">\n"
-        "<title>max-agent feedback</title>\n"
+        "<title>consilium feedback</title>\n"
         f"<style>{CSS}</style>\n"
-        "<h2>max-agent feedback</h2>\n"
-        f"<div class=\"sub\">{len(entries)} entries · skills/max-agent/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
+        "<h2>consilium feedback</h2>\n"
+        f"<div class=\"sub\">{len(entries)} entries · skills/consilium/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
         "<table>\n"
         "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Note</th></tr></thead>\n"
         f"<tbody>\n{rows_html}</tbody>\n"
@@ -334,13 +334,13 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
 
 - [ ] **Step 2.4: Run tests to verify they pass**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `3/3 passed`.
 
 - [ ] **Step 2.5: Commit**
 
 ```bash
-cd C:/Users/ALEX/.claude/skills/max-agent
+cd C:/Users/ALEX/.claude/skills/consilium
 git add scripts/render_feedback_html.py scripts/test_feedback_html.py
 git commit -m "feat(feedback-html): legacy entry rows with HTML escaping"
 ```
@@ -405,7 +405,7 @@ def test_render_drill_missing_run_file_falls_back_to_stub():
 
 - [ ] **Step 3.2: Run tests to verify they fail**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `FAIL test_render_drill_from_real_run_file` (`'Generator' not in html_out`) and previous tests still pass.
 
 - [ ] **Step 3.3: Implement drill-down rendering**
@@ -532,10 +532,10 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
     return (
         "<!doctype html>\n"
         "<meta charset=\"utf-8\">\n"
-        "<title>max-agent feedback</title>\n"
+        "<title>consilium feedback</title>\n"
         f"<style>{CSS}</style>\n"
-        "<h2>max-agent feedback</h2>\n"
-        f"<div class=\"sub\">{len(entries)} entries · skills/max-agent/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
+        "<h2>consilium feedback</h2>\n"
+        f"<div class=\"sub\">{len(entries)} entries · skills/consilium/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
         "<table>\n"
         "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Note</th></tr></thead>\n"
         f"<tbody>\n{rows_html}</tbody>\n"
@@ -546,13 +546,13 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
 
 - [ ] **Step 3.4: Run tests to verify they pass**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `5/5 passed`.
 
 - [ ] **Step 3.5: Commit**
 
 ```bash
-cd C:/Users/ALEX/.claude/skills/max-agent
+cd C:/Users/ALEX/.claude/skills/consilium
 git add scripts/render_feedback_html.py scripts/test_feedback_html.py
 git commit -m "feat(feedback-html): drill-down panels from runs/*.json"
 ```
@@ -610,7 +610,7 @@ def test_parse_feedback_returns_empty_for_missing_file():
 
 - [ ] **Step 4.2: Run tests to verify they fail**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `FAIL test_parse_feedback_roundtrip_html` (parser still expects MD; gets 0 entries).
 
 - [ ] **Step 4.3: Swap parser in feedback.py to HTML**
@@ -671,18 +671,18 @@ def parse_feedback(path: Path) -> list[dict]:
 
 - [ ] **Step 4.4: Run tests to verify they pass**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `7/7 passed`.
 
 - [ ] **Step 4.5: Verify priors.py still imports & works**
 
-Run: `cd C:/Users/ALEX/.claude/skills/max-agent && python scripts/priors.py --no-runs`
+Run: `cd C:/Users/ALEX/.claude/skills/consilium && python scripts/priors.py --no-runs`
 Expected: JSON output without exception (entries list may be empty if FEEDBACK.html doesn't yet exist — that's OK; the `_outcome_counts` returns empty Counter).
 
 - [ ] **Step 4.6: Commit**
 
 ```bash
-cd C:/Users/ALEX/.claude/skills/max-agent
+cd C:/Users/ALEX/.claude/skills/consilium
 git add scripts/feedback.py scripts/test_feedback_html.py
 git commit -m "feat(feedback-html): swap feedback.py parser to HTML rows"
 ```
@@ -740,7 +740,7 @@ import json  # noqa: E402 (used by the test above)
 
 - [ ] **Step 5.2: Run test to verify it fails**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `FAIL test_log_feedback_appends_html_entry` (log_feedback still appends MD line, breaking HTML).
 
 - [ ] **Step 5.3: Rewrite log_feedback.py append logic**
@@ -758,12 +758,12 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None
     """Round-trip the HTML: parse existing rows, append, re-render."""
     import importlib.util
     here = Path(__file__).resolve().parent
-    feedback_spec = importlib.util.spec_from_file_location("max_agent_feedback", here / "feedback.py")
+    feedback_spec = importlib.util.spec_from_file_location("consilium_feedback", here / "feedback.py")
     assert feedback_spec and feedback_spec.loader
     feedback_mod = importlib.util.module_from_spec(feedback_spec)
     feedback_spec.loader.exec_module(feedback_mod)
 
-    render_spec = importlib.util.spec_from_file_location("max_agent_render", here / "render_feedback_html.py")
+    render_spec = importlib.util.spec_from_file_location("consilium_render", here / "render_feedback_html.py")
     assert render_spec and render_spec.loader
     render_mod = importlib.util.module_from_spec(render_spec)
     render_spec.loader.exec_module(render_mod)
@@ -884,13 +884,13 @@ Entry format:
 
 - [ ] **Step 5.4: Run test to verify it passes**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `8/8 passed`.
 
 - [ ] **Step 5.5: Commit**
 
 ```bash
-cd C:/Users/ALEX/.claude/skills/max-agent
+cd C:/Users/ALEX/.claude/skills/consilium
 git add scripts/log_feedback.py scripts/test_feedback_html.py
 git commit -m "feat(feedback-html): log_feedback round-trips HTML on append"
 ```
@@ -937,7 +937,7 @@ def test_migration_parses_legacy_md_and_emits_html():
 
 - [ ] **Step 6.2: Run test to verify it fails**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `FAIL test_migration_parses_legacy_md_and_emits_html` (script doesn't exist; FileNotFoundError).
 
 - [ ] **Step 6.3: Implement migration script**
@@ -978,7 +978,7 @@ TOKEN_RE = re.compile(r"[a-zA-Z0-9]{4,}")
 
 
 def _load_render():
-    spec = importlib.util.spec_from_file_location("max_agent_render", ROOT / "scripts" / "render_feedback_html.py")
+    spec = importlib.util.spec_from_file_location("consilium_render", ROOT / "scripts" / "render_feedback_html.py")
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -1073,13 +1073,13 @@ if __name__ == "__main__":
 
 - [ ] **Step 6.4: Run test to verify it passes**
 
-Run: `python C:/Users/ALEX/.claude/skills/max-agent/scripts/test_feedback_html.py`
+Run: `python C:/Users/ALEX/.claude/skills/consilium/scripts/test_feedback_html.py`
 Expected: `9/9 passed`.
 
 - [ ] **Step 6.5: Commit**
 
 ```bash
-cd C:/Users/ALEX/.claude/skills/max-agent
+cd C:/Users/ALEX/.claude/skills/consilium
 git add scripts/migrate_feedback_md_to_html.py scripts/test_feedback_html.py
 git commit -m "feat(feedback-html): one-shot migration script with fuzzy run match"
 ```
@@ -1094,7 +1094,7 @@ git commit -m "feat(feedback-html): one-shot migration script with fuzzy run mat
 
 - [ ] **Step 7.1: Locate exact SKILL.md references**
 
-Run: `cd C:/Users/ALEX/.claude/skills/max-agent && grep -n "FEEDBACK.md" SKILL.md`
+Run: `cd C:/Users/ALEX/.claude/skills/consilium && grep -n "FEEDBACK.md" SKILL.md`
 Expected output: 4-5 line numbers. Note them.
 
 - [ ] **Step 7.2: Replace each reference**
@@ -1116,7 +1116,7 @@ new_string: "FEEDBACK.html"
 
 - [ ] **Step 7.3: Update .gitignore**
 
-Run: `cd C:/Users/ALEX/.claude/skills/max-agent && cat .gitignore`
+Run: `cd C:/Users/ALEX/.claude/skills/consilium && cat .gitignore`
 
 If `.gitignore` contains `FEEDBACK.md`, leave it (legacy backup `.md.bak` matches no rule otherwise — add it). Append (using Edit with appropriate anchor):
 
@@ -1127,13 +1127,13 @@ FEEDBACK.html
 
 - [ ] **Step 7.4: Verify SKILL.md still reads cleanly**
 
-Run: `cd C:/Users/ALEX/.claude/skills/max-agent && grep -n "FEEDBACK" SKILL.md`
+Run: `cd C:/Users/ALEX/.claude/skills/consilium && grep -n "FEEDBACK" SKILL.md`
 Expected: all matches now reference `FEEDBACK.html`, none mention `FEEDBACK.md`.
 
 - [ ] **Step 7.5: Commit**
 
 ```bash
-cd C:/Users/ALEX/.claude/skills/max-agent
+cd C:/Users/ALEX/.claude/skills/consilium
 git add SKILL.md .gitignore
 git commit -m "docs(feedback-html): update SKILL.md references and .gitignore"
 ```
@@ -1143,12 +1143,12 @@ git commit -m "docs(feedback-html): update SKILL.md references and .gitignore"
 ## Task 8: Live migration + smoke test
 
 **Files:**
-- Modify: `skills/max-agent/FEEDBACK.md` (consumed, renamed to `.md.bak`)
-- Create: `skills/max-agent/FEEDBACK.html`
+- Modify: `skills/consilium/FEEDBACK.md` (consumed, renamed to `.md.bak`)
+- Create: `skills/consilium/FEEDBACK.html`
 
 - [ ] **Step 8.1: Run migration script**
 
-Run: `cd C:/Users/ALEX/.claude/skills/max-agent && python scripts/migrate_feedback_md_to_html.py`
+Run: `cd C:/Users/ALEX/.claude/skills/consilium && python scripts/migrate_feedback_md_to_html.py`
 Expected stdout:
 ```
 wrote .../FEEDBACK.html (13 entries)
@@ -1162,26 +1162,26 @@ If `STUB` count is unexpectedly high (more than ~3 legacy entries), inspect the 
 
 - [ ] **Step 8.2: Open the HTML in a browser**
 
-Run: `cd C:/Users/ALEX/.claude/skills/max-agent && start FEEDBACK.html` (Windows) or open the file manually.
+Run: `cd C:/Users/ALEX/.claude/skills/consilium && start FEEDBACK.html` (Windows) or open the file manually.
 Expected: dark-themed table renders, 13 rows visible, outcomes colored; clicking row 4 (or whichever maps to `live-rerun-resilience.json`) expands the drill-down with 3 voice columns.
 
 - [ ] **Step 8.3: Verify priors.py reads the new file**
 
-Run: `cd C:/Users/ALEX/.claude/skills/max-agent && python scripts/priors.py --no-runs`
+Run: `cd C:/Users/ALEX/.claude/skills/consilium && python scripts/priors.py --no-runs`
 Expected: JSON output with `recent`, `counts`, `override_rate`, `bad_rate`, `top_note_keywords` populated from the migrated entries (same numbers as before migration — sanity check by running `python scripts/feedback.py` and comparing outcome tallies).
 
 - [ ] **Step 8.4: Smoke-test log_feedback append**
 
 Run from PowerShell (one line):
 ```powershell
-Get-Content "C:\Users\ALEX\.claude\skills\max-agent\runs\2026-05-11_2030_live-rerun-resilience.json" | python "C:\Users\ALEX\.claude\skills\max-agent\scripts\log_feedback.py" --feedback "C:\Users\ALEX\.claude\skills\max-agent\FEEDBACK.html" --outcome PEND --run-path "runs/2026-05-11_2030_live-rerun-resilience.json" --dry-run
+Get-Content "C:\Users\ALEX\.claude\skills\consilium\runs\2026-05-11_2030_live-rerun-resilience.json" | python "C:\Users\ALEX\.claude\skills\consilium\scripts\log_feedback.py" --feedback "C:\Users\ALEX\.claude\skills\consilium\FEEDBACK.html" --outcome PEND --run-path "runs/2026-05-11_2030_live-rerun-resilience.json" --dry-run
 ```
 Expected: prints a line like `2026-05-12 | Click pe sageata Rerun... | disable_when_unreachable | PEND | 5 cand, ...` and exits 0. `--dry-run` means HTML is not modified.
 
 - [ ] **Step 8.5: Final commit**
 
 ```bash
-cd C:/Users/ALEX/.claude/skills/max-agent
+cd C:/Users/ALEX/.claude/skills/consilium
 git add FEEDBACK.html  # if not gitignored; if gitignored, this is a no-op
 git status
 # Note: FEEDBACK.md should be gone (renamed); FEEDBACK.md.bak gitignored.
@@ -1206,7 +1206,7 @@ If `FEEDBACK.html` is gitignored (per Task 7.3), the commit is empty/symbolic �
 
 ## Execution Handoff
 
-Plan complete and saved to `C:\Users\ALEX\.claude\skills\max-agent\docs\superpowers\plans\2026-05-12-feedback-html.md`. Two execution options:
+Plan complete and saved to `C:\Users\ALEX\.claude\skills\consilium\docs\superpowers\plans\2026-05-12-feedback-html.md`. Two execution options:
 
 1. **Subagent-Driven (recommended)** — fresh subagent per task, review between tasks, fast iteration.
 2. **Inline Execution** — execute tasks in this session via `superpowers:executing-plans`, batch with checkpoints.

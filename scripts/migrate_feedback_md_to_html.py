@@ -31,10 +31,10 @@ TOKEN_RE = re.compile(r"[a-zA-Z0-9]{4,}")
 
 
 def _load_render():
-    spec = importlib.util.spec_from_file_location("max_agent_render", ROOT / "scripts" / "render_feedback_html.py")
+    spec = importlib.util.spec_from_file_location("consilium_render", ROOT / "scripts" / "render_feedback_html.py")
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
-    sys.modules["max_agent_render"] = mod
+    sys.modules["consilium_render"] = mod
     spec.loader.exec_module(mod)
     return mod
 

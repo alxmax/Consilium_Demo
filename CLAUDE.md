@@ -1,6 +1,6 @@
-# Contributing to max-agent
+# Contributing to Consilium
 
-Acest repo este sursa skill-ului `max-agent`. Pentru a-l **folosi**, invocă `/max-agent` într-o sesiune Claude Code. Acest fișier acoperă doar **editarea** skill-ului.
+Acest repo este sursa skill-ului `consilium`. Pentru a-l **folosi**, invocă `/consilium` într-o sesiune Claude Code. Acest fișier acoperă doar **editarea** skill-ului.
 
 ## Contract
 
@@ -24,7 +24,7 @@ Acest repo este sursa skill-ului `max-agent`. Pentru a-l **folosi**, invocă `/m
 
 ## Self-improvement loop
 
-Când editezi skill-ul însuși: rulează `/max-agent` pe propria schimbare. Dacă modul paralel e activat, vocile sunt sub-agenți independenți — dovadă mai puternică decât deliberarea single-context. Salvează run-ul în `runs/` și adaugă o linie în `FEEDBACK.md`.
+Când editezi skill-ul însuși: rulează `/consilium` pe propria schimbare. Dacă modul paralel e activat, vocile sunt sub-agenți independenți — dovadă mai puternică decât deliberarea single-context. Salvează run-ul în `runs/` și adaugă o linie în `FEEDBACK.md`.
 
 ## Git workflow
 

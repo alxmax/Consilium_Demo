@@ -1,14 +1,14 @@
-# max-agent Feedback Loop Fixes — Implementation Plan
+# Consilium Feedback Loop Fixes — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Close the feedback-loop drift in the max-agent skill — defensive `log_feedback.py` against non-canonical reports, strict `validate_report.py` checks that catch the drift at source, active-learning outcome capture at Step 6 with confidence-gated prompting, and retrospective PEND-closure signal at Step 0.
+**Goal:** Close the feedback-loop drift in the Consilium skill — defensive `log_feedback.py` against non-canonical reports, strict `validate_report.py` checks that catch the drift at source, active-learning outcome capture at Step 6 with confidence-gated prompting, and retrospective PEND-closure signal at Step 0.
 
 **Architecture:** Three coordinated changes to existing scripts plus workflow edits in `SKILL.md`. No new files. Component B (strict validator) lands first so future drift can't silently ship. Component A (defensive log_feedback) handles legacy reports already on disk. Component C (workflow + retrospective signal) is the user-facing behavior change.
 
 **Tech Stack:** Python 3 stdlib only (`argparse`, `json`, `pathlib`, `datetime`, `re`). Testing via `scripts/run_evals.py` over `evals/scenarios.json` for deterministic scripts; CLI smoke tests for `log_feedback.py` and `priors.py` (no existing eval scenarios). Markdown for `SKILL.md` workflow doc.
 
-**Spec:** `docs/superpowers/specs/2026-05-11-max-agent-feedback-loop-fixes-design.md`
+**Spec:** `docs/superpowers/specs/2026-05-11-consilium-feedback-loop-fixes-design.md`
 
 ---
 

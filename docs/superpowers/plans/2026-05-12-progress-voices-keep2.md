@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Eliminate stagnation bias and minimum-effort bias in max-agent voice prompts via two narrow edits — Conservator gets a quality-signals reducer on `regression_risk`; Control gets a goal-fit gate that invalidates `do_nothing` on action-shaped goals. Drop the originally-proposed F1 (Generator `unconventional_*` mandate) as speculative.
+**Goal:** Eliminate stagnation bias and minimum-effort bias in Consilium voice prompts via two narrow edits — Conservator gets a quality-signals reducer on `regression_risk`; Control gets a goal-fit gate that invalidates `do_nothing` on action-shaped goals. Drop the originally-proposed F1 (Generator `unconventional_*` mandate) as speculative.
 
-**Architecture:** Three prompt files edited (~18 lines total), zero schema changes, zero script changes, zero `evals/scenarios.json` changes. The math acts via existing channels: `valid: false` → `control_score = 0`; reduced `regression_risk` → adjusted `safety`. One git branch (`feat/progress-voices-keep2`), one amended commit per CLAUDE.md workflow. Validation is operational, not unit-test-based — CLAUDE.md mandates no tests dir; smoke testing is via CLI (`run_evals.py` and a self-improvement `/max-agent` run on the change itself).
+**Architecture:** Three prompt files edited (~18 lines total), zero schema changes, zero script changes, zero `evals/scenarios.json` changes. The math acts via existing channels: `valid: false` → `control_score = 0`; reduced `regression_risk` → adjusted `safety`. One git branch (`feat/progress-voices-keep2`), one amended commit per CLAUDE.md workflow. Validation is operational, not unit-test-based — CLAUDE.md mandates no tests dir; smoke testing is via CLI (`run_evals.py` and a self-improvement `/consilium` run on the change itself).
 
 **Tech Stack:** Markdown (prompt files). Python stdlib (existing scripts, untouched). Git CLI.
 
@@ -21,7 +21,7 @@
 | `prompts/control.md` | Modify (lines ~28-30) | Replace the `do_nothing` blanket-valid line with the new goal-fit gate (step 5 of Task) |
 | `prompts/conservator.md` | Modify (insert after line 32) | Add quality-progress reducer subsection between the 4 factors and the aggregation rule |
 | `prompts/generator.md` | Modify (insert after line 39) | Append goal-fit articulation bullet to Constraints |
-| `runs/<ts>_progress-voices-smoke.json` | Create | Self-improvement `/max-agent` run on the branch (persisted automatically by skill workflow) |
+| `runs/<ts>_progress-voices-smoke.json` | Create | Self-improvement `/consilium` run on the branch (persisted automatically by skill workflow) |
 | `FEEDBACK.md` | Append one line | Outcome log from the smoke-test run |
 
 ---
@@ -221,16 +221,16 @@ Expected: exactly one commit shown.
 
 ---
 
-### Task 8: Self-improvement smoke test — `/max-agent` parallel run on this change
+### Task 8: Self-improvement smoke test — `/consilium` parallel run on this change
 
 **Files:**
 - Create: `runs/<YYYY-MM-DD>_<HHMM>_progress-voices-smoke.json` (path determined at run time by skill workflow)
 
-- [ ] **Step 1: Inside this Claude Code session, invoke `/max-agent` on the change**
+- [ ] **Step 1: Inside this Claude Code session, invoke `/consilium` on the change**
 
-The orchestrator (the agent executing this plan) runs the full max-agent workflow per `SKILL.md`:
+The orchestrator (the agent executing this plan) runs the full Consilium workflow per `SKILL.md`:
 - Bootstrap Step 0 (priors + voice prompts)
-- Step 1: state success_criterion as: *"The three prompt edits in commit `<sha>` on `feat/progress-voices-keep2` correctly implement F2+F3 from the design spec, with no regression to the eval suite. After the change, /max-agent on action-shaped goals does not auto-favor do_nothing."*
+- Step 1: state success_criterion as: *"The three prompt edits in commit `<sha>` on `feat/progress-voices-keep2` correctly implement F2+F3 from the design spec, with no regression to the eval suite. After the change, /consilium on action-shaped goals does not auto-favor do_nothing."*
 - Step 1.5: skip (non-diff design; gate is no-op here, but you may run it for free signal)
 - Step 2-5b: dispatch Generator → Control + Conservator in parallel mode (3 sub-agents over 2 turns)
 - Step 6: persist `runs/<ts>_progress-voices-smoke.json`, validate with `validate_report.py`
