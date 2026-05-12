@@ -233,6 +233,12 @@ Câmpurile `success_criterion` și `verification` sunt **obligatorii** — sunt 
 
 **Telemetry e opțional dar încurajat.** Umple ce poți măsura, omite ce nu poți. În parallel/dialectic mode ai latențe per sub-agent; în sequential nu poți izola token-ii pe voce — pune doar `mode` + total `latency_ms` pe ce ai (sau omite voices). Validator-ul acceptă fields parțiale; `scripts/usage.py` agregă pe ce găsește. Pentru raporte skipped, omite blocul telemetry complet (nu există voci de măsurat — scope_gate-ul e neglijabil).
 
+**Terminal output discipline.** Nu scrie bundle-uri intermediare JSON pe disc ca fișiere separate (ex: `bundle_*.json`). Piped-ază output-urile scripturilor direct: `python scripts/build_report.py | python scripts/validate_report.py`. Singurul output vizibil în terminal la finalul deliberării: o linie de summary urmată de path-ul raportului:
+```
+chosen: <id> | conf: <X> | runs/<file>.json
+```
+Raportul complet e în `runs/` — nu îl echa în terminal. Dacă e nevoie să inspectezi raportul, deschide fișierul direct.
+
 **Gate de validare** (înainte de a considera raportul final):
 ```bash
 cat runs/<file>.json | python scripts/validate_report.py
@@ -313,18 +319,16 @@ Skill-ul învață din uz real prin două artefacte. Aici e descrierea lor; *cum
 - **`runs/`** — JSON complet per deliberare în `runs/YYYY-MM-DD_HHMM_<short-label>.json` (schema în `runs/README.md`). Fișierele sunt gitignored (personale). Citite de `priors.py` (Step 0) și `usage.py` / `feedback.py` (Skill maintenance). Scrise la finalul Step 6.
 - **`FEEDBACK.html`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Local/personal — gitignored (la fel ca `runs/*.json`), nu shared între mașini. User-ul îl scrie când e cerut la finalul Step 6. **Drill-down note:** When `log_feedback.py` appends a new entry, existing rows lose their drill-down (parser doesn't persist `run_path` between renders); only the freshly-logged row keeps it. Use the `migrate_feedback_md_to_html.py` script for bulk re-population if needed.
 
-## Parallel voices mode (opt-in)
+## Parallel voices mode
 
-Default-ul e secvențial: agentul principal joacă toate cele 3 voci în același context. Riscul e cross-contamination — Generator vede ce zice Control înainte de a fi terminat, etc.
+**Default-ul e parallel.** Dispatch cele 3 voci ca sub-agenți independenți — ele nu se văd între ele, eliminând cross-contamination complet.
 
 Pentru independență reală, dispatch vocile ca **până la 3 sub-agenți Claude rulând în paralel** (tool-ul `Agent`, `subagent_type=general-purpose`).
 
 ### Când să folosești
-- Schimbarea e suficient de subtilă încât contaminarea între voci ar afecta decizia
-- Ai timp/budget să aștepți 3 rulări paralele
+- Orice deliberare non-trivială — acesta e modul default
+- Când independența reală între voci contează (schimbări subtile sau high-stakes)
 - User-ul cere explicit "in paralel" / "parallel voices"
-
-Default-ul (secvențial) rămâne potrivit pentru deliberări rapide și schimbări mici.
 
 ### Cum
 Un singur message cu **3 Agent calls** (regula superpowers:dispatching-parallel-agents — calls independente într-un singur turn). Fiecare sub-agent primește:
@@ -390,6 +394,24 @@ Return STRICTLY the JSON specified in the "Output format" section above. No pros
 - Schimbarea e trivială (<10 linii, modul izolat) — overhead-ul nu merită
 - Nu ai tool-ul `Agent` disponibil în sesiune
 - Vrei să auditezi raționamentul intermediar pe parcurs (sub-agenții returnează doar JSON final)
+
+## Sequential mode (structured single-pass)
+
+**Nu este defaultul.** Sequential = agentul principal joacă toate cele 3 voci în **același context**, fără independență reală între ele.
+
+Valoarea lui nu e deliberarea multi-perspectivă — e **template-ul forțat**: te obligă să produci `rollback_recipe`, `tests_to_write`, `success_criterion` structurat, chiar și fără sub-agenți.
+
+### Când să folosești sequential în loc de parallel
+- Schimbarea e trivială și scope_gate a dat `should_skip: true` dar vrei totuși structura output-ului
+- Nu ai tool-ul `Agent` disponibil în sesiune
+- Vrei să auditezi raționamentul pas-cu-pas (în sequential, totul e vizibil în context)
+
+### Ce NU livrează
+- Independență între voci — Generator, Control și Conservator rulează în același context
+- Garanție anti-sycophancy — Conservatorul știe deja ce a zis Generatorul
+- "3 perspective independente" — e un singur model jucând 3 roluri
+
+Folosește `strip_context.py` (Steps 3 și 4) pentru a reduce parțial contaminarea, dar asta nu elimină cross-contamination, doar o limitează.
 
 ## Dialectic mode (opt-in, two-pass)
 
