@@ -360,6 +360,13 @@ Așadar pattern-ul real e:
 
 Maximum 3 sub-agenți activi simultan; în practică folosești 1 + 2.
 
+**Model default pentru voci: Sonnet 4.6 (`claude-sonnet-4-6`).** Dispatch fiecare Agent call cu parametrul explicit `model: "sonnet"`. Vocile execută un task structurat (produc JSON conform unui schema fix), unde Sonnet livrează la fracție din cost/latență față de Opus, fără pierdere observabilă de calitate. Override per-voce când chiar e justificat:
+
+- `model: "opus"` pe Generator când vrei divergență mai mare pe schimbări high-stakes / ambigue.
+- `model: "haiku"` pe Control sau Conservator când deliberezi pe diff-uri foarte mici și vrei să scazi costul total sub Sonnet.
+
+Fără override-uri explicite, vocile moștenesc modelul orchestratorului — care e adesea Opus, contrazicând defaultul de mai sus. Setează modelul la dispatch, nu te baza pe moștenire.
+
 **Captură telemetry per voce (responsabilitatea orchestratorului, nu a sub-agentului).** Sub-agenții nu-și pot măsura tokens cu acuratețe. Orchestratorul (agentul principal) îi măsoară la fiecare Agent call și injectează în bundle:
 
 - `tokens_in` ≈ `len(prompt) / 4` (lungimea prompt-ului trimis sub-agentului, în chars / 4 = aproximare tokens)
@@ -438,6 +445,8 @@ Un singur round de revizuire — fără bucle infinite, fără așteptare de "co
 - Nu ai budget pentru 6 sub-agent calls
 
 ### Cum
+Defaultul de model din secțiunea Parallel voices mode (`model: "sonnet"` per Agent call) se aplică și la dispatch-urile din Pass 1 și Pass 2 aici — fiecare dintre cele 6 sub-agenți. Override per-voce/per-pass dacă vrei un Generator pe Opus doar la Pass 2 etc.
+
 1. **Turn 1**: dispatch Generator (1 Agent call). Aștepți candidates.
 2. **Turn 2**: dispatch Control + Conservator în paralel (2 Agent calls). Ambii primesc candidates Pass-1. Salvezi cele 3 outputs ca `pass1`.
 3. **Turn 3 (revision)**: dispatch 3 sub-agenți paraleli — câte unul per voce. Fiecare primește:
