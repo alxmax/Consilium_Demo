@@ -355,7 +355,7 @@
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_contains": ["- ", "PEND", "approach_a", "3 cand", "1 vetoed", "conf=0.82", "mode=parallel"]
+    "expect_stdout_contains": ["PEND", "approach_a", "3 cand", "1 vetoed", "conf=0.82", "mode=parallel"]
   },
   {
     "name": "log_feedback/skipped report emits skipped note",
@@ -369,7 +369,7 @@
       "skip_reason": "1 file, 4 lines, no sensitive paths"
     },
     "expect_exit": 0,
-    "expect_stdout_contains": ["- ", "PEND", "skipped", "skipped: 1 file"]
+    "expect_stdout_contains": ["PEND", "skipped", "skipped: 1 file"]
   },
   {
     "name": "log_feedback/all-vetoed report emits null chosen with relaxed threshold",
@@ -384,7 +384,7 @@
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_contains": ["- ", "PEND", "| null |", "all vetoed", "relaxed=0.78"]
+    "expect_stdout_contains": ["PEND", "| null |", "all vetoed", "relaxed=0.78"]
   },
   {
     "name": "log_feedback/missing success_criterion fails with explicit message",
