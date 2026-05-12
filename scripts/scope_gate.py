@@ -11,7 +11,7 @@ Defaults (override via --config PATH or scope_gate.json in cwd):
                **/secrets*, .env*, Dockerfile, *.tf, *.tfvars,
                package.json, requirements.txt, go.mod, Cargo.toml, pom.xml]
 
-Escape hatch: env MAX_AGENT_FORCE_FULL=1 always returns should_skip=false
+Escape hatch: env CONSILIUM_FORCE_FULL=1 always returns should_skip=false
 (useful when you want full deliberation regardless of probe size).
 
 Output (always to stdout, exit 0 on success):
@@ -205,11 +205,11 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write("\n")
         return 0
 
-    if os.environ.get("MAX_AGENT_FORCE_FULL") == "1":
+    if os.environ.get("CONSILIUM_FORCE_FULL") == "1":
         json.dump(
             {
                 "should_skip": False,
-                "reason": "MAX_AGENT_FORCE_FULL=1 (override)",
+                "reason": "CONSILIUM_FORCE_FULL=1 (override)",
                 "signals": {"files_changed": None, "lines_changed": None, "blocklist_hits": []},
                 "config_used": cfg,
             },

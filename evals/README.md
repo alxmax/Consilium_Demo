@@ -1,6 +1,6 @@
 # Eval harness
 
-Regression suite for max-agent's deterministic scripts. Catches behavioral
+Regression suite for Consilium's deterministic scripts. Catches behavioral
 drift when you edit `scripts/*.py` (e.g., did changing the sigmoid steepness
 in `aggregator.py` accidentally make `risk_adjusted_utility` pick the risky
 candidate?).

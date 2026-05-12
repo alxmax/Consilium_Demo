@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>max-agent — Architecture Poster</title>
+<title>consilium — Architecture Poster</title>
 <style>
   :root {
     /* Dark theme (default) */
@@ -317,7 +317,7 @@
 <body>
 
 <header>
-  <h1>max-agent</h1>
+  <h1>consilium</h1>
   <div class="sub">Pattern de deliberare multi-perspectivă pentru evaluarea schimbărilor de cod</div>
 </header>
 
@@ -335,7 +335,7 @@
     <div class="intro">
       <div class="intro-grid">
         <div>
-          <h3>Ce este max-agent?</h3>
+          <h3>Ce este Consilium?</h3>
           <p class="lede">Un <b>pattern de deliberare</b> care evaluează schimbări de cod prin trei voci paralele cu roluri separate (<b>Generator</b> / <b>Control</b> / <b>Conservator</b>), agregă voturile printr-o schemă cu veto, și produce o decizie + un report canonic.</p>
           <p>Ideea de bază: nu te bazezi pe o singură perspectivă pentru o schimbare riscantă. Fiecare voce e împiedicată prin prompt să facă jobul celorlalți — <i>separation of powers</i> implementată prin context stripping (Sequential — Blind) sau sub-agenți independenți (Parallel / Dialectic).</p>
           <p class="why">Folosit pentru refactor mare, migrări DB, security, sau orice schimbare unde vrei un "second opinion" structurat înainte de merge. Output-ul ajunge ca JSON canonic în <code>runs/</code> și ca linie în <code>FEEDBACK.md</code> pentru calibrare viitoare.</p>
@@ -622,7 +622,7 @@
         <text x="580" y="168" text-anchor="middle" fill="#93c5fd" font-size="10">full flow (steps 2 → 6)</text>
       </svg>
       <div class="caption">
-        Override: <code>MAX_AGENT_FORCE_FULL=1</code> forțează deliberate indiferent de signals.
+        Override: <code>CONSILIUM_FORCE_FULL=1</code> forțează deliberate indiferent de signals.
         Defaults sunt în <code>DEFAULT_CONFIG</code>; pot fi suprascrise prin
         <code>scope_gate.json</code> în <code>cwd</code> sau prin <code>--config PATH</code>.
       </div>

@@ -1,4 +1,4 @@
-# max-agent feedback loop fixes — design
+# Consilium feedback loop fixes — design
 
 **Date:** 2026-05-11
 **Scope:** HIGH-priority recommendations from the 8-run retrospective (15:00–21:00, 2026-05-11). Closes the feedback-loop drift identified across `runs/2026-05-11_*.json`.

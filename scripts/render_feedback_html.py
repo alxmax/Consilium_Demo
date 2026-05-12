@@ -222,10 +222,10 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
     return (
         "<!doctype html>\n"
         "<meta charset=\"utf-8\">\n"
-        "<title>max-agent feedback</title>\n"
+        "<title>Consilium feedback</title>\n"
         f"<style>{CSS}</style>\n"
-        "<h2>max-agent feedback</h2>\n"
-        f"<div class=\"sub\">{len(entries)} entries · skills/max-agent/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
+        "<h2>Consilium feedback</h2>\n"
+        f"<div class=\"sub\">{len(entries)} entries · skills/consilium/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
         "<table>\n"
         "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Note</th></tr></thead>\n"
         f"<tbody>\n{rows_html}</tbody>\n"

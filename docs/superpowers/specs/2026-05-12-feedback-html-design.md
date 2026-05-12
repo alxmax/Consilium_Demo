@@ -8,7 +8,7 @@
 
 ## Goal
 
-Replace `skills/max-agent/FEEDBACK.md` (plain MD pipe-table) with `skills/max-agent/FEEDBACK.html` (dark-themed sortable table with row-level drill-down to Generator / Control / Conservator outputs). User opens the file with a double-click and gets:
+Replace `skills/consilium/FEEDBACK.md` (plain MD pipe-table) with `skills/consilium/FEEDBACK.html` (dark-themed sortable table with row-level drill-down to Generator / Control / Conservator outputs). User opens the file with a double-click and gets:
 
 - A scannable table of all past deliberations (date, context, chosen, outcome, note) — same columns as today, colored outcome.
 - A click-to-expand drill-down per row showing the actual candidates, validation verdicts, and risk scores from the corresponding `runs/<file>.json` — no more cross-referencing two files manually.
@@ -143,17 +143,17 @@ next session: priors.py reads FEEDBACK.html rows → soft priors
 
 | Path | State after migration |
 |---|---|
-| `skills/max-agent/FEEDBACK.html` | new, live, gitignored |
-| `skills/max-agent/FEEDBACK.md.bak` | one-time backup of legacy MD |
-| `skills/max-agent/FEEDBACK.md` | deleted (lives only as `.bak`) |
-| `skills/max-agent/runs/*.json` | unchanged |
-| `skills/max-agent/docs/feedback-preview.html` | committed reference mockup |
-| `skills/max-agent/scripts/render_feedback_html.py` | new |
-| `skills/max-agent/scripts/migrate_feedback_md_to_html.py` | new (one-shot) |
-| `skills/max-agent/scripts/log_feedback.py` | modified |
-| `skills/max-agent/scripts/priors.py` | modified (parser only) |
-| `skills/max-agent/scripts/feedback.py` | modified (parser only, if used) |
-| `skills/max-agent/SKILL.md` | text references updated |
+| `skills/consilium/FEEDBACK.html` | new, live, gitignored |
+| `skills/consilium/FEEDBACK.md.bak` | one-time backup of legacy MD |
+| `skills/consilium/FEEDBACK.md` | deleted (lives only as `.bak`) |
+| `skills/consilium/runs/*.json` | unchanged |
+| `skills/consilium/docs/feedback-preview.html` | committed reference mockup |
+| `skills/consilium/scripts/render_feedback_html.py` | new |
+| `skills/consilium/scripts/migrate_feedback_md_to_html.py` | new (one-shot) |
+| `skills/consilium/scripts/log_feedback.py` | modified |
+| `skills/consilium/scripts/priors.py` | modified (parser only) |
+| `skills/consilium/scripts/feedback.py` | modified (parser only, if used) |
+| `skills/consilium/SKILL.md` | text references updated |
 
 `.gitignore`: `FEEDBACK.html` and `*.md.bak` should be gitignored (same as `FEEDBACK.md` today — personal/local journal).
 

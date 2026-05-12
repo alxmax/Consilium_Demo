@@ -18,7 +18,7 @@ import render_feedback_html as rfh  # noqa: E402
 def test_render_empty_entries_produces_skeleton():
     html = rfh.render(entries=[], runs_dir=ROOT / "runs")
     assert "<!doctype html>" in html
-    assert "max-agent feedback" in html
+    assert "Consilium feedback" in html
     assert "<tbody>" in html and "</tbody>" in html
     assert "0 entries" in html
 

@@ -38,7 +38,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 _FB_PATH = ROOT / "scripts" / "feedback.py"
-_spec = importlib.util.spec_from_file_location("max_agent_feedback", _FB_PATH)
+_spec = importlib.util.spec_from_file_location("consilium_feedback", _FB_PATH)
 assert _spec and _spec.loader
 _feedback = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_feedback)
