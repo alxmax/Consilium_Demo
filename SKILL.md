@@ -302,6 +302,7 @@ Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit c
 - `scripts/usage.py` — rollup telemetry across `runs/*.json` (Skill maintenance)
 - `scripts/log_feedback.py` — auto-append linie în FEEDBACK.md la finalul Step 6 (outcome=PEND, user-ul închide ulterior)
 - `scripts/build_report.py` — asamblează raportul canonic dintr-un bundle de output-uri intermediare (Step 6); elimină clasa de bug-uri "report shape drift"
+- `agents/max-subagent.md` — definiție de subagent Claude Code pentru invocare prin `Agent(subagent_type="max-subagent", ...)` în context izolat. Delegă la SKILL.md (non-interactive overrides pentru Step 0/1/6). Install: symlink la `~/.claude/agents/max-subagent.md` (vezi fișierul).
 
 ## Feedback loop (artefacte)
 
