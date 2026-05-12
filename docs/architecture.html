@@ -212,6 +212,60 @@
   .parallel-row { display: flex; gap: 10px; align-items: stretch; }
   .parallel-col { flex: 1; }
 
+  /* ============== INTRO ============== */
+  .intro { background: var(--inset); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px 22px; margin-bottom: 24px; }
+  .intro-grid { display: grid; grid-template-columns: 1fr 380px; gap: 22px; align-items: center; }
+  .intro h3 { margin: 0 0 8px; font-size: 16px; }
+  .intro p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.55; }
+  .intro p.lede { font-size: 14.5px; color: var(--ink); }
+  .intro p.lede b { color: var(--gold); }
+  .intro p.why { color: var(--muted); font-size: 12.5px; margin-top: 6px; margin-bottom: 0; }
+  .intro svg { width: 100%; height: auto; }
+
+  /* ============== AGGREGATION EXAMPLE ============== */
+  .agg-example { margin-top: 16px; background: var(--inset); border: 1px dashed var(--line);
+    border-radius: 8px; padding: 14px 16px; }
+  .agg-example h4 { margin: 0 0 6px; font-size: 13px; color: var(--ink); letter-spacing: 0.02em; }
+  .agg-example .preamble { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .agg-example table { width: 100%; border-collapse: collapse; font-size: 12.5px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .agg-example th, .agg-example td { padding: 7px 10px; text-align: left;
+    border-bottom: 1px solid var(--line); }
+  .agg-example thead th { color: var(--muted); font-weight: 600; font-size: 10.5px;
+    letter-spacing: 0.06em; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .agg-example tbody th { font-weight: 600; color: var(--ink); font-size: 12px; }
+  .agg-example tr:last-child td, .agg-example tr:last-child th { border-bottom: none; }
+  .agg-example .win { color: var(--accent-text); font-weight: 700; }
+  .agg-example .lose { color: var(--muted); }
+  .agg-example .veto-pill { display: inline-block; padding: 1px 6px; background: var(--con);
+    color: #0f1419; border-radius: 3px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.05em; }
+  .agg-example .takeaway { margin-top: 12px; font-size: 12px; color: var(--muted);
+    border-top: 1px dashed var(--line); padding-top: 10px; }
+  .agg-example .takeaway b { color: var(--ink); }
+
+  /* ============== DECISION TREE ============== */
+  .decision { margin-top: 28px; background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px; }
+  .decision h3 { margin: 0 0 4px; font-size: 14px; }
+  .decision .lede { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+  .decision svg { width: 100%; height: auto; display: block; }
+  .decision .caption { margin-top: 10px; font-size: 11.5px; color: var(--muted);
+    border-top: 1px dashed var(--line); padding-top: 10px; }
+  .decision .caption code { color: var(--ink); }
+
+  /* ============== FEEDBACK CIRCLE ============== */
+  .feedback-diagram { background: var(--gold-soft); border: 1px solid var(--gold-border);
+    border-radius: 10px; padding: 18px 20px; margin-top: 28px; }
+  .feedback-diagram h3 { margin: 0 0 8px; font-size: 14px; color: var(--gold); }
+  .feedback-diagram svg { width: 100%; height: auto; display: block; max-width: 720px;
+    margin: 0 auto; }
+  .feedback-diagram .narrative { font-size: 13px; margin-top: 14px; color: var(--ink);
+    line-height: 1.55; }
+  .feedback-diagram .narrative b { color: var(--gold); }
+  .feedback-diagram .narrative code { color: var(--gold); }
+
   /* ============== PRINT ============== */
   @media print {
     /* Light palette override for paper — saves ink */
@@ -256,6 +310,7 @@
     .voices, .schemes, .modes, .flow, .rail-grid { grid-template-columns: 1fr; }
     .step { margin-right: 0; margin-bottom: 18px; }
     .step::after, .step::before { display: none; }
+    .intro-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -276,6 +331,41 @@
 
   <!-- ============== TAB 1 ============== -->
   <section class="tab active" id="architecture">
+
+    <div class="intro">
+      <div class="intro-grid">
+        <div>
+          <h3>Ce este max-agent?</h3>
+          <p class="lede">Un <b>pattern de deliberare</b> care evaluează schimbări de cod prin trei voci paralele cu roluri separate (<b>Generator</b> / <b>Control</b> / <b>Conservator</b>), agregă voturile printr-o schemă cu veto, și produce o decizie + un report canonic.</p>
+          <p>Ideea de bază: nu te bazezi pe o singură perspectivă pentru o schimbare riscantă. Fiecare voce e împiedicată prin prompt să facă jobul celorlalți — <i>separation of powers</i> implementată prin context stripping (Sequential — Blind) sau sub-agenți independenți (Parallel / Dialectic).</p>
+          <p class="why">Folosit pentru refactor mare, migrări DB, security, sau orice schimbare unde vrei un "second opinion" structurat înainte de merge. Output-ul ajunge ca JSON canonic în <code>runs/</code> și ca linie în <code>FEEDBACK.md</code> pentru calibrare viitoare.</p>
+        </div>
+        <svg viewBox="0 0 380 180" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="diff in, three voices, aggregator, winner out">
+          <rect x="8" y="70" width="60" height="40" rx="6" fill="#11151c" stroke="#2d3441"/>
+          <text x="38" y="89" text-anchor="middle" fill="#e5e7eb" font-size="11">diff +</text>
+          <text x="38" y="103" text-anchor="middle" fill="#9ca3af" font-size="10">context</text>
+          <line x1="68" y1="90" x2="104" y2="90" stroke="#9ca3af" stroke-width="1.5"/>
+          <polygon points="99,86 106,90 99,94" fill="#9ca3af"/>
+          <rect x="110" y="30" width="100" height="32" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+          <text x="160" y="50" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600">Generator</text>
+          <rect x="110" y="74" width="100" height="32" rx="6" fill="#182338" stroke="#2a3f5f"/>
+          <text x="160" y="94" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">Control</text>
+          <rect x="110" y="118" width="100" height="32" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+          <text x="160" y="138" text-anchor="middle" fill="#fca5a5" font-size="12" font-weight="600">Conservator</text>
+          <line x1="210" y1="46" x2="246" y2="86" stroke="#9ca3af" stroke-width="1.5"/>
+          <line x1="210" y1="90" x2="246" y2="90" stroke="#9ca3af" stroke-width="1.5"/>
+          <line x1="210" y1="134" x2="246" y2="94" stroke="#9ca3af" stroke-width="1.5"/>
+          <polygon points="241,86 248,90 241,94" fill="#9ca3af"/>
+          <rect x="250" y="70" width="76" height="40" rx="6" fill="#0a2e23" stroke="#145c45"/>
+          <text x="288" y="89" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="600">aggregate</text>
+          <text x="288" y="103" text-anchor="middle" fill="#6ee7b7" font-size="9">veto · rank</text>
+          <line x1="326" y1="90" x2="358" y2="90" stroke="#34d399" stroke-width="1.5"/>
+          <polygon points="353,86 360,90 353,94" fill="#34d399"/>
+          <text x="343" y="108" text-anchor="middle" fill="#6ee7b7" font-size="9">winner</text>
+          <text x="343" y="120" text-anchor="middle" fill="#6ee7b7" font-size="9">+ report</text>
+        </svg>
+      </div>
+    </div>
 
     <div class="constitution">
       <div class="label">Constitution — guvernează fiecare deliberare</div>
@@ -346,6 +436,70 @@
           Folosește când mai mulți candidates sunt strânși în jurul pragului.
         </div>
       </div>
+      <div class="agg-example">
+        <h4>Exemplu numeric — același set de candidate, 4 winners diferiți</h4>
+        <div class="preamble">
+          Trei candidate cu scoruri identice ca utility (gen, ctrl) dar conservator (risc) crescător.
+          Fiecare schemă agregă diferit — primele două tratează conservator ca utility (bug istoric);
+          ultimele două îl flip-uiesc în safety. Numerele sunt calculate cu weights egale = ⅓.
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>candidate</th>
+              <th>generator</th>
+              <th>control</th>
+              <th>conservator <span style="color:var(--con-text);">(risc)</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th>A — safe</th><td>0.80</td><td>0.90</td><td>0.30</td></tr>
+            <tr><th>B — medium</th><td>0.90</td><td>0.80</td><td>0.60</td></tr>
+            <tr><th>C — risky</th><td>0.85</td><td>0.85</td><td>0.75</td></tr>
+          </tbody>
+        </table>
+        <table style="margin-top: 14px;">
+          <thead>
+            <tr>
+              <th>schemă</th>
+              <th>score(A)</th>
+              <th>score(B)</th>
+              <th>score(C)</th>
+              <th>winner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>majority</th>
+              <td class="lose">0.667</td><td class="lose">0.767</td><td class="win">0.817</td>
+              <td class="win">C</td>
+            </tr>
+            <tr>
+              <th>weighted</th>
+              <td class="lose">0.667</td><td class="lose">0.767</td><td class="win">0.817</td>
+              <td class="win">C</td>
+            </tr>
+            <tr>
+              <th>conservative_override</th>
+              <td class="win">0.800</td><td class="lose">0.700</td><td><span class="veto-pill">VETO</span></td>
+              <td class="win">A</td>
+            </tr>
+            <tr>
+              <th>risk_adjusted_utility</th>
+              <td class="win">0.705</td><td class="lose">0.188</td><td class="lose">0.050</td>
+              <td class="win">A</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="takeaway">
+          <b>De ce default e <code>conservative_override</code></b>: <code>majority</code> și
+          <code>weighted</code> tratează scorul conservator ca utility (mai mare = mai bine),
+          deci aleg C — candidatul mai riscant. Doar schemele care flip-uiesc conservator
+          în safety (<code>1 − risc</code>) ajung la verdictul intuitiv. <code>risk_adjusted_utility</code>
+          dă același rezultat fără cliff la prag, util când mai mulți candidates sunt strânși
+          în jurul lui 0.7.
+        </div>
+      </div>
       <div class="note">
         Separation of powers: fiecare voce e împiedicată prin prompt să facă jobul celorlalți.
         Constitution bate orice voce în caz de conflict. Dacă toți candidates sunt vetoiți →
@@ -411,6 +565,66 @@
         <h4>Report</h4>
         <div><code>build_report.py</code> + <code>validate_report.py</code> + <code>log_feedback.py</code>.</div>
         <div class="io">out: canonical JSON</div>
+      </div>
+    </div>
+
+    <div class="decision">
+      <h3>Step 1.5 — scope gate decision tree</h3>
+      <div class="lede">Când deliberăm full vs când sărim direct la report. <code>scripts/scope_gate.py</code>, defaults: <code>max_files=1</code>, <code>max_lines=15</code>, blocklist pe paths sensibile.</div>
+      <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scope gate decision tree">
+        <rect x="80" y="10" width="200" height="36" rx="6" fill="#11151c" stroke="#2d3441"/>
+        <text x="180" y="33" text-anchor="middle" fill="#e5e7eb" font-size="12">probe_change.py → signals</text>
+        <line x1="180" y1="46" x2="180" y2="62" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,57 180,64 184,57" fill="#9ca3af"/>
+
+        <rect x="80" y="66" width="200" height="34" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="180" y="87" text-anchor="middle" fill="#e5e7eb" font-size="11">probe error OR files = 0?</text>
+        <line x1="280" y1="83" x2="468" y2="83" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="463,79 470,83 463,87" fill="#f87171"/>
+        <text x="374" y="78" text-anchor="middle" fill="#fca5a5" font-size="10">yes — fail open</text>
+        <line x1="180" y1="100" x2="180" y2="118" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,113 180,120 184,113" fill="#9ca3af"/>
+        <text x="188" y="113" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="80" y="122" width="200" height="34" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="180" y="143" text-anchor="middle" fill="#e5e7eb" font-size="11">blocklist hit?</text>
+        <line x1="280" y1="139" x2="468" y2="139" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="463,135 470,139 463,143" fill="#f87171"/>
+        <text x="374" y="134" text-anchor="middle" fill="#fca5a5" font-size="10">yes — sensitive path</text>
+        <line x1="180" y1="156" x2="180" y2="174" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,169 180,176 184,169" fill="#9ca3af"/>
+        <text x="188" y="169" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="80" y="178" width="200" height="34" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="180" y="199" text-anchor="middle" fill="#e5e7eb" font-size="11">files &gt; max_files (1)?</text>
+        <line x1="280" y1="195" x2="468" y2="195" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="463,191 470,195 463,199" fill="#f87171"/>
+        <text x="374" y="190" text-anchor="middle" fill="#fca5a5" font-size="10">yes</text>
+        <line x1="180" y1="212" x2="180" y2="230" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,225 180,232 184,225" fill="#9ca3af"/>
+        <text x="188" y="225" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="80" y="234" width="200" height="34" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="180" y="255" text-anchor="middle" fill="#e5e7eb" font-size="11">lines &gt; max_lines (15)?</text>
+        <line x1="280" y1="251" x2="468" y2="251" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="463,247 470,251 463,255" fill="#f87171"/>
+        <text x="374" y="246" text-anchor="middle" fill="#fca5a5" font-size="10">yes</text>
+        <line x1="180" y1="268" x2="180" y2="286" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,281 180,288 184,281" fill="#9ca3af"/>
+        <text x="188" y="281" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="80" y="290" width="200" height="40" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="180" y="309" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="700">SKIP</text>
+        <text x="180" y="323" text-anchor="middle" fill="#6ee7b7" font-size="10">skipped report → step 6 direct</text>
+
+        <rect x="470" y="50" width="220" height="220" rx="8" fill="#182338" stroke="#2a3f5f"/>
+        <text x="580" y="148" text-anchor="middle" fill="#93c5fd" font-size="14" font-weight="700">DELIBERATE</text>
+        <text x="580" y="168" text-anchor="middle" fill="#93c5fd" font-size="10">full flow (steps 2 → 6)</text>
+      </svg>
+      <div class="caption">
+        Override: <code>MAX_AGENT_FORCE_FULL=1</code> forțează deliberate indiferent de signals.
+        Defaults sunt în <code>DEFAULT_CONFIG</code>; pot fi suprascrise prin
+        <code>scope_gate.json</code> în <code>cwd</code> sau prin <code>--config PATH</code>.
       </div>
     </div>
 
@@ -491,26 +705,114 @@
       </div>
     </div>
 
-    <div class="loop">
-      <svg width="56" height="40" viewBox="0 0 56 40" fill="none">
-        <path d="M 4 36 Q 4 4, 28 4 Q 52 4, 52 28" stroke="#b8860b" stroke-width="2" fill="none"/>
-        <path d="M 48 24 L 52 28 L 52 32 L 56 28" stroke="#b8860b" stroke-width="2" fill="none"/>
-        <polygon points="50,32 52,28 54,32" fill="#b8860b"/>
+    <div class="decision">
+      <h3>Step 5b + 6 — confidence gate decision tree</h3>
+      <div class="lede">Cum se decide outcome-ul scris în <code>FEEDBACK.md</code> după aggregator. <code>scripts/confidence.py</code> derivă scorul; <code>scripts/log_feedback.py</code> îl gate-uiește pe 0.7.</div>
+      <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Confidence gate decision tree">
+        <rect x="270" y="10" width="180" height="36" rx="6" fill="#11151c" stroke="#2d3441"/>
+        <text x="360" y="33" text-anchor="middle" fill="#e5e7eb" font-size="12">report + confidence</text>
+        <line x1="360" y1="46" x2="360" y2="62" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,57 360,64 364,57" fill="#9ca3af"/>
+
+        <rect x="270" y="66" width="180" height="40" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="360" y="83" text-anchor="middle" fill="#e5e7eb" font-size="11">chosen == null</text>
+        <text x="360" y="97" text-anchor="middle" fill="#e5e7eb" font-size="11">OR skipped report?</text>
+        <line x1="450" y1="86" x2="588" y2="86" stroke="#fbbf24" stroke-width="1.5"/>
+        <polygon points="583,82 590,86 583,90" fill="#fbbf24"/>
+        <text x="519" y="80" text-anchor="middle" fill="#fbbf24" font-size="10">yes</text>
+        <rect x="590" y="66" width="110" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="645" y="86" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="700">PEND</text>
+        <text x="645" y="100" text-anchor="middle" fill="#fbbf24" font-size="9">no --outcome flag</text>
+        <line x1="360" y1="106" x2="360" y2="124" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,119 360,126 364,119" fill="#9ca3af"/>
+        <text x="368" y="119" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="270" y="128" width="180" height="38" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="360" y="151" text-anchor="middle" fill="#e5e7eb" font-size="11">confidence ≥ 0.7?</text>
+        <line x1="450" y1="147" x2="588" y2="147" stroke="#34d399" stroke-width="1.5"/>
+        <polygon points="583,143 590,147 583,151" fill="#34d399"/>
+        <text x="519" y="141" text-anchor="middle" fill="#6ee7b7" font-size="10">yes</text>
+        <rect x="590" y="128" width="110" height="38" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="645" y="144" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="700">OK</text>
+        <text x="645" y="158" text-anchor="middle" fill="#6ee7b7" font-size="9">auto, no prompt</text>
+        <line x1="360" y1="166" x2="360" y2="184" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,179 360,186 364,179" fill="#9ca3af"/>
+        <text x="368" y="179" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="270" y="188" width="180" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="360" y="205" text-anchor="middle" fill="#93c5fd" font-size="11">prompt user:</text>
+        <text x="360" y="219" text-anchor="middle" fill="#93c5fd" font-size="11">override la alt_id?</text>
+        <line x1="450" y1="208" x2="588" y2="208" stroke="#60a5fa" stroke-width="1.5"/>
+        <polygon points="583,204 590,208 583,212" fill="#60a5fa"/>
+        <text x="519" y="202" text-anchor="middle" fill="#93c5fd" font-size="10">picks alt</text>
+        <rect x="590" y="188" width="110" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="645" y="206" text-anchor="middle" fill="#93c5fd" font-size="13" font-weight="700">OVR</text>
+        <text x="645" y="220" text-anchor="middle" fill="#93c5fd" font-size="9">--override-target alt_id</text>
+        <line x1="360" y1="228" x2="360" y2="250" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,245 360,252 364,245" fill="#9ca3af"/>
+        <text x="368" y="245" fill="#9ca3af" font-size="10">no, chosen e bun</text>
+        <rect x="270" y="254" width="180" height="38" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="360" y="271" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="700">OK</text>
+        <text x="360" y="285" text-anchor="middle" fill="#6ee7b7" font-size="9">user confirmed chosen</text>
       </svg>
-      <div class="text">
-        <b>Feedback loop</b> — la finalul fiecărei deliberări, <code>build_report.py</code>
+      <div class="caption">
+        Outcome-urile sunt <code>OK</code>, <code>OVR</code>, <code>PEND</code>, <code>BAD</code>.
+        Tree-ul acoperă fluxul automatic la finalul step 6 — în plus, la prompt-ul de
+        confidence&nbsp;&lt;&nbsp;0.7 user-ul poate alege să <b>amâne</b> rating-ul
+        (echivalent cu <code>log_feedback.py</code> rulat fără <code>--outcome</code> →
+        <code>PEND</code>, închis retroactiv prin <code>stale_pendings</code>), iar
+        <code>--outcome BAD</code> e setat manual ulterior când vrea să marcheze o decizie
+        ca eșuată.
+      </div>
+    </div>
+
+    <div class="feedback-diagram">
+      <h3>Feedback loop — ciclul deliberare → calibrare → deliberare</h3>
+      <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Feedback loop cycle">
+        <rect x="14" y="100" width="150" height="60" rx="8" fill="#181d27" stroke="#2d3441"/>
+        <text x="89" y="124" text-anchor="middle" fill="#e5e7eb" font-size="12" font-weight="600">Deliberation</text>
+        <text x="89" y="140" text-anchor="middle" fill="#9ca3af" font-size="10">G · C · Cons</text>
+        <text x="89" y="153" text-anchor="middle" fill="#9ca3af" font-size="10">steps 1 → 5</text>
+
+        <line x1="164" y1="130" x2="220" y2="130" stroke="#34d399" stroke-width="1.5"/>
+        <polygon points="215,126 222,130 215,134" fill="#34d399"/>
+        <text x="192" y="120" text-anchor="middle" fill="#6ee7b7" font-size="9">step 6</text>
+        <text x="192" y="146" text-anchor="middle" fill="#6ee7b7" font-size="9">report + outcome</text>
+
+        <rect x="224" y="100" width="160" height="60" rx="8" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="304" y="120" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600">FEEDBACK.md</text>
+        <text x="304" y="138" text-anchor="middle" fill="#fbbf24" font-size="10">+ runs/&lt;file&gt;.json</text>
+        <text x="304" y="152" text-anchor="middle" fill="#fbbf24" font-size="9">OK / OVR / PEND / BAD</text>
+
+        <line x1="384" y1="130" x2="440" y2="130" stroke="#34d399" stroke-width="1.5"/>
+        <polygon points="435,126 442,130 435,134" fill="#34d399"/>
+        <text x="412" y="120" text-anchor="middle" fill="#6ee7b7" font-size="9">next run</text>
+        <text x="412" y="146" text-anchor="middle" fill="#6ee7b7" font-size="9">reads history</text>
+
+        <rect x="444" y="100" width="150" height="60" rx="8" fill="#182338" stroke="#2a3f5f"/>
+        <text x="519" y="120" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">priors.py</text>
+        <text x="519" y="138" text-anchor="middle" fill="#93c5fd" font-size="9">override_rate, veto_rate,</text>
+        <text x="519" y="152" text-anchor="middle" fill="#93c5fd" font-size="9">top keywords, stale_pendings</text>
+
+        <path d="M 519 100 Q 519 30 89 30 Q 89 30 89 100" stroke="#34d399" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+        <polygon points="85,95 89,102 93,95" fill="#34d399"/>
+        <text x="304" y="22" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="600">soft priors injected at step 0 (bootstrap)</text>
+
+        <line x1="304" y1="160" x2="304" y2="194" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <polygon points="300,189 304,196 308,189" fill="#fbbf24"/>
+        <rect x="180" y="200" width="248" height="44" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="304" y="218" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600">stale_pendings (PEND mai vechi de 7 zile)</text>
+        <text x="304" y="234" text-anchor="middle" fill="#fbbf24" font-size="9">prezentate user-ului înainte de step 1 pentru retro-close</text>
+      </svg>
+      <div class="narrative">
+        <b>Loop-ul în cuvinte</b>: la finalul fiecărei deliberări, <code>build_report.py</code>
         asamblează raportul canonic, <code>validate_report.py</code> verifică Principle #4
-        (shape + telemetry.mode + deliberation_log), iar <code>log_feedback.py</code> appendează
-        outcome-ul în <code>FEEDBACK.md</code> gate-uit pe confidence: <b>auto-OK</b> la
-        <code>confidence &ge; 0.7</code>, prompt user pentru <b>OVR</b>/no/skip la
-        <code>confidence &lt; 0.7</code>. Dacă <code>confidence</code> e <code>null</code>
-        (toți candidates vetoiți), <code>log_feedback.py</code> rulează fără flag (default
-        <b>PEND</b>) — veto total = no decision = no outcome to rate.
-        La începutul rulării următoare, <code>priors.py</code>
-        citește <code>runs/</code> + <code>FEEDBACK.md</code> și încarcă priorii soft
-        (override_rate, veto_rate, top keywords) plus <code>stale_pendings</code> — entries
-        PEND mai vechi de 7 zile pe care agentul le prezintă user-ului pentru închidere
-        retrospectivă înainte de step 1.
+        (shape + telemetry.mode + deliberation_log), iar <code>log_feedback.py</code>
+        appendează o linie în <code>FEEDBACK.md</code> conform tree-ului de mai sus.
+        La începutul rulării următoare, <code>priors.py</code> citește <code>runs/</code>
+        + <code>FEEDBACK.md</code> și calculează priorii soft pe care agentul îi injectează
+        în prompts — astfel skill-ul își calibrează singur intuiția de risc/override pe baza
+        istoricului real, nu doar a defaults-urilor.
       </div>
     </div>
 
