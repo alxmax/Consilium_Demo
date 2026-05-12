@@ -245,19 +245,21 @@ Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat; tipărește deta
 
    - **`confidence >= 0.7`** — pickul are agreement și separation suficient; auto-OK fără să întrebi user-ul:
      ```bash
-     cat runs/<file>.json | python scripts/log_feedback.py --outcome OK
+     cat runs/<file>.json | python scripts/log_feedback.py --outcome OK --run-path runs/<file>.json
      ```
 
    - **`confidence < 0.7`** — întreabă user-ul: *"Confidence sub prag (`<X>`). Vrei să override-ezi `<chosen>`? Alternative din raport: `<alt_id list>`. Răspunde alt_id, 'no', sau 'skip'."* Apoi:
-     - `no` → `python scripts/log_feedback.py --outcome OK`
-     - `<alt_id>` → `python scripts/log_feedback.py --outcome OVR --override-target <alt_id>` (cu `--user-note "<motiv>"` opțional)
-     - `skip` → `python scripts/log_feedback.py` (PEND, default — user-ul închide manual mai târziu)
+     - `no` → `python scripts/log_feedback.py --outcome OK --run-path runs/<file>.json`
+     - `<alt_id>` → `python scripts/log_feedback.py --outcome OVR --override-target <alt_id> --run-path runs/<file>.json` (cu `--user-note "<motiv>"` opțional)
+     - `skip` → `python scripts/log_feedback.py --run-path runs/<file>.json` (PEND, default — user-ul închide manual mai târziu)
 
-   - **`confidence` is null** (toți candidates vetoiți) — `python scripts/log_feedback.py` fără flag. Veto total = no decision = no outcome to rate.
+   - **`confidence` is null** (toți candidates vetoiți) — `python scripts/log_feedback.py --run-path runs/<file>.json` fără flag outcome. Veto total = no decision = no outcome to rate.
 
    Pragul `0.7` e o decizie de workflow în acest fișier, nu config în script. Schimbarea pragului = o editare aici. `--dry-run` previzualizează linia fără să scrie, în orice combinație de flag-uri.
 
    Script-ul derivă coloana note automat: `"skipped: <reason>"`, `"all vetoed; relaxed=<X>"`, sau `"<N> cand, <K> vetoed, conf=<X>, mode=<Y>"`. Când outcome e OVR, se append-ează `; override=<target>` și (opțional) nota user-ului.
+
+   **Windows note:** Use `python -X utf8 ...` or feed the JSON via `python` directly — PowerShell's `Get-Content | ...` adds a UTF-8 BOM that breaks `json.load(sys.stdin)`.
 
 ## Skill maintenance
 
@@ -309,7 +311,7 @@ Output-ul arată: rata de succes, override-uri recente, ce scheme s-au folosit c
 Skill-ul învață din uz real prin două artefacte. Aici e descrierea lor; *cum* sunt folosite (citite la Step 0, scrise la Step 6, auditate periodic) e prescris în Workflow și Skill maintenance.
 
 - **`runs/`** — JSON complet per deliberare în `runs/YYYY-MM-DD_HHMM_<short-label>.json` (schema în `runs/README.md`). Fișierele sunt gitignored (personale). Citite de `priors.py` (Step 0) și `usage.py` / `feedback.py` (Skill maintenance). Scrise la finalul Step 6.
-- **`FEEDBACK.html`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Local/personal — gitignored (la fel ca `runs/*.json`), nu shared între mașini. User-ul îl scrie când e cerut la finalul Step 6.
+- **`FEEDBACK.html`** — jurnal manual, o linie per folosire, format `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR` (override), `PEND`. Local/personal — gitignored (la fel ca `runs/*.json`), nu shared între mașini. User-ul îl scrie când e cerut la finalul Step 6. **Drill-down note:** When `log_feedback.py` appends a new entry, existing rows lose their drill-down (parser doesn't persist `run_path` between renders); only the freshly-logged row keeps it. Use the `migrate_feedback_md_to_html.py` script for bulk re-population if needed.
 
 ## Parallel voices mode (opt-in)
 
