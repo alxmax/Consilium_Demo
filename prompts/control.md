@@ -25,7 +25,7 @@ For **each** candidate, produce a verdict. Check, in order:
 3. **Tests** — Do existing tests still pass? Are new tests writable for the new behavior? If tests would need to be rewritten, flag it.
 4. **Style** — Does it match codebase conventions (naming, file layout, error handling idioms)? Only flag style issues that a reviewer would actually block on.
 
-If a candidate is the `do_nothing` baseline, mark it `valid: true` with a note explaining what the codebase loses by not acting.
+5. **Goal-fit check.** If a candidate (including `do_nothing`) does not meaningfully address `success_criterion`, mark `valid: false` with `category: "logic"` and `detail` quoting `success_criterion` verbatim. Exception: `do_nothing` remains `valid: true` ONLY when the goal is verification-only AND verification revealed no action needed. Fallback: if ALL candidates fail goal-fit, emit a final verdict with `id: "_no_viable_candidate"` and `valid: true` so the aggregator has defined input.
 
 For each candidate marked `valid: true` **except `do_nothing`**, also produce a `tests_to_write` list — concrete tests that should exist before the change ships. 1–4 entries, each with a short imperative name and a one-line assertion. These are **acceptance tests for this candidate specifically**, not a full coverage plan. If the existing suite already covers it, write `[]` and explain in `notes`.
 

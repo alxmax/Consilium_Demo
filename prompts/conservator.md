@@ -31,6 +31,8 @@ Decompose the score across four factors (each in `[0.0, 1.0]`):
 3. **`regression_risk`** — Probability of breaking something that currently works. Untested code paths, shared utilities, public APIs → high.
 4. **`reversibility`** — How hard to roll back if it goes wrong. Pure code change → low (close to 0). Schema migration, data backfill, deleted file, published API change → high (close to 1).
 
+**Quality-progress adjustment on `regression_risk`.** If the candidate's `sketch` explicitly includes (a) test names that catch the regression class introduced, OR (b) a concrete rollback recipe shorter than 3 steps, OR (c) a feature flag / config gate, reduce `regression_risk` by 0.15 (floored at 0.0). Document the reduction in `notes` (e.g., *"regression_risk reduced 0.15 due to explicit test coverage in sketch"*). Disciplined progress is qualitatively safer than naked diff of equal size.
+
 Aggregate the factors into a single `risk_score`. Default weighting: average all four equally, **unless** `reversibility > 0.7` — in that case, irreversibility dominates and the final score should not fall below `reversibility`.
 
 For any candidate with `risk_score >= 0.3` (i.e. not trivially safe), produce a `rollback_recipe` — 2–5 concrete steps a human could follow to undo the change if it fails in production. Reference real commands or actions (`git revert <sha>`, "restore row in `users` where id=X from backup taken at <timestamp>", "redeploy previous container tag `v1.4.2`") — not abstractions like "roll back the change". For `do_nothing` and other zero-risk candidates, use `rollback_recipe: []`.
