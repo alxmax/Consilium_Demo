@@ -45,6 +45,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import statistics
 import sys
 
@@ -149,6 +150,52 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     return []
 
 
+VOTE_PATTERN_REGEX = re.compile(r"^[0-3]-[0-3](-[0-1])?$")
+
+_TRIAS_NULL_PATTERNS = {"1-1-1", "1-1-0", "1-0-0", "0-0-0"}
+_TRIAS_EXPECTED_NAMES = {"pioneer", "architect", "steward"}
+
+
+def _validate_trias(report: dict, errors: list) -> None:
+    """Trias-specific validation. Only runs when report has team == 'trias'."""
+    personalities = report.get("personalities")
+    if not isinstance(personalities, list) or len(personalities) != 3:
+        errors.append("trias: personalities must be a list of exactly 3 entries")
+        return
+    names_seen: set[str] = set()
+    for i, p in enumerate(personalities):
+        for f in ("name", "weights", "lens", "chose"):
+            if f not in p:
+                errors.append(f"trias: personalities[{i}] missing field {f!r}")
+        if "name" in p:
+            if p["name"] in names_seen:
+                errors.append(f"trias: duplicate personality name {p['name']!r}")
+            names_seen.add(p["name"])
+    if names_seen and names_seen != _TRIAS_EXPECTED_NAMES:
+        errors.append(
+            f"trias: personality names must be exactly {sorted(_TRIAS_EXPECTED_NAMES)},"
+            f" got {sorted(names_seen)}"
+        )
+
+    pattern = report.get("vote_pattern")
+    if not pattern or not VOTE_PATTERN_REGEX.match(pattern):
+        errors.append(f"trias: vote_pattern missing or malformed (got {pattern!r})")
+
+    chosen = report.get("chosen_approach")
+    conf = report.get("confidence")
+    if pattern in _TRIAS_NULL_PATTERNS:
+        if chosen is not None:
+            errors.append(
+                f"trias: vote_pattern {pattern!r} requires chosen_approach=null,"
+                f" got {chosen!r}"
+            )
+        if conf is not None:
+            errors.append(
+                f"trias: vote_pattern {pattern!r} requires confidence=null,"
+                f" got {conf!r}"
+            )
+
+
 def validate(report: dict) -> list[str]:
     problems: list[str] = []
     for field in REQUIRED_NON_EMPTY:
@@ -174,11 +221,16 @@ def validate(report: dict) -> list[str]:
     if "telemetry" in report:
         problems.extend(_validate_telemetry(report["telemetry"]))
 
+    is_trias = report.get("team") == "trias"
     problems.extend(_validate_deliberation_log(
         report.get("deliberation_log"),
-        report.get("skipped") is True,
+        report.get("skipped") is True or is_trias,
     ))
-    problems.extend(_validate_telemetry_required(report))
+    if not is_trias:
+        problems.extend(_validate_telemetry_required(report))
+
+    if is_trias:
+        _validate_trias(report, problems)
 
     return problems
 

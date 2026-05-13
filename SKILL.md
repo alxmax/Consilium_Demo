@@ -170,7 +170,7 @@ python scripts/run_evals.py
 | `scripts/log_feedback.py` | Auto-append în FEEDBACK.html la finalul Step 6 |
 | `scripts/strip_context.py` | Proiectează output voce anterioară la minim (Steps 3-4 sequential) |
 | `scripts/dialectic_merge.py` | Combină Pass-1 + Pass-2 în payload aggregator-ready |
-| `scripts/personalities.py` | Rejection sampling pentru ensemble mode |
+| `scripts/personalities.py` | Trias mode — 3 personalități fixe cu weights + lens paths |
 | `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite scripturi deterministe |
 | `scripts/usage.py` | Rollup telemetry din runs/ |
 | `agents/consilium-subagent.md` | Subagent pentru invocare izolată via `Agent(subagent_type="consilium-subagent", ...)` |
@@ -215,10 +215,38 @@ Return STRICTLY the JSON specified in the "Output format" section above. No pros
 
 Two-pass: Pass 1 = parallel; Pass 2 = fiecare voce revizuiește văzând output-urile celorlalte două. Cost: 2× parallel. Implementat în `scripts/dialectic_merge.py`.
 
-## Ensemble mode (opțional)
+## Trias mode (high-stakes opt-in)
 
-Pentru high-stakes (migrări DB, security, refactor mare):
-```bash
-python scripts/personalities.py 5
-```
-Generează N=4–6 personalități cu weights random `w ∈ [0.2, 0.49]`. Rulează skill-ul de N ori, agregă cu `--scheme weighted`.
+**Mecanica:** 3 personalități fixe (Pioneer / Architect / Steward) deliberează în paralel cu lens prompts injectate, fiecare aplicând weights diferite peste output. Vot democratic majoritar peste cele 3 chosen-uri.
+
+### Când să folosești
+- Schema/DB migration ireversibilă
+- Security audit (auth, crypto, RCE potential)
+- Refactor > 5 fișiere
+- 2+ abordări arhitecturale plauzibile, fără clear winner
+- Costul deciziei greșite >> costul rulării (9 sub-agenți, 3× Parallel)
+
+### Workflow
+1. Orchestrator citește `python -X utf8 scripts/personalities.py` — emite cele 3 personalități
+2. Pentru fiecare personalitate, dispatch 3 voci (Gen/Ctrl/Cons) cu `prompts/<voice>.md` + `prompts/<personality>_lens.md` prepended
+3. Personalitatea agregă voice scores cu weights proprii → `chose`
+4. Orchestrator rulează `python -X utf8 scripts/aggregator.py --scheme team_vote` peste cele 3 chosen-uri
+5. Confidence derivat din vote_pattern (3-0/2-1/2-0 = OK auto; 1-1-1/0-0-0 = PEND)
+
+### Vote patterns
+| Pattern | Confidence | Outcome |
+|---|---|---|
+| 3-0 | 0.95 | OK auto |
+| 2-1 | 0.70 | OK auto |
+| 2-0 | 0.75 | OK auto |
+| 1-1-1 / 1-1-0 / 1-0-0 | null | PEND |
+| 0-0-0 | null | PEND + retry_suggested |
+
+### Failure recovery
+- **1-1-1 fragmentation:** orchestrator întreabă user — accept one, re-run with constraints, or abort
+- **0-0-0 total veto:** emite `retry_suggested` cu relaxed threshold sau Generator constraints
+
+### Skip Trias dacă
+- Diff < 20 lines / 1 fișier — `scope_gate.py` va skip oricum
+- Conservatism strict cerut (Trias agregat e −18% Conservator)
+- Bugfix evident — Sequential blind ajunge

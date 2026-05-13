@@ -190,6 +190,21 @@ def build(bundle: dict) -> dict:
     }
     if "telemetry" in bundle:
         report["telemetry"] = bundle["telemetry"]
+    # Trias mode: pass through team/personalities/vote_pattern/dissent/abstained
+    # fields when present in the bundle. These come from the orchestrator after
+    # the team_vote aggregator scheme runs.
+    if "team" in bundle:
+        report["team"] = bundle["team"]
+    if "personalities" in bundle:
+        report["personalities"] = bundle["personalities"]
+    if "vote_pattern" in bundle:
+        report["vote_pattern"] = bundle["vote_pattern"]
+    aggregate = bundle.get("aggregate", {})
+    if isinstance(aggregate, dict):
+        if "dissent" in aggregate:
+            report["dissent"] = aggregate["dissent"]
+        if "abstained" in aggregate:
+            report["abstained"] = aggregate["abstained"]
     return report
 
 

@@ -65,6 +65,40 @@ SEPARATION_WEIGHT = 0.3
 CONFIDENCE_FLOOR = 0.05
 CONFIDENCE_CEIL = 0.99
 
+VOTE_PATTERN_CONFIDENCE = {
+    "3-0": 0.95,
+    "2-1": 0.70,
+    "2-0": 0.75,
+    "1-1-1": None,
+    "1-1-0": None,
+    "1-0-0": None,
+    "0-0-0": None,
+}
+
+
+def confidence_from_vote_pattern(pattern: str) -> dict:
+    """Trias mode — derive confidence directly from democratic vote pattern.
+
+    Returns the canonical confidence shape (confidence, agreement, separation)
+    so downstream code doesn't need to branch on whether the input was Trias
+    or score-based.
+    """
+    if pattern not in VOTE_PATTERN_CONFIDENCE:
+        raise ValueError(f"unknown vote pattern: {pattern!r}")
+    conf = VOTE_PATTERN_CONFIDENCE[pattern]
+    if pattern == "3-0":
+        agreement = 1.0
+    elif pattern in ("2-1", "2-0"):
+        agreement = 2 / 3
+    else:
+        agreement = 0.0
+    return {
+        "confidence": conf,
+        "agreement": agreement,
+        "separation": None,
+        "source": "vote_pattern",
+    }
+
 
 def _utility_vec(scores: dict) -> list[float]:
     """Project the three voices onto a common [0,1] = good axis."""
@@ -149,6 +183,15 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     data = json.load(args.input)
+
+    # Trias mode: when vote_pattern is present, derive confidence from pattern
+    # instead of from utility/variance over voice scores.
+    if "vote_pattern" in data:
+        result = confidence_from_vote_pattern(data["vote_pattern"])
+        json.dump(result, sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return 0
+
     validate_input(data)
     result = derive(data.get("candidates", []), data.get("chosen"))
     json.dump(result, sys.stdout, indent=2)

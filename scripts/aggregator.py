@@ -231,6 +231,77 @@ def aggregate_risk_adjusted_utility(candidates: list[dict]) -> dict:
     }
 
 
+def aggregate_team_vote(personalities: list[dict], candidates: list[dict]) -> dict:
+    """Trias mode — democratic majority vote over 3 personalities' chosen-uri.
+
+    Input personalities have shape: {"name": str, "chose": str | None}.
+    Vote pattern is derived from the count of chosen-uri:
+    - 3-0: all 3 personalities agree
+    - 2-1: 2 agree, 1 prefers different candidate
+    - 2-0: 2 agree, 1 abstain (chose=null)
+    - 1-1-1: 3 different chosen-uri
+    - 1-1-0: 2 different chosen-uri + 1 abstain
+    - 1-0-0: 1 chosen + 2 abstain
+    - 0-0-0: all abstain (total veto)
+    """
+    if len(personalities) != 3:
+        raise ValueError(f"team_vote requires exactly 3 personalities, got {len(personalities)}")
+
+    valid_ids = {c["id"] for c in candidates}
+    valid_ids.add(None)
+
+    tally: dict = {}
+    abstained: list = []
+    for p in personalities:
+        chose = p.get("chose")
+        if chose not in valid_ids:
+            raise ValueError(f"personality {p.get('name')!r} chose unknown candidate {chose!r}")
+        if chose is None:
+            abstained.append({"name": p["name"], "reason": "all candidates vetoed"})
+        else:
+            tally[chose] = tally.get(chose, 0) + 1
+
+    counts = sorted(tally.values(), reverse=True)
+    abstain_count = len(abstained)
+    pattern_parts = list(counts) + [0] * abstain_count
+    # Always show second slot for 3-personality vote so 3-0/2-1/2-0 are readable.
+    while len(pattern_parts) < 2:
+        pattern_parts.append(0)
+    vote_pattern = "-".join(str(x) for x in pattern_parts)
+
+    chosen: str | None = None
+    if counts:
+        top = counts[0]
+        # Majority = strictly more than half; with 3 voters, majority is >=2 votes.
+        if top >= 2:
+            for cid, n in tally.items():
+                if n == top:
+                    chosen = cid
+                    break
+
+    dissent: list = []
+    if chosen and len(tally) > 1:
+        for p in personalities:
+            cid = p.get("chose")
+            if cid is not None and cid != chosen:
+                dissent.append({"personality": p["name"], "chose": cid})
+
+    result = {
+        "scheme": "team_vote",
+        "vote_pattern": vote_pattern,
+        "chosen": chosen,
+        "vote_tally": tally,
+        "dissent": dissent,
+        "abstained": abstained,
+    }
+    if vote_pattern == "0-0-0":
+        result["retry_suggested"] = {
+            "reason": "all 3 personalities vetoed every candidate",
+            "hint": "relax conservator threshold or re-run Generator with risk constraints",
+        }
+    return result
+
+
 SCHEMES = {
     "majority": lambda data: aggregate_majority(data["candidates"]),
     "weighted": lambda data: aggregate_weighted(data["candidates"], data["weights"]),
@@ -241,6 +312,9 @@ SCHEMES = {
     ),
     "risk_adjusted_utility": lambda data: aggregate_risk_adjusted_utility(
         data["candidates"]
+    ),
+    "team_vote": lambda data: aggregate_team_vote(
+        data["personalities"], data["candidates"]
     ),
 }
 

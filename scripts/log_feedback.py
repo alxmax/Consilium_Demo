@@ -155,6 +155,7 @@ def build_entry(
         "chosen": chosen_s,
         "outcome": outcome,
         "note": note,
+        "vote_pattern": _clean(report.get("vote_pattern") or ""),
     }
 
 
@@ -195,6 +196,7 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None
         outcome=entry["outcome"],
         note=entry["note"],
         run_path=run_path,
+        vote_pattern=entry.get("vote_pattern", ""),
     )
     entries.append(new_entry)
 
