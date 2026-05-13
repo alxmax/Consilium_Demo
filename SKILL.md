@@ -43,6 +43,8 @@ Două acțiuni, în ordine, **înainte** de a explora codul user-ului:
 
    Dacă `priors.py` raportează `stale_pendings` non-empty (PEND-uri mai vechi de 7 zile, max 5 entries), oprește **înainte** de Step 1 și întreabă user-ul: *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid acum (OK/BAD/skip per entry) sau să continuăm cu deliberarea nouă?"* Update-ul se face cu `Edit` tool pe `FEEDBACK.html` (înlocuiește literalul `PEND` din linia respectivă cu `OK` sau `BAD`), **nu** prin `log_feedback.py` — acela appendează o linie nouă, ducând la istoric dublu pentru aceeași deliberare. Dacă user-ul răspunde "skip", continuă la Step 1 fără modificări.
 
+   Dacă `priors.py` raportează `pend_pressure > 0.5` (mai mult de jumătate din ultimele N entries sunt PEND), adaugă o alertă scurtă înainte de Step 1: *"Atenție: {pend_count}/{window_size} entries recente sunt PEND — consideri să le închizi înainte de a adăuga o deliberare nouă?"* Nu bloca deliberarea — e un soft prompt, user-ul poate ignora.
+
 ### 1. Gather context & state the goal
 Citește schimbarea propusă (diff, fișiere atinse). Identifică:
 - Scope: câte fișiere, câte module, câte linii

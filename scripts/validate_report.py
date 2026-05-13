@@ -45,6 +45,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import statistics
 import sys
 
 
@@ -79,6 +80,8 @@ def _validate_telemetry(telemetry: object) -> list[str]:
                         problems.append(
                             f"telemetry.voices.{vname}.{f} must be a non-negative int"
                         )
+            if not problems:
+                _warn_latency_spikes(voices)
     if "passes" in telemetry:
         p = telemetry["passes"]
         if not (isinstance(p, int) and not isinstance(p, bool) and p > 0):
@@ -108,6 +111,26 @@ def _validate_deliberation_log(log: object, skipped: bool) -> list[str]:
     return []
 
 
+def _warn_latency_spikes(voices: dict) -> None:
+    latencies = {
+        v: d["latency_ms"]
+        for v, d in voices.items()
+        if isinstance(d, dict) and isinstance(d.get("latency_ms"), int) and not isinstance(d.get("latency_ms"), bool)
+    }
+    if len(latencies) < 2:
+        return
+    vnames = list(latencies.keys())
+    for i, vname in enumerate(vnames):
+        peers = [latencies[n] for j, n in enumerate(vnames) if j != i]
+        peer_median = statistics.median(peers)
+        if peer_median > 0 and latencies[vname] > 2 * peer_median:
+            print(
+                f"[warning] latency_spike: {vname} {latencies[vname]}ms > 2× "
+                f"peer median {peer_median:.0f}ms",
+                file=sys.stderr,
+            )
+
+
 def _validate_telemetry_required(report: dict) -> list[str]:
     if report.get("skipped") is True:
         return []
@@ -117,6 +140,10 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     mode = telemetry.get("mode")
     if not isinstance(mode, str) or not mode.strip():
         return ["telemetry.mode required (non-empty string) for non-skipped reports"]
+    if mode.strip() == "parallel":
+        voices = telemetry.get("voices")
+        if not isinstance(voices, dict) or len(voices) == 0:
+            return ["telemetry.mode=parallel requires telemetry.voices (non-empty dict); capture per-voice tokens/latency at dispatch"]
     return []
 
 
