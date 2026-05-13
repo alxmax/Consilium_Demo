@@ -48,6 +48,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from utils import force_utf8_streams, load_json_stdin
+
 
 CONTEXT_MAX = 60
 NOTE_MAX = 80
@@ -205,17 +207,8 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None
     feedback_path.write_text(render_mod.render(entries, runs_dir), encoding="utf-8")
 
 
-def _force_utf8_streams() -> None:
-    # Windows default stdin/stdout encoding is cp1252; piping UTF-8 JSON
-    # through that mangles non-ASCII (ț, ș, ă) before any script sees it.
-    for stream in (sys.stdin, sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure:
-            reconfigure(encoding="utf-8")
-
-
 def main(argv: list[str] | None = None) -> int:
-    _force_utf8_streams()
+    force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: ./FEEDBACK.html)")
     ap.add_argument("--dry-run", action="store_true", help="print summary, don't write file")
@@ -232,13 +225,9 @@ def main(argv: list[str] | None = None) -> int:
         help="allow --outcome OK even when confidence < 0.70 (use when user has confirmed the pick despite low confidence)")
     args = ap.parse_args(argv)
 
-    try:
-        report = json.load(sys.stdin)
-    except json.JSONDecodeError as exc:
-        print(f"invalid JSON: {exc}", file=sys.stderr)
-        return 2
+    report = load_json_stdin("log_feedback.py")
     if not isinstance(report, dict):
-        print("report must be a JSON object", file=sys.stderr)
+        print("log_feedback.py: report must be a JSON object", file=sys.stderr)
         return 2
 
     if args.outcome == "OK":
