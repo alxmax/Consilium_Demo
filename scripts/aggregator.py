@@ -36,6 +36,7 @@ import json
 import math
 import statistics
 import sys
+import warnings
 from typing import Any
 
 VOICES = ("generator", "control", "conservator")
@@ -69,6 +70,12 @@ def aggregate_majority(candidates: list[dict]) -> dict:
 
 def aggregate_weighted(candidates: list[dict], weights: dict) -> dict:
     """Weighted average across voices using supplied weights."""
+    warnings.warn(
+        "aggregate_weighted treats Conservator as utility (higher=better), but Conservator "
+        "emits risk (higher=worse). Scores will be inverted relative to other schemes. "
+        "Use 'conservative_override' or 'risk_adjusted_utility' instead.",
+        stacklevel=2,
+    )
     w = [float(weights[v]) for v in VOICES]
     s = sum(w)
     if s <= 0:
@@ -107,6 +114,10 @@ def aggregate_conservative_override(
     chosen=None. We do not pick automatically — that would defeat the
     veto's purpose.
     """
+    if not (0.0 <= veto_threshold <= 1.0):
+        raise ValueError(
+            f"veto_threshold must be in [0.0, 1.0], got {veto_threshold!r}"
+        )
     weights = weights or {v: 1 / 3 for v in VOICES}
 
     survivors = []
