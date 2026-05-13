@@ -41,6 +41,8 @@ import argparse
 import json
 import sys
 
+from utils import force_utf8_streams
+
 
 CANDIDATE_KEEP = ("id", "summary", "sketch")
 
@@ -76,17 +78,8 @@ PROJECTIONS = {
 }
 
 
-def _force_utf8_streams() -> None:
-    # Windows default stdin/stdout encoding is cp1252; piping UTF-8 JSON
-    # through that mangles non-ASCII (ț, ș, ă) before any script sees it.
-    for stream in (sys.stdin, sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure:
-            reconfigure(encoding="utf-8")
-
-
 def main(argv: list[str] | None = None) -> int:
-    _force_utf8_streams()
+    force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--for",

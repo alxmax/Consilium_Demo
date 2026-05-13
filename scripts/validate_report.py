@@ -48,6 +48,8 @@ import json
 import statistics
 import sys
 
+from utils import force_utf8_streams
+
 
 REQUIRED_NON_EMPTY = ("success_criterion", "verification")
 NULLABLE_NON_EMPTY = ("chosen_approach",)
@@ -181,17 +183,8 @@ def validate(report: dict) -> list[str]:
     return problems
 
 
-def _force_utf8_streams() -> None:
-    # Windows default stdin/stdout encoding is cp1252; piping UTF-8 JSON
-    # through that mangles non-ASCII (ț, ș, ă) before any script sees it.
-    for stream in (sys.stdin, sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure:
-            reconfigure(encoding="utf-8")
-
-
 def main(argv: list[str] | None = None) -> int:
-    _force_utf8_streams()
+    force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--input",

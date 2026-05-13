@@ -47,6 +47,8 @@ import json
 import sys
 from typing import Any
 
+from utils import force_utf8_streams
+
 
 def _err(msg: str) -> None:
     print(msg, file=sys.stderr)
@@ -181,17 +183,8 @@ def _default_reasoning(aggregate: dict, confidence_block: dict) -> str:
     return f"{scheme} picked {chosen} (confidence={conf_s})"
 
 
-def _force_utf8_streams() -> None:
-    # Windows default stdin/stdout encoding is cp1252; piping UTF-8 JSON
-    # through that mangles non-ASCII (ț, ș, ă) before any script sees it.
-    for stream in (sys.stdin, sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure:
-            reconfigure(encoding="utf-8")
-
-
 def main(argv: list[str] | None = None) -> int:
-    _force_utf8_streams()
+    force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--input",
