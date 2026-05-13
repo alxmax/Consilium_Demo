@@ -1,6 +1,13 @@
 # Consilium
 
-**Multi-agent deliberation pattern, packaged as a Claude Code skill** (identifier: `consilium`). Three independent voices evaluate code changes in parallel, with explicit voting and veto.
+Three specialized sub-agents (Generator / Control / Conservator) 
+are orchestrated by a Claude Code skill that aggregates their outputs 
+via configurable voting schemes into a canonical JSON decision. — 
+creative, analytical, and risk-focused — then vote on the best approach.
+
+Built as a Claude Code skill (identifier: `consilium`). The three voices 
+(Generator / Control / Conservator) run in parallel as separate sub-agents, 
+with explicit voting and veto logic aggregated into a canonical JSON report.
 
 - **Generator** (creative) — proposes alternatives, divergent thinking
 - **Control** (analytical) — verifies technical correctness
