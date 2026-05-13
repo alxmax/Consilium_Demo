@@ -2,92 +2,229 @@
   {
     "name": "aggregator/majority picks highest mean",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "majority"],
+    "args": [
+      "--scheme",
+      "majority"
+    ],
     "stdin_json": {
       "candidates": [
-        {"id": "a", "scores": {"generator": 0.9, "control": 0.9, "conservator": 0.2}},
-        {"id": "b", "scores": {"generator": 0.5, "control": 0.5, "conservator": 0.5}}
+        {
+          "id": "a",
+          "scores": {
+            "generator": 0.9,
+            "control": 0.9,
+            "conservator": 0.2
+          }
+        },
+        {
+          "id": "b",
+          "scores": {
+            "generator": 0.5,
+            "control": 0.5,
+            "conservator": 0.5
+          }
+        }
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "majority", "chosen": "a"}
+    "expect_stdout_subset": {
+      "scheme": "majority",
+      "chosen": "a"
+    }
   },
   {
     "name": "aggregator/weighted winner shifts when control is heavily weighted",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "weighted"],
+    "args": [
+      "--scheme",
+      "weighted"
+    ],
     "stdin_json": {
       "candidates": [
-        {"id": "a", "scores": {"generator": 0.9, "control": 0.3, "conservator": 0.2}},
-        {"id": "b", "scores": {"generator": 0.3, "control": 0.9, "conservator": 0.2}}
+        {
+          "id": "a",
+          "scores": {
+            "generator": 0.9,
+            "control": 0.3,
+            "conservator": 0.2
+          }
+        },
+        {
+          "id": "b",
+          "scores": {
+            "generator": 0.3,
+            "control": 0.9,
+            "conservator": 0.2
+          }
+        }
       ],
-      "weights": {"generator": 0.1, "control": 0.8, "conservator": 0.1}
+      "weights": {
+        "generator": 0.1,
+        "control": 0.8,
+        "conservator": 0.1
+      }
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "weighted", "chosen": "b"}
+    "expect_stdout_subset": {
+      "scheme": "weighted",
+      "chosen": "b"
+    }
   },
   {
     "name": "aggregator/conservative_override vetoes risky candidate",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "conservative_override"],
+    "args": [
+      "--scheme",
+      "conservative_override"
+    ],
     "stdin_json": {
       "candidates": [
-        {"id": "safe", "scores": {"generator": 0.7, "control": 0.7, "conservator": 0.3}},
-        {"id": "risky", "scores": {"generator": 0.95, "control": 0.95, "conservator": 0.85}}
+        {
+          "id": "safe",
+          "scores": {
+            "generator": 0.7,
+            "control": 0.7,
+            "conservator": 0.3
+          }
+        },
+        {
+          "id": "risky",
+          "scores": {
+            "generator": 0.95,
+            "control": 0.95,
+            "conservator": 0.85
+          }
+        }
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "conservative_override", "chosen": "safe"}
+    "expect_stdout_subset": {
+      "scheme": "conservative_override",
+      "chosen": "safe"
+    }
   },
   {
     "name": "aggregator/conservative_override survivor ranking prefers lower risk at gen+ctrl tie",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "conservative_override"],
+    "args": [
+      "--scheme",
+      "conservative_override"
+    ],
     "stdin_json": {
       "candidates": [
-        {"id": "lower_risk",  "scores": {"generator": 0.8, "control": 0.8, "conservator": 0.4}},
-        {"id": "higher_risk", "scores": {"generator": 0.8, "control": 0.8, "conservator": 0.6}}
+        {
+          "id": "lower_risk",
+          "scores": {
+            "generator": 0.8,
+            "control": 0.8,
+            "conservator": 0.4
+          }
+        },
+        {
+          "id": "higher_risk",
+          "scores": {
+            "generator": 0.8,
+            "control": 0.8,
+            "conservator": 0.6
+          }
+        }
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "conservative_override", "chosen": "lower_risk"}
+    "expect_stdout_subset": {
+      "scheme": "conservative_override",
+      "chosen": "lower_risk"
+    }
   },
   {
     "name": "aggregator/conservative_override veto-all attaches retry_suggested",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "conservative_override"],
+    "args": [
+      "--scheme",
+      "conservative_override"
+    ],
     "stdin_json": {
       "candidates": [
-        {"id": "a", "scores": {"generator": 0.9, "control": 0.9, "conservator": 0.9}},
-        {"id": "b", "scores": {"generator": 0.7, "control": 0.7, "conservator": 0.85}}
+        {
+          "id": "a",
+          "scores": {
+            "generator": 0.9,
+            "control": 0.9,
+            "conservator": 0.9
+          }
+        },
+        {
+          "id": "b",
+          "scores": {
+            "generator": 0.7,
+            "control": 0.7,
+            "conservator": 0.85
+          }
+        }
       ]
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
       "chosen": null,
-      "retry_suggested": {"would_survive_relaxed": true}
+      "retry_suggested": {
+        "would_survive_relaxed": true
+      }
     }
   },
   {
     "name": "aggregator/risk_adjusted_utility prefers safe over high-utility-but-risky",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "risk_adjusted_utility"],
+    "args": [
+      "--scheme",
+      "risk_adjusted_utility"
+    ],
     "stdin_json": {
       "candidates": [
-        {"id": "safe_modest", "scores": {"generator": 0.6, "control": 0.6, "conservator": 0.2}},
-        {"id": "risky_brilliant", "scores": {"generator": 0.95, "control": 0.95, "conservator": 0.85}}
+        {
+          "id": "safe_modest",
+          "scores": {
+            "generator": 0.6,
+            "control": 0.6,
+            "conservator": 0.2
+          }
+        },
+        {
+          "id": "risky_brilliant",
+          "scores": {
+            "generator": 0.95,
+            "control": 0.95,
+            "conservator": 0.85
+          }
+        }
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "risk_adjusted_utility", "chosen": "safe_modest"}
+    "expect_stdout_subset": {
+      "scheme": "risk_adjusted_utility",
+      "chosen": "safe_modest"
+    }
   },
   {
     "name": "confidence/well-aligned chosen returns numeric confidence",
     "tool": "scripts/confidence.py",
     "stdin_json": {
       "candidates": [
-        {"id": "x", "scores": {"generator": 0.9, "control": 0.85, "conservator": 0.1}},
-        {"id": "y", "scores": {"generator": 0.4, "control": 0.4, "conservator": 0.6}}
+        {
+          "id": "x",
+          "scores": {
+            "generator": 0.9,
+            "control": 0.85,
+            "conservator": 0.1
+          }
+        },
+        {
+          "id": "y",
+          "scores": {
+            "generator": 0.4,
+            "control": 0.4,
+            "conservator": 0.6
+          }
+        }
       ],
       "chosen": "x"
     },
@@ -102,7 +239,9 @@
       "chosen": null
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"confidence": null}
+    "expect_stdout_subset": {
+      "confidence": null
+    }
   },
   {
     "name": "validate_report/full report with required fields passes",
@@ -112,12 +251,29 @@
       "verification": "run pytest",
       "chosen_approach": "approach_a",
       "deliberation_log": [
-        {"step": "generator",   "candidates": []},
-        {"step": "control",     "verdicts":   []},
-        {"step": "conservator", "scores":     []},
-        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
       ],
-      "telemetry": {"mode": "sequential"}
+      "telemetry": {
+        "mode": "sequential"
+      }
     },
     "expect_exit": 0
   },
@@ -143,7 +299,9 @@
       "skipped": true
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["skip_reason"]
+    "expect_stderr_contains": [
+      "skip_reason"
+    ]
   },
   {
     "name": "validate_report/missing success_criterion fails",
@@ -153,7 +311,9 @@
       "chosen_approach": "approach_a"
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["success_criterion"]
+    "expect_stderr_contains": [
+      "success_criterion"
+    ]
   },
   {
     "name": "validate_report/telemetry with malformed token count fails",
@@ -163,18 +323,39 @@
       "verification": "y",
       "chosen_approach": "approach_a",
       "deliberation_log": [
-        {"step": "generator",   "candidates": []},
-        {"step": "control",     "verdicts":   []},
-        {"step": "conservator", "scores":     []},
-        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
       ],
       "telemetry": {
         "mode": "parallel",
-        "voices": {"generator": {"tokens_in": -5}}
+        "voices": {
+          "generator": {
+            "tokens_in": -5
+          }
+        }
       }
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["tokens_in"]
+    "expect_stderr_contains": [
+      "tokens_in"
+    ]
   },
   {
     "name": "validate_report/well-formed telemetry passes",
@@ -184,18 +365,45 @@
       "verification": "y",
       "chosen_approach": "approach_a",
       "deliberation_log": [
-        {"step": "generator",   "candidates": []},
-        {"step": "control",     "verdicts":   []},
-        {"step": "conservator", "scores":     []},
-        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
       ],
       "telemetry": {
         "mode": "parallel",
         "passes": 1,
         "voices": {
-          "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
-          "control":     {"tokens_in":  800, "tokens_out": 200, "latency_ms": 2100},
-          "conservator": {"tokens_in":  900, "tokens_out": 180, "latency_ms": 1800}
+          "generator": {
+            "tokens_in": 1200,
+            "tokens_out": 400,
+            "latency_ms": 3500
+          },
+          "control": {
+            "tokens_in": 800,
+            "tokens_out": 200,
+            "latency_ms": 2100
+          },
+          "conservator": {
+            "tokens_in": 900,
+            "tokens_out": 180,
+            "latency_ms": 1800
+          }
         }
       }
     },
@@ -204,34 +412,75 @@
   {
     "name": "strip_context/for control drops rationale",
     "tool": "scripts/strip_context.py",
-    "args": ["--for", "control"],
+    "args": [
+      "--for",
+      "control"
+    ],
     "stdin_json": {
       "candidates": [
-        {"id": "a", "summary": "do x", "sketch": "code", "rationale": "must not leak"}
+        {
+          "id": "a",
+          "summary": "do x",
+          "sketch": "code",
+          "rationale": "must not leak"
+        }
       ]
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
-      "candidates": [{"id": "a", "summary": "do x", "sketch": "code"}]
+      "candidates": [
+        {
+          "id": "a",
+          "summary": "do x",
+          "sketch": "code"
+        }
+      ]
     }
   },
   {
     "name": "strip_context/for conservator drops invalid verdicts and issue text",
     "tool": "scripts/strip_context.py",
-    "args": ["--for", "conservator"],
+    "args": [
+      "--for",
+      "conservator"
+    ],
     "stdin_json": {
       "candidates": [
-        {"id": "a", "summary": "ok", "sketch": "good"},
-        {"id": "b", "summary": "bad", "sketch": "broken"}
+        {
+          "id": "a",
+          "summary": "ok",
+          "sketch": "good"
+        },
+        {
+          "id": "b",
+          "summary": "bad",
+          "sketch": "broken"
+        }
       ],
       "verdicts": [
-        {"id": "a", "valid": true, "issues": []},
-        {"id": "b", "valid": false, "issues": ["broken"]}
+        {
+          "id": "a",
+          "valid": true,
+          "issues": []
+        },
+        {
+          "id": "b",
+          "valid": false,
+          "issues": [
+            "broken"
+          ]
+        }
       ]
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
-      "candidates": [{"id": "a", "summary": "ok", "sketch": "good"}]
+      "candidates": [
+        {
+          "id": "a",
+          "summary": "ok",
+          "sketch": "good"
+        }
+      ]
     }
   },
   {
@@ -239,21 +488,69 @@
     "tool": "scripts/dialectic_merge.py",
     "stdin_json": {
       "pass1": {
-        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.4}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v1"
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": []
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.4
+            }
+          ]
+        }
       },
       "pass2": {
-        "generator":   {"candidates": [{"id": "a", "summary": "v2"}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v2"
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": []
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.3
+            }
+          ]
+        }
       }
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
       "revision_log": {
         "pass2_received": true,
-        "fallback_to_pass1": {"generator": false, "control": false, "conservator": false}
+        "fallback_to_pass1": {
+          "generator": false,
+          "control": false,
+          "conservator": false
+        }
       }
     }
   },
@@ -263,30 +560,80 @@
     "stdin_json": {
       "success_criterion": "introduce scope_gate auto without false-skip on sensitive paths",
       "verification": "run scope_gate on synthetic scenarios and run_evals 21/21",
-      "generator": {"candidates": [
-        {"id": "gate_with_blocklist", "summary": "files+lines+blocklist"},
-        {"id": "path_aware_only", "summary": "blocklist only, no max_lines"},
-        {"id": "do_nothing", "summary": "keep manual hint"}
-      ]},
-      "control": {"verdicts": [
-        {"id": "gate_with_blocklist", "valid": true, "issues": []},
-        {"id": "path_aware_only", "valid": true, "issues": [{"category": "logic", "detail": "PR mari false-skipped"}]},
-        {"id": "do_nothing", "valid": true, "issues": []}
-      ]},
-      "conservator": {"scores": [
-        {"id": "gate_with_blocklist", "risk_score": 0.30},
-        {"id": "path_aware_only", "risk_score": 0.55},
-        {"id": "do_nothing", "risk_score": 0.0}
-      ]},
-      "aggregate": {"scheme": "risk_adjusted_utility", "chosen": "gate_with_blocklist"},
-      "confidence": {"confidence": 0.79}
+      "generator": {
+        "candidates": [
+          {
+            "id": "gate_with_blocklist",
+            "summary": "files+lines+blocklist"
+          },
+          {
+            "id": "path_aware_only",
+            "summary": "blocklist only, no max_lines"
+          },
+          {
+            "id": "do_nothing",
+            "summary": "keep manual hint"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "gate_with_blocklist",
+            "valid": true,
+            "issues": []
+          },
+          {
+            "id": "path_aware_only",
+            "valid": true,
+            "issues": [
+              {
+                "category": "logic",
+                "detail": "PR mari false-skipped"
+              }
+            ]
+          },
+          {
+            "id": "do_nothing",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "gate_with_blocklist",
+            "risk_score": 0.3
+          },
+          {
+            "id": "path_aware_only",
+            "risk_score": 0.55
+          },
+          {
+            "id": "do_nothing",
+            "risk_score": 0.0
+          }
+        ]
+      },
+      "aggregate": {
+        "scheme": "risk_adjusted_utility",
+        "chosen": "gate_with_blocklist"
+      },
+      "confidence": {
+        "confidence": 0.79
+      }
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
       "success_criterion": "introduce scope_gate auto without false-skip on sensitive paths",
       "chosen_approach": "gate_with_blocklist",
       "confidence": 0.79,
-      "voice_scores": {"generator": 1.0, "control": 1.0, "conservator": 0.30}
+      "voice_scores": {
+        "generator": 1.0,
+        "control": 1.0,
+        "conservator": 0.3
+      }
     }
   },
   {
@@ -297,7 +644,11 @@
       "verification": "n/a",
       "skipped": true,
       "skip_reason": "1 file, 4 lines, no sensitive paths",
-      "signals": {"files_changed": 1, "lines_changed": 4, "blocklist_hits": []}
+      "signals": {
+        "files_changed": 1,
+        "lines_changed": 4,
+        "blocklist_hits": []
+      }
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
@@ -314,11 +665,17 @@
     "tool": "scripts/build_report.py",
     "stdin_json": {
       "verification": "y",
-      "generator": {"candidates": []},
-      "aggregate": {"chosen": "x"}
+      "generator": {
+        "candidates": []
+      },
+      "aggregate": {
+        "chosen": "x"
+      }
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["success_criterion"]
+    "expect_stderr_contains": [
+      "success_criterion"
+    ]
   },
   {
     "name": "build_report/output validates cleanly via validate_report contract",
@@ -326,11 +683,38 @@
     "stdin_json": {
       "success_criterion": "any non-empty sentence",
       "verification": "any non-empty step",
-      "generator": {"candidates": [{"id": "x", "summary": "x"}]},
-      "control": {"verdicts": [{"id": "x", "valid": true, "issues": []}]},
-      "conservator": {"scores": [{"id": "x", "risk_score": 0.2}]},
-      "aggregate": {"scheme": "majority", "chosen": "x"},
-      "confidence": {"confidence": 0.7}
+      "generator": {
+        "candidates": [
+          {
+            "id": "x",
+            "summary": "x"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "x",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "x",
+            "risk_score": 0.2
+          }
+        ]
+      },
+      "aggregate": {
+        "scheme": "majority",
+        "chosen": "x"
+      },
+      "confidence": {
+        "confidence": 0.7
+      }
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
@@ -342,25 +726,61 @@
   {
     "name": "log_feedback/normal report emits PEND line with cand+vetoed counts",
     "tool": "scripts/log_feedback.py",
-    "args": ["--dry-run"],
+    "args": [
+      "--dry-run"
+    ],
     "stdin_json": {
       "success_criterion": "scope_gate skips truly-trivial diffs without bypassing sensitive paths",
       "verification": "run scope_gate.py on synthetic inputs",
       "chosen_approach": "approach_a",
       "confidence": 0.82,
-      "telemetry": {"mode": "parallel"},
+      "telemetry": {
+        "mode": "parallel"
+      },
       "deliberation_log": [
-        {"step": "generator", "candidates": [{"id": "approach_a"}, {"id": "approach_b"}, {"id": "do_nothing"}]},
-        {"step": "aggregate", "result": {"vetoed": [{"id": "approach_b", "risk": 0.85}]}}
+        {
+          "step": "generator",
+          "candidates": [
+            {
+              "id": "approach_a"
+            },
+            {
+              "id": "approach_b"
+            },
+            {
+              "id": "do_nothing"
+            }
+          ]
+        },
+        {
+          "step": "aggregate",
+          "result": {
+            "vetoed": [
+              {
+                "id": "approach_b",
+                "risk": 0.85
+              }
+            ]
+          }
+        }
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_contains": ["PEND", "approach_a", "3 cand", "1 vetoed", "conf=0.82", "mode=parallel"]
+    "expect_stdout_contains": [
+      "PEND",
+      "approach_a",
+      "3 cand",
+      "1 vetoed",
+      "conf=0.82",
+      "mode=parallel"
+    ]
   },
   {
     "name": "log_feedback/skipped report emits skipped note",
     "tool": "scripts/log_feedback.py",
-    "args": ["--dry-run"],
+    "args": [
+      "--dry-run"
+    ],
     "stdin_json": {
       "success_criterion": "trivial change to docstring",
       "verification": "n/a",
@@ -369,51 +789,106 @@
       "skip_reason": "1 file, 4 lines, no sensitive paths"
     },
     "expect_exit": 0,
-    "expect_stdout_contains": ["PEND", "skipped", "skipped: 1 file"]
+    "expect_stdout_contains": [
+      "PEND",
+      "skipped",
+      "skipped: 1 file"
+    ]
   },
   {
     "name": "log_feedback/all-vetoed report emits null chosen with relaxed threshold",
     "tool": "scripts/log_feedback.py",
-    "args": ["--dry-run"],
+    "args": [
+      "--dry-run"
+    ],
     "stdin_json": {
       "success_criterion": "every candidate breached veto",
       "verification": "human review",
       "chosen_approach": null,
       "deliberation_log": [
-        {"step": "aggregate", "result": {"retry_suggested": {"relaxed_threshold": 0.78}}}
+        {
+          "step": "aggregate",
+          "result": {
+            "retry_suggested": {
+              "relaxed_threshold": 0.78
+            }
+          }
+        }
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_contains": ["PEND", "| null |", "all vetoed", "relaxed=0.78"]
+    "expect_stdout_contains": [
+      "PEND",
+      "| null |",
+      "all vetoed",
+      "relaxed=0.78"
+    ]
   },
   {
     "name": "log_feedback/missing success_criterion fails with explicit message",
     "tool": "scripts/log_feedback.py",
-    "args": ["--dry-run"],
+    "args": [
+      "--dry-run"
+    ],
     "stdin_json": {
       "verification": "y",
       "chosen_approach": "approach_a"
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["success_criterion"]
+    "expect_stderr_contains": [
+      "success_criterion"
+    ]
   },
   {
     "name": "dialectic_merge/partial pass2 falls back per missing voice",
     "tool": "scripts/dialectic_merge.py",
     "stdin_json": {
       "pass1": {
-        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.4}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v1"
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": []
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.4
+            }
+          ]
+        }
       },
       "pass2": {
-        "generator": {"candidates": [{"id": "a", "summary": "v2"}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v2"
+            }
+          ]
+        }
       }
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
       "revision_log": {
-        "fallback_to_pass1": {"generator": false, "control": true, "conservator": true}
+        "fallback_to_pass1": {
+          "generator": false,
+          "control": true,
+          "conservator": true
+        }
       }
     }
   },
@@ -424,10 +899,14 @@
       "success_criterion": "x",
       "verification": "y",
       "chosen_approach": "approach_a",
-      "telemetry": {"mode": "sequential"}
+      "telemetry": {
+        "mode": "sequential"
+      }
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["deliberation_log"]
+    "expect_stderr_contains": [
+      "deliberation_log"
+    ]
   },
   {
     "name": "validate_report/deliberation_log aggregate result as string fails",
@@ -437,15 +916,32 @@
       "verification": "y",
       "chosen_approach": "approach_a",
       "deliberation_log": [
-        {"step": "generator",   "candidates": []},
-        {"step": "control",     "verdicts":   []},
-        {"step": "conservator", "scores":     []},
-        {"step": "aggregate",   "scheme": "majority", "result": "narrative string instead of dict"}
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": "narrative string instead of dict"
+        }
       ],
-      "telemetry": {"mode": "sequential"}
+      "telemetry": {
+        "mode": "sequential"
+      }
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["result must be an object"]
+    "expect_stderr_contains": [
+      "result must be an object"
+    ]
   },
   {
     "name": "validate_report/non-skipped missing telemetry fails",
@@ -455,14 +951,31 @@
       "verification": "y",
       "chosen_approach": "approach_a",
       "deliberation_log": [
-        {"step": "generator",   "candidates": []},
-        {"step": "control",     "verdicts":   []},
-        {"step": "conservator", "scores":     []},
-        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
       ]
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["telemetry block required"]
+    "expect_stderr_contains": [
+      "telemetry block required"
+    ]
   },
   {
     "name": "validate_report/telemetry without mode fails",
@@ -472,35 +985,108 @@
       "verification": "y",
       "chosen_approach": "approach_a",
       "deliberation_log": [
-        {"step": "generator",   "candidates": []},
-        {"step": "control",     "verdicts":   []},
-        {"step": "conservator", "scores":     []},
-        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
       ],
-      "telemetry": {"passes": 1}
+      "telemetry": {
+        "passes": 1
+      }
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["telemetry.mode required"]
+    "expect_stderr_contains": [
+      "telemetry.mode required"
+    ]
   },
   {
     "name": "dialectic_merge/dissent_both_absent: candidate missing revision and maintained triggers dissent fallback",
     "tool": "scripts/dialectic_merge.py",
     "stdin_json": {
       "pass1": {
-        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v1"
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": []
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.3
+            }
+          ]
+        }
       },
       "pass2": {
-        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v1"
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": []
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.3
+            }
+          ]
+        }
       }
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
       "revision_log": {
-        "dissent_fallbacks": {"generator": ["a"], "control": ["a"], "conservator": ["a"]}
+        "dissent_fallbacks": {
+          "generator": [
+            "a"
+          ],
+          "control": [
+            "a"
+          ],
+          "conservator": [
+            "a"
+          ]
+        }
       }
     }
   },
@@ -509,14 +1095,70 @@
     "tool": "scripts/dialectic_merge.py",
     "stdin_json": {
       "pass1": {
-        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v1"
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": []
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.3
+            }
+          ]
+        }
       },
       "pass2": {
-        "generator":   {"candidates": [{"id": "a", "summary": "v1", "maintained": {"peer_claim": "Control: valid", "dissent": "No change needed."}}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": [], "maintained": {"peer_claim": "Generator confirmed sketch", "dissent": "No change."}}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3, "maintained": {"peer_claim": "Control: valid, no issues", "dissent": "Risk unchanged."}}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v1",
+              "maintained": {
+                "peer_claim": "Control: valid",
+                "dissent": "No change needed."
+              }
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": [],
+              "maintained": {
+                "peer_claim": "Generator confirmed sketch",
+                "dissent": "No change."
+              }
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.3,
+              "maintained": {
+                "peer_claim": "Control: valid, no issues",
+                "dissent": "Risk unchanged."
+              }
+            }
+          ]
+        }
       }
     },
     "expect_exit": 0,
@@ -531,14 +1173,70 @@
     "tool": "scripts/dialectic_merge.py",
     "stdin_json": {
       "pass1": {
-        "generator":   {"candidates": [{"id": "a", "summary": "v1"}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.3}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v1"
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": []
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.3
+            }
+          ]
+        }
       },
       "pass2": {
-        "generator":   {"candidates": [{"id": "a", "summary": "v2", "revision": {"what_changed": "Updated sketch.", "peer_evidence": "Control flagged type mismatch."}}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": [], "revision": {"what_changed": "Removed stale issue.", "peer_evidence": "Generator fixed type in sketch."}}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.2, "revision": {"what_changed": "Reduced regression_risk by 0.1.", "peer_evidence": "Control added tests_to_write covering regression class."}}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "v2",
+              "revision": {
+                "what_changed": "Updated sketch.",
+                "peer_evidence": "Control flagged type mismatch."
+              }
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": [],
+              "revision": {
+                "what_changed": "Removed stale issue.",
+                "peer_evidence": "Generator fixed type in sketch."
+              }
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.2,
+              "revision": {
+                "what_changed": "Reduced regression_risk by 0.1.",
+                "peer_evidence": "Control added tests_to_write covering regression class."
+              }
+            }
+          ]
+        }
       }
     },
     "expect_exit": 0,
@@ -551,74 +1249,167 @@
   {
     "name": "log_feedback/rejects --outcome OK when confidence < 0.70 without --force-override",
     "tool": "scripts/log_feedback.py",
-    "args": ["--dry-run", "--outcome", "OK"],
+    "args": [
+      "--dry-run",
+      "--outcome",
+      "OK"
+    ],
     "stdin_json": {
       "success_criterion": "any criterion",
       "verification": "any step",
       "chosen_approach": "approach_a",
       "confidence": 0.49,
-      "telemetry": {"mode": "parallel"},
+      "telemetry": {
+        "mode": "parallel"
+      },
       "deliberation_log": [
-        {"step": "generator", "candidates": [{"id": "approach_a"}, {"id": "do_nothing"}]},
-        {"step": "aggregate", "result": {"vetoed": []}}
+        {
+          "step": "generator",
+          "candidates": [
+            {
+              "id": "approach_a"
+            },
+            {
+              "id": "do_nothing"
+            }
+          ]
+        },
+        {
+          "step": "aggregate",
+          "result": {
+            "vetoed": []
+          }
+        }
       ]
     },
     "expect_exit": 1,
-    "expect_stderr_contains": ["confidence", "threshold"]
+    "expect_stderr_contains": [
+      "confidence",
+      "threshold"
+    ]
   },
   {
     "name": "log_feedback/accepts --outcome OK with --force-override when confidence < 0.70",
     "tool": "scripts/log_feedback.py",
-    "args": ["--dry-run", "--outcome", "OK", "--force-override"],
+    "args": [
+      "--dry-run",
+      "--outcome",
+      "OK",
+      "--force-override"
+    ],
     "stdin_json": {
       "success_criterion": "any criterion",
       "verification": "any step",
       "chosen_approach": "approach_a",
       "confidence": 0.49,
-      "telemetry": {"mode": "parallel"},
+      "telemetry": {
+        "mode": "parallel"
+      },
       "deliberation_log": [
-        {"step": "generator", "candidates": [{"id": "approach_a"}, {"id": "do_nothing"}]},
-        {"step": "aggregate", "result": {"vetoed": []}}
+        {
+          "step": "generator",
+          "candidates": [
+            {
+              "id": "approach_a"
+            },
+            {
+              "id": "do_nothing"
+            }
+          ]
+        },
+        {
+          "step": "aggregate",
+          "result": {
+            "vetoed": []
+          }
+        }
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_contains": ["OK", "approach_a"]
+    "expect_stdout_contains": [
+      "OK",
+      "approach_a"
+    ]
   },
   {
     "name": "log_feedback/accepts --outcome OK when confidence >= 0.70",
     "tool": "scripts/log_feedback.py",
-    "args": ["--dry-run", "--outcome", "OK"],
+    "args": [
+      "--dry-run",
+      "--outcome",
+      "OK"
+    ],
     "stdin_json": {
       "success_criterion": "any criterion",
       "verification": "any step",
       "chosen_approach": "approach_a",
       "confidence": 0.72,
-      "telemetry": {"mode": "parallel"},
+      "telemetry": {
+        "mode": "parallel"
+      },
       "deliberation_log": [
-        {"step": "generator", "candidates": [{"id": "approach_a"}, {"id": "do_nothing"}]},
-        {"step": "aggregate", "result": {"vetoed": []}}
+        {
+          "step": "generator",
+          "candidates": [
+            {
+              "id": "approach_a"
+            },
+            {
+              "id": "do_nothing"
+            }
+          ]
+        },
+        {
+          "step": "aggregate",
+          "result": {
+            "vetoed": []
+          }
+        }
       ]
     },
     "expect_exit": 0,
-    "expect_stdout_contains": ["OK", "approach_a"]
+    "expect_stdout_contains": [
+      "OK",
+      "approach_a"
+    ]
   },
   {
-    "name": "validate_report/parallel mode with no voices fails validation",
+    "name": "validate_report/parallel mode with no voices emits warning not error",
     "tool": "scripts/validate_report.py",
     "stdin_json": {
       "success_criterion": "x",
       "verification": "y",
       "chosen_approach": "approach_a",
       "deliberation_log": [
-        {"step": "generator",   "candidates": []},
-        {"step": "control",     "verdicts":   []},
-        {"step": "conservator", "scores":     []},
-        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
       ],
-      "telemetry": {"mode": "parallel"}
+      "telemetry": {
+        "mode": "parallel"
+      }
     },
-    "expect_exit": 1,
-    "expect_stderr_contains": ["parallel", "voices"]
+    "expect_exit": 0,
+    "expect_stderr_contains": [
+      "parallel",
+      "voices"
+    ]
   },
   {
     "name": "validate_report/parallel mode with voices passes",
@@ -628,17 +1419,44 @@
       "verification": "y",
       "chosen_approach": "approach_a",
       "deliberation_log": [
-        {"step": "generator",   "candidates": []},
-        {"step": "control",     "verdicts":   []},
-        {"step": "conservator", "scores":     []},
-        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
       ],
       "telemetry": {
         "mode": "parallel",
         "voices": {
-          "generator":   {"tokens_in": 800, "tokens_out": 400, "latency_ms": 3000},
-          "control":     {"tokens_in": 800, "tokens_out": 300, "latency_ms": 2800},
-          "conservator": {"tokens_in": 800, "tokens_out": 250, "latency_ms": 2500}
+          "generator": {
+            "tokens_in": 800,
+            "tokens_out": 400,
+            "latency_ms": 3000
+          },
+          "control": {
+            "tokens_in": 800,
+            "tokens_out": 300,
+            "latency_ms": 2800
+          },
+          "conservator": {
+            "tokens_in": 800,
+            "tokens_out": 250,
+            "latency_ms": 2500
+          }
         }
       }
     },
@@ -652,12 +1470,29 @@
       "verification": "y",
       "chosen_approach": "approach_a",
       "deliberation_log": [
-        {"step": "generator",   "candidates": []},
-        {"step": "control",     "verdicts":   []},
-        {"step": "conservator", "scores":     []},
-        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
       ],
-      "telemetry": {"mode": "sequential"}
+      "telemetry": {
+        "mode": "sequential"
+      }
     },
     "expect_exit": 0
   },
@@ -666,96 +1501,302 @@
     "tool": "scripts/dialectic_merge.py",
     "stdin_json": {
       "pass1": {
-        "generator":   {"candidates": [{"id": "a", "summary": "kept"}, {"id": "b", "summary": "pass1-only"}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": []}, {"id": "b", "valid": true, "issues": []}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.2}, {"id": "b", "risk_score": 0.4}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "kept"
+            },
+            {
+              "id": "b",
+              "summary": "pass1-only"
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": []
+            },
+            {
+              "id": "b",
+              "valid": true,
+              "issues": []
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.2
+            },
+            {
+              "id": "b",
+              "risk_score": 0.4
+            }
+          ]
+        }
       },
       "pass2": {
-        "generator":   {"candidates": [{"id": "a", "summary": "kept", "maintained": {"peer_claim": "Control: valid", "dissent": "No change."}}]},
-        "control":     {"verdicts":   [{"id": "a", "valid": true, "issues": [], "maintained": {"peer_claim": "Generator confirmed", "dissent": "No change."}}, {"id": "b", "valid": true, "issues": [], "maintained": {"peer_claim": "Generator confirmed", "dissent": "No change."}}]},
-        "conservator": {"scores":     [{"id": "a", "risk_score": 0.2, "maintained": {"peer_claim": "Control: valid", "dissent": "Risk unchanged."}}, {"id": "b", "risk_score": 0.4, "maintained": {"peer_claim": "Control: valid", "dissent": "Risk unchanged."}}]}
+        "generator": {
+          "candidates": [
+            {
+              "id": "a",
+              "summary": "kept",
+              "maintained": {
+                "peer_claim": "Control: valid",
+                "dissent": "No change."
+              }
+            }
+          ]
+        },
+        "control": {
+          "verdicts": [
+            {
+              "id": "a",
+              "valid": true,
+              "issues": [],
+              "maintained": {
+                "peer_claim": "Generator confirmed",
+                "dissent": "No change."
+              }
+            },
+            {
+              "id": "b",
+              "valid": true,
+              "issues": [],
+              "maintained": {
+                "peer_claim": "Generator confirmed",
+                "dissent": "No change."
+              }
+            }
+          ]
+        },
+        "conservator": {
+          "scores": [
+            {
+              "id": "a",
+              "risk_score": 0.2,
+              "maintained": {
+                "peer_claim": "Control: valid",
+                "dissent": "Risk unchanged."
+              }
+            },
+            {
+              "id": "b",
+              "risk_score": 0.4,
+              "maintained": {
+                "peer_claim": "Control: valid",
+                "dissent": "Risk unchanged."
+              }
+            }
+          ]
+        }
       }
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
       "revision_log": {
-        "silently_dropped": ["b"]
+        "silently_dropped": [
+          "b"
+        ]
       }
     }
   },
   {
     "name": "trias_unanimous_3_0",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "team_vote"],
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
     "stdin_json": {
       "personalities": [
-        {"name": "pioneer",   "chose": "A"},
-        {"name": "architect", "chose": "A"},
-        {"name": "steward",   "chose": "A"}
+        {
+          "name": "pioneer",
+          "chose": "A"
+        },
+        {
+          "name": "architect",
+          "chose": "A"
+        },
+        {
+          "name": "steward",
+          "chose": "A"
+        }
       ],
-      "candidates": [{"id": "A"}, {"id": "B"}]
+      "candidates": [
+        {
+          "id": "A"
+        },
+        {
+          "id": "B"
+        }
+      ]
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "3-0", "chosen": "A"}
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "3-0",
+      "chosen": "A"
+    }
   },
   {
     "name": "trias_majority_2_1",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "team_vote"],
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
     "stdin_json": {
       "personalities": [
-        {"name": "pioneer",   "chose": "A"},
-        {"name": "architect", "chose": "A"},
-        {"name": "steward",   "chose": "B"}
+        {
+          "name": "pioneer",
+          "chose": "A"
+        },
+        {
+          "name": "architect",
+          "chose": "A"
+        },
+        {
+          "name": "steward",
+          "chose": "B"
+        }
       ],
-      "candidates": [{"id": "A"}, {"id": "B"}]
+      "candidates": [
+        {
+          "id": "A"
+        },
+        {
+          "id": "B"
+        }
+      ]
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "2-1", "chosen": "A"}
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "2-1",
+      "chosen": "A"
+    }
   },
   {
     "name": "trias_abstain_2_0",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "team_vote"],
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
     "stdin_json": {
       "personalities": [
-        {"name": "pioneer",   "chose": "A"},
-        {"name": "architect", "chose": "A"},
-        {"name": "steward",   "chose": null}
+        {
+          "name": "pioneer",
+          "chose": "A"
+        },
+        {
+          "name": "architect",
+          "chose": "A"
+        },
+        {
+          "name": "steward",
+          "chose": null
+        }
       ],
-      "candidates": [{"id": "A"}, {"id": "B"}]
+      "candidates": [
+        {
+          "id": "A"
+        },
+        {
+          "id": "B"
+        }
+      ]
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "2-0", "chosen": "A"}
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "2-0",
+      "chosen": "A"
+    }
   },
   {
     "name": "trias_fragment_1_1_1",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "team_vote"],
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
     "stdin_json": {
       "personalities": [
-        {"name": "pioneer",   "chose": "A"},
-        {"name": "architect", "chose": "B"},
-        {"name": "steward",   "chose": "C"}
+        {
+          "name": "pioneer",
+          "chose": "A"
+        },
+        {
+          "name": "architect",
+          "chose": "B"
+        },
+        {
+          "name": "steward",
+          "chose": "C"
+        }
       ],
-      "candidates": [{"id": "A"}, {"id": "B"}, {"id": "C"}]
+      "candidates": [
+        {
+          "id": "A"
+        },
+        {
+          "id": "B"
+        },
+        {
+          "id": "C"
+        }
+      ]
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "1-1-1", "chosen": null}
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "1-1-1",
+      "chosen": null
+    }
   },
   {
     "name": "trias_total_veto_0_0_0",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "team_vote"],
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
     "stdin_json": {
       "personalities": [
-        {"name": "pioneer",   "chose": null},
-        {"name": "architect", "chose": null},
-        {"name": "steward",   "chose": null}
+        {
+          "name": "pioneer",
+          "chose": null
+        },
+        {
+          "name": "architect",
+          "chose": null
+        },
+        {
+          "name": "steward",
+          "chose": null
+        }
       ],
-      "candidates": [{"id": "A"}]
+      "candidates": [
+        {
+          "id": "A"
+        }
+      ]
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "0-0-0", "chosen": null, "retry_suggested": {"reason": "all 3 personalities vetoed every candidate"}}
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "0-0-0",
+      "chosen": null,
+      "retry_suggested": {
+        "reason": "all 3 personalities vetoed every candidate"
+      }
+    }
   }
 ]

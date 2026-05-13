@@ -130,7 +130,9 @@ def validate_input(data: dict) -> None:
         if "scores" not in cand:
             print(
                 f"confidence input: candidates[{i}] (id={cand.get('id', '?')!r}) "
-                f"missing required field 'scores'",
+                f"missing required field 'scores'. "
+                f"For Trias mode, pass {{\"vote_pattern\": \"2-1\"}} instead of candidates with scores "
+                f"(or pipe aggregator --scheme team_vote output directly to confidence.py).",
                 file=sys.stderr,
             )
             sys.exit(1)
