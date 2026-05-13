@@ -217,14 +217,6 @@ Return STRICTLY the JSON specified in the "Output format" section above. No pros
 
 **Skip parallel dacă:** schimbarea e trivială (<10 linii), nu ai tool-ul `Agent`, sau vrei să auditezi raționamentul pas-cu-pas.
 
-## Sequential mode (structured single-pass)
-
-**Nu este defaultul.** Sequential = același context pentru toate 3 vocile. Valoarea: **template-ul forțat** — produce `rollback_recipe`, `tests_to_write`, `success_criterion` structurat chiar fără sub-agenți. Folosește `strip_context.py` la Steps 3-4 pentru a reduce parțial contaminarea.
-
-**Alege sequential când:** scope_gate a dat skip dar vrei structura output-ului; nu ai `Agent` disponibil; vrei raționamentul pas-cu-pas vizibil în context.
-
-**Nu livrează:** independență reală între voci, garanție anti-sycophancy, 3 perspective cu adevărat separate.
-
 ## Dialectic mode (opt-in, two-pass)
 
 Two-pass: Pass 1 = parallel; Pass 2 = fiecare voce revizuiește văzând output-urile celorlalte două. Cost: 2× parallel. Implementat în `scripts/dialectic_merge.py`.
