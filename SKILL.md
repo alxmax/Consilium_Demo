@@ -114,11 +114,7 @@ Folosește `prompts/control.md`. Pentru fiecare candidate verifică:
 
 Output per candidate: `{id, valid: bool, issues: [...], tests_to_write: [...]}`. `tests_to_write` e obligatoriu pentru candidate marcat `valid: true` (cu excepția `do_nothing`) — 1-4 teste de acceptanță cu `name` + `assert`.
 
-**Sequential blind context.** Înainte de a apela Control în sequential mode, rulează:
-```bash
-cat generator_out.json | python scripts/strip_context.py --for control
-```
-Control primește doar `{id, summary, sketch}` per candidate — fără `rationale`. Asta reduce contaminarea: Control validează ce vede în sketch, nu se lasă convins de retorica Generator-ului. În parallel mode pasul nu e necesar (sub-agenții n-au cum să vadă unul output-ul celuilalt).
+**Sequential blind context.** În sequential mode, rulează `python scripts/strip_context.py --for control` pe output-ul Generator-ului înainte de a-l trimite la Control — îi dă doar `{id, summary, sketch}`, fără `rationale`. În parallel mode pasul e omis (sub-agenții sunt oricum izolaţi).
 
 ### 4. Conservator — assess risc
 Folosește `prompts/conservator.md`. Pentru fiecare candidate **valid**, scorează:
@@ -131,11 +127,7 @@ Output per candidate: `{id, risk_score: 0.0–1.0, factors: {...}, rollback_reci
 
 **Aggregation rule (din `prompts/conservator.md`, autoritar):** `risk_score` e media celor 4 factori, **cu o excepție** — dacă `reversibility > 0.7`, irreversibilitatea domină și `risk_score` nu poate cădea sub `reversibility`. Asta previne "diluarea" unui factor critic de către media celorlalți (un schema migration cu `reversibility=0.85` și ceilalți 3 factori la 0.1 nu trebuie să primească 0.29).
 
-**Sequential blind context.** Înainte de a apela Conservator în sequential mode, rulează:
-```bash
-echo '{"candidates": [...], "verdicts": [...]}' | python scripts/strip_context.py --for conservator
-```
-Conservator primește doar `{id, summary, sketch}` pentru candidates marcate `valid: true` — fără `issues` și fără `rationale`. Scorează riscul pe baza sketch-ului, nu a poveștii pe care a spus-o Control. În parallel mode pasul e omis.
+**Sequential blind context.** În sequential mode, rulează `python scripts/strip_context.py --for conservator` pe outputs-urile Generator + Control înainte de Conservator — îi dă doar `{id, summary, sketch}` pentru candidates valide, fără `issues` sau `rationale`. În parallel mode pasul e omis.
 
 **Opțional — diff_size + churn autoprobe.** Pentru schimbări pe cod commited / staged, rulează:
 ```bash
@@ -152,20 +144,7 @@ python scripts/aggregator.py --scheme conservative_override
 ```
 Default: **conservative_override** — orice candidate cu `risk_score > 0.7` primește veto, indiferent de scorurile celorlalți. În rândul candidate-urilor non-vetoiți, ranking-ul folosește media ponderată `(generator + control + safety)` unde `safety = 1 - conservator` — așa că la egalitate pe celelalte voci, candidatul mai sigur câștigă.
 
-Alte scheme disponibile: `majority`, `weighted`, `risk_adjusted_utility`.
-
-**`risk_adjusted_utility`** — alternativă la `conservative_override` când pragul binar la 0.7 e prea brutal:
-```bash
-python scripts/aggregator.py --scheme risk_adjusted_utility
-```
-Calculează `utility(c) = mean(gen, ctrl, 1-cons)` (cu Conservator flip-uit la safety) și aplică penalty sigmoidal centrat la risc=0.5. Fără veto rigid — un candidate cu risc 0.7 nu e disqualified, doar penalizat (~79%). Folosește când ai mulți candidates strânși în jurul pragului de veto și preferi un tiebreaker neted.
-
-**Auto-relax la veto total.** Dacă toți candidates sunt vetoiți, aggregator-ul atașează un bloc `retry_suggested` cu:
-- `relaxed_threshold` — prag-ul minim sub care candidate-ul cu cel mai mic risc ar fi supraviețuit (capped la 0.85)
-- `lowest_risk_candidate` — candidatul cu risc minim și `would_survive_relaxed` (bool)
-- `reason` — sugestie să re-rulezi Generator cu constraint "stay under risk X"
-
-Acțiunea pe `retry_suggested` e a ta (agentul principal), nu automată — un veto total e un semnal important că request-ul poate fi prost formulat sau că toate abordările sunt prea riscante. Decide: re-roll cu constraint mai strict (acceptă mai puține candidate, dar cu risc mai mic), acceptă `chosen: null` (oprește deliberarea), sau întreabă user-ul.
+Alternativă: `--scheme risk_adjusted_utility` când pragul binar 0.7 e prea brutal — aplică penalty sigmoidal fără veto rigid. Schemele `majority` și `weighted` există în script dar sunt rareori justificate.
 
 ### 5b. Confidence
 După aggregation, derivă `confidence` din variance + separation:
@@ -369,25 +348,7 @@ Maximum 3 sub-agenți activi simultan; în practică folosești 1 + 2.
 
 Fără override-uri explicite, vocile moștenesc modelul orchestratorului — care e adesea Opus, contrazicând defaultul de mai sus. Setează modelul la dispatch, nu te baza pe moștenire.
 
-**Captură telemetry per voce (responsabilitatea orchestratorului, nu a sub-agentului).** Sub-agenții nu-și pot măsura tokens cu acuratețe. Orchestratorul (agentul principal) îi măsoară la fiecare Agent call și injectează în bundle:
-
-- `tokens_in` ≈ `len(prompt) / 4` (lungimea prompt-ului trimis sub-agentului, în chars / 4 = aproximare tokens)
-- `tokens_out` ≈ `len(response) / 4` (la fel pentru output-ul JSON al sub-agentului)
-- `latency_ms` = wall-clock între dispatch și răspuns (timpul real, măsurat de orchestrator)
-
-Output în bundle:
-```json
-"telemetry": {
-  "mode": "parallel",
-  "voices": {
-    "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
-    "control":     {"tokens_in":  800, "tokens_out": 200, "latency_ms": 2100},
-    "conservator": {"tokens_in":  900, "tokens_out": 180, "latency_ms": 1800}
-  }
-}
-```
-
-Best-effort: aproximările sunt sub-tokens-API, dar `usage.py` rollup-ul rămâne util pentru tendințe (p50/p95 per voce). Mai bine telemetry aproximat decât zero — fără capturare, parallel mode runs apar ca "0 tokens" în statistici și nu poți justifica costul vs sequential.
+**Captură telemetry per voce (best-effort).** Injectează în bundle `tokens_in ≈ len(prompt)/4`, `tokens_out ≈ len(response)/4`, `latency_ms` = wall-clock per Agent call. Aproximările sunt sub-tokens-API dar utile pentru `usage.py` rollup (p50/p95 per voce).
 
 ### Prompt template pentru un sub-agent
 ```
@@ -426,60 +387,7 @@ Folosește `strip_context.py` (Steps 3 și 4) pentru a reduce parțial contamina
 
 ## Dialectic mode (opt-in, two-pass)
 
-Parallel mode evită contaminarea, dar plătește o altă taxă: vocile **nu se aud niciodată una pe alta**. Dacă Conservator-ul vede ceva ce Generator-ul a ratat, Generator-ul nu mai are șansa să revizuiască. Dialectic mode adaugă o a doua trecere cross-context controlată, fără să sacrifice independența primei runde.
-
-### Pattern
-Două passes, fiecare cu 3 sub-agenți paraleli (6 sub-agenți total în 2 turn-uri):
-
-1. **Pass 1 — independent**: identic cu parallel mode (1 + 2 pattern). Cele 3 voci produc output-urile lor inițiale fără să se vadă.
-2. **Pass 2 — revision**: fiecare voce primește output-urile *celorlalte două voci* din Pass 1 și răspunde la întrebarea: "Vezi ceva ce vrei să schimbi în propriul output?" Output-ul revizuit (sau confirmarea) e autoritar.
-
-Un singur round de revizuire — fără bucle infinite, fără așteptare de "convergență". Goal-ul nu e consens; e ca fiecare voce să aibă șansa să updateze pe baza evidenței celorlalți.
-
-### Când să folosești
-- Decizii subtile unde **o singură voce ar putea schimba opinia** dacă vede ce-au zis celelalte (ex: Conservator-ul flag-uiește un risk score mare → Control-ul, văzând asta, realizează că issue-ul corespunde unei edge case nedeclarate)
-- High-stakes unde costul 2× parallel e acceptabil
-- Auditare: `revision_log` arată ce a schimbat fiecare voce între passes — evidence că dialectic-ul a mișcat ceva
-
-### Skip dacă
-- Schimbarea e simplă — parallel mode e mai ieftin și sufficient
-- Vocile sunt deja unanime în Pass 1 (te poți opri opțional, marcând `pass2: null`)
-- Nu ai budget pentru 6 sub-agent calls
-
-### Cum
-Defaultul de model din secțiunea Parallel voices mode (`model: "sonnet"` per Agent call) se aplică și la dispatch-urile din Pass 1 și Pass 2 aici — fiecare dintre cele 6 sub-agenți. Override per-voce/per-pass dacă vrei un Generator pe Opus doar la Pass 2 etc.
-
-1. **Turn 1**: dispatch Generator (1 Agent call). Aștepți candidates.
-2. **Turn 2**: dispatch Control + Conservator în paralel (2 Agent calls). Ambii primesc candidates Pass-1. Salvezi cele 3 outputs ca `pass1`.
-3. **Turn 3 (revision)**: dispatch 3 sub-agenți paraleli — câte unul per voce. Fiecare primește:
-   - Outputurile **celorlalte două voci** din Pass 1 (nu propriul output — îl re-derivă)
-   - Instrucțiunea: "Given what your peers concluded, produce a revised output OR re-emit your original unchanged."
-   Salvezi rezultatele ca `pass2`.
-4. **Merge & aggregate**:
-   ```bash
-   cat dialectic_payload.json | python scripts/dialectic_merge.py | python scripts/aggregator.py --scheme risk_adjusted_utility
-   ```
-   `dialectic_merge.py` folosește Pass-2 ca autoritar (sau cade pe Pass-1 cu flag `fallback_to_pass1` dacă lipsește), generează formatul aggregator-ready și emite `revision_log` cu diff-ul per voce.
-
-### Payload format pentru merge
-```json
-{
-  "pass1": {
-    "generator":   {"candidates": [...]},
-    "control":     {"verdicts":   [...]},
-    "conservator": {"scores":     [...]}
-  },
-  "pass2": {
-    "generator":   {"candidates": [...]},
-    "control":     {"verdicts":   [...]},
-    "conservator": {"scores":     [...]}
-  }
-}
-```
-`pass2` (sau orice voce individuală din el) e opțional — fallback transparent la Pass-1. Pentru a sări revizia complet pentru o voce dacă deja era unanimă, pur și simplu nu o include în `pass2`.
-
-### Cost
-Max 6 sub-agent calls în 3 turn-uri (1 + 2 + 3). În practică: 2× parallel mode. Folosește doar când justificat.
+Two-pass variant: Pass 1 = parallel mode; Pass 2 = fiecare voce revizuiește văzând output-urile celorlalte două. Costul e 2× parallel. Implementat în `scripts/dialectic_merge.py` — folosește când deciziile sunt subtile și vrei că vocile să se audă între ele.
 
 ## Ensemble mode (opțional)
 
