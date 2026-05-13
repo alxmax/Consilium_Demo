@@ -181,10 +181,23 @@ def merge(payload: dict) -> dict:
         if not cid:
             continue
 
-        # Use pass1 data for voices where this candidate had a dissent fallback
-        gen_cand = p1_gen_by_id.get(cid, cand) if cid in dissent_fallbacks.get("generator", []) else cand
-        verdict = p1_ctrl_by_id.get(cid, {}) if cid in dissent_fallbacks.get("control", []) else ctrl_verdicts.get(cid, {})
-        risk_entry = p1_cons_by_id.get(cid, {}) if cid in dissent_fallbacks.get("conservator", []) else cons_scores.get(cid, {})
+        # Candidates new in Pass-2 (not in Pass-1 at all) must never fall back to
+        # empty Pass-1 data — that would produce a 0.0 control score for a valid
+        # candidate. Always use Pass-2 voice data for genuinely new candidates.
+        is_new_in_pass2 = cid not in p1_gen_by_id
+
+        gen_cand = (
+            cand if is_new_in_pass2
+            else (p1_gen_by_id.get(cid, cand) if cid in dissent_fallbacks.get("generator", []) else cand)
+        )
+        verdict = (
+            ctrl_verdicts.get(cid, {}) if is_new_in_pass2
+            else (p1_ctrl_by_id.get(cid, {}) if cid in dissent_fallbacks.get("control", []) else ctrl_verdicts.get(cid, {}))
+        )
+        risk_entry = (
+            cons_scores.get(cid, {}) if is_new_in_pass2
+            else (p1_cons_by_id.get(cid, {}) if cid in dissent_fallbacks.get("conservator", []) else cons_scores.get(cid, {}))
+        )
 
         merged_candidates.append({
             "id": cid,
