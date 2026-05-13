@@ -57,7 +57,7 @@ import json
 import sys
 from typing import Any
 
-from utils import force_utf8_streams
+from utils import force_utf8_streams, validate_keys
 
 VOICES = ("generator", "control", "conservator")
 VOICE_KEY = {
@@ -117,6 +117,13 @@ def _is_dissent_compliant(item: dict) -> bool:
     revision = item.get("revision")
     maintained = item.get("maintained")
     return bool(revision) or bool(maintained)
+
+
+def validate_input(payload: dict) -> None:
+    """Validate dialectic_merge input has required pass1 structure."""
+    validate_keys(payload, ["pass1"], context="dialectic_merge input")
+    validate_keys(payload["pass1"], ["generator", "control", "conservator"],
+                  context="dialectic_merge input.pass1")
 
 
 def _diff_candidates(p1: list[dict], p2: list[dict]) -> list[dict]:
@@ -273,6 +280,8 @@ def main(argv: list[str] | None = None) -> int:
     except json.JSONDecodeError as exc:
         print(f"invalid JSON: {exc}", file=sys.stderr)
         return 2
+
+    validate_input(payload)
 
     try:
         result = merge(payload)
