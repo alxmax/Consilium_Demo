@@ -148,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
 
     entries = parse_feedback(FEEDBACK)
     if args.recent:
-        entries = entries[: args.recent]
+        entries = entries[-args.recent :]
 
     runs = parse_runs(RUNS) if args.runs else None
     print(report(entries, runs))
