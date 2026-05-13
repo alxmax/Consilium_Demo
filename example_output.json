@@ -1,0 +1,71 @@
+{
+  "run_id": "consilium-2026-014",
+  "timestamp": "2026-03-14T10:22:05Z",
+  "goal": "Choose an approach for adding real-time alerts on top of the existing batch analytics pipeline without disrupting current dashboard consumers",
+  "success_criterion": "Decision documented with explicit trade-offs; implementable within one sprint by a single engineer; alert latency under target; no breaking changes for downstream consumers of the existing JSON data constants",
+  "scope": {
+    "files_changed": 0,
+    "lines_affected": 0,
+    "auto_skip_triggered": false
+  },
+  "scheme": "conservative_override",
+  "candidates": [
+    {
+      "id": "A",
+      "summary": "Polling-based alerts: extend the existing scheduled ingestion job to evaluate alert rules at the end of each cycle and emit notifications via the existing webhook channel. Reuses the YAML rule engine; no new infrastructure.",
+      "scores": {
+        "generator": 0.74,
+        "control": 0.89,
+        "conservator_risk": 0.22
+      },
+      "risk_dimensions": {
+        "implementation_complexity": 0.20,
+        "operational_overhead": 0.15,
+        "scalability_ceiling": 0.50,
+        "reversibility": 0.90
+      },
+      "validation_criteria": [
+        "Alert latency stays within 5 minutes of the ingestion cycle for all rule categories",
+        "Existing pipeline runtime grows by less than 10% over the current baseline",
+        "Alert rules are defined in the same YAML schema as classification rules (no new DSL)"
+      ]
+    },
+    {
+      "id": "B",
+      "summary": "Event-driven alerts: introduce a Redis Streams message bus, refactor the pipeline to publish change events, and run an independent alert evaluator service that consumes the stream. Better long-term scalability but adds a new runtime dependency.",
+      "scores": {
+        "generator": 0.91,
+        "control": 0.71,
+        "conservator_risk": 0.68
+      },
+      "risk_dimensions": {
+        "implementation_complexity": 0.70,
+        "operational_overhead": 0.65,
+        "scalability_ceiling": 0.15,
+        "reversibility": 0.50
+      },
+      "validation_criteria": [
+        "End-to-end alert latency below 30 seconds at 10x current event volume",
+        "Pipeline throughput unchanged in a sustained load test (1 hour, 95th percentile within baseline)",
+        "Documented fail-over runbook for the Redis dependency with a tested recovery procedure"
+      ]
+    }
+  ],
+  "aggregation": {
+    "scheme": "conservative_override",
+    "veto_triggered": false,
+    "veto_threshold": 0.80,
+    "scores_final": {
+      "A": 0.81,
+      "B": 0.46
+    }
+  },
+  "chosen": "A",
+  "rationale": "Candidate A scores high on Control (correctness, fit with the existing rule engine) and low on Conservator risk. Latency target is comfortably met by the polling cadence. Candidate B is more elegant and scales further, but Conservator flags implementation and operational overhead above the acceptable threshold for a single-engineer sprint; reversibility is also lower because of the new infrastructure dependency. Recommendation: ship A now, revisit B when alert volume exceeds ~10x the current baseline or when sub-minute latency becomes a real requirement.",
+  "telemetry": {
+    "generator":   { "tokens_in": 812, "tokens_out": 445, "latency_ms": 1840 },
+    "control":     { "tokens_in": 950, "tokens_out": 381, "latency_ms": 1620 },
+    "conservator": { "tokens_in": 730, "tokens_out": 290, "latency_ms": 1410 }
+  },
+  "feedback_logged": true
+}

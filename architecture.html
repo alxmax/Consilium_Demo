@@ -1,0 +1,3251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>consilium — Architecture Poster</title>
+<style>
+  :root {
+    /* Dark theme (default) */
+    --bg: #0f1419;
+    --ink: #e5e7eb;
+    --muted: #9ca3af;
+    --line: #2d3441;
+    --card-bg: #181d27;
+    --inset: #11151c;
+    --gold: #fbbf24;
+    --gold-soft: #2a2410;
+    --gold-border: #5c4a14;
+    --gen: #fbbf24;
+    --gen-soft: #2a2410;
+    --gen-border: #5c4a14;
+    --gen-text: #fbbf24;
+    --ctl: #60a5fa;
+    --ctl-soft: #182338;
+    --ctl-border: #2a3f5f;
+    --ctl-text: #93c5fd;
+    --con: #f87171;
+    --con-soft: #2a1818;
+    --con-border: #5c2a2a;
+    --con-text: #fca5a5;
+    --accent: #34d399;
+    --accent-soft: #0a2e23;
+    --accent-border: #145c45;
+    --accent-text: #6ee7b7;
+    --bad: #fca5a5;
+    --bad-soft: #2a1818;
+    --bad-border: #5c2a2a;
+    --neutral: #94a3b8;
+    --trias: #c084fc;
+    --trias-soft: #221830;
+    --trias-border: #4c2a6b;
+    --trias-text: #d8b4fe;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  /* Subtle mesh gradient + dot grid — keeps a designed, calm feel under all content. */
+  body {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(ellipse 80% 60% at 15% 0%, rgba(217, 168, 116, 0.18) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 50% at 85% 0%, rgba(192, 154, 110, 0.14) 0%, transparent 55%),
+      radial-gradient(ellipse 90% 60% at 50% 100%, rgba(245, 158, 11, 0.11) 0%, transparent 55%),
+      radial-gradient(circle, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+    background-size: auto, auto, auto, 28px 28px;
+    background-attachment: fixed, fixed, fixed, fixed;
+  }
+  html:fullscreen body, html:-webkit-full-screen body { background-color: var(--bg); }
+  @media print {
+    body { background: #ffffff !important; background-image: none !important; }
+  }
+  header { padding: 28px 40px 0; }
+  h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; }
+  nav.tabs { display: flex; gap: 4px; padding: 22px 40px 0; border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  nav.tabs button { appearance: none; background: transparent; border: 0; padding: 12px 18px;
+    font: inherit; font-weight: 500; color: var(--muted); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  nav.tabs button:hover { color: var(--ink); }
+  nav.tabs button.active { color: var(--ink); border-bottom-color: var(--ink); }
+  main { padding: 32px 40px 80px; max-width: 1240px; margin: 0 auto; }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+  h2 { margin: 0 0 18px; font-size: 16px; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--muted); }
+  .note { color: var(--muted); font-size: 13px; margin-top: 24px; }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; }
+
+  /* ============== ARCHITECTURE ============== */
+  .constitution { background: var(--gold-soft); border: 1px solid var(--gold-border);
+    border-radius: 10px; padding: 16px 20px; margin-bottom: 28px; }
+  .constitution .label { color: var(--gold); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase; }
+  .constitution .principles { display: grid; gap: 8px 24px;
+    grid-template-columns: repeat(2, 1fr); margin-top: 10px; }
+  .constitution .p { display: flex; gap: 10px; font-size: 13px; }
+  .constitution .p b { color: var(--gold); min-width: 18px; }
+
+  .voices { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+  .card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .card .top { display: flex; align-items: baseline; justify-content: space-between; }
+  .card h3 { margin: 0; font-size: 17px; }
+  .card .tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.06em; }
+  .card.gen { border-top: 3px solid var(--gen); }
+  .card.gen .tag { background: var(--gen-soft); color: var(--gen-text); }
+  .card.ctl { border-top: 3px solid var(--ctl); }
+  .card.ctl .tag { background: var(--ctl-soft); color: var(--ctl-text); }
+  .card.con { border-top: 3px solid var(--con); }
+  .card.con .tag { background: var(--con-soft); color: var(--con-text); }
+  .card ul { margin: 4px 0 0; padding-left: 18px; font-size: 13.5px; }
+  .card ul li { margin-bottom: 4px; }
+  .card .cant { background: var(--inset); border-left: 3px solid var(--line);
+    padding: 8px 10px; font-size: 12.5px; color: var(--muted); border-radius: 4px; }
+  .card .cant b { color: var(--ink); }
+
+  .agg { margin-top: 32px; background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px; }
+  .agg h3 { margin: 0 0 12px; font-size: 15px; }
+  .schemes { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+  .scheme { padding: 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+  .scheme b { display: block; margin-bottom: 4px; }
+  .scheme.default { border-color: var(--con); background: var(--con-soft); }
+  .veto { display: inline-block; margin-top: 6px; padding: 2px 8px; background: var(--con);
+    color: #0f1419; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; border-radius: 3px; }
+
+  /* ============== FLOW ============== */
+  .flow { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0; align-items: stretch;
+    margin-bottom: 28px; }
+  .step { position: relative; background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 14px 12px; font-size: 13px; margin-right: 18px; }
+  .step:last-child { margin-right: 0; }
+  .step::after { content: ""; position: absolute; right: -14px; top: 50%; width: 12px; height: 2px;
+    background: var(--ink); transform: translateY(-50%); }
+  .step:last-child::after { display: none; }
+  .step::before { content: ""; position: absolute; right: -18px; top: 50%;
+    border: 5px solid transparent; border-left-color: var(--ink); transform: translateY(-50%); }
+  .step:last-child::before { display: none; }
+  .step .n { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; }
+  .step h4 { margin: 4px 0 6px; font-size: 14px; }
+  .step.gen { border-top: 3px solid var(--gen); }
+  .step.ctl { border-top: 3px solid var(--ctl); }
+  .step.con { border-top: 3px solid var(--con); }
+  .step.agg-step { border-top: 3px solid var(--accent); }
+  .step.aux { border-top: 2px dashed var(--muted); opacity: 0.92;
+    padding: 10px 9px; font-size: 12px; background: var(--inset); }
+  .step.aux .n { color: var(--gold); }
+  .step.aux h4 { font-size: 12.5px; }
+  .step .io { background: var(--inset); border-radius: 4px; padding: 6px 8px; margin-top: 8px;
+    font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; }
+  .step .sub { display: inline-block; margin-top: 6px; padding: 1px 6px; border-radius: 3px;
+    background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em; }
+
+  .rail { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px; }
+  .rail h3 { margin: 0 0 10px; font-size: 14px; }
+  .rail-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px;
+    font-size: 12px; }
+  .rail-grid .col.alt { background: var(--gold-soft); border: 1px solid var(--gold-border); }
+  .rail-grid .col.alt code { color: var(--gold); }
+  .rail-maint { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .rail-maint h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase; }
+  .rail-maint .maint-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+    font-size: 11.5px; }
+  .rail-maint .col { padding: 7px 8px; border-radius: 6px; background: var(--inset);
+    border: 1px dashed var(--line); }
+  .rail-maint code { display: block; font-size: 11.5px; color: var(--ink); }
+  .rail-maint .opt { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .rail-grid .col { padding: 8px; border-radius: 6px; min-height: 56px;
+    background: var(--inset); border: 1px dashed var(--line); }
+  .rail-grid .col.empty { background: transparent; border-style: dotted; opacity: 0.5; }
+  .rail-grid code { display: block; font-size: 11.5px; color: var(--ink); }
+  .rail-grid .opt { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .loop { margin-top: 28px; display: flex; align-items: center; gap: 16px;
+    background: var(--gold-soft); border: 1px solid var(--gold-border);
+    border-radius: 10px; padding: 14px 18px; }
+  .loop svg { flex-shrink: 0; }
+  .loop .text { font-size: 13px; }
+  .loop .text b { color: var(--gold); }
+
+  /* ============== MODES ============== */
+  .modes { display: grid; gap: 20px; grid-template-columns: repeat(2, 1fr); }
+  .mode { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px; display: flex; flex-direction: column; }
+  .mode.sequential-blind { border-top: 4px solid var(--gold); }
+  .mode.parallel { border-top: 4px solid var(--accent); }
+  .mode.dialectic { border-top: 4px solid var(--ctl); }
+  .mode.trias { border-top: 4px solid var(--trias); grid-column: 1 / -1; }
+  .mode.sequential { border-top: 4px solid var(--neutral); opacity: 0.78; }
+  .actor.trias { background: var(--trias-soft); border-color: var(--trias-border); color: var(--trias-text); }
+  .trias-weights { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; }
+  .trias-personality-block { background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px; text-align: center; }
+  .trias-personality-block .actor { display: block; margin: 0 auto 6px; max-width: 140px; }
+  .trias-personality-block .voice-row { display: flex; gap: 4px; justify-content: center;
+    margin-top: 8px; flex-wrap: wrap; }
+  .trias-personality-block .voice-row .actor { display: inline-block; padding: 4px 8px;
+    font-size: 10.5px; margin: 0; }
+  .trias-vote-table { width: 100%; border-collapse: collapse; font-size: 12px;
+    margin: 8px 0; }
+  .trias-vote-table th, .trias-vote-table td { padding: 6px 10px; text-align: left;
+    border-bottom: 1px solid var(--line); }
+  .trias-vote-table thead th { color: var(--muted); font-weight: 600; font-size: 10.5px;
+    letter-spacing: 0.06em; text-transform: uppercase; }
+  .trias-vote-table tbody td:first-child { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .trias-vote-table .vote-ok { color: var(--accent-text); font-weight: 600; }
+  .trias-vote-table .vote-pend { color: var(--gold); font-weight: 600; }
+  .trias-vote-table tr:last-child td { border-bottom: none; }
+
+  /* ============== TRIAS DEEP DIVE ============== */
+  .trias-deepdive { margin-top: 30px; background: var(--card-bg); border: 1px solid var(--line);
+    border-top: 4px solid var(--trias); border-radius: 10px; padding: 22px; }
+  .trias-deepdive h3 { margin: 0 0 4px; font-size: 16px; color: var(--trias-text); }
+  .trias-deepdive .lede { color: var(--muted); font-size: 12.5px; margin-bottom: 18px; }
+  .trias-deepdive h4 { margin: 22px 0 8px; font-size: 13.5px; color: var(--ink);
+    letter-spacing: 0.02em; border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+  .trias-deepdive h4:first-of-type { margin-top: 0; }
+  .trias-deepdive h5 { margin: 16px 0 8px; font-size: 12px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase; }
+  .flow-explainer { font-size: 12.5px; color: var(--ink); background: var(--inset);
+    border-left: 3px solid var(--trias); padding: 10px 14px; border-radius: 4px; margin-bottom: 14px; }
+  .flow-explainer b { color: var(--trias-text); }
+  .trias-flow-svg { width: 100%; height: auto; display: block;
+    background: var(--inset); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  .trias-flow-legend { display: flex; gap: 20px; flex-wrap: wrap; font-size: 11.5px;
+    color: var(--muted); margin-bottom: 6px; }
+  .trias-flow-legend .item { display: flex; align-items: center; gap: 8px; }
+  .trias-flow-legend .swatch { display: inline-block; width: 18px; height: 3px;
+    border-radius: 2px; }
+  .trias-example-json { background: var(--inset); border: 1px solid var(--line);
+    border-radius: 6px; padding: 14px 16px; overflow-x: auto; font-size: 11.5px;
+    line-height: 1.6; margin: 0 0 12px; }
+  .trias-example-json code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color: var(--ink); font-size: 11.5px; }
+  .example-takeaway { font-size: 12.5px; color: var(--muted); background: var(--accent-soft);
+    border: 1px solid var(--accent-border); border-radius: 6px; padding: 10px 14px;
+    line-height: 1.55; }
+  .example-takeaway b { color: var(--accent-text); }
+  .example-takeaway code { color: var(--accent-text); }
+  .cost-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
+  .cost-card { padding: 14px 16px; border-radius: 8px; border: 1px solid var(--line); }
+  .cost-card.use { background: var(--accent-soft); border-color: var(--accent-border); }
+  .cost-card.avoid { background: var(--bad-soft); border-color: var(--bad-border); }
+  .cost-card-header { font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 8px; }
+  .cost-card.use .cost-card-header { color: var(--accent-text); }
+  .cost-card.avoid .cost-card-header { color: var(--bad); }
+  .cost-card ul { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.65; }
+  .cost-card ul li { margin-bottom: 4px; }
+  .cost-card ul li b { color: var(--ink); }
+  .cost-card.use ul li code,
+  .cost-card.avoid ul li code { font-size: 11.5px; color: inherit; }
+  .failure-modes { margin-top: 18px; }
+  .failure-table { width: 100%; border-collapse: collapse; font-size: 12px;
+    background: var(--inset); border-radius: 6px; overflow: hidden; }
+  .failure-table thead th { background: var(--card-bg); color: var(--muted);
+    font-weight: 600; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+  .failure-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line);
+    vertical-align: top; line-height: 1.55; }
+  .failure-table tbody tr:last-child td { border-bottom: none; }
+  .failure-table tbody td:first-child { width: 22%; color: var(--ink); }
+  .failure-table tbody td:nth-child(2) { width: 38%; color: var(--muted); }
+  .failure-table tbody td b { color: var(--trias-text); }
+  .failure-table code { color: var(--ink); font-size: 11px; }
+  .mode-badge { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; vertical-align: 2px; }
+  .mode-badge.default { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border); }
+  .mode-badge.opt { background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--accent-border); }
+  .mode-badge.advanced { background: var(--ctl-soft); color: var(--ctl-text); border: 1px solid var(--ctl-border); }
+  .mode-badge.spec { background: var(--inset); color: var(--muted); border: 1px dashed var(--line); }
+  .mode-badge.legacy { background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad-border); }
+  .strip-tag { display: inline-block; padding: 2px 6px; border-radius: 3px;
+    background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; margin: 4px 0; }
+
+  /* ============== SVG FLOW COMPARISON ============== */
+  .flowmap { margin-top: 30px; background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px; }
+  .flowmap h3 { margin: 0 0 16px; font-size: 15px; }
+  .flowmap svg { width: 100%; height: auto; display: block; }
+  .flowmap .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px;
+    font-size: 11.5px; color: var(--muted); }
+  .flowmap .legend .item { display: flex; align-items: center; gap: 6px; }
+  .flowmap .legend .swatch { width: 18px; height: 2px; }
+  .mode h3 { margin: 0 0 4px; font-size: 17px; }
+  .mode .subtitle { color: var(--muted); font-size: 12.5px; margin-bottom: 14px; }
+  .stage { background: var(--inset); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .stage .label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .actor { display: inline-block; padding: 8px 12px; border-radius: 8px; font-size: 12.5px;
+    background: var(--card-bg); border: 1px solid var(--line); margin: 3px; }
+  .actor.main { background: var(--accent-soft); border-color: var(--accent-border);
+    color: var(--accent-text); font-weight: 600; }
+  .actor.gen { background: var(--gen-soft); border-color: var(--gen-border); color: var(--gen-text); }
+  .actor.ctl { background: var(--ctl-soft); border-color: var(--ctl-border); color: var(--ctl-text); }
+  .actor.con { background: var(--con-soft); border-color: var(--con-border); color: var(--con-text); }
+  .arrow-down { text-align: center; color: var(--muted); margin: 6px 0; font-size: 18px; }
+  .warning { background: var(--bad-soft); border: 1px solid var(--bad-border); border-radius: 6px;
+    padding: 8px 10px; margin-top: 8px; font-size: 11.5px; color: var(--bad); }
+  .ok { background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 6px;
+    padding: 8px 10px; margin-top: 8px; font-size: 11.5px; color: var(--accent-text); }
+  .use-when { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted); }
+  .use-when b { color: var(--ink); }
+
+  .wall {
+    background: repeating-linear-gradient(45deg, transparent 0 4px, var(--line) 4px 5px);
+    height: 4px; margin: 6px 12px; border-radius: 2px;
+  }
+  .parallel-row { display: flex; gap: 10px; align-items: stretch; }
+  .parallel-col { flex: 1; }
+
+  /* ============== INTRO ============== */
+  .intro { background: var(--inset); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px 22px; margin-bottom: 24px; }
+  .intro-grid { display: grid; grid-template-columns: 1fr 380px; gap: 22px; align-items: center; }
+  .intro h3 { margin: 0 0 8px; font-size: 16px; }
+  .intro p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.55; }
+  .intro p.lede { font-size: 14.5px; color: var(--ink); }
+  .intro p.lede b { color: var(--gold); }
+  .intro p.why { color: var(--muted); font-size: 12.5px; margin-top: 6px; margin-bottom: 0; }
+  .intro svg { width: 100%; height: auto; }
+
+  /* ============== AGGREGATION EXAMPLE ============== */
+  .agg-example { margin-top: 16px; background: var(--inset); border: 1px dashed var(--line);
+    border-radius: 8px; padding: 14px 16px; }
+  .agg-example h4 { margin: 0 0 6px; font-size: 13px; color: var(--ink); letter-spacing: 0.02em; }
+  .agg-example .preamble { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .agg-example table { width: 100%; border-collapse: collapse; font-size: 12.5px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .agg-example th, .agg-example td { padding: 7px 10px; text-align: left;
+    border-bottom: 1px solid var(--line); }
+  .agg-example thead th { color: var(--muted); font-weight: 600; font-size: 10.5px;
+    letter-spacing: 0.06em; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .agg-example tbody th { font-weight: 600; color: var(--ink); font-size: 12px; }
+  .agg-example tr:last-child td, .agg-example tr:last-child th { border-bottom: none; }
+  .agg-example .win { color: var(--accent-text); font-weight: 700; }
+  .agg-example .lose { color: var(--muted); }
+  .agg-example .veto-pill { display: inline-block; padding: 1px 6px; background: var(--con);
+    color: #0f1419; border-radius: 3px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.05em; }
+  .agg-example .takeaway { margin-top: 12px; font-size: 12px; color: var(--muted);
+    border-top: 1px dashed var(--line); padding-top: 10px; }
+  .agg-example .takeaway b { color: var(--ink); }
+
+  /* ============== DECISION TREE ============== */
+  .decision { margin-top: 28px; background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px; }
+  .decision h3 { margin: 0 0 4px; font-size: 14px; }
+  .decision .lede { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+  .decision svg { width: 100%; height: auto; display: block; }
+  .decision .caption { margin-top: 10px; font-size: 11.5px; color: var(--muted);
+    border-top: 1px dashed var(--line); padding-top: 10px; }
+  .decision .caption code { color: var(--ink); }
+
+  /* ============== FEEDBACK CIRCLE ============== */
+  .feedback-diagram { background: var(--gold-soft); border: 1px solid var(--gold-border);
+    border-radius: 10px; padding: 18px 20px; margin-top: 28px; }
+  .feedback-diagram h3 { margin: 0 0 8px; font-size: 14px; color: var(--gold); }
+  .feedback-diagram svg { width: 100%; height: auto; display: block; max-width: 720px;
+    margin: 0 auto; }
+  .feedback-diagram .narrative { font-size: 13px; margin-top: 14px; color: var(--ink);
+    line-height: 1.55; }
+  .feedback-diagram .narrative b { color: var(--gold); }
+  .feedback-diagram .narrative code { color: var(--gold); }
+
+  /* ============== PRINT ============== */
+  @media print {
+    /* Light palette override for paper — saves ink */
+    :root {
+      --bg: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --card-bg: #ffffff;
+      --inset: #f9fafb;
+      --gold: #b8860b;
+      --gold-soft: #fef3c7;
+      --gold-border: #f0d785;
+      --gen: #f59e0b;
+      --gen-soft: #fef3c7;
+      --gen-border: #fde68a;
+      --gen-text: #92400e;
+      --ctl: #2563eb;
+      --ctl-soft: #dbeafe;
+      --ctl-border: #93c5fd;
+      --ctl-text: #1e40af;
+      --con: #dc2626;
+      --con-soft: #fee2e2;
+      --con-border: #fca5a5;
+      --con-text: #991b1b;
+      --accent: #0f766e;
+      --accent-soft: #ecfdf5;
+      --accent-border: #6ee7b7;
+      --accent-text: #065f46;
+      --bad: #b91c1c;
+      --bad-soft: #fef2f2;
+      --bad-border: #fecaca;
+      --neutral: #94a3b8;
+      --trias: #7c3aed;
+      --trias-soft: #ede9fe;
+      --trias-border: #c4b5fd;
+      --trias-text: #5b21b6;
+    }
+    nav.tabs { display: none; }
+    section.tab { display: block !important; page-break-before: always; }
+    section.tab:first-of-type { page-break-before: avoid; }
+    .card, .agg, .rail, .loop, .mode, .stage { break-inside: avoid; }
+    .trias-deepdive, .cost-card, .failure-table, .trias-example-json { break-inside: avoid; }
+    .veto { color: #fff; }
+  }
+  @media (max-width: 900px) {
+    .voices, .schemes, .modes, .flow, .rail-grid { grid-template-columns: 1fr; }
+    .step { margin-right: 0; margin-bottom: 18px; }
+    .step::after, .step::before { display: none; }
+    .intro-grid { grid-template-columns: 1fr; }
+    .cost-grid { grid-template-columns: 1fr; }
+    .parallel-row { flex-direction: column; }
+  }
+
+  /* ============== PATTERNS (visual flow diagram) ============== */
+  .pat-intro { background: var(--inset); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 22px; }
+  .pat-intro h3 { margin: 0 0 6px; font-size: 15px; }
+  .pat-intro p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.55; }
+  .pat-intro p b { color: var(--ink); }
+
+  /* Patterns tab breaks out of main's 1240px cap to use full viewport width */
+  #patterns { width: 100vw; position: relative; left: 50%; right: 50%;
+    margin-left: -50vw; margin-right: -50vw; padding: 0 40px; box-sizing: border-box; }
+  @media (max-width: 600px) {
+    #patterns { padding: 0 16px; }
+  }
+
+  /* Action toolbar (Play tour + Full screen) — fixed top-right, only visible when
+     Patterns tab is active (parent section.tab is display:none otherwise, so its
+     fixed-position descendants hide with it). */
+  .pat-actions { position: fixed; top: 14px; right: 18px; z-index: 100;
+    display: flex; gap: 10px; }
+  .pat-fullscreen-btn {
+    background: var(--card-bg); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--ink); padding: 8px 12px; font-size: 16px; cursor: pointer;
+    font-family: inherit; line-height: 1;
+    transition: all 150ms ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .pat-fullscreen-btn .label { font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--muted); }
+  .pat-fullscreen-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .pat-fullscreen-btn:hover .label { color: var(--gold); }
+  .pat-fullscreen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  /* Play tour button — gentle glow pulse when idle to invite a click. */
+  @keyframes pat-play-glow {
+    0%, 100% {
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35),
+                  0 0 0 0 rgba(251, 191, 36, 0.45);
+      border-color: rgba(251, 191, 36, 0.45);
+    }
+    50% {
+      box-shadow: 0 4px 18px rgba(251, 191, 36, 0.35),
+                  0 0 0 9px rgba(251, 191, 36, 0);
+      border-color: rgba(251, 191, 36, 0.85);
+    }
+  }
+  .pat-play-btn:not(.running) {
+    animation: pat-play-glow 2.4s ease-in-out infinite;
+    border-color: rgba(251, 191, 36, 0.45);
+  }
+  .pat-play-btn:not(.running) .icon { color: var(--gold); }
+  .pat-play-btn:not(.running):hover {
+    animation-play-state: paused;
+    border-color: var(--gold);
+  }
+  .pat-play-btn.running {
+    border-color: var(--con); color: var(--con);
+    animation: none;
+  }
+  .pat-play-btn.running .label { color: var(--con); }
+  .pat-play-btn.running:hover { border-color: var(--con); }
+
+  /* Tour progress bar — appears at the bottom during the auto-tour */
+  .pat-tour-progress {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 3px;
+    background: rgba(255, 255, 255, 0.06); z-index: 99;
+    transform-origin: left center; pointer-events: none;
+    display: none;
+  }
+  .pat-tour-progress.active { display: block; }
+  .pat-tour-progress > span {
+    display: block; height: 100%; background: var(--gold);
+    width: 0%; transition: width 200ms linear;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+  }
+
+  /* When the whole document is fullscreen, ensure solid background fills the screen. */
+  html:fullscreen, html:-webkit-full-screen { background: var(--bg); }
+  html:fullscreen body, html:-webkit-full-screen body { background: var(--bg); }
+
+  /* 3-column layout: Diagram | Flows | Steps — everything visible at once */
+  .pat-layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr) minmax(220px, 1fr);
+    gap: 18px; align-items: flex-start; }
+  .pat-diagram { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 22px 24px; position: relative; overflow: visible; min-width: 0; width: 100%; }
+  @media (max-width: 1400px) {
+    .pat-layout { grid-template-columns: minmax(0, 2.4fr) minmax(220px, 1fr) minmax(200px, 1fr); }
+    .pat-diagram { padding: 18px 16px; }
+  }
+  @media (max-width: 1100px) {
+    .pat-layout { grid-template-columns: 1fr 1fr; }
+    .pat-diagram { grid-column: 1 / -1; }
+  }
+  @media (max-width: 720px) {
+    .pat-layout { grid-template-columns: 1fr; }
+    .pat-diagram { grid-column: auto; }
+  }
+  .pat-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 22px;
+    font-size: 11.5px; color: var(--muted); }
+  .pat-legend .item { display: inline-flex; align-items: center; gap: 7px; }
+  .pat-legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  .pat-legend .sw.actor { background: var(--neutral); }
+  .pat-legend .sw.surface { background: var(--ctl-soft); border: 1px solid var(--ctl-border); }
+  .pat-legend .sw.skill { background: var(--gold); }
+  .pat-legend .sw.trias-team { background: var(--trias); }
+  .pat-legend .sw.voice { background: linear-gradient(90deg, var(--gen) 0%, var(--gen) 33%, var(--ctl) 33%, var(--ctl) 66%, var(--con) 66%); }
+  .pat-legend .sw.prompt { background: var(--inset); border: 1px dashed var(--line); }
+  .pat-legend .sw.agg { background: var(--accent); }
+  .pat-legend .sw.gate { background: linear-gradient(90deg, var(--accent) 50%, var(--con) 50%); }
+  .pat-legend .sw.output { background: var(--trias-soft); border: 1px solid var(--trias-border); }
+
+  /* Vertical (top-to-bottom) flow layout. Each row is a stage; nodes within a row flex horizontally. */
+  .pat-grid { display: flex; flex-direction: column; gap: 44px;
+    position: relative; min-height: 0; padding: 4px 0; }
+
+  /* Inline bias mini-bars inside voice nodes */
+  .pat-node-bias { margin-top: 10px; display: flex; flex-direction: column; gap: 6px;
+    padding-top: 10px; border-top: 1px dashed var(--line); }
+  .pnb-row { display: grid; grid-template-columns: 1fr 56px 32px; align-items: center; gap: 8px;
+    font-size: 10.5px; line-height: 1; }
+  .pnb-label { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pnb-bar { height: 5px; background: var(--inset); border-radius: 3px; overflow: hidden;
+    border: 1px solid var(--line); }
+  .pnb-bar > span { display: block; height: 100%; border-radius: 2px; }
+  .pat-node.gen .pnb-bar > span { background: var(--gen); }
+  .pat-node.ctl .pnb-bar > span { background: var(--ctl); }
+  .pat-node.con .pnb-bar > span { background: var(--con); }
+  .pnb-val { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px; color: var(--muted); text-align: right; }
+  .pat-row { display: flex; align-items: stretch; gap: 26px; position: relative; z-index: 2; min-width: 0; }
+  .pat-row-label { flex: 0 0 100px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--muted); text-align: right;
+    padding: 18px 18px 0 0; border-right: 1px solid var(--line); align-self: stretch;
+    display: flex; align-items: flex-start; justify-content: flex-end; }
+  .pat-row-nodes { flex: 1 1 auto; display: flex; gap: 22px; flex-wrap: wrap; align-items: stretch;
+    min-width: 0; }
+  .pat-row-nodes .pat-node { flex: 0 0 auto; min-width: 160px; max-width: 240px; }
+  /* Voices row visually dominant */
+  .pat-row.row-voices .pat-row-nodes { gap: 36px; justify-content: space-between; }
+  .pat-row.row-voices .pat-row-nodes .pat-node { flex: 1 1 0; padding: 14px 16px; font-size: 13px;
+    min-width: 180px; max-width: none; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28); }
+  .pat-row.row-voices .pat-row-label { color: var(--accent-text); border-right-color: var(--accent-border); }
+  /* Voice/Personality set swap: default visible, trias set shown only when active flow is Trias */
+  .pat-row-nodes[data-set="trias"] { display: none; }
+  .pat-diagram[data-flow="trias"] .pat-row-nodes[data-set="default"] { display: none; }
+  .pat-diagram[data-flow="trias"] .pat-row-nodes[data-set="trias"] { display: flex; }
+  .pat-diagram[data-flow="trias"] .pat-row.row-voices .pat-row-label { color: var(--trias-text); border-right-color: var(--trias-border); }
+  .rl-trias { display: none; }
+  .pat-diagram[data-flow="trias"] .rl-default { display: none; }
+  .pat-diagram[data-flow="trias"] .rl-trias { display: inline; }
+  /* Gate node — branches PASS/FAIL based on active flow */
+  .pat-node.gate-node { border-left: 3px solid var(--accent); background: var(--accent-soft);
+    color: var(--accent-text); position: relative; }
+  .pat-node.gate-node::after { content: "PASS ✓"; position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%); font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    color: var(--accent); }
+  .pat-node.gate-node.failing { border-left-color: var(--con); background: var(--con-soft);
+    color: var(--con-text); }
+  .pat-node.gate-node.failing::after { content: "FAIL ✕"; color: var(--con); }
+  /* Output combined node */
+  .pat-node.output-combined { border-left: 3px solid var(--trias); background: var(--card-bg); }
+
+  /* Auxiliary script nodes — smaller, dashed border. Highlight when their mode is active. */
+  .pat-node.aux { background: var(--inset); border: 1px dashed var(--line);
+    border-left: 3px dashed var(--muted); font-size: 12px; padding: 10px 12px;
+    min-width: 150px !important; max-width: 180px !important; opacity: 0.78; }
+  .pat-node.aux .pat-node-sub { font-size: 9.5px; }
+  .pat-node.aux.in-flow { opacity: 1; border-style: solid; border-left-style: solid;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+  .pat-col-label { /* deprecated — replaced by .pat-row-label */ display: none; }
+  .pat-node { background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; font-size: 12px; color: var(--ink); line-height: 1.4;
+    position: relative; transition: all 200ms ease; cursor: default; }
+  .pat-node .pat-node-sub { display: block; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 0.01em; }
+  .pat-node.actor { border-left: 3px solid var(--neutral); }
+  .pat-node.surface { border-left: 3px solid var(--ctl); }
+  .pat-node.skill { border-left: 3px solid var(--gold); background: var(--gold-soft); }
+  .pat-node.gen { border-left: 3px solid var(--gen); background: var(--gen-soft); }
+  .pat-node.ctl { border-left: 3px solid var(--ctl); background: var(--ctl-soft); }
+  .pat-node.con { border-left: 3px solid var(--con); background: var(--con-soft); }
+  .pat-node.trias { border-left: 3px solid var(--trias); background: var(--trias-soft); color: var(--trias-text); }
+  .pat-node.prompt { border-style: dashed; background: transparent; }
+  .pat-node.agg { border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+  .pat-node.gate-pass { border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--accent-text); position: relative; }
+  .pat-node.gate-pass::after { content: "✓"; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--accent); font-weight: 800; font-size: 13px; }
+  .pat-node.gate-fail { border-left: 3px solid var(--con); background: var(--con-soft); color: var(--con-text); position: relative; }
+  .pat-node.gate-fail::after { content: "✕"; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--con); font-weight: 800; font-size: 13px; }
+  .pat-node.output { border-left: 3px solid var(--trias); background: var(--card-bg); }
+  .pat-node.in-flow {
+    box-shadow: 0 0 0 1px var(--gold), 0 0 14px rgba(251, 191, 36, 0.35);
+    border-color: var(--gold);
+    transform: translateY(-1px);
+  }
+  .pat-node.dim { opacity: 0.32; }
+  .pat-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+    z-index: 1; }
+  .pat-line { stroke: var(--line); stroke-width: 1.6; fill: none; opacity: 0.7;
+    transition: stroke 250ms, opacity 250ms, stroke-width 250ms; }
+  .pat-line.in-flow { stroke: var(--gold); stroke-width: 3; opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.35)); }
+  .pat-line.dim { opacity: 0.10; }
+  .pat-arrow-head { fill: var(--line); transition: fill 250ms; }
+  .pat-arrow-head.in-flow { fill: var(--gold); }
+  .pat-arrow-head.dim { opacity: 0.10; }
+
+  .pat-side { display: grid; grid-template-columns: minmax(280px, 1fr) 2fr; gap: 18px;
+    align-items: flex-start; }
+  @media (max-width: 900px) { .pat-side { grid-template-columns: 1fr; } }
+  .pat-flows { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; }
+  .pat-flows h4 { margin: 0 0 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); }
+  .pat-flows .hint { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .pat-flow {
+    display: block; width: 100%; text-align: left;
+    background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 11px; margin-bottom: 6px; cursor: pointer;
+    font: inherit; color: var(--ink); transition: all 150ms ease;
+  }
+  .pat-flow:hover { border-color: var(--gold); background: var(--gold-soft); }
+  .pat-flow.active { background: var(--gold-soft); border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold-border) inset; }
+  .pat-flow .pf-name { font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .pat-flow.active .pf-name { color: var(--gold); }
+  .pat-flow .pf-mode { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--inset);
+    color: var(--muted); border: 1px solid var(--line); text-transform: uppercase; letter-spacing: 0.04em;
+    font-weight: 700; white-space: nowrap; }
+  .pat-flow.active .pf-mode { background: var(--card-bg); border-color: var(--gold-border); color: var(--gold); }
+  .pat-flow .pf-desc { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+
+  .pat-steps { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; }
+  .pat-steps h4 { margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); }
+  .pat-steps ol { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+  .pat-steps li { position: relative; padding: 9px 0 9px 28px; border-bottom: 1px dashed var(--line);
+    counter-increment: step; font-size: 12.5px; line-height: 1.5; }
+  .pat-steps li:last-child { border-bottom: none; }
+  .pat-steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 9px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border);
+    font-size: 10px; font-weight: 700; display: grid; place-items: center;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  .pat-steps li b { color: var(--ink); }
+  .pat-steps li code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; color: var(--gold); }
+
+  /* ============== VOICES — bias profile + Trias weights ============== */
+  .pat-voices { margin-top: 36px; }
+  .pat-voices-header { display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+  .pat-voices-header h3 { margin: 0; font-size: 15px; }
+  .pat-voices-header .lede { color: var(--muted); font-size: 12.5px; max-width: 720px; }
+  .pat-voices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .pat-voice-card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; position: relative;
+    overflow: hidden; }
+  .pat-voice-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px; }
+  .pat-voice-card.gen { background: linear-gradient(180deg, var(--gen-soft) 0%, var(--card-bg) 60%); border-color: var(--gen-border); }
+  .pat-voice-card.gen::before { background: var(--gen); }
+  .pat-voice-card.ctl { background: linear-gradient(180deg, var(--ctl-soft) 0%, var(--card-bg) 60%); border-color: var(--ctl-border); }
+  .pat-voice-card.ctl::before { background: var(--ctl); }
+  .pat-voice-card.con { background: linear-gradient(180deg, var(--con-soft) 0%, var(--card-bg) 60%); border-color: var(--con-border); }
+  .pat-voice-card.con::before { background: var(--con); }
+
+  .pvc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .pvc-name { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .pat-voice-card.gen .pvc-name { color: var(--gen-text); }
+  .pat-voice-card.ctl .pvc-name { color: var(--ctl-text); }
+  .pat-voice-card.con .pvc-name { color: var(--con-text); }
+  .pvc-tag { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    letter-spacing: 0.06em; text-transform: uppercase; }
+  .pat-voice-card.gen .pvc-tag { background: var(--gen-soft); color: var(--gen-text); border: 1px solid var(--gen-border); }
+  .pat-voice-card.ctl .pvc-tag { background: var(--ctl-soft); color: var(--ctl-text); border: 1px solid var(--ctl-border); }
+  .pat-voice-card.con .pvc-tag { background: var(--con-soft); color: var(--con-text); border: 1px solid var(--con-border); }
+  .pvc-tagline { font-size: 12.5px; color: var(--ink); font-style: italic; opacity: 0.85;
+    border-left: 2px solid var(--line); padding-left: 10px; }
+  .pvc-section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .pvc-bars { display: flex; flex-direction: column; gap: 7px; }
+  .pvc-bar-row { display: grid; grid-template-columns: 1fr 100px 36px; align-items: center;
+    gap: 10px; font-size: 12px; }
+  .pvc-bar-label { color: var(--ink); }
+  .pvc-bar-track { height: 6px; background: var(--inset); border-radius: 4px; overflow: hidden;
+    border: 1px solid var(--line); }
+  .pvc-bar-fill { height: 100%; border-radius: 3px; }
+  .pat-voice-card.gen .pvc-bar-fill { background: var(--gen); }
+  .pat-voice-card.ctl .pvc-bar-fill { background: var(--ctl); }
+  .pat-voice-card.con .pvc-bar-fill { background: var(--con); }
+  .pvc-bar-val { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); text-align: right; }
+  .pvc-cant { font-size: 11.5px; color: var(--muted); background: var(--inset);
+    padding: 8px 10px; border-radius: 6px; border-left: 2px solid var(--line); }
+  .pvc-cant b { color: var(--ink); }
+
+  /* Trias deep-dive — 3 × 3 sub-agent matrix */
+  .pat-trias-deep { margin-top: 32px; }
+  .pat-trias-deep .pat-trias-header { border-top: 1px solid var(--line); padding-top: 28px; }
+  .pat-tdd-frame { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 24px; }
+  .pat-tdd-orch { display: flex; justify-content: center; margin-bottom: 18px; }
+  .pat-tdd-orch .box { background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 16px; font-size: 12.5px; color: var(--ink); display: inline-flex;
+    align-items: center; gap: 8px; }
+  .pat-tdd-orch .box::before { content: ""; display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--trias); box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.18); }
+  .pat-tdd-arrows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-bottom: 14px; }
+  .pat-tdd-arrow { text-align: center; color: var(--trias); font-size: 18px; line-height: 1; }
+  .pat-tdd-arrow-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .pat-tdd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .pat-tdd-personality { background: var(--inset); border: 1px solid var(--trias-border);
+    border-radius: 10px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .pat-tdd-personality .ptd-head { display: flex; align-items: baseline; justify-content: space-between;
+    gap: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+  .pat-tdd-personality .ptd-name { font-size: 13.5px; font-weight: 700; color: var(--trias-text); }
+  .pat-tdd-personality .ptd-w { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; color: var(--muted); }
+  .pat-tdd-voices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .pat-tdd-voice { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line);
+    text-align: center; font-size: 11px; line-height: 1.2; }
+  .pat-tdd-voice .vl { font-size: 9px; color: var(--muted); display: block; margin-bottom: 1px;
+    letter-spacing: 0.05em; text-transform: uppercase; }
+  .pat-tdd-voice.gen { background: var(--gen-soft); border-color: var(--gen-border); color: var(--gen-text); }
+  .pat-tdd-voice.ctl { background: var(--ctl-soft); border-color: var(--ctl-border); color: var(--ctl-text); }
+  .pat-tdd-voice.con { background: var(--con-soft); border-color: var(--con-border); color: var(--con-text); }
+  .pat-tdd-vote { font-size: 10.5px; color: var(--muted); text-align: center; padding-top: 6px;
+    border-top: 1px dashed var(--line); }
+  .pat-tdd-vote b { color: var(--ink); }
+  .pat-tdd-converge { text-align: center; color: var(--muted); font-size: 14px; line-height: 1;
+    margin: 14px 0 8px; }
+  .pat-tdd-vote-box { display: flex; justify-content: center; gap: 14px; align-items: center; }
+  .pat-tdd-vote-box .vbox { background: var(--accent-soft); border: 1px solid var(--accent-border);
+    color: var(--accent-text); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; }
+  .pat-tdd-vote-box .arrow { color: var(--muted); font-size: 14px; }
+  .pat-tdd-vote-box .chosen { background: var(--gold-soft); border-color: var(--gold-border);
+    color: var(--gold); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; }
+  .pat-tdd-counter { text-align: center; margin-top: 14px; font-size: 11px; color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .pat-tdd-counter b { color: var(--trias-text); font-size: 14px; padding: 0 4px; }
+
+  @media (max-width: 900px) {
+    .pat-tdd-grid, .pat-tdd-arrows { grid-template-columns: 1fr; }
+  }
+
+  /* Trias team */
+  .pat-trias-section { margin-top: 32px; }
+  .pat-trias-header { display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--line);
+    padding-top: 28px; }
+  .pat-trias-header h3 { margin: 0; font-size: 15px; color: var(--trias-text); }
+  .pat-trias-header .lede { color: var(--muted); font-size: 12.5px; max-width: 720px; }
+  .pat-trias-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .pat-trias-card { background: var(--card-bg); border: 1px solid var(--trias-border);
+    border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;
+    position: relative; overflow: hidden; }
+  .pat-trias-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: var(--trias); }
+  .ptc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .ptc-name { font-size: 15px; font-weight: 700; color: var(--trias-text); letter-spacing: -0.01em; }
+  .ptc-lens { font-size: 10.5px; color: var(--muted); font-style: italic; }
+  .ptc-bars { display: flex; flex-direction: column; gap: 8px; }
+  .ptc-row { display: grid; grid-template-columns: 100px 1fr 40px; align-items: center; gap: 12px;
+    font-size: 12px; }
+  .ptc-letter { font-size: 11.5px; font-weight: 700; text-align: center; padding: 3px 6px;
+    border-radius: 4px; letter-spacing: 0.01em; }
+  .ptc-letter.g { background: var(--gen-soft); color: var(--gen-text); border: 1px solid var(--gen-border); }
+  .ptc-letter.c { background: var(--ctl-soft); color: var(--ctl-text); border: 1px solid var(--ctl-border); }
+  .ptc-letter.k { background: var(--con-soft); color: var(--con-text); border: 1px solid var(--con-border); }
+  .ptc-track { height: 8px; background: var(--inset); border-radius: 4px; overflow: hidden;
+    border: 1px solid var(--line); position: relative; }
+  .ptc-fill { height: 100%; border-radius: 3px; }
+  .ptc-fill.g { background: var(--gen); }
+  .ptc-fill.c { background: var(--ctl); }
+  .ptc-fill.k { background: var(--con); }
+  .ptc-val { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); text-align: right; }
+  .ptc-note { font-size: 11.5px; color: var(--muted); border-top: 1px dashed var(--line);
+    padding-top: 8px; }
+  .ptc-note b { color: var(--ink); }
+
+  @media (max-width: 900px) {
+    .pat-voices-grid, .pat-trias-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 820px) {
+    .pat-row { flex-direction: column; gap: 14px; }
+    .pat-row-label { flex: 0 0 auto; text-align: left; border-right: none;
+      border-bottom: 1px solid var(--line); padding: 0 0 8px; }
+    .pat-row-nodes { gap: 14px; }
+    .pat-grid { gap: 40px; }
+  }
+  @media (max-width: 600px) {
+    .pat-row-nodes .pat-node { min-width: 100%; }
+    .pat-svg { display: none; }
+  }
+
+  /* Calibration loop standalone sub-diagram */
+  .pat-cal-section { margin-top: 32px; }
+  .pat-cal-section .pat-trias-header { border-top: 1px solid var(--line); padding-top: 28px; }
+  .pat-cal-section .pat-trias-header h3 { color: var(--gold); }
+  .pat-cal-frame { background: var(--card-bg); border: 1px solid var(--gold-border);
+    border-radius: 12px; padding: 22px 24px; position: relative; }
+  .pat-cal-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: stretch;
+    position: relative; }
+  .pat-cal-node { background: var(--gold-soft); border: 1px dashed var(--gold-border);
+    border-radius: 8px; padding: 12px 14px; font-size: 12.5px; color: var(--ink);
+    display: flex; flex-direction: column; gap: 4px; position: relative; }
+  .pat-cal-node b { color: var(--gold); font-size: 13px; font-weight: 700; }
+  .pat-cal-node .sub { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; color: var(--muted); }
+  .pat-cal-arrow { position: absolute; top: 50%; transform: translateY(-50%);
+    color: var(--gold); font-size: 18px; line-height: 1; z-index: 1; pointer-events: none; }
+  .pat-cal-loop { margin-top: 20px; padding: 14px 16px; background: var(--inset);
+    border-radius: 8px; border-left: 3px solid var(--gold); font-size: 12.5px; color: var(--ink);
+    display: flex; align-items: center; gap: 14px; }
+  .pat-cal-loop .loop-icon { font-size: 20px; color: var(--gold); flex-shrink: 0; }
+  .pat-cal-loop b { color: var(--gold); }
+
+  @media (max-width: 720px) {
+    .pat-cal-row { grid-template-columns: 1fr; }
+    .pat-cal-arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Consilium</h1>
+  <div class="sub">Multi-perspective deliberation pattern for evaluating code changes</div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="active" data-tab="architecture">Architecture</button>
+  <button data-tab="flow">Flow</button>
+  <button data-tab="modes">Modes</button>
+  <button data-tab="patterns">Patterns</button>
+</nav>
+
+<main>
+
+  <!-- ============== TAB 1 ============== -->
+  <section class="tab active" id="architecture">
+
+    <div class="intro">
+      <div class="intro-grid">
+        <div>
+          <h3>What is Consilium?</h3>
+          <p class="lede">A <b>deliberation pattern</b> that evaluates code changes through three parallel voices with separate roles (<b>Generator</b> / <b>Control</b> / <b>Conservator</b>), aggregates votes via a veto-enabled scheme, and produces a decision plus a canonical report.</p>
+          <p>The core idea: never rely on a single perspective for a risky change. Each voice is prompt-constrained from doing the others' job — <i>separation of powers</i> implemented through context stripping (Sequential — Blind) or independent sub-agents (Parallel / Dialectic).</p>
+          <p class="why">Used for large refactors, DB migrations, security work, or any change where you want a structured "second opinion" before merge. Output lands as canonical JSON in <code>runs/</code> and as a line in <code>FEEDBACK.md</code> for future calibration.</p>
+        </div>
+        <svg viewBox="0 0 380 180" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="diff in, three voices, aggregator, winner out">
+          <rect x="8" y="70" width="60" height="40" rx="6" fill="#11151c" stroke="#2d3441"/>
+          <text x="38" y="89" text-anchor="middle" fill="#e5e7eb" font-size="11">diff +</text>
+          <text x="38" y="103" text-anchor="middle" fill="#9ca3af" font-size="10">context</text>
+          <line x1="68" y1="90" x2="104" y2="90" stroke="#9ca3af" stroke-width="1.5"/>
+          <polygon points="99,86 106,90 99,94" fill="#9ca3af"/>
+          <rect x="110" y="30" width="100" height="32" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+          <text x="160" y="50" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600">Generator</text>
+          <rect x="110" y="74" width="100" height="32" rx="6" fill="#182338" stroke="#2a3f5f"/>
+          <text x="160" y="94" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">Control</text>
+          <rect x="110" y="118" width="100" height="32" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+          <text x="160" y="138" text-anchor="middle" fill="#fca5a5" font-size="12" font-weight="600">Conservator</text>
+          <line x1="210" y1="46" x2="246" y2="86" stroke="#9ca3af" stroke-width="1.5"/>
+          <line x1="210" y1="90" x2="246" y2="90" stroke="#9ca3af" stroke-width="1.5"/>
+          <line x1="210" y1="134" x2="246" y2="94" stroke="#9ca3af" stroke-width="1.5"/>
+          <polygon points="241,86 248,90 241,94" fill="#9ca3af"/>
+          <rect x="250" y="70" width="76" height="40" rx="6" fill="#0a2e23" stroke="#145c45"/>
+          <text x="288" y="89" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="600">aggregate</text>
+          <text x="288" y="103" text-anchor="middle" fill="#6ee7b7" font-size="9">veto · rank</text>
+          <line x1="326" y1="90" x2="358" y2="90" stroke="#34d399" stroke-width="1.5"/>
+          <polygon points="353,86 360,90 353,94" fill="#34d399"/>
+          <text x="343" y="108" text-anchor="middle" fill="#6ee7b7" font-size="9">winner</text>
+          <text x="343" y="120" text-anchor="middle" fill="#6ee7b7" font-size="9">+ report</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="constitution">
+      <div class="label">Constitution — governs every deliberation</div>
+      <div class="principles">
+        <div class="p"><b>1.</b> Think before coding — surface tradeoffs, don't assume.</div>
+        <div class="p"><b>2.</b> Simplicity first — minimum code that solves the problem.</div>
+        <div class="p"><b>3.</b> Surgical changes — touch only what the goal demands.</div>
+        <div class="p"><b>4.</b> Goal-driven — success_criterion + verification are mandatory.</div>
+      </div>
+    </div>
+
+    <h2>The 3 voices</h2>
+    <div class="voices">
+      <div class="card gen">
+        <div class="top"><h3>Generator</h3><span class="tag">Creative</span></div>
+        <div>Produces 3-5 candidate approaches via divergent thinking. Always includes <code>do_nothing</code> as a baseline.</div>
+        <ul>
+          <li>Curious, not cautious — risk is someone else's job</li>
+          <li>Quantity before quality</li>
+          <li>No self-censorship</li>
+        </ul>
+        <div class="cant"><b>Not allowed:</b> to filter for risk or feasibility.</div>
+      </div>
+
+      <div class="card ctl">
+        <div class="top"><h3>Control</h3><span class="tag">Analytical</span></div>
+        <div>Technically checks each candidate: types, logic, tests, style. Marks <code>valid: true/false</code>.</div>
+        <ul>
+          <li>Pedantic, not pessimistic</li>
+          <li>Concrete over abstract</li>
+          <li>Verifies, doesn't speculate</li>
+        </ul>
+        <div class="cant"><b>Not allowed:</b> to reject for risk — pass through if correct.</div>
+      </div>
+
+      <div class="card con">
+        <div class="top"><h3>Conservator</h3><span class="tag">Skeptical</span></div>
+        <div>Scores risk for each valid candidate: diff_size, scope_drift, regression_risk, reversibility.</div>
+        <ul>
+          <li>Reversibility over cleverness</li>
+          <li>Blast radius matters</li>
+          <li>May recommend <code>do_nothing</code></li>
+        </ul>
+        <div class="cant"><b>Not allowed:</b> to re-validate correctness — trust Control.</div>
+      </div>
+    </div>
+
+    <div class="agg">
+      <h3>Aggregation — 4 voting schemes</h3>
+      <div class="schemes">
+        <div class="scheme">
+          <b>majority</b>
+          Mean of votes; tiebreak on minimum variance.
+        </div>
+        <div class="scheme">
+          <b>weighted</b>
+          Weighted mean with weights ∈ [0.2, 0.49], sum=1.0.
+        </div>
+        <div class="scheme default">
+          <b>conservative_override <span style="color:var(--muted);font-weight:400;">(default)</span></b>
+          Weighted mean with <code>safety = 1 − conservator</code>; Conservator holds unilateral veto.
+          <span class="veto">VETO at risk_score &gt; 0.8</span>
+        </div>
+        <div class="scheme">
+          <b>risk_adjusted_utility</b>
+          <code>utility = mean(gen, ctrl, 1−cons)</code> with a sigmoidal penalty centered at risk=0.5.
+          No hard veto — a candidate with risk 0.7 is penalized ~21%, not disqualified.
+          Use when multiple candidates cluster around the threshold.
+        </div>
+      </div>
+      <div class="agg-example">
+        <h4>Numeric example — same candidate set, 4 different winners</h4>
+        <div class="preamble">
+          Three candidates with identical utility (gen, ctrl) but increasing conservator (risk).
+          Each scheme aggregates differently — the first two treat conservator as utility (historical bug);
+          the last two flip it into safety. Numbers computed with equal weights = ⅓.
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>candidate</th>
+              <th>generator</th>
+              <th>control</th>
+              <th>conservator <span style="color:var(--con-text);">(risk)</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th>A — safe</th><td>0.80</td><td>0.90</td><td>0.30</td></tr>
+            <tr><th>B — medium</th><td>0.90</td><td>0.80</td><td>0.60</td></tr>
+            <tr><th>C — risky</th><td>0.85</td><td>0.85</td><td>0.85</td></tr>
+          </tbody>
+        </table>
+        <table style="margin-top: 14px;">
+          <thead>
+            <tr>
+              <th>scheme</th>
+              <th>score(A)</th>
+              <th>score(B)</th>
+              <th>score(C)</th>
+              <th>winner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>majority</th>
+              <td class="lose">0.667</td><td class="lose">0.767</td><td class="win">0.850</td>
+              <td class="win">C</td>
+            </tr>
+            <tr>
+              <th>weighted</th>
+              <td class="lose">0.667</td><td class="lose">0.767</td><td class="win">0.850</td>
+              <td class="win">C</td>
+            </tr>
+            <tr>
+              <th>conservative_override</th>
+              <td class="win">0.800</td><td class="lose">0.700</td><td><span class="veto-pill">VETO</span></td>
+              <td class="win">A</td>
+            </tr>
+            <tr>
+              <th>risk_adjusted_utility</th>
+              <td class="win">0.705</td><td class="lose">0.188</td><td class="lose">0.018</td>
+              <td class="win">A</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="takeaway">
+          <b>Why the default is <code>conservative_override</code></b>: <code>majority</code> and
+          <code>weighted</code> treat the conservator score as utility (higher = better),
+          so they pick C — the riskier candidate. Only schemes that flip conservator
+          into safety (<code>1 − risk</code>) reach the intuitive verdict. <code>risk_adjusted_utility</code>
+          yields the same result without a cliff at the threshold — useful when several candidates
+          cluster around 0.8.
+        </div>
+      </div>
+      <div class="note">
+        Separation of powers: each voice is prompt-constrained from doing the others' job.
+        Constitution overrides any voice in case of conflict. If all candidates are vetoed →
+        the aggregator attaches a <code>retry_suggested</code> block with the minimum threshold
+        under which the lowest-risk candidate would have survived (capped at 0.85). The decision
+        (re-roll with a stricter constraint, accept <code>chosen: null</code>, or ask the user)
+        falls to the main agent.
+      </div>
+    </div>
+
+    <div style="margin-top:24px; padding:16px; background:var(--inset); border:1px solid var(--line); border-radius:6px;">
+  <h3 style="margin:0 0 12px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Shared Utilities — <code>scripts/utils.py</code></h3>
+  <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+    <thead><tr>
+      <th style="text-align:left; padding:4px 8px; color:var(--muted); font-weight:500; border-bottom:1px solid var(--line);">Function</th>
+      <th style="text-align:left; padding:4px 8px; color:var(--muted); font-weight:500; border-bottom:1px solid var(--line);">Role</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="padding:4px 8px;"><code>force_utf8_streams()</code></td><td style="padding:4px 8px; color:var(--muted);">Reconfigures stdin/stdout/stderr to UTF-8 (Windows cp1252 fix)</td></tr>
+      <tr><td style="padding:4px 8px;"><code>load_json_stdin(script_name)</code></td><td style="padding:4px 8px; color:var(--muted);">Reads + parses JSON from stdin; clear hint on empty stdin or invalid JSON</td></tr>
+      <tr><td style="padding:4px 8px;"><code>validate_keys(data, required, context)</code></td><td style="padding:4px 8px; color:var(--muted);">Checks required fields; exit 1 with explicit message on missing</td></tr>
+    </tbody>
+  </table>
+  <p style="margin:10px 0 0; font-size:12px; color:var(--muted);">Imported by every script that read stdin or had a local <code>_force_utf8_streams</code>. Scripts remain independently executable — <code>utils.py</code> is stdlib-only.</p>
+</div>
+
+  </section>
+
+  <!-- ============== TAB 2 ============== -->
+  <section class="tab" id="flow">
+
+    <h2>Steps 0 → 6 (with aux 1.5 + 5b)</h2>
+    <div class="flow">
+      <div class="step aux">
+        <div class="n">STEP 0</div>
+        <h4>Bootstrap</h4>
+        <div>Reads <code>prompts/*.md</code> + runs <code>priors.py</code>.</div>
+        <div class="io">out: soft priors</div>
+      </div>
+      <div class="step">
+        <div class="n">STEP 1</div>
+        <h4>Goal</h4>
+        <div>Restated as a testable <b>success_criterion</b>. Clarity gate.</div>
+        <div class="io">in: diff + context</div>
+        <div class="io">out: 1-sentence criterion</div>
+      </div>
+      <div class="step aux">
+        <div class="n">STEP 1.5</div>
+        <h4>Scope gate</h4>
+        <div>Auto-skip if scope is trivial (≤1 file / ≤15 lines, clear blocklist). No-op on non-diff tasks (audit/planning) — fails open by design.</div>
+        <div class="io">out: skipped report</div>
+      </div>
+      <div class="step gen">
+        <div class="n">STEP 2</div>
+        <h4>Generator</h4>
+        <div>3-5 candidate approaches, including do_nothing. Adversarial conditional — only at clarity gate 2+ readings or shared/core; otherwise <code>adversarial_skipped</code>.</div>
+        <div class="io">out: { candidates: [...] }</div>
+      </div>
+      <div class="step ctl">
+        <div class="n">STEP 3</div>
+        <h4>Control</h4>
+        <div>Technical verdict per candidate + tests_to_write.</div>
+        <div class="io">out: { verdicts: [...] }</div>
+      </div>
+      <div class="step con">
+        <div class="n">STEP 4</div>
+        <h4>Conservator</h4>
+        <div>Risk score + rollback_recipe for valid candidates.</div>
+        <div class="io">out: { scores: [...] }</div>
+      </div>
+      <div class="step agg-step">
+        <div class="n">STEP 5</div>
+        <h4>Aggregate</h4>
+        <div>Applies the chosen scheme; veto if necessary.</div>
+        <div class="io">out: { chosen, ranking }</div>
+        <span class="sub">+5b confidence</span>
+      </div>
+      <div class="step">
+        <div class="n">STEP 6</div>
+        <h4>Report</h4>
+        <div><code>build_report.py</code> + <code>validate_report.py</code> + <code>log_feedback.py</code>.</div>
+        <div style="font-size:12px; color:var(--accent); margin-top:4px;">✓ Input validated via <code>validate_input()</code> — exit 1 with missing field specified.</div>
+        <div class="io">out: canonical JSON</div>
+      </div>
+    </div>
+
+    <div class="decision">
+      <h3>Step 1.5 — scope gate decision tree</h3>
+      <div class="lede">When we run a full deliberation vs jump straight to report. <code>scripts/scope_gate.py</code>, defaults: <code>max_files=1</code>, <code>max_lines=15</code>, blocklist on sensitive paths.</div>
+      <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scope gate decision tree">
+        <rect x="80" y="10" width="200" height="36" rx="6" fill="#11151c" stroke="#2d3441"/>
+        <text x="180" y="33" text-anchor="middle" fill="#e5e7eb" font-size="12">probe_change.py → signals</text>
+        <line x1="180" y1="46" x2="180" y2="62" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,57 180,64 184,57" fill="#9ca3af"/>
+
+        <rect x="80" y="66" width="200" height="34" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="180" y="87" text-anchor="middle" fill="#e5e7eb" font-size="11">probe error OR files = 0?</text>
+        <line x1="280" y1="83" x2="468" y2="83" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="463,79 470,83 463,87" fill="#f87171"/>
+        <text x="374" y="78" text-anchor="middle" fill="#fca5a5" font-size="10">yes — fail open</text>
+        <line x1="180" y1="100" x2="180" y2="118" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,113 180,120 184,113" fill="#9ca3af"/>
+        <text x="188" y="113" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="80" y="122" width="200" height="34" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="180" y="143" text-anchor="middle" fill="#e5e7eb" font-size="11">blocklist hit?</text>
+        <line x1="280" y1="139" x2="468" y2="139" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="463,135 470,139 463,143" fill="#f87171"/>
+        <text x="374" y="134" text-anchor="middle" fill="#fca5a5" font-size="10">yes — sensitive path</text>
+        <line x1="180" y1="156" x2="180" y2="174" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,169 180,176 184,169" fill="#9ca3af"/>
+        <text x="188" y="169" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="80" y="178" width="200" height="34" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="180" y="199" text-anchor="middle" fill="#e5e7eb" font-size="11">files &gt; max_files (1)?</text>
+        <line x1="280" y1="195" x2="468" y2="195" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="463,191 470,195 463,199" fill="#f87171"/>
+        <text x="374" y="190" text-anchor="middle" fill="#fca5a5" font-size="10">yes</text>
+        <line x1="180" y1="212" x2="180" y2="230" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,225 180,232 184,225" fill="#9ca3af"/>
+        <text x="188" y="225" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="80" y="234" width="200" height="34" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="180" y="255" text-anchor="middle" fill="#e5e7eb" font-size="11">lines &gt; max_lines (15)?</text>
+        <line x1="280" y1="251" x2="468" y2="251" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="463,247 470,251 463,255" fill="#f87171"/>
+        <text x="374" y="246" text-anchor="middle" fill="#fca5a5" font-size="10">yes</text>
+        <line x1="180" y1="268" x2="180" y2="286" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="176,281 180,288 184,281" fill="#9ca3af"/>
+        <text x="188" y="281" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="80" y="290" width="200" height="40" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="180" y="309" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="700">SKIP</text>
+        <text x="180" y="323" text-anchor="middle" fill="#6ee7b7" font-size="10">skipped report → step 6 direct</text>
+
+        <rect x="470" y="50" width="220" height="220" rx="8" fill="#182338" stroke="#2a3f5f"/>
+        <text x="580" y="148" text-anchor="middle" fill="#93c5fd" font-size="14" font-weight="700">DELIBERATE</text>
+        <text x="580" y="168" text-anchor="middle" fill="#93c5fd" font-size="10">full flow (steps 2 → 6)</text>
+      </svg>
+      <div class="caption">
+        Override: <code>CONSILIUM_FORCE_FULL=1</code> forces deliberate regardless of signals.
+        Defaults live in <code>DEFAULT_CONFIG</code>; can be overridden via
+        <code>scope_gate.json</code> in <code>cwd</code> or via <code>--config PATH</code>.
+      </div>
+    </div>
+
+    <div class="rail">
+      <h3>Scripts per step</h3>
+      <div class="rail-grid">
+        <div class="col">
+          <code>priors.py</code>
+          <div class="opt">step 0 — soft priors</div>
+        </div>
+        <div class="col empty"></div>
+        <div class="col alt">
+          <code>scope_gate.py</code>
+          <div class="opt">step 1.5 — auto-skip</div>
+        </div>
+        <div class="col empty"></div>
+        <div class="col">
+          <code>strip_context.py</code>
+          <div class="opt">step 3-4 — blind context (sequential)</div>
+        </div>
+        <div class="col">
+          <code>probe_change.py</code>
+          <div class="opt">step 4 — anchor diff_size</div>
+        </div>
+        <div class="col">
+          <code>aggregator.py</code>
+          <div class="opt">step 5 — 4 schemes</div>
+        </div>
+        <div class="col">
+          <code>build_report.py</code>
+          <div class="opt">step 6 — canonical JSON</div>
+        </div>
+      </div>
+      <div class="rail-grid" style="margin-top: 10px;">
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col empty"></div>
+        <div class="col">
+          <code>confidence.py</code>
+          <div class="opt">step 5b — variance + separation</div>
+        </div>
+        <div class="col">
+          <code>validate_report.py</code>
+          <div class="opt">step 6 — gate Principle #4</div>
+        </div>
+      </div>
+      <div class="rail-maint">
+        <h4>Maintenance & extra-pipeline scripts</h4>
+        <div class="maint-grid">
+          <div class="col">
+            <code>dialectic_merge.py</code>
+            <div class="opt">parallel/dialectic mode</div>
+          </div>
+          <div class="col">
+            <code>log_feedback.py</code>
+            <div class="opt">step 6 — append outcome (OK auto / OVR / PEND) to FEEDBACK.md</div>
+          </div>
+          <div class="col">
+            <code>run_evals.py</code>
+            <div class="opt">regression suite (17+ scenarios)</div>
+          </div>
+          <div class="col">
+            <code>usage.py</code>
+            <div class="opt">telemetry rollup over runs/</div>
+          </div>
+          <div class="col">
+            <code>feedback.py</code>
+            <div class="opt">audit FEEDBACK.md (stats + recent)</div>
+          </div>
+          <div class="col" style="grid-column: 1 / 2;">
+            <code>personalities.py</code>
+            <div class="opt">trias mode — 3 fixed personalities (Pioneer / Architect / Steward)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="decision">
+      <h3>Step 5b + 6 — confidence gate decision tree</h3>
+      <div class="lede">How the outcome written to <code>FEEDBACK.md</code> is decided after aggregation. <code>scripts/confidence.py</code> derives the score; <code>scripts/log_feedback.py</code> gates it at 0.7.</div>
+      <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Confidence gate decision tree">
+        <rect x="270" y="10" width="180" height="36" rx="6" fill="#11151c" stroke="#2d3441"/>
+        <text x="360" y="33" text-anchor="middle" fill="#e5e7eb" font-size="12">report + confidence</text>
+        <line x1="360" y1="46" x2="360" y2="62" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,57 360,64 364,57" fill="#9ca3af"/>
+
+        <rect x="270" y="66" width="180" height="40" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="360" y="83" text-anchor="middle" fill="#e5e7eb" font-size="11">chosen == null</text>
+        <text x="360" y="97" text-anchor="middle" fill="#e5e7eb" font-size="11">OR skipped report?</text>
+        <line x1="450" y1="86" x2="588" y2="86" stroke="#fbbf24" stroke-width="1.5"/>
+        <polygon points="583,82 590,86 583,90" fill="#fbbf24"/>
+        <text x="519" y="80" text-anchor="middle" fill="#fbbf24" font-size="10">yes</text>
+        <rect x="590" y="66" width="110" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="645" y="86" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="700">PEND</text>
+        <text x="645" y="100" text-anchor="middle" fill="#fbbf24" font-size="9">no --outcome flag</text>
+        <line x1="360" y1="106" x2="360" y2="124" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,119 360,126 364,119" fill="#9ca3af"/>
+        <text x="368" y="119" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="270" y="128" width="180" height="38" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="360" y="151" text-anchor="middle" fill="#e5e7eb" font-size="11">confidence ≥ 0.7?</text>
+        <line x1="450" y1="147" x2="588" y2="147" stroke="#34d399" stroke-width="1.5"/>
+        <polygon points="583,143 590,147 583,151" fill="#34d399"/>
+        <text x="519" y="141" text-anchor="middle" fill="#6ee7b7" font-size="10">yes</text>
+        <rect x="590" y="128" width="110" height="38" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="645" y="144" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="700">OK</text>
+        <text x="645" y="158" text-anchor="middle" fill="#6ee7b7" font-size="9">auto, no prompt</text>
+        <line x1="360" y1="166" x2="360" y2="184" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,179 360,186 364,179" fill="#9ca3af"/>
+        <text x="368" y="179" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="270" y="188" width="180" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="360" y="205" text-anchor="middle" fill="#93c5fd" font-size="11">prompt user:</text>
+        <text x="360" y="219" text-anchor="middle" fill="#93c5fd" font-size="11">override to alt_id?</text>
+        <line x1="450" y1="208" x2="588" y2="208" stroke="#60a5fa" stroke-width="1.5"/>
+        <polygon points="583,204 590,208 583,212" fill="#60a5fa"/>
+        <text x="519" y="202" text-anchor="middle" fill="#93c5fd" font-size="10">picks alt</text>
+        <rect x="590" y="188" width="110" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="645" y="206" text-anchor="middle" fill="#93c5fd" font-size="13" font-weight="700">OVR</text>
+        <text x="645" y="220" text-anchor="middle" fill="#93c5fd" font-size="9">--override-target alt_id</text>
+        <line x1="360" y1="228" x2="360" y2="250" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,245 360,252 364,245" fill="#9ca3af"/>
+        <text x="368" y="245" fill="#9ca3af" font-size="10">no, chosen is fine</text>
+        <rect x="270" y="254" width="180" height="38" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="360" y="271" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="700">OK</text>
+        <text x="360" y="285" text-anchor="middle" fill="#6ee7b7" font-size="9">user confirmed chosen</text>
+      </svg>
+      <div class="caption">
+        Outcomes are <code>OK</code>, <code>OVR</code>, <code>PEND</code>, <code>BAD</code>.
+        The tree covers the automatic flow at the end of step 6 — additionally, at the
+        confidence&nbsp;&lt;&nbsp;0.7 prompt the user may choose to <b>defer</b> the rating
+        (equivalent to running <code>log_feedback.py</code> without <code>--outcome</code> →
+        <code>PEND</code>, retroactively closed via <code>stale_pendings</code>), and
+        <code>--outcome BAD</code> is set manually later to mark a decision as failed.
+      </div>
+    </div>
+
+    <div class="feedback-diagram">
+      <h3>Feedback loop — deliberation → calibration → deliberation cycle</h3>
+      <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Feedback loop cycle">
+        <rect x="14" y="100" width="150" height="60" rx="8" fill="#181d27" stroke="#2d3441"/>
+        <text x="89" y="124" text-anchor="middle" fill="#e5e7eb" font-size="12" font-weight="600">Deliberation</text>
+        <text x="89" y="140" text-anchor="middle" fill="#9ca3af" font-size="10">G · C · Cons</text>
+        <text x="89" y="153" text-anchor="middle" fill="#9ca3af" font-size="10">steps 1 → 5</text>
+
+        <line x1="164" y1="130" x2="220" y2="130" stroke="#34d399" stroke-width="1.5"/>
+        <polygon points="215,126 222,130 215,134" fill="#34d399"/>
+        <text x="192" y="120" text-anchor="middle" fill="#6ee7b7" font-size="9">step 6</text>
+        <text x="192" y="146" text-anchor="middle" fill="#6ee7b7" font-size="9">report + outcome</text>
+
+        <rect x="224" y="100" width="160" height="60" rx="8" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="304" y="120" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600">FEEDBACK.md</text>
+        <text x="304" y="138" text-anchor="middle" fill="#fbbf24" font-size="10">+ runs/&lt;file&gt;.json</text>
+        <text x="304" y="152" text-anchor="middle" fill="#fbbf24" font-size="9">OK / OVR / PEND / BAD</text>
+
+        <line x1="384" y1="130" x2="440" y2="130" stroke="#34d399" stroke-width="1.5"/>
+        <polygon points="435,126 442,130 435,134" fill="#34d399"/>
+        <text x="412" y="120" text-anchor="middle" fill="#6ee7b7" font-size="9">next run</text>
+        <text x="412" y="146" text-anchor="middle" fill="#6ee7b7" font-size="9">reads history</text>
+
+        <rect x="444" y="100" width="150" height="60" rx="8" fill="#182338" stroke="#2a3f5f"/>
+        <text x="519" y="120" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">priors.py</text>
+        <text x="519" y="138" text-anchor="middle" fill="#93c5fd" font-size="9">override_rate, veto_rate,</text>
+        <text x="519" y="152" text-anchor="middle" fill="#93c5fd" font-size="9">top keywords, stale_pendings</text>
+
+        <path d="M 519 100 Q 519 30 89 30 Q 89 30 89 100" stroke="#34d399" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+        <polygon points="85,95 89,102 93,95" fill="#34d399"/>
+        <text x="304" y="22" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="600">soft priors injected at step 0 (bootstrap)</text>
+
+        <line x1="304" y1="160" x2="304" y2="194" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <polygon points="300,189 304,196 308,189" fill="#fbbf24"/>
+        <rect x="180" y="200" width="248" height="44" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="304" y="218" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600">stale_pendings (PEND older than 7 days)</text>
+        <text x="304" y="234" text-anchor="middle" fill="#fbbf24" font-size="9">surfaced to the user before step 1 for retro-close</text>
+      </svg>
+      <div class="narrative">
+        <b>The loop, in words</b>: at the end of each deliberation, <code>build_report.py</code>
+        assembles the canonical report, <code>validate_report.py</code> verifies Principle #4
+        (shape + telemetry.mode + deliberation_log), and <code>log_feedback.py</code>
+        appends a line to <code>FEEDBACK.md</code> according to the tree above.
+        At the start of the next run, <code>priors.py</code> reads <code>runs/</code>
+        + <code>FEEDBACK.md</code> and computes the soft priors the agent injects
+        into prompts — the skill thus self-calibrates its risk/override intuition based on
+        actual history, not just defaults.
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============== TAB 3 ============== -->
+  <section class="tab" id="modes">
+
+    <h2>Flow models — 6 modes (5 active + 1 SPEC)</h2>
+    <div class="modes">
+
+      <div class="mode sequential-blind">
+        <h3>Sequential — blind <span class="mode-badge default">DEFAULT</span></h3>
+        <div class="subtitle">One context, but each voice receives only the strict minimum.</div>
+
+        <div class="stage">
+          <div class="label">turn 1 — single context</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ plays voices, with strip between them</div>
+          <span class="actor gen">Generator</span>
+          <div class="strip-tag">strip → {id, summary, sketch}</div>
+          <span class="actor ctl">Control</span>
+          <div class="strip-tag">strip → {id, summary, sketch} for valid</div>
+          <span class="actor con">Conservator</span>
+          <div class="ok">
+            ✓ Reduced contamination without parallel overhead — Control doesn't see <code>rationale</code>,
+            Conservator doesn't see <code>issues/notes</code>.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> most deliberations — fast, but with a Chinese wall implemented
+          via <code>scripts/strip_context.py</code>.
+        </div>
+      </div>
+
+      <div class="mode parallel">
+        <h3>Parallel voices <span class="mode-badge opt">OPT-IN</span></h3>
+        <div class="subtitle">Up to 3 independent Claude sub-agents, 1 + 2 pattern.</div>
+
+        <div class="stage">
+          <div class="label">turn 1 — 1 sub-agent</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ Agent call</div>
+          <span class="actor gen">Generator (sub-agent)</span>
+        </div>
+
+        <div class="stage">
+          <div class="label">turn 2 — 2 sub-agents in parallel</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ 2 Agent calls in the same message</div>
+          <div class="parallel-row">
+            <div class="parallel-col"><span class="actor ctl">Control (sub-agent)</span></div>
+            <div class="parallel-col"><span class="actor con">Conservator (sub-agent)</span></div>
+          </div>
+          <div class="wall" title="chinese wall — sub-agents cannot see each other"></div>
+          <div class="ok">
+            ✓ True independence — sub-agents return only final JSON, no shared reasoning.
+          </div>
+          <div class="ok">
+            ✓ Telemetry captured by the orchestrator per voice: <code>tokens_in/out ≈ len(prompt|response)/4</code>, <code>latency_ms</code> = wall-clock per Agent call. Best-effort, but non-zero — otherwise parallel runs show 0 tokens in <code>usage.py</code>.
+          </div>
+        </div>
+
+        <div style="margin-top:12px; border:1px solid var(--line); border-radius:6px; overflow:hidden; font-size:12.5px;">
+          <div style="padding:6px 10px; background:var(--inset); color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em;">Model selection</div>
+          <table style="width:100%; border-collapse:collapse;">
+            <thead><tr style="border-bottom:1px solid var(--line);">
+              <th style="padding:5px 10px; text-align:left; color:var(--muted); font-weight:500;">Model</th>
+              <th style="padding:5px 10px; text-align:left; color:var(--muted); font-weight:500;">Reasoning power</th>
+              <th style="padding:5px 10px; text-align:left; color:var(--muted); font-weight:500;">Recommended voice</th>
+            </tr></thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--line);">
+                <td style="padding:5px 10px;"><code>haiku</code></td>
+                <td style="padding:5px 10px; letter-spacing:2px; color:var(--accent);">●●○○○ <span style="color:var(--muted); letter-spacing:0; font-size:11px;">1/5</span></td>
+                <td style="padding:5px 10px; color:var(--muted);">Control / Conservator — small diffs</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--line);">
+                <td style="padding:5px 10px;"><code>sonnet</code> <span style="font-size:10px; color:var(--accent);">default</span></td>
+                <td style="padding:5px 10px; letter-spacing:2px; color:var(--accent);">●●●○○ <span style="color:var(--muted); letter-spacing:0; font-size:11px;">3/5</span></td>
+                <td style="padding:5px 10px; color:var(--muted);">All 3 voices — general use</td>
+              </tr>
+              <tr>
+                <td style="padding:5px 10px;"><code>opus</code></td>
+                <td style="padding:5px 10px; letter-spacing:2px; color:var(--gold);">●●●●● <span style="color:var(--muted); letter-spacing:0; font-size:11px;">5/5</span></td>
+                <td style="padding:5px 10px; color:var(--muted);">Generator — high-stakes / ambiguous</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> subtle decisions where contamination matters, high-stakes
+          (DB migrations, security, large refactors).
+        </div>
+      </div>
+
+      <div class="mode dialectic">
+        <h3>Dialectic — two-pass <span class="mode-badge advanced">OPT-IN</span></h3>
+        <div class="subtitle">Two parallel rounds with controlled cross-context revision.</div>
+
+        <div class="stage">
+          <div class="label">pass 1 — independent (like parallel)</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ 1 + 2 pattern</div>
+          <span class="actor gen">Generator</span>
+          <span class="actor ctl">Control</span>
+          <span class="actor con">Conservator</span>
+          <div class="wall" title="chinese wall"></div>
+        </div>
+
+        <div class="stage">
+          <div class="label">pass 2 — revision round (3 in parallel)</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ each voice sees the others' outputs</div>
+          <div class="parallel-row">
+            <div class="parallel-col"><span class="actor gen">Gen revised</span></div>
+            <div class="parallel-col"><span class="actor ctl">Ctrl revised</span></div>
+            <div class="parallel-col"><span class="actor con">Cons revised</span></div>
+          </div>
+          <div class="ok">
+            ✓ Independence in pass 1 + a chance to update in pass 2. <code>revision_log</code>
+            audits what changed. Merge via <code>scripts/dialectic_merge.py</code>.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> subtle decisions where a voice might change its mind
+          after seeing what the others said. Cost: 2× parallel (6 sub-agents total).
+        </div>
+      </div>
+
+      <div class="mode dialectic">
+        <h3>Dialectic — iterative (1-3 rounds) <span class="mode-badge spec">SPEC</span></h3>
+        <div class="subtitle">Extension of dialectic two-pass with N revision rounds and convergence detection.</div>
+
+        <div class="stage">
+          <div class="label">pass 1 — independent (like parallel)</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ 1 + 2 pattern</div>
+          <span class="actor gen">Generator</span>
+          <span class="actor ctl">Control</span>
+          <span class="actor con">Conservator</span>
+          <div class="wall" title="chinese wall"></div>
+        </div>
+
+        <div class="stage">
+          <div class="label">pass 2 … pass N+1 — revision loop (N ∈ {1,2,3})</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ each voice sees the others' outputs from the prior round</div>
+          <div class="parallel-row">
+            <div class="parallel-col"><span class="actor gen">Gen rev.</span></div>
+            <div class="parallel-col"><span class="actor ctl">Ctrl rev.</span></div>
+            <div class="parallel-col"><span class="actor con">Cons rev.</span></div>
+          </div>
+          <div class="ok">
+            ✓ <b>Convergence stop</b> — early-exit if in the current round: (a) the candidate
+            <code>id</code> list is identical, (b) no <code>valid</code> flag flipped,
+            (c) no <code>risk_score</code> moved by &gt;0.05. Hard cap N=3.
+          </div>
+          <div class="warning">
+            ⚠ Not yet implemented — <code>dialectic_merge.py</code> must accept
+            <code>{rounds: [pass1, pass2, ...]}</code> and return <code>revision_log</code>
+            per round. The legacy <code>{pass1, pass2}</code> shape remains backward-compatible.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> high-stakes decisions where the Conservator flags an unexpected risk
+          and you want to give the Generator a chance to propose candidates that explicitly avoid it —
+          then let the Conservator rescore. Cost: <code>1 + 3·(N+1)</code> sub-agents
+          (4 / 7 / 10 for N = 0 / 1 / 2 / 3).
+        </div>
+      </div>
+
+      <div class="mode trias">
+        <h3>Trias <span class="mode-badge advanced">OPT-IN</span></h3>
+        <div class="subtitle">3 personalities × 3 voices = 9 sub-agents, majority democratic vote (3-0 / 2-1 / 2-0).</div>
+
+        <div class="stage">
+          <div class="label">turn 1 — 3 personalities in parallel, each running its own parallel mode</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ 3 dispatches, each with different weights</div>
+          <div class="parallel-row">
+            <div class="parallel-col">
+              <div class="trias-personality-block">
+                <span class="actor trias">Pioneer</span>
+                <div class="trias-weights">G=0.49 · C=0.30 · K=0.21</div>
+                <div class="voice-row">
+                  <span class="actor gen">Gen</span>
+                  <span class="actor ctl">Ctrl</span>
+                  <span class="actor con">Cons</span>
+                </div>
+              </div>
+            </div>
+            <div class="parallel-col">
+              <div class="trias-personality-block">
+                <span class="actor trias">Architect</span>
+                <div class="trias-weights">G=0.30 · C=0.49 · K=0.21</div>
+                <div class="voice-row">
+                  <span class="actor gen">Gen</span>
+                  <span class="actor ctl">Ctrl</span>
+                  <span class="actor con">Cons</span>
+                </div>
+              </div>
+            </div>
+            <div class="parallel-col">
+              <div class="trias-personality-block">
+                <span class="actor trias">Steward</span>
+                <div class="trias-weights">G=0.30 · C=0.30 · K=0.40</div>
+                <div class="voice-row">
+                  <span class="actor gen">Gen</span>
+                  <span class="actor ctl">Ctrl</span>
+                  <span class="actor con">Cons</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="wall" title="chinese wall — each personality is isolated"></div>
+          <div class="ok">
+            ✓ Each personality orchestrates its own parallel mode (3 voice sub-agents).
+            Total: 9 independent sub-agents + 1 orchestrator.
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="label">turn 2 — democratic vote over 3 chosen results</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ simple majority, each personality = 1 vote</div>
+          <table class="trias-vote-table">
+            <thead>
+              <tr>
+                <th>Pattern</th>
+                <th>Meaning</th>
+                <th>Confidence</th>
+                <th>Outcome</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>3-0</td>
+                <td>Unanimous — all 3 personalities picked the same</td>
+                <td>0.95</td>
+                <td class="vote-ok">OK auto</td>
+              </tr>
+              <tr>
+                <td>2-1</td>
+                <td>Majority with dissent — 1 personality prefers a different candidate</td>
+                <td>0.70</td>
+                <td class="vote-ok">OK auto</td>
+              </tr>
+              <tr>
+                <td>2-0</td>
+                <td>Majority with abstention — 1 personality vetoed all (chosen=null)</td>
+                <td>0.75</td>
+                <td class="vote-ok">OK auto</td>
+              </tr>
+              <tr>
+                <td>1-1-1</td>
+                <td>Fragmented — 3 different chosen, no consensus</td>
+                <td>null</td>
+                <td class="vote-pend">PEND, escalate</td>
+              </tr>
+              <tr>
+                <td>1-0-0 / 1-1-0</td>
+                <td>Weak minority — below ≥2/3 majority</td>
+                <td>null</td>
+                <td class="vote-pend">PEND, escalate</td>
+              </tr>
+              <tr>
+                <td>0-0-0</td>
+                <td>Total veto — all 3 personalities vetoed all candidates</td>
+                <td>null</td>
+                <td class="vote-pend">PEND, retry_suggested</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="ok">
+            ✓ Dissent log captured per personality for audit. Steward abstention
+            (when it vetoes everything) is flagged separately — a stronger signal than
+            Pioneer or Architect abstention.
+          </div>
+        </div>
+
+        <div style="margin-top:12px; border:1px solid var(--line); border-radius:6px; overflow:hidden; font-size:12.5px;">
+          <div style="padding:6px 10px; background:var(--inset); color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em;">Team profile — aggregate bias toward progress</div>
+          <table style="width:100%; border-collapse:collapse;">
+            <thead><tr style="border-bottom:1px solid var(--line);">
+              <th style="padding:5px 10px; text-align:left; color:var(--muted); font-weight:500;">Voice</th>
+              <th style="padding:5px 10px; text-align:left; color:var(--muted); font-weight:500;">Mean weight</th>
+              <th style="padding:5px 10px; text-align:left; color:var(--muted); font-weight:500;">vs. balanced (0.333)</th>
+            </tr></thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--line);">
+                <td style="padding:5px 10px;"><span class="actor gen" style="margin:0; padding:2px 8px; font-size:11px;">Generator</span></td>
+                <td style="padding:5px 10px; font-family:ui-monospace,monospace;">0.363</td>
+                <td style="padding:5px 10px; color:var(--accent-text);">+9% ↑</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--line);">
+                <td style="padding:5px 10px;"><span class="actor ctl" style="margin:0; padding:2px 8px; font-size:11px;">Control</span></td>
+                <td style="padding:5px 10px; font-family:ui-monospace,monospace;">0.363</td>
+                <td style="padding:5px 10px; color:var(--accent-text);">+9% ↑</td>
+              </tr>
+              <tr>
+                <td style="padding:5px 10px;"><span class="actor con" style="margin:0; padding:2px 8px; font-size:11px;">Conservator</span></td>
+                <td style="padding:5px 10px; font-family:ui-monospace,monospace;">0.273</td>
+                <td style="padding:5px 10px; color:var(--bad);">−18% ↓</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> the highest-stakes decisions — DB migration, security, large
+          refactors, irreversible architecture. The run cost (9 sub-agents) is justified
+          by the cost of getting it wrong. Cost: 3× parallel mode.
+        </div>
+      </div>
+
+      <div class="mode sequential">
+        <h3>Sequential — naive <span class="mode-badge legacy">LEGACY</span></h3>
+        <div class="subtitle">Original mode — kept for reference.</div>
+
+        <div class="stage">
+          <div class="label">turn 1 — shared context</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ plays in sequence, full context</div>
+          <span class="actor gen">Generator</span>
+          <span class="actor ctl">Control</span>
+          <span class="actor con">Conservator</span>
+          <div class="warning">
+            ⚠ Cross-contamination — Control sees <code>rationale</code>, Conservator sees
+            everything Control said.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> debugging the skill itself, when you want to inspect intermediate
+          reasoning — not for real deliberations.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="flowmap">
+      <h3>How information flows between voices</h3>
+      <svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flow comparison across six modes">
+        <defs>
+          <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/>
+          </marker>
+          <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+          </marker>
+          <marker id="arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#f87171"/>
+          </marker>
+          <marker id="arrow-ctl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#60a5fa"/>
+          </marker>
+        </defs>
+
+        <!-- Row 1: Sequential-naive (legacy) -->
+        <text x="20" y="40" fill="#9ca3af" font-size="12" font-weight="700" letter-spacing="0.08em">SEQUENTIAL — NAIVE</text>
+        <rect x="180" y="20" width="100" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="230" y="45" fill="#fbbf24" font-size="13" text-anchor="middle">Generator</text>
+        <rect x="380" y="20" width="100" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="430" y="45" fill="#93c5fd" font-size="13" text-anchor="middle">Control</text>
+        <rect x="580" y="20" width="100" height="40" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="630" y="45" fill="#fca5a5" font-size="13" text-anchor="middle">Conservator</text>
+        <line x1="280" y1="40" x2="378" y2="40" stroke="#f87171" stroke-width="2" marker-end="url(#arrow-bad)"/>
+        <line x1="480" y1="40" x2="578" y2="40" stroke="#f87171" stroke-width="2" marker-end="url(#arrow-bad)"/>
+        <text x="329" y="32" fill="#fca5a5" font-size="10" text-anchor="middle">full output</text>
+        <text x="529" y="32" fill="#fca5a5" font-size="10" text-anchor="middle">full output</text>
+        <path d="M 230 60 Q 430 100 630 60" stroke="#f87171" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrow-bad)" opacity="0.6"/>
+        <text x="430" y="90" fill="#fca5a5" font-size="10" text-anchor="middle" opacity="0.7">rationale leaks across all voices</text>
+
+        <!-- Row 2: Sequential-blind (default) -->
+        <text x="20" y="160" fill="#fbbf24" font-size="12" font-weight="700" letter-spacing="0.08em">SEQUENTIAL — BLIND</text>
+        <rect x="180" y="140" width="100" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="230" y="165" fill="#fbbf24" font-size="13" text-anchor="middle">Generator</text>
+        <rect x="380" y="140" width="100" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="430" y="165" fill="#93c5fd" font-size="13" text-anchor="middle">Control</text>
+        <rect x="580" y="140" width="100" height="40" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="630" y="165" fill="#fca5a5" font-size="13" text-anchor="middle">Conservator</text>
+        <line x1="280" y1="160" x2="378" y2="160" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-gold)"/>
+        <line x1="480" y1="160" x2="578" y2="160" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-gold)"/>
+        <rect x="294" y="146" width="70" height="28" rx="4" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="329" y="158" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="700">STRIP</text>
+        <text x="329" y="169" fill="#fbbf24" font-size="8" text-anchor="middle">no rationale</text>
+        <rect x="494" y="146" width="70" height="28" rx="4" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="529" y="158" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="700">STRIP</text>
+        <text x="529" y="169" fill="#fbbf24" font-size="8" text-anchor="middle">no issues</text>
+
+        <!-- Row 3: Parallel -->
+        <text x="20" y="280" fill="#6ee7b7" font-size="12" font-weight="700" letter-spacing="0.08em">PARALLEL</text>
+        <rect x="180" y="260" width="100" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="230" y="285" fill="#fbbf24" font-size="13" text-anchor="middle">Generator</text>
+        <rect x="380" y="240" width="100" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="430" y="265" fill="#93c5fd" font-size="13" text-anchor="middle">Control</text>
+        <rect x="380" y="290" width="100" height="40" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="430" y="315" fill="#fca5a5" font-size="13" text-anchor="middle">Conservator</text>
+        <line x1="280" y1="270" x2="378" y2="258" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-accent)"/>
+        <line x1="280" y1="290" x2="378" y2="308" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-accent)"/>
+        <line x1="530" y1="285" x2="600" y2="285" stroke="#34d399" stroke-width="2" stroke-dasharray="3,3" opacity="0.4"/>
+        <text x="600" y="289" fill="#6ee7b7" font-size="10">→ aggregator</text>
+        <!-- chinese wall between control and conservator sub-agents -->
+        <line x1="480" y1="240" x2="580" y2="240" stroke="#9ca3af" stroke-width="1" stroke-dasharray="2,3"/>
+        <line x1="480" y1="330" x2="580" y2="330" stroke="#9ca3af" stroke-width="1" stroke-dasharray="2,3"/>
+        <text x="530" y="288" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.7">no shared context</text>
+
+        <!-- Row 4: Dialectic (two-pass) -->
+        <text x="20" y="400" fill="#93c5fd" font-size="12" font-weight="700" letter-spacing="0.08em">DIALECTIC</text>
+        <text x="20" y="416" fill="#9ca3af" font-size="10">pass 1 → pass 2</text>
+        <!-- Pass 1 boxes -->
+        <rect x="180" y="380" width="100" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="230" y="405" fill="#fbbf24" font-size="13" text-anchor="middle">Generator</text>
+        <rect x="320" y="380" width="90" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="365" y="405" fill="#93c5fd" font-size="12" text-anchor="middle">Control</text>
+        <rect x="430" y="380" width="100" height="40" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="480" y="405" fill="#fca5a5" font-size="12" text-anchor="middle">Conservator</text>
+        <text x="355" y="372" fill="#6ee7b7" font-size="9" text-anchor="middle">PASS 1 — independent (parallel)</text>
+        <!-- Pass 2 boxes -->
+        <rect x="600" y="380" width="80" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="640" y="405" fill="#fbbf24" font-size="11" text-anchor="middle">Gen rev.</text>
+        <rect x="690" y="380" width="80" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="730" y="405" fill="#93c5fd" font-size="11" text-anchor="middle">Ctrl rev.</text>
+        <rect x="780" y="380" width="90" height="40" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="825" y="405" fill="#fca5a5" font-size="11" text-anchor="middle">Cons rev.</text>
+        <text x="735" y="372" fill="#93c5fd" font-size="9" text-anchor="middle">PASS 2 — sees peers' pass-1</text>
+        <!-- Cross arrows pass1 -> pass2 (showing all 3 voices feed forward) -->
+        <line x1="280" y1="395" x2="598" y2="395" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)" opacity="0.6"/>
+        <line x1="410" y1="402" x2="688" y2="402" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)" opacity="0.6"/>
+        <line x1="530" y1="395" x2="778" y2="395" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)" opacity="0.6"/>
+        <text x="540" y="442" fill="#93c5fd" font-size="9" text-anchor="middle" opacity="0.8">each pass-2 voice receives the other two pass-1 outputs</text>
+
+        <!-- Row 5: Dialectic iterative (SPEC) -->
+        <text x="20" y="500" fill="#9ca3af" font-size="12" font-weight="700" letter-spacing="0.08em">DIALECTIC — ITERATIVE</text>
+        <text x="20" y="516" fill="#9ca3af" font-size="10">pass 1 → pass N (N ≤ 3, early-stop on convergence) — SPEC</text>
+        <rect x="180" y="480" width="90" height="40" rx="6" fill="#1a1f29" stroke="#3a4150" stroke-dasharray="3,3"/>
+        <text x="225" y="505" fill="#fbbf24" font-size="12" text-anchor="middle">pass 1</text>
+        <rect x="290" y="480" width="90" height="40" rx="6" fill="#1a1f29" stroke="#3a4150" stroke-dasharray="3,3"/>
+        <text x="335" y="505" fill="#93c5fd" font-size="12" text-anchor="middle">pass 2</text>
+        <rect x="400" y="480" width="90" height="40" rx="6" fill="#1a1f29" stroke="#3a4150" stroke-dasharray="3,3"/>
+        <text x="445" y="505" fill="#93c5fd" font-size="12" text-anchor="middle">pass 3</text>
+        <rect x="510" y="480" width="90" height="40" rx="6" fill="#1a1f29" stroke="#3a4150" stroke-dasharray="3,3"/>
+        <text x="555" y="505" fill="#93c5fd" font-size="12" text-anchor="middle">pass 4</text>
+        <line x1="270" y1="500" x2="288" y2="500" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)"/>
+        <line x1="380" y1="500" x2="398" y2="500" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)"/>
+        <line x1="490" y1="500" x2="508" y2="500" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrow-ctl)"/>
+        <!-- Convergence loop arrow back -->
+        <path d="M 445 480 Q 335 450 225 480" stroke="#34d399" stroke-width="1.5" fill="none" stroke-dasharray="3,2" opacity="0.6"/>
+        <text x="335" y="448" fill="#6ee7b7" font-size="9" text-anchor="middle" opacity="0.8">stop if converged</text>
+        <line x1="600" y1="500" x2="660" y2="500" stroke="#34d399" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+        <text x="700" y="504" fill="#6ee7b7" font-size="10">→ aggregator (last pass)</text>
+        <text x="225" y="546" fill="#9ca3af" font-size="9" text-anchor="middle">independent</text>
+        <text x="445" y="546" fill="#9ca3af" font-size="9" text-anchor="middle">each round: sees peers from prev round</text>
+      </svg>
+      <div class="legend">
+        <div class="item"><span class="swatch" style="background:#f87171;"></span>contaminated path (rationale/issues leak)</div>
+        <div class="item"><span class="swatch" style="background:#fbbf24;"></span>stripped path (minimum fields only)</div>
+        <div class="item"><span class="swatch" style="background:#34d399;"></span>independent sub-agent (true isolation)</div>
+        <div class="item"><span class="swatch" style="background:#60a5fa;"></span>controlled cross-context (dialectic pass 2)</div>
+        <div class="item"><span class="swatch" style="background:#34d399; border-top: 1px dashed #34d399;"></span>convergence loop back (iterative — early-stop)</div>
+      </div>
+    </div>
+
+    <div class="trias-deepdive">
+      <h3>Trias — deep dive</h3>
+      <div class="lede">How information flows between voices in Trias, a concrete output example, and when it is (and isn't) the right choice.</div>
+
+      <!-- ============ INFO FLOW SVG ============ -->
+      <h4>1. How information flows</h4>
+      <div class="flow-explainer">
+        2 isolation levels via <b>chinese wall</b>: between personalities (level 1) and between voices within each personality (level 2). Single-direction flow — the orchestrator collects at the end, never during the deliberation.
+      </div>
+      <svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trias information flow diagram" class="trias-flow-svg">
+        <defs>
+          <marker id="arrow-trias-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#c084fc"/>
+          </marker>
+          <marker id="arrow-trias-intra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+          </marker>
+        </defs>
+
+        <!-- Orchestrator top -->
+        <rect x="320" y="14" width="260" height="48" rx="8" fill="#0a2e23" stroke="#145c45" stroke-width="1.5"/>
+        <text x="450" y="36" fill="#6ee7b7" font-size="14" text-anchor="middle" font-weight="700">Claude main — orchestrator</text>
+        <text x="450" y="52" fill="#9ca3af" font-size="10.5" text-anchor="middle">success_criterion + diff + 3 personalities config</text>
+
+        <!-- Fan-out arrow -->
+        <line x1="450" y1="62" x2="450" y2="78" stroke="#c084fc" stroke-width="2"/>
+        <line x1="170" y1="78" x2="730" y2="78" stroke="#c084fc" stroke-width="2"/>
+        <line x1="170" y1="78" x2="170" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <line x1="450" y1="78" x2="450" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <line x1="730" y1="78" x2="730" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <text x="450" y="74" fill="#d8b4fe" font-size="10" text-anchor="middle">3 parallel dispatches, each with different weights</text>
+
+        <!-- ============ PIONEER cluster (x: 70-270) ============ -->
+        <rect x="70" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
+        <text x="170" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Pioneer</text>
+        <text x="170" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.49 · C=0.30 · K=0.21</text>
+        <!-- Generator -->
+        <rect x="85" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="170" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
+        <!-- arrow down -->
+        <line x1="170" y1="184" x2="170" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <text x="178" y="196" fill="#6ee7b7" font-size="8.5">candidates</text>
+        <!-- Control + Conservator parallel -->
+        <rect x="85" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/>
+        <text x="125" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+        <rect x="175" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="215" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
+        <!-- intra-wall between Ctrl and Cons -->
+        <line x1="170" y1="205" x2="170" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
+        <!-- arrows down to aggregator -->
+        <line x1="125" y1="237" x2="155" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <line x1="215" y1="237" x2="185" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <!-- Aggregator -->
+        <rect x="85" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/>
+        <text x="170" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Pioneer weights)</text>
+        <!-- chosen -->
+        <line x1="170" y1="287" x2="170" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="85" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/>
+        <text x="170" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_pioneer</text>
+        <text x="170" y="365" fill="#9ca3af" font-size="9.5" text-anchor="middle" font-style="italic">G voice champion</text>
+
+        <!-- ============ ARCHITECT cluster (x: 350-550) ============ -->
+        <rect x="350" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
+        <text x="450" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Architect</text>
+        <text x="450" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.30 · C=0.49 · K=0.21</text>
+        <rect x="365" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="450" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
+        <line x1="450" y1="184" x2="450" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <text x="458" y="196" fill="#6ee7b7" font-size="8.5">candidates</text>
+        <rect x="365" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/>
+        <text x="405" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+        <rect x="455" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="495" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
+        <line x1="450" y1="205" x2="450" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
+        <line x1="405" y1="237" x2="435" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <line x1="495" y1="237" x2="465" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="365" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/>
+        <text x="450" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Architect weights)</text>
+        <line x1="450" y1="287" x2="450" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="365" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/>
+        <text x="450" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_architect</text>
+        <text x="450" y="365" fill="#9ca3af" font-size="9.5" text-anchor="middle" font-style="italic">C voice champion</text>
+
+        <!-- ============ STEWARD cluster (x: 630-830) ============ -->
+        <rect x="630" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
+        <text x="730" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Steward</text>
+        <text x="730" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.30 · C=0.30 · K=0.40</text>
+        <rect x="645" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="730" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
+        <line x1="730" y1="184" x2="730" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <text x="738" y="196" fill="#6ee7b7" font-size="8.5">candidates</text>
+        <rect x="645" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/>
+        <text x="685" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+        <rect x="735" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="775" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
+        <line x1="730" y1="205" x2="730" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
+        <line x1="685" y1="237" x2="715" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <line x1="775" y1="237" x2="745" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="645" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/>
+        <text x="730" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Steward weights)</text>
+        <line x1="730" y1="287" x2="730" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="645" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/>
+        <text x="730" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_steward</text>
+        <text x="730" y="365" fill="#9ca3af" font-size="9.5" text-anchor="middle" font-style="italic">K voice champion</text>
+
+        <!-- Chinese wall between personalities (level 1) -->
+        <line x1="288" y1="125" x2="288" y2="370" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
+        <line x1="568" y1="125" x2="568" y2="370" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
+        <text x="288" y="100" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.8" font-style="italic">chinese wall</text>
+        <text x="568" y="100" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.8" font-style="italic">chinese wall</text>
+
+        <!-- Convergence to vote tally -->
+        <line x1="170" y1="340" x2="170" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="450" y1="340" x2="450" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="730" y1="340" x2="730" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="170" y1="412" x2="730" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="450" y1="412" x2="450" y2="440" stroke="#c084fc" stroke-width="2.5" marker-end="url(#arrow-trias-flow)"/>
+
+        <!-- Vote tally -->
+        <rect x="270" y="445" width="360" height="58" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="2"/>
+        <text x="450" y="470" fill="#d8b4fe" font-size="14" font-weight="700" text-anchor="middle">vote tally (3 chosen → 1 verdict)</text>
+        <text x="450" y="490" fill="#9ca3af" font-size="10.5" text-anchor="middle">simple majority · 3-0 / 2-1 / 2-0 = OK auto · 1-1-1 / 1-0-0 / 0-0-0 = PEND</text>
+
+        <!-- Final output -->
+        <line x1="450" y1="503" x2="450" y2="525" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="290" y="530" width="320" height="40" rx="6" fill="#11151c" stroke="#2d3441"/>
+        <text x="450" y="554" fill="#e5e7eb" font-size="12" text-anchor="middle">team verdict → <tspan font-family="ui-monospace,monospace" fill="#34d399">runs/&lt;ts&gt;_trias.json</tspan></text>
+      </svg>
+      <div class="trias-flow-legend">
+        <div class="item"><span class="swatch" style="background:#c084fc;"></span>cross-level flow (orchestrator ↔ personalities)</div>
+        <div class="item"><span class="swatch" style="background:#34d399;"></span>intra-personality flow (voice → voice, as in Parallel)</div>
+        <div class="item"><span class="swatch" style="background:transparent; border-left: 2px dashed #9ca3af; width: 12px; height: 14px;"></span>chinese wall — context isolation</div>
+      </div>
+
+      <!-- ============ WORKED EXAMPLE ============ -->
+      <h4>2. Worked example — real Trias output</h4>
+      <div class="flow-explainer">
+        Scenario: <b>add input validation to user registration</b>. Trias produces 3 chosen results from 2 candidates, 2-1 vote for approach_A.
+      </div>
+      <pre class="trias-example-json"><code>{
+  "success_criterion": "Reject malformed emails in /register endpoint",
+  "verification": "python -m pytest tests/test_validation.py -v",
+  "team": "trias",
+  "personalities": [
+    {
+      "name": "pioneer",
+      "weights": {"generator": 0.49, "control": 0.30, "conservator": 0.21},
+      "chose": "approach_A",
+      "rationale": "extensible validator class — supports future rules (password, phone)"
+    },
+    {
+      "name": "architect",
+      "weights": {"generator": 0.30, "control": 0.49, "conservator": 0.21},
+      "chose": "approach_A",
+      "rationale": "highest control_score (0.92) — comprehensive test coverage on edge cases"
+    },
+    {
+      "name": "steward",
+      "weights": {"generator": 0.30, "control": 0.30, "conservator": 0.40},
+      "chose": "approach_B",
+      "rationale": "smaller scope (8 lines vs 24), lower regression_risk on auth path"
+    }
+  ],
+  "vote_pattern": "2-1",
+  "chosen_approach": "approach_A",
+  "dissent": [
+    {
+      "personality": "steward",
+      "chose": "approach_B",
+      "why_diff": "approach_B has smaller blast radius — Steward consistently penalizes scope drift"
+    }
+  ],
+  "abstained": [],
+  "confidence": 0.70,
+  "voice_scores": {"generator": 0.78, "control": 0.85, "conservator": 0.32},
+  "deliberation_log": [
+    {"step": "dispatch_personalities", "count": 3, "parallel": true},
+    {"step": "vote_tally", "pattern": "2-1", "winner": "approach_A"},
+    {"step": "feedback_log", "outcome": "OK", "auto": true}
+  ]
+}</code></pre>
+      <div class="example-takeaway">
+        <b>Takeaway:</b> Steward voted for a different candidate, but the Pioneer+Architect majority won 2-1.
+        The Steward's dissent is logged — useful for human review: <i>"why did P3 prefer B?"</i>
+        The answer is in <code>dissent[0].why_diff</code>: smaller scope, lower regression risk.
+        Outcome: OK auto (confidence 0.70 = at threshold).
+      </div>
+
+      <!-- ============ COST & FAILURE MODES ============ -->
+      <h4>3. Cost &amp; failure modes</h4>
+      <div class="cost-grid">
+        <div class="cost-card use">
+          <div class="cost-card-header">✓ USE TRIAS WHEN</div>
+          <ul>
+            <li><b>Irreversible</b> schema/DB migration (ALTER TABLE on millions of rows)</li>
+            <li>Security audit — auth paths, crypto, RCE potential, secrets handling</li>
+            <li>Large refactor — touches ≥5 files or modifies core interfaces</li>
+            <li>2+ plausible architectural approaches, no clear winner</li>
+            <li>Cost-of-wrong-decision &gt;&gt; cost-of-running (9 sub-agents)</li>
+          </ul>
+        </div>
+        <div class="cost-card avoid">
+          <div class="cost-card-header">✗ DO NOT USE WHEN</div>
+          <ul>
+            <li>Diff &lt; 20 lines / 1 file — <code>scope_gate.py</code> will skip anyway</li>
+            <li>Fast iteration — Trias is ~30-60s, ~7× cost vs Sequential</li>
+            <li><b>Strict conservatism</b> required — Trias aggregate is −18% Conservator</li>
+            <li>Obvious bugfix, single approach — Sequential blind suffices</li>
+            <li>Throwaway code / experiments / ad-hoc scripts</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="failure-modes">
+        <h5>Failure modes &amp; recovery</h5>
+        <table class="failure-table">
+          <thead>
+            <tr>
+              <th>Failure</th>
+              <th>Trigger</th>
+              <th>Recovery</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>1-1-1 fragmentation</b></td>
+              <td>3 personalities, 3 distinct chosen results → no majority</td>
+              <td>Escalate to the user; or re-run Generator with added constraints ("avoid X, Y, Z")</td>
+            </tr>
+            <tr>
+              <td><b>0-0-0 total veto</b></td>
+              <td>All personalities vetoed all candidates (risk &gt; 0.8 across the board)</td>
+              <td><code>retry_suggested</code> with <code>relaxed_threshold</code>; strong signal that the change is risky/bad</td>
+            </tr>
+            <tr>
+              <td><b>Sub-agent timeout</b></td>
+              <td>A voice doesn't respond within budget (rare — Sonnet 4.6 is stable)</td>
+              <td>Emits <code>null</code> for the affected personality; the others vote 2-0 or 1-0</td>
+            </tr>
+            <tr>
+              <td><b>Inconsistent veto</b></td>
+              <td>Conservator scoring differs across personalities for the same candidate (variance &gt; 0.3)</td>
+              <td>Log warning in <code>telemetry.notes</code>; non-blocking but a signal of instability</td>
+            </tr>
+            <tr>
+              <td><b>Steward abstain</b></td>
+              <td>Steward = null, others have chosen (2-0 vote)</td>
+              <td>OK auto at confidence 0.75, but <b>Steward's veto reasoning is flagged separately</b> — a stronger signal than Pioneer/Architect abstention</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="note">
+      Max 3 sub-agents active simultaneously in standard modes (1 + 2 pattern); up to 9 in <b>Trias</b>
+      (3 personalities × 3 voices). The <code>prompts/*.md</code> prompts are self-contained —
+      they can be handed directly to a sub-agent with no adjustments.
+    </div>
+
+  </section>
+
+  <!-- ============== TAB 4 : PATTERNS ============== -->
+  <section class="tab" id="patterns">
+
+    <div class="pat-intro">
+      <h3>Architecture &amp; Flows</h3>
+      <p>Every component that participates in a Consilium deliberation, and the path a request takes through them. <b>Pick a flow on the right</b> to highlight the corresponding path through the system. Inspired by the <i>ToDesktop architecture &amp; flows</i> visualisation.</p>
+    </div>
+
+    <!-- =========== Voices — bias profile (moved above the flow diagram) =========== -->
+    <div class="pat-voices">
+      <div class="pat-voices-header">
+        <h3>Voices — bias profile</h3>
+        <p class="lede">Three voices, three independent objective functions. The flow diagram below shows where they sit in the pipeline; the cards here show <b>what each one actually optimises for</b>.</p>
+      </div>
+
+      <div class="pat-voices-grid">
+
+        <div class="pat-voice-card gen">
+          <div class="pvc-top">
+            <span class="pvc-name">Generator</span>
+            <span class="pvc-tag">creative</span>
+          </div>
+          <div class="pvc-tagline">"Quantity before quality. No self-censorship. Always include <code>do_nothing</code>."</div>
+          <div>
+            <div class="pvc-section-label">Optimises for</div>
+            <div class="pvc-bars">
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Divergence spread</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:92%"></div></div>
+                <span class="pvc-bar-val">0.92</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Adversarial coverage</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:78%"></div></div>
+                <span class="pvc-bar-val">0.78</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Convention-departure</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:74%"></div></div>
+                <span class="pvc-bar-val">0.74</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Goal-fit per candidate</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:55%"></div></div>
+                <span class="pvc-bar-val">0.55</span>
+              </div>
+            </div>
+          </div>
+          <div class="pvc-cant"><b>Does not</b> filter for feasibility or risk — that's downstream.</div>
+        </div>
+
+        <div class="pat-voice-card ctl">
+          <div class="pvc-top">
+            <span class="pvc-name">Control</span>
+            <span class="pvc-tag">analytical</span>
+          </div>
+          <div class="pvc-tagline">"Pedantic, not pessimistic. Verify, don't speculate. Concrete over abstract."</div>
+          <div>
+            <div class="pvc-section-label">Optimises for</div>
+            <div class="pvc-bars">
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Type / logic correctness</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:95%"></div></div>
+                <span class="pvc-bar-val">0.95</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Goal-fit check</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:88%"></div></div>
+                <span class="pvc-bar-val">0.88</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Test coverage adequacy</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:80%"></div></div>
+                <span class="pvc-bar-val">0.80</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Style / conventions</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:35%"></div></div>
+                <span class="pvc-bar-val">0.35</span>
+              </div>
+            </div>
+          </div>
+          <div class="pvc-cant"><b>Does not</b> weigh risk or reversibility — passes the candidate through if it compiles and matches the goal.</div>
+        </div>
+
+        <div class="pat-voice-card con">
+          <div class="pvc-top">
+            <span class="pvc-name">Conservator</span>
+            <span class="pvc-tag">prudent</span>
+          </div>
+          <div class="pvc-tagline">"Reversibility over cleverness. Blast radius matters. Scope discipline."</div>
+          <div>
+            <div class="pvc-section-label">Risk dimensions scored</div>
+            <div class="pvc-bars">
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Reversibility (caps risk)</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:92%"></div></div>
+                <span class="pvc-bar-val">0.92</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Regression risk</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:85%"></div></div>
+                <span class="pvc-bar-val">0.85</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Scope drift</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:82%"></div></div>
+                <span class="pvc-bar-val">0.82</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Diff size</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:70%"></div></div>
+                <span class="pvc-bar-val">0.70</span>
+              </div>
+            </div>
+          </div>
+          <div class="pvc-cant"><b>Does not</b> re-validate correctness — trusts Control's verdict, scores the residual risk.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="pat-layout">
+
+      <div class="pat-diagram" id="patDiagram">
+        <div class="pat-grid" id="patGrid">
+
+          <div class="pat-row">
+            <div class="pat-row-label">Trigger</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node actor" data-node="dev">Developer<span class="pat-node-sub">runs a change</span></div>
+              <div class="pat-node surface" data-node="cc-session">Claude Code session<span class="pat-node-sub">keyword trigger</span></div>
+            </div>
+          </div>
+
+          <div class="pat-row">
+            <div class="pat-row-label">Skill</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node skill" data-node="skill-md">SKILL.md<span class="pat-node-sub">workflow</span></div>
+              <div class="pat-node skill" data-node="mode">Mode selector<span class="pat-node-sub">parallel · dialectic · blind · trias</span></div>
+              <div class="pat-node aux skill" data-node="scope-gate">scope_gate.py<span class="pat-node-sub">step 1.5 · auto-skip check</span></div>
+            </div>
+          </div>
+
+          <div class="pat-row row-voices">
+            <div class="pat-row-label">
+              <span class="rl-default">Voices</span>
+              <span class="rl-trias">Personalities</span>
+            </div>
+            <div class="pat-row-nodes" data-set="default">
+              <div class="pat-node gen" data-node="generator">
+                Generator<span class="pat-node-sub">creative · generator.md</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Divergence</span><div class="pnb-bar"><span style="width:92%"></span></div><span class="pnb-val">0.92</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Adversarial</span><div class="pnb-bar"><span style="width:78%"></span></div><span class="pnb-val">0.78</span></div>
+                </div>
+              </div>
+              <div class="pat-node ctl" data-node="control">
+                Control<span class="pat-node-sub">analytical · control.md</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Correctness</span><div class="pnb-bar"><span style="width:95%"></span></div><span class="pnb-val">0.95</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Goal-fit</span><div class="pnb-bar"><span style="width:88%"></span></div><span class="pnb-val">0.88</span></div>
+                </div>
+              </div>
+              <div class="pat-node con" data-node="conservator">
+                Conservator<span class="pat-node-sub">prudent · conservator.md</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Reversibility</span><div class="pnb-bar"><span style="width:92%"></span></div><span class="pnb-val">0.92</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Regression</span><div class="pnb-bar"><span style="width:85%"></span></div><span class="pnb-val">0.85</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="pat-row-nodes" data-set="trias">
+              <div class="pat-node trias" data-node="pioneer">
+                Pioneer<span class="pat-node-sub">creative-leaning</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Generator</span><div class="pnb-bar"><span style="width:49%;background:var(--gen)"></span></div><span class="pnb-val">0.49</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Control</span><div class="pnb-bar"><span style="width:30%;background:var(--ctl)"></span></div><span class="pnb-val">0.30</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Conservator</span><div class="pnb-bar"><span style="width:21%;background:var(--con)"></span></div><span class="pnb-val">0.21</span></div>
+                </div>
+              </div>
+              <div class="pat-node trias" data-node="architect">
+                Architect<span class="pat-node-sub">correctness-leaning</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Generator</span><div class="pnb-bar"><span style="width:30%;background:var(--gen)"></span></div><span class="pnb-val">0.30</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Control</span><div class="pnb-bar"><span style="width:49%;background:var(--ctl)"></span></div><span class="pnb-val">0.49</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Conservator</span><div class="pnb-bar"><span style="width:21%;background:var(--con)"></span></div><span class="pnb-val">0.21</span></div>
+                </div>
+              </div>
+              <div class="pat-node trias" data-node="steward">
+                Steward<span class="pat-node-sub">safety-leaning</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Generator</span><div class="pnb-bar"><span style="width:30%;background:var(--gen)"></span></div><span class="pnb-val">0.30</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Control</span><div class="pnb-bar"><span style="width:30%;background:var(--ctl)"></span></div><span class="pnb-val">0.30</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Conservator</span><div class="pnb-bar"><span style="width:40%;background:var(--con)"></span></div><span class="pnb-val">0.40</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pat-row">
+            <div class="pat-row-label">Aggregator</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node agg" data-node="agg">aggregator.py<span class="pat-node-sub">voting schemes + veto threshold</span></div>
+              <div class="pat-node aux ctl" data-node="strip-context">strip_context.py<span class="pat-node-sub">sequential blind only</span></div>
+              <div class="pat-node aux gen" data-node="dialectic-merge">dialectic_merge.py<span class="pat-node-sub">dialectic only</span></div>
+            </div>
+          </div>
+
+          <div class="pat-row">
+            <div class="pat-row-label">Gate</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node gate-node" data-node="gate">Gate<span class="pat-node-sub">veto check · pass / fail</span></div>
+            </div>
+          </div>
+
+          <div class="pat-row">
+            <div class="pat-row-label">Output</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node output-combined" data-node="output">Output<span class="pat-node-sub">runs/&lt;id&gt;.json + console summary</span></div>
+            </div>
+          </div>
+
+        </div>
+        <svg class="pat-svg" id="patSvg" aria-hidden="true"></svg>
+      </div>
+
+      <div class="pat-flows" id="patFlows">
+        <h4>Flows</h4>
+        <div class="hint">Pick a flow to highlight its path through the diagram and read the step-by-step.</div>
+      </div>
+
+      <div class="pat-steps" id="patSteps">
+        <h4>Steps</h4>
+        <ol id="patStepsList">
+          <li>Pick a flow on the left to see the steps.</li>
+        </ol>
+      </div>
+
+    </div>
+
+    <!-- =========== Trias team — personality weights =========== -->
+    <div class="pat-trias-section">
+        <div class="pat-trias-header">
+          <h3>Trias team — personality weights</h3>
+          <p class="lede">In <b>Trias mode</b>, three personalities each apply different weights over the same three voices, then vote democratically. Three personalities × three voices = nine sub-agents per deliberation.</p>
+        </div>
+
+        <div class="pat-trias-grid">
+
+          <div class="pat-trias-card">
+            <div class="ptc-top">
+              <span class="ptc-name">Pioneer</span>
+              <span class="ptc-lens">creative-leaning</span>
+            </div>
+            <div class="ptc-bars">
+              <div class="ptc-row">
+                <span class="ptc-letter g">Generator</span>
+                <div class="ptc-track"><div class="ptc-fill g" style="width:49%"></div></div>
+                <span class="ptc-val">0.49</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter c">Control</span>
+                <div class="ptc-track"><div class="ptc-fill c" style="width:30%"></div></div>
+                <span class="ptc-val">0.30</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter k">Conservator</span>
+                <div class="ptc-track"><div class="ptc-fill k" style="width:21%"></div></div>
+                <span class="ptc-val">0.21</span>
+              </div>
+            </div>
+            <div class="ptc-note">Pulls the deliberation toward <b>exploration</b> — Generator's spread dominates the personality vote.</div>
+          </div>
+
+          <div class="pat-trias-card">
+            <div class="ptc-top">
+              <span class="ptc-name">Architect</span>
+              <span class="ptc-lens">correctness-leaning</span>
+            </div>
+            <div class="ptc-bars">
+              <div class="ptc-row">
+                <span class="ptc-letter g">Generator</span>
+                <div class="ptc-track"><div class="ptc-fill g" style="width:30%"></div></div>
+                <span class="ptc-val">0.30</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter c">Control</span>
+                <div class="ptc-track"><div class="ptc-fill c" style="width:49%"></div></div>
+                <span class="ptc-val">0.49</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter k">Conservator</span>
+                <div class="ptc-track"><div class="ptc-fill k" style="width:21%"></div></div>
+                <span class="ptc-val">0.21</span>
+              </div>
+            </div>
+            <div class="ptc-note">Pulls toward <b>well-formed solutions</b> — Control's correctness check dominates.</div>
+          </div>
+
+          <div class="pat-trias-card">
+            <div class="ptc-top">
+              <span class="ptc-name">Steward</span>
+              <span class="ptc-lens">safety-leaning</span>
+            </div>
+            <div class="ptc-bars">
+              <div class="ptc-row">
+                <span class="ptc-letter g">Generator</span>
+                <div class="ptc-track"><div class="ptc-fill g" style="width:30%"></div></div>
+                <span class="ptc-val">0.30</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter c">Control</span>
+                <div class="ptc-track"><div class="ptc-fill c" style="width:30%"></div></div>
+                <span class="ptc-val">0.30</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter k">Conservator</span>
+                <div class="ptc-track"><div class="ptc-fill k" style="width:40%"></div></div>
+                <span class="ptc-val">0.40</span>
+              </div>
+            </div>
+            <div class="ptc-note">Pulls toward <b>reversibility</b> — Conservator's risk score gets the largest weight.</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- =========== Trias deep-dive: 3 × 3 sub-agent matrix =========== -->
+      <div class="pat-trias-deep">
+        <div class="pat-trias-header">
+          <h3>Trias deep-dive — 9 sub-agents per deliberation</h3>
+          <p class="lede">Each personality orchestrates its own <b>parallel mode</b> over the three voices. Three personalities × three voices = <b>nine independent sub-agents</b>, plus one orchestrator coordinating the team vote.</p>
+        </div>
+
+        <div class="pat-tdd-frame">
+
+          <div class="pat-tdd-orch">
+            <div class="box">Claude Code orchestrator <span style="color:var(--muted);font-size:11px">· dispatches 3 personalities</span></div>
+          </div>
+
+          <div class="pat-tdd-arrows">
+            <div>
+              <div class="pat-tdd-arrow">↓</div>
+              <div class="pat-tdd-arrow-sub">Pioneer weights</div>
+            </div>
+            <div>
+              <div class="pat-tdd-arrow">↓</div>
+              <div class="pat-tdd-arrow-sub">Architect weights</div>
+            </div>
+            <div>
+              <div class="pat-tdd-arrow">↓</div>
+              <div class="pat-tdd-arrow-sub">Steward weights</div>
+            </div>
+          </div>
+
+          <div class="pat-tdd-grid">
+
+            <div class="pat-tdd-personality">
+              <div class="ptd-head">
+                <span class="ptd-name">Pioneer</span>
+                <span class="ptd-w">G 0.49 · C 0.30 · K 0.21</span>
+              </div>
+              <div class="pat-tdd-voices">
+                <div class="pat-tdd-voice gen"><span class="vl">Sub 1</span>Generator</div>
+                <div class="pat-tdd-voice ctl"><span class="vl">Sub 2</span>Control</div>
+                <div class="pat-tdd-voice con"><span class="vl">Sub 3</span>Conservator</div>
+              </div>
+              <div class="pat-tdd-vote">3 voice scores &times; G/C/K weights &rarr; <b>chosen<sub>P</sub></b></div>
+            </div>
+
+            <div class="pat-tdd-personality">
+              <div class="ptd-head">
+                <span class="ptd-name">Architect</span>
+                <span class="ptd-w">G 0.30 · C 0.49 · K 0.21</span>
+              </div>
+              <div class="pat-tdd-voices">
+                <div class="pat-tdd-voice gen"><span class="vl">Sub 4</span>Generator</div>
+                <div class="pat-tdd-voice ctl"><span class="vl">Sub 5</span>Control</div>
+                <div class="pat-tdd-voice con"><span class="vl">Sub 6</span>Conservator</div>
+              </div>
+              <div class="pat-tdd-vote">3 voice scores &times; G/C/K weights &rarr; <b>chosen<sub>A</sub></b></div>
+            </div>
+
+            <div class="pat-tdd-personality">
+              <div class="ptd-head">
+                <span class="ptd-name">Steward</span>
+                <span class="ptd-w">G 0.30 · C 0.30 · K 0.40</span>
+              </div>
+              <div class="pat-tdd-voices">
+                <div class="pat-tdd-voice gen"><span class="vl">Sub 7</span>Generator</div>
+                <div class="pat-tdd-voice ctl"><span class="vl">Sub 8</span>Control</div>
+                <div class="pat-tdd-voice con"><span class="vl">Sub 9</span>Conservator</div>
+              </div>
+              <div class="pat-tdd-vote">3 voice scores &times; G/C/K weights &rarr; <b>chosen<sub>S</sub></b></div>
+            </div>
+
+          </div>
+
+          <div class="pat-tdd-converge">↓ &nbsp;&nbsp; ↓ &nbsp;&nbsp; ↓</div>
+
+          <div class="pat-tdd-vote-box">
+            <div class="vbox">team_vote aggregator</div>
+            <span class="arrow">→</span>
+            <div class="chosen">Final decision (3-0 / 2-1 / 2-0)</div>
+          </div>
+
+          <div class="pat-tdd-counter">
+            <b>1</b>orchestrator&nbsp;+&nbsp;<b>3</b>personalities&nbsp;&times;&nbsp;<b>3</b>voices&nbsp;=&nbsp;<b>9</b>sub-agents per deliberation
+          </div>
+
+        </div>
+      </div>
+
+    <!-- =========== Calibration loop (standalone sub-diagram) =========== -->
+    <div class="pat-cal-section">
+      <div class="pat-trias-header">
+        <h3>Calibration loop</h3>
+        <p class="lede">Between deliberations, the <b>Reviewer</b> logs real outcomes in <code>FEEDBACK.html</code>. A small calibration job reads the log, computes per-voice stats, and adjusts prompts and thresholds before the next deliberation runs. This is not part of any per-run flow — it is the maintenance loop that keeps the system honest.</p>
+      </div>
+
+      <div class="pat-cal-frame">
+        <div class="pat-cal-row">
+
+          <div class="pat-cal-node">
+            <b>Reviewer</b>
+            <span class="sub">marks past run as OK / BAD / OVR</span>
+          </div>
+
+          <div class="pat-cal-node">
+            <b>FEEDBACK.html</b>
+            <span class="sub">append-only outcome log</span>
+          </div>
+
+          <div class="pat-cal-node">
+            <b>feedback.py</b>
+            <span class="sub">stats &amp; priors across runs/</span>
+          </div>
+
+          <div class="pat-cal-node">
+            <b>Prompt tuning</b>
+            <span class="sub">weights · veto threshold · prompts/*.md</span>
+          </div>
+
+        </div>
+
+        <div class="pat-cal-loop">
+          <span class="loop-icon">↻</span>
+          <span>Tuned prompts and thresholds apply to the <b>next deliberation</b> — the loop closes without code changes.</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- Global toolbar: Play tour + Full screen, available on every tab -->
+<div class="pat-actions">
+  <button class="pat-fullscreen-btn pat-play-btn" id="patPlayBtn" title="Play auto-tour through all flows on the Patterns tab" aria-label="Play tour">
+    <span class="icon">▶</span>
+    <span class="label">Play tour</span>
+  </button>
+  <button class="pat-fullscreen-btn" id="patFullscreenBtn" title="Toggle full screen" aria-label="Toggle full screen">
+    <span class="icon">⤢</span>
+    <span class="label">Full screen</span>
+  </button>
+</div>
+
+<div class="pat-tour-progress" id="patTourProgress"><span></span></div>
+
+<script>
+  (function() {
+    var tabs = document.querySelectorAll('nav.tabs button');
+    var sections = document.querySelectorAll('section.tab');
+    var playBtn = document.getElementById('patPlayBtn');
+    function syncPlayBtn(target) {
+      if (!playBtn) return;
+      playBtn.style.display = target === 'patterns' ? '' : 'none';
+    }
+    tabs.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var target = btn.getAttribute('data-tab');
+        tabs.forEach(function(b) { b.classList.toggle('active', b === btn); });
+        sections.forEach(function(s) { s.classList.toggle('active', s.id === target); });
+        if (target === 'patterns') { window.__patternsRedraw && window.__patternsRedraw(); }
+        syncPlayBtn(target);
+      });
+    });
+    // Initial state: hide Play tour unless Patterns is the active tab on load
+    var initialActive = document.querySelector('nav.tabs button.active');
+    syncPlayBtn(initialActive ? initialActive.getAttribute('data-tab') : null);
+  })();
+</script>
+
+<script>
+  /* ============== PATTERNS — flows, highlight, SVG lines ============== */
+  (function() {
+    var BASE_PATH = ['dev', 'cc-session', 'skill-md', 'mode', 'generator', 'control', 'conservator', 'agg', 'gate', 'output'];
+
+    var FLOWS = [
+      {
+        id: 'pr-review',
+        name: 'PR review',
+        mode: 'Parallel',
+        desc: 'Default flow: three voices evaluate the same diff independently, votes aggregated under conservative_override.',
+        path: BASE_PATH,
+        auxNodes: ['scope-gate'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
+          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer</b> opens a Claude Code session with a diff or change description.',
+          'Skill activates via a keyword trigger (e.g. <i>review PR</i>) and the orchestrator picks <b>Parallel mode</b>.',
+          'Three voices (<b>Generator</b>, <b>Control</b>, <b>Conservator</b>) are dispatched as independent sub-agents, each with its own prompt.',
+          'Each voice returns a vote and rationale (no cross-talk).',
+          'Aggregator combines votes under <code>conservative_override</code>; risk stays below the veto threshold so the gate <b>passes</b>.',
+          'A canonical <code>runs/&lt;id&gt;.json</code> is written and a summary with the chosen option is printed to the console.'
+        ]
+      },
+      {
+        id: 'refactor-planning',
+        name: 'Refactor planning',
+        mode: 'Dialectic',
+        desc: 'Voices respond to each other across rounds before voting — useful for multi-file refactors where positions evolve.',
+        path: BASE_PATH,
+        auxNodes: ['scope-gate', 'dialectic-merge'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
+          ['generator', 'control', 'bi'], ['control', 'conservator', 'bi'], ['generator', 'conservator', 'bi'],
+          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer</b> describes the refactor scope and constraints.',
+          'Skill picks <b>Dialectic mode</b>: voices run in rounds and read each other&apos;s outputs between rounds.',
+          'Round 1 — Generator proposes 2–3 alternatives.',
+          'Round 2 — Control critiques each alternative and may produce a hybrid.',
+          'Round 3 — Conservator scores residual risk and flags out-of-scope edits.',
+          'Aggregator converges, gate <b>passes</b>, deliberation log is saved in <code>runs/&lt;id&gt;.json</code>.'
+        ]
+      },
+      {
+        id: 'risk-assessment',
+        name: 'Risk assessment',
+        mode: 'Sequential — Blind',
+        desc: 'Each voice runs in isolation with stripped context; designed to prevent anchoring on the previous voice&apos;s framing.',
+        path: BASE_PATH,
+        auxNodes: ['scope-gate', 'strip-context'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'],
+          ['generator', 'control'],
+          ['control', 'conservator'],
+          ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer</b> submits a high-risk change (e.g. migration, security patch).',
+          'Skill picks <b>Sequential — Blind mode</b>: only the diff is shared; prior-voice outputs are stripped.',
+          '<b>Generator</b> runs first and proposes alternatives without seeing any critique.',
+          '<b>Control</b> runs next, blind to Generator&apos;s reasoning — only the resulting proposals.',
+          '<b>Conservator</b> runs last and scores risk on its own dimensions (diff size, scope drift, reversibility).',
+          'Risk score is below threshold this time, the gate <b>passes</b>, the canonical report is written.'
+        ]
+      },
+      {
+        id: 'veto-trigger',
+        name: 'Veto trigger',
+        mode: 'conservative_override',
+        desc: 'Subset of PR review where Conservator&apos;s risk crosses the threshold and the gate fails — candidate is rejected.',
+        path: ['dev', 'cc-session', 'skill-md', 'mode', 'generator', 'control', 'conservator', 'agg', 'gate', 'output'],
+        auxNodes: ['scope-gate'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
+          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        gateFails: true,
+        steps: [
+          'A deliberation completes with mixed votes from Generator and Control.',
+          '<b>Conservator</b>&apos;s risk score is above the configured veto threshold (e.g. <code>0.80</code>).',
+          'Aggregator triggers the veto path under <code>conservative_override</code>.',
+          'Gate <b>fails</b> — the candidate is rejected; the next-best alternative is chosen if it exists.',
+          'Run is recorded in <code>runs/&lt;id&gt;.json</code> with <code>veto_triggered: true</code> and the threshold.',
+          'Console prints the veto rationale so the developer can decide whether to revise and re-run.'
+        ]
+      },
+      {
+        id: 'multi-file',
+        name: 'Multi-file refactor',
+        mode: 'Dialectic',
+        desc: 'Bundled diffs across several files; voices evaluate cohesion, scope drift, and per-file risk before a single decision.',
+        path: BASE_PATH,
+        auxNodes: ['scope-gate', 'dialectic-merge'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
+          ['generator', 'control', 'bi'], ['control', 'conservator', 'bi'],
+          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer</b> passes a bundle of related diffs to the skill.',
+          'Skill picks <b>Dialectic mode</b> with multi-file aware prompts.',
+          'Generator considers each file in turn but proposes a single coherent direction.',
+          'Control verifies cross-file consistency (shared symbols, type contracts, error paths).',
+          'Conservator scores <i>scope drift</i> per file and flags edits that don&apos;t fit the stated goal.',
+          'Aggregator emits one decision plus a per-file risk breakdown; gate <b>passes</b> and the bundle is approved as a unit.'
+        ]
+      },
+      {
+        id: 'trias',
+        name: 'Trias deliberation',
+        mode: 'Trias',
+        desc: 'Three personalities each run their own parallel mode, then a democratic majority vote settles the choice. See the deep-dive schema below for the full 9-sub-agent fan-out.',
+        path: ['dev', 'cc-session', 'skill-md', 'mode', 'pioneer', 'architect', 'steward', 'agg', 'gate', 'output'],
+        auxNodes: ['scope-gate'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'pioneer'], ['mode', 'architect'], ['mode', 'steward'],
+          ['pioneer', 'agg'], ['architect', 'agg'], ['steward', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer</b> opts in to <b>Trias mode</b> for a high-stakes decision (e.g. architecture choice).',
+          'Skill dispatches three personalities — Pioneer (G-weighted), Architect (C-weighted), Steward (K-weighted).',
+          'Each personality orchestrates its own parallel round over the three voices — see the <i>Trias deep-dive</i> schema below for the 9 sub-agents.',
+          'A democratic majority vote is taken across personalities — 3-0, 2-1, or 2-0 yields an automatic decision.',
+          'A 1-1-1 split or weak minority escalates the run instead of auto-deciding.',
+          'When the majority is reached, the gate <b>passes</b> and the canonical report records all three personality votes.'
+        ]
+      }
+    ];
+
+    function flowEdges(flow) {
+      if (flow.edges) return flow.edges;
+      var out = [];
+      for (var i = 0; i < flow.path.length - 1; i++) {
+        out.push([flow.path[i], flow.path[i + 1]]);
+      }
+      return out;
+    }
+
+    var diagram = document.getElementById('patDiagram');
+    var grid    = document.getElementById('patGrid');
+    var svg     = document.getElementById('patSvg');
+    var flowsBox = document.getElementById('patFlows');
+    var stepsList = document.getElementById('patStepsList');
+    if (!diagram || !grid || !svg || !flowsBox || !stepsList) return;
+
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+    var activeFlow = FLOWS[0].id;
+
+    /* Render flow buttons */
+    FLOWS.forEach(function(f) {
+      var btn = document.createElement('button');
+      btn.className = 'pat-flow' + (f.id === activeFlow ? ' active' : '');
+      btn.setAttribute('data-flow', f.id);
+      btn.innerHTML =
+        '<div class="pf-name">' + f.name + ' <span class="pf-mode">' + f.mode + '</span></div>' +
+        '<div class="pf-desc">' + f.desc + '</div>';
+      btn.addEventListener('click', function() { setActive(f.id); });
+      flowsBox.appendChild(btn);
+    });
+
+    function getNodeCenters() {
+      var diagRect = diagram.getBoundingClientRect();
+      var centers = {};
+      diagram.querySelectorAll('.pat-node').forEach(function(n) {
+        var r = n.getBoundingClientRect();
+        // Skip nodes that are display:none (zero-size). These exist in DOM for
+        // alternate flow sets (e.g., Personalities for Trias) but are hidden when
+        // the flow doesn't apply, so they should not anchor any edges.
+        if (r.width === 0 && r.height === 0) return;
+        centers[n.getAttribute('data-node')] = {
+          x: r.left - diagRect.left + r.width / 2,
+          y: r.top  - diagRect.top  + r.height / 2,
+          right:  r.right  - diagRect.left,
+          left:   r.left   - diagRect.left,
+          top:    r.top    - diagRect.top,
+          bottom: r.bottom - diagRect.top,
+          width: r.width,
+          height: r.height,
+          el: n
+        };
+      });
+      return centers;
+    }
+
+    /* Union of all edges across flows — used to draw the always-visible base graph. Each flow's edges are either explicit (flow.edges) or derived from consecutive path elements. Edge tuple: [from, to] or [from, to, 'bi']. */
+    function edgeKey(e) { return e[0] + '>' + e[1] + (e[2] === 'bi' ? '|bi' : ''); }
+
+    function allConnections() {
+      var set = {};
+      FLOWS.forEach(function(f) {
+        flowEdges(f).forEach(function(e) {
+          set[edgeKey(e)] = e;
+        });
+      });
+      return Object.values(set);
+    }
+    var CONNECTIONS = allConnections();
+
+    function flowConnectionSet(flow) {
+      var s = {};
+      flowEdges(flow).forEach(function(e) {
+        s[edgeKey(e)] = true;
+      });
+      return s;
+    }
+
+    /* Compute the SVG path for an edge between two node positions.
+       Three regimes:
+         - same column (vertical edge):  route as a J-curve along the right side of the column
+         - forward (a.x < b.x):          standard left-to-right S-curve, anchored a.right -> b.left
+                                         with optional y offsets at both ends to support fan-in / fan-out
+         - backward (a.x > b.x):         anchored a.left -> b.right; path goes right-to-left
+       The y-offsets let multiple edges into the same target enter at distinct points
+       on the target's left edge, so curves do not pile up and overlap intervening nodes.
+    */
+    /* Detect whether an edge is vertical-dominant (top-to-bottom flow) or
+       horizontal-dominant (left-to-right flow). The layout is now top-to-bottom
+       so most edges are vertical, but same-row edges (skill-md -> mode, voice <-> voice
+       in Dialectic) are horizontal. */
+    function pathBetween(a, b, opts) {
+      opts = opts || {};
+      var dx = b.x - a.x;
+      var dy = b.y - a.y;
+      var verticalDominant = Math.abs(dy) > Math.abs(dx);
+
+      if (verticalDominant) {
+        // Top-to-bottom (or reversed): anchor source.bottom -> target.top
+        var down = dy >= 0;
+        var src = down ? a : b;
+        var dst = down ? b : a;
+        var sx = (down ? (opts.srcOffsetX || 0) : (opts.dstOffsetX || 0));
+        var tx = (down ? (opts.dstOffsetX || 0) : (opts.srcOffsetX || 0));
+        var x1 = src.x + sx, y1 = src.bottom;
+        var x2 = dst.x + tx, y2 = dst.top;
+        var amp = Math.max(36, (y2 - y1) * 0.55);
+        return {
+          d: 'M ' + x1 + ' ' + y1 +
+             ' C ' + x1 + ' ' + (y1 + amp) + ', ' +
+                     x2 + ' ' + (y2 - amp) + ', ' +
+                     x2 + ' ' + y2,
+          reversed: !down,
+          vertical: true
+        };
+      }
+
+      // Horizontal: anchor source.right -> target.left
+      var forward = dx >= 0;
+      var src = forward ? a : b;
+      var dst = forward ? b : a;
+      var sOff = forward ? (opts.srcOffsetY || 0) : (opts.dstOffsetY || 0);
+      var dOff = forward ? (opts.dstOffsetY || 0) : (opts.srcOffsetY || 0);
+      var x1 = src.right, y1 = src.y + sOff;
+      var x2 = dst.left,  y2 = dst.y + dOff;
+      var amp = Math.max(36, (x2 - x1) * 0.55);
+      return {
+        d: 'M ' + x1 + ' ' + y1 +
+           ' C ' + (x1 + amp) + ' ' + y1 + ', ' +
+                   (x2 - amp) + ' ' + y2 + ', ' +
+                   x2 + ' ' + y2,
+        reversed: !forward,
+        vertical: false
+      };
+    }
+
+    /* For each edge in the render set, compute small src/dst offsets so that:
+         - vertical edges (top-to-bottom layout): spread along X axis at the node's top/bottom edge
+         - horizontal edges: spread along Y axis at the node's left/right edge
+       Edges are classified as vertical or horizontal based on geometry, and the
+       perpendicular axis is the spread axis. Multiple incoming or outgoing edges
+       to the same node are distributed evenly across the node's perpendicular span. */
+    function computeEdgeOffsets(edgesToDraw, centers) {
+      function isVertical(edge) {
+        var a = centers[edge[0]], b = centers[edge[1]];
+        if (!a || !b) return false;
+        return Math.abs(b.y - a.y) > Math.abs(b.x - a.x);
+      }
+
+      // Group edges by (endpoint, axis). Spread is only within a same-axis group.
+      var groups = {};
+      function add(map, key, edge) {
+        map[key] = map[key] || [];
+        map[key].push(edge);
+      }
+      edgesToDraw.forEach(function(edge) {
+        var axis = isVertical(edge) ? 'v' : 'h';
+        add(groups, 'src|' + edge[0] + '|' + axis, edge);
+        add(groups, 'dst|' + edge[1] + '|' + axis, edge);
+      });
+
+      // Within each group, sort by the OTHER endpoint's perpendicular-axis position,
+      // so the spread comes out in geometric order.
+      Object.keys(groups).forEach(function(key) {
+        var parts = key.split('|');
+        var role = parts[0];      // 'src' or 'dst'
+        var axis = parts[2];      // 'v' or 'h'
+        var otherIdx = role === 'src' ? 1 : 0;
+        groups[key].sort(function(e1, e2) {
+          var c1 = centers[e1[otherIdx]], c2 = centers[e2[otherIdx]];
+          if (!c1 || !c2) return 0;
+          return axis === 'v' ? (c1.x - c2.x) : (c1.y - c2.y);
+        });
+      });
+
+      function spread(idx, total, span) {
+        if (total <= 1) return 0;
+        var amp = span * 0.35;
+        var t = (idx / (total - 1)) - 0.5;
+        return t * 2 * amp;
+      }
+
+      var offsets = new Map();
+      edgesToDraw.forEach(function(edge) {
+        var axis = isVertical(edge) ? 'v' : 'h';
+        var srcKey = 'src|' + edge[0] + '|' + axis;
+        var dstKey = 'dst|' + edge[1] + '|' + axis;
+        var srcGroup = groups[srcKey];
+        var dstGroup = groups[dstKey];
+        var srcCenter = centers[edge[0]];
+        var dstCenter = centers[edge[1]];
+        var srcIdx = srcGroup.indexOf(edge);
+        var dstIdx = dstGroup.indexOf(edge);
+
+        var off = {};
+        if (axis === 'v') {
+          // Spread along X axis (perpendicular to vertical flow)
+          off.srcOffsetX = (srcGroup.length > 1 && srcCenter)
+            ? spread(srcIdx, srcGroup.length, srcCenter.width) : 0;
+          off.dstOffsetX = (dstGroup.length > 1 && dstCenter)
+            ? spread(dstIdx, dstGroup.length, dstCenter.width) : 0;
+        } else {
+          // Spread along Y axis (perpendicular to horizontal flow)
+          off.srcOffsetY = (srcGroup.length > 1 && srcCenter)
+            ? spread(srcIdx, srcGroup.length, srcCenter.height) : 0;
+          off.dstOffsetY = (dstGroup.length > 1 && dstCenter)
+            ? spread(dstIdx, dstGroup.length, dstCenter.height) : 0;
+        }
+        offsets.set(edge, off);
+      });
+      return offsets;
+    }
+
+    /* Insert <defs> with arrow markers — called every redraw because svg.innerHTML='' wipes them. */
+    function ensureDefs() {
+      var defs = document.createElementNS(SVG_NS, 'defs');
+      defs.innerHTML =
+        '<marker id="pat-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">' +
+          '<path d="M0,0 L10,5 L0,10 z" class="pat-arrow-head"/>' +
+        '</marker>' +
+        '<marker id="pat-arrow-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse">' +
+          '<path d="M0,0 L10,5 L0,10 z" class="pat-arrow-head in-flow"/>' +
+        '</marker>' +
+        '<marker id="pat-arrow-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">' +
+          '<path d="M0,0 L10,5 L0,10 z" class="pat-arrow-head dim"/>' +
+        '</marker>';
+      svg.appendChild(defs);
+    }
+
+    function redraw() {
+      var rect = diagram.getBoundingClientRect();
+      // Set data-flow BEFORE measuring node positions — this triggers the CSS
+      // swap between Voices and Personalities so we measure the right set.
+      diagram.setAttribute('data-flow', activeFlow);
+
+      svg.setAttribute('viewBox', '0 0 ' + rect.width + ' ' + rect.height);
+      svg.setAttribute('width', rect.width);
+      svg.setAttribute('height', rect.height);
+
+      var centers = getNodeCenters();
+      var flow = FLOWS.find(function(f) { return f.id === activeFlow; });
+      var inFlow = flowConnectionSet(flow);
+      var inFlowNodes = {};
+      flow.path.forEach(function(n) { inFlowNodes[n] = true; });
+      /* Auxiliary script nodes (scope_gate, strip_context, dialectic_merge, confidence, personalities)
+         are not in the edge graph but light up when their mode is active. */
+      if (flow.auxNodes) {
+        flow.auxNodes.forEach(function(n) { inFlowNodes[n] = true; });
+      }
+
+      diagram.querySelectorAll('.pat-node').forEach(function(n) {
+        var id = n.getAttribute('data-node');
+        n.classList.toggle('in-flow', !!inFlowNodes[id]);
+        n.classList.toggle('dim',     !inFlowNodes[id]);
+      });
+
+      /* Gate node flips PASS (default green) <-> FAIL (red) based on the active flow. */
+      var gateEl = diagram.querySelector('[data-node="gate"]');
+      if (gateEl) {
+        gateEl.classList.toggle('failing', !!flow.gateFails);
+      }
+
+      svg.innerHTML = '';
+      ensureDefs();
+
+      // Filter to drawable edges first so offset computation is over the rendered set
+      var edgesToDraw = CONNECTIONS.filter(function(edge) {
+        var a = centers[edge[0]], b = centers[edge[1]];
+        if (!a || !b) return false;
+        if (Math.abs(a.x - b.x) < 4 && Math.abs(a.y - b.y) < 4) return false;
+        return true;
+      });
+
+      var offsets = computeEdgeOffsets(edgesToDraw, centers);
+
+      edgesToDraw.forEach(function(edge) {
+        var aId = edge[0], bId = edge[1], bi = edge[2] === 'bi';
+        var a = centers[aId], b = centers[bId];
+        var off = offsets.get(edge) || { srcOffsetY: 0, dstOffsetY: 0 };
+
+        var path = pathBetween(a, b, off);
+        var isInFlow = !!inFlow[edgeKey(edge)];
+        var p = document.createElementNS(SVG_NS, 'path');
+        p.setAttribute('d', path.d);
+        p.setAttribute('class', 'pat-line ' + (isInFlow ? 'in-flow' : 'dim'));
+
+        var markerId = isInFlow ? 'pat-arrow-flow' : 'pat-arrow-dim';
+        var arrowUrl = 'url(#' + markerId + ')';
+
+        if (bi) {
+          p.setAttribute('marker-start', arrowUrl);
+          p.setAttribute('marker-end',   arrowUrl);
+        } else if (path.reversed) {
+          p.setAttribute('marker-start', arrowUrl);
+        } else {
+          p.setAttribute('marker-end',   arrowUrl);
+        }
+        svg.appendChild(p);
+      });
+    }
+
+    function setActive(id) {
+      activeFlow = id;
+      flowsBox.querySelectorAll('.pat-flow').forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-flow') === id);
+      });
+      var flow = FLOWS.find(function(f) { return f.id === id; });
+      stepsList.innerHTML = flow.steps.map(function(s) { return '<li>' + s + '</li>'; }).join('');
+      redraw();
+    }
+
+    window.__patternsRedraw = redraw;
+    window.addEventListener('resize', function() {
+      // Debounce
+      clearTimeout(window.__patResizeT);
+      window.__patResizeT = setTimeout(redraw, 80);
+    });
+
+    /* Fullscreen toggle (applies to the whole document, not just #patterns) */
+    var fsBtn = document.getElementById('patFullscreenBtn');
+    var fsTarget = document.documentElement;
+    function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+    function enterFullscreen() {
+      if (isFullscreen()) return Promise.resolve();
+      var req = fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen;
+      if (!req) return Promise.resolve();
+      try {
+        var p = req.call(fsTarget);
+        return (p && p.then) ? p : Promise.resolve();
+      } catch (e) { return Promise.resolve(); }
+    }
+    function exitFullscreen() {
+      if (!isFullscreen()) return;
+      var doc = document;
+      if (doc.exitFullscreen) doc.exitFullscreen();
+      else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+    }
+    if (fsBtn) {
+      fsBtn.addEventListener('click', function() {
+        if (isFullscreen()) exitFullscreen();
+        else enterFullscreen();
+      });
+      function onFsChange() {
+        var fs = isFullscreen();
+        fsBtn.querySelector('.icon').textContent = fs ? '⤣' : '⤢';
+        fsBtn.querySelector('.label').textContent = fs ? 'Exit full screen' : 'Full screen';
+        setTimeout(redraw, 100);
+      }
+      document.addEventListener('fullscreenchange', onFsChange);
+      document.addEventListener('webkitfullscreenchange', onFsChange);
+    }
+
+    /* Auto-tour: cycle through every flow with a slow scroll. Optionally play your
+       favourite riff in another tab first (we don't embed audio — copyright).      */
+    var playBtn = document.getElementById('patPlayBtn');
+    var progress = document.getElementById('patTourProgress');
+    var tour = { running: false, flowTimer: null, rafId: null };
+    var TOUR_FLOW_MS = 5000;
+
+    function setPlayBtnState(running) {
+      if (!playBtn) return;
+      var icon = playBtn.querySelector('.icon');
+      var label = playBtn.querySelector('.label');
+      if (running) {
+        icon.textContent = '⏹'; label.textContent = 'Stop tour';
+        playBtn.classList.add('running');
+      } else {
+        icon.textContent = '▶'; label.textContent = 'Play tour';
+        playBtn.classList.remove('running');
+      }
+    }
+
+    function getScroller() {
+      // In fullscreen on <html>, the documentElement is still the scroller.
+      return document.scrollingElement || document.documentElement;
+    }
+
+    function stopTour() {
+      tour.running = false;
+      if (tour.flowTimer) { clearTimeout(tour.flowTimer); tour.flowTimer = null; }
+      if (tour.rafId) { cancelAnimationFrame(tour.rafId); tour.rafId = null; }
+      setPlayBtnState(false);
+      if (progress) {
+        progress.classList.remove('active');
+        progress.firstElementChild.style.width = '0%';
+      }
+    }
+
+    /* Smoothly scroll the document scroller to a target Y position over `duration` ms.
+       Returns a promise that resolves when the scroll completes (or the tour is stopped). */
+    function smoothScrollTo(targetY, duration) {
+      return new Promise(function(resolve) {
+        var scroller = getScroller();
+        var startY = scroller.scrollTop;
+        var maxY = scroller.scrollHeight - scroller.clientHeight;
+        var endY = Math.max(0, Math.min(maxY, targetY));
+        var startTime = Date.now();
+        function tick() {
+          if (!tour.running) { resolve(); return; }
+          var elapsed = Date.now() - startTime;
+          var t = Math.min(1, elapsed / duration);
+          // ease-in-out cubic
+          var eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          getScroller().scrollTop = startY + (endY - startY) * eased;
+          if (t < 1) {
+            tour.rafId = requestAnimationFrame(tick);
+          } else {
+            resolve();
+          }
+        }
+        tour.rafId = requestAnimationFrame(tick);
+      });
+    }
+
+    /* Tour timings (ms). Total ≈ 28.2s. */
+    var TOUR_TIMINGS = {
+      scrollToSchema: 4000,
+      pauseAtSchema:  1000,
+      perFlow:        3000,  // × 6 flows = 18000
+      scrollToBottom: 4000,
+      pauseAtBottom:  1200
+    };
+
+    function startTour() {
+      if (tour.running) return;
+      tour.running = true;
+      setPlayBtnState(true);
+      if (progress) progress.classList.add('active');
+
+      var total = FLOWS.length;
+      var totalMs = TOUR_TIMINGS.scrollToSchema + TOUR_TIMINGS.pauseAtSchema +
+                    (total * TOUR_TIMINGS.perFlow) + TOUR_TIMINGS.scrollToBottom +
+                    TOUR_TIMINGS.pauseAtBottom;
+      var startTime;
+      var labelEl = playBtn ? playBtn.querySelector('.label') : null;
+      function updateProgress() {
+        if (!tour.running) return;
+        var elapsed = Date.now() - startTime;
+        var pct = Math.min(100, (elapsed / totalMs) * 100);
+        if (progress) progress.firstElementChild.style.width = pct + '%';
+        if (labelEl) {
+          var remainingSec = Math.max(0, Math.ceil((totalMs - elapsed) / 1000));
+          labelEl.textContent = 'Stop · ' + remainingSec + 's';
+        }
+        if (pct < 100) tour.rafId = requestAnimationFrame(updateProgress);
+      }
+
+      enterFullscreen().then(function() {
+        setTimeout(function() {
+          if (!tour.running) return;
+          startTime = Date.now();
+          tour.rafId = requestAnimationFrame(updateProgress);
+
+          var diagramEl = document.getElementById('patDiagram');
+          var scroller = getScroller();
+          var diagramTopY = scroller.scrollTop + diagramEl.getBoundingClientRect().top - 60;
+
+          // Phase 1: gentle scroll down to the schema
+          smoothScrollTo(diagramTopY, TOUR_TIMINGS.scrollToSchema).then(function() {
+            if (!tour.running) return;
+            // Phase 1.5: 1-second breathing pause at the schema
+            return new Promise(function(r) {
+              tour.flowTimer = setTimeout(r, TOUR_TIMINGS.pauseAtSchema);
+            });
+          }).then(function() {
+            if (!tour.running) return;
+            // Phase 2: cycle every flow at the schema
+            var idx = 0;
+            setActive(FLOWS[idx].id);
+            return new Promise(function(resolve) {
+              function nextFlow() {
+                if (!tour.running) { resolve(); return; }
+                idx++;
+                if (idx >= total) { resolve(); return; }
+                setActive(FLOWS[idx].id);
+                tour.flowTimer = setTimeout(nextFlow, TOUR_TIMINGS.perFlow);
+              }
+              tour.flowTimer = setTimeout(nextFlow, TOUR_TIMINGS.perFlow);
+            });
+          }).then(function() {
+            if (!tour.running) return;
+            // Phase 3: scroll the rest of the page (Voices bias, Trias sections, Calibration)
+            var s = getScroller();
+            return smoothScrollTo(s.scrollHeight - s.clientHeight, TOUR_TIMINGS.scrollToBottom);
+          }).then(function() {
+            if (!tour.running) return;
+            // Phase 4: brief pause at the bottom, then auto-stop
+            return new Promise(function(r) {
+              tour.flowTimer = setTimeout(r, TOUR_TIMINGS.pauseAtBottom);
+            });
+          }).then(function() {
+            if (tour.running) stopTour();
+          });
+        }, 400);
+      });
+    }
+
+    if (playBtn) {
+      playBtn.addEventListener('click', function() {
+        if (tour.running) stopTour();
+        else startTour();
+      });
+      // Stop tour if user manually exits fullscreen
+      document.addEventListener('fullscreenchange', function() {
+        if (!isFullscreen() && tour.running) stopTour();
+      });
+    }
+
+    // Initial render
+    setActive(activeFlow);
+    // Re-draw after fonts and reflow settle
+    setTimeout(redraw, 50);
+    setTimeout(redraw, 250);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code workspace
+.claude/
+.superpowers/
+
+# Consilium runtime artefacts (would be created by the live skill, not the demo)
+runs/
+FEEDBACK.html.bak
