@@ -509,6 +509,22 @@
       </div>
     </div>
 
+    <div style="margin-top:24px; padding:16px; background:var(--inset); border:1px solid var(--line); border-radius:6px;">
+  <h3 style="margin:0 0 12px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Shared Utilities — <code>scripts/utils.py</code></h3>
+  <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+    <thead><tr>
+      <th style="text-align:left; padding:4px 8px; color:var(--muted); font-weight:500; border-bottom:1px solid var(--line);">Funcție</th>
+      <th style="text-align:left; padding:4px 8px; color:var(--muted); font-weight:500; border-bottom:1px solid var(--line);">Rol</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="padding:4px 8px;"><code>force_utf8_streams()</code></td><td style="padding:4px 8px; color:var(--muted);">Reconfigurează stdin/stdout/stderr la UTF-8 (fix Windows cp1252)</td></tr>
+      <tr><td style="padding:4px 8px;"><code>load_json_stdin(script_name)</code></td><td style="padding:4px 8px; color:var(--muted);">Citește + parsează JSON din stdin; hint clar la stdin gol sau JSON invalid</td></tr>
+      <tr><td style="padding:4px 8px;"><code>validate_keys(data, required, context)</code></td><td style="padding:4px 8px; color:var(--muted);">Verifică câmpuri obligatorii; exit 1 cu mesaj explicit la lipsă</td></tr>
+    </tbody>
+  </table>
+  <p style="margin:10px 0 0; font-size:12px; color:var(--muted);">Importat de toate scriptele care citeau stdin sau aveau <code>_force_utf8_streams</code> local. Scriptele rămân executabile independent — <code>utils.py</code> e stdlib-only.</p>
+</div>
+
   </section>
 
   <!-- ============== TAB 2 ============== -->
@@ -564,6 +580,7 @@
         <div class="n">STEP 6</div>
         <h4>Report</h4>
         <div><code>build_report.py</code> + <code>validate_report.py</code> + <code>log_feedback.py</code>.</div>
+        <div style="font-size:12px; color:var(--accent); margin-top:4px;">✓ Input validat prin <code>validate_input()</code> — exit 1 cu câmp lipsă specificat.</div>
         <div class="io">out: canonical JSON</div>
       </div>
     </div>
