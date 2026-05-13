@@ -36,6 +36,10 @@
     --bad-soft: #2a1818;
     --bad-border: #5c2a2a;
     --neutral: #94a3b8;
+    --trias: #c084fc;
+    --trias-soft: #221830;
+    --trias-border: #4c2a6b;
+    --trias-text: #d8b4fe;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
@@ -163,7 +167,85 @@
   .mode.sequential-blind { border-top: 4px solid var(--gold); }
   .mode.parallel { border-top: 4px solid var(--accent); }
   .mode.dialectic { border-top: 4px solid var(--ctl); }
+  .mode.trias { border-top: 4px solid var(--trias); grid-column: 1 / -1; }
   .mode.sequential { border-top: 4px solid var(--neutral); opacity: 0.78; }
+  .actor.trias { background: var(--trias-soft); border-color: var(--trias-border); color: var(--trias-text); }
+  .trias-weights { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; }
+  .trias-personality-block { background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px; text-align: center; }
+  .trias-personality-block .actor { display: block; margin: 0 auto 6px; max-width: 140px; }
+  .trias-personality-block .voice-row { display: flex; gap: 4px; justify-content: center;
+    margin-top: 8px; flex-wrap: wrap; }
+  .trias-personality-block .voice-row .actor { display: inline-block; padding: 4px 8px;
+    font-size: 10.5px; margin: 0; }
+  .trias-vote-table { width: 100%; border-collapse: collapse; font-size: 12px;
+    margin: 8px 0; }
+  .trias-vote-table th, .trias-vote-table td { padding: 6px 10px; text-align: left;
+    border-bottom: 1px solid var(--line); }
+  .trias-vote-table thead th { color: var(--muted); font-weight: 600; font-size: 10.5px;
+    letter-spacing: 0.06em; text-transform: uppercase; }
+  .trias-vote-table tbody td:first-child { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .trias-vote-table .vote-ok { color: var(--accent-text); font-weight: 600; }
+  .trias-vote-table .vote-pend { color: var(--gold); font-weight: 600; }
+  .trias-vote-table tr:last-child td { border-bottom: none; }
+
+  /* ============== TRIAS DEEP DIVE ============== */
+  .trias-deepdive { margin-top: 30px; background: var(--card-bg); border: 1px solid var(--line);
+    border-top: 4px solid var(--trias); border-radius: 10px; padding: 22px; }
+  .trias-deepdive h3 { margin: 0 0 4px; font-size: 16px; color: var(--trias-text); }
+  .trias-deepdive .lede { color: var(--muted); font-size: 12.5px; margin-bottom: 18px; }
+  .trias-deepdive h4 { margin: 22px 0 8px; font-size: 13.5px; color: var(--ink);
+    letter-spacing: 0.02em; border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+  .trias-deepdive h4:first-of-type { margin-top: 0; }
+  .trias-deepdive h5 { margin: 16px 0 8px; font-size: 12px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase; }
+  .flow-explainer { font-size: 12.5px; color: var(--ink); background: var(--inset);
+    border-left: 3px solid var(--trias); padding: 10px 14px; border-radius: 4px; margin-bottom: 14px; }
+  .flow-explainer b { color: var(--trias-text); }
+  .trias-flow-svg { width: 100%; height: auto; display: block;
+    background: var(--inset); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  .trias-flow-legend { display: flex; gap: 20px; flex-wrap: wrap; font-size: 11.5px;
+    color: var(--muted); margin-bottom: 6px; }
+  .trias-flow-legend .item { display: flex; align-items: center; gap: 8px; }
+  .trias-flow-legend .swatch { display: inline-block; width: 18px; height: 3px;
+    border-radius: 2px; }
+  .trias-example-json { background: var(--inset); border: 1px solid var(--line);
+    border-radius: 6px; padding: 14px 16px; overflow-x: auto; font-size: 11.5px;
+    line-height: 1.6; margin: 0 0 12px; }
+  .trias-example-json code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color: var(--ink); font-size: 11.5px; }
+  .example-takeaway { font-size: 12.5px; color: var(--muted); background: var(--accent-soft);
+    border: 1px solid var(--accent-border); border-radius: 6px; padding: 10px 14px;
+    line-height: 1.55; }
+  .example-takeaway b { color: var(--accent-text); }
+  .example-takeaway code { color: var(--accent-text); }
+  .cost-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
+  .cost-card { padding: 14px 16px; border-radius: 8px; border: 1px solid var(--line); }
+  .cost-card.use { background: var(--accent-soft); border-color: var(--accent-border); }
+  .cost-card.avoid { background: var(--bad-soft); border-color: var(--bad-border); }
+  .cost-card-header { font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 8px; }
+  .cost-card.use .cost-card-header { color: var(--accent-text); }
+  .cost-card.avoid .cost-card-header { color: var(--bad); }
+  .cost-card ul { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.65; }
+  .cost-card ul li { margin-bottom: 4px; }
+  .cost-card ul li b { color: var(--ink); }
+  .cost-card.use ul li code,
+  .cost-card.avoid ul li code { font-size: 11.5px; color: inherit; }
+  .failure-modes { margin-top: 18px; }
+  .failure-table { width: 100%; border-collapse: collapse; font-size: 12px;
+    background: var(--inset); border-radius: 6px; overflow: hidden; }
+  .failure-table thead th { background: var(--card-bg); color: var(--muted);
+    font-weight: 600; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+  .failure-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line);
+    vertical-align: top; line-height: 1.55; }
+  .failure-table tbody tr:last-child td { border-bottom: none; }
+  .failure-table tbody td:first-child { width: 22%; color: var(--ink); }
+  .failure-table tbody td:nth-child(2) { width: 38%; color: var(--muted); }
+  .failure-table tbody td b { color: var(--trias-text); }
+  .failure-table code { color: var(--ink); font-size: 11px; }
   .mode-badge { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 4px;
     font-size: 10px; font-weight: 700; letter-spacing: 0.08em; vertical-align: 2px; }
   .mode-badge.default { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border); }
@@ -299,11 +381,16 @@
       --bad-soft: #fef2f2;
       --bad-border: #fecaca;
       --neutral: #94a3b8;
+      --trias: #7c3aed;
+      --trias-soft: #ede9fe;
+      --trias-border: #c4b5fd;
+      --trias-text: #5b21b6;
     }
     nav.tabs { display: none; }
     section.tab { display: block !important; page-break-before: always; }
     section.tab:first-of-type { page-break-before: avoid; }
     .card, .agg, .rail, .loop, .mode, .stage { break-inside: avoid; }
+    .trias-deepdive, .cost-card, .failure-table, .trias-example-json { break-inside: avoid; }
     .veto { color: #fff; }
   }
   @media (max-width: 900px) {
@@ -311,6 +398,8 @@
     .step { margin-right: 0; margin-bottom: 18px; }
     .step::after, .step::before { display: none; }
     .intro-grid { grid-template-columns: 1fr; }
+    .cost-grid { grid-template-columns: 1fr; }
+    .parallel-row { flex-direction: column; }
   }
 </style>
 </head>
@@ -716,7 +805,7 @@
           </div>
           <div class="col" style="grid-column: 1 / 2;">
             <code>personalities.py</code>
-            <div class="opt">ensemble mode (rejection sampling)</div>
+            <div class="opt">trias mode — 3 personalități fixe (Pioneer / Architect / Steward)</div>
           </div>
         </div>
       </div>
@@ -838,7 +927,7 @@
   <!-- ============== TAB 3 ============== -->
   <section class="tab" id="modes">
 
-    <h2>Flow models — 5 moduri (4 active + 1 SPEC)</h2>
+    <h2>Flow models — 6 moduri (5 active + 1 SPEC)</h2>
     <div class="modes">
 
       <div class="mode sequential-blind">
@@ -1006,6 +1095,150 @@
         </div>
       </div>
 
+      <div class="mode trias">
+        <h3>Trias <span class="mode-badge advanced">OPT-IN</span></h3>
+        <div class="subtitle">3 personalități × 3 voci = 9 sub-agenți, vot democratic majoritar (3-0 / 2-1 / 2-0).</div>
+
+        <div class="stage">
+          <div class="label">turn 1 — 3 personalități în paralel, fiecare cu propriul parallel mode</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ 3 dispatches, fiecare cu weights diferite</div>
+          <div class="parallel-row">
+            <div class="parallel-col">
+              <div class="trias-personality-block">
+                <span class="actor trias">Pioneer</span>
+                <div class="trias-weights">G=0.49 · C=0.30 · K=0.21</div>
+                <div class="voice-row">
+                  <span class="actor gen">Gen</span>
+                  <span class="actor ctl">Ctrl</span>
+                  <span class="actor con">Cons</span>
+                </div>
+              </div>
+            </div>
+            <div class="parallel-col">
+              <div class="trias-personality-block">
+                <span class="actor trias">Architect</span>
+                <div class="trias-weights">G=0.30 · C=0.49 · K=0.21</div>
+                <div class="voice-row">
+                  <span class="actor gen">Gen</span>
+                  <span class="actor ctl">Ctrl</span>
+                  <span class="actor con">Cons</span>
+                </div>
+              </div>
+            </div>
+            <div class="parallel-col">
+              <div class="trias-personality-block">
+                <span class="actor trias">Steward</span>
+                <div class="trias-weights">G=0.30 · C=0.30 · K=0.40</div>
+                <div class="voice-row">
+                  <span class="actor gen">Gen</span>
+                  <span class="actor ctl">Ctrl</span>
+                  <span class="actor con">Cons</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="wall" title="chinese wall — fiecare personalitate e izolată"></div>
+          <div class="ok">
+            ✓ Fiecare personalitate orchestrează propriul parallel mode (3 sub-agenți voci).
+            Total: 9 sub-agenți independenți + 1 orchestrator.
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="label">turn 2 — vot democratic peste 3 chosen-uri</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ majoritate simplă, fiecare personalitate = 1 vot</div>
+          <table class="trias-vote-table">
+            <thead>
+              <tr>
+                <th>Pattern</th>
+                <th>Înțeles</th>
+                <th>Confidence</th>
+                <th>Outcome</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>3-0</td>
+                <td>Unanim — toate 3 personalitățile au ales același</td>
+                <td>0.95</td>
+                <td class="vote-ok">OK auto</td>
+              </tr>
+              <tr>
+                <td>2-1</td>
+                <td>Majoritate cu disident — 1 personalitate preferă alt candidate</td>
+                <td>0.70</td>
+                <td class="vote-ok">OK auto</td>
+              </tr>
+              <tr>
+                <td>2-0</td>
+                <td>Majoritate cu abținere — 1 personalitate veto'd toate (chosen=null)</td>
+                <td>0.75</td>
+                <td class="vote-ok">OK auto</td>
+              </tr>
+              <tr>
+                <td>1-1-1</td>
+                <td>Fragmentat — 3 chosen diferite, no consensus</td>
+                <td>null</td>
+                <td class="vote-pend">PEND, escalate</td>
+              </tr>
+              <tr>
+                <td>1-0-0 / 1-1-0</td>
+                <td>Minoritate slabă — sub majoritate de ≥2/3</td>
+                <td>null</td>
+                <td class="vote-pend">PEND, escalate</td>
+              </tr>
+              <tr>
+                <td>0-0-0</td>
+                <td>Veto total — toate 3 personalitățile au vetoiat toate candidates</td>
+                <td>null</td>
+                <td class="vote-pend">PEND, retry_suggested</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="ok">
+            ✓ Dissent log capturat per personalitate pentru audit. Abținerea Steward-ului
+            (când vetoiază tot) e semnalizată separat — semnal mai puternic decât abținerea
+            Pioneer-ului sau Architect-ului.
+          </div>
+        </div>
+
+        <div style="margin-top:12px; border:1px solid var(--line); border-radius:6px; overflow:hidden; font-size:12.5px;">
+          <div style="padding:6px 10px; background:var(--inset); color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em;">Profilul echipei — bias agregat spre progress</div>
+          <table style="width:100%; border-collapse:collapse;">
+            <thead><tr style="border-bottom:1px solid var(--line);">
+              <th style="padding:5px 10px; text-align:left; color:var(--muted); font-weight:500;">Voce</th>
+              <th style="padding:5px 10px; text-align:left; color:var(--muted); font-weight:500;">Weight mediu</th>
+              <th style="padding:5px 10px; text-align:left; color:var(--muted); font-weight:500;">vs. balanced (0.333)</th>
+            </tr></thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--line);">
+                <td style="padding:5px 10px;"><span class="actor gen" style="margin:0; padding:2px 8px; font-size:11px;">Generator</span></td>
+                <td style="padding:5px 10px; font-family:ui-monospace,monospace;">0.363</td>
+                <td style="padding:5px 10px; color:var(--accent-text);">+9% ↑</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--line);">
+                <td style="padding:5px 10px;"><span class="actor ctl" style="margin:0; padding:2px 8px; font-size:11px;">Control</span></td>
+                <td style="padding:5px 10px; font-family:ui-monospace,monospace;">0.363</td>
+                <td style="padding:5px 10px; color:var(--accent-text);">+9% ↑</td>
+              </tr>
+              <tr>
+                <td style="padding:5px 10px;"><span class="actor con" style="margin:0; padding:2px 8px; font-size:11px;">Conservator</span></td>
+                <td style="padding:5px 10px; font-family:ui-monospace,monospace;">0.273</td>
+                <td style="padding:5px 10px; color:var(--bad);">−18% ↓</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> deciziile cele mai high-stakes — DB migration, security, refactor
+          mare, arhitectură ireversibilă. Costul rulării (9 sub-agenți) e justificat de
+          costul deciziei greșite. Cost: 3× parallel mode.
+        </div>
+      </div>
+
       <div class="mode sequential">
         <h3>Sequential — naive <span class="mode-badge legacy">LEGACY</span></h3>
         <div class="subtitle">Original mode — păstrat pentru referință.</div>
@@ -1033,7 +1266,7 @@
 
     <div class="flowmap">
       <h3>Cum circulă informația între voci</h3>
-      <svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flow comparison across five modes">
+      <svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flow comparison across six modes">
         <defs>
           <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
             <path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/>
@@ -1154,10 +1387,264 @@
       </div>
     </div>
 
+    <div class="trias-deepdive">
+      <h3>Trias — deep dive</h3>
+      <div class="lede">Cum circulă informația între voci în Trias, exemplu concret de output, și când e (și când nu e) potrivit.</div>
+
+      <!-- ============ INFO FLOW SVG ============ -->
+      <h4>1. Cum circulă informația</h4>
+      <div class="flow-explainer">
+        2 niveluri de izolare prin <b>chinese wall</b>: între personalități (level 1) și între voci în fiecare personalitate (level 2). Single-direction flow — orchestratorul colectează la final, niciodată în timpul deliberării.
+      </div>
+      <svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trias information flow diagram" class="trias-flow-svg">
+        <defs>
+          <marker id="arrow-trias-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#c084fc"/>
+          </marker>
+          <marker id="arrow-trias-intra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+          </marker>
+        </defs>
+
+        <!-- Orchestrator top -->
+        <rect x="320" y="14" width="260" height="48" rx="8" fill="#0a2e23" stroke="#145c45" stroke-width="1.5"/>
+        <text x="450" y="36" fill="#6ee7b7" font-size="14" text-anchor="middle" font-weight="700">Claude main — orchestrator</text>
+        <text x="450" y="52" fill="#9ca3af" font-size="10.5" text-anchor="middle">success_criterion + diff + 3 personalities config</text>
+
+        <!-- Fan-out arrow -->
+        <line x1="450" y1="62" x2="450" y2="78" stroke="#c084fc" stroke-width="2"/>
+        <line x1="170" y1="78" x2="730" y2="78" stroke="#c084fc" stroke-width="2"/>
+        <line x1="170" y1="78" x2="170" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <line x1="450" y1="78" x2="450" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <line x1="730" y1="78" x2="730" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <text x="450" y="74" fill="#d8b4fe" font-size="10" text-anchor="middle">3 dispatches paralele, fiecare cu weights diferite</text>
+
+        <!-- ============ PIONEER cluster (x: 70-270) ============ -->
+        <rect x="70" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
+        <text x="170" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Pioneer</text>
+        <text x="170" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.49 · C=0.30 · K=0.21</text>
+        <!-- Generator -->
+        <rect x="85" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="170" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
+        <!-- arrow down -->
+        <line x1="170" y1="184" x2="170" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <text x="178" y="196" fill="#6ee7b7" font-size="8.5">candidates</text>
+        <!-- Control + Conservator parallel -->
+        <rect x="85" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/>
+        <text x="125" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+        <rect x="175" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="215" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
+        <!-- intra-wall between Ctrl and Cons -->
+        <line x1="170" y1="205" x2="170" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
+        <!-- arrows down to aggregator -->
+        <line x1="125" y1="237" x2="155" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <line x1="215" y1="237" x2="185" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <!-- Aggregator -->
+        <rect x="85" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/>
+        <text x="170" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Pioneer weights)</text>
+        <!-- chosen -->
+        <line x1="170" y1="287" x2="170" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="85" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/>
+        <text x="170" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_pioneer</text>
+        <text x="170" y="365" fill="#9ca3af" font-size="9.5" text-anchor="middle" font-style="italic">G voice champion</text>
+
+        <!-- ============ ARCHITECT cluster (x: 350-550) ============ -->
+        <rect x="350" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
+        <text x="450" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Architect</text>
+        <text x="450" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.30 · C=0.49 · K=0.21</text>
+        <rect x="365" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="450" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
+        <line x1="450" y1="184" x2="450" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <text x="458" y="196" fill="#6ee7b7" font-size="8.5">candidates</text>
+        <rect x="365" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/>
+        <text x="405" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+        <rect x="455" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="495" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
+        <line x1="450" y1="205" x2="450" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
+        <line x1="405" y1="237" x2="435" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <line x1="495" y1="237" x2="465" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="365" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/>
+        <text x="450" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Architect weights)</text>
+        <line x1="450" y1="287" x2="450" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="365" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/>
+        <text x="450" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_architect</text>
+        <text x="450" y="365" fill="#9ca3af" font-size="9.5" text-anchor="middle" font-style="italic">C voice champion</text>
+
+        <!-- ============ STEWARD cluster (x: 630-830) ============ -->
+        <rect x="630" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
+        <text x="730" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Steward</text>
+        <text x="730" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.30 · C=0.30 · K=0.40</text>
+        <rect x="645" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="730" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
+        <line x1="730" y1="184" x2="730" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <text x="738" y="196" fill="#6ee7b7" font-size="8.5">candidates</text>
+        <rect x="645" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/>
+        <text x="685" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+        <rect x="735" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="775" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
+        <line x1="730" y1="205" x2="730" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
+        <line x1="685" y1="237" x2="715" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <line x1="775" y1="237" x2="745" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="645" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/>
+        <text x="730" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Steward weights)</text>
+        <line x1="730" y1="287" x2="730" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="645" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/>
+        <text x="730" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_steward</text>
+        <text x="730" y="365" fill="#9ca3af" font-size="9.5" text-anchor="middle" font-style="italic">K voice champion</text>
+
+        <!-- Chinese wall between personalities (level 1) -->
+        <line x1="288" y1="125" x2="288" y2="370" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
+        <line x1="568" y1="125" x2="568" y2="370" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
+        <text x="288" y="100" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.8" font-style="italic">chinese wall</text>
+        <text x="568" y="100" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.8" font-style="italic">chinese wall</text>
+
+        <!-- Convergence to vote tally -->
+        <line x1="170" y1="340" x2="170" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="450" y1="340" x2="450" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="730" y1="340" x2="730" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="170" y1="412" x2="730" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="450" y1="412" x2="450" y2="440" stroke="#c084fc" stroke-width="2.5" marker-end="url(#arrow-trias-flow)"/>
+
+        <!-- Vote tally -->
+        <rect x="270" y="445" width="360" height="58" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="2"/>
+        <text x="450" y="470" fill="#d8b4fe" font-size="14" font-weight="700" text-anchor="middle">vote tally (3 chosen → 1 verdict)</text>
+        <text x="450" y="490" fill="#9ca3af" font-size="10.5" text-anchor="middle">majority simplă · 3-0 / 2-1 / 2-0 = OK auto · 1-1-1 / 1-0-0 / 0-0-0 = PEND</text>
+
+        <!-- Final output -->
+        <line x1="450" y1="503" x2="450" y2="525" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="290" y="530" width="320" height="40" rx="6" fill="#11151c" stroke="#2d3441"/>
+        <text x="450" y="554" fill="#e5e7eb" font-size="12" text-anchor="middle">team verdict → <tspan font-family="ui-monospace,monospace" fill="#34d399">runs/&lt;ts&gt;_trias.json</tspan></text>
+      </svg>
+      <div class="trias-flow-legend">
+        <div class="item"><span class="swatch" style="background:#c084fc;"></span>flow între nivele (orchestrator ↔ personalități)</div>
+        <div class="item"><span class="swatch" style="background:#34d399;"></span>flow intra-personalitate (voce → voce, ca în Parallel)</div>
+        <div class="item"><span class="swatch" style="background:transparent; border-left: 2px dashed #9ca3af; width: 12px; height: 14px;"></span>chinese wall — izolare contextuală</div>
+      </div>
+
+      <!-- ============ WORKED EXAMPLE ============ -->
+      <h4>2. Worked example — output Trias real</h4>
+      <div class="flow-explainer">
+        Scenariu: <b>add input validation to user registration</b>. Trias produce 3 chosen-uri din 2 candidates, vot 2-1 pentru approach_A.
+      </div>
+      <pre class="trias-example-json"><code>{
+  "success_criterion": "Reject malformed emails in /register endpoint",
+  "verification": "python -m pytest tests/test_validation.py -v",
+  "team": "trias",
+  "personalities": [
+    {
+      "name": "pioneer",
+      "weights": {"generator": 0.49, "control": 0.30, "conservator": 0.21},
+      "chose": "approach_A",
+      "rationale": "extensible validator class — supports future rules (password, phone)"
+    },
+    {
+      "name": "architect",
+      "weights": {"generator": 0.30, "control": 0.49, "conservator": 0.21},
+      "chose": "approach_A",
+      "rationale": "highest control_score (0.92) — comprehensive test coverage on edge cases"
+    },
+    {
+      "name": "steward",
+      "weights": {"generator": 0.30, "control": 0.30, "conservator": 0.40},
+      "chose": "approach_B",
+      "rationale": "smaller scope (8 lines vs 24), lower regression_risk on auth path"
+    }
+  ],
+  "vote_pattern": "2-1",
+  "chosen_approach": "approach_A",
+  "dissent": [
+    {
+      "personality": "steward",
+      "chose": "approach_B",
+      "why_diff": "approach_B has smaller blast radius — Steward consistently penalizes scope drift"
+    }
+  ],
+  "abstained": [],
+  "confidence": 0.70,
+  "voice_scores": {"generator": 0.78, "control": 0.85, "conservator": 0.32},
+  "deliberation_log": [
+    {"step": "dispatch_personalities", "count": 3, "parallel": true},
+    {"step": "vote_tally", "pattern": "2-1", "winner": "approach_A"},
+    {"step": "feedback_log", "outcome": "OK", "auto": true}
+  ]
+}</code></pre>
+      <div class="example-takeaway">
+        <b>Takeaway:</b> Steward a votat alt candidate, dar majoritatea Pioneer+Architect a câștigat 2-1.
+        Disidența Steward-ului e logată — util la review uman: <i>"de ce P3 a preferat B?"</i>
+        Răspunsul e în <code>dissent[0].why_diff</code>: scope mai mic, regression risk mai mic.
+        Outcome: OK auto (confidence 0.70 = la prag).
+      </div>
+
+      <!-- ============ COST & FAILURE MODES ============ -->
+      <h4>3. Cost &amp; failure modes</h4>
+      <div class="cost-grid">
+        <div class="cost-card use">
+          <div class="cost-card-header">✓ USE TRIAS WHEN</div>
+          <ul>
+            <li>Schema/DB migration <b>ireversibilă</b> (ALTER TABLE pe milioane de rows)</li>
+            <li>Security audit — paths auth, crypto, RCE potential, secrets handling</li>
+            <li>Refactor mare — atinge ≥5 fișiere sau modifică interfețe core</li>
+            <li>2+ abordări arhitecturale plauzibile, fără clear winner</li>
+            <li>Cost-of-wrong-decision &gt;&gt; cost-of-running (9 sub-agenți)</li>
+          </ul>
+        </div>
+        <div class="cost-card avoid">
+          <div class="cost-card-header">✗ DO NOT USE WHEN</div>
+          <ul>
+            <li>Diff &lt; 20 lines / 1 fișier — <code>scope_gate.py</code> va skip oricum</li>
+            <li>Iterare rapidă — Trias e ~30-60s, ~7× cost vs Sequential</li>
+            <li><b>Conservatism strict</b> cerut — Trias agregat e −18% Conservator</li>
+            <li>Bugfix evident, single approach — Sequential blind ajunge</li>
+            <li>Cod throwaway / experimente / scripts ad-hoc</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="failure-modes">
+        <h5>Failure modes &amp; recovery</h5>
+        <table class="failure-table">
+          <thead>
+            <tr>
+              <th>Failure</th>
+              <th>Trigger</th>
+              <th>Recovery</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>1-1-1 fragmentation</b></td>
+              <td>3 personalități, 3 chosen-uri distincte → no majority</td>
+              <td>Escalate la user; sau re-run Generator cu constraints adăugate ("avoid X, Y, Z")</td>
+            </tr>
+            <tr>
+              <td><b>0-0-0 total veto</b></td>
+              <td>Toate personalitățile vetoiate toate candidates (risk &gt; 0.8 pe tot)</td>
+              <td><code>retry_suggested</code> cu <code>relaxed_threshold</code>; semnal puternic că schimbarea e riscantă/proastă</td>
+            </tr>
+            <tr>
+              <td><b>Sub-agent timeout</b></td>
+              <td>O voce nu răspunde în budget (rar — Sonnet 4.6 e stabil)</td>
+              <td>Emite <code>null</code> pentru personalitatea afectată; ceilalți votează 2-0 sau 1-0</td>
+            </tr>
+            <tr>
+              <td><b>Inconsistent veto</b></td>
+              <td>Conservator scoring diferit între personalități pe același candidate (varianță &gt; 0.3)</td>
+              <td>Log warning în <code>telemetry.notes</code>; nu e blocking dar semnal de instabilitate</td>
+            </tr>
+            <tr>
+              <td><b>Steward abstain</b></td>
+              <td>Steward = null, ceilalți au chosen (vot 2-0)</td>
+              <td>OK auto la confidence 0.75, dar <b>Steward's veto reasoning e flagged separat</b> — semnal mai puternic decât abținerea Pioneer/Architect</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="note">
-      Max 3 sub-agenți activi simultan; în practică 1 + 2 pentru că Control și Conservator
-      depind de output-ul Generator-ului. Prompts-urile <code>prompts/*.md</code> sunt deja
-      self-contained — pot fi date direct unui sub-agent fără ajustări.
+      Max 3 sub-agenți activi simultan în modurile standard (1 + 2 pattern); până la 9 în <b>Trias</b>
+      (3 personalități × 3 voci). Prompts-urile <code>prompts/*.md</code> sunt self-contained —
+      pot fi date direct unui sub-agent fără ajustări.
     </div>
 
   </section>
