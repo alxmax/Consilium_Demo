@@ -39,7 +39,7 @@ import sys
 from typing import Any
 
 VOICES = ("generator", "control", "conservator")
-DEFAULT_VETO = 0.7
+DEFAULT_VETO = 0.8
 RELAXED_VETO_CAP = 0.85
 # Sigmoid risk penalty parameters: 50% at risk=0.5, ~0.79 at 0.7, ~0.93 at 0.85
 SIGMOID_MIDPOINT = 0.5

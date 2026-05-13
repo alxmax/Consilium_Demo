@@ -20,8 +20,6 @@ Patru principii care guvernează **fiecare** deliberare. Au prioritate când o v
 3. **Surgical changes.** Atinge doar ce cere goal-ul. Conservator-ul măsoară devierea prin `scope_drift` — respectă un scor mare.
 4. **Goal-driven execution.** Restate goal-ul ca **success criterion** testabil înainte de Generator. Output-ul final include un pas de **verification**.
 
-*(Adaptat după CLAUDE.md al lui Andrej Karpathy, via [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CLAUDE.md).)*
-
 ## When to use
 
 Activează acest skill când:
@@ -100,7 +98,7 @@ Ancorează `diff_size` la `files_changed/lines_*` și `regression_risk` la distr
 ```bash
 python scripts/aggregator.py --scheme conservative_override
 ```
-Default: **conservative_override** — veto la `risk_score > 0.7`; ranking prin medie ponderată `(generator + control + safety)` unde `safety = 1 - conservator`. La egalitate câștigă candidatul mai sigur. Alternativă: `--scheme risk_adjusted_utility` (penalty sigmoidal, fără veto rigid).
+Default: **conservative_override** — veto la `risk_score > 0.8`; ranking prin medie ponderată `(generator + control + safety)` unde `safety = 1 - conservator`. La egalitate câștigă candidatul mai sigur. Alternativă: `--scheme risk_adjusted_utility` (penalty sigmoidal, fără veto rigid).
 
 ### 5b. Confidence
 ```bash
@@ -144,7 +142,6 @@ Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat. Exit 2 = JSON ma
    - `confidence >= 0.7` → `python -X utf8 scripts/log_feedback.py --outcome OK --run-path runs/<file>.json < runs/<file>.json`
    - `confidence < 0.7` → întreabă: *"Confidence sub prag (`<X>`). Vrei să override-ezi `<chosen>`? Alternative: `<alt_ids>`. Răspunde alt_id, 'no', sau 'skip'."* Apoi: `no` → `--outcome OK`; `<alt_id>` → `--outcome OVR --override-target <alt_id>`; `skip` → fără flag (PEND).
    - `confidence null` (toți vetoiți) → `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json`
-   - **Windows note:** Folosește `python -X utf8` sau piped-ează direct din fișier — PowerShell `Get-Content | ...` adaugă BOM care sparge `json.load(sys.stdin)`.
 
 ## Skill maintenance
 
@@ -154,7 +151,6 @@ Aplică doar când editezi skill-ul (`scripts/*.py`, `prompts/*.md`, `SKILL.md`)
 ```bash
 python scripts/run_evals.py
 ```
-17+ scenarii. Exit 0 = toate trec; non-zero = regresie.
 
 **Usage rollup** (când ai 10+ runs cu telemetry): `python scripts/usage.py [--last 50]`
 
@@ -187,8 +183,6 @@ python scripts/run_evals.py
 ## Parallel voices mode
 
 **Default-ul e parallel.** Dispatch cele 3 voci ca sub-agenți independenți — elimină cross-contamination complet.
-
-**Notă:** `consilium-subagent` rulează **întotdeauna sequential** — dispatch-uiește cu `subagent_type=general-purpose` când vrei paralelism real.
 
 ### Cum (2 turns)
 1. **Turn 1:** dispatch Generator (1 Agent call). Aștepți candidates.

@@ -58,8 +58,8 @@
     "args": ["--scheme", "conservative_override"],
     "stdin_json": {
       "candidates": [
-        {"id": "a", "scores": {"generator": 0.9, "control": 0.9, "conservator": 0.8}},
-        {"id": "b", "scores": {"generator": 0.7, "control": 0.7, "conservator": 0.75}}
+        {"id": "a", "scores": {"generator": 0.9, "control": 0.9, "conservator": 0.9}},
+        {"id": "b", "scores": {"generator": 0.7, "control": 0.7, "conservator": 0.85}}
       ]
     },
     "expect_exit": 0,

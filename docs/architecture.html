@@ -427,7 +427,7 @@
         <div class="scheme default">
           <b>conservative_override <span style="color:var(--muted);font-weight:400;">(default)</span></b>
           Medie ponderată cu <code>safety = 1 − conservator</code>; Conservator are veto unilateral.
-          <span class="veto">VETO la risk_score &gt; 0.7</span>
+          <span class="veto">VETO la risk_score &gt; 0.8</span>
         </div>
         <div class="scheme">
           <b>risk_adjusted_utility</b>
@@ -455,7 +455,7 @@
           <tbody>
             <tr><th>A — safe</th><td>0.80</td><td>0.90</td><td>0.30</td></tr>
             <tr><th>B — medium</th><td>0.90</td><td>0.80</td><td>0.60</td></tr>
-            <tr><th>C — risky</th><td>0.85</td><td>0.85</td><td>0.75</td></tr>
+            <tr><th>C — risky</th><td>0.85</td><td>0.85</td><td>0.85</td></tr>
           </tbody>
         </table>
         <table style="margin-top: 14px;">
@@ -471,12 +471,12 @@
           <tbody>
             <tr>
               <th>majority</th>
-              <td class="lose">0.667</td><td class="lose">0.767</td><td class="win">0.817</td>
+              <td class="lose">0.667</td><td class="lose">0.767</td><td class="win">0.850</td>
               <td class="win">C</td>
             </tr>
             <tr>
               <th>weighted</th>
-              <td class="lose">0.667</td><td class="lose">0.767</td><td class="win">0.817</td>
+              <td class="lose">0.667</td><td class="lose">0.767</td><td class="win">0.850</td>
               <td class="win">C</td>
             </tr>
             <tr>
@@ -486,7 +486,7 @@
             </tr>
             <tr>
               <th>risk_adjusted_utility</th>
-              <td class="win">0.705</td><td class="lose">0.188</td><td class="lose">0.050</td>
+              <td class="win">0.705</td><td class="lose">0.188</td><td class="lose">0.018</td>
               <td class="win">A</td>
             </tr>
           </tbody>
@@ -497,7 +497,7 @@
           deci aleg C — candidatul mai riscant. Doar schemele care flip-uiesc conservator
           în safety (<code>1 − risc</code>) ajung la verdictul intuitiv. <code>risk_adjusted_utility</code>
           dă același rezultat fără cliff la prag, util când mai mulți candidates sunt strânși
-          în jurul lui 0.7.
+          în jurul lui 0.8.
         </div>
       </div>
       <div class="note">
