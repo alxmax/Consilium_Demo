@@ -26,6 +26,7 @@ class Entry:
     outcome: str  # OK | BAD | OVR | PEND
     note: str
     run_path: str | None = None  # relative path to runs/*.json (or None for legacy)
+    vote_pattern: str = ""  # e.g. "2-1" for Trias mode; empty for non-Trias
 
 
 CSS = """
@@ -105,8 +106,9 @@ def _row_html(idx: int, e: Entry, drill_inner: str, tokens_str: str) -> str:
         f'<td class="outcome {_esc(e.outcome)}">{_esc(e.outcome)}</td>'
         f'<td class="{tokens_cls}">{tokens_str}</td>'
         f'<td class="note">{_esc(e.note)}</td>'
+        f'<td>{_esc(e.vote_pattern)}</td>'
         f'</tr>\n'
-        f'<tr class="drill"><td colspan="7">{drill_inner}</td></tr>\n'
+        f'<tr class="drill"><td colspan="8">{drill_inner}</td></tr>\n'
     )
 
 
@@ -263,7 +265,7 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
         "<h2>Consilium feedback</h2>\n"
         f"<div class=\"sub\">{len(entries)} entries · skills/consilium/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
         "<table>\n"
-        "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Tokens</th><th>Note</th></tr></thead>\n"
+        "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Tokens</th><th>Note</th><th>Vote Pattern</th></tr></thead>\n"
         f"<tbody>\n{rows_html}</tbody>\n"
         "</table>\n"
         f"<script>{JS}</script>\n"

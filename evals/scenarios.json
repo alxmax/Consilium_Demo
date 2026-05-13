@@ -682,5 +682,80 @@
         "silently_dropped": ["b"]
       }
     }
+  },
+  {
+    "name": "trias_unanimous_3_0",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "team_vote"],
+    "stdin_json": {
+      "personalities": [
+        {"name": "pioneer",   "chose": "A"},
+        {"name": "architect", "chose": "A"},
+        {"name": "steward",   "chose": "A"}
+      ],
+      "candidates": [{"id": "A"}, {"id": "B"}]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "3-0", "chosen": "A"}
+  },
+  {
+    "name": "trias_majority_2_1",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "team_vote"],
+    "stdin_json": {
+      "personalities": [
+        {"name": "pioneer",   "chose": "A"},
+        {"name": "architect", "chose": "A"},
+        {"name": "steward",   "chose": "B"}
+      ],
+      "candidates": [{"id": "A"}, {"id": "B"}]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "2-1", "chosen": "A"}
+  },
+  {
+    "name": "trias_abstain_2_0",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "team_vote"],
+    "stdin_json": {
+      "personalities": [
+        {"name": "pioneer",   "chose": "A"},
+        {"name": "architect", "chose": "A"},
+        {"name": "steward",   "chose": null}
+      ],
+      "candidates": [{"id": "A"}, {"id": "B"}]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "2-0", "chosen": "A"}
+  },
+  {
+    "name": "trias_fragment_1_1_1",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "team_vote"],
+    "stdin_json": {
+      "personalities": [
+        {"name": "pioneer",   "chose": "A"},
+        {"name": "architect", "chose": "B"},
+        {"name": "steward",   "chose": "C"}
+      ],
+      "candidates": [{"id": "A"}, {"id": "B"}, {"id": "C"}]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "1-1-1", "chosen": null}
+  },
+  {
+    "name": "trias_total_veto_0_0_0",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "team_vote"],
+    "stdin_json": {
+      "personalities": [
+        {"name": "pioneer",   "chose": null},
+        {"name": "architect", "chose": null},
+        {"name": "steward",   "chose": null}
+      ],
+      "candidates": [{"id": "A"}]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {"scheme": "team_vote", "vote_pattern": "0-0-0", "chosen": null, "retry_suggested": {"reason": "all 3 personalities vetoed every candidate"}}
   }
 ]

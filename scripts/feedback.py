@@ -46,22 +46,32 @@ def parse_feedback(path: Path) -> list[dict]:
     text = path.read_text(encoding="utf-8")
     for m in ROW_RE.finditer(text):
         cells = CELL_RE.findall(m.group("body"))
-        # New layout (7 cells): [chev, date, context, chosen, outcome, tokens, note]
+        # Trias layout (8 cells): [chev, date, context, chosen, outcome, tokens, note, vote_pattern]
+        # Previous layout (7 cells): [chev, date, context, chosen, outcome, tokens, note]
         # Legacy layout (6 cells): [chev, date, context, chosen, outcome, note]
         # The tokens cell is regenerated at render time from run telemetry,
         # so we drop it here — the parser only returns the persistent fields.
-        if len(cells) == 7:
+        if len(cells) == 8:
             date = _strip_tags(cells[1])
             context = _strip_tags(cells[2])
             chosen = _strip_tags(cells[3])
             outcome = _strip_tags(cells[4])
             note = _strip_tags(cells[6])
+            vote_pattern = _strip_tags(cells[7])
+        elif len(cells) == 7:
+            date = _strip_tags(cells[1])
+            context = _strip_tags(cells[2])
+            chosen = _strip_tags(cells[3])
+            outcome = _strip_tags(cells[4])
+            note = _strip_tags(cells[6])
+            vote_pattern = ""
         elif len(cells) == 6:
             date = _strip_tags(cells[1])
             context = _strip_tags(cells[2])
             chosen = _strip_tags(cells[3])
             outcome = _strip_tags(cells[4])
             note = _strip_tags(cells[5])
+            vote_pattern = ""
         else:
             continue
         if outcome not in ("OK", "BAD", "OVR", "PEND"):
@@ -72,6 +82,7 @@ def parse_feedback(path: Path) -> list[dict]:
             "chosen": chosen,
             "outcome": outcome,
             "note": note,
+            "vote_pattern": vote_pattern,
         })
     return entries
 
