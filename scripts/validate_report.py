@@ -146,7 +146,12 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     if mode.strip() == "parallel":
         voices = telemetry.get("voices")
         if not isinstance(voices, dict) or len(voices) == 0:
-            return ["telemetry.mode=parallel requires telemetry.voices (non-empty dict); capture per-voice tokens/latency at dispatch"]
+            print(
+                "[warning] telemetry.voices missing or empty for parallel mode; "
+                "capture per-voice tokens/latency at dispatch for usage rollup "
+                "(scripts/usage.py will skip this run)",
+                file=sys.stderr,
+            )
     return []
 
 

@@ -106,6 +106,8 @@ echo '{"candidates": [...], "chosen": "approach_id"}' | python scripts/confidenc
 ```
 Returnează `{confidence, agreement, separation}`. Dacă `chosen` e `null` (toți vetoiți), `confidence` e `null`.
 
+**Quoting:** Evită construirea de Python inline via `-c "..."` cu payload JSON — apostrofurile din cod pot rupe quoting-ul bash. Folosește pipe pe stdin (ca mai sus) sau flag-ul `--input <file>`.
+
 ### 6. Report
 ```bash
 cat bundle.json | python scripts/build_report.py | python scripts/validate_report.py
@@ -231,7 +233,11 @@ Two-pass: Pass 1 = parallel; Pass 2 = fiecare voce revizuiește văzând output-
 2. Pentru fiecare personalitate, dispatch 3 voci (Gen/Ctrl/Cons) cu `prompts/<voice>.md` + `prompts/<personality>_lens.md` prepended
 3. Personalitatea agregă voice scores cu weights proprii → `chose`
 4. Orchestrator rulează `python -X utf8 scripts/aggregator.py --scheme team_vote` peste cele 3 chosen-uri
-5. Confidence derivat din vote_pattern (3-0/2-1/2-0 = OK auto; 1-1-1/0-0-0 = PEND)
+5. Confidence derivat din vote_pattern — pipe output-ul aggregator direct la `confidence.py`:
+   ```bash
+   echo '{"personalities":[...],"candidates":[...]}' | python scripts/aggregator.py --scheme team_vote | python scripts/confidence.py
+   ```
+   Nu construi manual `{"candidates":[...],"chosen":"..."}` pentru Trias — candidatele nu au `scores` per voce.
 
 ### Vote patterns
 | Pattern | Confidence | Outcome |
