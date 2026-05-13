@@ -132,6 +132,8 @@ def find_stale_pendings(entries: list[dict], days_old: int = STALE_PEND_DAYS) ->
 def build_priors(n: int = 10, include_runs: bool = True) -> dict:
     entries = parse_feedback(FEEDBACK)
     recent = entries[:n]
+    counts = dict(_outcome_counts(recent))
+    pend_pressure = counts.get("PEND", 0) / len(recent) if recent else 0.0
     out: dict = {
         "source": {
             "feedback_path": str(FEEDBACK.relative_to(ROOT)),
@@ -139,8 +141,9 @@ def build_priors(n: int = 10, include_runs: bool = True) -> dict:
             "feedback_window": len(recent),
         },
         "recent": recent,
-        "counts": dict(_outcome_counts(recent)),
+        "counts": counts,
         **_rates(recent),
+        "pend_pressure": round(pend_pressure, 2),
         "top_note_keywords": _top_keywords(recent),
         "stale_pendings": find_stale_pendings(entries),
     }

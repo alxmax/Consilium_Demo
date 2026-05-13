@@ -228,6 +228,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--override-target", default=None, help="alt_id when --outcome=OVR")
     ap.add_argument("--user-note", default=None, help="optional user-supplied note appended to auto-note")
     ap.add_argument("--run-path", default=None, help="relative path to runs/*.json for drill-down (e.g. runs/2026-05-12_foo.json)")
+    ap.add_argument("--force-override", action="store_true",
+        help="allow --outcome OK even when confidence < 0.70 (use when user has confirmed the pick despite low confidence)")
     args = ap.parse_args(argv)
 
     try:
@@ -238,6 +240,18 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(report, dict):
         print("report must be a JSON object", file=sys.stderr)
         return 2
+
+    if args.outcome == "OK":
+        conf = report.get("confidence")
+        below = conf is None or (isinstance(conf, (int, float)) and conf < 0.7)
+        if below and not args.force_override:
+            conf_s = f"{conf:.2f}" if isinstance(conf, (int, float)) else str(conf)
+            print(
+                f"confidence {conf_s} is below threshold 0.70 — "
+                "pass --force-override to log OK despite low confidence",
+                file=sys.stderr,
+            )
+            return 1
 
     try:
         entry = build_entry(

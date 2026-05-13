@@ -549,6 +549,119 @@
     }
   },
   {
+    "name": "log_feedback/rejects --outcome OK when confidence < 0.70 without --force-override",
+    "tool": "scripts/log_feedback.py",
+    "args": ["--dry-run", "--outcome", "OK"],
+    "stdin_json": {
+      "success_criterion": "any criterion",
+      "verification": "any step",
+      "chosen_approach": "approach_a",
+      "confidence": 0.49,
+      "telemetry": {"mode": "parallel"},
+      "deliberation_log": [
+        {"step": "generator", "candidates": [{"id": "approach_a"}, {"id": "do_nothing"}]},
+        {"step": "aggregate", "result": {"vetoed": []}}
+      ]
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["confidence", "threshold"]
+  },
+  {
+    "name": "log_feedback/accepts --outcome OK with --force-override when confidence < 0.70",
+    "tool": "scripts/log_feedback.py",
+    "args": ["--dry-run", "--outcome", "OK", "--force-override"],
+    "stdin_json": {
+      "success_criterion": "any criterion",
+      "verification": "any step",
+      "chosen_approach": "approach_a",
+      "confidence": 0.49,
+      "telemetry": {"mode": "parallel"},
+      "deliberation_log": [
+        {"step": "generator", "candidates": [{"id": "approach_a"}, {"id": "do_nothing"}]},
+        {"step": "aggregate", "result": {"vetoed": []}}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": ["OK", "approach_a"]
+  },
+  {
+    "name": "log_feedback/accepts --outcome OK when confidence >= 0.70",
+    "tool": "scripts/log_feedback.py",
+    "args": ["--dry-run", "--outcome", "OK"],
+    "stdin_json": {
+      "success_criterion": "any criterion",
+      "verification": "any step",
+      "chosen_approach": "approach_a",
+      "confidence": 0.72,
+      "telemetry": {"mode": "parallel"},
+      "deliberation_log": [
+        {"step": "generator", "candidates": [{"id": "approach_a"}, {"id": "do_nothing"}]},
+        {"step": "aggregate", "result": {"vetoed": []}}
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": ["OK", "approach_a"]
+  },
+  {
+    "name": "validate_report/parallel mode with no voices fails validation",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {"step": "generator",   "candidates": []},
+        {"step": "control",     "verdicts":   []},
+        {"step": "conservator", "scores":     []},
+        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+      ],
+      "telemetry": {"mode": "parallel"}
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": ["parallel", "voices"]
+  },
+  {
+    "name": "validate_report/parallel mode with voices passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {"step": "generator",   "candidates": []},
+        {"step": "control",     "verdicts":   []},
+        {"step": "conservator", "scores":     []},
+        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+      ],
+      "telemetry": {
+        "mode": "parallel",
+        "voices": {
+          "generator":   {"tokens_in": 800, "tokens_out": 400, "latency_ms": 3000},
+          "control":     {"tokens_in": 800, "tokens_out": 300, "latency_ms": 2800},
+          "conservator": {"tokens_in": 800, "tokens_out": 250, "latency_ms": 2500}
+        }
+      }
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "validate_report/sequential mode without voices passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {"step": "generator",   "candidates": []},
+        {"step": "control",     "verdicts":   []},
+        {"step": "conservator", "scores":     []},
+        {"step": "aggregate",   "scheme": "majority", "result": {"chosen": "approach_a"}}
+      ],
+      "telemetry": {"mode": "sequential"}
+    },
+    "expect_exit": 0
+  },
+  {
     "name": "dialectic_merge/silent_drop_recovered_from_pass1: pass2 generator omits a pass1 candidate; recovery lists it in silently_dropped",
     "tool": "scripts/dialectic_merge.py",
     "stdin_json": {

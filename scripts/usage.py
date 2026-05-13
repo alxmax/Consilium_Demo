@@ -107,10 +107,40 @@ def collect(reports: list[dict]) -> dict:
     }
 
 
-def load_reports(runs_dir: Path, last: int | None) -> list[dict]:
+def _latency_warnings(files: list[Path], reports: list[dict]) -> list[dict]:
+    warnings: list[dict] = []
+    for path, report in zip(files, reports):
+        telemetry = report.get("telemetry")
+        if not isinstance(telemetry, dict) or telemetry.get("mode") != "parallel":
+            continue
+        voices = telemetry.get("voices") or {}
+        latencies = {
+            v: d["latency_ms"]
+            for v, d in voices.items()
+            if isinstance(d, dict) and isinstance(d.get("latency_ms"), int) and not isinstance(d.get("latency_ms"), bool)
+        }
+        if len(latencies) < 2:
+            continue
+        vnames = list(latencies.keys())
+        for i, vname in enumerate(vnames):
+            peers = [latencies[n] for j, n in enumerate(vnames) if j != i]
+            peer_median = statistics.median(peers)
+            if peer_median > 0 and latencies[vname] > 2 * peer_median:
+                warnings.append({
+                    "type": "latency_spike",
+                    "run": path.name,
+                    "voice": vname,
+                    "latency_ms": latencies[vname],
+                    "peer_median_ms": int(peer_median),
+                })
+    return warnings
+
+
+def load_reports(runs_dir: Path, last: int | None) -> tuple[list[Path], list[dict]]:
     files = sorted(runs_dir.glob("*.json"))
     if last is not None:
         files = files[-last:]
+    paths: list[Path] = []
     reports: list[dict] = []
     for path in files:
         try:
@@ -120,8 +150,9 @@ def load_reports(runs_dir: Path, last: int | None) -> list[dict]:
             print(f"skip {path.name}: {exc}", file=sys.stderr)
             continue
         if isinstance(data, dict):
+            paths.append(path)
             reports.append(data)
-    return reports
+    return paths, reports
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -140,8 +171,9 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write("\n")
         return 1
 
-    reports = load_reports(runs_dir, args.last)
+    files, reports = load_reports(runs_dir, args.last)
     result = collect(reports)
+    result["warnings"] = _latency_warnings(files, reports)
     json.dump(result, sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0
