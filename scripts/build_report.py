@@ -47,6 +47,8 @@ import json
 import sys
 from typing import Any
 
+from utils import force_utf8_streams, validate_keys
+
 
 def _err(msg: str) -> None:
     print(msg, file=sys.stderr)
@@ -87,6 +89,26 @@ def _why_not(verdict: dict | None, score: dict | None) -> str:
         if risk >= 0.5:
             bits.append(f"risk={risk:.2f}")
     return "; ".join(bits) or "ranked below chosen"
+
+
+def validate_input(bundle: dict) -> None:
+    """Validate build_report bundle has required top-level fields.
+
+    For skipped bundles, only success_criterion and verification are required.
+    For normal bundles, generator/control/conservator are also required.
+    """
+    if bundle.get("skipped") is True:
+        validate_keys(
+            bundle,
+            ["success_criterion", "verification"],
+            context="build_report bundle",
+        )
+    else:
+        validate_keys(
+            bundle,
+            ["success_criterion", "verification", "generator", "control", "conservator"],
+            context="build_report bundle",
+        )
 
 
 def _alternatives(generator: dict, control: dict, conservator: dict, aggregate: dict, limit: int) -> list[dict]:
@@ -181,17 +203,8 @@ def _default_reasoning(aggregate: dict, confidence_block: dict) -> str:
     return f"{scheme} picked {chosen} (confidence={conf_s})"
 
 
-def _force_utf8_streams() -> None:
-    # Windows default stdin/stdout encoding is cp1252; piping UTF-8 JSON
-    # through that mangles non-ASCII (ț, ș, ă) before any script sees it.
-    for stream in (sys.stdin, sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure:
-            reconfigure(encoding="utf-8")
-
-
 def main(argv: list[str] | None = None) -> int:
-    _force_utf8_streams()
+    force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--input",
@@ -209,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(bundle, dict):
         _err("bundle must be a JSON object")
         return 2
+
+    validate_input(bundle)
 
     try:
         report = build(bundle)

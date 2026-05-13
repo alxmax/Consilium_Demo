@@ -55,6 +55,8 @@ import json
 import statistics
 import sys
 
+from utils import force_utf8_streams, validate_keys
+
 VOICES = ("generator", "control", "conservator")
 # pstdev of [0, 0, 1] = sqrt(2/9) ≈ 0.4714
 MAX_STDEV_3VALS = (2 / 9) ** 0.5
@@ -79,6 +81,30 @@ def _utility(scores: dict) -> float:
 
 def _spread(scores: dict) -> float:
     return statistics.pstdev(_utility_vec(scores))
+
+
+def validate_input(data: dict) -> None:
+    """Validate confidence.py input shape before any computation."""
+    validate_keys(data, ["candidates", "chosen"], context="confidence input")
+    if not isinstance(data["candidates"], list):
+        print("confidence input: 'candidates' must be a list", file=sys.stderr)
+        sys.exit(1)
+    for i, cand in enumerate(data["candidates"]):
+        if not isinstance(cand, dict):
+            print(f"confidence input: candidates[{i}] must be an object", file=sys.stderr)
+            sys.exit(1)
+        if "scores" not in cand:
+            print(
+                f"confidence input: candidates[{i}] (id={cand.get('id', '?')!r}) "
+                f"missing required field 'scores'",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        validate_keys(
+            cand["scores"],
+            ["generator", "control", "conservator"],
+            context=f"candidates[{i}].scores",
+        )
 
 
 def derive(candidates: list[dict], chosen: str | None) -> dict:
@@ -111,17 +137,8 @@ def derive(candidates: list[dict], chosen: str | None) -> dict:
     }
 
 
-def _force_utf8_streams() -> None:
-    # Windows default stdin/stdout encoding is cp1252; piping UTF-8 JSON
-    # through that mangles non-ASCII (ț, ș, ă) before any script sees it.
-    for stream in (sys.stdin, sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure:
-            reconfigure(encoding="utf-8")
-
-
 def main(argv: list[str] | None = None) -> int:
-    _force_utf8_streams()
+    force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--input",
@@ -132,6 +149,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     data = json.load(args.input)
+    validate_input(data)
     result = derive(data.get("candidates", []), data.get("chosen"))
     json.dump(result, sys.stdout, indent=2)
     sys.stdout.write("\n")

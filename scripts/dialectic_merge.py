@@ -57,6 +57,8 @@ import json
 import sys
 from typing import Any
 
+from utils import force_utf8_streams, validate_keys
+
 VOICES = ("generator", "control", "conservator")
 VOICE_KEY = {
     "generator": "candidates",
@@ -115,6 +117,13 @@ def _is_dissent_compliant(item: dict) -> bool:
     revision = item.get("revision")
     maintained = item.get("maintained")
     return bool(revision) or bool(maintained)
+
+
+def validate_input(payload: dict) -> None:
+    """Validate dialectic_merge input has required pass1 structure."""
+    validate_keys(payload, ["pass1"], context="dialectic_merge input")
+    validate_keys(payload["pass1"], ["generator", "control", "conservator"],
+                  context="dialectic_merge input.pass1")
 
 
 def _diff_candidates(p1: list[dict], p2: list[dict]) -> list[dict]:
@@ -181,10 +190,23 @@ def merge(payload: dict) -> dict:
         if not cid:
             continue
 
-        # Use pass1 data for voices where this candidate had a dissent fallback
-        gen_cand = p1_gen_by_id.get(cid, cand) if cid in dissent_fallbacks.get("generator", []) else cand
-        verdict = p1_ctrl_by_id.get(cid, {}) if cid in dissent_fallbacks.get("control", []) else ctrl_verdicts.get(cid, {})
-        risk_entry = p1_cons_by_id.get(cid, {}) if cid in dissent_fallbacks.get("conservator", []) else cons_scores.get(cid, {})
+        # Candidates new in Pass-2 (not in Pass-1 at all) must never fall back to
+        # empty Pass-1 data — that would produce a 0.0 control score for a valid
+        # candidate. Always use Pass-2 voice data for genuinely new candidates.
+        is_new_in_pass2 = cid not in p1_gen_by_id
+
+        gen_cand = (
+            cand if is_new_in_pass2
+            else (p1_gen_by_id.get(cid, cand) if cid in dissent_fallbacks.get("generator", []) else cand)
+        )
+        verdict = (
+            ctrl_verdicts.get(cid, {}) if is_new_in_pass2
+            else (p1_ctrl_by_id.get(cid, {}) if cid in dissent_fallbacks.get("control", []) else ctrl_verdicts.get(cid, {}))
+        )
+        risk_entry = (
+            cons_scores.get(cid, {}) if is_new_in_pass2
+            else (p1_cons_by_id.get(cid, {}) if cid in dissent_fallbacks.get("conservator", []) else cons_scores.get(cid, {}))
+        )
 
         merged_candidates.append({
             "id": cid,
@@ -242,17 +264,8 @@ def merge(payload: dict) -> dict:
     }
 
 
-def _force_utf8_streams() -> None:
-    # Windows default stdin/stdout encoding is cp1252; piping UTF-8 JSON
-    # through that mangles non-ASCII (ț, ș, ă) before any script sees it.
-    for stream in (sys.stdin, sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure:
-            reconfigure(encoding="utf-8")
-
-
 def main(argv: list[str] | None = None) -> int:
-    _force_utf8_streams()
+    force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--input",
@@ -267,6 +280,8 @@ def main(argv: list[str] | None = None) -> int:
     except json.JSONDecodeError as exc:
         print(f"invalid JSON: {exc}", file=sys.stderr)
         return 2
+
+    validate_input(payload)
 
     try:
         result = merge(payload)

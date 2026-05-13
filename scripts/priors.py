@@ -131,7 +131,7 @@ def find_stale_pendings(entries: list[dict], days_old: int = STALE_PEND_DAYS) ->
 
 def build_priors(n: int = 10, include_runs: bool = True) -> dict:
     entries = parse_feedback(FEEDBACK)
-    recent = entries[:n]
+    recent = entries[-n:]
     counts = dict(_outcome_counts(recent))
     pend_pressure = counts.get("PEND", 0) / len(recent) if recent else 0.0
     out: dict = {

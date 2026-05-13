@@ -36,7 +36,10 @@ import json
 import math
 import statistics
 import sys
+import warnings
 from typing import Any
+
+from utils import force_utf8_streams
 
 VOICES = ("generator", "control", "conservator")
 DEFAULT_VETO = 0.7
@@ -69,6 +72,12 @@ def aggregate_majority(candidates: list[dict]) -> dict:
 
 def aggregate_weighted(candidates: list[dict], weights: dict) -> dict:
     """Weighted average across voices using supplied weights."""
+    warnings.warn(
+        "aggregate_weighted treats Conservator as utility (higher=better), but Conservator "
+        "emits risk (higher=worse). Scores will be inverted relative to other schemes. "
+        "Use 'conservative_override' or 'risk_adjusted_utility' instead.",
+        stacklevel=2,
+    )
     w = [float(weights[v]) for v in VOICES]
     s = sum(w)
     if s <= 0:
@@ -107,6 +116,10 @@ def aggregate_conservative_override(
     chosen=None. We do not pick automatically — that would defeat the
     veto's purpose.
     """
+    if not (0.0 <= veto_threshold <= 1.0):
+        raise ValueError(
+            f"veto_threshold must be in [0.0, 1.0], got {veto_threshold!r}"
+        )
     weights = weights or {v: 1 / 3 for v in VOICES}
 
     survivors = []
@@ -232,17 +245,8 @@ SCHEMES = {
 }
 
 
-def _force_utf8_streams() -> None:
-    # Windows default stdin/stdout encoding is cp1252; piping UTF-8 JSON
-    # through that mangles non-ASCII (ț, ș, ă) before any script sees it.
-    for stream in (sys.stdin, sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure:
-            reconfigure(encoding="utf-8")
-
-
 def main(argv: list[str] | None = None) -> int:
-    _force_utf8_streams()
+    force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--scheme",

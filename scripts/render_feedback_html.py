@@ -249,7 +249,7 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
             if run_file.exists():
                 try:
                     run_dict = json.loads(run_file.read_text(encoding="utf-8"))
-                except json.JSONDecodeError:
+                except (json.JSONDecodeError, OSError):
                     run_dict = None
         drill = render_drill(run_dict, e.chosen) if run_dict else _legacy_stub()
         tokens_str = _total_tokens(run_dict)
