@@ -17,6 +17,12 @@ The voices are prompt-constrained from doing each other's job and run as separat
 
 > **About this repository.** Public showcase / portfolio demo, maintained by **Schipor Alexandru Ionut**. The live skill source is in a private repository — this repo contains the design, the architecture poster, and a canonical run example. For source-code access requests, see contact details on my CV.
 
+## Live demo
+
+**[https://alxmax.github.io/Consilium_Demo/](https://alxmax.github.io/Consilium_Demo/)**
+
+Open the link in any modern browser — no install needed. Four tabs walk you through the system from overview to interactive flow demo.
+
 ## Try the visual architecture
 
 Open [`architecture.html`](./architecture.html) in any modern browser. Four tabs:
