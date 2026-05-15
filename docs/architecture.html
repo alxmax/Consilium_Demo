@@ -42,18 +42,44 @@
     --trias-text: #d8b4fe;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+  html, body { margin: 0; padding: 0; color: var(--ink);
     font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  /* Subtle mesh gradient + dot grid — keeps a designed, calm feel under all content. */
+  body {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(ellipse 80% 60% at 15% 0%, rgba(217, 168, 116, 0.18) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 50% at 85% 0%, rgba(192, 154, 110, 0.14) 0%, transparent 55%),
+      radial-gradient(ellipse 90% 60% at 50% 100%, rgba(245, 158, 11, 0.11) 0%, transparent 55%),
+      radial-gradient(circle, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+    background-size: auto, auto, auto, 28px 28px;
+    background-attachment: fixed, fixed, fixed, fixed;
+  }
+  html:fullscreen body, html:-webkit-full-screen body { background-color: var(--bg); }
+  @media print {
+    body { background: #ffffff !important; background-image: none !important; }
+  }
   header { padding: 28px 40px 0; }
   h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.01em; }
   .sub { color: var(--muted); font-size: 13px; }
   nav.tabs { display: flex; gap: 4px; padding: 22px 40px 0; border-bottom: 1px solid var(--line);
     position: sticky; top: 0; background: var(--bg); z-index: 10; }
-  nav.tabs button { appearance: none; background: transparent; border: 0; padding: 12px 18px;
+  nav.tabs button { appearance: none; background: transparent; border: 0; padding: 10px 18px;
     font: inherit; font-weight: 500; color: var(--muted); cursor: pointer;
-    border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    display: inline-flex; flex-direction: column; align-items: flex-start; }
   nav.tabs button:hover { color: var(--ink); }
   nav.tabs button.active { color: var(--ink); border-bottom-color: var(--ink); }
+  .tab-sub { font-size: 10px; font-weight: 400; color: var(--muted); opacity: 0.6; line-height: 1.3; }
+  nav.tabs button:hover .tab-sub, nav.tabs button.active .tab-sub { opacity: 0.85; }
+  .start-banner { display: flex; align-items: center; gap: 8px; padding: 8px 40px;
+    background: var(--inset); border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .start-banner b { color: var(--gold); }
+  .start-banner .banner-dismiss { margin-left: auto; appearance: none; background: transparent;
+    border: 1px solid var(--line); border-radius: 4px; color: var(--muted); cursor: pointer;
+    font: inherit; font-size: 11px; padding: 3px 9px; }
+  .start-banner .banner-dismiss:hover { color: var(--ink); border-color: var(--muted); }
+  .start-banner.hidden { display: none; }
   main { padding: 32px 40px 80px; max-width: 1240px; margin: 0 auto; }
   section.tab { display: none; }
   section.tab.active { display: block; }
@@ -401,19 +427,529 @@
     .cost-grid { grid-template-columns: 1fr; }
     .parallel-row { flex-direction: column; }
   }
+
+  /* ============== PATTERNS (visual flow diagram) ============== */
+  .pat-intro { background: var(--inset); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 22px; }
+  .pat-intro h3 { margin: 0 0 6px; font-size: 15px; }
+  .pat-intro p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.55; }
+  .pat-intro p b { color: var(--ink); }
+
+  /* Patterns tab breaks out of main's 1240px cap to use full viewport width */
+  #patterns { width: 100vw; position: relative; left: 50%; right: 50%;
+    margin-left: -50vw; margin-right: -50vw; padding: 0 40px; box-sizing: border-box; }
+  @media (max-width: 600px) {
+    #patterns { padding: 0 16px; }
+  }
+
+  /* Action toolbar (Play tour + Full screen) — fixed top-right, only visible when
+     Patterns tab is active (parent section.tab is display:none otherwise, so its
+     fixed-position descendants hide with it). */
+  .pat-actions { position: fixed; top: 14px; right: 18px; z-index: 100;
+    display: flex; gap: 10px; }
+  .pat-fullscreen-btn {
+    background: var(--card-bg); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--ink); padding: 8px 12px; font-size: 16px; cursor: pointer;
+    font-family: inherit; line-height: 1;
+    transition: all 150ms ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .pat-fullscreen-btn .label { font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--muted); }
+  .pat-fullscreen-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .pat-fullscreen-btn:hover .label { color: var(--gold); }
+  .pat-fullscreen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  /* Play tour button — gentle glow pulse when idle to invite a click. */
+  @keyframes pat-play-glow {
+    0%, 100% {
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35),
+                  0 0 0 0 rgba(251, 191, 36, 0.45);
+      border-color: rgba(251, 191, 36, 0.45);
+    }
+    50% {
+      box-shadow: 0 4px 18px rgba(251, 191, 36, 0.35),
+                  0 0 0 9px rgba(251, 191, 36, 0);
+      border-color: rgba(251, 191, 36, 0.85);
+    }
+  }
+  .pat-play-btn:not(.running) {
+    animation: pat-play-glow 2.4s ease-in-out infinite;
+    border-color: rgba(251, 191, 36, 0.45);
+  }
+  .pat-play-btn:not(.running) .icon { color: var(--gold); }
+  .pat-play-btn:not(.running):hover {
+    animation-play-state: paused;
+    border-color: var(--gold);
+  }
+  .pat-play-btn.running {
+    border-color: var(--con); color: var(--con);
+    animation: none;
+  }
+  .pat-play-btn.running .label { color: var(--con); }
+  .pat-play-btn.running:hover { border-color: var(--con); }
+
+  /* Tour progress bar — appears at the bottom during the auto-tour */
+  .pat-tour-progress {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 3px;
+    background: rgba(255, 255, 255, 0.06); z-index: 99;
+    transform-origin: left center; pointer-events: none;
+    display: none;
+  }
+  .pat-tour-progress.active { display: block; }
+  .pat-tour-progress > span {
+    display: block; height: 100%; background: var(--gold);
+    width: 0%; transition: width 200ms linear;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+  }
+
+  /* When the whole document is fullscreen, ensure solid background fills the screen. */
+  html:fullscreen, html:-webkit-full-screen { background: var(--bg); }
+  html:fullscreen body, html:-webkit-full-screen body { background: var(--bg); }
+
+  /* 3-column layout: Diagram | Flows | Steps — everything visible at once */
+  .pat-layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr) minmax(220px, 1fr);
+    gap: 18px; align-items: flex-start; }
+  .pat-diagram { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 22px 24px; position: relative; overflow: visible; min-width: 0; width: 100%; }
+  @media (max-width: 1400px) {
+    .pat-layout { grid-template-columns: minmax(0, 2.4fr) minmax(220px, 1fr) minmax(200px, 1fr); }
+    .pat-diagram { padding: 18px 16px; }
+  }
+  @media (max-width: 1100px) {
+    .pat-layout { grid-template-columns: 1fr 1fr; }
+    .pat-diagram { grid-column: 1 / -1; }
+  }
+  @media (max-width: 720px) {
+    .pat-layout { grid-template-columns: 1fr; }
+    .pat-diagram { grid-column: auto; }
+  }
+  .pat-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 22px;
+    font-size: 11.5px; color: var(--muted); }
+  .pat-legend .item { display: inline-flex; align-items: center; gap: 7px; }
+  .pat-legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  .pat-legend .sw.actor { background: var(--neutral); }
+  .pat-legend .sw.surface { background: var(--ctl-soft); border: 1px solid var(--ctl-border); }
+  .pat-legend .sw.skill { background: var(--gold); }
+  .pat-legend .sw.trias-team { background: var(--trias); }
+  .pat-legend .sw.voice { background: linear-gradient(90deg, var(--gen) 0%, var(--gen) 33%, var(--ctl) 33%, var(--ctl) 66%, var(--con) 66%); }
+  .pat-legend .sw.prompt { background: var(--inset); border: 1px dashed var(--line); }
+  .pat-legend .sw.agg { background: var(--accent); }
+  .pat-legend .sw.gate { background: linear-gradient(90deg, var(--accent) 50%, var(--con) 50%); }
+  .pat-legend .sw.output { background: var(--trias-soft); border: 1px solid var(--trias-border); }
+
+  /* Vertical (top-to-bottom) flow layout. Each row is a stage; nodes within a row flex horizontally. */
+  .pat-grid { display: flex; flex-direction: column; gap: 44px;
+    position: relative; min-height: 0; padding: 4px 0; }
+
+  /* Inline bias mini-bars inside voice nodes */
+  .pat-node-bias { margin-top: 10px; display: flex; flex-direction: column; gap: 6px;
+    padding-top: 10px; border-top: 1px dashed var(--line); }
+  .pnb-row { display: grid; grid-template-columns: 1fr 56px 32px; align-items: center; gap: 8px;
+    font-size: 10.5px; line-height: 1; }
+  .pnb-label { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pnb-bar { height: 5px; background: var(--inset); border-radius: 3px; overflow: hidden;
+    border: 1px solid var(--line); }
+  .pnb-bar > span { display: block; height: 100%; border-radius: 2px; }
+  .pat-node.gen .pnb-bar > span { background: var(--gen); }
+  .pat-node.ctl .pnb-bar > span { background: var(--ctl); }
+  .pat-node.con .pnb-bar > span { background: var(--con); }
+  .pnb-val { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px; color: var(--muted); text-align: right; }
+  .pat-row { display: flex; align-items: stretch; gap: 26px; position: relative; z-index: 2; min-width: 0; }
+  .pat-row-label { flex: 0 0 100px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--muted); text-align: right;
+    padding: 18px 18px 0 0; border-right: 1px solid var(--line); align-self: stretch;
+    display: flex; align-items: flex-start; justify-content: flex-end; }
+  .pat-row-nodes { flex: 1 1 auto; display: flex; gap: 22px; flex-wrap: wrap; align-items: stretch;
+    min-width: 0; }
+  .pat-row-nodes .pat-node { flex: 0 0 auto; min-width: 160px; max-width: 240px; }
+  /* Voices row visually dominant */
+  .pat-row.row-voices .pat-row-nodes { gap: 36px; justify-content: space-between; }
+  .pat-row.row-voices .pat-row-nodes .pat-node { flex: 1 1 0; padding: 14px 16px; font-size: 13px;
+    min-width: 180px; max-width: none; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28); }
+  .pat-row.row-voices .pat-row-label { color: var(--accent-text); border-right-color: var(--accent-border); }
+  /* Voice/Personality set swap: default visible, trias set shown only when active flow is Trias */
+  .pat-row-nodes[data-set="trias"] { display: none; }
+  .pat-diagram[data-flow="trias"] .pat-row-nodes[data-set="default"] { display: none; }
+  .pat-diagram[data-flow="trias"] .pat-row-nodes[data-set="trias"] { display: flex; }
+  .pat-diagram[data-flow="trias"] .pat-row.row-voices .pat-row-label { color: var(--trias-text); border-right-color: var(--trias-border); }
+  .rl-trias { display: none; }
+  .pat-diagram[data-flow="trias"] .rl-default { display: none; }
+  .pat-diagram[data-flow="trias"] .rl-trias { display: inline; }
+  /* Gate node — branches PASS/FAIL based on active flow */
+  .pat-node.gate-node { border-left: 3px solid var(--accent); background: var(--accent-soft);
+    color: var(--accent-text); position: relative; }
+  .pat-node.gate-node::after { content: "PASS ✓"; position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%); font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    color: var(--accent); }
+  .pat-node.gate-node.failing { border-left-color: var(--con); background: var(--con-soft);
+    color: var(--con-text); }
+  .pat-node.gate-node.failing::after { content: "FAIL ✕"; color: var(--con); }
+  /* Output combined node */
+  .pat-node.output-combined { border-left: 3px solid var(--trias); background: var(--card-bg); }
+
+  /* Auxiliary script nodes — smaller, dashed border. Highlight when their mode is active. */
+  .pat-node.aux { background: var(--inset); border: 1px dashed var(--line);
+    border-left: 3px dashed var(--muted); font-size: 12px; padding: 10px 12px;
+    min-width: 150px !important; max-width: 180px !important; opacity: 0.78; }
+  .pat-node.aux .pat-node-sub { font-size: 9.5px; }
+  .pat-node.aux.in-flow { opacity: 1; border-style: solid; border-left-style: solid;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+  .pat-col-label { /* deprecated — replaced by .pat-row-label */ display: none; }
+  .pat-node { background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; font-size: 12px; color: var(--ink); line-height: 1.4;
+    position: relative; transition: all 200ms ease; cursor: default; }
+  .pat-node .pat-node-sub { display: block; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 0.01em; }
+  .pat-node.actor { border-left: 3px solid var(--neutral); }
+  .pat-node.surface { border-left: 3px solid var(--ctl); }
+  .pat-node.skill { border-left: 3px solid var(--gold); background: var(--gold-soft); }
+  .pat-node.gen { border-left: 3px solid var(--gen); background: var(--gen-soft); }
+  .pat-node.ctl { border-left: 3px solid var(--ctl); background: var(--ctl-soft); }
+  .pat-node.con { border-left: 3px solid var(--con); background: var(--con-soft); }
+  .pat-node.trias { border-left: 3px solid var(--trias); background: var(--trias-soft); color: var(--trias-text); }
+  .pat-node.prompt { border-style: dashed; background: transparent; }
+  .pat-node.agg { border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+  .pat-node.gate-pass { border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--accent-text); position: relative; }
+  .pat-node.gate-pass::after { content: "✓"; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--accent); font-weight: 800; font-size: 13px; }
+  .pat-node.gate-fail { border-left: 3px solid var(--con); background: var(--con-soft); color: var(--con-text); position: relative; }
+  .pat-node.gate-fail::after { content: "✕"; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--con); font-weight: 800; font-size: 13px; }
+  .pat-node.output { border-left: 3px solid var(--trias); background: var(--card-bg); }
+  .pat-node.in-flow {
+    box-shadow: 0 0 0 1px var(--gold), 0 0 14px rgba(251, 191, 36, 0.35);
+    border-color: var(--gold);
+    transform: translateY(-1px);
+  }
+  .pat-node.dim { opacity: 0.32; }
+  .pat-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+    z-index: 1; }
+  .pat-line { stroke: var(--line); stroke-width: 1.6; fill: none; opacity: 0.7;
+    transition: stroke 250ms, opacity 250ms, stroke-width 250ms; }
+  .pat-line.in-flow { stroke: var(--gold); stroke-width: 3; opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.35)); }
+  .pat-line.dim { opacity: 0.10; }
+  .pat-arrow-head { fill: var(--line); transition: fill 250ms; }
+  .pat-arrow-head.in-flow { fill: var(--gold); }
+  .pat-arrow-head.dim { opacity: 0.10; }
+
+  .pat-side { display: grid; grid-template-columns: minmax(280px, 1fr) 2fr; gap: 18px;
+    align-items: flex-start; }
+  @media (max-width: 900px) { .pat-side { grid-template-columns: 1fr; } }
+  .pat-flows { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; }
+  .pat-flows h4 { margin: 0 0 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); }
+  .pat-flows .hint { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .pat-flow {
+    display: block; width: 100%; text-align: left;
+    background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 11px; margin-bottom: 6px; cursor: pointer;
+    font: inherit; color: var(--ink); transition: all 150ms ease;
+  }
+  .pat-flow:hover { border-color: var(--gold); background: var(--gold-soft); }
+  .pat-flow.active { background: var(--gold-soft); border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold-border) inset; }
+  .pat-flow .pf-name { font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .pat-flow.active .pf-name { color: var(--gold); }
+  .pat-flow .pf-mode { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--inset);
+    color: var(--muted); border: 1px solid var(--line); text-transform: uppercase; letter-spacing: 0.04em;
+    font-weight: 700; white-space: nowrap; }
+  .pat-flow.active .pf-mode { background: var(--card-bg); border-color: var(--gold-border); color: var(--gold); }
+  .pat-flow .pf-desc { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+
+  .pat-steps { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; }
+  .pat-steps h4 { margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); }
+  .pat-steps ol { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+  .pat-steps li { position: relative; padding: 9px 0 9px 28px; border-bottom: 1px dashed var(--line);
+    counter-increment: step; font-size: 12.5px; line-height: 1.5; }
+  .pat-steps li:last-child { border-bottom: none; }
+  .pat-steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 9px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border);
+    font-size: 10px; font-weight: 700; display: grid; place-items: center;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  .pat-steps li b { color: var(--ink); }
+  .pat-steps li code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; color: var(--gold); }
+
+  /* ============== VOICES — bias profile + Trias weights ============== */
+  .pat-voices { margin-top: 36px; }
+  .pat-voices-header { display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+  .pat-voices-header h3 { margin: 0; font-size: 15px; }
+  .pat-voices-header .lede { color: var(--muted); font-size: 12.5px; max-width: 720px; }
+  .pat-voices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .pat-voice-card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; position: relative;
+    overflow: hidden; }
+  .pat-voice-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px; }
+  .pat-voice-card.gen { background: linear-gradient(180deg, var(--gen-soft) 0%, var(--card-bg) 60%); border-color: var(--gen-border); }
+  .pat-voice-card.gen::before { background: var(--gen); }
+  .pat-voice-card.ctl { background: linear-gradient(180deg, var(--ctl-soft) 0%, var(--card-bg) 60%); border-color: var(--ctl-border); }
+  .pat-voice-card.ctl::before { background: var(--ctl); }
+  .pat-voice-card.con { background: linear-gradient(180deg, var(--con-soft) 0%, var(--card-bg) 60%); border-color: var(--con-border); }
+  .pat-voice-card.con::before { background: var(--con); }
+
+  .pvc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .pvc-name { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .pat-voice-card.gen .pvc-name { color: var(--gen-text); }
+  .pat-voice-card.ctl .pvc-name { color: var(--ctl-text); }
+  .pat-voice-card.con .pvc-name { color: var(--con-text); }
+  .pvc-tag { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    letter-spacing: 0.06em; text-transform: uppercase; }
+  .pat-voice-card.gen .pvc-tag { background: var(--gen-soft); color: var(--gen-text); border: 1px solid var(--gen-border); }
+  .pat-voice-card.ctl .pvc-tag { background: var(--ctl-soft); color: var(--ctl-text); border: 1px solid var(--ctl-border); }
+  .pat-voice-card.con .pvc-tag { background: var(--con-soft); color: var(--con-text); border: 1px solid var(--con-border); }
+  .pvc-tagline { font-size: 12.5px; color: var(--ink); font-style: italic; opacity: 0.85;
+    border-left: 2px solid var(--line); padding-left: 10px; }
+  .pvc-section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .pvc-bars { display: flex; flex-direction: column; gap: 7px; }
+  .pvc-bar-row { display: grid; grid-template-columns: 1fr 100px 36px; align-items: center;
+    gap: 10px; font-size: 12px; }
+  .pvc-bar-label { color: var(--ink); }
+  .pvc-bar-track { height: 6px; background: var(--inset); border-radius: 4px; overflow: hidden;
+    border: 1px solid var(--line); }
+  .pvc-bar-fill { height: 100%; border-radius: 3px; }
+  .pat-voice-card.gen .pvc-bar-fill { background: var(--gen); }
+  .pat-voice-card.ctl .pvc-bar-fill { background: var(--ctl); }
+  .pat-voice-card.con .pvc-bar-fill { background: var(--con); }
+  .pvc-bar-val { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); text-align: right; }
+  .pvc-cant { font-size: 11.5px; color: var(--muted); background: var(--inset);
+    padding: 8px 10px; border-radius: 6px; border-left: 2px solid var(--line); }
+  .pvc-cant b { color: var(--ink); }
+
+  /* Trias deep-dive — 3 × 3 sub-agent matrix */
+  .pat-trias-deep { margin-top: 32px; }
+  .pat-trias-deep .pat-trias-header { border-top: 1px solid var(--line); padding-top: 28px; }
+  .pat-tdd-frame { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 24px; }
+  .pat-tdd-orch { display: flex; justify-content: center; margin-bottom: 18px; }
+  .pat-tdd-orch .box { background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 16px; font-size: 12.5px; color: var(--ink); display: inline-flex;
+    align-items: center; gap: 8px; }
+  .pat-tdd-orch .box::before { content: ""; display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--trias); box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.18); }
+  .pat-tdd-arrows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-bottom: 14px; }
+  .pat-tdd-arrow { text-align: center; color: var(--trias); font-size: 18px; line-height: 1; }
+  .pat-tdd-arrow-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .pat-tdd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .pat-tdd-personality { background: var(--inset); border: 1px solid var(--trias-border);
+    border-radius: 10px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .pat-tdd-personality .ptd-head { display: flex; align-items: baseline; justify-content: space-between;
+    gap: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+  .pat-tdd-personality .ptd-name { font-size: 13.5px; font-weight: 700; color: var(--trias-text); }
+  .pat-tdd-personality .ptd-w { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; color: var(--muted); }
+  .pat-tdd-voices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .pat-tdd-voice { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line);
+    text-align: center; font-size: 11px; line-height: 1.2; }
+  .pat-tdd-voice .vl { font-size: 9px; color: var(--muted); display: block; margin-bottom: 1px;
+    letter-spacing: 0.05em; text-transform: uppercase; }
+  .pat-tdd-voice.gen { background: var(--gen-soft); border-color: var(--gen-border); color: var(--gen-text); }
+  .pat-tdd-voice.ctl { background: var(--ctl-soft); border-color: var(--ctl-border); color: var(--ctl-text); }
+  .pat-tdd-voice.con { background: var(--con-soft); border-color: var(--con-border); color: var(--con-text); }
+  .pat-tdd-vote { font-size: 10.5px; color: var(--muted); text-align: center; padding-top: 6px;
+    border-top: 1px dashed var(--line); }
+  .pat-tdd-vote b { color: var(--ink); }
+  .pat-tdd-converge { text-align: center; color: var(--muted); font-size: 14px; line-height: 1;
+    margin: 14px 0 8px; }
+  .pat-tdd-vote-box { display: flex; justify-content: center; gap: 14px; align-items: center; }
+  .pat-tdd-vote-box .vbox { background: var(--accent-soft); border: 1px solid var(--accent-border);
+    color: var(--accent-text); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; }
+  .pat-tdd-vote-box .arrow { color: var(--muted); font-size: 14px; }
+  .pat-tdd-vote-box .chosen { background: var(--gold-soft); border-color: var(--gold-border);
+    color: var(--gold); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; }
+  .pat-tdd-counter { text-align: center; margin-top: 14px; font-size: 11px; color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .pat-tdd-counter b { color: var(--trias-text); font-size: 14px; padding: 0 4px; }
+
+  @media (max-width: 900px) {
+    .pat-tdd-grid, .pat-tdd-arrows { grid-template-columns: 1fr; }
+  }
+
+  /* Trias team */
+  .pat-trias-section { margin-top: 32px; }
+  .pat-trias-header { display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--line);
+    padding-top: 28px; }
+  .pat-trias-header h3 { margin: 0; font-size: 15px; color: var(--trias-text); }
+  .pat-trias-header .lede { color: var(--muted); font-size: 12.5px; max-width: 720px; }
+  .pat-trias-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .pat-trias-card { background: var(--card-bg); border: 1px solid var(--trias-border);
+    border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;
+    position: relative; overflow: hidden; }
+  .pat-trias-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: var(--trias); }
+  .ptc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .ptc-name { font-size: 15px; font-weight: 700; color: var(--trias-text); letter-spacing: -0.01em; }
+  .ptc-lens { font-size: 10.5px; color: var(--muted); font-style: italic; }
+  .ptc-bars { display: flex; flex-direction: column; gap: 8px; }
+  .ptc-row { display: grid; grid-template-columns: 100px 1fr 40px; align-items: center; gap: 12px;
+    font-size: 12px; }
+  .ptc-letter { font-size: 11.5px; font-weight: 700; text-align: center; padding: 3px 6px;
+    border-radius: 4px; letter-spacing: 0.01em; }
+  .ptc-letter.g { background: var(--gen-soft); color: var(--gen-text); border: 1px solid var(--gen-border); }
+  .ptc-letter.c { background: var(--ctl-soft); color: var(--ctl-text); border: 1px solid var(--ctl-border); }
+  .ptc-letter.k { background: var(--con-soft); color: var(--con-text); border: 1px solid var(--con-border); }
+  .ptc-track { height: 8px; background: var(--inset); border-radius: 4px; overflow: hidden;
+    border: 1px solid var(--line); position: relative; }
+  .ptc-fill { height: 100%; border-radius: 3px; }
+  .ptc-fill.g { background: var(--gen); }
+  .ptc-fill.c { background: var(--ctl); }
+  .ptc-fill.k { background: var(--con); }
+  .ptc-val { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); text-align: right; }
+  .ptc-note { font-size: 11.5px; color: var(--muted); border-top: 1px dashed var(--line);
+    padding-top: 8px; }
+  .ptc-note b { color: var(--ink); }
+
+  @media (max-width: 900px) {
+    .pat-voices-grid, .pat-trias-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 820px) {
+    .pat-row { flex-direction: column; gap: 14px; }
+    .pat-row-label { flex: 0 0 auto; text-align: left; border-right: none;
+      border-bottom: 1px solid var(--line); padding: 0 0 8px; }
+    .pat-row-nodes { gap: 14px; }
+    .pat-grid { gap: 40px; }
+  }
+  @media (max-width: 600px) {
+    .pat-row-nodes .pat-node { min-width: 100%; }
+    .pat-svg { display: none; }
+  }
+
+  /* Calibration loop standalone sub-diagram */
+  .pat-cal-section { margin-top: 32px; }
+  .pat-cal-section .pat-trias-header { border-top: 1px solid var(--line); padding-top: 28px; }
+  .pat-cal-section .pat-trias-header h3 { color: var(--gold); }
+  .pat-cal-frame { background: var(--card-bg); border: 1px solid var(--gold-border);
+    border-radius: 12px; padding: 22px 24px; position: relative; }
+  .pat-cal-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: stretch;
+    position: relative; }
+  .pat-cal-node { background: var(--gold-soft); border: 1px dashed var(--gold-border);
+    border-radius: 8px; padding: 12px 14px; font-size: 12.5px; color: var(--ink);
+    display: flex; flex-direction: column; gap: 4px; position: relative; }
+  .pat-cal-node b { color: var(--gold); font-size: 13px; font-weight: 700; }
+  .pat-cal-node .sub { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; color: var(--muted); }
+  .pat-cal-arrow { position: absolute; top: 50%; transform: translateY(-50%);
+    color: var(--gold); font-size: 18px; line-height: 1; z-index: 1; pointer-events: none; }
+  .pat-cal-loop { margin-top: 20px; padding: 14px 16px; background: var(--inset);
+    border-radius: 8px; border-left: 3px solid var(--gold); font-size: 12.5px; color: var(--ink);
+    display: flex; align-items: center; gap: 14px; }
+  .pat-cal-loop .loop-icon { font-size: 20px; color: var(--gold); flex-shrink: 0; }
+  .pat-cal-loop b { color: var(--gold); }
+
+  @media (max-width: 720px) {
+    .pat-cal-row { grid-template-columns: 1fr; }
+    .pat-cal-arrow { display: none; }
+  }
+
+  /* ============== MEMORY ============== */
+  .mem-intro { background: var(--inset); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px 22px; margin-bottom: 24px; }
+  .mem-intro-grid { display: grid; grid-template-columns: 1fr 380px; gap: 22px; align-items: center; }
+  .mem-intro h3 { margin: 0 0 8px; font-size: 16px; }
+  .mem-intro p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.55; }
+  .mem-intro p.lede { font-size: 14.5px; color: var(--ink); }
+  .mem-intro p.lede b { color: var(--gold); }
+  .mem-intro p.why { color: var(--muted); font-size: 12.5px; margin-top: 6px; margin-bottom: 0; }
+  .mem-intro svg { width: 100%; height: auto; }
+
+  .tiers { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); margin-bottom: 28px; }
+  .tier { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .tier .top { display: flex; align-items: baseline; justify-content: space-between; }
+  .tier h3 { margin: 0; font-size: 17px; }
+  .tier .tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.06em; }
+  .tier.short { border-top: 3px solid var(--accent); }
+  .tier.short .tag { background: var(--accent-soft); color: var(--accent-text); }
+  .tier.short h3 { color: var(--accent-text); }
+  .tier.medium { border-top: 3px solid var(--ctl); }
+  .tier.medium .tag { background: var(--ctl-soft); color: var(--ctl-text); }
+  .tier.medium h3 { color: var(--ctl-text); }
+  .tier.long { border-top: 3px solid var(--gold); }
+  .tier.long .tag { background: var(--gold-soft); color: var(--gold); }
+  .tier.long h3 { color: var(--gold); }
+  .tier .meta { font-size: 11.5px; color: var(--muted); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    background: var(--inset); border: 1px dashed var(--line); border-radius: 6px;
+    padding: 6px 8px; display: grid; grid-template-columns: 80px 1fr; gap: 4px 10px; }
+  .tier .meta b { color: var(--ink); font-weight: 600; }
+  .tier ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
+  .tier ul li { margin-bottom: 4px; }
+  .tier .reads { background: var(--inset); border-left: 3px solid var(--line);
+    padding: 8px 10px; font-size: 12px; color: var(--muted); border-radius: 4px; }
+  .tier .reads b { color: var(--ink); }
+  .tier .reads code { color: var(--ink); }
+
+  .signals-table { width: 100%; border-collapse: collapse; font-size: 12.5px;
+    background: var(--inset); border-radius: 6px; overflow: hidden; }
+  .signals-table thead th { background: var(--card-bg); color: var(--muted);
+    font-weight: 600; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+  .signals-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line);
+    vertical-align: top; line-height: 1.5; }
+  .signals-table tbody tr:last-child td { border-bottom: none; }
+  .signals-table tbody td:first-child { width: 28%; color: var(--ink); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; }
+  .signals-table tbody td:nth-child(2) { width: 42%; color: var(--muted); }
+  .signals-table tbody td:nth-child(3) { width: 30%; color: var(--ink); }
+  .signals-table .pill { display: inline-block; padding: 1px 7px; border-radius: 3px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em; }
+  .signals-table .pill.block { background: var(--con-soft); color: var(--con-text); border: 1px solid var(--con-border); }
+  .signals-table .pill.alert { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border); }
+  .signals-table .pill.advice { background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--accent-border); }
+
+  .mem-cli { background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 16px; margin: 12px 0; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; line-height: 1.6; color: var(--ink); overflow-x: auto; }
+  .mem-cli .c { color: var(--muted); }
+  .mem-cli .k { color: var(--gold); }
+
+  .mem-confirmed { background: var(--accent-soft); border: 1px solid var(--accent-border);
+    border-radius: 10px; padding: 16px 20px; margin-top: 24px; }
+  .mem-confirmed h3 { margin: 0 0 8px; font-size: 14px; color: var(--accent-text); }
+  .mem-confirmed p { font-size: 13px; margin: 0 0 8px; color: var(--ink); line-height: 1.55; }
+  .mem-confirmed code { color: var(--accent-text); }
+  .mem-confirmed .marker { display: inline-block; padding: 1px 6px; background: var(--accent);
+    color: #0f1419; border-radius: 3px; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.05em; font-family: ui-monospace, monospace; }
+
+  @media (max-width: 900px) {
+    .mem-intro-grid { grid-template-columns: 1fr; }
+    .tiers { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>consilium</h1>
+  <h1>Consilium</h1>
   <div class="sub">Pattern de deliberare multi-perspectivă pentru evaluarea schimbărilor de cod</div>
 </header>
 
+<div class="start-banner" id="startBanner">
+  Începe cu <b>Architecture</b>, apoi <b>Flow</b> — fiecare tab construiește pe cel anterior.
+  <button class="banner-dismiss" onclick="document.getElementById('startBanner').classList.add('hidden'); sessionStorage.setItem('consiliumBannerDone','1');">Închide ×</button>
+</div>
+
 <nav class="tabs" role="tablist">
-  <button class="active" data-tab="architecture">Architecture</button>
-  <button data-tab="flow">Flow</button>
-  <button data-tab="modes">Modes</button>
+  <button class="active" data-tab="architecture"><span>Architecture</span><span class="tab-sub">ce e și cele 3 voci</span></button>
+  <button data-tab="flow"><span>Flow</span><span class="tab-sub">deliberarea pas cu pas</span></button>
+  <button data-tab="modes"><span>Modes</span><span class="tab-sub">parallel, dialectic, trias, skeptic</span></button>
+  <button data-tab="memory"><span>Memory</span><span class="tab-sub">3 tiers + calibration loop</span></button>
+  <button data-tab="patterns"><span>Patterns</span><span class="tab-sub">demo interactiv de fluxuri</span></button>
 </nav>
 
 <main>
@@ -427,7 +963,7 @@
           <h3>Ce este Consilium?</h3>
           <p class="lede">Un <b>pattern de deliberare</b> care evaluează schimbări de cod prin trei voci paralele cu roluri separate (<b>Generator</b> / <b>Control</b> / <b>Conservator</b>), agregă voturile printr-o schemă cu veto, și produce o decizie + un report canonic.</p>
           <p>Ideea de bază: nu te bazezi pe o singură perspectivă pentru o schimbare riscantă. Fiecare voce e împiedicată prin prompt să facă jobul celorlalți — <i>separation of powers</i> implementată prin context stripping (Sequential — Blind) sau sub-agenți independenți (Parallel / Dialectic).</p>
-          <p class="why">Folosit pentru refactor mare, migrări DB, security, sau orice schimbare unde vrei un "second opinion" structurat înainte de merge. Output-ul ajunge ca JSON canonic în <code>runs/</code> și ca linie în <code>FEEDBACK.md</code> pentru calibrare viitoare.</p>
+          <p class="why">Folosit pentru refactor mare, migrări DB, security, sau orice schimbare unde vrei un "second opinion" structurat înainte de merge. Output-ul ajunge ca JSON canonic în <code>runs/</code> și ca linie în <code>FEEDBACK.html</code> pentru calibrare viitoare.</p>
         </div>
         <svg viewBox="0 0 380 180" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="diff in, three voices, aggregator, winner out">
           <rect x="8" y="70" width="60" height="40" rx="6" fill="#11151c" stroke="#2d3441"/>
@@ -598,6 +1134,51 @@
       </div>
     </div>
 
+    <div class="agg" style="margin-top:24px;">
+      <h3>Memory tiers</h3>
+      <div style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">
+        Consilium are 3 layere de memorie cu lifecycle diferit. <code>scripts/memory.py</code> oferă un read API uniform peste toate trei.
+      </div>
+      <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+        <thead><tr style="border-bottom:1px solid var(--line);">
+          <th style="padding:6px 10px; text-align:left; color:var(--muted); font-weight:500; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;">Tier</th>
+          <th style="padding:6px 10px; text-align:left; color:var(--muted); font-weight:500; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;">Locație</th>
+          <th style="padding:6px 10px; text-align:left; color:var(--muted); font-weight:500; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;">Lifetime</th>
+          <th style="padding:6px 10px; text-align:left; color:var(--muted); font-weight:500; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;">Conținut</th>
+          <th style="padding:6px 10px; text-align:left; color:var(--muted); font-weight:500; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;">Citit de</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--line);">
+            <td style="padding:8px 10px;"><b>Short</b></td>
+            <td style="padding:8px 10px; color:var(--muted);">conversation window</td>
+            <td style="padding:8px 10px; color:var(--muted);">sesiune</td>
+            <td style="padding:8px 10px; color:var(--muted);">bundle în construcție, clarity gate</td>
+            <td style="padding:8px 10px; color:var(--muted);">doar agent</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line);">
+            <td style="padding:8px 10px;"><b>Medium</b></td>
+            <td style="padding:8px 10px; color:var(--muted);"><code>runs/*.json</code></td>
+            <td style="padding:8px 10px; color:var(--muted);">indefinit (gitignored)</td>
+            <td style="padding:8px 10px; color:var(--muted);">un fișier per deliberare; episodic</td>
+            <td style="padding:8px 10px; color:var(--muted);"><code>priors.py</code>, <code>usage.py</code>, <code>memory.py</code>, <code>audit_feedback.py</code></td>
+          </tr>
+          <tr>
+            <td style="padding:8px 10px;"><b>Long</b></td>
+            <td style="padding:8px 10px; color:var(--muted);"><code>FEEDBACK.html</code> + signals din <code>priors.py</code></td>
+            <td style="padding:8px 10px; color:var(--muted);">indefinit</td>
+            <td style="padding:8px 10px; color:var(--muted);">un rând per folosire; agregat</td>
+            <td style="padding:8px 10px; color:var(--muted);"><code>priors.py</code>, <code>feedback.py</code>, <code>memory.py</code>, <code>mark_outcome.py</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px; font-size:12.5px; color:var(--muted);">
+        CLI uniform pentru citire peste toate tiers:
+        <pre style="background:var(--inset); border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin:8px 0 0; font-size:11.5px; line-height:1.5; overflow-x:auto;"><code>python scripts/memory.py --tier medium --n 5             # ultimele 5 runs
+python scripts/memory.py --tier long --query auth        # substring filter pe FEEDBACK.html
+python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</code></pre>
+      </div>
+    </div>
+
     <div style="margin-top:24px; padding:16px; background:var(--inset); border:1px solid var(--line); border-radius:6px;">
   <h3 style="margin:0 0 12px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;">Shared Utilities — <code>scripts/utils.py</code></h3>
   <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
@@ -619,7 +1200,7 @@
   <!-- ============== TAB 2 ============== -->
   <section class="tab" id="flow">
 
-    <h2>Pașii 0 → 6 (cu aux 1.5 + 5b)</h2>
+    <h2>Pașii 0 → 6 (cu aux 1.5, 5b, 5c, 5d)</h2>
     <div class="flow">
       <div class="step aux">
         <div class="n">STEP 0</div>
@@ -671,6 +1252,21 @@
         <div><code>build_report.py</code> + <code>validate_report.py</code> + <code>log_feedback.py</code>.</div>
         <div style="font-size:12px; color:var(--accent); margin-top:4px;">✓ Input validat prin <code>validate_input()</code> — exit 1 cu câmp lipsă specificat.</div>
         <div class="io">out: canonical JSON</div>
+      </div>
+    </div>
+
+    <div class="flow" style="grid-template-columns: repeat(2, 1fr); margin-top: 14px;">
+      <div class="step aux">
+        <div class="n">STEP 5c</div>
+        <h4>Meta-critic <span class="sub" style="margin-left:6px;">advisory</span></h4>
+        <div><code>scripts/meta_critic.py</code> scorează <b>calitatea deliberării</b> (nu corectitudinea alegerii): <code>generator_divergence</code> (paraphrasing?), <code>control_concreteness</code> (speculation?), <code>conservator_spread</code> (shrug?). Emite <code>deliberation_quality.flags</code>. Non-blocking, dar flags trebuie menționate în <code>reasoning</code>.</div>
+        <div class="io">out: deliberation_quality</div>
+      </div>
+      <div class="step aux">
+        <div class="n">STEP 5d</div>
+        <h4>Retry on low confidence <span class="sub" style="margin-left:6px;">single pass</span></h4>
+        <div>Dacă <code>confidence &lt; 0.7</code>: rulează <code>scripts/retry_context.py</code> → top-2 candidați cu fișiere/simboluri de citit/grepat. Gather context (Read + Grep) → re-rulează G/C/Cons <b>o singură dată</b> cu input îmbogățit. Dacă confidence încă <code>&lt; 0.7</code>, abia atunci întrebi utilizatorul.</div>
+        <div class="io">out: refreshed bundle | escalate</div>
       </div>
     </div>
 
@@ -769,11 +1365,17 @@
         <div class="col empty"></div>
         <div class="col empty"></div>
         <div class="col empty"></div>
-        <div class="col empty"></div>
-        <div class="col empty"></div>
         <div class="col">
           <code>confidence.py</code>
           <div class="opt">step 5b — variance + separation</div>
+        </div>
+        <div class="col alt">
+          <code>meta_critic.py</code>
+          <div class="opt">step 5c — quality flags</div>
+        </div>
+        <div class="col alt">
+          <code>retry_context.py</code>
+          <div class="opt">step 5d — single-retry hints</div>
         </div>
         <div class="col">
           <code>validate_report.py</code>
@@ -781,7 +1383,7 @@
         </div>
       </div>
       <div class="rail-maint">
-        <h4>Maintenance & extra-pipeline scripts</h4>
+        <h4>Maintenance &amp; extra-pipeline scripts</h4>
         <div class="maint-grid">
           <div class="col">
             <code>dialectic_merge.py</code>
@@ -789,7 +1391,27 @@
           </div>
           <div class="col">
             <code>log_feedback.py</code>
-            <div class="opt">step 6 — append outcome (OK auto / OVR / PEND) la FEEDBACK.md</div>
+            <div class="opt">step 6 — append outcome (OK auto / OVR / PEND) la FEEDBACK.html</div>
+          </div>
+          <div class="col">
+            <code>mark_outcome.py</code>
+            <div class="opt">post step 6 — outcome retroactiv cu marker <code>[confirmed]</code> (pondere 2× în priors)</div>
+          </div>
+          <div class="col">
+            <code>audit_feedback.py</code>
+            <div class="opt">maintenance — listează / backfill runs orfane fără rând FB</div>
+          </div>
+          <div class="col">
+            <code>memory.py</code>
+            <div class="opt">read API uniform peste 3 tiers (short/medium/long)</div>
+          </div>
+          <div class="col">
+            <code>render_feedback_html.py</code>
+            <div class="opt">FEEDBACK.html rendering</div>
+          </div>
+          <div class="col">
+            <code>migrate_feedback_md_to_html.py</code>
+            <div class="opt">migrare bulk MD → HTML (re-populare drill-down)</div>
           </div>
           <div class="col">
             <code>run_evals.py</code>
@@ -801,19 +1423,22 @@
           </div>
           <div class="col">
             <code>feedback.py</code>
-            <div class="opt">audit FEEDBACK.md (stats + recent)</div>
+            <div class="opt">audit FEEDBACK.html (stats + recent)</div>
           </div>
-          <div class="col" style="grid-column: 1 / 2;">
+          <div class="col">
             <code>personalities.py</code>
             <div class="opt">trias mode — 3 personalități fixe (Pioneer / Architect / Steward)</div>
           </div>
+        </div>
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 11.5px; color: var(--muted);">
+          <b style="color: var(--ink);">Prompts:</b> <code>prompts/generator.md</code>, <code>prompts/control.md</code>, <code>prompts/conservator.md</code> (cele 3 voci); <code>prompts/{pioneer,architect,steward}_lens.md</code> (Trias); <code>prompts/{generator,control,conservator}_pass2.md</code> (Dialectic pass 2); <code>prompts/skeptic.md</code> — voce focală pentru <code>parallel_skeptic</code> și <code>dialectic_skeptic</code>.
         </div>
       </div>
     </div>
 
     <div class="decision">
       <h3>Step 5b + 6 — confidence gate decision tree</h3>
-      <div class="lede">Cum se decide outcome-ul scris în <code>FEEDBACK.md</code> după aggregator. <code>scripts/confidence.py</code> derivă scorul; <code>scripts/log_feedback.py</code> îl gate-uiește pe 0.7.</div>
+      <div class="lede">Cum se decide outcome-ul scris în <code>FEEDBACK.html</code> după aggregator. <code>scripts/confidence.py</code> derivă scorul; <code>scripts/log_feedback.py</code> îl gate-uiește pe 0.7.</div>
       <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Confidence gate decision tree">
         <rect x="270" y="10" width="180" height="36" rx="6" fill="#11151c" stroke="#2d3441"/>
         <text x="360" y="33" text-anchor="middle" fill="#e5e7eb" font-size="12">report + confidence</text>
@@ -869,6 +1494,8 @@
         <code>PEND</code>, închis retroactiv prin <code>stale_pendings</code>), iar
         <code>--outcome BAD</code> e setat manual ulterior când vrea să marcheze o decizie
         ca eșuată.
+        <br><br>
+        <b style="color: var(--ink);">Update recent:</b> <code>priors.py STALE_PEND_DAYS</code> a scăzut de la 7 → 2 (retro-close mai agresiv). În plus, <code>scripts/mark_outcome.py --run-path runs/&lt;f&gt;.json --outcome OK|BAD --reason "…"</code> adaugă marker <code>[confirmed]</code> în note — <code>priors.py</code> ponderează aceste rânduri <b>2×</b> în <code>weighted_bad_rate</code> față de feedback-ul subiectiv din Step 6.
       </div>
     </div>
 
@@ -886,7 +1513,7 @@
         <text x="192" y="146" text-anchor="middle" fill="#6ee7b7" font-size="9">report + outcome</text>
 
         <rect x="224" y="100" width="160" height="60" rx="8" fill="#2a2410" stroke="#5c4a14"/>
-        <text x="304" y="120" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600">FEEDBACK.md</text>
+        <text x="304" y="120" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600">FEEDBACK.html</text>
         <text x="304" y="138" text-anchor="middle" fill="#fbbf24" font-size="10">+ runs/&lt;file&gt;.json</text>
         <text x="304" y="152" text-anchor="middle" fill="#fbbf24" font-size="9">OK / OVR / PEND / BAD</text>
 
@@ -897,28 +1524,34 @@
 
         <rect x="444" y="100" width="150" height="60" rx="8" fill="#182338" stroke="#2a3f5f"/>
         <text x="519" y="120" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">priors.py</text>
-        <text x="519" y="138" text-anchor="middle" fill="#93c5fd" font-size="9">override_rate, veto_rate,</text>
-        <text x="519" y="152" text-anchor="middle" fill="#93c5fd" font-size="9">top keywords, stale_pendings</text>
+        <text x="519" y="138" text-anchor="middle" fill="#93c5fd" font-size="9">weighted_bad_rate, override_rate,</text>
+        <text x="519" y="152" text-anchor="middle" fill="#93c5fd" font-size="9">missing_feedback_runs, pend_pressure</text>
 
         <path d="M 519 100 Q 519 30 89 30 Q 89 30 89 100" stroke="#34d399" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
         <polygon points="85,95 89,102 93,95" fill="#34d399"/>
-        <text x="304" y="22" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="600">soft priors injected at step 0 (bootstrap)</text>
+        <text x="304" y="22" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="600">soft priors injectați la step 0 (bootstrap)</text>
 
         <line x1="304" y1="160" x2="304" y2="194" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3,2"/>
         <polygon points="300,189 304,196 308,189" fill="#fbbf24"/>
         <rect x="180" y="200" width="248" height="44" rx="6" fill="#2a2410" stroke="#5c4a14"/>
-        <text x="304" y="218" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600">stale_pendings (PEND mai vechi de 7 zile)</text>
+        <text x="304" y="218" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600">stale_pendings (PEND mai vechi de 2 zile)</text>
         <text x="304" y="234" text-anchor="middle" fill="#fbbf24" font-size="9">prezentate user-ului înainte de step 1 pentru retro-close</text>
       </svg>
       <div class="narrative">
         <b>Loop-ul în cuvinte</b>: la finalul fiecărei deliberări, <code>build_report.py</code>
         asamblează raportul canonic, <code>validate_report.py</code> verifică Principle #4
         (shape + telemetry.mode + deliberation_log), iar <code>log_feedback.py</code>
-        appendează o linie în <code>FEEDBACK.md</code> conform tree-ului de mai sus.
+        appendează un rând în <code>FEEDBACK.html</code> conform tree-ului de mai sus.
         La începutul rulării următoare, <code>priors.py</code> citește <code>runs/</code>
-        + <code>FEEDBACK.md</code> și calculează priorii soft pe care agentul îi injectează
-        în prompts — astfel skill-ul își calibrează singur intuiția de risc/override pe baza
-        istoricului real, nu doar a defaults-urilor.
+        + <code>FEEDBACK.html</code> și calculează priorii soft pe care agentul îi injectează
+        în prompts: <code>weighted_bad_rate</code> (ponderează 2× rândurile cu marker
+        <code>[confirmed]</code>), <code>missing_feedback_runs</code> (runs orfane fără rând FB —
+        rezolvate cu <code>audit_feedback.py --backfill</code>),
+        <code>stale_pendings</code> (PEND-uri mai vechi de <b>2 zile</b>) și alerta soft
+        <code>pend_pressure &gt; 0.3</code> (raportul PEND în ultimele 20 entries).
+        În plus, <code>mark_outcome.py</code> permite confirmare retroactivă a deciziei —
+        suprascrie outcome-ul subiectiv cu evidență din producție. Astfel skill-ul își calibrează
+        singur intuiția de risc/override pe baza istoricului real, nu doar a defaults-urilor.
       </div>
     </div>
 
@@ -927,7 +1560,7 @@
   <!-- ============== TAB 3 ============== -->
   <section class="tab" id="modes">
 
-    <h2>Flow models — 6 moduri (5 active + 1 SPEC)</h2>
+    <h2>Flow models — 9 moduri (8 active + 1 SPEC)</h2>
     <div class="modes">
 
       <div class="mode sequential-blind">
@@ -993,17 +1626,17 @@
             </tr></thead>
             <tbody>
               <tr style="border-bottom:1px solid var(--line);">
-                <td style="padding:5px 10px;"><code>haiku</code></td>
+                <td style="padding:5px 10px;"><code>haiku 4.5</code></td>
                 <td style="padding:5px 10px; letter-spacing:2px; color:var(--accent);">●●○○○ <span style="color:var(--muted); letter-spacing:0; font-size:11px;">1/5</span></td>
-                <td style="padding:5px 10px; color:var(--muted);">Control / Conservator — diff-uri mici</td>
+                <td style="padding:5px 10px; color:var(--muted);">Control / Conservator — diff-uri mici (și în <code>trias_split</code>)</td>
               </tr>
               <tr style="border-bottom:1px solid var(--line);">
-                <td style="padding:5px 10px;"><code>sonnet</code> <span style="font-size:10px; color:var(--accent);">default</span></td>
+                <td style="padding:5px 10px;"><code>sonnet 4.6</code> <span style="font-size:10px; color:var(--accent);">default</span></td>
                 <td style="padding:5px 10px; letter-spacing:2px; color:var(--accent);">●●●○○ <span style="color:var(--muted); letter-spacing:0; font-size:11px;">3/5</span></td>
                 <td style="padding:5px 10px; color:var(--muted);">Toate 3 vocile — uz general</td>
               </tr>
               <tr>
-                <td style="padding:5px 10px;"><code>opus</code></td>
+                <td style="padding:5px 10px;"><code>opus 4.7</code></td>
                 <td style="padding:5px 10px; letter-spacing:2px; color:var(--gold);">●●●●● <span style="color:var(--muted); letter-spacing:0; font-size:11px;">5/5</span></td>
                 <td style="padding:5px 10px; color:var(--muted);">Generator — high-stakes / ambigue</td>
               </tr>
@@ -1239,6 +1872,120 @@
         </div>
       </div>
 
+      <div class="mode parallel">
+        <h3>Parallel + Skeptic <span class="mode-badge opt">OPT-IN</span></h3>
+        <div class="subtitle">Parallel standard + o voce focală <b>Skeptic</b> care provoacă <code>chosen</code> când confidence ∈ [0.5, 0.7].</div>
+
+        <div class="stage">
+          <div class="label">cum — extinde Parallel cu un sub-agent focal</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ Parallel normal (1 + 2 sub-agenți)</div>
+          <span class="actor gen">Generator</span>
+          <span class="actor ctl">Control</span>
+          <span class="actor con">Conservator</span>
+          <div class="arrow-down">↓ aggregator → chosen (confidence ∈ [0.5, 0.7])</div>
+          <span class="actor" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);">Skeptic (sub-agent focal · prompts/skeptic.md)</span>
+          <div class="ok">
+            ✓ Skeptic primește <b>doar</b> <code>chosen</code> și <code>success_criterion</code> — fără
+            celelalte candidates, fără voturile celorlalte voci. Provocare „blind" pe alegere, nu pe set.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> confidence e marginal (zona [0.5, 0.7]) și vrei un al doilea opinion focal
+          înainte de prompt-ul către utilizator. Nu schimbă topology-ul vocilor de bază —
+          adaugă o singură rundă focală peste Parallel.
+          <br><b>Cost:</b> 1.33× Parallel (4 sub-agenți total).
+        </div>
+      </div>
+
+      <div class="mode dialectic">
+        <h3>Dialectic + Skeptic <span class="mode-badge opt">OPT-IN</span></h3>
+        <div class="subtitle">Dialectic two-pass + voce focală <b>Skeptic</b> peste <code>chosen</code> final, după pass 2.</div>
+
+        <div class="stage">
+          <div class="label">cum — extinde Dialectic two-pass cu un sub-agent focal</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ Dialectic normal (pass 1 paralel + pass 2 cu cross-context)</div>
+          <div class="parallel-row">
+            <div class="parallel-col"><span class="actor gen">Gen rev.</span></div>
+            <div class="parallel-col"><span class="actor ctl">Ctrl rev.</span></div>
+            <div class="parallel-col"><span class="actor con">Cons rev.</span></div>
+          </div>
+          <div class="arrow-down">↓ aggregator → chosen</div>
+          <span class="actor" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);">Skeptic (sub-agent focal · prompts/skeptic.md)</span>
+          <div class="ok">
+            ✓ Skeptic vede doar <code>chosen</code> + <code>success_criterion</code> — provocare focală
+            după ce vocile au convergit prin pass 2. Util când Conservator-ul a flag-uit ceva în
+            pass 1 dar pass 2 a relaxat.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> decizii high-stakes unde vrei <i>și</i> revizuirea cross-context (Dialectic)
+          <i>și</i> challenge focal post-convergență (Skeptic) pe alegerea finală.
+          <br><b>Cost:</b> 1.14× Dialectic (7 sub-agenți total: 6 Dialectic + 1 Skeptic).
+        </div>
+      </div>
+
+      <div class="mode trias" style="grid-column: 1 / -1; border-top-color: var(--ctl);">
+        <h3>Trias split-model <span class="mode-badge advanced">ADVANCED</span></h3>
+        <div class="subtitle">Trias normal, dar cu <b>split de model pe voci</b>: Generator pe <code>opus 4.7</code>, Control + Conservator pe <code>haiku 4.5</code>. Reduce costul fără să sacrifice calitatea creativă.</div>
+
+        <div class="stage">
+          <div class="label">cum — Trias cu model split per voce, în fiecare personalitate</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ 3 dispatches paralele (Pioneer / Architect / Steward), fiecare orchestrând Parallel intern cu model-uri mixte</div>
+          <div class="parallel-row">
+            <div class="parallel-col">
+              <div class="trias-personality-block">
+                <span class="actor trias">Pioneer</span>
+                <div class="trias-weights">G=0.49 · C=0.30 · K=0.21</div>
+                <div class="voice-row">
+                  <span class="actor gen">Gen <small>opus 4.7</small></span>
+                  <span class="actor ctl">Ctrl <small>haiku 4.5</small></span>
+                  <span class="actor con">Cons <small>haiku 4.5</small></span>
+                </div>
+              </div>
+            </div>
+            <div class="parallel-col">
+              <div class="trias-personality-block">
+                <span class="actor trias">Architect</span>
+                <div class="trias-weights">G=0.30 · C=0.49 · K=0.21</div>
+                <div class="voice-row">
+                  <span class="actor gen">Gen <small>opus 4.7</small></span>
+                  <span class="actor ctl">Ctrl <small>haiku 4.5</small></span>
+                  <span class="actor con">Cons <small>haiku 4.5</small></span>
+                </div>
+              </div>
+            </div>
+            <div class="parallel-col">
+              <div class="trias-personality-block">
+                <span class="actor trias">Steward</span>
+                <div class="trias-weights">G=0.30 · C=0.30 · K=0.40</div>
+                <div class="voice-row">
+                  <span class="actor gen">Gen <small>opus 4.7</small></span>
+                  <span class="actor ctl">Ctrl <small>haiku 4.5</small></span>
+                  <span class="actor con">Cons <small>haiku 4.5</small></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ok">
+            ✓ Generator-ul folosește modelul cel mai puternic (creativ, divergent), iar
+            Control/Conservator merg pe <code>haiku 4.5</code> — verdictele lor sunt structurate,
+            nu speculative. Restul (vot, agregare, raport) e identic cu Trias normal.
+          </div>
+        </div>
+
+        <div class="use-when">
+          <b>Use when:</b> vrei calitatea Trias (3 personalități × 3 voci = 9 sub-agenți) la cost
+          mai mic — economie estimată ~50–60% vs Trias all-sonnet, fără sacrificarea diversity-ului
+          de candidates (Generator rămâne pe modelul cel mai capabil).
+          <br><b>Cost:</b> ~0.4–0.5× Trias all-sonnet (depinde de pricing curent).
+        </div>
+      </div>
+
       <div class="mode sequential">
         <h3>Sequential — naive <span class="mode-badge legacy">LEGACY</span></h3>
         <div class="subtitle">Original mode — păstrat pentru referință.</div>
@@ -1379,11 +2126,15 @@
         <text x="445" y="546" fill="#9ca3af" font-size="9" text-anchor="middle">each round: sees peers from prev round</text>
       </svg>
       <div class="legend">
-        <div class="item"><span class="swatch" style="background:#f87171;"></span>contaminated path (rationale/issues leak)</div>
-        <div class="item"><span class="swatch" style="background:#fbbf24;"></span>stripped path (minimum fields only)</div>
-        <div class="item"><span class="swatch" style="background:#34d399;"></span>independent sub-agent (true isolation)</div>
-        <div class="item"><span class="swatch" style="background:#60a5fa;"></span>controlled cross-context (dialectic pass 2)</div>
+        <div class="item"><span class="swatch" style="background:#f87171;"></span>path contaminat (rationale/issues leak)</div>
+        <div class="item"><span class="swatch" style="background:#fbbf24;"></span>path stripped (doar câmpuri minime)</div>
+        <div class="item"><span class="swatch" style="background:#34d399;"></span>sub-agent independent (izolare reală)</div>
+        <div class="item"><span class="swatch" style="background:#60a5fa;"></span>cross-context controlat (dialectic pass 2)</div>
         <div class="item"><span class="swatch" style="background:#34d399; border-top: 1px dashed #34d399;"></span>convergence loop back (iterative — early-stop)</div>
+      </div>
+      <div style="margin-top: 12px; padding: 10px 12px; background: var(--inset); border-left: 3px solid var(--accent); border-radius: 4px; font-size: 12px; color: var(--muted);">
+        <b style="color: var(--accent-text);">Notă:</b> modurile <code>parallel_skeptic</code> și <code>dialectic_skeptic</code> extind Parallel/Dialectic cu o voce focală pe <code>chosen</code> — nu schimbă topology-ul vocilor de bază. <code>trias_split</code> are topology identic cu Trias, doar cu model split per voce (Generator pe <code>opus 4.7</code>, Control/Conservator pe <code>haiku 4.5</code>).
+
       </div>
     </div>
 
@@ -1649,19 +2400,1545 @@
 
   </section>
 
+  <!-- ============== TAB 4 : MEMORY ============== -->
+  <section class="tab" id="memory">
+
+    <div class="mem-intro">
+      <div class="mem-intro-grid">
+        <div>
+          <h3>How Consilium remembers</h3>
+          <p class="lede">Consilium does not deliberate in isolation — it remembers past decisions across <b>3 layers with different lifecycles</b>. The loop isn't just <i>deliberate → choose</i>, it's <i>deliberate → outcome → priors → next deliberation</i>.</p>
+          <p>Short memory is the current context (the Claude session); medium memory is each deliberation persisted as JSON; long memory is the aggregated outcome log over time. <code>scripts/priors.py</code> reads long memory at Step 0 and injects soft signals (override / veto rates, stale pendings) into the current deliberation.</p>
+          <p class="why">Key point: the outcome written at Step 6 is not final. <code>mark_outcome.py</code> allows retroactive revision with a <code>[confirmed]</code> marker — confirmed outcomes are weighted 2× over subjective ones, so production reality dominates the immediate impression.</p>
+        </div>
+        <svg viewBox="0 0 380 220" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="3 tiers stacked: short volatile, medium episodic, long aggregate, all feeding priors">
+          <!-- Short tier (top) -->
+          <rect x="40" y="14" width="300" height="46" rx="8" fill="#0a2e23" stroke="#145c45"/>
+          <text x="190" y="34" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="700">SHORT — current session</text>
+          <text x="190" y="50" text-anchor="middle" fill="#6ee7b7" font-size="10">conversation window · bundle Steps 1–5b</text>
+          <!-- Medium tier -->
+          <rect x="40" y="78" width="300" height="46" rx="8" fill="#182338" stroke="#2a3f5f"/>
+          <text x="190" y="98" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="700">MEDIUM — runs/*.json</text>
+          <text x="190" y="114" text-anchor="middle" fill="#93c5fd" font-size="10">episodic · 1 file per deliberation</text>
+          <!-- Long tier -->
+          <rect x="40" y="142" width="300" height="46" rx="8" fill="#2a2410" stroke="#5c4a14"/>
+          <text x="190" y="162" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700">LONG — FEEDBACK.html</text>
+          <text x="190" y="178" text-anchor="middle" fill="#fbbf24" font-size="10">aggregate · 1 row per use + priors</text>
+          <!-- Down arrows -->
+          <line x1="190" y1="60" x2="190" y2="76" stroke="#9ca3af" stroke-width="1.5"/>
+          <polygon points="186,71 190,78 194,71" fill="#9ca3af"/>
+          <line x1="190" y1="124" x2="190" y2="140" stroke="#9ca3af" stroke-width="1.5"/>
+          <polygon points="186,135 190,142 194,135" fill="#9ca3af"/>
+          <text x="200" y="73" fill="#9ca3af" font-size="9">step 6 persist</text>
+          <text x="200" y="137" fill="#9ca3af" font-size="9">step 6 log</text>
+          <!-- Loop back arrow -->
+          <path d="M 340 165 Q 365 100 340 35" stroke="#fbbf24" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+          <polygon points="336,40 340,33 344,40" fill="#fbbf24"/>
+          <text x="350" y="105" fill="#fbbf24" font-size="9" text-anchor="middle" transform="rotate(90 350 105)">priors @ step 0</text>
+          <!-- mark_outcome arrow back to long -->
+          <path d="M 30 100 Q 12 165 38 165" stroke="#34d399" stroke-width="1.5" fill="none" stroke-dasharray="3,2"/>
+          <polygon points="33,161 38,167 38,159" fill="#34d399"/>
+          <text x="22" y="140" fill="#6ee7b7" font-size="9" text-anchor="middle" transform="rotate(-90 22 140)">mark_outcome</text>
+        </svg>
+      </div>
+    </div>
+
+    <h2>The 3 tiers</h2>
+    <div class="tiers">
+
+      <div class="tier short">
+        <div class="top"><h3>Short</h3><span class="tag">Volatile</span></div>
+        <div>The active deliberation context. Lives only in the agent's <i>conversation window</i> — never persisted to disk.</div>
+        <div class="meta">
+          <span>Location</span><b>conversation window</b>
+          <span>Lifetime</span><b>current session only</b>
+          <span>Content</span><b>bundle Steps 1–5b, clarity gate, success_criterion</b>
+          <span>Read by</span><b>the agent only</b>
+        </div>
+        <ul>
+          <li>Bundle under construction: <code>{success_criterion, generator, control, conservator}</code></li>
+          <li>Clarity gate state (detected interpretations)</li>
+          <li>Meta-critic output + retry hints (Steps 5c, 5d)</li>
+        </ul>
+        <div class="reads"><b>Note:</b> <code>memory.py --tier short</code> returns only a stub describing <i>what would be there</i> — the real content is accessible only to the agent, via context.</div>
+      </div>
+
+      <div class="tier medium">
+        <div class="top"><h3>Medium</h3><span class="tag">Episodic</span></div>
+        <div>One JSON file per deliberation in <code>runs/</code>. Full detail: candidates, votes, scores, deliberation_log, telemetry. Gitignored.</div>
+        <div class="meta">
+          <span>Location</span><b>runs/YYYY-MM-DD_HHMM_&lt;label&gt;.json</b>
+          <span>Lifetime</span><b>indefinite (gitignored)</b>
+          <span>Content</span><b>canonical report per deliberation</b>
+          <span>Read by</span><b>priors.py · usage.py · memory.py · audit_feedback.py</b>
+        </div>
+        <ul>
+          <li>Schema in <code>runs/README.md</code> — required fields validated by <code>validate_report.py</code></li>
+          <li>Retrieval: <code>memory.py --tier medium --n 5</code> or <code>--query auth</code></li>
+          <li>Orphan detection: <code>audit_feedback.py</code> finds runs without a row in <code>FEEDBACK.html</code></li>
+        </ul>
+        <div class="reads"><b>Risk:</b> if the orchestrator stops before <code>log_feedback.py</code>, the run exists on disk but is invisible to <code>priors.py</code> → <code>audit_feedback.py --backfill</code> creates a default PEND row.</div>
+      </div>
+
+      <div class="tier long">
+        <div class="top"><h3>Long</h3><span class="tag">Aggregate</span></div>
+        <div>The HTML log with one row per use + the derived signals. This is where <i>true memory</i> lives — survives across deliberations and calibrates intuition.</div>
+        <div class="meta">
+          <span>Location</span><b>FEEDBACK.html + priors.py signals</b>
+          <span>Lifetime</span><b>indefinite (gitignored)</b>
+          <span>Content</span><b>1 row per use: date | context | chosen | outcome | note</b>
+          <span>Read by</span><b>priors.py · feedback.py · memory.py · mark_outcome.py</b>
+        </div>
+        <ul>
+          <li>Outcomes: <code>OK</code>, <code>BAD</code>, <code>OVR</code>, <code>PEND</code></li>
+          <li><code>[confirmed]</code> marker in note → 2× weight in <code>weighted_bad_rate</code></li>
+          <li>Drill-down: <code>migrate_feedback_md_to_html.py</code> repopulates existing rows</li>
+        </ul>
+        <div class="reads"><b>The only source</b> that learns over time. Step 0 of every new deliberation reads aggregated signals from here via <code>priors.py</code>.</div>
+      </div>
+
+    </div>
+
+    <div class="feedback-diagram">
+      <h3>Lifecycle — one deliberation through the 3 tiers</h3>
+      <svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Memory lifecycle: short builds, then persists to medium and long, priors read at next bootstrap">
+        <defs>
+          <marker id="mem-arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/>
+          </marker>
+          <marker id="mem-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+          </marker>
+          <marker id="mem-arrow-ctl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#60a5fa"/>
+          </marker>
+        </defs>
+
+        <!-- Lane labels -->
+        <text x="20" y="50" fill="#6ee7b7" font-size="11" font-weight="700" letter-spacing="0.08em">SHORT</text>
+        <text x="20" y="160" fill="#93c5fd" font-size="11" font-weight="700" letter-spacing="0.08em">MEDIUM</text>
+        <text x="20" y="270" fill="#fbbf24" font-size="11" font-weight="700" letter-spacing="0.08em">LONG</text>
+
+        <!-- Lane separators -->
+        <line x1="100" y1="20" x2="100" y2="300" stroke="#2d3441" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="100" y1="100" x2="880" y2="100" stroke="#2d3441" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="100" y1="210" x2="880" y2="210" stroke="#2d3441" stroke-width="1" stroke-dasharray="3,3"/>
+
+        <!-- SHORT lane: Step 0 → 5d -->
+        <rect x="120" y="32" width="100" height="46" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="170" y="52" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">Step 0</text>
+        <text x="170" y="68" fill="#6ee7b7" font-size="9" text-anchor="middle">bootstrap + priors</text>
+
+        <rect x="240" y="32" width="180" height="46" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="330" y="52" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">Steps 1 → 5</text>
+        <text x="330" y="68" fill="#6ee7b7" font-size="9" text-anchor="middle">deliberation in single context</text>
+
+        <rect x="440" y="32" width="160" height="46" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="520" y="52" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">Step 5b · 5c · 5d</text>
+        <text x="520" y="68" fill="#6ee7b7" font-size="9" text-anchor="middle">confidence · meta · retry</text>
+
+        <line x1="220" y1="55" x2="238" y2="55" stroke="#34d399" stroke-width="1.5" marker-end="url(#mem-arrow-accent)"/>
+        <line x1="420" y1="55" x2="438" y2="55" stroke="#34d399" stroke-width="1.5" marker-end="url(#mem-arrow-accent)"/>
+        <line x1="600" y1="55" x2="638" y2="55" stroke="#34d399" stroke-width="1.5" marker-end="url(#mem-arrow-accent)"/>
+
+        <!-- Step 6 persists down to MEDIUM and LONG -->
+        <rect x="640" y="32" width="160" height="46" rx="6" fill="#11151c" stroke="#5c4a14" stroke-width="1.5"/>
+        <text x="720" y="52" fill="#fbbf24" font-size="11" text-anchor="middle" font-weight="700">Step 6 — persist</text>
+        <text x="720" y="68" fill="#fbbf24" font-size="9" text-anchor="middle">build_report · validate · log</text>
+
+        <!-- Arrows from step 6 down to medium and long -->
+        <line x1="700" y1="78" x2="320" y2="138" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#mem-arrow-ctl)"/>
+        <text x="450" y="118" fill="#93c5fd" font-size="10">runs/&lt;file&gt;.json</text>
+        <line x1="740" y1="78" x2="540" y2="248" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#mem-arrow-gold)"/>
+        <text x="640" y="170" fill="#fbbf24" font-size="10">log_feedback.py</text>
+
+        <!-- MEDIUM lane: runs/*.json artefact -->
+        <rect x="220" y="135" width="220" height="50" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="330" y="156" fill="#93c5fd" font-size="12" text-anchor="middle" font-weight="700">runs/2026-05-16_*.json</text>
+        <text x="330" y="172" fill="#93c5fd" font-size="9" text-anchor="middle">candidates · votes · scores · telemetry</text>
+
+        <!-- audit_feedback orphan detection on medium → long -->
+        <line x1="440" y1="160" x2="540" y2="240" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#mem-arrow-gold)" opacity="0.7"/>
+        <text x="500" y="200" fill="#fbbf24" font-size="9" font-style="italic">audit_feedback --backfill</text>
+
+        <!-- LONG lane: FEEDBACK.html + priors signals -->
+        <rect x="220" y="240" width="280" height="50" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="360" y="261" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="700">FEEDBACK.html</text>
+        <text x="360" y="277" fill="#fbbf24" font-size="9" text-anchor="middle">date | context | chosen | outcome | [confirmed]</text>
+
+        <rect x="520" y="240" width="200" height="50" rx="6" fill="#11151c" stroke="#5c4a14" stroke-dasharray="2,2"/>
+        <text x="620" y="261" fill="#fbbf24" font-size="11" text-anchor="middle" font-weight="700">priors.py signals</text>
+        <text x="620" y="277" fill="#fbbf24" font-size="9" text-anchor="middle">rates · stale · pressure · keywords</text>
+
+        <line x1="500" y1="265" x2="518" y2="265" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#mem-arrow-gold)"/>
+
+        <!-- mark_outcome retro -->
+        <line x1="360" y1="240" x2="360" y2="220" stroke="#34d399" stroke-width="1" stroke-dasharray="2,2"/>
+        <line x1="360" y1="220" x2="200" y2="220" stroke="#34d399" stroke-width="1" stroke-dasharray="2,2"/>
+        <line x1="200" y1="220" x2="200" y2="265" stroke="#34d399" stroke-width="1" stroke-dasharray="2,2" marker-end="url(#mem-arrow-accent)"/>
+        <text x="280" y="216" fill="#6ee7b7" font-size="9" font-style="italic">mark_outcome.py · retroactive [confirmed]</text>
+
+        <!-- LONG → next deliberation SHORT (priors injected) -->
+        <path d="M 720 240 Q 850 130 850 60 Q 850 40 220 40" stroke="#fbbf24" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+        <polygon points="225,36 218,40 225,44" fill="#fbbf24"/>
+        <text x="850" y="155" fill="#fbbf24" font-size="10" text-anchor="middle" transform="rotate(90 850 155)">soft priors → next deliberation</text>
+
+        <!-- Stale PEND surface back into SHORT at step 0 -->
+        <path d="M 360 240 Q 145 250 130 78" stroke="#fbbf24" stroke-width="1" fill="none" stroke-dasharray="3,2"/>
+        <polygon points="126,82 130,75 134,82" fill="#fbbf24"/>
+        <text x="55" y="180" fill="#fbbf24" font-size="9" text-anchor="middle" transform="rotate(-90 55 180)">stale_pendings (&gt;2 days)</text>
+      </svg>
+      <div class="narrative">
+        <b>In words:</b> the current deliberation lives in <b>SHORT</b> until Step 6, when <code>build_report.py</code>
+        writes the canonical report into <b>MEDIUM</b> (<code>runs/&lt;file&gt;.json</code>) and
+        <code>log_feedback.py</code> appends a row to <b>LONG</b> (<code>FEEDBACK.html</code>).
+        On the next run, <code>priors.py</code> reads LONG (and runs/) and injects soft signals
+        that calibrate the deliberation — <i>stale_pendings</i> blocks, <i>missing_feedback_runs</i> triggers an audit,
+        <i>weighted_bad_rate</i> shapes the agent's trust in the Conservator voice.
+        <code>mark_outcome.py</code> allows later revision with a <code>[confirmed]</code> marker —
+        the reality-confirmed outcome dominates the subjective one (2× weight).
+      </div>
+    </div>
+
+    <h2 style="margin-top:32px;">Signals derived by <code>priors.py</code></h2>
+    <p style="font-size:13px; color:var(--muted); margin-top:-8px; margin-bottom:18px;">
+      What the agent sees at Step 0, before any grep / Read. Three of them <b>block</b> the current
+      deliberation until resolved; the rest are soft (advice).
+    </p>
+    <table class="signals-table">
+      <thead>
+        <tr>
+          <th>Signal</th>
+          <th>Meaning</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>stale_pendings</td>
+          <td>PEND entries older than <b>2 days</b> (capped at 5). Unfinished deliberations that can still be judged retroactively.</td>
+          <td><span class="pill block">BLOCK</span> Ask the user: <i>"You have N old PENDs: [date | chosen]. Close as OK / BAD / skip?"</i> → <code>mark_outcome.py</code></td>
+        </tr>
+        <tr>
+          <td>missing_feedback_runs</td>
+          <td>Files in <code>runs/*.json</code> with no matching row in <code>FEEDBACK.html</code>. Orphan detection.</td>
+          <td><span class="pill block">BLOCK</span> Run <code>audit_feedback.py --backfill</code> to create default PEND rows, then resolve them. If &gt;3, fix the gap before starting a new deliberation.</td>
+        </tr>
+        <tr>
+          <td>pend_pressure</td>
+          <td>Ratio of PEND in the last N=20 entries. Threshold <b>0.3</b> (lowered from 0.5).</td>
+          <td><span class="pill alert">ALERT</span> Soft warning: <i>"X/20 recent entries are PEND — close some?"</i> Does not block.</td>
+        </tr>
+        <tr>
+          <td>weighted_bad_rate</td>
+          <td>Weighted BAD outcome rate: rows with <code>[confirmed]</code> count <b>2×</b> over subjective ones.</td>
+          <td><span class="pill advice">SOFT</span> Calibrates trust in the Conservator. If high, the agent grows more skeptical of new candidates.</td>
+        </tr>
+        <tr>
+          <td>override_rate, bad_rate</td>
+          <td>Percentage of OVR and BAD across rated entries (non-PEND). Decoupled from <code>weighted_bad_rate</code> as a subjective baseline.</td>
+          <td><span class="pill advice">SOFT</span> Compared with <code>weighted_bad_rate</code> — large divergence = reality ≠ immediate impression.</td>
+        </tr>
+        <tr>
+          <td>rated_count, confirmed_count</td>
+          <td>How many entries have a final outcome (OK/BAD/OVR) and how many are <code>[confirmed]</code>. The volume of data backing the rates.</td>
+          <td><span class="pill advice">SOFT</span> <code>rated_count &lt; 10</code> = unstable priors — the agent ignores soft signals.</td>
+        </tr>
+        <tr>
+          <td>veto_rate</td>
+          <td>Percentage of runs where the Conservator vetoed all candidates (<code>chosen=null</code> + retry_suggested). Computed from <code>runs/*.json</code>.</td>
+          <td><span class="pill advice">SOFT</span> High = success_criteria too aggressive, or Conservator over-strict.</td>
+        </tr>
+        <tr>
+          <td>top_keywords</td>
+          <td>Top 5 words from the <code>context</code> field of recent entries. Indicates usage patterns.</td>
+          <td><span class="pill advice">SOFT</span> Diagnostic — helps the user see where decisions concentrate.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="mem-confirmed">
+      <h3>Retroactive mechanism — the <span class="marker">[confirmed]</span> marker</h3>
+      <p>The outcome logged at Step 6 is <b>subjective</b> — it reflects the immediate post-deliberation impression. Weeks later, when production reveals reality (did it break something? was it a good call?), you can overwrite:</p>
+      <div class="mem-cli">
+<span class="c"># mark retroactively as BAD, weighted 2× in priors</span>
+python scripts/mark_outcome.py <span class="k">--run-path</span> runs/2026-04-12_1430_auth.json \
+                                <span class="k">--outcome</span> BAD \
+                                <span class="k">--reason</span> <span class="k">"</span>broke prod migration on rollout<span class="k">"</span></div>
+      <p>The <code>[confirmed]</code> marker is added to <code>note</code>. At the next Step 0, <code>priors.py</code> computes <code>weighted_bad_rate</code> with this row <b>counting double</b> — production reality dominates subjective feedback within the same window.</p>
+    </div>
+
+    <h2 style="margin-top:32px;">Uniform CLI — <code>memory.py</code></h2>
+    <p style="font-size:13px; color:var(--muted); margin-top:-8px; margin-bottom:14px;">
+      A single entry-point to query the 3 tiers. Stdlib-only. Returns JSON on stdout.
+    </p>
+    <div class="mem-cli">
+<span class="c"># inspect what would be in short (stub — agent sees the real context)</span>
+python scripts/memory.py <span class="k">--tier</span> short
+
+<span class="c"># last 5 deliberations (medium, runs/*.json)</span>
+python scripts/memory.py <span class="k">--tier</span> medium <span class="k">--n</span> 5
+
+<span class="c"># substring search in medium across success_criterion + chosen_approach</span>
+python scripts/memory.py <span class="k">--tier</span> medium <span class="k">--query</span> auth
+
+<span class="c"># long — feedback rows + confirmed flag</span>
+python scripts/memory.py <span class="k">--tier</span> long <span class="k">--query</span> rollback
+
+<span class="c"># union across all tiers for a keyword</span>
+python scripts/memory.py <span class="k">--tier</span> all <span class="k">--query</span> migration</div>
+
+    <div class="decision">
+      <h3>Step 0 — bootstrap gate (driven by long memory)</h3>
+      <div class="lede">How Step 0 decides whether to block the current deliberation in order to clean memory first. <code>scripts/priors.py</code> emits the signals; the agent applies the tree below.</div>
+      <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bootstrap gate based on long-term memory signals">
+        <rect x="260" y="10" width="200" height="36" rx="6" fill="#11151c" stroke="#2d3441"/>
+        <text x="360" y="33" text-anchor="middle" fill="#e5e7eb" font-size="12">priors.py → 8 signals</text>
+        <line x1="360" y1="46" x2="360" y2="62" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,57 360,64 364,57" fill="#9ca3af"/>
+
+        <rect x="260" y="66" width="200" height="38" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="360" y="89" text-anchor="middle" fill="#e5e7eb" font-size="11">stale_pendings non-empty?</text>
+        <line x1="460" y1="85" x2="588" y2="85" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="583,81 590,85 583,89" fill="#f87171"/>
+        <text x="524" y="80" text-anchor="middle" fill="#fca5a5" font-size="10">yes — block</text>
+        <rect x="590" y="66" width="120" height="38" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="650" y="83" text-anchor="middle" fill="#fca5a5" font-size="11" font-weight="700">CLOSE PEND</text>
+        <text x="650" y="98" text-anchor="middle" fill="#fca5a5" font-size="9">mark_outcome.py</text>
+        <line x1="360" y1="104" x2="360" y2="120" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,115 360,122 364,115" fill="#9ca3af"/>
+        <text x="368" y="117" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="260" y="124" width="200" height="38" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="360" y="147" text-anchor="middle" fill="#e5e7eb" font-size="11">missing_feedback_runs &gt; 0?</text>
+        <line x1="460" y1="143" x2="588" y2="143" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="583,139 590,143 583,147" fill="#f87171"/>
+        <text x="524" y="138" text-anchor="middle" fill="#fca5a5" font-size="10">yes — block</text>
+        <rect x="590" y="124" width="120" height="38" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="650" y="141" text-anchor="middle" fill="#fca5a5" font-size="11" font-weight="700">BACKFILL</text>
+        <text x="650" y="156" text-anchor="middle" fill="#fca5a5" font-size="9">audit_feedback --backfill</text>
+        <line x1="360" y1="162" x2="360" y2="178" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,173 360,180 364,173" fill="#9ca3af"/>
+        <text x="368" y="175" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="260" y="182" width="200" height="38" rx="6" fill="#181d27" stroke="#2d3441"/>
+        <text x="360" y="205" text-anchor="middle" fill="#e5e7eb" font-size="11">pend_pressure &gt; 0.3?</text>
+        <line x1="460" y1="201" x2="588" y2="201" stroke="#fbbf24" stroke-width="1.5"/>
+        <polygon points="583,197 590,201 583,205" fill="#fbbf24"/>
+        <text x="524" y="196" text-anchor="middle" fill="#fbbf24" font-size="10">yes — alert</text>
+        <rect x="590" y="182" width="120" height="38" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="650" y="199" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700">WARN SOFT</text>
+        <text x="650" y="214" text-anchor="middle" fill="#fbbf24" font-size="9">does not block</text>
+        <line x1="360" y1="220" x2="360" y2="236" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,231 360,238 364,231" fill="#9ca3af"/>
+        <text x="368" y="233" fill="#9ca3af" font-size="10">no</text>
+
+        <rect x="260" y="240" width="200" height="42" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="360" y="259" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="700">INJECT PRIORS</text>
+        <text x="360" y="274" text-anchor="middle" fill="#6ee7b7" font-size="9">weighted_bad_rate, veto_rate, top_keywords</text>
+
+        <line x1="360" y1="282" x2="360" y2="298" stroke="#9ca3af" stroke-width="1.5"/>
+        <polygon points="356,293 360,300 364,293" fill="#9ca3af"/>
+
+        <rect x="260" y="302" width="200" height="42" rx="6" fill="#182338" stroke="#2a3f5f"/>
+        <text x="360" y="321" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="700">CONTINUE → Step 1</text>
+        <text x="360" y="336" text-anchor="middle" fill="#93c5fd" font-size="9">priors injected into the deliberation prompt</text>
+      </svg>
+      <div class="caption">
+        The 3 <span style="color:var(--bad);">BLOCK</span> cases must be resolved before the current deliberation —
+        not because they affect correctness, but because they leave <i>long memory</i> incoherent (forgotten PENDs,
+        orphan runs). The <code>pend_pressure</code> soft warning does not block, but is logged in
+        <code>deliberation_log</code> as a signal.
+      </div>
+    </div>
+
+    <div class="note">
+      Long memory is <b>the only source of cross-deliberation learning</b>. Without it, every run would restart
+      from defaults and the skill could not adjust its intuition based on real history. <code>priors.py</code>
+      turns the raw outcome list into a small set of numeric signals easy to inject into context — just enough
+      to influence decisions, never enough to dictate them.
+    </div>
+
+  </section>
+
+  <!-- ============== TAB 5 : PATTERNS ============== -->
+  <section class="tab" id="patterns">
+
+    <div class="pat-intro">
+      <h3>Arhitectură &amp; Fluxuri</h3>
+      <p>Fiecare componentă care participă la o deliberare Consilium, și traseul unei cereri prin ele. <b>Alege un flux pe dreapta</b> ca să evidențiezi path-ul corespunzător prin sistem. Inspirat de vizualizările de tip <i>architecture &amp; flows</i>.</p>
+    </div>
+
+    <!-- =========== Voices — bias profile (moved above the flow diagram) =========== -->
+    <div class="pat-voices">
+      <div class="pat-voices-header">
+        <h3>Voci — profil de bias</h3>
+        <p class="lede">Trei voci, trei funcții obiective independente. Diagrama de flux de mai jos arată unde stau în pipeline; cardurile de aici arată <b>ce optimizează fiecare</b>.</p>
+      </div>
+
+      <div class="pat-voices-grid">
+
+        <div class="pat-voice-card gen">
+          <div class="pvc-top">
+            <span class="pvc-name">Generator</span>
+            <span class="pvc-tag">creativ</span>
+          </div>
+          <div class="pvc-tagline">"Cantitate înainte de calitate. Fără auto-cenzură. Include mereu <code>do_nothing</code>."</div>
+          <div>
+            <div class="pvc-section-label">Optimizează pentru</div>
+            <div class="pvc-bars">
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Divergence spread</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:92%"></div></div>
+                <span class="pvc-bar-val">0.92</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Acoperire adversarială</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:78%"></div></div>
+                <span class="pvc-bar-val">0.78</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Departure de la convenții</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:74%"></div></div>
+                <span class="pvc-bar-val">0.74</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Goal-fit per candidate</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:55%"></div></div>
+                <span class="pvc-bar-val">0.55</span>
+              </div>
+            </div>
+          </div>
+          <div class="pvc-cant"><b>Nu</b> filtrează pentru fezabilitate sau risc — asta e downstream.</div>
+        </div>
+
+        <div class="pat-voice-card ctl">
+          <div class="pvc-top">
+            <span class="pvc-name">Control</span>
+            <span class="pvc-tag">analitic</span>
+          </div>
+          <div class="pvc-tagline">"Pedant, nu pesimist. Verifică, nu specula. Concret peste abstract."</div>
+          <div>
+            <div class="pvc-section-label">Optimizează pentru</div>
+            <div class="pvc-bars">
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Corectitudine type / logic</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:95%"></div></div>
+                <span class="pvc-bar-val">0.95</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Verificare goal-fit</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:88%"></div></div>
+                <span class="pvc-bar-val">0.88</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Adecvare test coverage</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:80%"></div></div>
+                <span class="pvc-bar-val">0.80</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Style / convenții</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:35%"></div></div>
+                <span class="pvc-bar-val">0.35</span>
+              </div>
+            </div>
+          </div>
+          <div class="pvc-cant"><b>Nu</b> cântărește risc sau reversibilitate — pass through dacă compilează și se potrivește cu goal-ul.</div>
+        </div>
+
+        <div class="pat-voice-card con">
+          <div class="pvc-top">
+            <span class="pvc-name">Conservator</span>
+            <span class="pvc-tag">prudent</span>
+          </div>
+          <div class="pvc-tagline">"Reversibilitatea peste deșteptăciune. Blast radius contează. Disciplină de scope."</div>
+          <div>
+            <div class="pvc-section-label">Dimensiuni de risc scorate</div>
+            <div class="pvc-bars">
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Reversibilitate (cap pe risc)</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:92%"></div></div>
+                <span class="pvc-bar-val">0.92</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Regression risk</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:85%"></div></div>
+                <span class="pvc-bar-val">0.85</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Scope drift</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:82%"></div></div>
+                <span class="pvc-bar-val">0.82</span>
+              </div>
+              <div class="pvc-bar-row">
+                <span class="pvc-bar-label">Diff size</span>
+                <div class="pvc-bar-track"><div class="pvc-bar-fill" style="width:70%"></div></div>
+                <span class="pvc-bar-val">0.70</span>
+              </div>
+            </div>
+          </div>
+          <div class="pvc-cant"><b>Nu</b> re-validează corectitudinea — acceptă verdictul Control, scorează riscul rezidual.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="pat-layout">
+
+      <div class="pat-diagram" id="patDiagram">
+        <div class="pat-grid" id="patGrid">
+
+          <div class="pat-row">
+            <div class="pat-row-label">Trigger</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node actor" data-node="dev">Developer<span class="pat-node-sub">rulează o schimbare</span></div>
+              <div class="pat-node surface" data-node="cc-session">Sesiune Claude Code<span class="pat-node-sub">keyword trigger</span></div>
+            </div>
+          </div>
+
+          <div class="pat-row">
+            <div class="pat-row-label">Skill</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node skill" data-node="skill-md">SKILL.md<span class="pat-node-sub">workflow</span></div>
+              <div class="pat-node skill" data-node="mode">Selector mod<span class="pat-node-sub">parallel · dialectic · blind · trias</span></div>
+              <div class="pat-node aux skill" data-node="scope-gate">scope_gate.py<span class="pat-node-sub">step 1.5 · auto-skip</span></div>
+            </div>
+          </div>
+
+          <div class="pat-row row-voices">
+            <div class="pat-row-label">
+              <span class="rl-default">Voci</span>
+              <span class="rl-trias">Personalități</span>
+            </div>
+            <div class="pat-row-nodes" data-set="default">
+              <div class="pat-node gen" data-node="generator">
+                Generator<span class="pat-node-sub">creativ · generator.md</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Divergence</span><div class="pnb-bar"><span style="width:92%"></span></div><span class="pnb-val">0.92</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Adversarial</span><div class="pnb-bar"><span style="width:78%"></span></div><span class="pnb-val">0.78</span></div>
+                </div>
+              </div>
+              <div class="pat-node ctl" data-node="control">
+                Control<span class="pat-node-sub">analitic · control.md</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Correctness</span><div class="pnb-bar"><span style="width:95%"></span></div><span class="pnb-val">0.95</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Goal-fit</span><div class="pnb-bar"><span style="width:88%"></span></div><span class="pnb-val">0.88</span></div>
+                </div>
+              </div>
+              <div class="pat-node con" data-node="conservator">
+                Conservator<span class="pat-node-sub">prudent · conservator.md</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Reversibility</span><div class="pnb-bar"><span style="width:92%"></span></div><span class="pnb-val">0.92</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Regression</span><div class="pnb-bar"><span style="width:85%"></span></div><span class="pnb-val">0.85</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="pat-row-nodes" data-set="trias">
+              <div class="pat-node trias" data-node="pioneer">
+                Pioneer<span class="pat-node-sub">creative-leaning</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Generator</span><div class="pnb-bar"><span style="width:49%;background:var(--gen)"></span></div><span class="pnb-val">0.49</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Control</span><div class="pnb-bar"><span style="width:30%;background:var(--ctl)"></span></div><span class="pnb-val">0.30</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Conservator</span><div class="pnb-bar"><span style="width:21%;background:var(--con)"></span></div><span class="pnb-val">0.21</span></div>
+                </div>
+              </div>
+              <div class="pat-node trias" data-node="architect">
+                Architect<span class="pat-node-sub">correctness-leaning</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Generator</span><div class="pnb-bar"><span style="width:30%;background:var(--gen)"></span></div><span class="pnb-val">0.30</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Control</span><div class="pnb-bar"><span style="width:49%;background:var(--ctl)"></span></div><span class="pnb-val">0.49</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Conservator</span><div class="pnb-bar"><span style="width:21%;background:var(--con)"></span></div><span class="pnb-val">0.21</span></div>
+                </div>
+              </div>
+              <div class="pat-node trias" data-node="steward">
+                Steward<span class="pat-node-sub">safety-leaning</span>
+                <div class="pat-node-bias">
+                  <div class="pnb-row"><span class="pnb-label">Generator</span><div class="pnb-bar"><span style="width:30%;background:var(--gen)"></span></div><span class="pnb-val">0.30</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Control</span><div class="pnb-bar"><span style="width:30%;background:var(--ctl)"></span></div><span class="pnb-val">0.30</span></div>
+                  <div class="pnb-row"><span class="pnb-label">Conservator</span><div class="pnb-bar"><span style="width:40%;background:var(--con)"></span></div><span class="pnb-val">0.40</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pat-row">
+            <div class="pat-row-label">Aggregator</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node agg" data-node="agg">aggregator.py<span class="pat-node-sub">scheme votare + prag veto</span></div>
+              <div class="pat-node aux ctl" data-node="strip-context">strip_context.py<span class="pat-node-sub">doar sequential blind</span></div>
+              <div class="pat-node aux gen" data-node="dialectic-merge">dialectic_merge.py<span class="pat-node-sub">doar dialectic</span></div>
+              <div class="pat-node aux con" data-node="skeptic">Skeptic<span class="pat-node-sub">focal · skeptic.md</span></div>
+            </div>
+          </div>
+
+          <div class="pat-row">
+            <div class="pat-row-label">Gate</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node gate-node" data-node="gate">Gate<span class="pat-node-sub">veto check · pass / fail</span></div>
+            </div>
+          </div>
+
+          <div class="pat-row">
+            <div class="pat-row-label">Output</div>
+            <div class="pat-row-nodes">
+              <div class="pat-node output-combined" data-node="output">Output<span class="pat-node-sub">runs/&lt;id&gt;.json + sumar consolă</span></div>
+            </div>
+          </div>
+
+        </div>
+        <svg class="pat-svg" id="patSvg" aria-hidden="true"></svg>
+      </div>
+
+      <div class="pat-flows" id="patFlows">
+        <h4>Fluxuri</h4>
+        <div class="hint">Alege un flux ca să evidențiezi traseul prin diagramă și să citești pașii.</div>
+      </div>
+
+      <div class="pat-steps" id="patSteps">
+        <h4>Pași</h4>
+        <ol id="patStepsList">
+          <li>Alege un flux pe stânga ca să vezi pașii.</li>
+        </ol>
+      </div>
+
+    </div>
+
+    <!-- =========== Trias team — personality weights =========== -->
+    <div class="pat-trias-section">
+        <div class="pat-trias-header">
+          <h3>Echipa Trias — weights pe personalități</h3>
+          <p class="lede">În <b>Trias mode</b>, trei personalități aplică weights diferite peste aceleași trei voci, apoi votează democratic. Trei personalități × trei voci = nouă sub-agenți per deliberare.</p>
+        </div>
+
+        <div class="pat-trias-grid">
+
+          <div class="pat-trias-card">
+            <div class="ptc-top">
+              <span class="ptc-name">Pioneer</span>
+              <span class="ptc-lens">creative-leaning</span>
+            </div>
+            <div class="ptc-bars">
+              <div class="ptc-row">
+                <span class="ptc-letter g">Generator</span>
+                <div class="ptc-track"><div class="ptc-fill g" style="width:49%"></div></div>
+                <span class="ptc-val">0.49</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter c">Control</span>
+                <div class="ptc-track"><div class="ptc-fill c" style="width:30%"></div></div>
+                <span class="ptc-val">0.30</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter k">Conservator</span>
+                <div class="ptc-track"><div class="ptc-fill k" style="width:21%"></div></div>
+                <span class="ptc-val">0.21</span>
+              </div>
+            </div>
+            <div class="ptc-note">Trage deliberarea spre <b>explorare</b> — spread-ul Generator-ului domină votul personalității.</div>
+          </div>
+
+          <div class="pat-trias-card">
+            <div class="ptc-top">
+              <span class="ptc-name">Architect</span>
+              <span class="ptc-lens">correctness-leaning</span>
+            </div>
+            <div class="ptc-bars">
+              <div class="ptc-row">
+                <span class="ptc-letter g">Generator</span>
+                <div class="ptc-track"><div class="ptc-fill g" style="width:30%"></div></div>
+                <span class="ptc-val">0.30</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter c">Control</span>
+                <div class="ptc-track"><div class="ptc-fill c" style="width:49%"></div></div>
+                <span class="ptc-val">0.49</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter k">Conservator</span>
+                <div class="ptc-track"><div class="ptc-fill k" style="width:21%"></div></div>
+                <span class="ptc-val">0.21</span>
+              </div>
+            </div>
+            <div class="ptc-note">Trage spre <b>soluții bine formate</b> — verificarea de corectitudine Control domină.</div>
+          </div>
+
+          <div class="pat-trias-card">
+            <div class="ptc-top">
+              <span class="ptc-name">Steward</span>
+              <span class="ptc-lens">safety-leaning</span>
+            </div>
+            <div class="ptc-bars">
+              <div class="ptc-row">
+                <span class="ptc-letter g">Generator</span>
+                <div class="ptc-track"><div class="ptc-fill g" style="width:30%"></div></div>
+                <span class="ptc-val">0.30</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter c">Control</span>
+                <div class="ptc-track"><div class="ptc-fill c" style="width:30%"></div></div>
+                <span class="ptc-val">0.30</span>
+              </div>
+              <div class="ptc-row">
+                <span class="ptc-letter k">Conservator</span>
+                <div class="ptc-track"><div class="ptc-fill k" style="width:40%"></div></div>
+                <span class="ptc-val">0.40</span>
+              </div>
+            </div>
+            <div class="ptc-note">Trage spre <b>reversibilitate</b> — scorul de risc al Conservator-ului primește weight-ul cel mai mare.</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- =========== Trias deep-dive: 3 × 3 sub-agent matrix =========== -->
+      <div class="pat-trias-deep">
+        <div class="pat-trias-header">
+          <h3>Trias deep-dive — 9 sub-agenți per deliberare</h3>
+          <p class="lede">Fiecare personalitate orchestrează propriul <b>parallel mode</b> peste cele trei voci. Trei personalități × trei voci = <b>nouă sub-agenți independenți</b>, plus un orchestrator care coordonează votul echipei.</p>
+        </div>
+
+        <div class="pat-tdd-frame">
+
+          <div class="pat-tdd-orch">
+            <div class="box">Orchestrator Claude Code <span style="color:var(--muted);font-size:11px">· dispatch 3 personalități</span></div>
+          </div>
+
+          <div class="pat-tdd-arrows">
+            <div>
+              <div class="pat-tdd-arrow">↓</div>
+              <div class="pat-tdd-arrow-sub">weights Pioneer</div>
+            </div>
+            <div>
+              <div class="pat-tdd-arrow">↓</div>
+              <div class="pat-tdd-arrow-sub">weights Architect</div>
+            </div>
+            <div>
+              <div class="pat-tdd-arrow">↓</div>
+              <div class="pat-tdd-arrow-sub">weights Steward</div>
+            </div>
+          </div>
+
+          <div class="pat-tdd-grid">
+
+            <div class="pat-tdd-personality">
+              <div class="ptd-head">
+                <span class="ptd-name">Pioneer</span>
+                <span class="ptd-w">G 0.49 · C 0.30 · K 0.21</span>
+              </div>
+              <div class="pat-tdd-voices">
+                <div class="pat-tdd-voice gen"><span class="vl">Sub 1</span>Generator</div>
+                <div class="pat-tdd-voice ctl"><span class="vl">Sub 2</span>Control</div>
+                <div class="pat-tdd-voice con"><span class="vl">Sub 3</span>Conservator</div>
+              </div>
+              <div class="pat-tdd-vote">3 scoruri voce &times; weights G/C/K &rarr; <b>chosen<sub>P</sub></b></div>
+            </div>
+
+            <div class="pat-tdd-personality">
+              <div class="ptd-head">
+                <span class="ptd-name">Architect</span>
+                <span class="ptd-w">G 0.30 · C 0.49 · K 0.21</span>
+              </div>
+              <div class="pat-tdd-voices">
+                <div class="pat-tdd-voice gen"><span class="vl">Sub 4</span>Generator</div>
+                <div class="pat-tdd-voice ctl"><span class="vl">Sub 5</span>Control</div>
+                <div class="pat-tdd-voice con"><span class="vl">Sub 6</span>Conservator</div>
+              </div>
+              <div class="pat-tdd-vote">3 scoruri voce &times; weights G/C/K &rarr; <b>chosen<sub>A</sub></b></div>
+            </div>
+
+            <div class="pat-tdd-personality">
+              <div class="ptd-head">
+                <span class="ptd-name">Steward</span>
+                <span class="ptd-w">G 0.30 · C 0.30 · K 0.40</span>
+              </div>
+              <div class="pat-tdd-voices">
+                <div class="pat-tdd-voice gen"><span class="vl">Sub 7</span>Generator</div>
+                <div class="pat-tdd-voice ctl"><span class="vl">Sub 8</span>Control</div>
+                <div class="pat-tdd-voice con"><span class="vl">Sub 9</span>Conservator</div>
+              </div>
+              <div class="pat-tdd-vote">3 scoruri voce &times; weights G/C/K &rarr; <b>chosen<sub>S</sub></b></div>
+            </div>
+
+          </div>
+
+          <div class="pat-tdd-converge">↓ &nbsp;&nbsp; ↓ &nbsp;&nbsp; ↓</div>
+
+          <div class="pat-tdd-vote-box">
+            <div class="vbox">aggregator team_vote</div>
+            <span class="arrow">→</span>
+            <div class="chosen">Decizie finală (3-0 / 2-1 / 2-0)</div>
+          </div>
+
+          <div class="pat-tdd-counter">
+            <b>1</b>orchestrator&nbsp;+&nbsp;<b>3</b>personalități&nbsp;&times;&nbsp;<b>3</b>voci&nbsp;=&nbsp;<b>9</b>sub-agenți per deliberare
+          </div>
+
+        </div>
+      </div>
+
+    <!-- =========== Calibration loop (standalone sub-diagram) =========== -->
+    <div class="pat-cal-section">
+      <div class="pat-trias-header">
+        <h3>Loop de calibrare</h3>
+        <p class="lede">Între deliberări, <b>Reviewer-ul</b> loghează outcome-uri reale în <code>FEEDBACK.html</code>. Un job mic de calibrare citește log-ul, calculează stats per-voce, și ajustează prompts și praguri înainte de deliberarea următoare. Nu face parte din vreun flux per-run — e loop-ul de maintenance care ține sistemul onest.</p>
+      </div>
+
+      <div class="pat-cal-frame">
+        <div class="pat-cal-row">
+
+          <div class="pat-cal-node">
+            <b>Reviewer</b>
+            <span class="sub">marchează run trecut ca OK / BAD / OVR</span>
+          </div>
+
+          <div class="pat-cal-node">
+            <b>FEEDBACK.html</b>
+            <span class="sub">log append-only de outcome</span>
+          </div>
+
+          <div class="pat-cal-node">
+            <b>feedback.py</b>
+            <span class="sub">stats &amp; priors peste runs/</span>
+          </div>
+
+          <div class="pat-cal-node">
+            <b>Tuning prompts</b>
+            <span class="sub">weights · prag veto · prompts/*.md</span>
+          </div>
+
+        </div>
+
+        <div class="pat-cal-loop">
+          <span class="loop-icon">↻</span>
+          <span>Prompts și praguri tuned se aplică la <b>deliberarea următoare</b> — loop-ul se închide fără modificări de cod.</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
 </main>
+
+<!-- Global toolbar: Play tour + Full screen, available on every tab -->
+<div class="pat-actions">
+  <button class="pat-fullscreen-btn pat-play-btn" id="patPlayBtn" title="Tur automat prin toate fluxurile din tab-ul Patterns" aria-label="Pornește tur">
+    <span class="icon">▶</span>
+    <span class="label">Pornește tur</span>
+  </button>
+  <button class="pat-fullscreen-btn" id="patFullscreenBtn" title="Comută ecran complet" aria-label="Comută ecran complet">
+    <span class="icon">⤢</span>
+    <span class="label">Ecran complet</span>
+  </button>
+</div>
+
+<div class="pat-tour-progress" id="patTourProgress"><span></span></div>
 
 <script>
   (function() {
     var tabs = document.querySelectorAll('nav.tabs button');
     var sections = document.querySelectorAll('section.tab');
+    var playBtn = document.getElementById('patPlayBtn');
+    function syncPlayBtn(target) {
+      if (!playBtn) return;
+      playBtn.style.display = target === 'patterns' ? '' : 'none';
+    }
+    var banner = document.getElementById('startBanner');
+    if (banner && sessionStorage.getItem('consiliumBannerDone')) { banner.classList.add('hidden'); }
     tabs.forEach(function(btn) {
       btn.addEventListener('click', function() {
         var target = btn.getAttribute('data-tab');
         tabs.forEach(function(b) { b.classList.toggle('active', b === btn); });
         sections.forEach(function(s) { s.classList.toggle('active', s.id === target); });
+        if (target === 'patterns') { window.__patternsRedraw && window.__patternsRedraw(); }
+        syncPlayBtn(target);
+        if (banner) { banner.classList.add('hidden'); sessionStorage.setItem('consiliumBannerDone','1'); }
       });
     });
+    // Initial state: hide Play tour unless Patterns is the active tab on load
+    var initialActive = document.querySelector('nav.tabs button.active');
+    syncPlayBtn(initialActive ? initialActive.getAttribute('data-tab') : null);
+  })();
+</script>
+
+<script>
+  /* ============== PATTERNS — flows, highlight, SVG lines ============== */
+  (function() {
+    var BASE_PATH = ['dev', 'cc-session', 'skill-md', 'mode', 'generator', 'control', 'conservator', 'agg', 'gate', 'output'];
+
+    var FLOWS = [
+      {
+        id: 'pr-review',
+        name: 'Review PR',
+        mode: 'Parallel',
+        desc: 'Flux default: trei voci evaluează același diff independent, voturile agregate sub conservative_override.',
+        path: BASE_PATH,
+        auxNodes: ['scope-gate'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
+          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer-ul</b> deschide o sesiune Claude Code cu un diff sau o descriere de schimbare.',
+          'Skill-ul se activează prin keyword trigger (ex. <i>review PR</i>) și orchestratorul alege <b>Parallel mode</b>.',
+          'Trei voci (<b>Generator</b>, <b>Control</b>, <b>Conservator</b>) sunt dispatch-uite ca sub-agenți independenți, fiecare cu propriul prompt.',
+          'Fiecare voce întoarce un vot și un rationale (fără cross-talk).',
+          'Aggregator combină voturile sub <code>conservative_override</code>; riscul rămâne sub pragul de veto, deci gate-ul <b>trece</b>.',
+          'Se scrie un <code>runs/&lt;id&gt;.json</code> canonic și un sumar cu opțiunea aleasă în consolă.'
+        ]
+      },
+      {
+        id: 'refactor-planning',
+        name: 'Planificare refactor',
+        mode: 'Dialectic',
+        desc: 'Vocile răspund unele la altele între runde înainte de a vota — util pentru refactors multi-fișier unde pozițiile evoluează.',
+        path: BASE_PATH,
+        auxNodes: ['scope-gate', 'dialectic-merge'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
+          ['generator', 'control', 'bi'], ['control', 'conservator', 'bi'], ['generator', 'conservator', 'bi'],
+          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer-ul</b> descrie scope-ul refactor-ului și constraints.',
+          'Skill-ul alege <b>Dialectic mode</b>: vocile rulează în runde și citesc outputs-urile celorlalți între runde.',
+          'Runda 1 — Generator-ul propune 2–3 alternative.',
+          'Runda 2 — Control-ul critică fiecare alternativă și poate produce un hibrid.',
+          'Runda 3 — Conservator-ul scorează riscul rezidual și flag-uiește edits out-of-scope.',
+          'Aggregator-ul converge, gate-ul <b>trece</b>, deliberation log salvat în <code>runs/&lt;id&gt;.json</code>.'
+        ]
+      },
+      {
+        id: 'risk-assessment',
+        name: 'Evaluare de risc',
+        mode: 'Sequential — Blind',
+        desc: 'Fiecare voce rulează în izolare cu context stripped; previne anchoring-ul pe framing-ul vocii anterioare.',
+        path: BASE_PATH,
+        auxNodes: ['scope-gate', 'strip-context'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'],
+          ['generator', 'control'],
+          ['control', 'conservator'],
+          ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer-ul</b> trimite o schimbare high-risk (ex. migration, security patch).',
+          'Skill-ul alege <b>Sequential — Blind mode</b>: doar diff-ul e partajat; outputs-urile vocii anterioare sunt stripped.',
+          '<b>Generator-ul</b> rulează primul și propune alternative fără să vadă vreo critică.',
+          '<b>Control-ul</b> rulează după, blind la raționamentul Generator-ului — vede doar propunerile rezultate.',
+          '<b>Conservator-ul</b> rulează ultimul și scorează risc pe dimensiunile lui (diff size, scope drift, reversibility).',
+          'Risk score sub prag de data asta, gate-ul <b>trece</b>, raportul canonic e scris.'
+        ]
+      },
+      {
+        id: 'veto-trigger',
+        name: 'Trigger veto',
+        mode: 'conservative_override',
+        desc: 'Subset al PR review unde riscul Conservator-ului trece de prag și gate-ul eșuează — candidate-ul e respins.',
+        path: ['dev', 'cc-session', 'skill-md', 'mode', 'generator', 'control', 'conservator', 'agg', 'gate', 'output'],
+        auxNodes: ['scope-gate'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
+          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        gateFails: true,
+        steps: [
+          'O deliberare se termină cu voturi mixte de la Generator și Control.',
+          'Risk score-ul <b>Conservator-ului</b> e peste pragul de veto configurat (ex. <code>0.80</code>).',
+          'Aggregator-ul declanșează path-ul de veto sub <code>conservative_override</code>.',
+          'Gate-ul <b>eșuează</b> — candidate-ul e respins; alternativa next-best e aleasă dacă există.',
+          'Run-ul e înregistrat în <code>runs/&lt;id&gt;.json</code> cu <code>veto_triggered: true</code> și pragul.',
+          'Consola tipărește rationale-ul vetoului ca developer-ul să decidă dacă revizuiește și reia.'
+        ]
+      },
+      {
+        id: 'multi-file',
+        name: 'Refactor multi-fișier',
+        mode: 'Dialectic',
+        desc: 'Diff-uri bundled peste mai multe fișiere; vocile evaluează cohesion, scope drift, și risc per-fișier înainte de o decizie unică.',
+        path: BASE_PATH,
+        auxNodes: ['scope-gate', 'dialectic-merge'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
+          ['generator', 'control', 'bi'], ['control', 'conservator', 'bi'],
+          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer-ul</b> pasează un bundle de diff-uri legate la skill.',
+          'Skill-ul alege <b>Dialectic mode</b> cu prompts conștiente multi-fișier.',
+          'Generator-ul ia fiecare fișier pe rând dar propune o singură direcție coerentă.',
+          'Control-ul verifică consistența cross-fișier (simboluri partajate, contracte de tip, error paths).',
+          'Conservator-ul scorează <i>scope drift</i> per fișier și flag-uiește edits care nu se potrivesc cu goal-ul.',
+          'Aggregator-ul emite o singură decizie + un risk breakdown per-fișier; gate-ul <b>trece</b> și bundle-ul e aprobat ca o unitate.'
+        ]
+      },
+      {
+        id: 'trias',
+        name: 'Deliberare Trias',
+        mode: 'Trias',
+        desc: 'Trei personalități rulează fiecare propriul parallel mode, apoi un vot democratic majoritar tranșează alegerea. Vezi schema deep-dive de mai jos pentru fan-out-ul de 9 sub-agenți.',
+        path: ['dev', 'cc-session', 'skill-md', 'mode', 'pioneer', 'architect', 'steward', 'agg', 'gate', 'output'],
+        auxNodes: ['scope-gate'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'pioneer'], ['mode', 'architect'], ['mode', 'steward'],
+          ['pioneer', 'agg'], ['architect', 'agg'], ['steward', 'agg'],
+          ['agg', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer-ul</b> opt-in la <b>Trias mode</b> pentru o decizie high-stakes (ex. alegere de arhitectură).',
+          'Skill-ul dispatch trei personalități — Pioneer (G-weighted), Architect (C-weighted), Steward (K-weighted).',
+          'Fiecare personalitate orchestrează propria rundă paralelă peste cele trei voci — vezi schema <i>Trias deep-dive</i> de mai jos pentru cei 9 sub-agenți.',
+          'Un vot democratic majoritar e luat peste personalități — 3-0, 2-1, sau 2-0 dă o decizie automată.',
+          'Un split 1-1-1 sau o minoritate slabă escaladează run-ul în loc să decidă automat.',
+          'Când majoritatea e atinsă, gate-ul <b>trece</b> și raportul canonic înregistrează toate cele trei voturi de personalitate.'
+        ]
+      },
+      {
+        id: 'skeptic-challenge',
+        name: 'Provocare Skeptic',
+        mode: 'Parallel + Skeptic',
+        desc: 'Când confidence ∈ [0.5, 0.7], un Skeptic focal provoacă <code>chosen</code> — primește doar chosen, nu și ceilalți candidați.',
+        path: ['dev', 'cc-session', 'skill-md', 'mode', 'generator', 'control', 'conservator', 'agg', 'skeptic', 'gate', 'output'],
+        auxNodes: ['scope-gate'],
+        edges: [
+          ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
+          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
+          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['agg', 'skeptic'], ['skeptic', 'gate'], ['gate', 'output']
+        ],
+        steps: [
+          '<b>Developer-ul</b> rulează un Parallel review obișnuit.',
+          'Trei voci dispatch-uite ca sub-agenți independenți; aggregator-ul produce <code>chosen</code> + confidence.',
+          'Confidence cade în zona marginală <code>[0.5, 0.7]</code> — orchestratorul activează automat <b>parallel_skeptic</b>.',
+          'Un sub-agent focal <b>Skeptic</b> (<code>prompts/skeptic.md</code>) primește <i>doar</i> <code>chosen</code> și <code>success_criterion</code> — fără ceilalți candidați, fără voturile vocilor de bază.',
+          'Skeptic-ul produce un challenge focal: dacă întărește alegerea, gate-ul <b>trece</b>; dacă găsește un risc serios, deliberarea escaladează.',
+          'Cost total: 1.33× Parallel (4 sub-agenți). Skeptic-ul nu se activează dacă confidence ≥ 0.7 sau confidence < 0.5.'
+        ]
+      }
+    ];
+
+    function flowEdges(flow) {
+      if (flow.edges) return flow.edges;
+      var out = [];
+      for (var i = 0; i < flow.path.length - 1; i++) {
+        out.push([flow.path[i], flow.path[i + 1]]);
+      }
+      return out;
+    }
+
+    var diagram = document.getElementById('patDiagram');
+    var grid    = document.getElementById('patGrid');
+    var svg     = document.getElementById('patSvg');
+    var flowsBox = document.getElementById('patFlows');
+    var stepsList = document.getElementById('patStepsList');
+    if (!diagram || !grid || !svg || !flowsBox || !stepsList) return;
+
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+    var activeFlow = FLOWS[0].id;
+
+    /* Render flow buttons */
+    FLOWS.forEach(function(f) {
+      var btn = document.createElement('button');
+      btn.className = 'pat-flow' + (f.id === activeFlow ? ' active' : '');
+      btn.setAttribute('data-flow', f.id);
+      btn.innerHTML =
+        '<div class="pf-name">' + f.name + ' <span class="pf-mode">' + f.mode + '</span></div>' +
+        '<div class="pf-desc">' + f.desc + '</div>';
+      btn.addEventListener('click', function() { setActive(f.id); });
+      flowsBox.appendChild(btn);
+    });
+
+    function getNodeCenters() {
+      var diagRect = diagram.getBoundingClientRect();
+      var centers = {};
+      diagram.querySelectorAll('.pat-node').forEach(function(n) {
+        var r = n.getBoundingClientRect();
+        // Skip nodes that are display:none (zero-size). These exist in DOM for
+        // alternate flow sets (e.g., Personalities for Trias) but are hidden when
+        // the flow doesn't apply, so they should not anchor any edges.
+        if (r.width === 0 && r.height === 0) return;
+        centers[n.getAttribute('data-node')] = {
+          x: r.left - diagRect.left + r.width / 2,
+          y: r.top  - diagRect.top  + r.height / 2,
+          right:  r.right  - diagRect.left,
+          left:   r.left   - diagRect.left,
+          top:    r.top    - diagRect.top,
+          bottom: r.bottom - diagRect.top,
+          width: r.width,
+          height: r.height,
+          el: n
+        };
+      });
+      return centers;
+    }
+
+    /* Union of all edges across flows — used to draw the always-visible base graph. Each flow's edges are either explicit (flow.edges) or derived from consecutive path elements. Edge tuple: [from, to] or [from, to, 'bi']. */
+    function edgeKey(e) { return e[0] + '>' + e[1] + (e[2] === 'bi' ? '|bi' : ''); }
+
+    function allConnections() {
+      var set = {};
+      FLOWS.forEach(function(f) {
+        flowEdges(f).forEach(function(e) {
+          set[edgeKey(e)] = e;
+        });
+      });
+      return Object.values(set);
+    }
+    var CONNECTIONS = allConnections();
+
+    function flowConnectionSet(flow) {
+      var s = {};
+      flowEdges(flow).forEach(function(e) {
+        s[edgeKey(e)] = true;
+      });
+      return s;
+    }
+
+    /* Compute the SVG path for an edge between two node positions.
+       Three regimes:
+         - same column (vertical edge):  route as a J-curve along the right side of the column
+         - forward (a.x < b.x):          standard left-to-right S-curve, anchored a.right -> b.left
+                                         with optional y offsets at both ends to support fan-in / fan-out
+         - backward (a.x > b.x):         anchored a.left -> b.right; path goes right-to-left
+       The y-offsets let multiple edges into the same target enter at distinct points
+       on the target's left edge, so curves do not pile up and overlap intervening nodes.
+    */
+    /* Detect whether an edge is vertical-dominant (top-to-bottom flow) or
+       horizontal-dominant (left-to-right flow). The layout is now top-to-bottom
+       so most edges are vertical, but same-row edges (skill-md -> mode, voice <-> voice
+       in Dialectic) are horizontal. */
+    function pathBetween(a, b, opts) {
+      opts = opts || {};
+      var dx = b.x - a.x;
+      var dy = b.y - a.y;
+      var verticalDominant = Math.abs(dy) > Math.abs(dx);
+
+      if (verticalDominant) {
+        // Top-to-bottom (or reversed): anchor source.bottom -> target.top
+        var down = dy >= 0;
+        var src = down ? a : b;
+        var dst = down ? b : a;
+        var sx = (down ? (opts.srcOffsetX || 0) : (opts.dstOffsetX || 0));
+        var tx = (down ? (opts.dstOffsetX || 0) : (opts.srcOffsetX || 0));
+        var x1 = src.x + sx, y1 = src.bottom;
+        var x2 = dst.x + tx, y2 = dst.top;
+        var amp = Math.max(36, (y2 - y1) * 0.55);
+        return {
+          d: 'M ' + x1 + ' ' + y1 +
+             ' C ' + x1 + ' ' + (y1 + amp) + ', ' +
+                     x2 + ' ' + (y2 - amp) + ', ' +
+                     x2 + ' ' + y2,
+          reversed: !down,
+          vertical: true
+        };
+      }
+
+      // Horizontal: anchor source.right -> target.left
+      var forward = dx >= 0;
+      var src = forward ? a : b;
+      var dst = forward ? b : a;
+      var sOff = forward ? (opts.srcOffsetY || 0) : (opts.dstOffsetY || 0);
+      var dOff = forward ? (opts.dstOffsetY || 0) : (opts.srcOffsetY || 0);
+      var x1 = src.right, y1 = src.y + sOff;
+      var x2 = dst.left,  y2 = dst.y + dOff;
+      var amp = Math.max(36, (x2 - x1) * 0.55);
+      return {
+        d: 'M ' + x1 + ' ' + y1 +
+           ' C ' + (x1 + amp) + ' ' + y1 + ', ' +
+                   (x2 - amp) + ' ' + y2 + ', ' +
+                   x2 + ' ' + y2,
+        reversed: !forward,
+        vertical: false
+      };
+    }
+
+    /* For each edge in the render set, compute small src/dst offsets so that:
+         - vertical edges (top-to-bottom layout): spread along X axis at the node's top/bottom edge
+         - horizontal edges: spread along Y axis at the node's left/right edge
+       Edges are classified as vertical or horizontal based on geometry, and the
+       perpendicular axis is the spread axis. Multiple incoming or outgoing edges
+       to the same node are distributed evenly across the node's perpendicular span. */
+    function computeEdgeOffsets(edgesToDraw, centers) {
+      function isVertical(edge) {
+        var a = centers[edge[0]], b = centers[edge[1]];
+        if (!a || !b) return false;
+        return Math.abs(b.y - a.y) > Math.abs(b.x - a.x);
+      }
+
+      // Group edges by (endpoint, axis). Spread is only within a same-axis group.
+      var groups = {};
+      function add(map, key, edge) {
+        map[key] = map[key] || [];
+        map[key].push(edge);
+      }
+      edgesToDraw.forEach(function(edge) {
+        var axis = isVertical(edge) ? 'v' : 'h';
+        add(groups, 'src|' + edge[0] + '|' + axis, edge);
+        add(groups, 'dst|' + edge[1] + '|' + axis, edge);
+      });
+
+      // Within each group, sort by the OTHER endpoint's perpendicular-axis position,
+      // so the spread comes out in geometric order.
+      Object.keys(groups).forEach(function(key) {
+        var parts = key.split('|');
+        var role = parts[0];      // 'src' or 'dst'
+        var axis = parts[2];      // 'v' or 'h'
+        var otherIdx = role === 'src' ? 1 : 0;
+        groups[key].sort(function(e1, e2) {
+          var c1 = centers[e1[otherIdx]], c2 = centers[e2[otherIdx]];
+          if (!c1 || !c2) return 0;
+          return axis === 'v' ? (c1.x - c2.x) : (c1.y - c2.y);
+        });
+      });
+
+      function spread(idx, total, span) {
+        if (total <= 1) return 0;
+        var amp = span * 0.35;
+        var t = (idx / (total - 1)) - 0.5;
+        return t * 2 * amp;
+      }
+
+      var offsets = new Map();
+      edgesToDraw.forEach(function(edge) {
+        var axis = isVertical(edge) ? 'v' : 'h';
+        var srcKey = 'src|' + edge[0] + '|' + axis;
+        var dstKey = 'dst|' + edge[1] + '|' + axis;
+        var srcGroup = groups[srcKey];
+        var dstGroup = groups[dstKey];
+        var srcCenter = centers[edge[0]];
+        var dstCenter = centers[edge[1]];
+        var srcIdx = srcGroup.indexOf(edge);
+        var dstIdx = dstGroup.indexOf(edge);
+
+        var off = {};
+        if (axis === 'v') {
+          // Spread along X axis (perpendicular to vertical flow)
+          off.srcOffsetX = (srcGroup.length > 1 && srcCenter)
+            ? spread(srcIdx, srcGroup.length, srcCenter.width) : 0;
+          off.dstOffsetX = (dstGroup.length > 1 && dstCenter)
+            ? spread(dstIdx, dstGroup.length, dstCenter.width) : 0;
+        } else {
+          // Spread along Y axis (perpendicular to horizontal flow)
+          off.srcOffsetY = (srcGroup.length > 1 && srcCenter)
+            ? spread(srcIdx, srcGroup.length, srcCenter.height) : 0;
+          off.dstOffsetY = (dstGroup.length > 1 && dstCenter)
+            ? spread(dstIdx, dstGroup.length, dstCenter.height) : 0;
+        }
+        offsets.set(edge, off);
+      });
+      return offsets;
+    }
+
+    /* Insert <defs> with arrow markers — called every redraw because svg.innerHTML='' wipes them. */
+    function ensureDefs() {
+      var defs = document.createElementNS(SVG_NS, 'defs');
+      defs.innerHTML =
+        '<marker id="pat-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">' +
+          '<path d="M0,0 L10,5 L0,10 z" class="pat-arrow-head"/>' +
+        '</marker>' +
+        '<marker id="pat-arrow-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse">' +
+          '<path d="M0,0 L10,5 L0,10 z" class="pat-arrow-head in-flow"/>' +
+        '</marker>' +
+        '<marker id="pat-arrow-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">' +
+          '<path d="M0,0 L10,5 L0,10 z" class="pat-arrow-head dim"/>' +
+        '</marker>';
+      svg.appendChild(defs);
+    }
+
+    function redraw() {
+      var rect = diagram.getBoundingClientRect();
+      // Set data-flow BEFORE measuring node positions — this triggers the CSS
+      // swap between Voices and Personalities so we measure the right set.
+      diagram.setAttribute('data-flow', activeFlow);
+
+      svg.setAttribute('viewBox', '0 0 ' + rect.width + ' ' + rect.height);
+      svg.setAttribute('width', rect.width);
+      svg.setAttribute('height', rect.height);
+
+      var centers = getNodeCenters();
+      var flow = FLOWS.find(function(f) { return f.id === activeFlow; });
+      var inFlow = flowConnectionSet(flow);
+      var inFlowNodes = {};
+      flow.path.forEach(function(n) { inFlowNodes[n] = true; });
+      /* Auxiliary script nodes (scope_gate, strip_context, dialectic_merge, confidence, personalities)
+         are not in the edge graph but light up when their mode is active. */
+      if (flow.auxNodes) {
+        flow.auxNodes.forEach(function(n) { inFlowNodes[n] = true; });
+      }
+
+      diagram.querySelectorAll('.pat-node').forEach(function(n) {
+        var id = n.getAttribute('data-node');
+        n.classList.toggle('in-flow', !!inFlowNodes[id]);
+        n.classList.toggle('dim',     !inFlowNodes[id]);
+      });
+
+      /* Gate node flips PASS (default green) <-> FAIL (red) based on the active flow. */
+      var gateEl = diagram.querySelector('[data-node="gate"]');
+      if (gateEl) {
+        gateEl.classList.toggle('failing', !!flow.gateFails);
+      }
+
+      svg.innerHTML = '';
+      ensureDefs();
+
+      // Filter to drawable edges first so offset computation is over the rendered set
+      var edgesToDraw = CONNECTIONS.filter(function(edge) {
+        var a = centers[edge[0]], b = centers[edge[1]];
+        if (!a || !b) return false;
+        if (Math.abs(a.x - b.x) < 4 && Math.abs(a.y - b.y) < 4) return false;
+        return true;
+      });
+
+      var offsets = computeEdgeOffsets(edgesToDraw, centers);
+
+      edgesToDraw.forEach(function(edge) {
+        var aId = edge[0], bId = edge[1], bi = edge[2] === 'bi';
+        var a = centers[aId], b = centers[bId];
+        var off = offsets.get(edge) || { srcOffsetY: 0, dstOffsetY: 0 };
+
+        var path = pathBetween(a, b, off);
+        var isInFlow = !!inFlow[edgeKey(edge)];
+        var p = document.createElementNS(SVG_NS, 'path');
+        p.setAttribute('d', path.d);
+        p.setAttribute('class', 'pat-line ' + (isInFlow ? 'in-flow' : 'dim'));
+
+        var markerId = isInFlow ? 'pat-arrow-flow' : 'pat-arrow-dim';
+        var arrowUrl = 'url(#' + markerId + ')';
+
+        if (bi) {
+          p.setAttribute('marker-start', arrowUrl);
+          p.setAttribute('marker-end',   arrowUrl);
+        } else if (path.reversed) {
+          p.setAttribute('marker-start', arrowUrl);
+        } else {
+          p.setAttribute('marker-end',   arrowUrl);
+        }
+        svg.appendChild(p);
+      });
+    }
+
+    function setActive(id) {
+      activeFlow = id;
+      flowsBox.querySelectorAll('.pat-flow').forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-flow') === id);
+      });
+      var flow = FLOWS.find(function(f) { return f.id === id; });
+      stepsList.innerHTML = flow.steps.map(function(s) { return '<li>' + s + '</li>'; }).join('');
+      redraw();
+    }
+
+    window.__patternsRedraw = redraw;
+    window.addEventListener('resize', function() {
+      // Debounce
+      clearTimeout(window.__patResizeT);
+      window.__patResizeT = setTimeout(redraw, 80);
+    });
+
+    /* Fullscreen toggle (applies to the whole document, not just #patterns) */
+    var fsBtn = document.getElementById('patFullscreenBtn');
+    var fsTarget = document.documentElement;
+    function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+    function enterFullscreen() {
+      if (isFullscreen()) return Promise.resolve();
+      var req = fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen;
+      if (!req) return Promise.resolve();
+      try {
+        var p = req.call(fsTarget);
+        return (p && p.then) ? p : Promise.resolve();
+      } catch (e) { return Promise.resolve(); }
+    }
+    function exitFullscreen() {
+      if (!isFullscreen()) return;
+      var doc = document;
+      if (doc.exitFullscreen) doc.exitFullscreen();
+      else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+    }
+    if (fsBtn) {
+      fsBtn.addEventListener('click', function() {
+        if (isFullscreen()) exitFullscreen();
+        else enterFullscreen();
+      });
+      function onFsChange() {
+        var fs = isFullscreen();
+        fsBtn.querySelector('.icon').textContent = fs ? '⤣' : '⤢';
+        fsBtn.querySelector('.label').textContent = fs ? 'Ieși din ecran complet' : 'Ecran complet';
+        setTimeout(redraw, 100);
+      }
+      document.addEventListener('fullscreenchange', onFsChange);
+      document.addEventListener('webkitfullscreenchange', onFsChange);
+    }
+
+    /* Auto-tour: cycle through every flow with a slow scroll. Optionally play your
+       favourite riff in another tab first (we don't embed audio — copyright).      */
+    var playBtn = document.getElementById('patPlayBtn');
+    var progress = document.getElementById('patTourProgress');
+    var tour = { running: false, flowTimer: null, rafId: null };
+    var TOUR_FLOW_MS = 5000;
+
+    function setPlayBtnState(running) {
+      if (!playBtn) return;
+      var icon = playBtn.querySelector('.icon');
+      var label = playBtn.querySelector('.label');
+      if (running) {
+        icon.textContent = '⏹'; label.textContent = 'Oprește tur';
+        playBtn.classList.add('running');
+      } else {
+        icon.textContent = '▶'; label.textContent = 'Pornește tur';
+        playBtn.classList.remove('running');
+      }
+    }
+
+    function getScroller() {
+      // In fullscreen on <html>, the documentElement is still the scroller.
+      return document.scrollingElement || document.documentElement;
+    }
+
+    function stopTour() {
+      tour.running = false;
+      if (tour.flowTimer) { clearTimeout(tour.flowTimer); tour.flowTimer = null; }
+      if (tour.rafId) { cancelAnimationFrame(tour.rafId); tour.rafId = null; }
+      setPlayBtnState(false);
+      if (progress) {
+        progress.classList.remove('active');
+        progress.firstElementChild.style.width = '0%';
+      }
+    }
+
+    /* Smoothly scroll the document scroller to a target Y position over `duration` ms.
+       Returns a promise that resolves when the scroll completes (or the tour is stopped). */
+    function smoothScrollTo(targetY, duration) {
+      return new Promise(function(resolve) {
+        var scroller = getScroller();
+        var startY = scroller.scrollTop;
+        var maxY = scroller.scrollHeight - scroller.clientHeight;
+        var endY = Math.max(0, Math.min(maxY, targetY));
+        var startTime = Date.now();
+        function tick() {
+          if (!tour.running) { resolve(); return; }
+          var elapsed = Date.now() - startTime;
+          var t = Math.min(1, elapsed / duration);
+          // ease-in-out cubic
+          var eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          getScroller().scrollTop = startY + (endY - startY) * eased;
+          if (t < 1) {
+            tour.rafId = requestAnimationFrame(tick);
+          } else {
+            resolve();
+          }
+        }
+        tour.rafId = requestAnimationFrame(tick);
+      });
+    }
+
+    /* Tour timings (ms). Total ≈ 28.2s. */
+    var TOUR_TIMINGS = {
+      scrollToSchema: 4000,
+      pauseAtSchema:  1000,
+      perFlow:        3000,  // × 6 flows = 18000
+      scrollToBottom: 4000,
+      pauseAtBottom:  1200
+    };
+
+    function startTour() {
+      if (tour.running) return;
+      tour.running = true;
+      setPlayBtnState(true);
+      if (progress) progress.classList.add('active');
+
+      var total = FLOWS.length;
+      var totalMs = TOUR_TIMINGS.scrollToSchema + TOUR_TIMINGS.pauseAtSchema +
+                    (total * TOUR_TIMINGS.perFlow) + TOUR_TIMINGS.scrollToBottom +
+                    TOUR_TIMINGS.pauseAtBottom;
+      var startTime;
+      var labelEl = playBtn ? playBtn.querySelector('.label') : null;
+      function updateProgress() {
+        if (!tour.running) return;
+        var elapsed = Date.now() - startTime;
+        var pct = Math.min(100, (elapsed / totalMs) * 100);
+        if (progress) progress.firstElementChild.style.width = pct + '%';
+        if (labelEl) {
+          var remainingSec = Math.max(0, Math.ceil((totalMs - elapsed) / 1000));
+          labelEl.textContent = 'Oprește · ' + remainingSec + 's';
+        }
+        if (pct < 100) tour.rafId = requestAnimationFrame(updateProgress);
+      }
+
+      enterFullscreen().then(function() {
+        setTimeout(function() {
+          if (!tour.running) return;
+          startTime = Date.now();
+          tour.rafId = requestAnimationFrame(updateProgress);
+
+          var diagramEl = document.getElementById('patDiagram');
+          var scroller = getScroller();
+          var diagramTopY = scroller.scrollTop + diagramEl.getBoundingClientRect().top - 60;
+
+          // Phase 1: gentle scroll down to the schema
+          smoothScrollTo(diagramTopY, TOUR_TIMINGS.scrollToSchema).then(function() {
+            if (!tour.running) return;
+            // Phase 1.5: 1-second breathing pause at the schema
+            return new Promise(function(r) {
+              tour.flowTimer = setTimeout(r, TOUR_TIMINGS.pauseAtSchema);
+            });
+          }).then(function() {
+            if (!tour.running) return;
+            // Phase 2: cycle every flow at the schema
+            var idx = 0;
+            setActive(FLOWS[idx].id);
+            return new Promise(function(resolve) {
+              function nextFlow() {
+                if (!tour.running) { resolve(); return; }
+                idx++;
+                if (idx >= total) { resolve(); return; }
+                setActive(FLOWS[idx].id);
+                tour.flowTimer = setTimeout(nextFlow, TOUR_TIMINGS.perFlow);
+              }
+              tour.flowTimer = setTimeout(nextFlow, TOUR_TIMINGS.perFlow);
+            });
+          }).then(function() {
+            if (!tour.running) return;
+            // Phase 3: scroll the rest of the page (Voices bias, Trias sections, Calibration)
+            var s = getScroller();
+            return smoothScrollTo(s.scrollHeight - s.clientHeight, TOUR_TIMINGS.scrollToBottom);
+          }).then(function() {
+            if (!tour.running) return;
+            // Phase 4: brief pause at the bottom, then auto-stop
+            return new Promise(function(r) {
+              tour.flowTimer = setTimeout(r, TOUR_TIMINGS.pauseAtBottom);
+            });
+          }).then(function() {
+            if (tour.running) stopTour();
+          });
+        }, 400);
+      });
+    }
+
+    if (playBtn) {
+      playBtn.addEventListener('click', function() {
+        if (tour.running) stopTour();
+        else startTour();
+      });
+      // Stop tour if user manually exits fullscreen
+      document.addEventListener('fullscreenchange', function() {
+        if (!isFullscreen() && tour.running) stopTour();
+      });
+    }
+
+    // Initial render
+    setActive(activeFlow);
+    // Re-draw after fonts and reflow settle
+    setTimeout(redraw, 50);
+    setTimeout(redraw, 250);
   })();
 </script>
 
