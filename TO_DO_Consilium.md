@@ -2,7 +2,7 @@
 
 Rankate după raportul impact / efort. Categorii: **Prompt** (prompts/*.md), **Skill** (SKILL.md + scripts), **Arch** (arhitectură).
 
-**Stare 2026-05-15:** #13, #14, #15, #19 sunt implementate pe branch `feat/feedback-and-quality-loop` (vezi commit). Restul rămân deschise.
+**Stare 2026-05-15:** #13, #14, #15, #19 sunt implementate pe branch `feat/feedback-and-quality-loop` (vezi commit). #1, #16, #17, #20 dropped după deliberare Consilium (`runs/2026-05-15_2236_todo-triage.json`, chosen=`minimal_next_ship`, drop unanim între candidate non-trivial pentru #16/17/18/20; #1 drop la cerere user). #9 și #18 sub investigație (user). Restul rămân deschise.
 
 **Follow-up eval parity (planificat după parallel-review 0.57 conf):** branch `feat/eval-parity-rest` cu scenarii pentru:
 - `memory.py` tier medium/long/unknown (3 scenarii — cer fixtures runs/)
@@ -14,15 +14,6 @@ Total ~9 scenarii noi. Cere extensie a `run_evals.py` să accepte fixtures de fi
 ---
 
 ## Tier 1 — Quick wins (impact mare, efort mic)
-
-### 1. `success_criterion` explicit în Input la toate 3 voci
-**Categorie:** Prompt | **Impact:** Înalt | **Efort:** Mic
-
-Acum vocile primesc "the user's stated goal" — o formulare liberă. `success_criterion` e propoziția testabilă din Step 1 și e mai precisă. Conservator nu poate scora corect `scope_drift` fără ea.
-
-Fix: adaugă `success_criterion: <string>` ca prim câmp în secțiunea `## Input` din `generator.md`, `control.md`, `conservator.md`.
-
----
 
 ### 2. Conservator Mindset — "scorezi risc, nu valoare netă"
 **Categorie:** Prompt | **Impact:** Înalt | **Efort:** Mic
@@ -118,6 +109,7 @@ Never guess and mark it verified.
 
 ### 9. Goal-fit check mutat la pasul 1 în Control
 **Categorie:** Prompt | **Impact:** Mediu | **Efort:** Mic-Mediu
+**Status:** INVESTIGATE (user, 2026-05-15) — re-evaluare înainte de ship.
 
 Acum Control face types → logic → tests → style → goal-fit. Dacă candidatul nu adresează success_criterion, primele 4 verificări sunt irosite.
 
@@ -208,30 +200,13 @@ Necesită: un CLI `consilium mark-outcome <run-id> BAD --reason "..."` și actua
 
 ---
 
-### 16. Meta-controller cu autoritate reală
-**Categorie:** Arch | **Impact:** Mediu | **Efort:** Mare
-
-Acum orchestratorul execută pașii secvențial fără să poată decide "deliberarea a deraiat, restart cu alt framing". Nu poate sări Control pentru un candidat trivial sau cere mai mult context înainte de Generator.
-
-Implementare: un script `meta_controller.py` care primește starea curentă și decide next step (continue / restart / enrich-context / skip-voice).
-
----
-
-### 17. Semantic memory — deliberări trecute căutabile prin similaritate
-**Categorie:** Arch | **Impact:** Mediu | **Efort:** Foarte Mare
-
-`runs/*.json` sunt episodice dar nu căutabile tematic. `priors.py` citește ultimele N runs indiferent de relevanță. Nu poți întreba "deliberări trecute similare cu această schimbare de auth".
-
-Necesită: indexare embeddings pe `runs/*.json` + query la Step 0 cu schimbarea curentă ca seed.
-
----
-
 ### 18. Observe → Think → Act → Learn loop formal
 **Categorie:** Arch | **Impact:** Mediu | **Efort:** Foarte Mare
+**Status:** INVESTIGATE (user, 2026-05-15) — păstrat pentru explorare ulterioară.
 
 Schelet-ul există deja implicit (Step 1 = Observe, Steps 2-4 = Think, Step 5 = Act, Step 6 = Learn). Formalizarea ca loop explicit cu state machine ar permite restart, enrichment, și skip-uri condiționate.
 
-Risc: Consilium devine agentic și nedeterminist — contrazice Principiul 2 (Simplicity first). De implementat doar dacă meta-controller (17) e deja stabil.
+Risc: Consilium devine agentic și nedeterminist — contrazice Principiul 2 (Simplicity first). De implementat doar dacă meta-controller (16, dropped) e deja stabil.
 
 ---
 
@@ -248,24 +223,10 @@ Formalizarea nu adaugă capabilități noi — doar documentație și posibil un
 
 ---
 
-### 20. Mecanism variation example în Generator Constraints
-**Categorie:** Prompt | **Impact:** Scăzut | **Efort:** Mic
-
-"Vary on at least one axis: scope, abstraction level, timing, or mechanism" — `mechanism` e cel mai abstract ax și cel mai rar variat în practică pentru că nu există exemplu concret.
-
-Fix: adaugă exemplu inline:
-```
-mechanism: e.g. instead of patching at call site, intercept at middleware level;
-instead of polling, use event-driven notification.
-```
-
----
-
 ## Sumar rapid
 
 | # | Titlu | Categorie | Impact | Efort |
 |---|-------|-----------|--------|-------|
-| 1 | success_criterion în Input la toate 3 | Prompt | Înalt | Mic |
 | 2 | Conservator: risc ≠ valoare netă | Prompt | Înalt | Mic |
 | 3 | Control: standard consistent | Prompt | Înalt | Mic |
 | 4 | Generator: nu te ancora | Prompt | Mediu | Mic |
@@ -273,15 +234,12 @@ instead of polling, use event-driven notification.
 | 6 | Shared/core code definit în Conservator | Prompt | Mediu | Mic |
 | 7 | Sketch depth specificat | Prompt | Mediu | Mic |
 | 8 | Control: citește fișierele, nu specula | Prompt | Mediu | Mic |
-| 9 | Goal-fit → pasul 0 în Control | Prompt | Mediu | Mic-Mediu |
+| 9 | Goal-fit → pasul 0 în Control (INVESTIGATE) | Prompt | Mediu | Mic-Mediu |
 | 10 | Cap stacking regression_risk | Prompt | Mediu | Mic |
 | 11 | Candidați ireversibili by nature | Prompt | Mediu | Mediu |
 | 12 | probe_change data în Conservator Input | Prompt | Mediu | Mic |
-| 13 | Single retry la confidence scăzut | Skill | Mediu | Mediu |
-| 14 | Meta-critic calitate deliberare | Arch | Înalt | Mare |
-| 15 | Feedback din outcome real | Arch | Înalt | Mare |
-| 16 | Meta-controller cu autoritate | Arch | Mediu | Mare |
-| 17 | Semantic memory | Arch | Mediu | Foarte Mare |
-| 18 | Observe→Think→Act→Learn formal | Arch | Mediu | Foarte Mare |
-| 19 | Memory tiers formalizate | Arch | Scăzut | Mare |
-| 20 | Mechanism variation example | Prompt | Scăzut | Mic |
+| 13 | Single retry la confidence scăzut (DONE) | Skill | Mediu | Mediu |
+| 14 | Meta-critic calitate deliberare (DONE) | Arch | Înalt | Mare |
+| 15 | Feedback din outcome real (DONE) | Arch | Înalt | Mare |
+| 18 | Observe→Think→Act→Learn formal (INVESTIGATE) | Arch | Mediu | Foarte Mare |
+| 19 | Memory tiers formalizate (DONE) | Arch | Scăzut | Mare |
