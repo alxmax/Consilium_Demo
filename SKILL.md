@@ -203,6 +203,7 @@ python scripts/run_evals.py
 | `scripts/strip_context.py` | Proiectează output voce anterioară la minim (Steps 3-4 sequential) |
 | `scripts/dialectic_merge.py` | Combină Pass-1 + Pass-2 în payload aggregator-ready |
 | `scripts/personalities.py` | Trias mode — 3 personalități fixe cu weights + lens paths |
+| `prompts/skeptic.md` | Voce focală pentru `parallel_skeptic` și `dialectic_skeptic` — primește doar chosen, produce obiecție concretă sau `meta_scope_mismatch` |
 | `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite scripturi deterministe |
 | `scripts/usage.py` | Rollup telemetry din runs/ |
 | `agents/consilium-subagent.md` | Subagent pentru invocare izolată via `Agent(subagent_type="consilium-subagent", ...)` |
@@ -304,3 +305,84 @@ Two-pass: Pass 1 = parallel; Pass 2 = fiecare voce revizuiește văzând output-
 - Diff < 20 lines / 1 fișier — `scope_gate.py` va skip oricum
 - Conservatism strict cerut (Trias agregat e −18% Conservator)
 - Bugfix evident — Sequential blind ajunge
+
+## Parallel + Skeptic mode (`parallel_skeptic`)
+
+**Mecanica:** Parallel standard (3 voci Sonnet) + 1 voce **Skeptic** focală care primește DOAR chosen-ul (nu și ceilalți candidați, nu și verdicts-urile). Skeptic-ul produce o obiecție concretă pe chosen sau marchează `meta_scope_mismatch` dacă deliberarea însăși e supra-aplicată.
+
+**Cost:** 4 sub-agenți (1.33× Parallel).
+
+### Când să folosești
+- Confidence-ul din Parallel cade în banda `[0.5, 0.7]` — nu suficient pentru ship, nu suficient de jos pentru retry
+- Schimbări medium-stakes unde vrei un challenge focal post-hoc fără cost Trias
+- Probleme unde over-engineering e un risc real (trivial-but-framed-as-complex)
+
+### Workflow
+1. Rulează Parallel normal (Gen/Ctrl/Cons în paralel pe Sonnet 4.6) → produce `chosen` + `confidence`
+2. Dacă `confidence ∈ [0.5, 0.7]`, dispatch 1 sub-agent Sonnet 4.6 cu `prompts/skeptic.md` inline + input minim:
+   ```
+   chosen: <id, summary, sketch, rationale>
+   success_criterion: <propoziția testabilă>
+   verification: <comanda>
+   ```
+   NU pasezi alte candidate sau scoruri.
+3. Validează skeptic output-ul:
+   - `can_object: true` cu `concrete_concerns` ≥ 2 SAU `quoted_scenario` non-null → accept
+   - `can_object: true` fără evidence → reject (schema fail), ship chosen original
+   - `can_object: false` → ship chosen original, conf upgrade
+4. Acțiune pe baza `addressable`:
+   - `in_place` → ship chosen cu nota din skeptic în `deliberation_log`
+   - `requires_redesign` → ask user: alternative din `alternatives`?
+   - `unaddressable` cu `failure_mode: meta_scope_mismatch` → marchează raportul `misapplied`, log în FEEDBACK ca outcome=PEND cu nota "scope mismatch"
+
+### Skip parallel_skeptic dacă
+- Confidence ≥ 0.7 — skeptic n-are ce găsi
+- Confidence < 0.5 — prea jos, escaladare directă la Trias sau user
+- Diff e high-stakes intrinsec (auth, migrations) — folosește Trias direct
+
+## Dialectic + Skeptic mode (`dialectic_skeptic`)
+
+**Mecanica:** Dialectic two-pass standard (6 voci Sonnet) + 1 voce **Skeptic** focală pe chosen-ul final (același prompt și schema ca la `parallel_skeptic`). Skeptic-ul rulează după Pass 2, post-aggregation.
+
+**Cost:** 7 sub-agenți (~2.3× Parallel).
+
+### Când să folosești
+- Schimbări cu trade-off-uri reale care beneficiază de cross-review (Dialectic) PLUS un challenge focal final
+- Decizii medium-stakes unde vrei și revizia inter-voci (Dialectic catches some errors during Pass 2) ȘI o ultimă verificare focală
+- NU pentru detectarea fabricațiilor introduse în Pass 2 — Dialectic Pass 2 e sursa fabricațiilor cunoscute (vezi `experiments/run2-p3-reruns.html`), iar skeptic-ul vine după și nu poate unwind drift-ul Pass 1 → Pass 2
+
+### Workflow
+1. Rulează Dialectic complet (`scripts/dialectic_merge.py`) → `chosen` din Pass 2
+2. Dispatch skeptic cu același prompt minimal ca la `parallel_skeptic`
+3. Validare + acțiune identică cu `parallel_skeptic`
+
+### Limitare cunoscută
+Skeptic-ul vede DOAR chosen final, nu și Pass 1 vs Pass 2 drift. Dacă Dialectic Pass 2 fabricat constraint care a deplasat chosen, skeptic-ul evaluează doar finalitatea, nu mișcarea. Pentru drift detection, e nevoie de un mod separat (planificat: `dialectic_drift_guard`).
+
+## Trias split-model mode (`trias_split`)
+
+**Mecanica:** Trias standard (3 personalități × 3 voci = 9 sub-agenți) cu override de model:
+- **Generator voices** (1 per personalitate, 3 total) → Sonnet 4.6 (creativitate)
+- **Control + Conservator voices** (2 per personalitate, 6 total) → Haiku 4.5 (verificare rapidă)
+
+**Cost:** ~3.3× Parallel (vs 9× Parallel pentru Trias full).
+
+### Când să folosești
+- Decizii medium-stakes care beneficiază de diversitatea de personalități (3 perspective ortogonale) dar nu justifică costul Trias full
+- Probleme unde verificarea e relativ surface-level (factor scoring, sanity checks) — Haiku ajunge
+- Risc redus de fabricație: Haiku verifiers nu au capacitate cognitivă să elaboreze constraints fabricate, ceea ce face Trias split mai stabil decât Trias full pe probleme triviale (anti-fabrication mechanism — vezi `experiments/run2-p3-reruns.html`)
+
+### Workflow
+Identic cu Trias standard, dar override-uri explicite la dispatch:
+```
+Pentru fiecare personalitate (Pioneer/Architect/Steward):
+  Dispatch Generator: model="sonnet"
+  Dispatch Control:    model="haiku"
+  Dispatch Conservator: model="haiku"
+```
+Restul (vote pattern, confidence, failure recovery) identic cu Trias.
+
+### Skip trias_split dacă
+- Verificarea cere adâncime tehnică (security audit, schema migration complexă) — Haiku speculează, folosește Trias full
+- Diff trivial — un mod simplu (Sequential/Parallel) ajunge
+- Output schema strict required cu garanție 100% — Haiku violează ocazional instrucțiuni strict-JSON (vezi Run 1 lite_trias_A — disqualified for verbose output)

@@ -15,7 +15,20 @@ Acest repo este sursa skill-ului `consilium`. Pentru a-l **folosi**, invocă `/c
 ## Zone autoritative (atinge cu grijă)
 
 - **`prompts/*.md`** — citite de fiecare voce la rulare. O schimbare aici afectează toate deliberările viitoare → `regression_risk` mare în Conservator. Preferă să injectezi context suplimentar în input-ul vocii, nu în prompt.
+  - Vocile core: `generator.md`, `control.md`, `conservator.md` — rulate în orice mod
+  - `skeptic.md` — focal challenger, rulat doar în `parallel_skeptic` și `dialectic_skeptic`
+  - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended peste core voices în `trias` și `trias_split`
 - **`SKILL.md` Constitution + workflow** — schimbarea pașilor 1-6 rupe formatul JSON așteptat de `aggregator.py` și `validate_report.py`. Modifică deodată ambele.
+
+## Moduri disponibile
+
+Pe lângă cele 4 moduri originale (Sequential, Parallel, Dialectic, Trias), skill-ul documentează 3 moduri suplimentare în SKILL.md:
+
+- **`parallel_skeptic`** — Parallel + 1 voce Skeptic focală pe chosen (4 sub-agenți, 1.33× Parallel). Pentru medium-stakes când conf cade în `[0.5, 0.7]`.
+- **`dialectic_skeptic`** — Dialectic + 1 voce Skeptic focală pe chosen (7 sub-agenți, ~2.3× Parallel). Cross-review + challenge focal final.
+- **`trias_split`** — Trias cu model override (Sonnet Gen + Haiku verifiers, ~3.3× Parallel). Anti-fabricație via Haiku verifiers shallow.
+
+Aceste 3 moduri sunt **conceptuale + documentate**, fără cod dedicat (orchestrate prin dispatch standard cu prompts existente + skeptic.md). Pentru testare empirică pe P3, vezi `experiments/run2-p3-reruns.html`.
 
 ## Fișiere locale (gitignored)
 
