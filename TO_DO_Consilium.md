@@ -340,6 +340,116 @@ Fix:
 
 ---
 
+## Sugestii din sesiunea 2026-05-16 — audit flow models (Sequential / Parallel / Dialectic / Trias + 5 SPEC moduri)
+
+Findings din auditul peste cele 4 moduri implementate + cele descrise în `docs/architecture.html`. Cu `feat/skeptic-modes` (PR #34) merged, Skeptic + trias_split sunt documentate ca moduri "conceptuale" (SKILL.md). Iterative Dialectic rămâne SPEC nereimplementat.
+
+**Top 3 fixed pe `fix/audit-flow-modes-top3` (#36, #37, #38).** Restul rămân deschise.
+
+### 29. Pass-2 schema obligatorie documentată în SKILL.md
+**Categorie:** Skill | **Impact:** Mediu | **Efort:** Mic
+
+`dialectic_merge._is_dissent_compliant` cere `revision` SAU `maintained` pe fiecare item Pass-2. SKILL.md secțiunea Dialectic nu menționează contractul. Sub-agent uită câmpul → fallback tăcut la Pass-1.
+
+Fix: documentat parțial în secțiunea Dialectic (commit `3d59f39`). Mai trebuie extins per voce (generator/control/conservator pass2 prompts).
+
+### 30. Failure-mode section în SKILL.md Parallel
+**Categorie:** Skill | **Impact:** Înalt | **Efort:** Mic
+
+Sub-agent crash / JSON malformed / timeout nu au recovery path documentat. Cel mai frecvent failure mode în producție.
+
+### 31. VOTE_PATTERN_CONFIDENCE ordonare contraintuitivă
+**Categorie:** Skill | **Impact:** Mic | **Efort:** Mic
+
+`2-0` (veto total dintr-o personalitate) primește 0.75 confidence, `2-1` (dissent activ) primește 0.70. Veto e semnal mai grav decât dissent — ordinea trebuie inversată sau justificată. (Parțial atenuat de #37 când dissenter-ul e Steward.)
+
+### 32. Deduplică _TRIAS_EXPECTED_NAMES
+**Categorie:** Skill | **Impact:** Mic | **Efort:** Mic
+
+`validate_report.py:161` și `personalities.py:21-37` duplică lista personalităților. Drift inevitabil când adaugi a 4-a.
+
+Fix: import din `personalities.NAMES`.
+
+### 33. Documentează că `strip_context.py` se skip-uiește în Parallel
+**Categorie:** Skill | **Impact:** Mic | **Efort:** Trivial
+
+SKILL.md Step 3-4 zice "Sequential: rulează `strip_context.py`" fără să clarifice că Parallel nu are nevoie (sub-agenții sunt deja izolați).
+
+### 34. Şterge sau wrap deprecated `aggregate_weighted`
+**Categorie:** Skill | **Impact:** Mic | **Efort:** Mic
+
+`aggregator.py:73` are `aggregate_weighted` cu doar `warnings.warn`. Scoate-l din `SCHEMES` map sau ridică-l la `DeprecationWarning` cu `simplefilter("default")`.
+
+### 35. Folosește issue severity în `_voice_score_from_verdict`
+**Categorie:** Skill | **Impact:** Mediu | **Efort:** Mic
+
+`dialectic_merge.py:88` și `build_report.py:70` scad 0.15 per issue indiferent de severity. 1 typo trivial = 1 SQL injection. Control prompt cere severity dar score nu o folosește.
+
+Fix: ponderare `0.05 / 0.15 / 0.30` pe `severity: low/medium/high`.
+
+### 36. ✅ Trias telemetry obligatoriu — DONE (`fix/audit-flow-modes-top3`)
+**Categorie:** Skill | **Impact:** Înalt | **Efort:** Mic
+
+`validate_report.py:235` exempta Trias de la telemetry, deşi Trias e modul cel mai scump (9 sub-agenți). `usage.py` nu putea roll-ui costuri pentru exact tipul de run unde costul contează cel mai mult. Fix: scoate `if not is_trias` din `_validate_telemetry_required`.
+
+### 37. ✅ Steward-aware vote_pattern confidence — DONE (`fix/audit-flow-modes-top3`)
+**Categorie:** Skill | **Impact:** Înalt | **Efort:** Mediu
+
+`confidence_from_vote_pattern` primea doar pattern-ul, ignorând care personalitate a dissent-it / abținut. Steward dissent (vocea conservatoare) și Pioneer dissent (vocea progresistă) erau tratate identic — deşi spec-ul afirmă "Steward abstain semantics: semnal mai puternic". Fix: confidence cade cu 0.1 când Steward e dissenter, 0.15 când abstainer.
+
+### 38. ✅ Pass-2 silent fallback warning — DONE (`fix/audit-flow-modes-top3`)
+**Categorie:** Skill | **Impact:** Mediu | **Efort:** Mic
+
+`dialectic_merge.py` urmărea `dissent_fallbacks` și `silently_dropped` dar nu warning-uia. Fix: stderr warning când oricare e non-empty. Schema obligatorie documentată în SKILL.md secțiunea Dialectic.
+
+### 39. scope_gate blocklist extends pentru `*secrets*` folder
+**Categorie:** Skill | **Impact:** Mic | **Efort:** Trivial
+
+`**/secrets*` matchează `secrets.json` dar nu `with-secrets/foo`. Adaugă `**/*secrets*` sau directorul matching.
+
+### 40. telemetry.voices empty în Parallel → eroare (nu warning)
+**Categorie:** Skill | **Impact:** Mediu | **Efort:** Trivial
+
+`validate_report.py:146-154` doar emite warning. Orchestrator parallel care uită să captureze telemetry trece gate-ul, dar `usage.py` skip-uiește runul → cost vizibil 0.
+
+### 41. Tie-break determinist la `team_vote` duplicate top
+**Categorie:** Skill | **Impact:** Mic | **Efort:** Trivial
+
+`aggregator.py:277-280` foloseşte `for ... break` pe dict — non-deterministic dacă tally are 2 candidați cu același top count (matematic imposibil cu 3 voturi, dar codul nu validează input). Adaugă `raise ValueError` explicit.
+
+### 42. `signals.files_changed = None` la `CONSILIUM_FORCE_FULL=1` type-safe
+**Categorie:** Skill | **Impact:** Mic | **Efort:** Trivial
+
+`scope_gate.py:212-213` emite `None` pentru numerics. Consumeri downstream tipați se sparg. Fix: emite `-1` sau omite câmpurile.
+
+### 43. Iterative Dialectic — SPEC fără implementare
+**Categorie:** Arch | **Impact:** Mediu | **Efort:** Mare
+
+`docs/architecture.html` descrie modul iterative cu N=1..3 runde + convergence stop, marcat `SPEC` + warning "nu e încă implementat". `dialectic_merge.py` acceptă strict `{pass1, pass2}`.
+
+Fix path: ori implementează schema `{rounds: [...]}` în dialectic_merge.py cu convergence detection, ori șterge modul din HTML și actualizează CLAUDE.md (acum doar Skeptic+trias_split rămân ca "conceptuale, fără cod dedicat").
+
+### 44. Sequential "Chinese wall" iluzoriu — clarify în docs
+**Categorie:** Arch | **Impact:** Mediu | **Efort:** Mic
+
+Sequential rulează același LLM care joacă 3 roluri în acelaşi context. `strip_context.py` doar curăță prompt-ul vocii următoare; weights interne au procesat deja tot. Nu e Chinese wall real. HTML zice corect "Contaminare redusă" dar utilizatorii probabil interpretează vizualul (`<div class="wall">`) ca izolare reală.
+
+Fix: nota explicită în HTML + SKILL.md că Sequential e single-context, doar prompt-stripped.
+
+### 45. Lens injection validation end-to-end
+**Categorie:** Skill | **Impact:** Mediu | **Efort:** Mediu
+
+`prompts/<personality>_lens.md` sunt fişiere arbitrare. Niciun test că Pioneer e progress-leaning vs Steward risk-averse. Editor poate inversa accidental fără să fie detectat — toate testele scriptice trec. Overlap parțial cu #37 (Architect rebalance).
+
+Fix: scenariu eval care rulează un diff cu trade-off conservator-vs-progress și verifică că Pioneer alege novel iar Steward alege baseline.
+
+### 46. Generator Pass-2 candidate diff semantic în `revision_log`
+**Categorie:** Skill | **Impact:** Mic | **Efort:** Mediu
+
+`dialectic_merge._diff_candidates` listează `fields: ["sketch", "summary"]` ca "modified" dar nu emite diff propriu-zis. Audit promis ("revision_log auditează ce s-a schimbat") e doar nominal — nu poți reconstrui ce s-a schimbat fără ambele payload-uri originale.
+
+Fix: include payload before/after per field în `revision_log.diffs` (atenție la PII / cost storage).
+
 ## Sumar rapid
 
 | # | Titlu | Categorie | Impact | Efort |
@@ -369,3 +479,21 @@ Fix:
 | 26 | Lărgește trigger adversarial Generator (hot-path) | Prompt | Mediu | Mic |
 | 27 | confidence_in_verdict în Control | Prompt+Skill | Scăzut | Mediu |
 | 28 | pass2_revision + personalities_divergence metrics | Skill | Scăzut | Mediu |
+| 29 | Pass-2 schema în SKILL.md | Skill | Mediu | Mic |
+| 30 | Failure-mode section în Parallel | Skill | Înalt | Mic |
+| 31 | VOTE_PATTERN_CONFIDENCE reorder | Skill | Mic | Mic |
+| 32 | Deduplică _TRIAS_EXPECTED_NAMES | Skill | Mic | Mic |
+| 33 | strip_context skip în Parallel — doc | Skill | Mic | Trivial |
+| 34 | Şterge deprecated aggregate_weighted | Skill | Mic | Mic |
+| 35 | Severity-aware control score | Skill | Mediu | Mic |
+| 36 | Trias telemetry required (DONE) | Skill | Înalt | Mic |
+| 37 | Steward-aware confidence (DONE) | Skill | Înalt | Mediu |
+| 38 | Pass-2 silent fallback warning (DONE) | Skill | Mediu | Mic |
+| 39 | scope_gate blocklist `*secrets*` folder | Skill | Mic | Trivial |
+| 40 | Parallel telemetry empty → eroare | Skill | Mediu | Trivial |
+| 41 | team_vote tie-break determinist | Skill | Mic | Trivial |
+| 42 | scope_gate None signals type-safe | Skill | Mic | Trivial |
+| 43 | Iterative Dialectic — SPEC fără implementare | Arch | Mediu | Mare |
+| 44 | Sequential Chinese wall — clarify docs | Arch | Mediu | Mic |
+| 45 | Lens injection validation end-to-end | Skill | Mediu | Mediu |
+| 46 | Pass-2 diff semantic în revision_log | Skill | Mic | Mediu |

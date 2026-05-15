@@ -244,6 +244,48 @@
     }
   },
   {
+    "name": "confidence/vote_pattern 2-1 with steward dissent drops below PEND threshold",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "vote_pattern": "2-1",
+      "dissent": [{"personality": "steward", "chose": "B"}],
+      "abstained": []
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "confidence": 0.6,
+      "source": "vote_pattern"
+    }
+  },
+  {
+    "name": "confidence/vote_pattern 2-1 with pioneer dissent keeps baseline",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "vote_pattern": "2-1",
+      "dissent": [{"personality": "pioneer", "chose": "B"}],
+      "abstained": []
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "confidence": 0.7,
+      "source": "vote_pattern"
+    }
+  },
+  {
+    "name": "confidence/vote_pattern 2-0 with steward abstain drops below PEND threshold",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "vote_pattern": "2-0",
+      "dissent": [],
+      "abstained": [{"name": "steward", "reason": "all candidates vetoed"}]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "confidence": 0.6,
+      "source": "vote_pattern"
+    }
+  },
+  {
     "name": "validate_report/full report with required fields passes",
     "tool": "scripts/validate_report.py",
     "stdin_json": {
@@ -1493,6 +1535,41 @@
       "telemetry": {
         "mode": "sequential"
       }
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "validate_report/trias report without telemetry now fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "team": "trias",
+      "personalities": [
+        {"name": "pioneer", "weights": {}, "lens": "p", "chose": "approach_a"},
+        {"name": "architect", "weights": {}, "lens": "p", "chose": "approach_a"},
+        {"name": "steward", "weights": {}, "lens": "p", "chose": "approach_a"}
+      ],
+      "vote_pattern": "3-0"
+    },
+    "expect_exit": 1
+  },
+  {
+    "name": "validate_report/trias report with telemetry passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "team": "trias",
+      "personalities": [
+        {"name": "pioneer", "weights": {}, "lens": "p", "chose": "approach_a"},
+        {"name": "architect", "weights": {}, "lens": "p", "chose": "approach_a"},
+        {"name": "steward", "weights": {}, "lens": "p", "chose": "approach_a"}
+      ],
+      "vote_pattern": "3-0",
+      "telemetry": {"mode": "trias"}
     },
     "expect_exit": 0
   },

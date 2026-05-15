@@ -289,9 +289,48 @@ def main(argv: list[str] | None = None) -> int:
         print(f"merge failed: {exc}", file=sys.stderr)
         return 1
 
+    _emit_fallback_warnings(result.get("revision_log") or {})
+
     json.dump(result, sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0
+
+
+def _emit_fallback_warnings(revision_log: dict) -> None:
+    """Surface silent Pass-2 fallbacks so the orchestrator notices a 2× cost
+    deliberation degraded into Pass-1 for some voices/candidates.
+
+    Three failure modes get a warning each:
+      - whole-voice fallback (sub-agent skipped Pass-2 entirely)
+      - per-candidate dissent fallback (Pass-2 item lacks revision/maintained)
+      - silently dropped candidate (Pass-2 generator omitted a Pass-1 id)
+    """
+    fallbacks = revision_log.get("fallback_to_pass1") or {}
+    fallen = [v for v, fell in fallbacks.items() if fell]
+    if fallen:
+        print(
+            f"[warning] dialectic pass-2 fell back to pass-1 entirely for: "
+            f"{', '.join(sorted(fallen))} — sub-agent skipped pass-2 or returned empty",
+            file=sys.stderr,
+        )
+
+    dissent_fallbacks = revision_log.get("dissent_fallbacks") or {}
+    for voice, ids in dissent_fallbacks.items():
+        if ids:
+            print(
+                f"[warning] dialectic pass-2 dissent fallback for {voice}: "
+                f"{', '.join(sorted(ids))} — items missing required "
+                f"'revision' or 'maintained' field",
+                file=sys.stderr,
+            )
+
+    dropped = revision_log.get("silently_dropped") or []
+    if dropped:
+        print(
+            f"[warning] dialectic pass-2 generator silently dropped candidates: "
+            f"{', '.join(sorted(dropped))} — recovered from pass-1 data",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":

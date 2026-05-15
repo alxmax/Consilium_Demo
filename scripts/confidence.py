@@ -75,13 +75,37 @@ VOTE_PATTERN_CONFIDENCE = {
     "0-0-0": None,
 }
 
+# Steward is the conservative-leaning personality (weights K=0.40). When it
+# dissents or abstains, that carries more risk-signal than the same outcome
+# from Pioneer or Architect — drop confidence below the PEND threshold so
+# the orchestrator prompts the user instead of auto-shipping.
+STEWARD_DISSENT_PENALTY = 0.10
+STEWARD_ABSTAIN_PENALTY = 0.15
+STEWARD_NAME = "steward"
 
-def confidence_from_vote_pattern(pattern: str) -> dict:
+
+def _steward_involved(items: list[dict] | None, key: str) -> bool:
+    if not items:
+        return False
+    return any(isinstance(it, dict) and it.get(key) == STEWARD_NAME for it in items)
+
+
+def confidence_from_vote_pattern(
+    pattern: str,
+    dissent: list[dict] | None = None,
+    abstained: list[dict] | None = None,
+) -> dict:
     """Trias mode — derive confidence directly from democratic vote pattern.
 
     Returns the canonical confidence shape (confidence, agreement, separation)
     so downstream code doesn't need to branch on whether the input was Trias
     or score-based.
+
+    When ``dissent`` (list of ``{personality, chose}``) or ``abstained``
+    (list of ``{name, reason}``) is provided, applies a penalty when
+    Steward — the conservative voice — is the dissenter/abstainer. Other
+    personalities' dissent/abstain doesn't change confidence; the spec
+    flags Steward involvement as semantically stronger.
     """
     if pattern not in VOTE_PATTERN_CONFIDENCE:
         raise ValueError(f"unknown vote pattern: {pattern!r}")
@@ -92,12 +116,27 @@ def confidence_from_vote_pattern(pattern: str) -> dict:
         agreement = 2 / 3
     else:
         agreement = 0.0
-    return {
+
+    notes: list[str] = []
+    if conf is not None:
+        steward_dissenting = pattern == "2-1" and _steward_involved(dissent, "personality")
+        steward_abstaining = pattern == "2-0" and _steward_involved(abstained, "name")
+        if steward_dissenting:
+            conf = round(conf - STEWARD_DISSENT_PENALTY, 3)
+            notes.append(f"steward dissented (penalty {STEWARD_DISSENT_PENALTY})")
+        if steward_abstaining:
+            conf = round(conf - STEWARD_ABSTAIN_PENALTY, 3)
+            notes.append(f"steward abstained (penalty {STEWARD_ABSTAIN_PENALTY})")
+
+    result = {
         "confidence": conf,
         "agreement": agreement,
         "separation": None,
         "source": "vote_pattern",
     }
+    if notes:
+        result["notes"] = notes
+    return result
 
 
 def _utility_vec(scores: dict) -> list[float]:
@@ -187,9 +226,14 @@ def main(argv: list[str] | None = None) -> int:
     data = json.load(args.input)
 
     # Trias mode: when vote_pattern is present, derive confidence from pattern
-    # instead of from utility/variance over voice scores.
+    # instead of from utility/variance over voice scores. Dissent/abstained
+    # arrive on aggregator output piped from --scheme team_vote.
     if "vote_pattern" in data:
-        result = confidence_from_vote_pattern(data["vote_pattern"])
+        result = confidence_from_vote_pattern(
+            data["vote_pattern"],
+            dissent=data.get("dissent"),
+            abstained=data.get("abstained"),
+        )
         json.dump(result, sys.stdout, indent=2)
         sys.stdout.write("\n")
         return 0
