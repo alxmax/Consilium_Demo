@@ -157,6 +157,12 @@ def _gen_panel(run: dict, chosen_id: str) -> str:
     cands = gen_step.get("candidates") or []
     parts = [f'<div class="voice"><h4>Generator <span class="count">{len(cands)} candidates</span></h4>']
     for c in cands:
+        # Some legacy runs encode bare candidates as a plain string (e.g. "do_nothing").
+        # Promote them to a minimal dict so panel rendering stays uniform.
+        if isinstance(c, str):
+            c = {"id": c, "summary": "", "sketch": ""}
+        elif not isinstance(c, dict):
+            continue
         cid = _esc(c.get("id", ""))
         chosen_badge = ' <span class="badge valid">CHOSEN</span>' if c.get("id") == chosen_id else ""
         summary = _esc(c.get("summary", ""))
@@ -173,7 +179,7 @@ def _gen_panel(run: dict, chosen_id: str) -> str:
 def _ctrl_panel(run: dict) -> str:
     log = run.get("deliberation_log") or []
     ctrl_step = next((s for s in log if isinstance(s, dict) and s.get("step") == "control"), {})
-    verdicts = ctrl_step.get("verdicts") or []
+    verdicts = [v for v in (ctrl_step.get("verdicts") or []) if isinstance(v, dict)]
     n_valid = sum(1 for v in verdicts if v.get("valid"))
     n_invalid = len(verdicts) - n_valid
     parts = [f'<div class="voice"><h4>Control <span class="count">{n_valid} valid, {n_invalid} invalid</span></h4>']
@@ -201,7 +207,7 @@ def _ctrl_panel(run: dict) -> str:
 def _cons_panel(run: dict) -> str:
     log = run.get("deliberation_log") or []
     cons_step = next((s for s in log if isinstance(s, dict) and s.get("step") == "conservator"), {})
-    scores = cons_step.get("scores") or []
+    scores = [s for s in (cons_step.get("scores") or []) if isinstance(s, dict)]
     n_vetoed = sum(1 for s in scores if (s.get("risk_score") or 0) >= 0.7)
     parts = [f'<div class="voice"><h4>Conservator <span class="count">{len(scores)} scored, {n_vetoed} vetoed</span></h4>']
     for s in scores:

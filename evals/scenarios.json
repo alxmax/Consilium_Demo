@@ -1798,5 +1798,369 @@
         "reason": "all 3 personalities vetoed every candidate"
       }
     }
+  },
+  {
+    "name": "meta_critic/healthy bundle emits no flags",
+    "tool": "scripts/meta_critic.py",
+    "args": [],
+    "stdin_json": {
+      "generator": {
+        "candidates": [
+          {
+            "id": "a",
+            "summary": "rewrite parser iterative approach",
+            "sketch": "for token in tokens state transition compute result accumulator"
+          },
+          {
+            "id": "b",
+            "summary": "memoize recursive function calls",
+            "sketch": "wrap with lru_cache decorator input parameters cache invalidation"
+          },
+          {
+            "id": "c",
+            "summary": "parallel worker threads partition",
+            "sketch": "pool map process chunk partitions merge results ordered"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "a",
+            "issues": [
+              {
+                "category": "logic",
+                "detail": "potential off-by-one in state transition at scripts/parser.py:42 when input is empty"
+              }
+            ]
+          },
+          {
+            "id": "b",
+            "issues": [
+              {
+                "category": "tests",
+                "detail": "tests/test_cache_invalidation.py needs update for new memo signature"
+              }
+            ]
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "a",
+            "risk_score": 0.25
+          },
+          {
+            "id": "b",
+            "risk_score": 0.55
+          },
+          {
+            "id": "c",
+            "risk_score": 0.8
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "deliberation_quality": {
+        "flags": []
+      }
+    }
+  },
+  {
+    "name": "meta_critic/paraphrasing generator triggers divergence flag",
+    "tool": "scripts/meta_critic.py",
+    "args": [],
+    "stdin_json": {
+      "generator": {
+        "candidates": [
+          {
+            "id": "a",
+            "summary": "validation logic added new",
+            "sketch": "validation logic added new approach"
+          },
+          {
+            "id": "b",
+            "summary": "new validation logic added",
+            "sketch": "validation new logic added approach"
+          },
+          {
+            "id": "c",
+            "summary": "logic validation new added",
+            "sketch": "validation logic new added approach"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": []
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "a",
+            "risk_score": 0.3
+          },
+          {
+            "id": "b",
+            "risk_score": 0.4
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "generator_divergence"
+    ]
+  },
+  {
+    "name": "meta_critic/empty issues yields concreteness 1.0",
+    "tool": "scripts/meta_critic.py",
+    "args": [],
+    "stdin_json": {
+      "generator": {
+        "candidates": [
+          {
+            "id": "alpha",
+            "summary": "first distinct option",
+            "sketch": "completely different approach number one"
+          },
+          {
+            "id": "beta",
+            "summary": "second different option",
+            "sketch": "another approach using parallel mechanism"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "alpha",
+            "valid": true,
+            "issues": []
+          },
+          {
+            "id": "beta",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "alpha",
+            "risk_score": 0.2
+          },
+          {
+            "id": "beta",
+            "risk_score": 0.7
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "deliberation_quality": {
+        "control_concreteness": 1.0
+      }
+    }
+  },
+  {
+    "name": "meta_critic/single conservator score yields spread 0",
+    "tool": "scripts/meta_critic.py",
+    "args": [],
+    "stdin_json": {
+      "generator": {
+        "candidates": [
+          {
+            "id": "alpha",
+            "summary": "distinct approach one",
+            "sketch": "completely different mechanism"
+          },
+          {
+            "id": "beta",
+            "summary": "distinct approach two",
+            "sketch": "another orthogonal mechanism"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": []
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "alpha",
+            "risk_score": 0.5
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "deliberation_quality": {
+        "conservator_spread": 0.0
+      }
+    }
+  },
+  {
+    "name": "retry_context/low confidence recommends retry with top-2 candidates",
+    "tool": "scripts/retry_context.py",
+    "args": [],
+    "stdin_json": {
+      "confidence": 0.5,
+      "generator": {
+        "candidates": [
+          {
+            "id": "approach_a",
+            "summary": "edit scripts/foo.py to call helper",
+            "sketch": "scripts/foo.py needs change in helper() to handle None input"
+          },
+          {
+            "id": "approach_b",
+            "summary": "modify scripts/bar.py",
+            "sketch": "scripts/bar.py modify validate() function arguments"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "approach_a",
+            "valid": true,
+            "issues": []
+          },
+          {
+            "id": "approach_b",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "approach_a",
+            "risk_score": 0.3
+          },
+          {
+            "id": "approach_b",
+            "risk_score": 0.4
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "retry_recommended": true
+    }
+  },
+  {
+    "name": "retry_context/high confidence skips retry",
+    "tool": "scripts/retry_context.py",
+    "args": [],
+    "stdin_json": {
+      "confidence": 0.9,
+      "generator": {
+        "candidates": [
+          {
+            "id": "a",
+            "summary": "x",
+            "sketch": "y"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": []
+      },
+      "conservator": {
+        "scores": []
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "retry_recommended": false,
+      "top_candidates": []
+    }
+  },
+  {
+    "name": "build_report/passes through deliberation_quality when present",
+    "tool": "scripts/build_report.py",
+    "args": [],
+    "stdin_json": {
+      "success_criterion": "test sc",
+      "verification": "test verify",
+      "generator": {
+        "candidates": [
+          {
+            "id": "a",
+            "summary": "x",
+            "sketch": "y"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "a",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "a",
+            "risk_score": 0.2
+          }
+        ]
+      },
+      "aggregate": {
+        "scheme": "majority",
+        "chosen": "a"
+      },
+      "confidence": {
+        "confidence": 0.85
+      },
+      "telemetry": {
+        "mode": "parallel",
+        "voices": {
+          "generator": {
+            "tokens_in": 0,
+            "tokens_out": 0,
+            "latency_ms": 0
+          }
+        }
+      },
+      "deliberation_quality": {
+        "generator_divergence": 0.8,
+        "control_concreteness": 0.9,
+        "conservator_spread": 0.5,
+        "flags": []
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "deliberation_quality": {
+        "generator_divergence": 0.8,
+        "flags": []
+      }
+    }
+  },
+  {
+    "name": "memory/tier short returns stub with empty entries",
+    "tool": "scripts/memory.py",
+    "args": [
+      "--tier",
+      "short"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "tier": "short",
+      "entries": []
+    }
   }
 ]
