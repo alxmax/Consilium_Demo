@@ -190,6 +190,10 @@ def build(bundle: dict) -> dict:
     }
     if "telemetry" in bundle:
         report["telemetry"] = bundle["telemetry"]
+    if "deliberation_quality" in bundle:
+        # Advisory block from meta_critic.py — flags shallow deliberations
+        # (generator paraphrasing, control speculation, conservator shrugging).
+        report["deliberation_quality"] = bundle["deliberation_quality"]
     # Trias mode: pass through team/personalities/vote_pattern/dissent/abstained
     # fields when present in the bundle. These come from the orchestrator after
     # the team_vote aggregator scheme runs.

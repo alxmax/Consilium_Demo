@@ -37,7 +37,10 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 Două acțiuni în ordine:
 
 1. **Citește contractele celor 3 voci** — `prompts/generator.md`, `prompts/control.md`, `prompts/conservator.md`. Definesc câmpurile exacte produse de fiecare voce. **Notă parallel/dialectic:** conținutul fiecărui prompt trebuie *inline-uit* în dispatch-ul sub-agentului — citirea la Step 0 nu e suficientă.
-2. **Rulează `python scripts/priors.py`** — întoarce priori soft din `FEEDBACK.html` + `runs/`. Dacă `stale_pendings` e non-empty, oprește și întreabă: *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid (OK/BAD/skip)?"* Actualizează cu `Edit` pe `FEEDBACK.html` (înlocuiește `PEND` cu `OK`/`BAD`), **nu** cu `log_feedback.py`. Dacă `pend_pressure > 0.5`, adaugă alertă: *"Atenție: {pend_count}/{window_size} entries recente sunt PEND — consideri să le închizi?"* (soft, nu bloca deliberarea).
+2. **Rulează `python scripts/priors.py`** — întoarce priori soft din `FEEDBACK.html` + `runs/`. Trei câmpuri ne pot bloca deliberarea curentă până sunt rezolvate:
+   - `stale_pendings` non-empty (PEND mai vechi de 2 zile): întreabă *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid (OK/BAD/skip)?"* — actualizează cu `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferat) sau cu `Edit` direct pe `FEEDBACK.html`. **Nu** folosi `log_feedback.py` — duplichează rândul.
+   - `missing_feedback_runs` non-empty: rulează `python scripts/audit_feedback.py --backfill` ca să creezi PEND-uri pentru runs orfane, apoi rezolvă-le ca mai sus. Dacă lista e mai mare de 3, prefer să rezolvi gap-ul *înainte* de a începe o deliberare nouă.
+   - `pend_pressure > 0.3` (raportul PEND în ultimele N=20 entries — pragul a scăzut de la 0.5): alertă soft *"{pend_count}/{window_size} entries recente sunt PEND — consideri să le închizi?"* — nu bloca, dar înregistrează semnalul.
 
 ### 1. Gather context & state the goal
 Citește schimbarea propusă. Identifică scope (fișiere, module, linii), tip (bugfix/feature/refactor/cleanup), blast radius. Formulează `success_criterion` — o propoziție testabilă.
@@ -108,6 +111,19 @@ Returnează `{confidence, agreement, separation}`. Dacă `chosen` e `null` (toț
 
 **Quoting:** Evită construirea de Python inline via `-c "..."` cu payload JSON — apostrofurile din cod pot rupe quoting-ul bash. Folosește pipe pe stdin (ca mai sus) sau flag-ul `--input <file>`.
 
+### 5c. Meta-critic (auto, advisory)
+```bash
+cat bundle.json | python scripts/meta_critic.py
+```
+Scorează **calitatea deliberării** (nu corectitudinea alegerii): `generator_divergence` (paraphrasing?), `control_concreteness` (speculation?), `conservator_spread` (shrug?). Emite `deliberation_quality.flags` — atașează la bundle înainte de Step 6 (build_report îl pasează în raport). `flags` non-empty nu blochează, dar trebuie menționate în `reasoning`.
+
+### 5d. Retry on low confidence (opțional, single pass)
+Dacă `confidence < 0.7`, **înainte** să întrebi utilizatorul:
+```bash
+cat bundle.json | python scripts/retry_context.py
+```
+Returnează top-2 candidați cu fișiere/simboluri de citit/grepat. Folosește hint-urile → gather context (Read + Grep) → re-rulează Generator/Control/Conservator **o singură dată** cu input îmbogățit. Dacă confidence încă < 0.7, abia atunci întrebi utilizatorul (Step 6).
+
 ### 6. Report
 ```bash
 cat bundle.json | python scripts/build_report.py | python scripts/validate_report.py
@@ -138,12 +154,21 @@ cat runs/<file>.json | python scripts/validate_report.py
 ```
 Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat. Exit 2 = JSON malformat.
 
-**Acțiuni finale (obligatorii — fără ele deliberarea nu e completă):**
+**Acțiuni finale (obligatorii — deliberarea nu e completă fără ele):**
+
+Cele două apeluri de mai jos sunt **obligatorii**. Dacă orchestratorul oprește înainte de a le rula, raportul există pe disc dar e invizibil pentru priors → următoarea deliberare nu va beneficia de feedback-ul ăsta. Audit periodic: `python scripts/audit_feedback.py` listează runs orfane; cu `--backfill` adaugă rânduri PEND default.
+
 1. **Persistă raportul** în `runs/YYYY-MM-DD_HHMM_<label>.json`.
-2. **Loghează în `FEEDBACK.html`** (confidence-gated):
+2. **Loghează în `FEEDBACK.html`** (confidence-gated, fără să sări vreun caz):
    - `confidence >= 0.7` → `python -X utf8 scripts/log_feedback.py --outcome OK --run-path runs/<file>.json < runs/<file>.json`
-   - `confidence < 0.7` → întreabă: *"Confidence sub prag (`<X>`). Vrei să override-ezi `<chosen>`? Alternative: `<alt_ids>`. Răspunde alt_id, 'no', sau 'skip'."* Apoi: `no` → `--outcome OK`; `<alt_id>` → `--outcome OVR --override-target <alt_id>`; `skip` → fără flag (PEND).
+   - `confidence < 0.7` → întreabă: *"Confidence sub prag (`<X>`). Vrei să override-ezi `<chosen>`? Alternative: `<alt_ids>`. Răspunde alt_id, 'no', sau 'skip'."* Apoi: `no` → `--outcome OK --force-override`; `<alt_id>` → `--outcome OVR --override-target <alt_id>`; `skip` → fără flag (PEND, dar **nu lăsa apelul să fie sărit**).
    - `confidence null` (toți vetoiți) → `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json`
+
+**Outcome confirmation (retroactiv).** Outcome-ul logat la pasul 2 e subiectiv — reflectă impresia imediată. Dacă mai târziu producția dezvăluie un regression sau o alegere bună, suprascrie-l cu marker confirmat:
+```bash
+python scripts/mark_outcome.py --run-path runs/<file>.json --outcome BAD --reason "broke prod migration"
+```
+Marker-ul `[confirmed]` apare în note; `priors.py` ponderează aceste rânduri 2x față de feedback-ul subiectiv (vezi `weighted_bad_rate`).
 
 ## Skill maintenance
 
@@ -156,20 +181,25 @@ python scripts/run_evals.py
 
 **Usage rollup** (când ai 10+ runs cu telemetry): `python scripts/usage.py [--last 50]`
 
-**Audit periodic feedback**: `python scripts/feedback.py [--recent 10 --runs]`
+**Audit periodic feedback**: `python scripts/feedback.py [--recent 10 --runs]` (stats), `python scripts/audit_feedback.py [--backfill]` (runs fără rând FB).
 
 ## Resources
 
 | Script | Rol |
 |---|---|
-| `scripts/priors.py` | Priori soft din FEEDBACK.html + runs/ (Step 0) |
+| `scripts/priors.py` | Priori soft din FEEDBACK.html + runs/ (Step 0). Surface `missing_feedback_runs`, `stale_pendings` (prag 2 zile), `weighted_bad_rate`. |
 | `scripts/scope_gate.py` | Auto-detect skip dacă scope e mic (Step 1.5) |
 | `scripts/probe_change.py` | Ancorare diff_size la `git diff --numstat` (Step 4) |
 | `scripts/aggregator.py` | 4 scheme de voting + auto-relax la veto total (Step 5) |
 | `scripts/confidence.py` | Derivă confidence din variance + separation (Step 5b) |
+| `scripts/meta_critic.py` | Scor calitate deliberare (divergence/concreteness/spread) — Step 5c |
+| `scripts/retry_context.py` | Hint pentru single retry când confidence < 0.7 — Step 5d |
 | `scripts/build_report.py` | Asamblează raportul canonic din bundle (Step 6) |
 | `scripts/validate_report.py` | Gate Principle #4: success_criterion + verification + chosen_approach |
 | `scripts/log_feedback.py` | Auto-append în FEEDBACK.html la finalul Step 6 |
+| `scripts/mark_outcome.py` | Suprascriere outcome retroactiv (`[confirmed]` în note → pondere 2x) |
+| `scripts/audit_feedback.py` | Listează runs fără rând FB; cu `--backfill` adaugă PEND default |
+| `scripts/memory.py` | Read API uniform peste cele 3 tiers (short/medium/long) |
 | `scripts/strip_context.py` | Proiectează output voce anterioară la minim (Steps 3-4 sequential) |
 | `scripts/dialectic_merge.py` | Combină Pass-1 + Pass-2 în payload aggregator-ready |
 | `scripts/personalities.py` | Trias mode — 3 personalități fixe cu weights + lens paths |
@@ -181,6 +211,24 @@ python scripts/run_evals.py
 
 - **`runs/`** — JSON per deliberare în `runs/YYYY-MM-DD_HHMM_<label>.json` (schema în `runs/README.md`). Gitignored. Citit de `priors.py` (Step 0), `usage.py`, `feedback.py`.
 - **`FEEDBACK.html`** — o linie per folosire: `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR`, `PEND`. Local, gitignored. **Drill-down:** când `log_feedback.py` appendează, rows existente pierd drill-down-ul; folosește `migrate_feedback_md_to_html.py` pentru re-populare în bulk.
+- **Confirmed outcome.** `mark_outcome.py` adaugă marker `[confirmed]` în note. `priors.py` ponderează aceste rânduri 2x în `weighted_bad_rate`. Folosește când realitatea producției contrazice outcome-ul subiectiv din Step 6.
+
+## Memory tiers
+
+Consilium are 3 layere de memorie cu lifecycle diferit. `scripts/memory.py` oferă un read API uniform peste toate trei.
+
+| Tier | Locație | Lifetime | Conținut | Citit de |
+|---|---|---|---|---|
+| **Short** | conversation window | sesiune | bundle în construcție (Steps 1–5b), clarity gate, success_criterion curent | doar agent (nepersistat) |
+| **Medium** | `runs/*.json` | indefinit (gitignored) | un fișier per deliberare; episodic | `priors.py`, `usage.py`, `memory.py`, `audit_feedback.py` |
+| **Long** | `FEEDBACK.html` + signals din `priors.py` | indefinit | un rând per folosire; agregat peste timp | `priors.py`, `feedback.py`, `memory.py`, `mark_outcome.py` |
+
+CLI uniform:
+```bash
+python scripts/memory.py --tier medium --n 5             # ultimele 5 runs
+python scripts/memory.py --tier long --query auth        # substring filter
+python scripts/memory.py --tier all --query feedback     # union peste 3 tiers
+```
 
 ## Parallel voices mode
 

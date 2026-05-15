@@ -9,12 +9,16 @@ Signals computed:
 - counts: outcome tally over the recent slice
 - override_rate: OVR / (OK + BAD + OVR), PEND excluded
 - bad_rate: BAD / (OK + BAD + OVR)
+- weighted_bad_rate: BAD weighted by ``[confirmed]`` marker in note
+  (outcome confirmed by production = 2x weight vs subjective rating)
 - conservator_veto_rate: from runs/*.json, fraction of runs whose aggregation
   vetoed at least one candidate (or chose None)
 - top_note_keywords: top 5 alpha tokens (len >= 4, lowercased) from recent notes
 - stale_pendings: up to STALE_PEND_CAP entries from the *full* FEEDBACK list
   (not just recent) whose outcome is PEND and whose date is older than
   STALE_PEND_DAYS — surfaces entries needing retrospective close at step 0
+- missing_feedback_runs: runs/*.json files with NO matching FEEDBACK row
+  (auto-logging was never called for them) — surfaces feedback gaps
 
 The priors are advisory. Prompts in prompts/*.md remain authoritative.
 
@@ -55,24 +59,94 @@ STOPWORDS = {
     "still", "just", "not", "are", "shipped", "dropped", "real", "fine",
 }
 
-STALE_PEND_DAYS = 7
+# PEND entries older than this many days are surfaced at Step 0 so the user
+# is prompted to close them retroactively. Was 7 — reduced to 2 because audits
+# showed 40% of feedback rows reached PEND state and were forgotten before the
+# week-long window expired. A two-day cutoff matches a typical "next session"
+# cadence, which is when context for a deliberation is still recoverable.
+STALE_PEND_DAYS = 2
 STALE_PEND_CAP = 5
+CONFIRMED_MARKER = "[confirmed]"
+# Outcome rows whose note carries CONFIRMED_MARKER reflect production reality
+# (the chosen approach was applied and observed), not the user's gut feeling
+# right after deliberation. weighted_bad_rate gives them this much more weight
+# than subjective rows in the same window.
+CONFIRMED_WEIGHT = 2.0
 
 
 def _outcome_counts(entries: list[dict]) -> Counter:
     return Counter(e["outcome"] for e in entries)
 
 
+def _is_confirmed(entry: dict) -> bool:
+    return CONFIRMED_MARKER in (entry.get("note") or "")
+
+
 def _rates(entries: list[dict]) -> dict:
     counts = _outcome_counts(entries)
     rated = counts.get("OK", 0) + counts.get("BAD", 0) + counts.get("OVR", 0)
     if not rated:
-        return {"override_rate": None, "bad_rate": None, "rated_count": 0}
+        return {
+            "override_rate": None,
+            "bad_rate": None,
+            "weighted_bad_rate": None,
+            "rated_count": 0,
+            "confirmed_count": 0,
+        }
+    confirmed = sum(1 for e in entries if _is_confirmed(e))
+    # weighted_bad: confirmed BAD counts 2x toward numerator and denominator
+    # so confirmed outcomes dominate over subjective ones when present.
+    num = 0.0
+    den = 0.0
+    for e in entries:
+        if e["outcome"] not in ("OK", "BAD", "OVR"):
+            continue
+        w = CONFIRMED_WEIGHT if _is_confirmed(e) else 1.0
+        den += w
+        if e["outcome"] == "BAD":
+            num += w
     return {
         "override_rate": counts.get("OVR", 0) / rated,
         "bad_rate": counts.get("BAD", 0) / rated,
+        "weighted_bad_rate": (num / den) if den else None,
         "rated_count": rated,
+        "confirmed_count": confirmed,
     }
+
+
+def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap: int = 5) -> list[dict]:
+    """Surface runs/*.json files with NO matching FEEDBACK row.
+
+    A run is matched if its filename date and chosen_approach match a
+    feedback row. This catches the auto-logging gap: cases where
+    log_feedback.py was never called at end of Step 6.
+    """
+    if not runs_dir.exists():
+        return []
+    import re
+    fb_keys: set[tuple[str, str]] = set()
+    for e in feedback_entries:
+        chosen = e.get("chosen") or ""
+        fb_keys.add((e.get("date", ""), chosen[:40]))
+    missing: list[dict] = []
+    date_re = re.compile(r"^(\d{4}-\d{2}-\d{2})")
+    for run_file in sorted(runs_dir.glob("*.json"), reverse=True):
+        m = date_re.match(run_file.name)
+        if not m:
+            continue
+        d = m.group(1)
+        try:
+            data = json.loads(run_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        chosen = data.get("chosen_approach")
+        chosen_s = "null" if chosen is None else str(chosen)
+        if (d, chosen_s[:40]) in fb_keys:
+            continue
+        missing.append({"run": run_file.name, "date": d, "chosen": chosen_s})
+        if len(missing) >= cap:
+            break
+    return missing
 
 
 def _result_mentions_veto(result: object) -> bool:
@@ -152,6 +226,7 @@ def build_priors(n: int = 10, include_runs: bool = True) -> dict:
         out["source"]["runs_path"] = str(RUNS.relative_to(ROOT))
         out["source"]["runs_total"] = len(runs)
         out.update(_veto_rate(runs))
+        out["missing_feedback_runs"] = find_missing_feedback_runs(RUNS, entries)
     return out
 
 
