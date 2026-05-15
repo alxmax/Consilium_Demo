@@ -231,8 +231,9 @@ def validate(report: dict) -> list[str]:
         report.get("deliberation_log"),
         report.get("skipped") is True or is_trias,
     ))
-    if not is_trias:
-        problems.extend(_validate_telemetry_required(report))
+    # Telemetry required for all non-skipped reports, Trias included — it's
+    # the most expensive mode (9 sub-agenți) so cost rollup matters most there.
+    problems.extend(_validate_telemetry_required(report))
 
     if is_trias:
         _validate_trias(report, problems)

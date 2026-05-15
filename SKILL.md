@@ -266,6 +266,10 @@ Return STRICTLY the JSON specified in the "Output format" section above. No pros
 
 Two-pass: Pass 1 = parallel; Pass 2 = fiecare voce revizuiește văzând output-urile celorlalte două. Cost: 2× parallel. Implementat în `scripts/dialectic_merge.py`.
 
+**Pass-2 schema (obligatorie per item).** Fiecare item Pass-2 (candidate / verdict / score) trebuie să emită fie `revision: <noul conținut>` fie `maintained: <motiv>`. Lipsa ambelor → `dialectic_merge.py` îl tratează ca dissent fallback și emite stderr warning (`[warning] dialectic pass-2 dissent fallback for <voice>: <ids>`). Candidate Pass-1 omise complet din Pass-2 generator declanșează `silently_dropped` warning și sunt recuperate din Pass-1.
+
+Audit warnings la stderr după merge — verifică-le înainte să consideri 2× cost-ul justificat.
+
 ## Trias mode (high-stakes opt-in)
 
 **Mecanica:** 3 personalități fixe (Pioneer / Architect / Steward) deliberează în paralel cu lens prompts injectate, fiecare aplicând weights diferite peste output. Vot democratic majoritar peste cele 3 chosen-uri.
