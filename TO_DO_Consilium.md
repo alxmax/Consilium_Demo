@@ -6,6 +6,8 @@ Rankate după raportul impact / efort. Categorii: **Prompt** (prompts/*.md), **S
 
 **Stare 2026-05-16:** adăugate #20-#28 din audit-ul vocilor (Trias + parallel-skeptic, `runs/2026-05-16_0148_voice_audit_meta.json`, conf=0.80). Toate sunt deschise; #20 e quick-win HIGH severity (naming collision).
 
+**Stare 2026-05-16 (audit LangGraph/LangChain):** adăugate #47-#50 din `runs/2026-05-16_1430_audit_langgraph_langchain.json` (chosen=`do_nothing`, conf=0.36 PEND, mode=parallel). Audit-ul a respins integrarea profundă (veto pe full rewrite, invalid pe LangChain output parsers, invalid pe topology-only). #47 e runner-up (sidecar izolat); #48-#50 sunt pattern-uri LangGraph-inspired propuse pentru analiză înainte de orice implementare.
+
 **Follow-up eval parity (planificat după parallel-review 0.57 conf):** branch `feat/eval-parity-rest` cu scenarii pentru:
 - `memory.py` tier medium/long/unknown (3 scenarii — cer fixtures runs/)
 - `audit_feedback.py` orphan detection + `--backfill` idempotency (2 scenarii — cer fixture FEEDBACK.html + runs/*.json)
@@ -450,6 +452,75 @@ Fix: scenariu eval care rulează un diff cu trade-off conservator-vs-progress ș
 
 Fix: include payload before/after per field în `revision_log.diffs` (atenție la PII / cost storage).
 
+## Sugestii din sesiunea 2026-05-16 — audit LangGraph/LangChain integration
+
+Sursa: `runs/2026-05-16_1430_audit_langgraph_langchain.json` (parallel mode, 5 candidates, chosen=`do_nothing` conf=0.36 PEND). Auditul a respins integrarea profundă: veto pe full rewrite (risk 0.95), invalid pe LangChain output parsers (interface mismatch + stdlib break), invalid pe topology-only (nu răspunde adopt/reject). Runner-up `optional_sidecar_visualizer` (score 0.800 vs `do_nothing` 0.833, separation 0.033) e singura formă de integrare validă tehnic — tracked ca #47. Pattern-urile #48-#50 sunt împrumutabile din LangGraph fără să adopți biblioteca, dar necesită analiză înainte de orice ship.
+
+### 47. `optional_sidecar_visualizer` — `experiments/langgraph_replay/` izolat
+**Categorie:** Arch | **Impact:** Mediu | **Efort:** Mediu
+**Status:** PROPOSED (runner-up în audit, score 0.800).
+
+Sidecar opțional care vizualizează `runs/*.json` post-hoc. Niciun rol în deliberarea live, niciun import din `scripts/`, venv izolat. Doar dacă apare nevoia reală de vizualizare/replay — altfel rămâne pe lista PROPOSED.
+
+Contracte obligatorii înainte de ship:
+1. `experiments/langgraph_replay/` rămâne gitignored sau explicit marcat "not part of the skill"
+2. `grep -r 'from scripts\|import scripts' experiments/` returnează zero matches; reciproc, niciun `scripts/*.py` nu importă din `experiments/`
+3. `replay.py` output schema definită: Mermaid (`graph TD` sau `stateDiagram`) cu cel puțin un nod per step din `deliberation_log` al run-ului citit
+
+Acceptance tests (din audit, Control voice):
+- `replay_reads_existing_run`: `python experiments/langgraph_replay/replay.py --input runs/<id>.json` exit 0, stdout Mermaid valid
+- `replay_does_not_import_scripts`: grep clean pe `experiments/`
+- `core_scripts_unmodified`: `git diff HEAD -- scripts/` zero changes
+
+Risc principal (Conservator, score 0.30): "optional" devine load-bearing peste timp. Dacă alegem să implementăm, adăugăm guard în CI: blocăm orice PR care adaugă import din `experiments/` în `scripts/`.
+
+---
+
+### 48. Analiză: checkpoint per-step între voci
+**Categorie:** Arch | **Impact:** Mediu | **Efort:** Mediu
+**Status:** INVESTIGATE — pattern LangGraph-inspired, necesită analiză.
+
+Acum `runs/<id>.json` se scrie o singură dată la Step 6 (raport final). Dacă Generator reușește dar Control crash-uiește, pierdem tot output-ul Generator-ului — re-rulez de la zero.
+
+Întrebare de explorat:
+- Scriem un partial `runs/<id>_partial.json` după fiecare voce (Generator → după Generator; Control → după Control)? Sau un fișier separat per voce (`runs/<id>/generator.json`, `runs/<id>/control.json`)?
+- Cum interacționează cu `audit_feedback.py` (care detectează orphan runs pe glob `runs/*.json`)? Schema directory pe run sau filename-suffix?
+- Cost/beneficiu real: cât de des Control/Conservator eșuează vs cât de des ne afectează? Verifică `feedback.py --recent 50` și caută BAD/OVR cauzate de re-run.
+
+Decizie blocată până avem datele. Nu implementa fără audit prealabil.
+
+---
+
+### 49. Analiză: streaming / human-in-the-loop între Generator și Control
+**Categorie:** Arch | **Impact:** Mediu | **Efort:** Mare
+**Status:** INVESTIGATE — pattern LangGraph-inspired, necesită analiză + posibil suport Claude Code.
+
+Acum Generator → Control e automat. Pattern propus: după Generator, pause; orchestratorul afișează candidates și permite utilizatorului să excludă/edite candidate înainte ca Control + Conservator să le vadă.
+
+Întrebare de explorat:
+- Există în Claude Code un mecanism nativ de pause + user input între sub-agent calls? Sau trebuie implementat în orchestrator (orchestratorul în two turns explicit, prima emite candidates pentru user)?
+- Cum se loghează intervenția? `runs/*.json` are nevoie de un câmp `human_intervention: {step: "post_generator", action: "removed_candidate", id: "..."}` ca să nu poluăm signalul de eval.
+- Conflict cu Principle 1 (Think before coding): dacă utilizatorul filtrează candidates, tradeoff-urile vizibile în deliberare se restrâng — riscăm să trecem peste explorări utile.
+
+Decizie blocată până cunoaștem disponibilitatea pause/resume în Claude Code. De preferat: contactează #claude-code dacă există spec, nu construi pe presupuneri.
+
+---
+
+### 50. Analiză: time-travel peste `runs/*.json`
+**Categorie:** Skill | **Impact:** Mic | **Efort:** Mic-Mediu
+**Status:** INVESTIGATE — pattern LangGraph-inspired, util la debugging eval-uri.
+
+Acum `runs/*.json` sunt immutable după scriere. Pattern propus: un script `scripts/replay_aggregator.py` care citește un run, permite editarea manuală a scorurilor per voce (de exemplu, "ce-ar fi dacă Conservator dădea 0.5 în loc de 0.72?"), și re-rulează aggregator + confidence pe scorurile editate — fără să modifice run-ul original.
+
+Întrebare de explorat:
+- Output: nou run (`runs/<id>_replay_<timestamp>.json`) sau JSON pe stdout fără persistare? Persistarea poluează priors; stdout pierde context. Probabil stdout cu flag opțional `--save`.
+- Cum interacționează cu `validate_report.py`? Replay-ul nu are voci noi — telemetry rămâne din original sau marker `replay: true`?
+- Caz de utilizare real: util când editezi `aggregator.py` și vrei să verifici că noul scheme nu sparge alegerea pe runs vechi (cuplaj util cu `run_evals.py`).
+
+Decizie soft-pozitivă, dar prioritate scăzută. Implementăm dacă apare o eval-iteration session care ar beneficia. Altfel rămâne pe lista PROPOSED.
+
+---
+
 ## Sumar rapid
 
 | # | Titlu | Categorie | Impact | Efort |
@@ -497,3 +568,7 @@ Fix: include payload before/after per field în `revision_log.diffs` (atenție l
 | 44 | Sequential Chinese wall — clarify docs | Arch | Mediu | Mic |
 | 45 | Lens injection validation end-to-end | Skill | Mediu | Mediu |
 | 46 | Pass-2 diff semantic în revision_log | Skill | Mic | Mediu |
+| 47 | `optional_sidecar_visualizer` — experiments/ izolat (PROPOSED) | Arch | Mediu | Mediu |
+| 48 | Analiză: checkpoint per-step între voci (INVESTIGATE) | Arch | Mediu | Mediu |
+| 49 | Analiză: streaming / HITL Generator↔Control (INVESTIGATE) | Arch | Mediu | Mare |
+| 50 | Analiză: time-travel peste runs/ (INVESTIGATE) | Skill | Mic | Mic-Mediu |
