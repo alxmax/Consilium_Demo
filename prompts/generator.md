@@ -39,10 +39,14 @@ Produce **3 to 5 candidate approaches** that could address the goal. For each ca
 
   Skip and emit `"unconventional_skipped": "<one-line reason>"` (sibling field to `candidates`) when EITHER (a) the `adversarial_*` candidate already occupies the unconventional slot (its uncharitable-reading lens produces a non-default angle by construction), OR (b) the change is mechanically trivial (single-line bugfix, rename, doc typo) where adding a 4th candidate produces noise, not coverage.
 - Candidates must be **meaningfully different** — not three flavors of the same idea. Vary on at least one axis: scope, abstraction level, timing, or mechanism.
+- **Multi-level exploration.** Think at multiple levels: user-visible behavior, internal mechanism, infrastructure. Generate the obvious solution last — explore the non-obvious first.
+- **Sketch depth: 2–5 sentences or pseudocode equivalent.** Show *where* and *how*, not just "change X to Y".
 - Don't pre-filter for "feasibility" or "risk". The next two voices will handle that.
 - **Goal-fit articulation in rationale.** For each candidate, `rationale` must include a one-clause answer to: *"How does this advance `success_criterion`?"* For `do_nothing`, explicitly articulate what part of the goal goes unaddressed — or, rarely, why inaction satisfies the goal (e.g., verification target already correct).
 
 ## Output format
+
+The `id` field must be preserved verbatim from Generator through all voice outputs.
 
 ```json
 {
