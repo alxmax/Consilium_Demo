@@ -1711,7 +1711,7 @@ flowchart LR
           </div>
         </div>
         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 11.5px; color: var(--muted);">
-          <b style="color: var(--ink);">Prompts:</b> <code>prompts/generator.md</code>, <code>prompts/control.md</code>, <code>prompts/conservator.md</code> (cele 3 voci); <code>prompts/{pioneer,architect,steward}_lens.md</code> (Trias); <code>prompts/{generator,control,conservator}_pass2.md</code> (Dialectic pass 2); <code>prompts/skeptic.md</code> — voce focală pentru <code>parallel_skeptic</code> și <code>dialectic_skeptic</code>.
+          <b style="color: var(--ink);">Prompts:</b> <code>prompts/voices/generator.md</code>, <code>prompts/voices/control.md</code>, <code>prompts/voices/conservator.md</code> (cele 3 voci); <code>prompts/voices/{pioneer,architect,steward}_lens.md</code> (Trias); <code>prompts/voices/{generator,control,conservator}_pass2.md</code> (Dialectic pass 2); <code>prompts/voices/skeptic.md</code> — voce focală pentru <code>parallel_skeptic</code> și <code>dialectic_skeptic</code>.
         </div>
       </div>
     </div>
@@ -2214,7 +2214,7 @@ flowchart LR
           <span class="actor ctl">Control</span>
           <span class="actor con">Conservator</span>
           <div class="arrow-down">↓ aggregator → chosen (confidence ∈ [0.5, 0.7])</div>
-          <span class="actor" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);">Skeptic (sub-agent focal · prompts/skeptic.md)</span>
+          <span class="actor" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);">Skeptic (sub-agent focal · prompts/voices/skeptic.md)</span>
           <div class="ok">
             ✓ Skeptic primește <b>doar</b> <code>chosen</code> și <code>success_criterion</code> — fără
             celelalte candidates, fără voturile celorlalte voci. Provocare „blind" pe alegere, nu pe set.
@@ -2250,7 +2250,7 @@ flowchart LR
             <div class="parallel-col"><span class="actor con">Cons rev.</span></div>
           </div>
           <div class="arrow-down">↓ aggregator → chosen</div>
-          <span class="actor" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);">Skeptic (sub-agent focal · prompts/skeptic.md)</span>
+          <span class="actor" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);">Skeptic (sub-agent focal · prompts/voices/skeptic.md)</span>
           <div class="ok">
             ✓ Skeptic vede doar <code>chosen</code> + <code>success_criterion</code> — provocare focală
             după ce vocile au convergit prin pass 2. Util când Conservator-ul a flag-uit ceva în
@@ -2350,7 +2350,7 @@ flowchart LR
           <span class="actor con">Conservator</span>
           <div class="arrow-down">↓ aggregator → chosen + confidence</div>
           <div class="label">condiție: confidence ∈ [0.5, 0.7] AND (--skeptic-on-chosen activ OR auto-trigger)</div>
-          <span class="actor" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);">Skeptic (sub-agent focal · prompts/skeptic.md)</span>
+          <span class="actor" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);">Skeptic (sub-agent focal · prompts/voices/skeptic.md)</span>
           <div class="ok">
             ✓ Înlocuiește Step 5d retry în această bandă. Retry rămâne fallback condițional doar dacă Skeptic verdict e <code>requires_redesign</code>.
           </div>
@@ -3661,7 +3661,7 @@ flowchart LR
             <li>Goal-fit clauză obligatorie în rationale</li>
             <li>Multi-level exploration: behavior, mechanism, infra</li>
           </ul>
-          <div class="cant"><b>Contract:</b> <code>prompts/generator.md</code></div>
+          <div class="cant"><b>Contract:</b> <code>prompts/voices/generator.md</code></div>
         </div>
         <div class="card ctl">
           <div class="top"><h3>Control</h3><span class="tag">Analitic</span></div>
@@ -3670,7 +3670,7 @@ flowchart LR
             <li>Invalidează dacă goal-fit ratat (citează <code>success_criterion</code>)</li>
             <li>Fallback <code>_no_viable_candidate</code> dacă toate eșuează</li>
           </ul>
-          <div class="cant"><b>Contract:</b> <code>prompts/control.md</code></div>
+          <div class="cant"><b>Contract:</b> <code>prompts/voices/control.md</code></div>
         </div>
         <div class="card con">
           <div class="top"><h3>Conservator</h3><span class="tag">Sceptic</span></div>
@@ -3679,7 +3679,7 @@ flowchart LR
             <li><code>rollback_recipe</code> obligator dacă <code>risk_score ≥ 0.3</code></li>
             <li>Quality-progress: -0.15 regression_risk dacă tests/flag/recipe în sketch</li>
           </ul>
-          <div class="cant"><b>Contract:</b> <code>prompts/conservator.md</code></div>
+          <div class="cant"><b>Contract:</b> <code>prompts/voices/conservator.md</code></div>
         </div>
       </div>
     </div>
@@ -3693,19 +3693,19 @@ flowchart LR
         <div class="lens-title"><h3>Pioneer</h3><span class="pers-tag">bold</span></div>
         <div class="weights"><span>gen <b>0.49</b></span><span>ctl <b>0.30</b></span><span>cons <b>0.21</b></span></div>
         <p>Tolerate moderate risk for novel solutions. Favor new patterns when they add clear value. When in doubt between safe and ambitious → <b>prefer ambitious</b>.</p>
-        <div class="prompt-ref">Lens: <code>prompts/pioneer_lens.md</code></div>
+        <div class="prompt-ref">Lens: <code>prompts/voices/pioneer_lens.md</code></div>
       </div>
       <div class="lens architect">
         <div class="lens-title"><h3>Architect</h3><span class="pers-tag">structural</span></div>
         <div class="weights"><span>gen <b>0.30</b></span><span>ctl <b>0.49</b></span><span>cons <b>0.21</b></span></div>
         <p>Internal consistency, type safety, clear abstractions. Long-term maintainability > short-term win. <b>Strengthen invariants</b> over loosening them.</p>
-        <div class="prompt-ref">Lens: <code>prompts/architect_lens.md</code></div>
+        <div class="prompt-ref">Lens: <code>prompts/voices/architect_lens.md</code></div>
       </div>
       <div class="lens steward">
         <div class="lens-title"><h3>Steward</h3><span class="pers-tag">protective</span></div>
         <div class="weights"><span>gen <b>0.30</b></span><span>ctl <b>0.30</b></span><span>cons <b>0.40</b></span></div>
         <p>Minimal scope, reversibility, protect working systems. <b>Blast radius &lt; novelty</b>: smaller safe change beats larger ambitious one.</p>
-        <div class="prompt-ref">Lens: <code>prompts/steward_lens.md</code></div>
+        <div class="prompt-ref">Lens: <code>prompts/voices/steward_lens.md</code></div>
       </div>
     </div>
 
@@ -3715,7 +3715,7 @@ flowchart LR
         Folosit în <code>parallel_skeptic</code> și <code>dialectic_skeptic</code>. Primește <b>doar</b> chosen-ul (nu și candidates, nu și verdicts). Produce o obiecție concretă sau marchează <code>meta_scope_mismatch</code> dacă deliberarea însăși e supra-aplicată.
       </p>
       <p style="font-size: 11.5px; margin: 0; color: var(--muted);">
-        Schema: <code>{can_object, concrete_concerns, quoted_scenario, addressable: in_place|requires_redesign|unaddressable, failure_mode?}</code> · Prompt: <code>prompts/skeptic.md</code>
+        Schema: <code>{can_object, concrete_concerns, quoted_scenario, addressable: in_place|requires_redesign|unaddressable, failure_mode?}</code> · Prompt: <code>prompts/voices/skeptic.md</code>
       </p>
     </div>
   </section>
@@ -4318,7 +4318,7 @@ flowchart LR
           '<b>Developer-ul</b> rulează un Parallel review obișnuit.',
           'Trei voci dispatch-uite ca sub-agenți independenți; aggregator-ul produce <code>chosen</code> + confidence.',
           'Confidence cade în zona marginală <code>[0.5, 0.7]</code> — orchestratorul activează automat <b>parallel_skeptic</b>.',
-          'Un sub-agent focal <b>Skeptic</b> (<code>prompts/skeptic.md</code>) primește <i>doar</i> <code>chosen</code> și <code>success_criterion</code> — fără ceilalți candidați, fără voturile vocilor de bază.',
+          'Un sub-agent focal <b>Skeptic</b> (<code>prompts/voices/skeptic.md</code>) primește <i>doar</i> <code>chosen</code> și <code>success_criterion</code> — fără ceilalți candidați, fără voturile vocilor de bază.',
           'Skeptic-ul produce un challenge focal: dacă întărește alegerea, gate-ul <b>trece</b>; dacă găsește un risc serios, deliberarea escaladează.',
           'Cost total: 1.33× Parallel (4 sub-agenți). Skeptic-ul nu se activează dacă confidence ≥ 0.7 sau confidence < 0.5.'
         ]

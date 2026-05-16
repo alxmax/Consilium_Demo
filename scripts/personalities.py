@@ -22,17 +22,17 @@ PERSONALITIES = [
     {
         "name": "pioneer",
         "weights": {"generator": 0.49, "control": 0.30, "conservator": 0.21},
-        "lens": "prompts/pioneer_lens.md",
+        "lens": "prompts/voices/pioneer_lens.md",
     },
     {
         "name": "architect",
         "weights": {"generator": 0.30, "control": 0.49, "conservator": 0.21},
-        "lens": "prompts/architect_lens.md",
+        "lens": "prompts/voices/architect_lens.md",
     },
     {
         "name": "steward",
         "weights": {"generator": 0.30, "control": 0.30, "conservator": 0.40},
-        "lens": "prompts/steward_lens.md",
+        "lens": "prompts/voices/steward_lens.md",
     },
 ]
 
