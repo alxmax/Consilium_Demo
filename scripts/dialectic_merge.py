@@ -98,6 +98,37 @@ def _voice_score_from_verdict(verdict: dict) -> float:
     return max(0.3, 1.0 - 0.15 * len(issues))
 
 
+def _merge_pass2_control_verdict(p2_verdict: dict, p1_verdict: dict) -> dict:
+    """Combine Pass-2 control metadata with Pass-1 verdict body.
+
+    control_pass2.md schema is {id, revision|maintained} — Pass-2 carries
+    only the dissent metadata, not valid/issues. Without inheriting Pass-1's
+    valid/issues, every compliant Pass-2 verdict scores 0.0 in
+    `_voice_score_from_verdict`, collapsing dialectic aggregation.
+
+    Strict inheritance: Pass-1 is the base; Pass-2 wins only if it explicitly
+    re-emits a field. revision/maintained metadata is preserved for audit.
+    """
+    merged = dict(p1_verdict)
+    for k in ("valid", "issues", "tests_to_write", "notes"):
+        if k in p2_verdict:
+            merged[k] = p2_verdict[k]
+    for k in ("revision", "maintained"):
+        if k in p2_verdict:
+            merged[k] = p2_verdict[k]
+    return merged
+
+
+def _safe_risk_score(risk_entry: dict, default: float = 0.5) -> float:
+    """`float(risk_entry.get("risk_score", default))` blows up on explicit
+    null risk_score; treat None the same as missing.
+    """
+    rs = risk_entry.get("risk_score")
+    if rs is None:
+        return default
+    return float(rs)
+
+
 def _generator_score(candidate: dict) -> float:
     """Generator's own confidence in a candidate.
 
@@ -199,10 +230,16 @@ def merge(payload: dict) -> dict:
             cand if is_new_in_pass2
             else (p1_gen_by_id.get(cid, cand) if cid in dissent_fallbacks.get("generator", []) else cand)
         )
-        verdict = (
-            ctrl_verdicts.get(cid, {}) if is_new_in_pass2
-            else (p1_ctrl_by_id.get(cid, {}) if cid in dissent_fallbacks.get("control", []) else ctrl_verdicts.get(cid, {}))
-        )
+        # Control: Pass-2 carries only revision/maintained metadata per
+        # control_pass2.md — valid/issues stay in Pass-1. Merge so a compliant
+        # Pass-2 verdict doesn't collapse to control_score=0.0.
+        p1_verdict = p1_ctrl_by_id.get(cid, {})
+        if is_new_in_pass2:
+            verdict = ctrl_verdicts.get(cid, {})
+        elif cid in dissent_fallbacks.get("control", []):
+            verdict = p1_verdict
+        else:
+            verdict = _merge_pass2_control_verdict(ctrl_verdicts.get(cid, {}), p1_verdict)
         risk_entry = (
             cons_scores.get(cid, {}) if is_new_in_pass2
             else (p1_cons_by_id.get(cid, {}) if cid in dissent_fallbacks.get("conservator", []) else cons_scores.get(cid, {}))
@@ -214,7 +251,7 @@ def merge(payload: dict) -> dict:
             "scores": {
                 "generator": _generator_score(gen_cand),
                 "control": _voice_score_from_verdict(verdict),
-                "conservator": float(risk_entry.get("risk_score", 0.5)),
+                "conservator": _safe_risk_score(risk_entry),
             },
         })
 
@@ -228,15 +265,15 @@ def merge(payload: dict) -> dict:
             if cid in seen:
                 continue
             silently_dropped.append(cid)
-            p1_verdict = p1_ctrl_by_id.get(cid, {})
+            p1_verdict_recovered = p1_ctrl_by_id.get(cid, {})
             p1_risk = p1_cons_by_id.get(cid, {})
             merged_candidates.append({
                 "id": cid,
                 "summary": p1_cand.get("summary", ""),
                 "scores": {
                     "generator": _generator_score(p1_cand),
-                    "control": _voice_score_from_verdict(p1_verdict),
-                    "conservator": float(p1_risk.get("risk_score", 0.5)),
+                    "control": _voice_score_from_verdict(p1_verdict_recovered),
+                    "conservator": _safe_risk_score(p1_risk),
                 },
                 "pass2_status": "dropped_silently",
             })
