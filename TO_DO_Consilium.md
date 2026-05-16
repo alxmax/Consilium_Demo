@@ -4,6 +4,8 @@ Rankate după raportul impact / efort. Categorii: **Prompt** (prompts/*.md), **S
 
 **Stare 2026-05-15:** #13, #14, #15, #19 sunt implementate pe branch `feat/feedback-and-quality-loop` (vezi commit). #1, #16, #17, #20 dropped după deliberare Consilium (`runs/2026-05-15_2236_todo-triage.json`, chosen=`minimal_next_ship`, drop unanim între candidate non-trivial pentru #16/17/18/20; #1 drop la cerere user). #9 și #18 sub investigație (user). Restul rămân deschise.
 
+**Stare 2026-05-16 (audit la finalul Branch 3 sync):** items #2, #3, #4, #5, #6, #7, #8 sunt deja implementate în prompts (descoperite la implementarea planului Branches 1–5; TODO-ul era desincronizat cu codul). Marcate `✅ DONE` cu pointer la file:line.
+
 **Stare 2026-05-16:** adăugate #20-#28 din audit-ul vocilor (Trias + parallel-skeptic, `runs/2026-05-16_0148_voice_audit_meta.json`, conf=0.80). Toate sunt deschise; #20 e quick-win HIGH severity (naming collision).
 
 **Stare 2026-05-16 (audit LangGraph/LangChain):** adăugate #47-#50 din `runs/2026-05-16_1430_audit_langgraph_langchain.json` (chosen=`do_nothing`, conf=0.36 PEND, mode=parallel). Audit-ul a respins integrarea profundă (veto pe full rewrite, invalid pe LangChain output parsers, invalid pe topology-only). #47 e runner-up (sidecar izolat); #48-#50 sunt pattern-uri LangGraph-inspired propuse pentru analiză înainte de orice implementare.
@@ -19,93 +21,45 @@ Total ~9 scenarii noi. Cere extensie a `run_evals.py` să accepte fixtures de fi
 
 ## Tier 1 — Quick wins (impact mare, efort mic)
 
-### 2. Conservator Mindset — "scorezi risc, nu valoare netă"
+### 2. Conservator Mindset — "scorezi risc, nu valoare netă" ✅ DONE
 **Categorie:** Prompt | **Impact:** Înalt | **Efort:** Mic
-
-Acum Conservator poate veta nejustificat o schimbare cu risc 0.7 dar beneficiu enorm. Prompt-ul nu spune că `risk_score` e un semnal pentru aggregator, nu o decizie finală.
-
-Fix: adaugă în Mindset:
-```
-You score risk, not net value. A high risk_score is a flag for the aggregator,
-not a veto. Don't inflate scores to steer the outcome.
-```
+**Status:** implementat în `prompts/conservator.md:7` ("Risk signal, not decision. You score risk, not net value. A high risk_score is a flag for the aggregator, not a veto. Don't inflate scores to steer the outcome.").
 
 ---
 
-### 3. Control Mindset — standard consistent între candidați
+### 3. Control Mindset — standard consistent între candidați ✅ DONE
 **Categorie:** Prompt | **Impact:** Înalt | **Efort:** Mic
-
-Control poate fi implicit mai strict cu `unconventional_*` pentru că "pare ciudat" și mai indulgent cu abordarea familiară — fără să realizeze că aplică standarde diferite.
-
-Fix: adaugă în Mindset:
-```
-Apply the same standard to every candidate. Familiarity is not a validity signal.
-```
+**Status:** implementat în `prompts/control.md:11` ("Consistent standard across candidates. Apply the same scrutiny to every candidate. Familiarity is not a validity signal.").
 
 ---
 
-### 4. Generator Mindset — nu te ancora pe prima soluție obvioasă
+### 4. Generator Mindset — nu te ancora pe prima soluție obvioasă ✅ DONE
 **Categorie:** Prompt | **Impact:** Mediu | **Efort:** Mic
-
-Generator poate produce 4 variante ale aceleiași idei cu formulări diferite și tot respectă "Quantity before quality". Lipsă de instrucțiune privind ordinea generării.
-
-Fix: adaugă în Mindset:
-```
-Think at multiple levels: user-visible behavior, internal mechanism, infrastructure.
-Generate the obvious solution last — explore the non-obvious first.
-```
+**Status:** implementat în `prompts/generator.md:42` ("Multi-level exploration. Think at multiple levels: user-visible behavior, internal mechanism, infrastructure. Generate the obvious solution last — explore the non-obvious first.").
 
 ---
 
-### 5. ID preservation explicit în toate 3 voci
+### 5. ID preservation explicit în toate 3 voci ✅ DONE
 **Categorie:** Prompt | **Impact:** Mediu | **Efort:** Mic
-
-Niciun prompt nu spune că `id`-urile trebuie păstrate verbatim între Generator → Control → Conservator. Un drift de naming face aggregatorul să eșueze silențios.
-
-Fix: adaugă în fiecare `## Output format`:
-```
-The `id` field must be preserved verbatim from Generator through all voice outputs.
-```
+**Status:** implementat în toate 3 prompts — `prompts/generator.md:49`, `prompts/control.md:35`, `prompts/conservator.md:45` ("The `id` field must be preserved verbatim from Generator through all voice outputs.").
 
 ---
 
-### 6. Definiție "shared/core code" în Conservator
+### 6. Definiție "shared/core code" în Conservator ✅ DONE
 **Categorie:** Prompt | **Impact:** Mediu | **Efort:** Mic
-
-Generator îl definește (`auth/`, `migrations/`, `security/`, public APIs) dar Conservator scorează `scope_drift` fără referință consistentă la aceeași definiție.
-
-Fix: adaugă în `## Input` din `conservator.md`:
-```
-Core/shared zones (reference for scope_drift): auth/, migrations/, security/,
-public APIs, dependency files, .github/workflows/
-```
+**Status:** implementat în `prompts/conservator.md:19` ("Core/shared zones (reference for `scope_drift`): `auth/`, `migrations/`, `security/`, public APIs, dependency files, `.github/workflows/`").
 
 ---
 
-### 7. Sketch depth specificat în Generator
+### 7. Sketch depth specificat în Generator ✅ DONE
 **Categorie:** Prompt | **Impact:** Mediu | **Efort:** Mic
-
-`sketch` poate fi o linie sau 10 paragrafe — nu există ghidaj. Rezultatul e inconsistent și Control nu poate verifica un sketch prea vag.
-
-Fix: adaugă în Constraints:
-```
-Sketch depth: 2–5 sentences or pseudocode equivalent.
-Show *where* and *how*, not just "change X to Y".
-```
+**Status:** implementat în `prompts/generator.md:43` ("Sketch depth: 2–5 sentences or pseudocode equivalent. Show *where* and *how*, not just \"change X to Y\".").
 
 ---
 
-### 8. Control — instrucțiune explicită pentru citit fișiere
+### 8. Control — instrucțiune explicită pentru citit fișiere ✅ DONE
 **Categorie:** Prompt | **Impact:** Mediu | **Efort:** Mic
-
-"Access to relevant files if you need to check signatures" e vag. Control speculează în loc să verifice când nu are certitudine.
-
-Fix: adaugă în Mindset sau Task:
-```
-If you cannot verify a signature without reading a file, read it.
-If the file is not accessible, mark: category: "types", detail: "unverifiable — file not accessible".
-Never guess and mark it verified.
-```
+**Status:** implementat în `prompts/control.md:9` ("Verify, don't speculate. ... If you cannot verify a signature without reading a file, read it. If the file is not accessible, mark `category: \"types\"`, `detail: \"unverifiable — file not accessible\"`. Never guess and mark it verified.").
 
 ---
 
@@ -525,13 +479,13 @@ Decizie soft-pozitivă, dar prioritate scăzută. Implementăm dacă apare o eva
 
 | # | Titlu | Categorie | Impact | Efort |
 |---|-------|-----------|--------|-------|
-| 2 | Conservator: risc ≠ valoare netă | Prompt | Înalt | Mic |
-| 3 | Control: standard consistent | Prompt | Înalt | Mic |
-| 4 | Generator: nu te ancora | Prompt | Mediu | Mic |
-| 5 | ID preservation explicit | Prompt | Mediu | Mic |
-| 6 | Shared/core code definit în Conservator | Prompt | Mediu | Mic |
-| 7 | Sketch depth specificat | Prompt | Mediu | Mic |
-| 8 | Control: citește fișierele, nu specula | Prompt | Mediu | Mic |
+| 2 | Conservator: risc ≠ valoare netă ✅ DONE (conservator.md:7) | Prompt | Înalt | Mic |
+| 3 | Control: standard consistent ✅ DONE (control.md:11) | Prompt | Înalt | Mic |
+| 4 | Generator: nu te ancora ✅ DONE (generator.md:42) | Prompt | Mediu | Mic |
+| 5 | ID preservation explicit ✅ DONE (3 prompts) | Prompt | Mediu | Mic |
+| 6 | Shared/core code definit în Conservator ✅ DONE (conservator.md:19) | Prompt | Mediu | Mic |
+| 7 | Sketch depth specificat ✅ DONE (generator.md:43) | Prompt | Mediu | Mic |
+| 8 | Control: citește fișierele, nu specula ✅ DONE (control.md:9) | Prompt | Mediu | Mic |
 | 9 | Goal-fit → pasul 0 în Control (INVESTIGATE) | Prompt | Mediu | Mic-Mediu |
 | 10 | Cap stacking regression_risk | Prompt | Mediu | Mic |
 | 11 | Candidați ireversibili by nature | Prompt | Mediu | Mediu |
