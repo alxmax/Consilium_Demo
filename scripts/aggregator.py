@@ -309,6 +309,156 @@ def aggregate_team_vote(personalities: list[dict], candidates: list[dict]) -> di
     return result
 
 
+# === RUND2 ===
+def _rund2_methodology_notes(g: dict, c: dict, _cons: dict) -> str:
+    notes = []
+    if g.get("abstain", {}).get("triggered"):
+        notes.append(f"Generator abstain: {g['abstain'].get('reason', '?')}")
+    if g.get("challenge_upward", {}).get("triggered"):
+        notes.append("Generator challenged Conservator (challenge_upward)")
+    if c.get("disagreements"):
+        n = len(c["disagreements"])
+        notes.append(f"{n} disagreement(s) detectate")
+    return " | ".join(notes) if notes else "Deliberare completă fără anomalii"
+
+
+def aggregate_rund2(
+    generator_out: dict,
+    control_out: dict,
+    conservator_out: dict,
+) -> dict:
+    """RUND2 priority-based aggregation with veto cascade.
+
+    Input: voice output dicts (not candidate scores).
+
+    Priority order:
+    1. glossary_fail (Control) → BLOCK
+    2. irreversibility_flag (Conservator) → BLOCK
+    3. substantial disagreement (Control) → REWORK
+    4. scale_down (Conservator meta) → ADAPT_SHORT
+    5. scale_up (Conservator meta) → ADAPT_EXTENDED
+    6. 3+ triggers simultaneously → ESCALATE
+    7. default → AGGREGATE
+    """
+    triggers: list[str] = []
+
+    # Priority 1: Glossary fail
+    if control_out.get("glossary_fail"):
+        return {
+            "scheme": "rund2",
+            "result": "BLOCK",
+            "reason": "glossary_fail",
+            "attempts": control_out.get("glossary_attempts", []),
+            "action": "Reformulează întrebarea cu termeni operaționali verificabili",
+        }
+
+    # Priority 2: Irreversibility without consent
+    if conservator_out.get("irreversibility_flag"):
+        rr = conservator_out.get("regression_risk", {})
+        return {
+            "scheme": "rund2",
+            "result": "BLOCK",
+            "reason": "irreversibility_no_consent",
+            "magnitude": rr.get("magnitude") if isinstance(rr, dict) else None,
+            "action": "Confirmă explicit că această decizie este ireversibilă înainte de a continua",
+        }
+
+    # Collect triggers for escalation check
+    disagreements = control_out.get("disagreements", [])
+    substantial = [d for d in disagreements if isinstance(d, dict) and d.get("type") == "substantial"]
+    if substantial:
+        triggers.append("substantial_disagreement")
+
+    meta = conservator_out.get("meta_recommendation")
+    if meta == "scale_down":
+        triggers.append("scale_down")
+    elif meta == "scale_up":
+        triggers.append("scale_up")
+
+    if generator_out.get("abstain", {}).get("triggered"):
+        triggers.append("generator_abstain")
+
+    # Priority 5 (escalate before individual handling)
+    if len(triggers) >= 3:
+        return {
+            "scheme": "rund2",
+            "result": "ESCALATE",
+            "triggers": triggers,
+            "action": (
+                "Multiple semnale critice detectate simultan. "
+                "Aggregator nu poate decide singur. Alege ordinea de rezolvare:\n"
+                + "\n".join(f"  - {t}" for t in triggers)
+            ),
+        }
+
+    # Priority 3: Substantial disagreement
+    if "substantial_disagreement" in triggers:
+        return {
+            "scheme": "rund2",
+            "result": "REWORK",
+            "reason": "substantial_disagreement",
+            "disagreements": substantial,
+            "action": "Vocile au divergențe substanțiale — clarifică înainte de agregare finală",
+        }
+
+    # Priority 4a: scale_down
+    if "scale_down" in triggers:
+        preferred = generator_out.get("preferred")
+        return {
+            "scheme": "rund2",
+            "result": "ADAPT_SHORT",
+            "meta_recommendation": "scale_down",
+            "chosen": preferred,
+            "action": "Deliberare comprimată — răspuns scurt (max 2 propoziții)",
+        }
+
+    # Priority 4b: scale_up
+    if "scale_up" in triggers:
+        return {
+            "scheme": "rund2",
+            "result": "ADAPT_EXTENDED",
+            "meta_recommendation": "scale_up",
+            "action": "Deliberare extinsă necesară — cere clarificare user înainte de a continua",
+        }
+
+    # Default: aggregate normally
+    preferred = generator_out.get("preferred")
+    options = generator_out.get("options", generator_out.get("candidates", []))
+    rr = conservator_out.get("regression_risk", {})
+    net_concern = (
+        rr.get("net_concern", 0.15) if isinstance(rr, dict) else float(rr)
+        if isinstance(rr, (int, float)) else 0.15
+    )
+
+    confidence_per_option: dict[str, float] = {}
+    for opt in options:
+        oid = opt.get("id", "")
+        base = 1.0 if oid == preferred else 0.5
+        confidence_per_option[oid] = round(base * (1.0 - net_concern), 3)
+
+    methodology_confidence = 1.0
+    if "generator_abstain" in triggers:
+        methodology_confidence -= 0.3
+    if not control_out.get("glossary"):
+        methodology_confidence -= 0.1
+    if control_out.get("disagreements"):
+        methodology_confidence -= 0.05 * len(control_out["disagreements"])
+    methodology_confidence = max(0.0, round(methodology_confidence, 2))
+
+    result = {
+        "scheme": "rund2",
+        "result": "AGGREGATE",
+        "chosen": preferred,
+        "confidence_per_option": confidence_per_option,
+        "confidence_methodology": methodology_confidence,
+        "methodology_notes": _rund2_methodology_notes(generator_out, control_out, conservator_out),
+    }
+    if methodology_confidence < 0.5:
+        result["warning"] = "Deliberare incompletă — consideră rezultatul ca preliminar"
+    return result
+# === END RUND2 ===
+
+
 SCHEMES = {
     "majority": lambda data: aggregate_majority(data["candidates"]),
     "conservative_override": lambda data: aggregate_conservative_override(
@@ -322,6 +472,13 @@ SCHEMES = {
     "team_vote": lambda data: aggregate_team_vote(
         data["personalities"], data["candidates"]
     ),
+    # === RUND2 ===
+    "rund2": lambda data: aggregate_rund2(
+        data["generator"],
+        data["control"],
+        data["conservator"],
+    ),
+    # === END RUND2 ===
 }
 
 

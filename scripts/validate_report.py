@@ -66,6 +66,47 @@ def _is_non_negative_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
+# === RUND2 ===
+_REVERSIBILITY_VALUES = frozenset({"complete", "partial", "irreversible"})
+_MAGNITUDE_VALUES = frozenset({"trivial", "moderate", "high", "critical"})
+
+
+def _validate_regression_risk(value: object) -> list[str]:
+    """Accept scalar float (old format) OR object with reversibility/magnitude/net_concern (RUND2)."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if not (0.0 <= float(value) <= 1.0):
+            return [f"regression_risk scalar must be in [0.0, 1.0], got {value}"]
+        return []
+    if isinstance(value, dict):
+        problems = []
+        rev = value.get("reversibility")
+        if rev not in _REVERSIBILITY_VALUES:
+            problems.append(f"regression_risk.reversibility must be one of {sorted(_REVERSIBILITY_VALUES)}, got {rev!r}")
+        mag = value.get("magnitude")
+        if mag not in _MAGNITUDE_VALUES:
+            problems.append(f"regression_risk.magnitude must be one of {sorted(_MAGNITUDE_VALUES)}, got {mag!r}")
+        nc = value.get("net_concern")
+        if nc is not None and not (isinstance(nc, (int, float)) and not isinstance(nc, bool) and 0.0 <= float(nc) <= 1.0):
+            problems.append(f"regression_risk.net_concern must be float in [0.0, 1.0], got {nc!r}")
+        return problems
+    return [f"regression_risk must be a float or an object, got {type(value).__name__}"]
+
+
+def _validate_rund2_fields(report: dict) -> list[str]:
+    """Strict RUND2 field validation — only run with --strict-rund2 flag."""
+    problems = []
+    for score in report.get("voice_scores", {}).get("conservator", {}).get("scores", []):
+        rr = score.get("regression_risk")
+        if rr is None:
+            problems.append(f"strict-rund2: candidate '{score.get('id')}' conservator missing regression_risk object")
+            continue
+        problems.extend(_validate_regression_risk(rr))
+        if "tokens_budget" not in score:
+            problems.append(f"strict-rund2: candidate '{score.get('id')}' conservator missing tokens_budget")
+    return problems
+# === END RUND2 ===
+
+
 def _validate_telemetry(telemetry: object) -> list[str]:
     if not isinstance(telemetry, dict):
         return ["telemetry must be a JSON object"]
@@ -250,6 +291,14 @@ def main(argv: list[str] | None = None) -> int:
         default=sys.stdin,
         help="JSON input file (default: stdin)",
     )
+    # === RUND2 ===
+    ap.add_argument(
+        "--strict-rund2",
+        action="store_true",
+        default=False,
+        help="require RUND2 fields (regression_risk object, tokens_budget) in conservator scores",
+    )
+    # === END RUND2 ===
     args = ap.parse_args(argv)
 
     try:
@@ -263,6 +312,10 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     problems = validate(report)
+    # === RUND2 ===
+    if args.strict_rund2:
+        problems.extend(_validate_rund2_fields(report))
+    # === END RUND2 ===
     if problems:
         for p in problems:
             print(p, file=sys.stderr)
