@@ -110,6 +110,17 @@ Fiecare senator e o **perspectivă cognitivă distinctă** — nu un alter-ego a
 
 Toate trebuie să emită câmpul **`vote`** (`GO|MODIFY|STOP`) și **`modify_request`** (string).
 
+### Procedură manuală de cross-check Limite (când editezi un prompt senator)
+
+Nu există script CI care validează ortogonalitatea automat — în repo nu rulează CI. Înainte să faci merge la o schimbare în `prompts/senators/*.md`:
+
+1. **Citește cele 7 secțiuni `## Limite` consecutiv.** Pentru fiecare senator, întrebarea de control e: *"Ce NU fac eu? Lista include explicit fiecare alt senator cu domeniul lui?"*
+2. **Verifică matricea de mai sus.** Coloana "Output structurat distinct" trebuie să rămână 1:1 cu un senator — niciun câmp dintr-un senator nu trebuie să apară (ca producere) în alt senator.
+3. **Test de overlap negativ:** dacă tocmai ai adăugat o frază în secțiunea `## Specialitate` a unui senator, caută aceeași responsabilitate în `## Specialitate` la ceilalți 6. Dacă apare → contradicție de scope; alege un senator unic care primește responsabilitatea.
+4. **Test funcțional:** rulează `python -X utf8 scripts/test_senate_synth.py` — suita verifică structural că toate 7 prompturile există și au secțiunile cerute (nu validează semantic, dar prinde structuri rupte).
+
+De ce nu există script: validarea semantică a non-overlap-ului între prompturi NL necesită NLP, nu stdlib. Un keyword-count pe `## Limite` produce false positives pe negații împărtășite (ex: "NU evaluez risc" apare la mai mulți senatori cu sensuri diferite) și false negatives pe overlap real exprimat în vocabular distinct. Verificarea manuală pe matricea § 2 e mai fiabilă decât un script naiv.
+
 ---
 
 ## 3. Flow de dispatch (de la propunere la verdict)
@@ -443,15 +454,53 @@ Track-uiește în bundle:
 ]
 ```
 
-## 9. Limitări cunoscute (MVP)
+## 9. MVP-status
 
-| Limitare | Status | Plan viitor |
+### 9.1 Cele 5 Legi: active vs suspendate în MVP
+
+`prompts/senators/SENAT-todo-rol-legi-functii.md` în `experiments/New phase senat/` declară 5 Legi pentru deliberarea Senatului (vezi §8.1). MVP-ul curent **nu** implementează toate cele 5. Tabelul de mai jos clarifică ce e activ vs suspendat — fără asta, secțiunea Senate mode din SKILL.md pretinde implicit conformitate cu toate cele 5 Legi, ceea ce e fals.
+
+| # | Lege | Status MVP | Cum se manifestă în implementare |
+|---|---|---|---|
+| 1 | Răspuns obligatoriu | **Activ** (parțial) | Senator absent → marcat în `senators_absent[]`; senator prezent fără `vote` parseable → counted ca MODIFY (vot conservativ). Forma "nu am opinie" interzisă structural prin prompt; absența silentioasă tratată ca MODIFY, nu ca încălcare a Legii 1 — decizie deliberată documentată aici. |
+| 2 | Cross-questions max 3 per senator per punct | **Suspendat** | MVP e single-pass parallel. Cross-questions documentate ca §8 future extension; nu există dispatch multi-round. |
+| 3 | Blocaj → vot majoritar de 5 | **Suspendat** | Necesită Legea 2 implementată întâi. Documentat ca §8.4. |
+| 4 | Sinteza doar la final | **N/A în MVP** | Aplicabilă doar cu multi-round; sinteza curentă e oricum o singură dată (după Pass 1). |
+| 5 | Auditabilitate în `runs/senate/` | **Activ** | `senate_synth.py` scrie collision-safe în `runs/senate/<timestamp>-<label>.json`. Folder gitignored (consecvent cu `runs/*.json`) — auditabilitate locală. |
+
+**De ce conturile:** Legile 2–4 sunt aspirational pentru deliberare deliberativă multi-runde. MVP-ul deservește Functia 1 (audit pre-implementare) cu o singură rundă paralelă; e adecvat pentru pre-implementation gating și nu pretinde să replice dinamica RUND2 reală până nu acumulăm 3+ invocări care arată că simple parallel e insuficient.
+
+### 9.2 Disposition self-validation run (2026-05-16_1632)
+
+Run-ul de self-validation a emis verdict **MODIFY** cu 4 modify_requests (Wittgenstein, Socrate, Musk, Dimon). Tabelul de mai jos înregistrează dispoziția fiecărei cereri în implementarea finală — fără asta, MVP-ul ar fi shipped pe un baseline incomplet.
+
+| Senator | Cerere | Status | Unde se vede |
+|---|---|---|---|
+| Wittgenstein | Operational definitions pentru "end-to-end Senate run", "does not touch existing voices/modes", absent-senator semantics | **Resolved** | `SKILL.md` Senate mode → secțiunea "Operational definitions" |
+| Wittgenstein | Fix `collect_risks` asymmetry (Aurelius/Confucius/Musk dropped) | **Resolved** | `collect_risks()` șters complet; doar `collect_modify_requests` + `collect_warnings` rămân (`scripts/senate_synth.py`) |
+| Socrate | Comandă concretă de falsificare pentru "end-to-end" — fixture reproducând verdict cunoscut | **Resolved** | `scripts/senate_synth_fixture.json` + 9-test suite în `scripts/test_senate_synth.py` |
+| Socrate | Test explicit byte-identical pe voci core (zero-touch verification) | **Resolved** | `SKILL.md` Senate mode → secțiunea "Operational definitions" → predicat `git diff` exact |
+| Socrate | Confirmare empirică: dispatch 7-parallel rulat real cu Sonnet 4.6 | **Resolved** | `runs/senate/2026-05-16_1632-self-validation.json` cu 7 voturi reale |
+| Socrate | Documentează quorum behavior sub absent (>=3 absent) | **Resolved** | `compute_verdict` emite `UNREACHABLE` când `voters_present < 5`; `collect_warnings` emite `quorum_unreachable` warning |
+| Musk | Delete `--no-write`, `--label` CLI flags, `bundle['senators_invoked']` | **Resolved** | Toate șterse din `scripts/senate_synth.py` |
+| Musk | Delete SKILL.md "Legi (pentru orchestrator)" subsection + verdict table | **Resolved** | SKILL.md Senate mode condensată; verdict rule rămâne doar inline în workflow Step 4 |
+| Musk | Simplify `collect_warnings` la unrecognized-vote + structural fields only | **Resolved** | `collect_warnings` curent emite doar: structural field missing, unrecognized vote, quorum_unreachable. "Absent" restating eliminat. |
+| Dimon | Validare per-senator: warning dacă senator prezent cu payload incomplet | **Resolved** | `SENATOR_REQUIRED_FIELDS` dict + warning per senator per field lipsă (`scripts/senate_synth.py`) |
+| Dimon | Collision detection în `write_bundle` | **Resolved** | Granularitate la secunde (`%Y-%m-%d_%H%M%S`) + suffix `_v2/_v3` la coliziune (`scripts/senate_synth.py:write_bundle`) |
+| Dimon | Warning explicit `quorum_unreachable` când GO/STOP devine matematic imposibil | **Resolved** | Verdict `UNREACHABLE` + warning în `collect_warnings` |
+
+**Rămase deferred (nu deficiențe, ci scope future):**
+
+| Item | Status | Plan |
 |---|---|---|
-| Cross-questions între senatori | Lipsă (vision în §8) | Adăugat după ≥3 invocări reale care arată valoare |
-| Blocaj resolution prin vot majoritar | Lipsă (vision în §8.4) | Necesar doar cu cross-questions; vine în pachet |
-| Principle extraction din pattern detection | Lipsă | După 30+ runs reale (outcome tracking activ) |
-| Scope-overlap detector între senatori | Lipsă | Validare statică în CI dacă vreodată CI-uri pe repo |
-| Empirical validation Napoleon | Lipsă | După 10+ invocări, decide retain vs retire |
+| Cross-questions multi-round (Legea 2) | Deferred | §8 future extension; adăugat după ≥3 invocări reale care arată valoare |
+| Blocaj resolution prin vot 5 (Legea 3) | Deferred | §8.4; vine în pachet cu Legea 2 |
+| Principle extraction din pattern detection | Deferred | După 30+ senate runs reale cu outcome tracking activ |
+| Empirical validation Napoleon | Deferred | După 10+ invocări reale, decide retain vs retire |
+| Outcome tracking pentru `runs/senate/` (Functia 3 prerequisite) | Deferred | Adaptat din `scripts/mark_outcome.py` când senate run count ≥10 |
+| Scope-overlap detector automat între senatori | **N/A** | Înlocuit cu procedura manuală documentată în §2 (NL semantic check nu e fiabil în stdlib) |
+| Contradicție în `modify_requests` (Dimon scenario 5) | Acceptat ca limită | User vede toate cele 7 cereri și filtrează manual; Senatul nu joacă rol de arbitru între cereri |
+| `proposal` non-empty hard check | Acceptat ca limită | `senate_synth.py` returnează exit 1 + stderr message; nu mai e silent failure |
 
 ---
 
