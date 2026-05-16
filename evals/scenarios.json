@@ -1394,7 +1394,7 @@
     ]
   },
   {
-    "name": "validate_report/parallel mode with no voices emits warning not error",
+    "name": "validate_report/parallel mode with no voices fails hard",
     "tool": "scripts/validate_report.py",
     "stdin_json": {
       "success_criterion": "x",
@@ -1425,10 +1425,11 @@
         "mode": "parallel"
       }
     },
-    "expect_exit": 0,
+    "expect_exit": 1,
     "expect_stderr_contains": [
       "parallel",
-      "voices"
+      "voices",
+      "required"
     ]
   },
   {
