@@ -4147,7 +4147,7 @@ flowchart LR
         tabs.forEach(function(b) { b.classList.toggle('active', b === btn); });
         sections.forEach(function(s) { s.classList.toggle('active', s.id === target); });
         if (target === 'patterns') { window.__patternsRedraw && window.__patternsRedraw(); }
-          if (target === 'todo-matrix') drawTodoMatrix();
+        if (target === 'todo-matrix') drawTodoMatrix();
         syncPlayBtn(target);
         if (banner) { banner.classList.add('hidden'); sessionStorage.setItem('consiliumBannerDone','1'); }
       });
