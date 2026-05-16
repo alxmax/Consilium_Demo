@@ -1027,7 +1027,7 @@
       </div>
 
       <div class="card con">
-        <div class="top"><h3>Conservator</h3><span class="tag">Sceptic</span></div>
+        <div class="top"><h3>Conservator</h3><span class="tag">Risk Assessor</span></div>
         <div>Scorează risc pentru fiecare candidate valid: diff_size, scope_drift, regression_risk, reversibility.</div>
         <ul>
           <li>Reversibilitatea peste deșteptăciune</li>
@@ -1039,15 +1039,15 @@
     </div>
 
     <div class="agg">
-      <h3>Aggregation — 4 scheme de votare</h3>
+      <h3>Aggregation — 3 scheme active (+ 1 deprecated)</h3>
       <div class="schemes">
         <div class="scheme">
           <b>majority</b>
           Media voturilor; tiebreak pe varianță minimă.
         </div>
-        <div class="scheme">
-          <b>weighted</b>
-          Medie ponderată cu weights ∈ [0.2, 0.49], sum=1.0.
+        <div class="scheme" style="opacity:0.6;">
+          <b>weighted <span style="color:var(--muted);font-weight:400;">(deprecated)</span></b>
+          Medie ponderată cu weights ∈ [0.2, 0.49], sum=1.0. Scoasă din CLI (`--scheme weighted` returnează `invalid choice`) — tratează `conservator` ca utility, invers față de celelalte scheme. Funcția rămâne importabilă cu `DeprecationWarning` pentru consumeri externi.
         </div>
         <div class="scheme default">
           <b>conservative_override <span style="color:var(--muted);font-weight:400;">(default)</span></b>
@@ -1353,7 +1353,7 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
         </div>
         <div class="col">
           <code>aggregator.py</code>
-          <div class="opt">step 5 — 4 scheme</div>
+          <div class="opt">step 5 — 3 scheme (+ weighted deprecated)</div>
         </div>
         <div class="col">
           <code>build_report.py</code>
