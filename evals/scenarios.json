@@ -33,42 +33,20 @@
     }
   },
   {
-    "name": "aggregator/weighted winner shifts when control is heavily weighted",
+    "name": "aggregator/weighted scheme removed from CLI (deprecated)",
     "tool": "scripts/aggregator.py",
     "args": [
       "--scheme",
       "weighted"
     ],
     "stdin_json": {
-      "candidates": [
-        {
-          "id": "a",
-          "scores": {
-            "generator": 0.9,
-            "control": 0.3,
-            "conservator": 0.2
-          }
-        },
-        {
-          "id": "b",
-          "scores": {
-            "generator": 0.3,
-            "control": 0.9,
-            "conservator": 0.2
-          }
-        }
-      ],
-      "weights": {
-        "generator": 0.1,
-        "control": 0.8,
-        "conservator": 0.1
-      }
+      "candidates": []
     },
-    "expect_exit": 0,
-    "expect_stdout_subset": {
-      "scheme": "weighted",
-      "chosen": "b"
-    }
+    "expect_exit": 2,
+    "expect_stderr_contains": [
+      "invalid choice",
+      "weighted"
+    ]
   },
   {
     "name": "aggregator/conservative_override vetoes risky candidate",

@@ -49,6 +49,7 @@ import re
 import statistics
 import sys
 
+from personalities import NAMES
 from utils import force_utf8_streams
 
 
@@ -158,7 +159,7 @@ def _validate_telemetry_required(report: dict) -> list[str]:
 VOTE_PATTERN_REGEX = re.compile(r"^[0-3]-[0-3](-[0-1])?$")
 
 _TRIAS_NULL_PATTERNS = {"1-1-1", "1-1-0", "1-0-0", "0-0-0"}
-_TRIAS_EXPECTED_NAMES = {"pioneer", "architect", "steward"}
+_TRIAS_EXPECTED_NAMES = frozenset(NAMES)
 
 
 def _validate_trias(report: dict, errors: list) -> None:
