@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <title>consilium — Architecture Poster</title>
 <style>
   :root {
@@ -419,6 +420,14 @@
     .trias-deepdive, .cost-card, .failure-table, .trias-example-json { break-inside: avoid; }
     .veto { color: #fff; }
   }
+  /* ============== MERMAID ============== */
+  .mermaid { text-align: center; margin: 0 auto; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  .mermaid-wrap { background: var(--inset); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+  .mermaid-wrap h3 { margin: 0 0 16px; font-size: 13px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+
   @media (max-width: 900px) {
     .voices, .schemes, .modes, .flow, .rail-grid { grid-template-columns: 1fr; }
     .step { margin-right: 0; margin-bottom: 18px; }
@@ -3835,6 +3844,16 @@ python scripts/memory.py <span class="k">--tier</span> all <span class="k">--que
 <div class="pat-tour-progress" id="patTourProgress"><span></span></div>
 
 <script>
+  mermaid.initialize({ startOnLoad: true, securityLevel: 'loose',
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#21262d', primaryTextColor: '#e5e7eb',
+      primaryBorderColor: '#2d3441', lineColor: '#9ca3af',
+      secondaryColor: '#11151c', tertiaryColor: '#0f1419',
+      edgeLabelBackground: '#11151c'
+    }
+  });
+
   (function() {
     var tabs = document.querySelectorAll('nav.tabs button');
     var sections = document.querySelectorAll('section.tab');
