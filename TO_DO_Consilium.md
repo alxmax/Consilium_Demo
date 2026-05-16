@@ -497,9 +497,9 @@ Propunere: flag `--skeptic-on-chosen` care rulează 1 voce skeptic după Pass-1 
 
 ---
 
-### 52. Revizuiește descrierile "Haiku verifiers = anti-fabrication"
+### 52. ✅ DONE Revizuiește descrierile "Haiku verifiers = anti-fabrication"
 **Categorie:** Docs (Skill/Arch HTML) | **Impact:** Mediu | **Efort:** Mic
-**Status:** OPEN — audit grep + revizuire condițională.
+**Status:** ✅ DONE (2026-05-16, branch `fix/haiku-antifab-claim`) — CLAUDE.md / SKILL.md (Trias split-model) / docs/architecture.html revised with conditional framing.
 
 Rapoartele inițiale din `experiments/run2-p3-reruns.html` (acum comasat în `p3-car-wash.html`) și posibil `docs/architecture.html` + SKILL.md descriu lite_trias_B / synod_split cu claim-ul că Haiku verifiers funcționează ca "anti-fabrication brake".
 
@@ -579,5 +579,5 @@ Quick-take-ul evaluatorului ≠ oracle. Această disciplină se aplică retroact
 | 49 | Analiză: streaming / HITL Generator↔Control (INVESTIGATE) | Arch | Mediu | Mare |
 | 50 | Analiză: time-travel peste runs/ (INVESTIGATE) | Skill | Mic | Mic-Mediu |
 | 51 | Skeptic-on-chosen ca pas opțional (P3 lesson) ✅ DONE | Skill | Înalt | Mediu |
-| 52 | Revizuiește "Haiku = anti-fabrication" în docs (P3 lesson) | Docs | Mediu | Mic |
+| 52 | Revizuiește "Haiku = anti-fabrication" în docs (P3 lesson) ✅ DONE | Docs | Mediu | Mic |
 | 53 | Oracle verification pe fab-rate claims (P3 lesson) ✅ DONE (SKILL.md + experiments/README.md) | Arch | Înalt | Mic |

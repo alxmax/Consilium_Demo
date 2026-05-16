@@ -376,7 +376,7 @@ Skeptic-ul vede DOAR chosen final, nu și Pass 1 vs Pass 2 drift. Dacă Dialecti
 ### Când să folosești
 - Decizii medium-stakes care beneficiază de diversitatea de personalități (3 perspective ortogonale) dar nu justifică costul Trias full
 - Probleme unde verificarea e relativ surface-level (factor scoring, sanity checks) — Haiku ajunge
-- Risc redus de fabricație: Haiku verifiers nu au capacitate cognitivă să elaboreze constraints fabricate, ceea ce face Trias split mai stabil decât Trias full pe probleme triviale (anti-fabrication mechanism — vezi `experiments/run2-p3-reruns.html`)
+- Haiku verifiers: efect anti-zgomot pe probleme triviale fără constraint implicit (resping elaborări inutile), dar shallow-amplifier pe probleme cu constraint implicit — confirmă răspunsul evident fără să interogheze asumpția ascunsă (P3 corrigendum: 3/3 A pe o problemă cu răspuns corect C; vezi `experiments/p3-car-wash.html`). Nu folosi trias_split dacă problema poate conține constraints implicite — preferă Trias full sau `parallel_skeptic`.
 
 ### Workflow
 Identic cu Trias standard, dar override-uri explicite la dispatch:

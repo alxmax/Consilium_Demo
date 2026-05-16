@@ -26,7 +26,7 @@ Pe lângă cele 4 moduri originale (Sequential, Parallel, Dialectic, Trias), ski
 
 - **`parallel_skeptic`** — Parallel + 1 voce Skeptic focală pe chosen (4 sub-agenți, 1.33× Parallel). Pentru medium-stakes când conf cade în `[0.5, 0.7]`.
 - **`dialectic_skeptic`** — Dialectic + 1 voce Skeptic focală pe chosen (7 sub-agenți, ~2.3× Parallel). Cross-review + challenge focal final.
-- **`trias_split`** — Trias cu model override (Sonnet Gen + Haiku verifiers, ~3.3× Parallel). Anti-fabricație via Haiku verifiers shallow.
+- **`trias_split`** — Trias cu model override (Sonnet Gen + Haiku verifiers, ~3.3× Parallel). Anti-zgomot pe probleme triviale; shallow-amplifier pe probleme cu constraint implicit (vezi `experiments/p3-car-wash.html`).
 
 Aceste 3 moduri sunt **conceptuale + documentate**, fără cod dedicat (orchestrate prin dispatch standard cu prompts existente + skeptic.md). Pentru testare empirică pe P3, vezi `experiments/run2-p3-reruns.html`.
 
