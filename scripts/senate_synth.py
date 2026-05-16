@@ -123,7 +123,8 @@ def normalize_rounds(data: dict) -> tuple[list[dict], bool]:
     The returned list always has the shape [{"round": <int>, "senators": {...}}, ...]
     so downstream code is uniform. is_multi_round_input is True only when the
     user explicitly supplied data["rounds"] — used to decide which extra bundle
-    fields to emit (Laws 2-4 metadata only on multi-round).
+    fields to emit (Laws 2+4 metadata only on multi-round; Law 3 blocaj_pending
+    emitted on both when verdict=MODIFY).
     """
     rounds_in = data.get("rounds")
     if isinstance(rounds_in, list) and rounds_in:
@@ -364,8 +365,12 @@ def build_bundle(
 
     cq_used, cq_violations = cross_questions_summary(rounds)
     position_changes = detect_position_changes(rounds)
+
+    # Compute verdict before blocaj_pending: only emit advisory signal when
+    # verdict is MODIFY (no quorum), suppressing it on clean GO/STOP outcomes.
+    verdict = compute_verdict(final_counts, voters_present)
     blocaj_pending = []
-    if blocaj_info is None and is_multi_round_input:
+    if blocaj_info is None and verdict == "MODIFY":
         blocaj_pending = detect_blocaj_pairs(final_outputs)
 
     warnings = collect_warnings(final_outputs, voters_present)
@@ -387,7 +392,7 @@ def build_bundle(
         "senators_absent": senators_absent,
         "outputs": outputs_for_bundle,
         "vote_counts": final_counts,
-        "verdict": compute_verdict(final_counts, voters_present),
+        "verdict": verdict,
         "modify_requests": collect_modify_requests(final_outputs),
         "warnings": warnings,
     }
@@ -398,8 +403,8 @@ def build_bundle(
         if blocaj_info:
             bundle["blocaj_resolution"] = blocaj_info
             bundle["vote_counts_pre_blocaj"] = raw_counts
-        if blocaj_pending:
-            bundle["blocaj_pending"] = blocaj_pending
+    if blocaj_pending:
+        bundle["blocaj_pending"] = blocaj_pending
     return bundle
 
 
