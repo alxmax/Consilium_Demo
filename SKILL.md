@@ -209,6 +209,8 @@ python scripts/run_evals.py
 | `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite scripturi deterministe |
 | `scripts/usage.py` | Rollup telemetry din runs/ |
 | `agents/consilium-subagent.md` | Subagent pentru invocare izolată via `Agent(subagent_type="consilium-subagent", ...)` |
+| `prompts/senators/*.md` | 7 prompturi de audit pre-implementare (mod `senate`); fiecare cu specialitate distinctă (vezi tabelul din Senate mode) |
+| `scripts/senate_synth.py` | Synthesizer Senate: agregă 7 output-uri JSON → verdict GO/MODIFY/STOP + modify_requests + risks → salvează în `runs/senate/` |
 
 ## Feedback loop
 
@@ -446,3 +448,79 @@ Tabel sumar:
 - Diff e high-stakes intrinsec (auth, migrations, security) — folosește Trias full cu cost justificat
 
 **Origine empirică.** Modul a apărut din analiza `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (echivalentul conceptual al acestui flag) a atins catch-rate 100% în simulare și 4/7 în reruns reale pe P3 car wash — performanță superioară oricărui alt mod testat. Mecanismul: o singură voce skeptic pe `chosen` post-hoc obligă re-citirea success_criterion și detectarea constraint-urilor implicite ratate de toate vocile din Pass-1.
+
+## Senate mode (`senate`)
+
+**Scope distinct:** `senate` auditează **modificări la skill-ul însuși** (prompturi, scripts, arhitectură, SKILL.md), nu întrebări ale user-ului. Pentru cod user folosești modurile standard.
+
+**Mecanica:** 7 sub-agenți Sonnet 4.6 paralel, fiecare cu prompt-ul lui din `prompts/senators/`:
+
+| Senator | Specialitate |
+|---|---|
+| Wittgenstein | termeni vagi, definiții testabile |
+| Aurelius | reversibility × magnitude, proporționalitate cost/stake |
+| Confucius | autoritate, precedente în `runs/` + `experiments/` |
+| Socrate | premize load-bearing nedeclarate |
+| Musk | aggressive deletion + 10% add-back |
+| Dimon | stress test, counterparty, silent failure modes |
+| Napoleon | tokens, ore, starea operatorului |
+
+**Cost:** 7 sub-agenți Sonnet (~2.3× Parallel). On-demand only — niciun trigger automat.
+
+### Operational definitions
+
+Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au definiții testabile:
+
+- **"Senate run end-to-end"** = (a) bundle `runs/senate/<timestamp>-<label>.json` există pe disc; (b) parsabil JSON; (c) conține `verdict ∈ {GO, MODIFY, STOP, UNREACHABLE}` și `vote_counts`; (d) `senate_synth.py` exit 0.
+- **"Senate nu atinge voci/moduri existente"** = `git diff <base>..HEAD -- prompts/{generator,control,conservator,skeptic,generator_pass2,control_pass2,conservator_pass2,*_lens}.md scripts/{aggregator,confidence,dialectic_merge,validate_report,build_report,personalities,strip_context,priors}.py` returnează empty. Adăugiri la SKILL.md Resources table sau secțiuni noi sunt explicit permise.
+
+### Când să folosești
+
+- Modificări la `prompts/*.md` core sau la Constitution/Workflow din SKILL.md
+- Voci/moduri noi înainte să implementezi
+- Decizii arhitecturale ireversibile (schemă `runs/*.json`, semantica veto-urilor)
+- Self-improvement loop pe propriile schimbări (versiune mai puternică decât `/consilium parallel`)
+
+### Workflow
+
+1. **Formulează propunerea concret** — paragraf: ce schimbi, de ce, fișiere atinse, success criterion.
+2. **Dispatch 7 sub-agenți paralel** (`model: "sonnet"` explicit), fiecare cu prompt-ul senatorului inline. Input identic:
+   ```
+   Proposal under audit: <textul>
+   Context: <fișiere atinse, success criterion>
+
+   Your role and instructions:
+   <conținutul prompts/senators/<senator>.md>
+
+   Return STRICTLY the JSON specified in the "Output format" section. No prose.
+   ```
+3. **Retry 1× pe senator absent / JSON malformat.** La eșec, marchează `absent` și continuă.
+4. **Rulează synthesizer:** `cat senate_input.json | python -X utf8 scripts/senate_synth.py` — input format: `{"proposal": "...", "label": "...", "senators": {...}, "absent": [...]}` (vezi docstring).
+5. **Bundle salvat automat** în `runs/senate/<YYYY-MM-DD_HHMMSS>-<label>.json` (granularitate secunde + suffix `_v2/_v3...` pe coliziune — niciun overwrite tăcut).
+6. **Verdictul e advisory** — user-ul decide:
+   - `GO` (≥5/7 GO) → procedezi
+   - `STOP` (≥5/7 STOP) → revizuie propunerea sau override explicit
+   - `MODIFY` (default) → aplică `modify_requests` și (opțional) re-rulează
+   - `UNREACHABLE` (<5 senatori prezenți) → verdict structurally biased toward MODIFY; orchestrator escaladează la user
+
+### Quorum sub absenți
+
+`UNREACHABLE` apare când `voters_present < 5`. Sub acest prag, nici GO nici STOP nu pot fi atinse matematic, iar default-ul MODIFY ar fi înșelător. Synthesizer-ul emite warning explicit `quorum_unreachable` și verdict `UNREACHABLE` — orchestrator-ul trebuie să escaladeze.
+
+### Skip Senate dacă
+
+- Schimbarea e pe deliberare standard, nu pe skill → folosește `parallel` / `dialectic` / etc.
+- Schimbarea e trivial-textuală (typo, rename intern, fix doc) — cost-prohibitive
+- User declină explicit
+
+### Smoke test
+
+Falsification fixture: `scripts/senate_synth_fixture.json` — input cunoscut → verdict așteptat MODIFY (3 GO / 3 MODIFY / 1 STOP) + un warning despre `dimon` cu `stress_scenarios` empty. Rulează:
+```bash
+cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py
+```
+
+### Origine + arhitectură
+
+- **Arhitectură vizuală + scheme:** [`docs/senate/architecture.md`](docs/senate/architecture.md) — diagrame ASCII, flow de dispatch, logica verdictului, file map, comparație cu alte moduri.
+- **Justification empirică:** `experiments/New phase senat/deliberations/RUND2-deliberari.md`. Implementarea curentă e MVP single-pass parallel; extensii (cross-questions, blocaj resolution) documentate în `experiments/New phase senat/todos/SENAT-todo-rol-legi-functii.md`.
