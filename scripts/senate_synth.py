@@ -1,29 +1,57 @@
 """Synthesize a Senate deliberation into a verdict bundle.
 
 Orchestration note: this script is NOT a dispatcher. The 7 senators are
-dispatched as parallel sub-agents by the Claude orchestrator when
+dispatched as sub-agents by the Claude orchestrator when
 `/consilium senate <proposal>` is invoked (see SKILL.md "Senate mode").
-This script consumes the 7 JSON outputs and produces one bundle:
+This script consumes the senator JSON outputs and produces one bundle:
 
   - vote tally + verdict (GO / MODIFY / STOP / UNREACHABLE)
   - flat list of modify_requests
-  - structured per-senator outputs (kept verbatim for consumer-side views)
+  - structured per-senator outputs (latest per senator)
   - warnings (only structural anomalies; absent senators surface via
     senators_absent rather than warning duplication)
 
-Input format on stdin (JSON):
-    {
-      "proposal": "<the proposal text being audited>",   # non-empty
-      "label":    "<short filename label, e.g. 'self-validation'>",
-      "senators": {"wittgenstein": {...}, ...},
-      "absent":   ["<senator_name>", ...]                 # optional
-    }
+Two input modes (backward compatible):
 
-Verdict rule:
+  1. Legacy single-round (Law 1 + Law 5 active, Laws 2-4 N/A):
+      {
+        "proposal": "<text>",
+        "label":    "<short>",
+        "senators": {"wittgenstein": {...}, ...},
+        "absent":   ["<senator_name>", ...]    # optional
+      }
+
+  2. Multi-round (Laws 2-4 active — cross-questions, blocaj resolution,
+     final-only synthesis):
+      {
+        "proposal": "<text>",
+        "label":    "<short>",
+        "rounds": [
+          {"round": 1, "senators": {"wittgenstein": {..., "cross_questions": [
+              {"to": "socrate", "question": "..."}
+          ]}, ...}},
+          {"round": 2, "senators": {"socrate": {<updated output, vote may change>}}},
+          {"round": 3, "senators": {...}}          # max 3 rounds
+        ],
+        "blocaj_resolution": {                     # optional; orchestrator
+            "pair": ["musk", "confucius"],         # supplies after 5-vote
+            "winning_senator": "musk",             # tiebreaker dispatch
+            "votes_from_others": {                 # 5 other senators choose
+                "wittgenstein": "musk", ...        # which argument wins
+            }
+        },
+        "absent": ["<senator_name>", ...]          # optional
+      }
+
+Verdict rule (same for both modes):
     UNREACHABLE if voters_present < 5 (matemathically cannot reach quorum)
     GO          if GO     >= 5 of 7
     STOP        if STOP   >= 5 of 7
     MODIFY      otherwise (default — also covers all non-quorum cases)
+
+Multi-round semantics (Law 2: max 3 cross_questions per senator per round;
+Law 3: blocaj_resolution.winning_senator's vote replaces loser's vote in the
+tally; Law 4: synthesis runs once, at end, on latest votes per senator).
 
 CLI:
     cat senate_input.json | python -X utf8 scripts/senate_synth.py
@@ -58,6 +86,7 @@ SENATORS = (
 )
 QUORUM = 5  # >= 5 of 7 needed for GO or STOP verdict
 VOTES = ("GO", "MODIFY", "STOP")
+MAX_CROSS_QUESTIONS_PER_SENATOR_PER_ROUND = 3  # Law 2
 
 # Per-senator structural expectations: if a senator votes but omits its
 # signature structured field, the audit is silent on that axis. We surface a
@@ -83,6 +112,174 @@ def normalize_vote(raw) -> str | None:
         return None
     upper = raw.strip().upper()
     return upper if upper in VOTES else None
+
+
+def normalize_rounds(data: dict) -> tuple[list[dict], bool]:
+    """Return (rounds_list, is_multi_round_input).
+
+    - Multi-round input: data["rounds"] is a non-empty list of {round, senators}.
+    - Legacy single-round input: data["senators"] holds the per-senator outputs.
+
+    The returned list always has the shape [{"round": <int>, "senators": {...}}, ...]
+    so downstream code is uniform. is_multi_round_input is True only when the
+    user explicitly supplied data["rounds"] — used to decide which extra bundle
+    fields to emit (Laws 2-4 metadata only on multi-round).
+    """
+    rounds_in = data.get("rounds")
+    if isinstance(rounds_in, list) and rounds_in:
+        rounds = []
+        for i, r in enumerate(rounds_in):
+            if not isinstance(r, dict):
+                continue
+            senators = r.get("senators")
+            if not isinstance(senators, dict):
+                continue
+            rounds.append({"round": r.get("round", i + 1), "senators": senators})
+        if rounds:
+            return rounds, True
+    # Legacy single-round
+    senators = data.get("senators")
+    if not isinstance(senators, dict):
+        senators = {}
+    return [{"round": 1, "senators": senators}], False
+
+
+def collect_final_outputs(rounds: list[dict]) -> dict[str, dict]:
+    """For each senator that appeared in any round, return their LATEST output.
+
+    Latest = highest round index in which they were present. Preserves canonical
+    senator ordering for stable bundle serialization.
+    """
+    latest: dict[str, dict] = {}
+    latest_round: dict[str, int] = {}
+    for r in rounds:
+        for name, output in r["senators"].items():
+            if name not in latest_round or r["round"] >= latest_round[name]:
+                latest[name] = output
+                latest_round[name] = r["round"]
+    return {n: latest[n] for n in SENATORS if n in latest}
+
+
+def detect_position_changes(rounds: list[dict]) -> list[dict]:
+    """Track per-senator vote changes between successive appearances.
+
+    Only emits when normalize_vote(...) changes between rounds. The trigger
+    string includes which senator(s) emitted a cross_question targeting this
+    senator in the immediately preceding round (heuristic — orchestrator can
+    enrich post-hoc by reading rounds[round_idx-1].senators[*].cross_questions).
+    """
+    history: dict[str, list[dict]] = {}
+    for r in rounds:
+        for name, output in r["senators"].items():
+            history.setdefault(name, []).append({
+                "round": r["round"],
+                "vote": normalize_vote(output.get("vote")),
+            })
+    changes: list[dict] = []
+    for name, hist in history.items():
+        for i in range(1, len(hist)):
+            prev, curr = hist[i - 1], hist[i]
+            if prev["vote"] != curr["vote"]:
+                changes.append({
+                    "senator": name,
+                    "from_round": prev["round"],
+                    "to_round": curr["round"],
+                    "from_vote": prev["vote"],
+                    "to_vote": curr["vote"],
+                    "trigger": _infer_trigger(rounds, name, prev["round"], curr["round"]),
+                })
+    return changes
+
+
+def _infer_trigger(rounds: list[dict], target: str, from_round: int, to_round: int) -> str:
+    """Best-effort: which senator's cross_question targeting `target` likely
+    triggered the change. Scans rounds between from_round and to_round inclusive.
+    """
+    triggers: list[str] = []
+    for r in rounds:
+        if r["round"] < from_round or r["round"] >= to_round:
+            continue
+        for from_senator, output in r["senators"].items():
+            cqs = output.get("cross_questions") or []
+            if not isinstance(cqs, list):
+                continue
+            for cq in cqs:
+                if isinstance(cq, dict) and cq.get("to") == target:
+                    triggers.append(f"cross-Q from {from_senator} in round {r['round']}")
+    return "; ".join(triggers) if triggers else "unspecified"
+
+
+def cross_questions_summary(rounds: list[dict]) -> tuple[dict[str, int], list[str]]:
+    """Sum cross_questions emitted per senator (across all rounds) and surface
+    Law-2 violations (more than MAX per senator per round).
+    """
+    totals: dict[str, int] = {}
+    violations: list[str] = []
+    for r in rounds:
+        per_round: dict[str, int] = {}
+        for name, output in r["senators"].items():
+            cqs = output.get("cross_questions") or []
+            if not isinstance(cqs, list):
+                continue
+            n = len(cqs)
+            per_round[name] = n
+            totals[name] = totals.get(name, 0) + n
+        for name, n in per_round.items():
+            if n > MAX_CROSS_QUESTIONS_PER_SENATOR_PER_ROUND:
+                violations.append(
+                    f"law_2_violation: senator '{name}' emitted {n} cross_questions in round "
+                    f"{r['round']} (max {MAX_CROSS_QUESTIONS_PER_SENATOR_PER_ROUND})"
+                )
+    return totals, violations
+
+
+def detect_blocaj_pairs(final_outputs: dict[str, dict]) -> list[dict]:
+    """Find every GO×STOP senator pair in final votes — candidates for Law-3
+    tiebreaker. Pairs are surfaced when no `blocaj_resolution` was provided
+    by orchestrator; presence of pairs without resolution becomes a warning.
+    """
+    go = sorted(n for n, o in final_outputs.items() if normalize_vote(o.get("vote")) == "GO")
+    stop = sorted(n for n, o in final_outputs.items() if normalize_vote(o.get("vote")) == "STOP")
+    return [{"go_senator": a, "stop_senator": b} for a in go for b in stop]
+
+
+def apply_blocaj_resolution(
+    final_outputs: dict[str, dict],
+    blocaj_resolution,
+) -> tuple[dict[str, dict], dict | None]:
+    """Per Law 3: when 2 senators are in GO×STOP opposition after cross-questions,
+    the other 5 vote between the two arguments. Winning side's vote replaces
+    the losing senator's vote in the tally. Individual outputs are NOT mutated;
+    we return a parallel dict with the adjusted vote so the original record is
+    preserved for audit.
+    """
+    if not isinstance(blocaj_resolution, dict):
+        return final_outputs, None
+    pair = blocaj_resolution.get("pair")
+    winner = blocaj_resolution.get("winning_senator")
+    if not (isinstance(pair, list) and len(pair) == 2 and winner in pair):
+        return final_outputs, None
+    loser = pair[1] if pair[0] == winner else pair[0]
+    if winner not in final_outputs or loser not in final_outputs:
+        return final_outputs, None
+    winning_vote = normalize_vote(final_outputs[winner].get("vote"))
+    if winning_vote is None:
+        return final_outputs, None
+    adjusted = dict(final_outputs)
+    adjusted[loser] = dict(final_outputs[loser])
+    adjusted[loser]["vote"] = winning_vote
+    adjusted[loser]["_blocaj_override"] = {
+        "original_vote": normalize_vote(final_outputs[loser].get("vote")),
+        "replaced_by": winner,
+    }
+    info = {
+        "pair": pair,
+        "winning_senator": winner,
+        "winning_vote": winning_vote,
+        "losing_senator": loser,
+        "votes_from_others": blocaj_resolution.get("votes_from_others", {}),
+    }
+    return adjusted, info
 
 
 def tally(senator_outputs: dict[str, dict]) -> dict[str, int]:
@@ -148,25 +345,62 @@ def slugify(label: str) -> str:
 
 def build_bundle(
     proposal: str,
-    senator_outputs: dict[str, dict],
+    rounds: list[dict],
+    is_multi_round_input: bool,
+    blocaj_resolution,
     absent: list[str],
     label: str,
     timestamp: str,
 ) -> dict:
-    counts = tally(senator_outputs)
-    voters_present = len(senator_outputs)
-    senators_absent = sorted({n for n in SENATORS if n not in senator_outputs} | set(absent))
-    return {
+    senators_appearing = {n for r in rounds for n in r["senators"].keys()}
+    senators_absent = sorted({n for n in SENATORS if n not in senators_appearing} | set(absent))
+
+    final_outputs = collect_final_outputs(rounds)
+    voters_present = len(final_outputs)
+
+    raw_counts = tally(final_outputs)
+    adjusted_outputs, blocaj_info = apply_blocaj_resolution(final_outputs, blocaj_resolution)
+    final_counts = tally(adjusted_outputs) if blocaj_info else raw_counts
+
+    cq_used, cq_violations = cross_questions_summary(rounds)
+    position_changes = detect_position_changes(rounds)
+    blocaj_pending = []
+    if blocaj_info is None and is_multi_round_input:
+        blocaj_pending = detect_blocaj_pairs(final_outputs)
+
+    warnings = collect_warnings(final_outputs, voters_present)
+    warnings.extend(cq_violations)
+    if blocaj_pending:
+        warnings.append(
+            f"blocaj_pending: {len(blocaj_pending)} GO×STOP pair(s) without resolution; "
+            "orchestrator must dispatch 5-vote tiebreaker (Law 3)"
+        )
+
+    # When a blocaj resolution applied, `outputs` reflects the post-override
+    # state (so tally(outputs) == vote_counts) with `_blocaj_override` marker
+    # preserving the senator's original vote for audit.
+    outputs_for_bundle = adjusted_outputs if blocaj_info else final_outputs
+    bundle: dict = {
         "timestamp": timestamp,
         "label": label,
         "proposal": proposal,
         "senators_absent": senators_absent,
-        "outputs": {n: senator_outputs[n] for n in SENATORS if n in senator_outputs},
-        "vote_counts": counts,
-        "verdict": compute_verdict(counts, voters_present),
-        "modify_requests": collect_modify_requests(senator_outputs),
-        "warnings": collect_warnings(senator_outputs, voters_present),
+        "outputs": outputs_for_bundle,
+        "vote_counts": final_counts,
+        "verdict": compute_verdict(final_counts, voters_present),
+        "modify_requests": collect_modify_requests(final_outputs),
+        "warnings": warnings,
     }
+    if is_multi_round_input:
+        bundle["rounds"] = rounds
+        bundle["position_changes"] = position_changes
+        bundle["cross_questions_used"] = cq_used
+        if blocaj_info:
+            bundle["blocaj_resolution"] = blocaj_info
+            bundle["vote_counts_pre_blocaj"] = raw_counts
+        if blocaj_pending:
+            bundle["blocaj_pending"] = blocaj_pending
+    return bundle
 
 
 def repo_root() -> Path:
@@ -202,17 +436,17 @@ def main() -> int:
     force_utf8_streams()
     parse_args()
     data = load_json_stdin("senate_synth.py")
-    validate_keys(data, ["proposal", "senators"], "senate_synth input")
+    validate_keys(data, ["proposal"], "senate_synth input")
+    if "rounds" not in data and "senators" not in data:
+        print("senate_synth: input must contain either 'rounds' or 'senators'", file=sys.stderr)
+        return 1
 
     proposal = str(data["proposal"]).strip()
     if not proposal:
         print("senate_synth: 'proposal' must be a non-empty string", file=sys.stderr)
         return 1
 
-    senator_outputs = data["senators"]
-    if not isinstance(senator_outputs, dict):
-        print("senate_synth: 'senators' must be an object keyed by senator name", file=sys.stderr)
-        return 1
+    rounds, is_multi_round_input = normalize_rounds(data)
 
     absent = data.get("absent", [])
     if not isinstance(absent, list):
@@ -220,8 +454,12 @@ def main() -> int:
 
     label = data.get("label") or "senate"
     timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    blocaj_resolution = data.get("blocaj_resolution")
 
-    bundle = build_bundle(proposal, senator_outputs, absent, label, timestamp)
+    bundle = build_bundle(
+        proposal, rounds, is_multi_round_input, blocaj_resolution,
+        absent, label, timestamp,
+    )
 
     print(json.dumps(bundle, indent=2, ensure_ascii=False))
     out_path = write_bundle(bundle)
