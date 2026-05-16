@@ -254,7 +254,7 @@
 <div class="eyebrow">Consilium · governance layer</div>
 <h1>Senate — arhitectură vizuală</h1>
 <div class="lede">
-  Audit pre-implementare pentru modificări la skill-ul <code>consilium</code> însuși. 7 senatori paralel, on-demand only, single-pass în MVP cu cross-questions ca extensie viitoare documentată.
+  Audit pre-implementare pentru modificări la skill-ul <code>consilium</code> însuși. 7 senatori paralel, on-demand only; toate cele 5 Legi sunt active (Laws 2-4 opt-in multi-round via schema <code>{rounds: [...]}</code>).
 </div>
 
 <div class="hero">
@@ -589,10 +589,10 @@ consilium/<br>
 <p>Bundle-ul rămâne în <code>runs/senate/&lt;timestamp&gt;-&lt;label&gt;.json</code> ca jurnal — chiar dacă procedezi împotriva verdictului (override explicit), audit-ul e păstrat pentru audit retroactiv.</p>
 
 <!-- ═══════════════════ §8 CROSS-QUESTIONS ═══════════════════ -->
-<h2 id="sec8">§8 — Cross-questions <em style="font-size: 16px; color: var(--amber);">(extensie viitoare — NU în MVP)</em></h2>
+<h2 id="sec8">§8 — Cross-questions <em style="font-size: 16px; color: var(--green, #6abf69);">(Laws 2-4 active, opt-in multi-round)</em></h2>
 
 <div class="cq-banner">
-  <strong>Status:</strong> documentată, neimplementată. MVP-ul curent e single-pass parallel. Secțiunea descrie <em>vision-ul</em> — pentru când acumulezi date care arată că merită cost-ul.
+  <strong>Status:</strong> implementat și testat (PR <code>feat/senate-laws-2-3-4</code>). Multi-round e opt-in: orchestrator-ul folosește schema <code>{rounds: [...]}</code> în input-ul de synth doar când vrea să activeze cross-questions; legacy <code>{senators: {...}}</code> rămâne valid (single-pass, Laws 2-4 N/A).
 </div>
 
 <p>Cross-questions transformă Senatul din 7 voci independente într-un grup deliberativ care își poate clarifica pozițiile reciproc. În deliberarea istorică RUND2, <strong>3 senatori și-au schimbat poziții</strong> post-cross-questions (Musk, Wittgenstein, Confucius) — semnal că dinamica funcționează.</p>
@@ -743,12 +743,12 @@ consilium/<br>
 </pre>
 
 <!-- ═══════════════════ §9 LIMITS ═══════════════════ -->
-<h2 id="sec9">§9 — Limitări cunoscute (MVP)</h2>
+<h2 id="sec9">§9 — Limitări cunoscute</h2>
 <table class="data">
   <thead><tr><th>Limitare</th><th>Status</th><th>Plan viitor</th></tr></thead>
   <tbody>
-    <tr><td>Cross-questions între senatori</td><td>Lipsă (vision în §8)</td><td>Adăugat după ≥3 invocări reale care arată valoare</td></tr>
-    <tr><td>Blocaj resolution prin vot majoritar</td><td>Lipsă (vision în §8.4)</td><td>Necesar doar cu cross-questions; vine în pachet</td></tr>
+    <tr><td>Cross-questions între senatori</td><td>Activ (opt-in multi-round, §8)</td><td>Empirical validation: ≥3 invocări reale care confirmă valoarea</td></tr>
+    <tr><td>Blocaj resolution prin vot majoritar</td><td>Activ (opt-in multi-round, §8.4)</td><td>Empirical validation după prima activare</td></tr>
     <tr><td>Principle extraction din pattern detection</td><td>Lipsă</td><td>După 30+ runs reale (outcome tracking activ)</td></tr>
     <tr><td>Scope-overlap detector între senatori</td><td>Lipsă</td><td>Validare statică în CI dacă vreodată CI-uri pe repo</td></tr>
     <tr><td>Empirical validation Napoleon</td><td>Lipsă</td><td>După 10+ invocări, decide retain vs retire</td></tr>
@@ -768,7 +768,7 @@ consilium/<br>
   <li><code>warnings: ["senator 'dimon' voted but omitted/empty 'stress_scenarios' — that axis of audit is silent"]</code></li>
 </ul>
 
-<h4>2. Suite completă (9 teste)</h4>
+<h4>2. Suite completă (14 teste)</h4>
 <pre class="ascii">python -X utf8 scripts/test_senate_synth.py</pre>
 <p><strong>Cazuri acoperite:</strong></p>
 <ul>
@@ -779,10 +779,15 @@ consilium/<br>
   <li>verdict_modify_default — 4 GO / 3 MODIFY → MODIFY</li>
   <li>verdict_unreachable — 4 prezenți / 3 absenți → UNREACHABLE + warning</li>
   <li>unrecognized_vote — vot invalid → contat MODIFY + warning structural</li>
+  <li><strong>multi_round_position_change (Law 2+4)</strong> — Round 1 STOP → Round 2 GO; <code>position_changes[]</code> populat + trigger inferat din cross-Q</li>
+  <li><strong>cross_questions_law2 (Law 2)</strong> — 4 cross_questions într-o rundă → <code>law_2_violation</code> warning</li>
+  <li><strong>blocaj_pending (Law 3)</strong> — GO×STOP pair fără rezolvare → <code>blocaj_pending</code> warning</li>
+  <li><strong>blocaj_resolution_applied (Law 3)</strong> — resolution dat → vot loser înlocuit, verdict computat post-tiebreaker</li>
+  <li><strong>legacy_single_round_compat</strong> — input <code>{senators: ...}</code> nu emite câmpuri multi-round</li>
   <li>bundle_persisted — runs/senate/*.json scris cu keys obligatorii</li>
   <li>collision_safe_write — fără overwrite silent; suffix <code>_vN</code> aplicat</li>
 </ul>
-<p>Toate 9 trebuie să PASS înainte de orice commit pe <code>senate_synth.py</code> sau pe orice <code>prompts/senators/*.md</code>.</p>
+<p>Toate 14 trebuie să PASS înainte de orice commit pe <code>senate_synth.py</code> sau pe orice <code>prompts/senators/*.md</code>.</p>
 
 <footer>
   <p>

@@ -223,7 +223,7 @@ python scripts/run_evals.py
 | `prompts/senators/*.md` | 7 prompturi de audit pre-implementare (mod `senate`); fiecare cu specialitate distinctă (vezi tabelul din Senate mode) |
 | `scripts/vocabulary_map.py` | RUND2: traduceri user-facing (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
 | `scripts/principle_extraction.py` | RUND2 EXPERIMENTAL, INACTIVE — extract principles din `runs/` dacă coverage ≥ 80% și ≥ 10 entries pe categorie verificabilă |
-| `scripts/senate_synth.py` | Synthesizer Senate: agregă 7 output-uri JSON → verdict GO/MODIFY/STOP + modify_requests + risks → salvează în `runs/senate/` |
+| `scripts/senate_synth.py` | Synthesizer Senate: agregă 7 output-uri JSON → verdict GO/MODIFY/STOP + modify_requests + risks → salvează în `runs/senate/`. Suportă **multi-round (Laws 2-4)** via schema `{rounds: [...]}` cu `cross_questions[]`, `position_changes[]`, și `blocaj_resolution` (5-vote tiebreaker). Backward compat pe legacy `{senators: {...}}`. |
 
 ## Feedback loop
 
@@ -470,7 +470,7 @@ Tabel sumar:
 
 **Scope distinct:** `senate` auditează **modificări la skill-ul însuși** (prompturi, scripts, arhitectură, SKILL.md), nu întrebări ale user-ului. Pentru cod user folosești modurile standard.
 
-**Mecanica:** 7 sub-agenți Sonnet 4.6 paralel, fiecare cu prompt-ul lui din `prompts/senators/`:
+**Mecanica:** 7 sub-agenți Sonnet 4.6 într-o primă rundă paralel + (opțional) cross-questions multi-round, fiecare cu prompt-ul lui din `prompts/senators/`:
 
 | Senator | Specialitate |
 |---|---|
@@ -512,9 +512,13 @@ Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au defini�
    Return STRICTLY the JSON specified in the "Output format" section. No prose.
    ```
 3. **Retry 1× pe senator absent / JSON malformat.** La eșec, marchează `absent` și continuă.
-4. **Rulează synthesizer:** `cat senate_input.json | python -X utf8 scripts/senate_synth.py` — input format: `{"proposal": "...", "label": "...", "senators": {...}, "absent": [...]}` (vezi docstring).
-5. **Bundle salvat automat** în `runs/senate/<YYYY-MM-DD_HHMMSS>-<label>.json` (granularitate secunde + suffix `_v2/_v3...` pe coliziune — niciun overwrite tăcut).
-6. **Verdictul e advisory** — user-ul decide:
+4. **Cross-questions (Law 2 — opțional, multi-round).** Scanează output-urile Round 1 pentru `cross_questions[]`. Pentru fiecare `{to: <senator>, question: ...}`, dispatch focal pe senatorul-țintă cu input "Round 1 ai votat X. Senator Y te întreabă: <question>. Răspunde cu output complet actualizat — votul poate fi diferit." Counter per senator per rundă (max 3 — Law 2). Maximum 3 runde total. Dacă Round 2 ridică noi cross-Qs, repetă în Round 3 apoi STOP forțat.
+5. **Blocaj resolution (Law 3 — opțional).** Dacă după Round 3 încă există 2 senatori în GO×STOP opposition (synthesizer raportează `blocaj_pending`), dispatch ceilalți 5 cu argumentele ambelor părți și întreabă care e mai puternic. Strânge `votes_from_others: {<senator>: <pair_member>}` și dă orchestrator-ului blocaj_resolution în input-ul de synth.
+6. **Rulează synthesizer:** `cat senate_input.json | python -X utf8 scripts/senate_synth.py`
+   - **Legacy:** `{"proposal": "...", "label": "...", "senators": {...}, "absent": [...]}` (single-round; Laws 2-4 inactive)
+   - **Multi-round (Laws 2-4):** `{"proposal": "...", "label": "...", "rounds": [{"round": 1, "senators": {...}}, ...], "blocaj_resolution": {...}, "absent": [...]}` — vezi docstring.
+7. **Bundle salvat automat** în `runs/senate/<YYYY-MM-DD_HHMMSS>-<label>.json` (granularitate secunde + suffix `_v2/_v3...` pe coliziune — niciun overwrite tăcut). Multi-round bundle include `rounds`, `position_changes`, `cross_questions_used`, și (dacă aplicat) `blocaj_resolution` + `vote_counts_pre_blocaj`.
+8. **Verdictul e advisory** — user-ul decide:
    - `GO` (≥5/7 GO) → procedezi
    - `STOP` (≥5/7 STOP) → revizuie propunerea sau override explicit
    - `MODIFY` (default) → aplică `modify_requests` și (opțional) re-rulează
@@ -537,7 +541,7 @@ Două nivele:
 cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py   # fixture quick check
 python -X utf8 scripts/test_senate_synth.py                                       # 9-test suite
 ```
-Suita rulează: prompt structure, fixture, verdict GO unanimous/quorum, MODIFY default, UNREACHABLE, unrecognized-vote, bundle persistence, collision-safe write. Toate 9 trebuie PASS înainte de commit pe `senate_synth.py` sau orice `prompts/senators/*.md`.
+Suita rulează: prompt structure, fixture, verdict GO unanimous/quorum, MODIFY default, UNREACHABLE, unrecognized-vote, **multi-round position change (Law 2+4)**, **cross-questions violation (Law 2)**, **blocaj pending + blocaj resolution (Law 3)**, **legacy backward compat**, bundle persistence, collision-safe write. Toate 14 trebuie PASS înainte de commit pe `senate_synth.py` sau orice `prompts/senators/*.md`.
 
 ### Origine + arhitectură
 

@@ -323,9 +323,9 @@ Bundle-ul rămâne în `runs/senate/<timestamp>-<label>.json` ca jurnal — chia
 
 ---
 
-## 8. Cross-questions (extensie viitoare — NU în MVP)
+## 8. Cross-questions (Laws 2-4 — active, opt-in multi-round)
 
-> **Status:** documentată, neimplementată. MVP-ul curent e single-pass parallel. Această secțiune descrie *vision-ul* — pentru când acumulezi date care arată că merită cost-ul.
+> **Status:** implementat și testat (PR `feat/senate-laws-2-3-4`). Multi-round e opt-in: orchestrator-ul folosește schema `{rounds: [...]}` în input-ul de synth doar când vrea să activeze cross-questions; legacy `{senators: {...}}` rămâne valid (single-pass, Laws 2-4 N/A). Implementarea respectă §8.1-§8.6.
 
 Cross-questions transformă Senatul din 7 voci independente într-un grup deliberativ care își poate clarifica pozițiile reciproc. În deliberarea istorică RUND2, **3 senatori și-au schimbat poziții** post-cross-questions (Musk, Wittgenstein, Confucius) — semnal că dinamica funcționează.
 
@@ -458,17 +458,17 @@ Track-uiește în bundle:
 
 ### 9.1 Cele 5 Legi: active vs suspendate în MVP
 
-`prompts/senators/SENAT-todo-rol-legi-functii.md` în `experiments/New phase senat/` declară 5 Legi pentru deliberarea Senatului (vezi §8.1). MVP-ul curent **nu** implementează toate cele 5. Tabelul de mai jos clarifică ce e activ vs suspendat — fără asta, secțiunea Senate mode din SKILL.md pretinde implicit conformitate cu toate cele 5 Legi, ceea ce e fals.
+`prompts/senators/SENAT-todo-rol-legi-functii.md` în `experiments/New phase senat/` declară 5 Legi pentru deliberarea Senatului (vezi §8.1). Începând cu PR `feat/senate-laws-2-3-4`, **toate cele 5 Legi sunt active** — Laws 2-4 sunt opt-in multi-round (orchestrator-ul decide când le aplică folosind schema `{rounds: [...]}`).
 
-| # | Lege | Status MVP | Cum se manifestă în implementare |
+| # | Lege | Status | Cum se manifestă în implementare |
 |---|---|---|---|
 | 1 | Răspuns obligatoriu | **Activ** (parțial) | Senator absent → marcat în `senators_absent[]`; senator prezent fără `vote` parseable → counted ca MODIFY (vot conservativ). Forma "nu am opinie" interzisă structural prin prompt; absența silentioasă tratată ca MODIFY, nu ca încălcare a Legii 1 — decizie deliberată documentată aici. |
-| 2 | Cross-questions max 3 per senator per punct | **Suspendat** | MVP e single-pass parallel. Cross-questions documentate ca §8 future extension; nu există dispatch multi-round. |
-| 3 | Blocaj → vot majoritar de 5 | **Suspendat** | Necesită Legea 2 implementată întâi. Documentat ca §8.4. |
-| 4 | Sinteza doar la final | **N/A în MVP** | Aplicabilă doar cu multi-round; sinteza curentă e oricum o singură dată (după Pass 1). |
-| 5 | Auditabilitate în `runs/senate/` | **Activ** | `senate_synth.py` scrie collision-safe în `runs/senate/<timestamp>-<label>.json`. Folder gitignored (consecvent cu `runs/*.json`) — auditabilitate locală. |
+| 2 | Cross-questions max 3 per senator per rundă | **Activ** (opt-in multi-round) | `cross_questions[]` opțional în output-ul fiecărui senator. `senate_synth.py` numără `cross_questions_used: {senator: count}` și emite `law_2_violation` warning când un senator depășește 3/rundă. Orchestrator-ul dispatch-uiește focal (Rounds 2-3). |
+| 3 | Blocaj → vot majoritar de 5 | **Activ** (opt-in multi-round) | Synthesizer detectează `blocaj_pending: [{go_senator, stop_senator}]` când 2 senatori sunt în opoziție GO×STOP fără rezolvare. Orchestrator-ul colectează `votes_from_others` de la cei 5 neutri și pasează `blocaj_resolution` în input; votul loser-ului e înlocuit cu cel al winner-ului în tally + `_blocaj_override` marker preservă originalul pentru audit. |
+| 4 | Sinteza doar la final | **Activ** (opt-in multi-round) | În multi-round, `collect_final_outputs(rounds)` ia output-ul ultimei runde per senator înainte de tally; nu se face sinteză inter-rundă. `position_changes[]` track-uiește vot-schimbările cu trigger inferat din cross-questions. |
+| 5 | Auditabilitate în `runs/senate/` | **Activ** | `senate_synth.py` scrie collision-safe în `runs/senate/<timestamp>-<label>.json`. Multi-round bundle include `rounds` complet + `position_changes` + `cross_questions_used` + `vote_counts_pre_blocaj` (dacă blocaj_resolution aplicat). Folder gitignored — auditabilitate locală. |
 
-**De ce conturile:** Legile 2–4 sunt aspirational pentru deliberare deliberativă multi-runde. MVP-ul deservește Functia 1 (audit pre-implementare) cu o singură rundă paralelă; e adecvat pentru pre-implementation gating și nu pretinde să replice dinamica RUND2 reală până nu acumulăm 3+ invocări care arată că simple parallel e insuficient.
+**Evoluție de la MVP:** anterior, Laws 2-4 erau suspendate fiindcă MVP-ul era single-pass parallel. PR-ul `feat/senate-laws-2-3-4` a adăugat schema multi-round (`{rounds: [...]}`) cu backward compat — input-urile legacy `{senators: {...}}` continuă să meargă single-round. Orchestrator-ul decide când să activeze multi-round (cost: ~2-3× single-pass per cross-Q dispatch focal).
 
 ### 9.2 Disposition self-validation run (2026-05-16_1632)
 

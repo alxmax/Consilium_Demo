@@ -235,6 +235,200 @@ def test_bundle_persisted_and_valid_json() -> tuple[bool, str]:
     return True, f"bundle {last.name} parsable + has required keys"
 
 
+# ───────── multi-round tests (Laws 2-4) ─────────
+
+
+def make_multi_round_payload(
+    proposal: str,
+    rounds: list[dict],
+    label: str = "smoke",
+    absent: list[str] | None = None,
+    blocaj_resolution: dict | None = None,
+) -> dict:
+    payload: dict = {
+        "proposal": proposal,
+        "label": label,
+        "rounds": rounds,
+        "absent": absent or [],
+    }
+    if blocaj_resolution is not None:
+        payload["blocaj_resolution"] = blocaj_resolution
+    return payload
+
+
+def test_multi_round_position_change() -> tuple[bool, str]:
+    """Senator changes vote between Round 1 and Round 2 — position_changes populated.
+
+    Law 2 + Law 4: cross-question prompts senator to revise; final synthesis uses
+    latest vote per senator (Round 2 overrides Round 1).
+    """
+    round1 = {
+        "round": 1,
+        "senators": {
+            "wittgenstein": {"vote": "GO", "modify_request": "",
+                             "cross_questions": [{"to": "musk", "question": "Why delete X?"}]},
+            "aurelius":     base_senator_output("GO"),
+            "confucius":    base_senator_output("GO"),
+            "socrate":      base_senator_output("GO"),
+            "musk":         base_senator_output("STOP", "delete X first"),
+            "dimon":        base_senator_output("GO"),
+            "napoleon":     base_senator_output("GO"),
+        },
+    }
+    round2 = {
+        "round": 2,
+        "senators": {
+            "musk": base_senator_output("GO", "ok keeping X with justification"),
+        },
+    }
+    code, bundle, stderr = run_synth(make_multi_round_payload(
+        proposal="multi-round position change", rounds=[round1, round2], label="smoke-multi-pos"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if "rounds" not in bundle:
+        return False, "expected bundle.rounds to be present for multi-round input"
+    if "position_changes" not in bundle or not bundle["position_changes"]:
+        return False, f"expected position_changes populated, got: {bundle.get('position_changes')}"
+    musk_change = next((c for c in bundle["position_changes"] if c["senator"] == "musk"), None)
+    if not musk_change:
+        return False, f"expected musk position change, got: {bundle['position_changes']}"
+    if musk_change["from_vote"] != "STOP" or musk_change["to_vote"] != "GO":
+        return False, f"expected musk STOP→GO, got {musk_change}"
+    if "wittgenstein" not in musk_change.get("trigger", ""):
+        return False, f"expected trigger to mention wittgenstein cross-Q, got: {musk_change['trigger']}"
+    if bundle["verdict"] != "GO":
+        return False, f"expected GO (7/7 after position change), got {bundle['verdict']}"
+    return True, "Round 1 STOP → Round 2 GO tracked + trigger inferred + final tally uses latest"
+
+
+def test_cross_questions_law2_violation() -> tuple[bool, str]:
+    """Senator emits 4 cross_questions in a single round → law_2_violation warning."""
+    round1 = {
+        "round": 1,
+        "senators": {
+            "wittgenstein": {
+                "vote": "GO", "modify_request": "",
+                "cross_questions": [
+                    {"to": "musk", "question": "q1"},
+                    {"to": "musk", "question": "q2"},
+                    {"to": "socrate", "question": "q3"},
+                    {"to": "dimon", "question": "q4"},  # exceeds max 3
+                ],
+            },
+            "aurelius":  base_senator_output("GO"),
+            "confucius": base_senator_output("GO"),
+            "socrate":   base_senator_output("GO"),
+            "musk":      base_senator_output("GO"),
+            "dimon":     base_senator_output("GO"),
+            "napoleon":  base_senator_output("GO"),
+        },
+    }
+    code, bundle, stderr = run_synth(make_multi_round_payload(
+        proposal="law2 violation test", rounds=[round1], label="smoke-law2"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if not any("law_2_violation" in w and "wittgenstein" in w for w in bundle["warnings"]):
+        return False, f"expected law_2_violation warning for wittgenstein, got: {bundle['warnings']}"
+    if bundle.get("cross_questions_used", {}).get("wittgenstein") != 4:
+        return False, f"expected cross_questions_used.wittgenstein=4, got: {bundle.get('cross_questions_used')}"
+    return True, "4 cross_questions in 1 round → law_2_violation surfaced + count tracked"
+
+
+def test_blocaj_pending() -> tuple[bool, str]:
+    """2 senators in GO×STOP opposition + no resolution → blocaj_pending warning."""
+    round1 = {
+        "round": 1,
+        "senators": {
+            "wittgenstein": base_senator_output("MODIFY", "x"),
+            "aurelius":     base_senator_output("MODIFY", "y"),
+            "confucius":    base_senator_output("MODIFY", "z"),
+            "socrate":      base_senator_output("MODIFY", "w"),
+            "musk":         base_senator_output("GO"),
+            "dimon":        base_senator_output("STOP", "block"),
+            "napoleon":     base_senator_output("MODIFY", "v"),
+        },
+    }
+    code, bundle, stderr = run_synth(make_multi_round_payload(
+        proposal="blocaj pending", rounds=[round1], label="smoke-blocaj-pend"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if not bundle.get("blocaj_pending"):
+        return False, f"expected blocaj_pending populated, got: {bundle.get('blocaj_pending')}"
+    pair = bundle["blocaj_pending"][0]
+    if pair["go_senator"] != "musk" or pair["stop_senator"] != "dimon":
+        return False, f"expected musk/dimon pair, got: {pair}"
+    if not any("blocaj_pending" in w for w in bundle["warnings"]):
+        return False, f"expected blocaj_pending warning, got: {bundle['warnings']}"
+    return True, "GO×STOP pair without resolution → blocaj_pending + warning surfaced"
+
+
+def test_blocaj_resolution_applied() -> tuple[bool, str]:
+    """blocaj_resolution provided → loser's vote replaced by winner's, verdict adjusted."""
+    round1 = {
+        "round": 1,
+        "senators": {
+            "wittgenstein": base_senator_output("GO"),
+            "aurelius":     base_senator_output("GO"),
+            "confucius":    base_senator_output("GO"),
+            "socrate":      base_senator_output("GO"),
+            "musk":         base_senator_output("GO"),
+            "dimon":        base_senator_output("STOP", "argue stop"),
+            "napoleon":     base_senator_output("GO"),
+        },
+    }
+    blocaj_resolution = {
+        "pair": ["musk", "dimon"],
+        "winning_senator": "musk",
+        "votes_from_others": {
+            "wittgenstein": "musk", "aurelius": "musk", "confucius": "musk",
+            "socrate": "musk", "napoleon": "dimon",
+        },
+    }
+    code, bundle, stderr = run_synth(make_multi_round_payload(
+        proposal="blocaj resolution", rounds=[round1], label="smoke-blocaj-res",
+        blocaj_resolution=blocaj_resolution))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if "blocaj_resolution" not in bundle:
+        return False, "expected blocaj_resolution in bundle, missing"
+    if bundle["blocaj_resolution"]["losing_senator"] != "dimon":
+        return False, f"expected losing_senator=dimon, got: {bundle['blocaj_resolution']}"
+    if bundle["vote_counts"]["GO"] != 7 or bundle["vote_counts"]["STOP"] != 0:
+        return False, f"expected GO=7 STOP=0 post-blocaj, got: {bundle['vote_counts']}"
+    if bundle.get("vote_counts_pre_blocaj", {}).get("STOP") != 1:
+        return False, f"expected pre-blocaj STOP=1, got: {bundle.get('vote_counts_pre_blocaj')}"
+    if bundle["verdict"] != "GO":
+        return False, f"expected GO post-blocaj, got: {bundle['verdict']}"
+    # dimon's output should be preserved with override marker
+    dimon_out = bundle["outputs"]["dimon"]
+    if dimon_out.get("vote") != "GO" or "_blocaj_override" not in dimon_out:
+        return False, f"expected dimon vote replaced with GO + _blocaj_override marker, got: {dimon_out}"
+    return True, "blocaj resolution replaces loser's vote, verdict computed post-tiebreaker"
+
+
+def test_legacy_single_round_omits_multi_round_fields() -> tuple[bool, str]:
+    """Backward compat: legacy {senators: ...} input doesn't emit Law-2-4 fields."""
+    code, bundle, stderr = run_synth(make_payload(
+        proposal="legacy smoke", senators=all_voting("GO"), label="smoke-legacy"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    forbidden = {"rounds", "position_changes", "cross_questions_used", "blocaj_pending"}
+    present = forbidden & set(bundle.keys())
+    if present:
+        return False, f"legacy input must not emit multi-round fields, found: {present}"
+    return True, "legacy single-round input omits rounds/position_changes/cq_used/blocaj_pending"
+
+
 def test_collision_safe_write() -> tuple[bool, str]:
     """Forcing same-timestamp collision: pre-write a stub at the path the next
     synth invocation will try to use, then verify synth produces a `_v2`
@@ -272,6 +466,11 @@ TESTS = [
     ("verdict_modify_default",       test_verdict_modify_default),
     ("verdict_unreachable",          test_verdict_unreachable),
     ("unrecognized_vote",            test_unrecognized_vote_warns_and_counts_modify),
+    ("multi_round_position_change",  test_multi_round_position_change),
+    ("cross_questions_law2",         test_cross_questions_law2_violation),
+    ("blocaj_pending",               test_blocaj_pending),
+    ("blocaj_resolution_applied",    test_blocaj_resolution_applied),
+    ("legacy_single_round_compat",   test_legacy_single_round_omits_multi_round_fields),
     ("bundle_persisted",             test_bundle_persisted_and_valid_json),
     ("collision_safe_write",         test_collision_safe_write),
 ]

@@ -27,6 +27,7 @@ Operaționalitate semantică. Un concept e operațional doar dacă poți spune *
     {"term": "<termen>", "proposed_definition": "<cum ar putea fi definit testabil>"}
   ],
   "false_consensus_risks": ["<termen> înseamnă X pentru voce A, Y pentru voce B"],
+  "cross_questions": [{"to": "<senator_name>", "question": "<focused, 1-2 propoziții — opțional, max 3 per rundă>"}],
   "vote": "GO|MODIFY|STOP",
   "modify_request": "<dacă vote != GO: ce trebuie redefinit operațional înainte să continui>"
 }
@@ -41,6 +42,10 @@ Operaționalitate semantică. Un concept e operațional doar dacă poți spune *
 - **NU** estimez cost cuantitativ — asta e Napoleon
 
 Mă opresc unde semantica devine clară. Restul rămâne în sarcina altor senatori.
+
+## Cross-questions (multi-round)
+
+În deliberări multi-round, poți emite `cross_questions[]` (max 3 per rundă — Law 2) pentru a contesta sau clarifica output-ul altui senator. Orchestrator-ul îl dispatch-uiește focal cu întrebarea ta în runda următoare. Dacă ești tu focal-dispatch (Rounds 2-3), răspunde cu output complet actualizat — schimbarea votului e permisă și e trackuită ca indicator de calitate deliberativă.
 
 ## Pattern de gândire
 
