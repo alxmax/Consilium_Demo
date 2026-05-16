@@ -52,6 +52,11 @@
   a:hover { text-decoration: underline; }
   .note { color: var(--muted); font-size: 13px; margin-top: 16px; }
 
+  /* HR intro block */
+  .hr-intro { background: var(--card-bg); border-left: 3px solid var(--gold);
+    border-radius: 6px; padding: 14px 18px; margin-bottom: 28px; font-size: 14px;
+    line-height: 1.6; color: var(--ink); }
+
   /* Mermaid */
   .mermaid { text-align: center; }
   .mermaid svg { max-width: 100%; height: auto; }
@@ -77,8 +82,9 @@
     letter-spacing: .06em; margin-bottom: 10px; }
   .senator-card .question { font-size: 13px; font-style: italic; color: var(--ink);
     padding-left: 10px; border-left: 2px solid var(--line); margin: 8px 0; }
-  .senator-card .field { font-family: ui-monospace,monospace; font-size: 11px;
-    color: var(--gold); margin-top: 6px; }
+  .senator-card .field { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .senator-card .field-tech { font-family: ui-monospace,monospace; font-size: 11px;
+    color: var(--gold); margin-top: 4px; }
 
   /* Verdict cards */
   .verdict-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; margin: 20px 0; }
@@ -141,26 +147,27 @@
 
 <header>
   <h1>Senate</h1>
-  <div class="sub">Layer de governance pentru modificări la skill-ul consilium însuși</div>
+  <div class="sub">Layer de governance pentru modificari la skill-ul consilium insusi</div>
 </header>
 
 <nav class="tabs" role="tablist">
-  <button class="active" data-tab="overview">Overview</button>
-  <button data-tab="senators">Senatori</button>
-  <button data-tab="dispatch">Dispatch</button>
-  <button data-tab="verdict">Verdict</button>
-  <button data-tab="files">Fișiere &amp; Mod</button>
-  <button data-tab="self-improvement">Self-improvement</button>
-  <button data-tab="limits">Limitări &amp; Test</button>
+  <button class="active" data-tab="ce-este">Ce este?</button>
+  <button data-tab="cum-functioneaza">Cum functioneaza?</button>
+  <button data-tab="cand-folosesti">Cand il folosesti?</button>
+  <button data-tab="pentru-tech">Pentru tech</button>
 </nav>
 
 <main>
 
-  <!-- ══════ TAB: OVERVIEW ══════ -->
-  <section class="tab active" id="overview">
+  <!-- ══════ TAB: CE ESTE? ══════ -->
+  <section class="tab active" id="ce-este">
 
-    <h2>§1 — Unde stă Senatul în consilium</h2>
-    <p>3 layere distincte. Senatul e layer-ul de <strong>governance</strong> — nu intervine pe întrebări regulate, ci doar când skill-ul însuși urmează să fie modificat.</p>
+    <div class="hr-intro">
+      Senatul este un layer de governance care auditeaza modificarile la skill-ul consilium inainte de implementare. Cand vrei sa schimbi regulile dupa care functioneaza consilium, 7 senatori independenti evalueaza propunerea in paralel si emit un verdict — advisory, nu blocant: decizia finala apartine utilizatorului.
+    </div>
+
+    <h2>§1 — Unde sta Senatul in consilium</h2>
+    <p>3 layere distincte. Senatul e layer-ul de <strong>governance</strong> — nu intervine pe intrebari regulate, ci doar cand skill-ul insusi urmeaza sa fie modificat.</p>
 
     <div class="mermaid-wrap">
       <h3>Arhitectura pe layere</h3>
@@ -181,7 +188,7 @@ flowchart TD
       REP["validate_report.py"]:::agg
       AGG --> CONF --> REP
     end
-    subgraph L1 ["L1 · Deliberation — per întrebare"]
+    subgraph L1 ["L1 · Deliberation — per intrebare"]
       direction LR
       GEN["Generator"]:::gen
       CTL["Control"]:::ctl
@@ -199,76 +206,82 @@ flowchart TD
     </div>
 
     <div class="info-card">
-      <b>Reguli de izolare:</b> L3 nu se invocă pe întrebări user; L1+L2 nu se invocă pe modificări la skill. Senatul e <b>advisory</b> — user-ul ia decizia finală.
+      <b>Reguli de izolare:</b> L3 nu se invoca pe intrebari user; L1+L2 nu se invoca pe modificari la skill. Senatul e <b>advisory</b> — user-ul ia decizia finala.
     </div>
 
-    <p>Citește înainte: secțiunea <em>„Senate mode (<code>senate</code>)"</em> din <a href="../../SKILL.md">SKILL.md</a>. Acest doc e schemele; SKILL.md e contractul.</p>
+    <p>Citeste inainte: sectiunea <em>&bdquo;Senate mode (<code>senate</code>)&rdquo;</em> din <a href="../../SKILL.md">SKILL.md</a>. Acest doc e schemele; SKILL.md e contractul.</p>
 
-  </section>
-
-  <!-- ══════ TAB: SENATORS ══════ -->
-  <section class="tab" id="senators">
-
-    <h2>§2 — Cei 7 senatori și lensele lor</h2>
-    <p>Fiecare e o <strong>perspectivă cognitivă distinctă</strong>. Scope-ul declarat în <code>## Limite</code> din fiecare prompt; NU se suprapun.</p>
+    <h2 style="margin-top:36px">§2 — Cei 7 senatori si lensele lor</h2>
+    <p>Fiecare senator reprezinta o <strong>perspectiva cognitiva distincta</strong> — un mod diferit de a pune intrebari critice despre o propunere. Scopul e sa acopere unghiuri pe care un singur evaluator le-ar rata.</p>
 
     <div class="senator-grid">
       <div class="senator-card w">
         <div class="name">Wittgenstein</div>
-        <div class="spec">operational semantics</div>
-        <div class="question">„E definit operațional? Cum verifici că s-a respectat?"</div>
-        <div class="field">→ vague_terms_found[]</div>
+        <div class="spec">claritate operationala</div>
+        <div class="question">„E definit operational? Cum verifici ca s-a respectat?"</div>
+        <div class="field">Detecteaza termeni vagi si cere definitii verificabile</div>
+        <div class="field-tech">→ vague_terms_found[]</div>
       </div>
       <div class="senator-card a">
         <div class="name">Aurelius</div>
-        <div class="spec">reversibility × magnitude</div>
-        <div class="question">„E proporțional cu stake-ul? Reversibil?"</div>
-        <div class="field">→ reversibility · magnitude · quadrant</div>
+        <div class="spec">proportionalitate si reversibilitate</div>
+        <div class="question">„E proportional cu miza? Se poate da inapoi daca gresim?"</div>
+        <div class="field">Evalueaza cat de mare e schimbarea (magnitudine) si cat de usor se poate anula (reversibilitate)</div>
+        <div class="field-tech">→ reversibility · magnitude · quadrant</div>
       </div>
       <div class="senator-card c">
         <div class="name">Confucius</div>
-        <div class="spec">hierarchy &amp; precedent</div>
+        <div class="spec">ierarhie si precedente</div>
         <div class="question">„Cine are autoritate aici? Avem precedente?"</div>
-        <div class="field">→ hierarchy_check · precedent_search[]</div>
+        <div class="field">Verifica daca schimbarea respecta structura de autoritate si daca exista cazuri similare anterioare</div>
+        <div class="field-tech">→ hierarchy_check · precedent_search[]</div>
       </div>
       <div class="senator-card s">
         <div class="name">Socrate</div>
-        <div class="spec">hidden assumptions</div>
-        <div class="question">„Ce presupui fără să declari? Dacă-i falsă?"</div>
-        <div class="field">→ hidden_assumptions[].load_bearing</div>
+        <div class="spec">presupozitii ascunse</div>
+        <div class="question">„Ce presupui fara sa declari? Daca-i falsa?"</div>
+        <div class="field">Cauta ipoteze nedeclarate care sustin propunerea — daca una e falsa, propunerea cade</div>
+        <div class="field-tech">→ hidden_assumptions[].load_bearing</div>
       </div>
       <div class="senator-card m">
         <div class="name">Musk</div>
-        <div class="spec">aggressive deletion</div>
-        <div class="question">„Ce poți șterge fără să pierzi funcția?"</div>
-        <div class="field">→ components_attacked[].vote</div>
+        <div class="spec">simplificare agresiva</div>
+        <div class="question">„Ce poti sterge fara sa pierzi functia?"</div>
+        <div class="field">Ataca componentele care par inutile — daca nimeni nu le poate apara, se elimina</div>
+        <div class="field-tech">→ components_attacked[].vote</div>
       </div>
       <div class="senator-card d">
         <div class="name">Dimon</div>
-        <div class="spec">stress test &amp; counterparty</div>
-        <div class="question">„Ce dacă eșuează? Cine plătește?"</div>
-        <div class="field">→ stress_scenarios[].failure_mode</div>
+        <div class="spec">scenarii de esec</div>
+        <div class="question">„Ce daca esueaza? Cine plateste?"</div>
+        <div class="field">Simuleaza scenariile negative: ce se intampla daca implementarea merge prost</div>
+        <div class="field-tech">→ stress_scenarios[].failure_mode</div>
       </div>
       <div class="senator-card n">
         <div class="name">Napoleon</div>
-        <div class="spec">cost &amp; terrain</div>
-        <div class="question">„Câți tokens? În ce stare e operatorul?"</div>
-        <div class="field">→ cost_estimate · terrain_check</div>
+        <div class="spec">cost si stare operationala</div>
+        <div class="question">„Cati tokens? In ce stare e operatorul?"</div>
+        <div class="field">Evalueaza costul practic (tokeni, timp, efort) si daca contextul permite executia acum</div>
+        <div class="field-tech">→ cost_estimate · terrain_check</div>
       </div>
     </div>
 
-    <p class="note">Toți emit <code>vote</code> (GO/MODIFY/STOP) și <code>modify_request</code>. Ortogonalitatea e validată prin secțiunea <code>## Limite</code> din fiecare prompt.</p>
+    <p class="note">Toti emit <code>vote</code> (GO/MODIFY/STOP) si <code>modify_request</code>. Ortogonalitatea e validata prin sectiunea <code>## Limite</code> din fiecare prompt.</p>
 
   </section>
 
-  <!-- ══════ TAB: DISPATCH ══════ -->
-  <section class="tab" id="dispatch">
+  <!-- ══════ TAB: CUM FUNCTIONEAZA? ══════ -->
+  <section class="tab" id="cum-functioneaza">
+
+    <div class="hr-intro">
+      User-ul trimite o propunere &rarr; orchestratorul lanseaza cei 7 senatori in paralel, fiecare cu specialitatea lui &rarr; <code>senate_synth.py</code> strange voturile si calculeaza verdictul &rarr; rezultatul e advisory, user-ul decide. Intregul proces dureaza cat un singur apel paralel de sub-agenti.
+    </div>
 
     <h2>§3 — Flow de dispatch</h2>
-    <p>Orchestrator-ul (Claude când execută <code>/consilium senate</code>) urmează acest flow. Senatul nu se invocă automat.</p>
+    <p>Orchestrator-ul (Claude cand executa <code>/consilium senate</code>) urmeaza acest flow. Senatul nu se invoca automat.</p>
 
     <div class="mermaid-wrap">
-      <h3>Sequence — orchestrator → 7 senatori → sinteză</h3>
+      <h3>Sequence — orchestrator → 7 senatori → sinteza</h3>
       <div class="mermaid">
 %%{init:{'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
 sequenceDiagram
@@ -283,7 +296,7 @@ sequenceDiagram
     participant N as Napoleon
     participant Sy as senate_synth.py
 
-    U->>O: propunere (ce, de ce, fișiere, criterion)
+    U->>O: propunere (ce, de ce, fisiere, criterion)
     Note over O: /consilium senate
     O->>W: prompt senator + input (model: sonnet)
     O->>Au: prompt senator + input (model: sonnet)
@@ -292,7 +305,7 @@ sequenceDiagram
     O->>M: prompt senator + input (model: sonnet)
     O->>D: prompt senator + input (model: sonnet)
     O->>N: prompt senator + input (model: sonnet)
-    Note over W,N: paralel — nu văd unii pe alții
+    Note over W,N: paralel — nu vad unii pe altii
     W-->>O: {vote, modify_request, ...}
     Au-->>O: {vote, modify_request, ...}
     Co-->>O: {vote, modify_request, ...}
@@ -303,40 +316,35 @@ sequenceDiagram
     O->>Sy: 7 JSON-uri
     Note over Sy: tally + compute_verdict + collect_modify_requests
     Sy-->>O: verdict + modify_requests[] + warnings[]
-    O-->>U: verdict + recomandări (user decide)
+    O-->>U: verdict + recomandari (user decide)
       </div>
     </div>
 
-    <p class="note">Retry 1× pe senator absent / JSON malformat. La eșec persistent → marchează <code>absent</code> și continuă. Dacă <code>voters_present &lt; 5</code> → verdict <code>UNREACHABLE</code>.</p>
+    <p class="note">Retry 1× pe senator absent / JSON malformat. La esec persistent &rarr; marcheaza <code>absent</code> si continua. Daca <code>voters_present &lt; 5</code> &rarr; verdict <code>UNREACHABLE</code>.</p>
 
-  </section>
-
-  <!-- ══════ TAB: VERDICT ══════ -->
-  <section class="tab" id="verdict">
-
-    <h2>§4 — Logica verdictului</h2>
-    <p>Quorum 5/7. Cazul <code>UNREACHABLE</code> surfacează când restul de senatori nu pot atinge matematic quorum-ul.</p>
+    <h2 style="margin-top:36px">§4 — Logica verdictului</h2>
+    <p>Quorum 5/7. Cazul <code>UNREACHABLE</code> apare cand prea multi senatori lipsesc si cei ramasi nu pot atinge matematic quorum-ul.</p>
 
     <div class="verdict-grid">
       <div class="verdict-card go">
         <div class="label">verdict GO</div>
-        <div class="rule">GO ≥ 5/7</div>
+        <div class="rule">GO &ge; 5/7</div>
         <div class="action">Procedezi cu implementarea.</div>
       </div>
       <div class="verdict-card stop">
         <div class="label">verdict STOP</div>
-        <div class="rule">STOP ≥ 5/7</div>
+        <div class="rule">STOP &ge; 5/7</div>
         <div class="action">Revizuie propunerea sau override explicit.</div>
       </div>
       <div class="verdict-card mod">
         <div class="label">verdict MODIFY</div>
-        <div class="rule">orice altă combinație (default)</div>
-        <div class="action">Aplică modify_requests și (opțional) re-rulează.</div>
+        <div class="rule">orice alta combinatie (default)</div>
+        <div class="action">Aplica modify_requests si (optional) re-ruleaza.</div>
       </div>
       <div class="verdict-card unr">
         <div class="label">verdict UNREACHABLE</div>
         <div class="rule">voters_present &lt; 5</div>
-        <div class="action">Verdict structurally biased. Orchestrator escaladează la user.</div>
+        <div class="action">Verdict structural biased. Orchestrator escaleaza la user.</div>
       </div>
     </div>
 
@@ -345,15 +353,15 @@ sequenceDiagram
       <div class="mermaid">
 %%{init:{'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
 flowchart TD
-    IN["7 voturi colectate\n(minus absenți/malformat)"]
-    VP{"voters_present ≥ 5?"}
+    IN["7 voturi colectate\n(minus absenti/malformat)"]
+    VP{"voters_present >= 5?"}
     RUNREACH["UNREACHABLE\n+ warning structural"]:::unr
-    COUNT["Numără GO și STOP"]
-    GO{"GO ≥ 5/7?"}
-    STOP{"STOP ≥ 5/7?"}
+    COUNT["Numara GO si STOP"]
+    GO{"GO >= 5/7?"}
+    STOP{"STOP >= 5/7?"}
     RGO["GO\nProcedezi"]:::go
     RSTOP["STOP\nRevizuie"]:::stop
-    RMOD["MODIFY (default)\nAplică modify_requests"]:::mod
+    RMOD["MODIFY (default)\nAplica modify_requests"]:::mod
 
     IN --> VP
     VP -->|da| COUNT
@@ -371,105 +379,113 @@ flowchart TD
       </div>
     </div>
 
-    <p><strong>De ce default-ul e MODIFY:</strong> GO și STOP sunt convergențe puternice (≥5/7); orice altă combinație = semnal de dezbatere = MODIFY.</p>
+    <p><strong>De ce default-ul e MODIFY:</strong> GO si STOP sunt convergente puternice (&ge;5/7); orice alta combinatie = semnal de dezbatere = MODIFY.</p>
 
   </section>
 
-  <!-- ══════ TAB: FIȘIERE & MOD ══════ -->
-  <section class="tab" id="files">
+  <!-- ══════ TAB: CAND IL FOLOSESTI? ══════ -->
+  <section class="tab" id="cand-folosesti">
 
-    <h2>§5 — Hartă fișiere</h2>
-    <div class="file-tree">
-consilium/<br>
-├── SKILL.md <span class="note">              ← secțiunea „Senate mode"</span><br>
-├── prompts/<br>
-│   ├── generator.md <span class="note">      ← voce core (nu se atinge)</span><br>
-│   ├── control.md <span class="note">        ← voce core (nu se atinge)</span><br>
-│   ├── conservator.md <span class="note">    ← voce core (nu se atinge)</span><br>
-│   └── <span class="new">senators/</span><br>
-│       ├── <span class="new">wittgenstein.md · aurelius.md · confucius.md</span><br>
-│       └── <span class="new">socrate.md · musk.md · dimon.md · napoleon.md</span><br>
-├── scripts/<br>
-│   ├── aggregator.py <span class="note">     ← nu se atinge</span><br>
-│   ├── <span class="new">senate_synth.py</span>            <span class="note">◄── synth + verdict logic</span><br>
-│   ├── <span class="new">senate_synth_fixture.json</span>  <span class="note">◄── smoke test fixture</span><br>
-│   └── <span class="new">test_senate_synth.py</span>       <span class="note">◄── 14 smoke tests</span><br>
-├── runs/<br>
-│   └── <span class="new">senate/</span>                    <span class="note">◄── per-audit bundle (gitignored)</span><br>
-│       └── &lt;YYYY-MM-DD_HHMMSS&gt;-&lt;label&gt;.json<br>
-└── docs/senate/ <span class="note">          ← acest fișier</span>
+    <div class="hr-intro">
+      Senatul e instrumentul potrivit cand <strong>schimbarea vizeaza skill-ul insusi</strong> — nu o intrebare normala, ci modificarea regulilor dupa care consilium functioneaza. Tab-ul acesta raspunde la &bdquo;ce mod aleg?&rdquo; si &bdquo;ce se intampla dupa verdict?&rdquo;
     </div>
 
-    <h2 style="margin-top:36px">§6 — Comparație cu alte moduri</h2>
+    <h2>§6 — Comparatie cu alte moduri</h2>
+    <p>Consilium are mai multe moduri de deliberare. Senatul e singurul activat pe modificari la skill (L3); celelalte opereaza pe intrebari obisnuite (L1).</p>
     <table class="data">
       <thead>
-        <tr><th>Mod</th><th>Când</th><th>Sub-agenți</th><th>Output</th></tr>
+        <tr><th>Mod</th><th>Cand</th><th>Sub-agenti</th><th>Output</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>parallel</code></td><td>schimbări standard</td><td>3 voci independente</td><td><code>runs/*.json</code></td></tr>
-        <tr><td><code>dialectic</code></td><td>conf &lt; 0.7 sau risc mediu</td><td>3 × 2 pass</td><td><code>runs/*.json</code></td></tr>
-        <tr><td><code>trias</code></td><td>schimbări arhitecturale mari</td><td>9 (3 personalități × 3 voci)</td><td><code>runs/*.json</code></td></tr>
-        <tr style="background:rgba(192,132,252,.08)"><td><strong>senate</strong></td><td>modificări la skill însuși (L3 only)</td><td>7 senatori</td><td><code>runs/senate/*.json</code></td></tr>
+        <tr><td><code>parallel</code></td><td>schimbari standard</td><td>3 voci independente</td><td><code>runs/*.json</code></td></tr>
+        <tr><td><code>dialectic</code></td><td>conf &lt; 0.7 sau risc mediu</td><td>3 &times; 2 pass</td><td><code>runs/*.json</code></td></tr>
+        <tr><td><code>trias</code></td><td>schimbari arhitecturale mari</td><td>9 (3 personalitati &times; 3 voci)</td><td><code>runs/*.json</code></td></tr>
+        <tr style="background:rgba(192,132,252,.08)"><td><strong>senate</strong></td><td>modificari la skill insusi (L3 only)</td><td>7 senatori</td><td><code>runs/senate/*.json</code></td></tr>
       </tbody>
     </table>
 
+    <h2 style="margin-top:36px">§7 — Self-improvement loop</h2>
+    <p>Senatul se poate evalua pe sine. Inainte de orice modificare la <code>SKILL.md</code> sau la prompt-urile senatorilor, rulezi <code>/consilium senate</code> cu propunerea ta ca input.</p>
+    <p>Output-ul merge in <code>runs/senate/</code> (gitignored). Daca verdictul e GO sau MODIFY cu modify_requests clare, implementezi si comiti. Daca STOP &mdash; revizuiesti propunerea.</p>
+
+    <div class="info-card">
+      <b>Regula practica:</b> Orice modificare la un prompt de senator sau la logica din <code>senate_synth.py</code> merita o rulare senate inainte de commit. Verdictele GO sunt rare &mdash; MODIFY e normalul care functioneaza.
+    </div>
+
   </section>
 
-  <!-- ══════ TAB: SELF-IMPROVEMENT ══════ -->
-  <section class="tab" id="self-improvement">
+  <!-- ══════ TAB: PENTRU TECH ══════ -->
+  <section class="tab" id="pentru-tech">
 
-    <h2>§7 — Self-improvement loop</h2>
-    <p>Senatul se poate evalua pe sine. Înainte de orice modificare la <code>SKILL.md</code> sau la prompt-urile senatorilor, rulezi <code>/consilium senate</code> cu propunerea ta ca input.</p>
-    <p>Output-ul merge în <code>runs/senate/</code> (gitignored). Dacă verdictul e GO sau MODIFY cu modify_requests clare, implementezi și comiti. Dacă STOP — revizuiești propunerea.</p>
+    <div class="hr-intro">
+      Tab dedicat cititorului tehnic: harta fisierelor, extensia cross-questions (Laws 2-4), limitarile cunoscute si comenzile de smoke test. HR cititor poate ignora acest tab.
+    </div>
+
+    <h2>§5 — Harta fisiere</h2>
+    <div class="file-tree">
+consilium/<br>
+&#9500;&#9472;&#9472; SKILL.md <span class="note">              &#8592; sectiunea &bdquo;Senate mode&rdquo;</span><br>
+&#9500;&#9472;&#9472; prompts/<br>
+&#9474;&nbsp;&nbsp; &#9500;&#9472;&#9472; generator.md <span class="note">      &#8592; voce core (nu se atinge)</span><br>
+&#9474;&nbsp;&nbsp; &#9500;&#9472;&#9472; control.md <span class="note">        &#8592; voce core (nu se atinge)</span><br>
+&#9474;&nbsp;&nbsp; &#9500;&#9472;&#9472; conservator.md <span class="note">    &#8592; voce core (nu se atinge)</span><br>
+&#9474;&nbsp;&nbsp; &#9492;&#9472;&#9472; <span class="new">senators/</span><br>
+&#9474;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &#9500;&#9472;&#9472; <span class="new">wittgenstein.md &middot; aurelius.md &middot; confucius.md</span><br>
+&#9474;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &#9492;&#9472;&#9472; <span class="new">socrate.md &middot; musk.md &middot; dimon.md &middot; napoleon.md</span><br>
+&#9500;&#9472;&#9472; scripts/<br>
+&#9474;&nbsp;&nbsp; &#9500;&#9472;&#9472; aggregator.py <span class="note">     &#8592; nu se atinge</span><br>
+&#9474;&nbsp;&nbsp; &#9500;&#9472;&#9472; <span class="new">senate_synth.py</span>            <span class="note">&#9668;&#9472;&#9472; synth + verdict logic</span><br>
+&#9474;&nbsp;&nbsp; &#9500;&#9472;&#9472; <span class="new">senate_synth_fixture.json</span>  <span class="note">&#9668;&#9472;&#9472; smoke test fixture</span><br>
+&#9474;&nbsp;&nbsp; &#9492;&#9472;&#9472; <span class="new">test_senate_synth.py</span>       <span class="note">&#9668;&#9472;&#9472; 14 smoke tests</span><br>
+&#9500;&#9472;&#9472; runs/<br>
+&#9474;&nbsp;&nbsp; &#9492;&#9472;&#9472; <span class="new">senate/</span>                    <span class="note">&#9668;&#9472;&#9472; per-audit bundle (gitignored)</span><br>
+&#9474;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &#9492;&#9472;&#9472; &lt;YYYY-MM-DD_HHMMSS&gt;-&lt;label&gt;.json<br>
+&#9492;&#9472;&#9472; docs/senate/ <span class="note">          &#8592; acest fisier</span>
+    </div>
 
     <h2 style="margin-top:36px">§8 — Cross-questions (extensie)</h2>
-    <p>Opt-in. Multi-round schema: <code>{"rounds": [...]}</code>. Senatorii pot adresa întrebări unii altora; câștigătorul blocajului se determină prin vot majoritar din senatorii rămași.</p>
+    <p>Opt-in. Multi-round schema: <code>{"rounds": [...]}</code>. Senatorii pot adresa intrebari unii altora; castigatorul blocajului se determina prin vot majoritar din senatorii ramasi.</p>
 
     <table class="data">
-      <thead><tr><th>Legea</th><th>Condiție de activare</th><th>Efect</th></tr></thead>
+      <thead><tr><th>Legea</th><th>Conditie de activare</th><th>Efect</th></tr></thead>
       <tbody>
-        <tr><td>Law 2</td><td><code>rounds</code> prezent în schema</td><td>Cross-questions între senatori (max 4/rundă)</td></tr>
-        <tr><td>Law 3</td><td>GO×STOP pair detectat</td><td>Blocaj — cei doi trebuie să se întrebe reciproc; resolution prin vot majoritar</td></tr>
-        <tr><td>Law 4</td><td>schimbări de poziție în rundă anterioară</td><td><code>position_changes[]</code> populat + trigger inferat</td></tr>
+        <tr><td>Law 2</td><td><code>rounds</code> prezent in schema</td><td>Cross-questions intre senatori (max 4/runda)</td></tr>
+        <tr><td>Law 3</td><td>GO&times;STOP pair detectat</td><td>Blocaj &mdash; cei doi trebuie sa se intrebe reciproc; resolution prin vot majoritar</td></tr>
+        <tr><td>Law 4</td><td>schimbari de pozitie in runda anterioara</td><td><code>position_changes[]</code> populat + trigger inferat</td></tr>
       </tbody>
     </table>
 
-    <p class="note">Schimbările de poziție (<em>position_changes</em>) sunt <strong>semnalul</strong> că dinamica funcționează. Un Senat care converge mereu fără schimbări e suspect (groupthink structural).</p>
+    <p class="note">Schimbarile de pozitie (<em>position_changes</em>) sunt <strong>semnalul</strong> ca dinamica functioneaza. Un Senat care converge mereu fara schimbari e suspect (groupthink structural).</p>
 
-  </section>
-
-  <!-- ══════ TAB: LIMITĂRI & TEST ══════ -->
-  <section class="tab" id="limits">
-
-    <h2>§9 — Limitări cunoscute</h2>
+    <h2 style="margin-top:36px">§9 — Limitari cunoscute</h2>
     <table class="data">
       <thead><tr><th>Limitare</th><th>Status</th><th>Plan viitor</th></tr></thead>
       <tbody>
-        <tr><td>Cross-questions între senatori</td><td>Activ (opt-in multi-round)</td><td>Empirical validation: ≥3 invocări reale</td></tr>
-        <tr><td>Blocaj resolution</td><td>Activ (opt-in multi-round)</td><td>Empirical validation după prima activare</td></tr>
-        <tr><td>Principle extraction din pattern detection</td><td>Lipsă</td><td>După 30+ runs reale</td></tr>
-        <tr><td>Scope-overlap detector între senatori</td><td>Lipsă</td><td>Validare statică în CI dacă există</td></tr>
-        <tr><td>Empirical validation Napoleon</td><td>Lipsă</td><td>După 10+ invocări, decide retain vs retire</td></tr>
+        <tr><td>Cross-questions intre senatori</td><td>Activ (opt-in multi-round)</td><td>Empirical validation: &ge;3 invocari reale</td></tr>
+        <tr><td>Blocaj resolution</td><td>Activ (opt-in multi-round)</td><td>Empirical validation dupa prima activare</td></tr>
+        <tr><td>Principle extraction din pattern detection</td><td>Lipsa</td><td>Dupa 30+ runs reale</td></tr>
+        <tr><td>Scope-overlap detector intre senatori</td><td>Lipsa</td><td>Validare statica in CI daca exista</td></tr>
+        <tr><td>Empirical validation Napoleon</td><td>Lipsa</td><td>Dupa 10+ invocari, decide retain vs retire</td></tr>
       </tbody>
     </table>
 
     <h2 style="margin-top:36px">§10 — Smoke test</h2>
-    <p>Două nivele de verificare end-to-end:</p>
+    <p>Doua nivele de verificare end-to-end:</p>
 
     <h3>1. Synth pe fixture</h3>
     <pre class="code-block">cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py</pre>
-    <p><strong>Așteptare:</strong> <code>verdict: MODIFY</code>, <code>vote_counts: {GO:3, MODIFY:3, STOP:1}</code>, <code>warnings</code> cu senator dimon silent.</p>
+    <p><strong>Asteptare:</strong> <code>verdict: MODIFY</code>, <code>vote_counts: {GO:3, MODIFY:3, STOP:1}</code>, <code>warnings</code> cu senator dimon silent.</p>
 
-    <h3>2. Suite completă (14 teste)</h3>
+    <h3>2. Suite completa (14 teste)</h3>
     <pre class="code-block">python -X utf8 scripts/test_senate_synth.py</pre>
-    <p>Toate 14 trebuie să PASS înainte de orice commit pe <code>senate_synth.py</code> sau <code>prompts/senators/*.md</code>. Cazuri acoperite: verdict GO/MODIFY/STOP/UNREACHABLE, quorum, multi-round position changes, blocaj, collision-safe write.</p>
+    <p>Toate 14 trebuie sa PASS inainte de orice commit pe <code>senate_synth.py</code> sau <code>prompts/senators/*.md</code>. Cazuri acoperite: verdict GO/MODIFY/STOP/UNREACHABLE, quorum, multi-round position changes, blocaj, collision-safe write.</p>
 
     <footer>
       <p>
         <strong>Surse:</strong>
-        <a href="../../SKILL.md">SKILL.md</a> ·
-        <a href="../../scripts/senate_synth.py">senate_synth.py</a> ·
-        <a href="../../experiments/New%20phase%20senat/">experiments/New phase senat/</a> ·
+        <a href="../../SKILL.md">SKILL.md</a> &middot;
+        <a href="../../scripts/senate_synth.py">senate_synth.py</a> &middot;
+        <a href="../../experiments/New%20phase%20senat/">experiments/New phase senat/</a> &middot;
         <a href="../architecture.html">docs/architecture.html</a> (main)
       </p>
     </footer>
