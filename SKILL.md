@@ -65,37 +65,48 @@ Defaults: `max_files=1`, `max_lines=15`, blocklist conservativ (`auth/`, `securi
 
 **Task-uri non-diff** (audit, architecture review, planning): scope_gate e no-op — poți sări Step 1.5.
 
-### 2. Generator — produce alternative
-Folosește `prompts/generator.md`. Cere **3–5 candidate**, inclusiv `do_nothing`. Stil divergent.
+### 2. Conservator — assess risc (runs FIRST)
+Folosește `prompts/conservator.md`. Rulează **înainte** de Generator și Control. Output-ul setează `tokens_budget` pentru celelalte voci.
 
-Output per candidate: `{id, summary, sketch, rationale}`. Adversarial e condiționat (clarity gate a returnat 2+ interpretări SAU schimbarea atinge shared/core code) — altfel emit `"adversarial_skipped": "<reason>"`.
+Required Questions (Q1-Q5): reversibility, magnitude, counterparty_risks, status quo bias check, meta_recommendation.
 
-### 3. Control — verifică corectitudine
-Folosește `prompts/control.md`. Per candidate: types, logică, tests, style.
+Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_concern}, counterparty_risks, bias_check, meta_recommendation, tokens_budget: {generator, control}, irreversibility_flag, rollback_recipe, notes}`.
 
-Output: `{id, valid: bool, issues: [...], tests_to_write: [...]}`. `tests_to_write` obligatoriu pentru `valid: true` (excepție `do_nothing`) — 1-4 teste de acceptanță.
+**Sequential-first.** Conservator runs before Generator and Control. Its `tokens_budget` output caps how deep the other voices go. Its `irreversibility_flag: true` BLOCKS the pipeline — confirm user consent before proceeding.
 
-**Sequential:** rulează `python scripts/strip_context.py --for control` pe output-ul Generator înainte de a-l trimite Control.
-
-### 4. Conservator — assess risc
-Folosește `prompts/conservator.md`. Per candidate **valid**, scorează 4 factori (0.0–1.0):
-- `diff_size` — dimensiunea brută a schimbării
-- `scope_drift` — atinge zone nelegate de goal
-- `regression_risk` — probabilitate de a sparge ceva funcțional
-- `reversibility` — cât de greu revii dacă merge prost
-
-Output: `{id, risk_score: 0.0–1.0, factors: {...}, rollback_recipe: [...]}`. `rollback_recipe` obligatoriu dacă `risk_score >= 0.3` — 2-5 pași concreți executabili fără context suplimentar.
-
-**Aggregation rule:** `risk_score` = media celor 4 factori — **excepție: dacă `reversibility > 0.7`, `risk_score` nu poate cădea sub `reversibility`** (irreversibilitatea domină și previne diluarea prin media celorlalți factori).
-
-**Sequential:** rulează `python scripts/strip_context.py --for conservator` pe outputs Generator + Control.
+**Veto check (auto, after Conservator output):**
+- If `irreversibility_flag: true` → stop, ask user: *"Conservator marcheaza aceasta decizie ca ireversibila. Confirmi ca vrei sa continui?"* — proceed only with explicit YES.
+- If `meta_recommendation: scale_down` → skip Generator's unconventional/adversarial candidates; cap at 2 candidates; use short path.
+- If `meta_recommendation: scale_up` → warn user, add context request before Generator.
 
 **Opțional — autoprobe:**
 ```bash
 python scripts/probe_change.py                       # working tree vs HEAD
 python scripts/probe_change.py --ref main --churn 30 # + commit count per file last 30 days
 ```
-Ancorează `diff_size` la `files_changed/lines_*` și `regression_risk` la distribuția de churn când prezent.
+Ancorează `magnitude` la `files_changed/lines_*` și `regression_risk.net_concern` la distribuția de churn când prezent.
+
+### 3. Generator — produce alternative
+Folosește `prompts/generator.md`. Cere **3–5 candidate**, inclusiv `do_nothing`. Stil divergent. Respectă `tokens_budget.generator` setat de Conservator.
+
+Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fallback_scenario, coverage_check, challenge_upward, abstain, preferred}`. Adversarial e condiționat (clarity gate a returnat 2+ interpretări SAU schimbarea atinge shared/core code) — altfel emit `"adversarial_skipped": "<reason>"`.
+
+**Receives from Conservator (selective):** `magnitude`, `counterparty_risks`, `tokens_budget.generator`. Does NOT receive `meta_recommendation` — that is policy, not Generator input.
+
+**Challenge upward:** If Generator sets `challenge_upward.triggered: true`, re-run Conservator with Generator's context before proceeding to Control.
+
+### 4. Control — verifică corectitudine
+Folosește `prompts/control.md`. Per candidate: types, logică, tests, style.
+
+Required Questions (Q1-Q4): glossary (max 5), hidden_assumptions (max 3), disagreements, fixed/negotiable_constraints.
+
+Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negotiable_constraints, glossary_fail, glossary_attempts, verdicts: [{id, valid, issues, tests_to_write, notes}]}`. `tests_to_write` obligatoriu pentru `valid: true` (excepție `do_nothing`) — 1-4 teste de acceptanță.
+
+**Receives from both:** full Conservator output + full Generator output.
+
+**Post-Control veto check:**
+- If `glossary_fail: true` → BLOCK, request reformulation from user.
+- If `disagreements` contains any `type: substantial` → REWORK: re-run Generator with clarification before aggregating.
 
 ### 5. Aggregate
 ```bash
@@ -210,6 +221,8 @@ python scripts/run_evals.py
 | `scripts/usage.py` | Rollup telemetry din runs/ |
 | `agents/consilium-subagent.md` | Subagent pentru invocare izolată via `Agent(subagent_type="consilium-subagent", ...)` |
 | `prompts/senators/*.md` | 7 prompturi de audit pre-implementare (mod `senate`); fiecare cu specialitate distinctă (vezi tabelul din Senate mode) |
+| `scripts/vocabulary_map.py` | RUND2: traduceri user-facing (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
+| `scripts/principle_extraction.py` | RUND2 EXPERIMENTAL, INACTIVE — extract principles din `runs/` dacă coverage ≥ 80% și ≥ 10 entries pe categorie verificabilă |
 | `scripts/senate_synth.py` | Synthesizer Senate: agregă 7 output-uri JSON → verdict GO/MODIFY/STOP + modify_requests + risks → salvează în `runs/senate/` |
 
 ## Feedback loop
@@ -237,7 +250,11 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers
 
 ## Parallel voices mode
 
-**Default-ul e parallel.** Dispatch cele 3 voci ca sub-agenți independenți — elimină cross-contamination complet.
+<!-- === RUND2 === -->
+**Parallel mode removed (RUND2).** Parallel dispatch is no longer a user-selectable option. Auto-triggered internally only when `magnitude = critical` AND `reversibility = irreversible`, as a cross-check on the sequential result. Every 20 runs, a silent parallel audit runs automatically; if systematic divergence is detected, frequency increases to 1/5.
+<!-- === END RUND2 === -->
+
+**Legacy reference (auto cross-check only).** Dispatch cele 3 voci ca sub-agenți independenți — elimină cross-contamination complet.
 
 ### Cum (2 turns)
 1. **Turn 1:** dispatch Generator (1 Agent call). Aștepți candidates.
@@ -526,3 +543,55 @@ Suita rulează: prompt structure, fixture, verdict GO unanimous/quorum, MODIFY d
 
 - **Arhitectură vizuală:** [`docs/senate/architecture.md`](docs/senate/architecture.md) (markdown) sau [`docs/senate/architecture.html`](docs/senate/architecture.html) (dark theme — vizualizări cross-questions matrix + blocaj resolution + flow runde).
 - **Justification empirică:** `experiments/New phase senat/deliberations/RUND2-deliberari.md`. MVP curent = single-pass parallel; cross-questions + blocaj resolution documentate vizual în architecture.html §8 ca extensie viitoare (NU în MVP).
+
+<!-- === RUND2 === -->
+## Three-layer architecture (RUND2)
+
+| Layer | Components | Role |
+|---|---|---|
+| **Deliberation** | Conservator → Generator → Control (sequential) | Runs on every user question |
+| **Aggregation** | aggregate_rund2() with 8-component veto cascade | Synthesizes voice outputs, decides what user sees |
+| **Senate** | 7 senators (Wittgenstein, Aurelius, Confucius, Socrate, Musk, Dimon, Napoleon) | On-demand audit of proposed changes to consilium itself |
+
+## Sequential dispatch (RUND2)
+
+Default order: **Conservator → Generator → Control**
+
+1. Conservator sets `tokens_budget` and `irreversibility_flag`
+2. Generator receives `magnitude`, `counterparty_risks`, `tokens_budget.generator` (NOT `meta_recommendation`)
+3. Control receives full outputs from both Conservator and Generator
+
+Auto-parallel cross-check: triggered only when Conservator outputs `magnitude: critical` AND `reversibility: irreversible`. Not user-selectable.
+
+Silent audit: every 20 runs, parallel mode runs silently alongside sequential. If systematic divergence detected → audit frequency increases to 1/5.
+
+## Veto powers (RUND2)
+
+The 8 design components (per spec): vocabulary_map, length_targets, priority_veto_order, tension_expose, metadata, user_profile, multi_confidence, escalation_rule. The `aggregate_rund2()` function produces 7 distinct routing outcomes derived from these components: `BLOCK` (glossary_fail), `BLOCK` (irreversibility), `REWORK`, `ADAPT_SHORT`, `ADAPT_EXTENDED`, `ESCALATE` (3+ triggers), `AGGREGATE` (default).
+
+| Trigger | Source | Effect | Action |
+|---|---|---|---|
+| `irreversibility_flag: true` | Conservator | BLOCK (hard) | Ask user for explicit consent before Generator |
+| `glossary_fail: true` | Control | BLOCK (soft) | Ask user to reformulate with operational terms |
+| `disagreements: substantial` | Control | REWORK | Re-run Generator with clarification context |
+| `meta_recommendation: scale_down` | Conservator | ADAPT_SHORT | Short path: max 2 candidates, 2-sentence output |
+| `meta_recommendation: scale_up` | Conservator | ADAPT_EXTENDED | Warn user, add context before Generator |
+| 3+ of above simultaneously | Aggregator | ESCALATE | Present trigger table to user, request decision |
+
+Veto budget for `meta_recommendation`: 5 activations of `scale_up` or `scale_down` per month. On exhaustion → soft warning only, not blocking.
+
+## Principle_Extraction (RUND2 — EXPERIMENTAL, inactive)
+
+Script: `scripts/principle_extraction.py`
+
+**Status: INACTIVE.** Blocked until:
+1. `runs/` has >= 10 entries in target category
+2. Outcome tracking active for >= 80% of runs
+3. Category has externally-verifiable outcomes
+
+**Supported categories (once active):** trading, code, real_estate
+
+**Excluded categories (subjective):** career, relationships, mental_health
+
+To activate: flip `_INACTIVE = False` in `scripts/principle_extraction.py` after verifying the 3 conditions. Once active, Conservator consults it before marking `magnitude`.
+<!-- === END RUND2 === -->
