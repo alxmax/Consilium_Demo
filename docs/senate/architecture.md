@@ -312,21 +312,150 @@ Bundle-ul rămâne în `runs/senate/<timestamp>-<label>.json` ca jurnal — chia
 
 ---
 
-## 8. Limitări cunoscute (MVP)
+## 8. Cross-questions (extensie viitoare — NU în MVP)
 
-Senatul curent e MVP single-pass parallel. Extensii documentate în [`experiments/New phase senat/todos/SENAT-todo-rol-legi-functii.md`](../../experiments/New%20phase%20senat/todos/SENAT-todo-rol-legi-functii.md):
+> **Status:** documentată, neimplementată. MVP-ul curent e single-pass parallel. Această secțiune descrie *vision-ul* — pentru când acumulezi date care arată că merită cost-ul.
+
+Cross-questions transformă Senatul din 7 voci independente într-un grup deliberativ care își poate clarifica pozițiile reciproc. În deliberarea istorică RUND2, **3 senatori și-au schimbat poziții** post-cross-questions (Musk, Wittgenstein, Confucius) — semnal că dinamica funcționează.
+
+### 8.1 Cele 5 Legi ale Senatului
+
+| # | Lege | Esență |
+|---|---|---|
+| 1 | Răspuns obligatoriu | Fiecare senator răspunde pe fiecare punct — direct, prin întrebare, sau prin reformulare. **Interzis** "nu am opinie" |
+| 2 | Cross-questions limitate | Maximum **3 cross-questions per senator per punct**. Previne spam și ramificare infinită. |
+| 3 | Blocaj → vot majoritar 5 | Dacă 2 senatori intră în impas, **ceilalți 5 votează**. 7 impar → niciodată 50/50. |
+| 4 | Sinteza doar la final | Aggregator pe Senat rulează DUPĂ toate punctele (evită contagiunea de poziții). |
+| 5 | Auditabilitate | Toate runde + cross-questions + schimbări de poziție salvate în `runs/senate/`. |
+
+### 8.2 Matricea cross-questions (cine cu cine)
+
+Fiecare senator poate adresa întrebări fiecăruia altul (matrice 7×7, diagonala goală). Perechi observate empiric ca productive în RUND2 marcate cu ★:
+
+```
+              W   A   C   S   Mu  D   N
+            ┌───┬───┬───┬───┬───┬───┬───┐
+Wittgenst.  │ — │ • │ • │ ★ │ • │ • │ • │  ★ = pereche care a schimbat poziții
+            ├───┼───┼───┼───┼───┼───┼───┤      în RUND2 (semnal de productivitate)
+Aurelius    │ • │ — │ • │ • │ • │ ★ │ ★ │  • = pereche posibilă (toate sunt permise)
+            ├───┼───┼───┼───┼───┼───┼───┤
+Confucius   │ • │ • │ — │ • │ ★ │ • │ • │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Socrate     │ ★ │ • │ • │ — │ • │ • │ • │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Musk        │ • │ • │ ★ │ • │ — │ • │ ★ │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Dimon       │ • │ ★ │ • │ • │ • │ — │ ★ │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Napoleon    │ • │ ★ │ • │ • │ ★ │ ★ │ — │
+            └───┴───┴───┴───┴───┴───┴───┘
+```
+
+**De ce sunt productive:** Wittgenstein↔Socrate (semantic vs asumpții, overlap pe "ce e nedeclarat"), Aurelius↔Dimon/Napoleon (risc abstract vs concret), Musk↔Napoleon (cost calitativ vs cantitativ), Musk↔Confucius (delete vs precedent).
+
+### 8.3 Flow runde (max 3 per senator per punct)
+
+```
+   Runda 1: paralel, toți 7 răspund simultan pe input identic
+              │
+              ▼
+   ┌─────────────────────────────────┐
+   │ Outputs colectate.              │
+   │ Orchestrator detectează:        │
+   │  - voturi opuse (potențial      │
+   │    blocaj, vezi §8.4)           │
+   │  - pattern de cross-question    │
+   │    ("întreb pe <senator>...")   │
+   └────────────────┬────────────────┘
+                    │
+   ┌────────────────┴────────────────┐
+   │  Există cross-questions?        │
+   └──┬──────────────────────────┬───┘
+      │ NU                       │ DA
+      ▼                          ▼
+   senate_synth.py     ┌─────────────────────────┐
+   (verdict imediat)   │  RUNDA 2: dispatch focal│
+                       │  Senator X (cu max 3    │
+                       │  cross-Q used so far)   │
+                       │  primește întrebarea Y, │
+                       │  răspunde. Counter X+1. │
+                       └────────────┬────────────┘
+                                    │
+                       ┌────────────┴────────────┐
+                       │  X mai are <3 cross-Qs? │
+                       │  Mai sunt întrebări?    │
+                       └──┬──────────────────┬───┘
+                          │ NU               │ DA
+                          ▼                  ▼
+                   sinteză finală        RUNDA 3 (max)
+                                         apoi STOP forțat
+                                         pentru senatorul X
+```
+
+### 8.4 Blocaj resolution (Lege 3)
+
+```
+   2 senatori (X și Y) după 3 cross-Qs au poziții opuse:
+        X: GO    Y: STOP
+              │
+              ▼
+   ┌──────────────────────────────────┐
+   │  Ceilalți 5 senatori primesc:    │
+   │  - argumentul lui X (cu evidence)│
+   │  - argumentul lui Y (cu evidence)│
+   │  - întrebare: care e mai puternic│
+   └────────────────┬─────────────────┘
+                    │
+                    ▼  (5 voturi: X | Y)
+        ┌───────────────────────────┐
+        │  Majoritate (cel mult 4-1)│
+        └─────────────┬─────────────┘
+                      │
+        ┌─────────────┴─────────────┐
+        ▼                           ▼
+     X câștigă                   Y câștigă
+   (GO contează)              (STOP contează)
+
+   Verdictul pe punctul ăla = poziția câștigătoare
+```
+
+Senatul are **7 impar** → 2 în impas + 5 votanți = niciodată 50/50.
+
+### 8.5 Ce înseamnă pentru orchestrator când implementezi
+
+Schimbări față de MVP-ul curent:
+- **Dispatch multi-round** — nu doar 1 ciclu paralel, ci 2-3 cicluri secvențiale (Runda 1 paralel, runde 2-3 doar pentru senatorii care primesc cross-questions)
+- **State tracking** — counter `cross_questions_used[senator][point]` per senator per punct
+- **Routing cross-questions** — parser pe output pentru "întrebare către <senator>" → dispatch focal pe acel senator
+- **Blocaj detection** — orchestrator detectează 2 voturi opuse persistente după 3 runde → dispatch celor 5 senatori neutri
+- **Aggregator schema schimbat** — `vote_counts` → `vote_counts_per_round[]` cu schimbări de poziție track-uite
+
+Cost estimat: ~2-3× MVP-ul curent (per senatorii care intră în cross-questions; restul ies devreme).
+
+### 8.6 Indicator de calitate: schimbări de poziție
+
+În RUND2 reală, 3 senatori au schimbat poziții post-cross-questions. Asta e **semnalul** că dinamica funcționează — nu schimbi opinia oarbă, schimbi după ce auzi un counter-argument concret. Un Senat care converge **mereu** fără schimbări de poziție e suspect (groupthink prin structură).
+
+Track-uiește în bundle:
+```json
+"position_changes": [
+  {"senator": "musk", "point": 3, "from": "STOP", "to": "MODIFY", "trigger": "cross-Q from confucius about precedent"}
+]
+```
+
+## 9. Limitări cunoscute (MVP)
 
 | Limitare | Status | Plan viitor |
 |---|---|---|
-| Cross-questions între senatori | Lipsă | Adăugat când ≥3 invocări reale arată că ar fi prins ceva important |
-| Blocaj resolution prin vot majoritar | Lipsă | Necesar doar cu cross-questions; vine în pachet |
-| Principle extraction din pattern detection | Lipsă | După 30+ runs Senat reale (outcome tracking activ) |
+| Cross-questions între senatori | Lipsă (vision în §8) | Adăugat după ≥3 invocări reale care arată valoare |
+| Blocaj resolution prin vot majoritar | Lipsă (vision în §8.4) | Necesar doar cu cross-questions; vine în pachet |
+| Principle extraction din pattern detection | Lipsă | După 30+ runs reale (outcome tracking activ) |
 | Scope-overlap detector între senatori | Lipsă | Validare statică în CI dacă vreodată CI-uri pe repo |
-| Empirical validation Napoleon pe 5-10 întrebări | Lipsă | După 10+ invocări, decide retain vs retire |
+| Empirical validation Napoleon | Lipsă | După 10+ invocări, decide retain vs retire |
 
 ---
 
-## 9. Smoke test
+## 10. Smoke test
 
 Fixture pentru verificarea că pipeline-ul rulează end-to-end fără sub-agenți reali:
 
