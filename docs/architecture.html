@@ -1091,6 +1091,7 @@
   <button data-tab="voices"><span>Voices</span><span class="tab-sub">3 voci + 3 lenses Trias</span></button>
   <button data-tab="files"><span>Files</span><span class="tab-sub">prompts/ + scripts/ (hover)</span></button>
   <button data-tab="git"><span>Git</span><span class="tab-sub">workflow + self-improvement loop</span></button>
+  <button data-tab="dialectic"><span>Dialectic</span><span class="tab-sub">Pass 1 + Pass 2 cross-review</span></button>
 </nav>
 
 <main>
@@ -3887,6 +3888,81 @@ flowchart LR
 
       <p><b>Audit periodic:</b> <code>python scripts/audit_feedback.py --backfill</code> creează rânduri PEND pentru runs orfane. <code>python scripts/feedback.py --recent 10 --runs</code> arată distribuția outcome-urilor recente.</p>
     </div>
+  </section>
+
+  <!-- ============== TAB: DIALECTIC ============== -->
+  <section class="tab" id="dialectic">
+
+    <h2>Dialectic Mode — flow complet</h2>
+    <p style="color:var(--muted);font-size:13.5px;margin:-8px 0 24px">Pass 1: izolat (parallel). Pass 2: fiecare voce vede output-urile celorlalte și revizuiește sau menține.</p>
+
+    <div class="mermaid-wrap" style="max-width:900px;margin-bottom:32px">
+      <h3>Sequence — Pass 1 + Pass 2</h3>
+      <div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+sequenceDiagram
+    autonumber
+    participant G as Generator
+    participant C as Control
+    participant K as Conservator
+    participant M as dialectic_merge.py
+    participant A as aggregator.py
+
+    Note over G,K: PASS 1 — izolat (parallel subagents)
+    G->>M: candidates[] + adversarial_* + do_nothing
+    C->>M: verdicts[] (valid: true/false, issues, tests_to_write)
+    K->>M: scores[] (risk_score, factors, rollback_recipe)
+
+    Note over G,K: PASS 2 — cross-review (fiecare vede Pass 1 al celorlalți)
+    M-->>G: Control verdicts + Conservator scores
+    M-->>C: Generator candidates + Conservator scores
+    M-->>K: Generator candidates + Control verdicts
+
+    G->>M: revision{what_changed, peer_evidence} / maintained{peer_claim, dissent}
+    C->>M: revision / maintained (NU revizuiește pentru risc — doar corectitudine)
+    K->>M: revision / maintained (aplică -0.15 regression dacă Control adaugă tests)
+
+    Note over M: Merge + revision_log + convergence check
+    M->>A: merged candidates[] + revision_log
+    A->>A: conservative_override voting + veto @ risk > 0.8
+    A-->>G: chosen_approach + confidence + alternatives[why_not]
+      </div>
+    </div>
+
+    <div class="mermaid-wrap" style="max-width:900px">
+      <h3>Reguli per-voce în Pass 2</h3>
+      <div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+flowchart LR
+    subgraph P2G ["Generator Pass 2"]
+      direction TB
+      GA["pentru fiecare candidat:\nrevision SAU maintained\nNiciodată ambele, niciodată niciunul"]
+      GB["NU retrage candidați\npe baza scorului Conservator"]
+    end
+
+    subgraph P2C ["Control Pass 2"]
+      direction TB
+      CA["revizuiește doar pt\ncorectitudine, NU risc"]
+      CB["dacă sketch schimbat\nsubstanțial → re-validare completă"]
+    end
+
+    subgraph P2K ["Conservator Pass 2"]
+      direction TB
+      KA["aplică -0.15 regression_risk\ndacă Control adaugă tests_to_write"]
+      KB["handling Control flip\nfalse→true: scorează\ntrue→false: retrage"]
+    end
+
+    P2G --> MERGE["dialectic_merge.py\nrevision_log\nconvergence check"]
+    P2C --> MERGE
+    P2K --> MERGE
+
+    style P2G  fill:#2a2410,stroke:#fbbf24,color:#fbbf24
+    style P2C  fill:#182338,stroke:#60a5fa,color:#93c5fd
+    style P2K  fill:#2a1818,stroke:#5c2a2a,color:#fca5a5
+    style MERGE fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+      </div>
+    </div>
+
   </section>
 
 </main>
