@@ -76,3 +76,9 @@ Skill-ul se activează automat când keywords precum "review PR", "evaluate chan
 Output: JSON cu `recommended`, `alternatives`, `voice_scores`, `confidence`, `deliberation_log`.
 
 Pentru feedback loop și calibrare după uz real, vezi secțiunea **Feedback loop** din `SKILL.md`.
+
+## License
+
+[Business Source License 1.1](LICENSE) © 2026 Schipor Alexandru.
+
+Free for non-commercial use (evaluation, education, research, personal use). Commercial use within an organization that generates revenue from products or services incorporating the Licensed Work requires a commercial license — contact the Licensor. License converts automatically to Apache 2.0 on **2030-05-16**.
