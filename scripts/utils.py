@@ -6,7 +6,9 @@ defining their own copies. Each script remains a stand-alone executable.
 from __future__ import annotations
 
 import json
+import os
 import sys
+from pathlib import Path
 from typing import Any
 
 
@@ -45,6 +47,23 @@ def load_json_stdin(script_name: str) -> Any:
     except json.JSONDecodeError as exc:
         print(f"{script_name}: invalid JSON — {exc}", file=sys.stderr)
         sys.exit(2)
+
+
+def atomic_write_text(path, content: str, encoding: str = "utf-8") -> None:
+    """Write *content* to *path* atomically.
+
+    Writes to a sibling temp file then ``os.replace``s it onto *path*.
+    A crash anywhere in the write leaves the original intact rather than
+    truncated — important for long-term journals (FEEDBACK.html) where a
+    half-written render would erase historical data.
+
+    ``os.replace`` is atomic on both POSIX and Windows when source and
+    destination live on the same filesystem (always true here — same dir).
+    """
+    path = Path(path)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(content, encoding=encoding)
+    os.replace(tmp, path)
 
 
 def validate_keys(data: dict, required: list[str], context: str) -> None:
