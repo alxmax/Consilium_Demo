@@ -930,6 +930,135 @@
     .mem-intro-grid { grid-template-columns: 1fr; }
     .tiers { grid-template-columns: 1fr; }
   }
+
+  /* ============== AUTHORITATIVE ZONES (touch with care) ============== */
+  .authoritative-zone { position: relative; border: 1px dashed var(--gold);
+    border-radius: 8px; padding: 18px 16px 16px; background: rgba(251, 191, 36, 0.045);
+    margin: 8px 0; }
+  .authoritative-zone::before { content: "⚠ AUTHORITATIVE — touch with care";
+    position: absolute; top: -10px; left: 14px; background: var(--bg); color: var(--gold);
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; padding: 2px 9px;
+    border: 1px solid var(--gold-border); border-radius: 4px; }
+
+  /* ============== MODE METADATA (4-field comparison block) ============== */
+  .mode-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 18px;
+    margin-top: 14px; padding: 12px 14px; background: var(--inset);
+    border: 1px solid var(--line); border-radius: 6px; }
+  .mode-meta .cell dt { font-size: 9.5px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); margin: 0 0 3px; font-weight: 600; }
+  .mode-meta .cell dd { margin: 0; font-size: 12.5px; color: var(--ink); line-height: 1.4; }
+  .mode-meta .cell .cost { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color: var(--accent-text); font-weight: 600; }
+  .mode-meta .cell .voices-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .mode-meta .cell .vt { padding: 1px 6px; border-radius: 3px; font-size: 10.5px;
+    font-weight: 600; letter-spacing: 0.02em; }
+  .mode-meta .cell .vt.g { background: var(--gen-soft); color: var(--gen-text); }
+  .mode-meta .cell .vt.c { background: var(--ctl-soft); color: var(--ctl-text); }
+  .mode-meta .cell .vt.k { background: var(--con-soft); color: var(--con-text); }
+  .mode-meta .cell .vt.s { background: rgba(192, 132, 252, 0.18); color: var(--trias-text); }
+  .mode-meta .cell .vt.p { background: var(--trias-soft); color: var(--trias-text); }
+
+  /* ============== STEP JSON SCHEMA (collapsible) ============== */
+  .step details.schema { margin-top: 8px; }
+  .step details.schema summary { cursor: pointer; color: var(--muted); font-size: 9.5px;
+    text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 0;
+    user-select: none; list-style: none; }
+  .step details.schema summary::-webkit-details-marker { display: none; }
+  .step details.schema summary::before { content: "▸ "; color: var(--muted); margin-right: 2px; }
+  .step details.schema[open] summary::before { content: "▾ "; color: var(--accent); }
+  .step details.schema summary:hover { color: var(--ink); }
+  .step details.schema pre { margin: 6px 0 0; padding: 8px 10px; background: #0a0d12;
+    border: 1px solid var(--line); border-radius: 4px; font-size: 10px; line-height: 1.45;
+    color: var(--accent-text); white-space: pre; overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .step details.schema pre .k { color: var(--gen-text); }
+  .step details.schema pre .s { color: var(--ctl-text); }
+
+  /* ============== FILES TAB (hover tooltips) ============== */
+  .file-tree { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px;
+    margin-top: 10px; }
+  @media (max-width: 900px) { .file-tree { grid-template-columns: 1fr; } }
+  .file-group { background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px; }
+  .file-group h3 { margin: 0 0 12px; font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+  .file-group .file-count { float: right; color: var(--muted); font-size: 10.5px;
+    font-weight: 500; letter-spacing: 0.04em; }
+  .file-list { display: flex; flex-direction: column; gap: 5px; }
+  .file { position: relative; display: flex; align-items: center; gap: 10px;
+    padding: 7px 11px; background: var(--inset); border: 1px solid var(--line);
+    border-radius: 5px; font-size: 12.5px; cursor: help; transition: border-color 0.12s; }
+  .file:hover { border-color: var(--accent); }
+  .file code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; color: var(--ink); flex: 1; }
+  .file.auth { border-color: var(--gold-border); background: var(--gold-soft); }
+  .file.auth:hover { border-color: var(--gold); }
+  .file.auth .auth-mark { color: var(--gold); font-size: 11px; font-weight: 700;
+    margin-left: auto; letter-spacing: 0.06em; }
+  .file[data-role]:hover::after { content: attr(data-role); position: absolute;
+    bottom: calc(100% + 6px); left: 0; right: 0; background: #05080c;
+    color: var(--ink); border: 1px solid var(--accent-border); border-radius: 6px;
+    padding: 9px 11px; font-size: 11.5px; line-height: 1.5; white-space: normal;
+    z-index: 200; box-shadow: 0 8px 28px rgba(0,0,0,0.7); pointer-events: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .file.auth[data-role]:hover::after { border-color: var(--gold-border); }
+
+  /* ============== VOICES TAB — lens cards ============== */
+  .lens-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin-top: 18px; }
+  @media (max-width: 900px) { .lens-grid { grid-template-columns: 1fr; } }
+  .lens { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .lens.pioneer { border-top: 3px solid var(--gen); }
+  .lens.architect { border-top: 3px solid var(--ctl); }
+  .lens.steward { border-top: 3px solid var(--con); }
+  .lens-title { display: flex; align-items: baseline; justify-content: space-between; }
+  .lens-title h3 { margin: 0; font-size: 16px; }
+  .lens-title .pers-tag { font-size: 10.5px; padding: 2px 7px; border-radius: 4px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .lens.pioneer .pers-tag { background: var(--gen-soft); color: var(--gen-text); }
+  .lens.architect .pers-tag { background: var(--ctl-soft); color: var(--ctl-text); }
+  .lens.steward .pers-tag { background: var(--con-soft); color: var(--con-text); }
+  .lens .weights { display: flex; gap: 5px; font-size: 10.5px; margin: 2px 0 6px; }
+  .lens .weights span { padding: 2px 6px; background: var(--inset); border-radius: 3px;
+    color: var(--muted); font-family: ui-monospace, monospace; }
+  .lens .weights span b { color: var(--ink); font-weight: 600; }
+  .lens p { font-size: 12.5px; margin: 4px 0; color: var(--ink); line-height: 1.5; }
+  .lens .prompt-ref { font-size: 11px; color: var(--muted); margin-top: auto;
+    padding-top: 8px; border-top: 1px solid var(--line); }
+
+  /* ============== GIT TAB — numbered rule cards ============== */
+  .git-rules { counter-reset: gitrule; display: flex; flex-direction: column;
+    gap: 10px; }
+  .rule { position: relative; padding: 14px 16px 14px 54px; background: var(--card-bg);
+    border: 1px solid var(--line); border-radius: 8px; counter-increment: gitrule; }
+  .rule::before { content: counter(gitrule); position: absolute; left: 14px; top: 14px;
+    width: 28px; height: 28px; border-radius: 50%; background: var(--gold-soft);
+    color: var(--gold); font-weight: 700; font-size: 12.5px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--gold-border); font-family: ui-monospace, monospace; }
+  .rule h4 { margin: 0 0 4px; font-size: 13.5px; color: var(--ink); }
+  .rule p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .rule code { font-size: 11.5px; color: var(--accent-text); }
+
+  /* ============== SELF-IMPROVEMENT LOOP ============== */
+  .self-loop { margin-top: 32px; padding: 20px 22px; background: var(--accent-soft);
+    border: 1px solid var(--accent-border); border-radius: 10px; }
+  .self-loop h3 { margin: 0 0 8px; color: var(--accent-text); font-size: 16px; }
+  .self-loop > p { margin: 6px 0; font-size: 13px; line-height: 1.55; color: var(--ink); }
+  .self-loop .loop-cycle { display: flex; align-items: center; gap: 6px;
+    margin: 16px 0 10px; flex-wrap: wrap; }
+  .self-loop .loop-step { padding: 6px 10px; background: var(--bg);
+    border: 1px solid var(--accent-border); border-radius: 6px;
+    font-size: 11.5px; color: var(--accent-text); font-family: ui-monospace, monospace; }
+  .self-loop .loop-arrow { color: var(--accent); font-size: 14px; font-weight: 700; }
+  .self-loop code { color: var(--accent-text); }
+
+  /* ============== TAB BUTTONS — wrap on narrow viewports ============== */
+  @media (max-width: 1100px) {
+    nav.tabs { flex-wrap: wrap; }
+    nav.tabs button { padding: 8px 12px; font-size: 13px; }
+  }
 </style>
 </head>
 <body>
@@ -950,6 +1079,9 @@
   <button data-tab="modes"><span>Modes</span><span class="tab-sub">parallel, dialectic, trias, skeptic</span></button>
   <button data-tab="memory"><span>Memory</span><span class="tab-sub">3 tiers + calibration loop</span></button>
   <button data-tab="patterns"><span>Patterns</span><span class="tab-sub">demo interactiv de fluxuri</span></button>
+  <button data-tab="voices"><span>Voices</span><span class="tab-sub">3 voci + 3 lenses Trias</span></button>
+  <button data-tab="files"><span>Files</span><span class="tab-sub">prompts/ + scripts/ (hover)</span></button>
+  <button data-tab="git"><span>Git</span><span class="tab-sub">workflow + self-improvement loop</span></button>
 </nav>
 
 <main>
@@ -1207,6 +1339,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
         <h4>Bootstrap</h4>
         <div>Citește <code>prompts/*.md</code> + rulează <code>priors.py</code>.</div>
         <div class="io">out: soft priors</div>
+        <details class="schema"><summary>JSON output</summary><pre>{
+  "stale_pendings": [...],
+  "missing_feedback_runs": [...],
+  "pend_pressure": 0.0-1.0,
+  "weighted_bad_rate": 0.0-1.0,
+  "confirmed_count": int
+}</pre></details>
       </div>
       <div class="step">
         <div class="n">STEP 1</div>
@@ -1214,30 +1353,84 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
         <div>Restate ca <b>success_criterion</b> testabil. Clarity gate.</div>
         <div class="io">in: diff + context</div>
         <div class="io">out: 1-sentence criterion</div>
+        <details class="schema"><summary>JSON output</summary><pre>{
+  "success_criterion": "&lt;testable sentence&gt;",
+  "verification": "&lt;command or check&gt;",
+  "scope": {"files": [...], "type": "bugfix|feature|refactor"},
+  "clarity_gate": "pass|2+ readings"
+}</pre></details>
       </div>
       <div class="step aux">
         <div class="n">STEP 1.5</div>
         <h4>Scope gate</h4>
         <div>Auto-skip dacă scope-ul e trivial (≤1 fișier / ≤15 linii, blocklist clear). No-op pe task-uri non-diff (audit/planning) — fails open by design.</div>
         <div class="io">out: skipped report</div>
+        <details class="schema"><summary>JSON output</summary><pre>{
+  "should_skip": true|false,
+  "skip_reason": "&lt;why|null&gt;",
+  "signals": {
+    "files_changed": int,
+    "lines_changed": int,
+    "blocklist_hits": [...]
+  }
+}</pre></details>
       </div>
       <div class="step gen">
         <div class="n">STEP 2</div>
         <h4>Generator</h4>
         <div>3-5 abordări candidate, inclusiv do_nothing. Adversarial conditional — doar la clarity gate 2+ readings sau shared/core; altfel <code>adversarial_skipped</code>.</div>
         <div class="io">out: { candidates: [...] }</div>
+        <details class="schema"><summary>JSON output</summary><pre>{
+  "candidates": [
+    {
+      "id": "do_nothing|adversarial_*|...",
+      "summary": "...",
+      "sketch": "...",
+      "rationale": "... (incl. goal-fit clause)"
+    }
+  ],
+  "adversarial_skipped": "&lt;reason|absent&gt;",
+  "unconventional_skipped": "&lt;reason|absent&gt;"
+}</pre></details>
       </div>
       <div class="step ctl">
         <div class="n">STEP 3</div>
         <h4>Control</h4>
         <div>Verdict tehnic per candidate + tests_to_write.</div>
         <div class="io">out: { verdicts: [...] }</div>
+        <details class="schema"><summary>JSON output</summary><pre>{
+  "verdicts": [
+    {
+      "id": "...",
+      "valid": true|false,
+      "issues": [{"category": "types|logic|tests|style", "detail": "..."}],
+      "tests_to_write": [{"name": "...", "assert": "..."}],
+      "notes": "..."
+    }
+  ]
+}</pre></details>
       </div>
       <div class="step con">
         <div class="n">STEP 4</div>
         <h4>Conservator</h4>
         <div>Risk score + rollback_recipe pentru candidates valid.</div>
         <div class="io">out: { scores: [...] }</div>
+        <details class="schema"><summary>JSON output</summary><pre>{
+  "scores": [
+    {
+      "id": "...",
+      "risk_score": 0.0-1.0,
+      "factors": {
+        "diff_size": 0.0-1.0,
+        "scope_drift": 0.0-1.0,
+        "regression_risk": 0.0-1.0,
+        "reversibility": 0.0-1.0
+      },
+      "rollback_recipe": ["step 1", "step 2", ...],
+      "notes": "..."
+    }
+  ]
+}</pre></details>
       </div>
       <div class="step agg-step">
         <div class="n">STEP 5</div>
@@ -1245,6 +1438,15 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
         <div>Aplică schema aleasă; veto dacă necesar.</div>
         <div class="io">out: { chosen, ranking }</div>
         <span class="sub">+5b confidence</span>
+        <details class="schema"><summary>JSON output</summary><pre>{
+  "chosen": "&lt;candidate_id|null&gt;",
+  "ranking": [{"id": "...", "score": 0.0-1.0}],
+  "scheme": "conservative_override|team_vote|...",
+  "vetoed": [...],
+  "confidence": 0.0-1.0,
+  "agreement": 0.0-1.0,
+  "separation": 0.0-1.0
+}</pre></details>
       </div>
       <div class="step">
         <div class="n">STEP 6</div>
@@ -1252,6 +1454,23 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
         <div><code>build_report.py</code> + <code>validate_report.py</code> + <code>log_feedback.py</code>.</div>
         <div style="font-size:12px; color:var(--accent); margin-top:4px;">✓ Input validat prin <code>validate_input()</code> — exit 1 cu câmp lipsă specificat.</div>
         <div class="io">out: canonical JSON</div>
+        <details class="schema"><summary>JSON output (canonical)</summary><pre>{
+  "success_criterion": "...",
+  "chosen_approach": "&lt;id|null&gt;",
+  "verification": "...",
+  "alternatives": [
+    {"id": "...", "summary": "...", "why_not": "..."}
+  ],
+  "voice_scores": {
+    "generator": 0.0-1.0,
+    "control": 0.0-1.0,
+    "conservator": 0.0-1.0
+  },
+  "confidence": 0.0-1.0,
+  "deliberation_log": [
+    {"step": "generator|control|conservator|aggregate", "...": "..."}
+  ]
+}</pre></details>
       </div>
     </div>
 
@@ -1582,6 +1801,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
           </div>
         </div>
 
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>0</b> <span style="color:var(--muted); font-size:11px;">(single context)</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">0.33×</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt g">Gen</span><span class="vt c">Ctrl</span><span class="vt k">Cons</span></div><span style="color:var(--muted); font-size:11px;">strip între</span></dd></div>
+          <div class="cell"><dt>When</dt><dd>Default — majoritatea deliberărilor</dd></div>
+        </dl>
+
         <div class="use-when">
           <b>Use when:</b> majoritatea deliberărilor — rapid, dar cu Chinese wall implementat
           prin <code>scripts/strip_context.py</code>.
@@ -1644,6 +1870,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
           </table>
         </div>
 
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>3</b> <span style="color:var(--muted); font-size:11px;">(1 + 2 pattern, 2 turns)</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">1.0×</span> <span style="color:var(--muted); font-size:11px;">baseline</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt g">Gen</span><span class="vt c">Ctrl</span><span class="vt k">Cons</span></div><span style="color:var(--muted); font-size:11px;">paralel, izolați</span></dd></div>
+          <div class="cell"><dt>When</dt><dd>High-stakes, decizii subtile unde contaminarea contează</dd></div>
+        </dl>
+
         <div class="use-when">
           <b>Use when:</b> decizii subtile unde contaminarea contează, high-stakes
           (migrări DB, security, refactor mare).
@@ -1678,6 +1911,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
             auditează ce s-a schimbat. Merge via <code>scripts/dialectic_merge.py</code>.
           </div>
         </div>
+
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>6</b> <span style="color:var(--muted); font-size:11px;">(3 + 3, pass 1 + pass 2)</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">2.0×</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt g">Gen×2</span><span class="vt c">Ctrl×2</span><span class="vt k">Cons×2</span></div><span style="color:var(--muted); font-size:11px;">revision/maintained</span></dd></div>
+          <div class="cell"><dt>When</dt><dd>O voce ar putea schimba opinia după ce vede celelalte</dd></div>
+        </dl>
 
         <div class="use-when">
           <b>Use when:</b> decizii subtile unde o voce ar putea schimba opinia
@@ -1719,6 +1959,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
             per round. Schema veche <code>{pass1, pass2}</code> rămâne backward-compat.
           </div>
         </div>
+
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>4 / 7 / 10</b> <span style="color:var(--muted); font-size:11px;">(N = 0 / 1 / 2 / 3 rounds)</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">1.3× – 3.3×</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt g">Gen×N</span><span class="vt c">Ctrl×N</span><span class="vt k">Cons×N</span></div><span style="color:var(--muted); font-size:11px;">convergence stop</span></dd></div>
+          <div class="cell"><dt>When</dt><dd>SPEC — Conservator flag pe risc; Gen revisits explicit</dd></div>
+        </dl>
 
         <div class="use-when">
           <b>Use when:</b> decizii high-stakes unde Conservator-ul flag-uiește un risc neașteptat
@@ -1865,6 +2112,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
           </table>
         </div>
 
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>9</b> <span style="color:var(--muted); font-size:11px;">(3 pers × 3 voci)</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">3.0×</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt p">Pioneer</span><span class="vt p">Architect</span><span class="vt p">Steward</span></div><span style="color:var(--muted); font-size:11px;">× G/C/K cu lens prepended</span></dd></div>
+          <div class="cell"><dt>When</dt><dd>DB migration, security, refactor mare, ireversibil</dd></div>
+        </dl>
+
         <div class="use-when">
           <b>Use when:</b> deciziile cele mai high-stakes — DB migration, security, refactor
           mare, arhitectură ireversibilă. Costul rulării (9 sub-agenți) e justificat de
@@ -1890,6 +2144,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
             celelalte candidates, fără voturile celorlalte voci. Provocare „blind" pe alegere, nu pe set.
           </div>
         </div>
+
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>4</b> <span style="color:var(--muted); font-size:11px;">(3 Parallel + 1 Skeptic focal)</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">1.33×</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt g">Gen</span><span class="vt c">Ctrl</span><span class="vt k">Cons</span><span class="vt s">Skeptic</span></div><span style="color:var(--muted); font-size:11px;">Skeptic vede doar chosen</span></dd></div>
+          <div class="cell"><dt>When</dt><dd>Confidence ∈ [0.5, 0.7], challenge focal</dd></div>
+        </dl>
 
         <div class="use-when">
           <b>Use when:</b> confidence e marginal (zona [0.5, 0.7]) și vrei un al doilea opinion focal
@@ -1920,6 +2181,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
             pass 1 dar pass 2 a relaxat.
           </div>
         </div>
+
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>7</b> <span style="color:var(--muted); font-size:11px;">(6 Dialectic + 1 Skeptic)</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">2.33×</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt g">Gen×2</span><span class="vt c">Ctrl×2</span><span class="vt k">Cons×2</span><span class="vt s">Skeptic</span></div></dd></div>
+          <div class="cell"><dt>When</dt><dd>Cross-review + challenge focal final</dd></div>
+        </dl>
 
         <div class="use-when">
           <b>Use when:</b> decizii high-stakes unde vrei <i>și</i> revizuirea cross-context (Dialectic)
@@ -1978,6 +2246,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
           </div>
         </div>
 
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>9</b> <span style="color:var(--muted); font-size:11px;">(3 pers × 3 voci, mixed model)</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">~1.2× – 1.5×</span> <span style="color:var(--muted); font-size:11px;">(Haiku ieftin)</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt p">Pioneer</span><span class="vt p">Architect</span><span class="vt p">Steward</span></div><span style="color:var(--muted); font-size:11px;">Gen=opus, Ctrl/Cons=haiku</span></dd></div>
+          <div class="cell"><dt>When</dt><dd>Calitatea Trias la ~50% cost; anti-fabricație</dd></div>
+        </dl>
+
         <div class="use-when">
           <b>Use when:</b> vrei calitatea Trias (3 personalități × 3 voci = 9 sub-agenți) la cost
           mai mic — economie estimată ~50–60% vs Trias all-sonnet, fără sacrificarea diversity-ului
@@ -2002,6 +2277,13 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
             tot ce a spus Control.
           </div>
         </div>
+
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>0</b> <span style="color:var(--muted); font-size:11px;">(single context, no strip)</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">0.33×</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt g">Gen</span><span class="vt c">Ctrl</span><span class="vt k">Cons</span></div><span style="color:var(--bad); font-size:11px;">⚠ full context leak</span></dd></div>
+          <div class="cell"><dt>When</dt><dd><span style="color:var(--bad);">LEGACY</span> — debugging skill, NU deliberări reale</dd></div>
+        </dl>
 
         <div class="use-when">
           <b>Use when:</b> debugging skill-ului însuși, când vrei să vezi raționamentul
@@ -3215,6 +3497,270 @@ python scripts/memory.py <span class="k">--tier</span> all <span class="k">--que
       </div>
     </div>
 
+  </section>
+
+  <!-- ============== TAB 6 — VOICES ============== -->
+  <section class="tab" id="voices">
+
+    <h2>Cele 3 voci core + 3 personality lenses (Trias only)</h2>
+    <p style="color: var(--muted); font-size: 13.5px; margin: -8px 0 22px;">
+      Vocile <b>Generator / Control / Conservator</b> rulează în <i>fiecare</i> deliberare. În Trias mode, fiecare voce primește în plus un <b>lens prompt</b> al uneia din cele 3 personalități fixe (Pioneer / Architect / Steward) — același voice job, dar prin lentilă diferită.
+    </p>
+
+    <div class="authoritative-zone">
+      <div class="voices">
+        <div class="card gen">
+          <div class="top"><h3>Generator</h3><span class="tag">Creativ</span></div>
+          <div>Divergent thinking — produce 3-5 candidate cu <code>{id, summary, sketch, rationale}</code>. Always include <code>do_nothing</code>. Conditional <code>adversarial_*</code> + <code>unconventional_*</code> când clarity gate ridică 2+ readings.</div>
+          <ul>
+            <li>Goal-fit clauză obligatorie în rationale</li>
+            <li>Multi-level exploration: behavior, mechanism, infra</li>
+          </ul>
+          <div class="cant"><b>Contract:</b> <code>prompts/generator.md</code></div>
+        </div>
+        <div class="card ctl">
+          <div class="top"><h3>Control</h3><span class="tag">Analitic</span></div>
+          <div>Per-candidate verdict: types → logic → tests → style. Output <code>{id, valid, issues, tests_to_write}</code>. <code>tests_to_write</code> obligatoriu pentru <code>valid:true</code> (excepție <code>do_nothing</code>).</div>
+          <ul>
+            <li>Invalidează dacă goal-fit ratat (citează <code>success_criterion</code>)</li>
+            <li>Fallback <code>_no_viable_candidate</code> dacă toate eșuează</li>
+          </ul>
+          <div class="cant"><b>Contract:</b> <code>prompts/control.md</code></div>
+        </div>
+        <div class="card con">
+          <div class="top"><h3>Conservator</h3><span class="tag">Sceptic</span></div>
+          <div>4-factor risk score în [0, 1]: <code>diff_size</code>, <code>scope_drift</code>, <code>regression_risk</code>, <code>reversibility</code>. Floor rule: dacă <code>reversibility > 0.7</code>, final score ≥ reversibility.</div>
+          <ul>
+            <li><code>rollback_recipe</code> obligator dacă <code>risk_score ≥ 0.3</code></li>
+            <li>Quality-progress: -0.15 regression_risk dacă tests/flag/recipe în sketch</li>
+          </ul>
+          <div class="cant"><b>Contract:</b> <code>prompts/conservator.md</code></div>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 36px;">3 personality lenses — Pioneer / Architect / Steward</h2>
+    <p style="color: var(--muted); font-size: 13.5px; margin: -8px 0 0;">
+      În Trias mode, orchestrator-ul dispatch-uiește <b>3 × 3 = 9 sub-agenți</b>. Fiecare personalitate are propriul triplet Gen/Ctrl/Cons și produce un <code>chose</code> via weighted aggregation. Cele 3 chose-uri intră în <code>team_vote</code>.
+    </p>
+    <div class="lens-grid">
+      <div class="lens pioneer">
+        <div class="lens-title"><h3>Pioneer</h3><span class="pers-tag">bold</span></div>
+        <div class="weights"><span>gen <b>0.49</b></span><span>ctl <b>0.30</b></span><span>cons <b>0.21</b></span></div>
+        <p>Tolerate moderate risk for novel solutions. Favor new patterns when they add clear value. When in doubt between safe and ambitious → <b>prefer ambitious</b>.</p>
+        <div class="prompt-ref">Lens: <code>prompts/pioneer_lens.md</code></div>
+      </div>
+      <div class="lens architect">
+        <div class="lens-title"><h3>Architect</h3><span class="pers-tag">structural</span></div>
+        <div class="weights"><span>gen <b>0.30</b></span><span>ctl <b>0.49</b></span><span>cons <b>0.21</b></span></div>
+        <p>Internal consistency, type safety, clear abstractions. Long-term maintainability > short-term win. <b>Strengthen invariants</b> over loosening them.</p>
+        <div class="prompt-ref">Lens: <code>prompts/architect_lens.md</code></div>
+      </div>
+      <div class="lens steward">
+        <div class="lens-title"><h3>Steward</h3><span class="pers-tag">protective</span></div>
+        <div class="weights"><span>gen <b>0.30</b></span><span>ctl <b>0.30</b></span><span>cons <b>0.40</b></span></div>
+        <p>Minimal scope, reversibility, protect working systems. <b>Blast radius &lt; novelty</b>: smaller safe change beats larger ambitious one.</p>
+        <div class="prompt-ref">Lens: <code>prompts/steward_lens.md</code></div>
+      </div>
+    </div>
+
+    <div class="authoritative-zone" style="margin-top: 32px;">
+      <h3 style="margin: 0 0 8px; font-size: 14px; color: var(--gold);">Skeptic voice — focal challenger</h3>
+      <p style="font-size: 12.5px; margin: 0 0 8px; color: var(--ink); line-height: 1.55;">
+        Folosit în <code>parallel_skeptic</code> și <code>dialectic_skeptic</code>. Primește <b>doar</b> chosen-ul (nu și candidates, nu și verdicts). Produce o obiecție concretă sau marchează <code>meta_scope_mismatch</code> dacă deliberarea însăși e supra-aplicată.
+      </p>
+      <p style="font-size: 11.5px; margin: 0; color: var(--muted);">
+        Schema: <code>{can_object, concrete_concerns, quoted_scenario, addressable: in_place|requires_redesign|unaddressable, failure_mode?}</code> · Prompt: <code>prompts/skeptic.md</code>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============== TAB 7 — FILES ============== -->
+  <section class="tab" id="files">
+
+    <h2>Files — <code>prompts/</code> + <code>scripts/</code> (hover pentru rol)</h2>
+    <p style="color: var(--muted); font-size: 13.5px; margin: -8px 0 18px;">
+      Hover pe orice fișier pentru a vedea rolul. Cele cu marker <span style="color: var(--gold); font-weight: 700;">⚠ AUTH</span> sunt zone <b>autoritative</b> — CLAUDE.md spune să le atingi cu grijă pentru că o schimbare aici afectează <i>fiecare</i> deliberare viitoare.
+    </p>
+
+    <div class="file-tree">
+      <div class="file-group">
+        <h3>prompts/ — voice contracts <span class="file-count">10 files</span></h3>
+        <div class="file-list">
+          <div class="file auth" data-role="Generator voice contract — divergent thinking, produce 3-5 candidates cu {id, summary, sketch, rationale}. Mereu include do_nothing. Conditional adversarial_* + unconventional_*. Citit în fiecare deliberare.">
+            <code>generator.md</code><span class="auth-mark">⚠ AUTH</span>
+          </div>
+          <div class="file auth" data-role="Control voice contract — per-candidate verdict: types/logic/tests/style. Output {id, valid, issues, tests_to_write}. Goal-fit invalidează dacă criterion ratat.">
+            <code>control.md</code><span class="auth-mark">⚠ AUTH</span>
+          </div>
+          <div class="file auth" data-role="Conservator voice contract — 4-factor risk score (diff_size/scope_drift/regression_risk/reversibility). rollback_recipe obligator la risk ≥ 0.3. Floor rule la reversibility > 0.7.">
+            <code>conservator.md</code><span class="auth-mark">⚠ AUTH</span>
+          </div>
+          <div class="file" data-role="Generator Pass-2 — fiecare candidate trebuie să emită fie revision: fie maintained: (dialectic mode). Lipsa ambelor → dissent fallback warning.">
+            <code>generator_pass2.md</code>
+          </div>
+          <div class="file" data-role="Control Pass-2 — revizuiește verdicts după ce vede Pass-1 al celorlalți (dialectic mode).">
+            <code>control_pass2.md</code>
+          </div>
+          <div class="file" data-role="Conservator Pass-2 — revizuiește risk scores după Pass-1 (dialectic mode).">
+            <code>conservator_pass2.md</code>
+          </div>
+          <div class="file" data-role="Pioneer lens — prepended peste voice prompt în Trias mode. Bias: bold, novel, forward momentum. Weights: gen 0.49, ctl 0.30, cons 0.21.">
+            <code>pioneer_lens.md</code>
+          </div>
+          <div class="file" data-role="Architect lens — prepended în Trias mode. Bias: invariants, type safety, structural soundness. Weights: gen 0.30, ctl 0.49, cons 0.21.">
+            <code>architect_lens.md</code>
+          </div>
+          <div class="file" data-role="Steward lens — prepended în Trias mode. Bias: minimal scope, reversibility, protect working systems. Weights: gen 0.30, ctl 0.30, cons 0.40.">
+            <code>steward_lens.md</code>
+          </div>
+          <div class="file" data-role="Skeptic voice — focal challenger pentru parallel_skeptic și dialectic_skeptic. Primește DOAR chosen (nu candidates, nu verdicts). Produce obiecție concretă sau meta_scope_mismatch.">
+            <code>skeptic.md</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="file-group">
+        <h3>scripts/ — core pipeline (stdlib-only) <span class="file-count">19 files</span></h3>
+        <div class="file-list">
+          <div class="file" data-role="Step 0 bootstrap — soft priors din FEEDBACK.html + runs/. Surface stale_pendings (2-day threshold), missing_feedback_runs, pend_pressure (>0.3 alertă), weighted_bad_rate.">
+            <code>priors.py</code>
+          </div>
+          <div class="file" data-role="Step 1.5 auto-skip — diff trivial (defaults: 1 file, 15 lines) sau blocklist hit (auth/, migrations/, security/, .env*, Dockerfile, *.tf). Fails open la error.">
+            <code>scope_gate.py</code>
+          </div>
+          <div class="file" data-role="Step 4 helper — ancorează diff_size la git diff --numstat. Optional churn distribution (commit count per file last N days).">
+            <code>probe_change.py</code>
+          </div>
+          <div class="file" data-role="Step 5 — 4 voting schemes (conservative_override default + risk_adjusted_utility + team_vote pentru Trias + equal_weight). Auto-relax la veto total.">
+            <code>aggregator.py</code>
+          </div>
+          <div class="file" data-role="Step 5b — confidence derivat din agreement + separation. Returns null dacă toți vetoiți. Special: team_vote pattern → 3-0: 0.95, 2-1: 0.70, 2-0: 0.75.">
+            <code>confidence.py</code>
+          </div>
+          <div class="file" data-role="Step 5c — scor calitate deliberare (advisory): generator_divergence (paraphrasing?), control_concreteness (speculation?), conservator_spread (shrug?). Emite flags non-blocking.">
+            <code>meta_critic.py</code>
+          </div>
+          <div class="file" data-role="Step 5d — hint pentru single retry când confidence < 0.7. Returnează top-2 candidates cu fișiere/simboluri de citit/grepat.">
+            <code>retry_context.py</code>
+          </div>
+          <div class="file" data-role="Step 6 — asamblează raportul canonic din bundle. Derivă voice_scores, alternatives (cu why_not), deliberation_log.">
+            <code>build_report.py</code>
+          </div>
+          <div class="file auth" data-role="Step 6 gate — verifică success_criterion + verification + chosen_approach + telemetry. Exit 0=OK, 1=field gol/malformat, 2=JSON malformat. Cerut de Principle #4 (Goal-driven).">
+            <code>validate_report.py</code><span class="auth-mark">⚠ AUTH</span>
+          </div>
+          <div class="file" data-role="Step 6 — auto-append în FEEDBACK.html (confidence-gated). conf ≥ 0.7 → OK; conf < 0.7 → întreabă user; conf null → PEND.">
+            <code>log_feedback.py</code>
+          </div>
+          <div class="file" data-role="Suprascrie outcome retroactiv. Marker [confirmed] în note → priors.py ponderează aceste rânduri 2x în weighted_bad_rate.">
+            <code>mark_outcome.py</code>
+          </div>
+          <div class="file" data-role="Listează runs orfane (fără rând FB). Cu --backfill adaugă PEND default. Audit periodic recomandat.">
+            <code>audit_feedback.py</code>
+          </div>
+          <div class="file" data-role="Read API uniform peste cele 3 tiers (short/medium/long). CLI: --tier all|short|medium|long --query <substring>.">
+            <code>memory.py</code>
+          </div>
+          <div class="file" data-role="Steps 3-4 sequential — proiectează output voce anterioară la minim ({id, summary, sketch}). Implementează Chinese wall în Sequential mode.">
+            <code>strip_context.py</code>
+          </div>
+          <div class="file" data-role="Combină Pass-1 + Pass-2 în payload aggregator-ready. Detectează silently_dropped (candidate Pass-1 omis în Pass-2) + dissent fallback warnings la stderr.">
+            <code>dialectic_merge.py</code>
+          </div>
+          <div class="file" data-role="Trias mode — emite 3 personalități (pioneer/architect/steward) cu weights + lens paths. Citit de orchestrator înainte de dispatch.">
+            <code>personalities.py</code>
+          </div>
+          <div class="file" data-role="Regression suite — rulează scripts deterministe (aggregator, confidence, validate_report, strip_context, dialectic_merge) pe evals/scenarios.json.">
+            <code>run_evals.py</code>
+          </div>
+          <div class="file" data-role="Rollup telemetry din runs/. Folosit când ai 10+ runs cu telemetry (tokens_in/out, latency_ms per voce).">
+            <code>usage.py</code>
+          </div>
+          <div class="file" data-role="Stats peste FEEDBACK.html — recent decisions + outcome distribution (OK/BAD/OVR/PEND). Opțional --runs pentru a corela cu runs/.">
+            <code>feedback.py</code>
+          </div>
+          <div class="file" data-role="Utils stdlib-only — force_utf8_streams (fix Windows cp1252), load_json_stdin (clear hint la stdin gol), validate_keys (exit 1 cu mesaj specific). Importat de scripturile care citeau stdin.">
+            <code>utils.py</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="authoritative-zone" style="margin-top: 26px;">
+      <h3 style="margin: 0 0 8px; font-size: 14px; color: var(--gold);">SKILL.md workflow — guvern în 6 pași</h3>
+      <p style="font-size: 12.5px; margin: 0 0 6px; color: var(--ink); line-height: 1.55;">
+        Pașii 0 → 6 (cu aux 1.5, 5b, 5c, 5d) sunt contractul public. Schimbarea formatului JSON așteptat de scripturi rupe deliberările existente.
+      </p>
+      <p style="font-size: 11.5px; margin: 0; color: var(--muted);">
+        CLAUDE.md: <i>"O schimbare aici afectează toate deliberările viitoare → <code>regression_risk</code> mare în Conservator. Preferă să injectezi context suplimentar în input-ul vocii, nu în prompt."</i>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============== TAB 8 — GIT ============== -->
+  <section class="tab" id="git">
+
+    <h2>Git workflow — reguli per branch (din CLAUDE.md)</h2>
+    <p style="color: var(--muted); font-size: 13.5px; margin: -8px 0 22px;">
+      Reguli pentru orice schimbare non-trivială făcută de Claude în acest repo. Prefix branch: <code>feat/</code> sau <code>fix/</code>. Slug kebab-case. Un singur commit per branch (amend).
+    </p>
+
+    <div class="git-rules">
+      <div class="rule">
+        <h4>Branch nou de la <code>main</code> înainte de a edita</h4>
+        <p>Naming: <code>feat/&lt;slug&gt;</code> pentru feature-uri / capabilități noi, <code>fix/&lt;slug&gt;</code> pentru bugfix-uri. Slug în kebab-case, descriptiv (ex: <code>feat/parallel-voices</code>, <code>fix/aggregator-null-confidence</code>). Doar aceste 2 prefixe.</p>
+      </div>
+      <div class="rule">
+        <h4>Un singur commit per branch (amend strategy)</h4>
+        <p>Primul <code>git commit</code>, apoi <code>git commit --amend --no-edit</code> la fiecare modificare ulterioară din aceeași sesiune. Branch-ul rămâne mereu la 1 commit.</p>
+      </div>
+      <div class="rule">
+        <h4>Înainte de push, întreb explicit</h4>
+        <p>"Totul ok sau mai vrei schimbări?" Dacă cere modificări → amend + reia întrebarea. Dacă e ok → push.</p>
+      </div>
+      <div class="rule">
+        <h4>Push o singură dată → <code>git checkout main</code></h4>
+        <p>După push, nu mai amend + force-push fără cerere explicită. Schimbări noi = branch nou.</p>
+      </div>
+      <div class="rule">
+        <h4>PR-ul îl face utilizatorul manual</h4>
+        <p>Nu rulez <code>gh pr create</code>. La final, doar raportez branch-ul push-uit.</p>
+      </div>
+      <div class="rule">
+        <h4>Excepție: typo-uri / fix-uri de 1 linie</h4>
+        <p>Pot merge direct pe <code>main</code> dacă utilizatorul cere explicit. Restul intră în workflow-ul de mai sus.</p>
+      </div>
+      <div class="rule">
+        <h4>Mesajele de commit = Conventional Commits</h4>
+        <p>Format: <code>feat(scope): ...</code>, <code>fix(scope): ...</code>, aliniat cu prefixul branch-ului. Omit <code>Co-Authored-By: Claude ...</code> pe Consilium (user-preferred).</p>
+      </div>
+    </div>
+
+    <div class="self-loop">
+      <h3>🔄 Self-improvement loop — cum se folosește skill-ul pe sine</h3>
+      <p>Când editezi skill-ul însuși (<code>prompts/*.md</code>, <code>scripts/*.py</code>, <code>SKILL.md</code>): <b>rulează <code>/consilium</code> pe propria schimbare</b>. Dacă modul paralel e activat, vocile sunt sub-agenți independenți — dovadă mai puternică decât deliberarea single-context.</p>
+
+      <div class="loop-cycle">
+        <span class="loop-step">edit prompts/* sau scripts/*</span>
+        <span class="loop-arrow">→</span>
+        <span class="loop-step">/consilium pe diff</span>
+        <span class="loop-arrow">→</span>
+        <span class="loop-step">runs/&lt;date&gt;.json</span>
+        <span class="loop-arrow">→</span>
+        <span class="loop-step">log_feedback.py</span>
+        <span class="loop-arrow">→</span>
+        <span class="loop-step">FEEDBACK.html</span>
+        <span class="loop-arrow">↺</span>
+        <span class="loop-step">priors.py (next deliberation)</span>
+      </div>
+
+      <p style="margin-top: 14px;"><b>De ce contează:</b> skill-ul citește propriile artefacte (<code>runs/</code> + <code>FEEDBACK.html</code>) în Step 0 al fiecărei deliberări noi → priors devin <i>increasingly calibrate</i> la realitatea proiectului tău. <code>stale_pendings</code>, <code>pend_pressure</code> și <code>weighted_bad_rate</code> îl ajustează soft.</p>
+
+      <p><b>Outcome confirmation retroactiv:</b> dacă producția dezvăluie ulterior un regression sau o alegere bună, suprascrie cu <code>mark_outcome.py --run-path runs/&lt;file&gt;.json --outcome BAD|OK --reason "..."</code>. Markerul <code>[confirmed]</code> apare în note; <code>priors.py</code> ponderează aceste rânduri <b>2x</b> față de feedback-ul subiectiv în <code>weighted_bad_rate</code>.</p>
+
+      <p><b>Audit periodic:</b> <code>python scripts/audit_feedback.py --backfill</code> creează rânduri PEND pentru runs orfane. <code>python scripts/feedback.py --recent 10 --runs</code> arată distribuția outcome-urilor recente.</p>
+    </div>
   </section>
 
 </main>
