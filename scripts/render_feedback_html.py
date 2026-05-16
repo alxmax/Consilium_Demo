@@ -208,13 +208,28 @@ def _cons_panel(run: dict) -> str:
     log = run.get("deliberation_log") or []
     cons_step = next((s for s in log if isinstance(s, dict) and s.get("step") == "conservator"), {})
     scores = [s for s in (cons_step.get("scores") or []) if isinstance(s, dict)]
-    n_vetoed = sum(1 for s in scores if (s.get("risk_score") or 0) >= 0.7)
+
+    # Authoritative VETOED list: read from the aggregate step's `vetoed` list
+    # — that's what aggregator.py actually used to drop candidates. Re-deriving
+    # from a hard-coded risk_score threshold here used to drift (renderer used
+    # `>= 0.7`, aggregator uses `> DEFAULT_VETO = 0.8`) and lied about every
+    # candidate in the [0.7, 0.8] band. Falls back to empty set when missing
+    # (older runs, manual constructs) — under-showing VETOED is preferable to
+    # fabricating it.
+    agg_step = next((s for s in log if isinstance(s, dict) and s.get("step") == "aggregate"), {})
+    agg_raw = agg_step.get("result")
+    agg_result = agg_raw if isinstance(agg_raw, dict) else {}
+    vetoed_ids = {
+        v.get("id") for v in (agg_result.get("vetoed") or []) if isinstance(v, dict)
+    }
+    n_vetoed = sum(1 for s in scores if s.get("id") in vetoed_ids)
     parts = [f'<div class="voice"><h4>Conservator <span class="count">{len(scores)} scored, {n_vetoed} vetoed</span></h4>']
     for s in scores:
-        cid = _esc(s.get("id", ""))
+        cid_raw = s.get("id", "")
+        cid = _esc(cid_raw)
         rs = s.get("risk_score") or 0.0
         rcls = _risk_class(rs)
-        vetoed_badge = ' <span class="badge invalid">VETOED</span>' if rs >= 0.7 else ""
+        vetoed_badge = ' <span class="badge invalid">VETOED</span>' if cid_raw in vetoed_ids else ""
         f = s.get("factors") or {}
         parts.append(
             f'<div class="cand">'
