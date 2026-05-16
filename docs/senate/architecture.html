@@ -1,805 +1,509 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Senate — Arhitectură vizuală</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Senate — Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
   :root {
-    --bg: #1a1a1a;
-    --bg2: #242424;
-    --bg3: #2d2d2d;
-    --bg4: #383838;
-    --text: #eaeaea;
-    --dim: #9a9a95;
-    --dim2: #6a6a65;
-    --accent: #e85a3c;
-    --teal: #1f9e83;
-    --amber: #f2a623;
-    --red: #c73e3a;
-    --green: #5a9e3e;
-    --purple: #9b7dcc;
-    --blue: #5a8dc7;
-    --pink: #c77dcc;
-    --divider: #3a3a3a;
-    --mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-    --serif: 'Georgia', serif;
-    --sans: 'Inter', -apple-system, sans-serif;
+    --bg: #0f1419; --ink: #e5e7eb; --muted: #9ca3af; --line: #2d3441;
+    --card-bg: #181d27; --inset: #11151c;
+    --gold: #fbbf24; --gold-soft: #2a2410; --gold-border: #5c4a14;
+    --gen: #fbbf24; --gen-soft: #2a2410; --gen-border: #5c4a14; --gen-text: #fbbf24;
+    --ctl: #60a5fa; --ctl-soft: #182338; --ctl-border: #2a3f5f; --ctl-text: #93c5fd;
+    --con: #f87171; --con-soft: #2a1818; --con-border: #5c2a2a; --con-text: #fca5a5;
+    --accent: #34d399; --accent-soft: #0a2e23; --accent-border: #145c45; --accent-text: #6ee7b7;
+    --trias: #c084fc; --trias-soft: #221830; --trias-border: #4c2a6b; --trias-text: #d8b4fe;
+    --amber: #f59e0b; --purple: #c084fc; --green: #34d399; --red: #f87171;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.6; font-size: 14px; }
-  .wrap { max-width: 1300px; margin: 0 auto; padding: 40px 32px 80px; }
-
-  h1 { font-family: var(--serif); font-style: italic; font-size: 38px; font-weight: 400; margin: 0 0 8px; line-height: 1.1; }
-  h2 { font-family: var(--serif); font-style: italic; font-size: 24px; font-weight: 400; margin: 56px 0 16px; color: var(--text); border-bottom: 1px solid var(--divider); padding-bottom: 8px; }
-  h3 { font-family: var(--sans); font-size: 15px; font-weight: 600; margin: 28px 0 10px; color: var(--text); letter-spacing: 0.01em; }
-  h4 { font-family: var(--mono); font-size: 11px; font-weight: 600; margin: 16px 0 6px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; }
-
-  .eyebrow { font-family: var(--mono); font-size: 10px; color: var(--dim2); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
-  .lede { font-family: var(--serif); font-style: italic; font-size: 16px; color: var(--dim); line-height: 1.6; margin: 0 0 32px; max-width: 900px; }
-
-  p { color: var(--text); margin: 12px 0; }
-  p.note { color: var(--dim); font-size: 13px; }
-  strong { color: var(--text); font-weight: 600; }
-  em { font-style: italic; color: var(--dim); }
-  code { font-family: var(--mono); font-size: 12.5px; background: var(--bg3); padding: 1px 6px; border-radius: 3px; color: var(--amber); }
-  a { color: var(--blue); text-decoration: none; }
+  html, body { margin: 0; padding: 0; color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  body {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(ellipse 80% 60% at 15% 0%, rgba(217,168,116,.18) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 50% at 85% 0%, rgba(192,154,110,.14) 0%, transparent 55%),
+      radial-gradient(circle, rgba(255,255,255,.022) 1px, transparent 1px);
+    background-size: auto, auto, 28px 28px;
+    background-attachment: fixed, fixed, fixed;
+  }
+  header { padding: 28px 40px 0; }
+  header h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  nav.tabs { display: flex; gap: 4px; padding: 22px 40px 0; border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; background: var(--bg); z-index: 10; flex-wrap: wrap; }
+  nav.tabs button { appearance: none; background: transparent; border: 0; padding: 10px 18px;
+    font: inherit; font-weight: 500; color: var(--muted); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  nav.tabs button:hover { color: var(--ink); }
+  nav.tabs button.active { color: var(--ink); border-bottom-color: var(--gold); }
+  main { padding: 32px 40px 80px; max-width: 1240px; margin: 0 auto; }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+  h2 { margin: 0 0 18px; font-size: 16px; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--muted); }
+  h3 { margin: 28px 0 12px; font-size: 15px; }
+  p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.6; }
+  code { font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-size: 12.5px; background: var(--inset); padding: 1px 5px; border-radius: 3px; }
+  a { color: var(--ctl-text); text-decoration: none; }
   a:hover { text-decoration: underline; }
+  .note { color: var(--muted); font-size: 13px; margin-top: 16px; }
 
-  hr.div { height: 1px; background: var(--divider); margin: 32px 0; border: none; }
+  /* Mermaid */
+  .mermaid { text-align: center; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  .mermaid-wrap { background: var(--inset); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+  .mermaid-wrap h3 { margin: 0 0 16px; font-size: 13px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
 
-  /* ──── Hero / TOC ──── */
-  .hero { background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%); border: 1px solid var(--divider); border-radius: 8px; padding: 32px 28px; margin-bottom: 40px; }
-  .toc { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 24px; margin-top: 16px; }
-  .toc a { font-family: var(--mono); font-size: 12px; color: var(--dim); padding: 4px 0; }
-  .toc a:hover { color: var(--accent); }
-
-  /* ──── Layer diagram (Section 1) ──── */
-  .layers { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
-  .layer {
-    background: var(--bg2);
-    border: 1px solid var(--divider);
-    border-radius: 6px;
-    padding: 16px 18px;
-    position: relative;
-  }
-  .layer.governance { border-left: 3px solid var(--purple); }
-  .layer.deliberation { border-left: 3px solid var(--teal); }
-  .layer.aggregation { border-left: 3px solid var(--blue); }
-  .layer-head { display: flex; gap: 12px; align-items: baseline; margin-bottom: 8px; }
-  .layer-tag { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.08em; }
-  .layer.governance .layer-tag { background: var(--purple); color: white; }
-  .layer.deliberation .layer-tag { background: var(--teal); color: white; }
-  .layer.aggregation .layer-tag { background: var(--blue); color: white; }
-  .layer-name { font-family: var(--serif); font-style: italic; font-size: 18px; }
-  .layer-purpose { color: var(--dim); font-size: 12.5px; margin-left: auto; }
-  .layer-body { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--dim); margin-top: 8px; }
-  .layer-body .step { background: var(--bg3); padding: 4px 10px; border-radius: 4px; color: var(--text); }
-  .layer-body .arrow { color: var(--dim2); }
-  .layer-isolation { display: block; margin-top: 8px; font-size: 12px; color: var(--dim); font-family: var(--mono); }
-
-  /* ──── Senator cards (Section 2) ──── */
-  .senator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 20px 0; }
-  .senator-card {
-    background: var(--bg2);
-    border: 1px solid var(--divider);
-    border-left: 3px solid var(--accent);
-    border-radius: 6px;
-    padding: 14px 16px;
-  }
-  .senator-card .name { font-family: var(--serif); font-style: italic; font-size: 17px; margin-bottom: 4px; }
-  .senator-card .spec { font-family: var(--mono); font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
-  .senator-card .question { font-size: 13px; color: var(--text); font-style: italic; margin: 8px 0; padding-left: 10px; border-left: 2px solid var(--bg4); }
-  .senator-card .field { font-family: var(--mono); font-size: 11px; color: var(--amber); margin-top: 6px; }
-  .senator-card.w { border-left-color: var(--pink); }
-  .senator-card.a { border-left-color: var(--blue); }
-  .senator-card.c { border-left-color: var(--green); }
-  .senator-card.s { border-left-color: var(--purple); }
-  .senator-card.m { border-left-color: var(--accent); }
-  .senator-card.d { border-left-color: var(--red); }
+  /* Senator cards */
+  .senator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+    gap: 14px; margin: 20px 0; }
+  .senator-card { background: var(--card-bg); border: 1px solid var(--line);
+    border-left: 3px solid var(--gold); border-radius: 8px; padding: 14px 16px; }
+  .senator-card.w { border-left-color: #ec4899; }
+  .senator-card.a { border-left-color: var(--ctl); }
+  .senator-card.c { border-left-color: var(--accent); }
+  .senator-card.s { border-left-color: var(--trias); }
+  .senator-card.m { border-left-color: var(--gold); }
+  .senator-card.d { border-left-color: var(--con); }
   .senator-card.n { border-left-color: var(--amber); }
+  .senator-card .name { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+  .senator-card .spec { font-size: 11px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: .06em; margin-bottom: 10px; }
+  .senator-card .question { font-size: 13px; font-style: italic; color: var(--ink);
+    padding-left: 10px; border-left: 2px solid var(--line); margin: 8px 0; }
+  .senator-card .field { font-family: ui-monospace,monospace; font-size: 11px;
+    color: var(--gold); margin-top: 6px; }
 
-  /* ──── Dispatch flow (Section 3) ──── */
-  .flow { background: var(--bg2); border: 1px solid var(--divider); border-radius: 6px; padding: 24px; margin: 20px 0; }
-  .flow-step { display: flex; gap: 14px; align-items: flex-start; padding: 10px 0; }
-  .flow-num { font-family: var(--mono); font-size: 13px; background: var(--bg3); color: var(--accent); padding: 4px 10px; border-radius: 3px; font-weight: 600; min-width: 32px; text-align: center; }
-  .flow-content { flex: 1; }
-  .flow-content .title { font-weight: 600; margin-bottom: 4px; }
-  .flow-content .desc { color: var(--dim); font-size: 13px; }
-  .flow-arrow { display: block; margin-left: 16px; color: var(--dim2); font-family: var(--mono); font-size: 14px; line-height: 1; }
-  .dispatch-fan { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 16px 0; }
-  .dispatch-fan .agent {
-    background: var(--bg3);
-    border: 1px solid var(--divider);
-    border-radius: 4px;
-    padding: 8px 6px;
-    text-align: center;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--dim);
+  /* Verdict cards */
+  .verdict-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; margin: 20px 0; }
+  .verdict-card { background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 16px; }
+  .verdict-card .label { font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; margin-bottom: 6px; }
+  .verdict-card .rule { font-family: ui-monospace,monospace; font-size: 13px;
+    color: var(--muted); margin-bottom: 8px; }
+  .verdict-card .action { font-size: 13px; }
+  .verdict-card.go  { background: var(--accent-soft); border-color: var(--accent-border); }
+  .verdict-card.go .label { color: var(--accent-text); }
+  .verdict-card.stop { background: var(--con-soft); border-color: var(--con-border); }
+  .verdict-card.stop .label { color: var(--con-text); }
+  .verdict-card.mod  { background: var(--gold-soft); border-color: var(--gold-border); }
+  .verdict-card.mod .label { color: var(--gold); }
+  .verdict-card.unr { background: var(--inset); border-color: var(--line); opacity: .8; }
+  .verdict-card.unr .label { color: var(--muted); }
+
+  /* File tree */
+  .file-tree { background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 18px 24px; font-family: ui-monospace,monospace;
+    font-size: 12.5px; line-height: 1.6; }
+  .file-tree .new { color: var(--accent-text); }
+  .file-tree .note { color: var(--muted); font-style: italic; }
+
+  /* Tables */
+  table.data { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  table.data th, table.data td { text-align: left; padding: 10px 14px;
+    border-bottom: 1px solid var(--line); }
+  table.data th { background: var(--inset); font-weight: 600; color: var(--muted);
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+  table.data td { color: var(--ink); vertical-align: top; }
+  table.data tr:hover td { background: var(--inset); }
+
+  /* Code block */
+  pre.code-block { background: var(--inset); border: 1px solid var(--line);
+    border-radius: 6px; padding: 14px 16px; overflow-x: auto;
+    font-family: ui-monospace,monospace; font-size: 12px;
+    color: var(--muted); line-height: 1.5; margin: 12px 0; }
+
+  /* Info card */
+  .info-card { background: var(--gold-soft); border: 1px solid var(--gold-border);
+    border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; }
+  .info-card b { color: var(--gold); }
+
+  /* Footer */
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 12px; }
+
+  @media (max-width: 900px) {
+    main { padding: 24px 16px 60px; }
+    nav.tabs { padding: 16px 16px 0; }
+    header { padding: 20px 16px 0; }
+    .senator-grid, .verdict-grid { grid-template-columns: 1fr; }
   }
-  .dispatch-fan .agent strong { display: block; color: var(--text); font-size: 12px; margin-bottom: 2px; font-family: var(--sans); }
-
-  /* ──── Verdict logic (Section 4) ──── */
-  .verdict-tree {
-    background: var(--bg2);
-    border: 1px solid var(--divider);
-    border-radius: 6px;
-    padding: 24px;
-    font-family: var(--mono);
-    font-size: 12.5px;
-    overflow-x: auto;
-  }
-  .verdict-tree pre { margin: 0; color: var(--dim); line-height: 1.5; }
-  .verdict-card { display: inline-block; padding: 12px 20px; border-radius: 5px; font-family: var(--sans); font-size: 13px; font-weight: 600; margin: 4px; }
-  .verdict-go { background: rgba(90, 158, 62, 0.15); border: 1px solid var(--green); color: var(--green); }
-  .verdict-modify { background: rgba(242, 166, 35, 0.15); border: 1px solid var(--amber); color: var(--amber); }
-  .verdict-stop { background: rgba(199, 62, 58, 0.15); border: 1px solid var(--red); color: var(--red); }
-  .verdict-unreach { background: rgba(106, 106, 101, 0.15); border: 1px solid var(--dim); color: var(--dim); }
-  .verdict-cards { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
-  .verdict-cards .card { flex: 1; min-width: 200px; background: var(--bg2); border: 1px solid var(--divider); border-radius: 6px; padding: 14px; }
-  .verdict-cards .card .label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
-  .verdict-cards .card.go .label { color: var(--green); }
-  .verdict-cards .card.modify .label { color: var(--amber); }
-  .verdict-cards .card.stop .label { color: var(--red); }
-  .verdict-cards .card.unreach .label { color: var(--dim); }
-  .verdict-cards .card .rule { font-family: var(--mono); font-size: 12px; color: var(--dim); margin-bottom: 8px; }
-  .verdict-cards .card .action { font-size: 13px; color: var(--text); }
-
-  /* ──── Cross-question matrix (Section 8) ──── */
-  .cq-banner { background: rgba(242, 166, 35, 0.1); border: 1px solid var(--amber); border-left: 3px solid var(--amber); border-radius: 4px; padding: 12px 16px; margin: 16px 0; color: var(--amber); font-size: 13px; }
-  .cq-matrix {
-    background: var(--bg2);
-    border: 1px solid var(--divider);
-    border-radius: 6px;
-    padding: 16px;
-    overflow-x: auto;
-    margin: 16px 0;
-  }
-  .cq-matrix table { border-collapse: collapse; margin: 0 auto; font-family: var(--mono); font-size: 12px; }
-  .cq-matrix th, .cq-matrix td {
-    width: 50px; height: 36px;
-    text-align: center;
-    border: 1px solid var(--bg4);
-    color: var(--dim);
-  }
-  .cq-matrix th { background: var(--bg3); color: var(--text); font-weight: 600; }
-  .cq-matrix th.row-label { text-align: right; padding-right: 8px; min-width: 110px; background: var(--bg3); }
-  .cq-matrix td.diag { background: var(--bg); color: var(--dim2); }
-  .cq-matrix td.poss { background: var(--bg2); }
-  .cq-matrix td.prod { background: rgba(232, 90, 60, 0.2); color: var(--accent); font-weight: 700; font-size: 14px; }
-  .cq-legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--dim); flex-wrap: wrap; }
-  .cq-legend .item { display: flex; align-items: center; gap: 6px; }
-  .cq-legend .swatch { width: 14px; height: 14px; border: 1px solid var(--bg4); border-radius: 2px; display: inline-block; }
-  .cq-legend .swatch.prod { background: rgba(232, 90, 60, 0.2); }
-  .cq-legend .swatch.poss { background: var(--bg2); }
-  .cq-legend .swatch.diag { background: var(--bg); }
-
-  /* ──── Cross-Q round flow ──── */
-  .round-flow { display: flex; gap: 20px; align-items: stretch; flex-wrap: wrap; margin: 20px 0; }
-  .round-card {
-    flex: 1;
-    min-width: 240px;
-    background: var(--bg2);
-    border: 1px solid var(--divider);
-    border-radius: 6px;
-    padding: 16px;
-    position: relative;
-  }
-  .round-card .round-num { font-family: var(--mono); font-size: 10px; color: var(--dim2); letter-spacing: 0.1em; margin-bottom: 4px; text-transform: uppercase; }
-  .round-card .round-title { font-family: var(--serif); font-style: italic; font-size: 16px; margin-bottom: 10px; }
-  .round-card.r1 { border-left: 3px solid var(--green); }
-  .round-card.r2 { border-left: 3px solid var(--amber); }
-  .round-card.r3 { border-left: 3px solid var(--red); }
-  .round-card.stop { border-left: 3px solid var(--dim2); border-style: dashed; }
-  .round-card ul { margin: 8px 0; padding-left: 18px; color: var(--dim); font-size: 12.5px; }
-  .round-card ul li { margin: 4px 0; }
-  .round-arrow { font-family: var(--mono); color: var(--dim2); font-size: 18px; align-self: center; }
-
-  /* ──── Blocaj diagram ──── */
-  .blocaj { background: var(--bg2); border: 1px solid var(--divider); border-radius: 6px; padding: 20px; margin: 16px 0; }
-  .blocaj-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-  .blocaj-side { background: var(--bg3); border-radius: 5px; padding: 12px 16px; flex: 1; min-width: 140px; }
-  .blocaj-side.X { border-left: 3px solid var(--green); }
-  .blocaj-side.Y { border-left: 3px solid var(--red); }
-  .blocaj-side .who { font-family: var(--mono); font-size: 11px; color: var(--dim); }
-  .blocaj-side .vote { font-family: var(--mono); font-size: 16px; font-weight: 700; margin-top: 4px; }
-  .blocaj-side.X .vote { color: var(--green); }
-  .blocaj-side.Y .vote { color: var(--red); }
-  .blocaj-arbiters { background: var(--bg3); border-radius: 5px; padding: 12px 16px; margin-top: 14px; text-align: center; }
-  .blocaj-arbiters .label { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-bottom: 8px; }
-  .blocaj-arbiters .heads { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-  .blocaj-arbiters .head { font-family: var(--mono); font-size: 11px; padding: 4px 10px; background: var(--bg4); border-radius: 3px; color: var(--text); }
-
-  /* ──── Tables ──── */
-  table.data {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0;
-    font-size: 13px;
-  }
-  table.data th, table.data td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--divider); }
-  table.data th { background: var(--bg2); font-weight: 600; color: var(--text); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
-  table.data td { color: var(--text); vertical-align: top; }
-  table.data tr:hover td { background: var(--bg2); }
-  table.data td code { background: var(--bg3); }
-  .mode-senate td { background: rgba(155, 125, 204, 0.08); }
-
-  /* ──── ASCII art block ──── */
-  pre.ascii {
-    background: var(--bg2);
-    border: 1px solid var(--divider);
-    border-radius: 6px;
-    padding: 18px 20px;
-    overflow-x: auto;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--dim);
-    line-height: 1.4;
-  }
-
-  /* ──── File tree ──── */
-  .file-tree { background: var(--bg2); border: 1px solid var(--divider); border-radius: 6px; padding: 18px 24px; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; }
-  .file-tree .new { color: var(--accent); }
-  .file-tree .note { color: var(--dim2); font-style: italic; }
-
-  /* ──── Footer ──── */
-  footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--divider); color: var(--dim); font-size: 12px; }
-  footer a { color: var(--blue); }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<div class="eyebrow">Consilium · governance layer</div>
-<h1>Senate — arhitectură vizuală</h1>
-<div class="lede">
-  Audit pre-implementare pentru modificări la skill-ul <code>consilium</code> însuși. 7 senatori paralel, on-demand only; toate cele 5 Legi sunt active (Laws 2-4 opt-in multi-round via schema <code>{rounds: [...]}</code>).
-</div>
+<header>
+  <h1>Senate</h1>
+  <div class="sub">Layer de governance pentru modificări la skill-ul consilium însuși</div>
+</header>
 
-<div class="hero">
-  <p><strong>Citește înainte:</strong> secțiunea „Senate mode (<code>senate</code>)" din <a href="../../SKILL.md">SKILL.md</a>. Acest doc e schemele; SKILL.md e contractul.</p>
-  <div class="toc">
-    <a href="#sec1">§1 — Unde stă Senatul</a>
-    <a href="#sec2">§2 — Cei 7 senatori</a>
-    <a href="#sec3">§3 — Flow de dispatch</a>
-    <a href="#sec4">§4 — Logica verdictului</a>
-    <a href="#sec5">§5 — Hartă fișiere</a>
-    <a href="#sec6">§6 — Comparație cu alte moduri</a>
-    <a href="#sec7">§7 — Self-improvement loop</a>
-    <a href="#sec8">§8 — Cross-questions (extensie)</a>
-    <a href="#sec9">§9 — Limitări cunoscute</a>
-    <a href="#sec10">§10 — Smoke test</a>
-  </div>
-</div>
+<nav class="tabs" role="tablist">
+  <button class="active" data-tab="overview">Overview</button>
+  <button data-tab="senators">Senatori</button>
+  <button data-tab="dispatch">Dispatch</button>
+  <button data-tab="verdict">Verdict</button>
+  <button data-tab="files">Fișiere &amp; Mod</button>
+  <button data-tab="self-improvement">Self-improvement</button>
+  <button data-tab="limits">Limitări &amp; Test</button>
+</nav>
 
-<!-- ═══════════════════ §1 LAYERS ═══════════════════ -->
-<h2 id="sec1">§1 — Unde stă Senatul în consilium</h2>
-<p>3 layere distincte. Senatul e layer-ul de <strong>governance</strong> — nu intervine pe întrebări regulate, ci doar când skill-ul însuși urmează să fie modificat.</p>
+<main>
 
-<div class="layers">
-  <div class="layer deliberation">
-    <div class="layer-head">
-      <span class="layer-tag">L1</span>
-      <span class="layer-name">Deliberation layer</span>
-      <span class="layer-purpose">per-question deliberation</span>
-    </div>
-    <div class="layer-body">
-      <span class="step">Generator</span><span class="arrow">→</span>
-      <span class="step">Control</span><span class="arrow">→</span>
-      <span class="step">Conservator</span>
-      <span style="margin-left: auto;">modes: <code>parallel</code> / <code>dialectic</code> / <code>trias</code> / <code>skeptic*</code></span>
-    </div>
-  </div>
-  <div class="layer aggregation">
-    <div class="layer-head">
-      <span class="layer-tag">L2</span>
-      <span class="layer-name">Aggregation layer</span>
-      <span class="layer-purpose">vote → verdict → report</span>
-    </div>
-    <div class="layer-body">
-      <span class="step">aggregator.py</span><span class="arrow">→</span>
-      <span class="step">confidence.py</span><span class="arrow">→</span>
-      <span class="step">build_report.py</span><span class="arrow">→</span>
-      <span class="step">validate_report.py</span>
-      <span style="margin-left: auto;">output: <code>runs/&lt;file&gt;.json</code></span>
-    </div>
-  </div>
-  <div class="layer governance">
-    <div class="layer-head">
-      <span class="layer-tag">L3</span>
-      <span class="layer-name">Senate layer (governance)</span>
-      <span class="layer-purpose">on-demand · audit skill changes</span>
-    </div>
-    <div class="layer-body">
-      <span class="step">7 senators parallel</span><span class="arrow">→</span>
-      <span class="step">senate_synth.py</span><span class="arrow">→</span>
-      <span class="step">verdict GO/MODIFY/STOP/UNREACHABLE</span>
-      <span style="margin-left: auto;">output: <code>runs/senate/&lt;file&gt;.json</code></span>
-    </div>
-    <span class="layer-isolation">Reguli izolare: L3 nu se invocă pe întrebări user; L1+L2 nu se invocă pe modificări la skill.</span>
-  </div>
-</div>
+  <!-- ══════ TAB: OVERVIEW ══════ -->
+  <section class="tab active" id="overview">
 
-<!-- ═══════════════════ §2 SENATORS ═══════════════════ -->
-<h2 id="sec2">§2 — Cei 7 senatori și lensele lor</h2>
-<p>Fiecare e o <strong>perspectivă cognitivă distinctă</strong>. Scope-ul declarat în <code>## Limite</code> din fiecare prompt; NU se suprapun.</p>
+    <h2>§1 — Unde stă Senatul în consilium</h2>
+    <p>3 layere distincte. Senatul e layer-ul de <strong>governance</strong> — nu intervine pe întrebări regulate, ci doar când skill-ul însuși urmează să fie modificat.</p>
 
-<div class="senator-grid">
-  <div class="senator-card w">
-    <div class="name">Wittgenstein</div>
-    <div class="spec">operational semantics</div>
-    <div class="question">„E definit operațional? Cum verifici că s-a respectat?"</div>
-    <div class="field">→ vague_terms_found[]</div>
-  </div>
-  <div class="senator-card a">
-    <div class="name">Aurelius</div>
-    <div class="spec">reversibility × magnitude</div>
-    <div class="question">„E proporțional cu stake-ul? Reversibil?"</div>
-    <div class="field">→ reversibility · magnitude · quadrant</div>
-  </div>
-  <div class="senator-card c">
-    <div class="name">Confucius</div>
-    <div class="spec">hierarchy &amp; precedent</div>
-    <div class="question">„Cine are autoritate aici? Avem precedente?"</div>
-    <div class="field">→ hierarchy_check · precedent_search[]</div>
-  </div>
-  <div class="senator-card s">
-    <div class="name">Socrate</div>
-    <div class="spec">hidden assumptions</div>
-    <div class="question">„Ce presupui fără să declari? Dacă-i falsă?"</div>
-    <div class="field">→ hidden_assumptions[].load_bearing</div>
-  </div>
-  <div class="senator-card m">
-    <div class="name">Musk</div>
-    <div class="spec">aggressive deletion</div>
-    <div class="question">„Ce poți șterge fără să pierzi funcția?"</div>
-    <div class="field">→ components_attacked[].vote</div>
-  </div>
-  <div class="senator-card d">
-    <div class="name">Dimon</div>
-    <div class="spec">stress test &amp; counterparty</div>
-    <div class="question">„Ce dacă eșuează? Cine plătește?"</div>
-    <div class="field">→ stress_scenarios[].failure_mode</div>
-  </div>
-  <div class="senator-card n">
-    <div class="name">Napoleon</div>
-    <div class="spec">cost &amp; terrain</div>
-    <div class="question">„Câți tokens? În ce stare e operatorul?"</div>
-    <div class="field">→ cost_estimate · terrain_check</div>
-  </div>
-</div>
+    <div class="mermaid-wrap">
+      <h3>Arhitectura pe layere</h3>
+      <div class="mermaid">
+%%{init:{'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c','clusterBkg':'#181d27'}}}%%
+flowchart TD
+    subgraph L3 ["L3 · Senate — governance (on-demand)"]
+      direction LR
+      S7["7 senatori\nparalel\nmodel: sonnet"]:::gov
+      SYNTH["senate_synth.py\nquorum 5/7"]:::gov
+      VV["Verdict\nGO / MODIFY / STOP\nUNREACHABLE"]:::gov
+      S7 --> SYNTH --> VV
+    end
+    subgraph L2 ["L2 · Aggregation — per deliberare"]
+      direction LR
+      AGG["aggregator.py"]:::agg
+      CONF["confidence.py"]:::agg
+      REP["validate_report.py"]:::agg
+      AGG --> CONF --> REP
+    end
+    subgraph L1 ["L1 · Deliberation — per întrebare"]
+      direction LR
+      GEN["Generator"]:::gen
+      CTL["Control"]:::ctl
+      CON["Conservator"]:::con
+      GEN & CTL & CON --> AGG
+    end
+    VV -.->|"advisory only\nuser decide"| L1
 
-<p class="note">Toți emit <code>vote</code> (GO/MODIFY/STOP) și <code>modify_request</code> (string). Ortogonalitatea e validată prin secțiunea <code>## Limite</code> din fiecare prompt — fiecare declară explicit ce <em>nu</em> face.</p>
-
-<!-- ═══════════════════ §3 DISPATCH ═══════════════════ -->
-<h2 id="sec3">§3 — Flow de dispatch</h2>
-<p>Orchestrator-ul (Claude când execută <code>/consilium senate</code>) urmează acest flow. Senatul nu se invocă automat.</p>
-
-<div class="flow">
-  <div class="flow-step">
-    <div class="flow-num">1</div>
-    <div class="flow-content">
-      <div class="title">User formulează propunerea</div>
-      <div class="desc">Un paragraf concret: <em>ce schimbi, de ce, fișiere atinse, success criterion</em>.</div>
-    </div>
-  </div>
-  <div class="flow-arrow">▼</div>
-  <div class="flow-step">
-    <div class="flow-num">2</div>
-    <div class="flow-content">
-      <div class="title">Orchestrator dispatch 7× paralel</div>
-      <div class="desc"><code>model: "sonnet"</code> explicit, fiecare cu prompt-ul senatorului inline + input identic (propunere + context).</div>
-      <div class="dispatch-fan">
-        <div class="agent"><strong>Witgen.</strong>Sonnet</div>
-        <div class="agent"><strong>Aurelius</strong>Sonnet</div>
-        <div class="agent"><strong>Confucius</strong>Sonnet</div>
-        <div class="agent"><strong>Socrate</strong>Sonnet</div>
-        <div class="agent"><strong>Musk</strong>Sonnet</div>
-        <div class="agent"><strong>Dimon</strong>Sonnet</div>
-        <div class="agent"><strong>Napoleon</strong>Sonnet</div>
+    classDef gov fill:#221830,stroke:#c084fc,color:#d8b4fe
+    classDef agg fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    classDef gen fill:#2a2410,stroke:#5c4a14,color:#fbbf24
+    classDef ctl fill:#182338,stroke:#2a3f5f,color:#93c5fd
+    classDef con fill:#2a1818,stroke:#5c2a2a,color:#fca5a5
       </div>
     </div>
-  </div>
-  <div class="flow-arrow">▼</div>
-  <div class="flow-step">
-    <div class="flow-num">3</div>
-    <div class="flow-content">
-      <div class="title">Colectează 7 JSON-uri</div>
-      <div class="desc">Retry 1× pe senator absent / JSON malformat. La eșec persistent → marchează <code>absent</code> și continuă.</div>
+
+    <div class="info-card">
+      <b>Reguli de izolare:</b> L3 nu se invocă pe întrebări user; L1+L2 nu se invocă pe modificări la skill. Senatul e <b>advisory</b> — user-ul ia decizia finală.
     </div>
-  </div>
-  <div class="flow-arrow">▼</div>
-  <div class="flow-step">
-    <div class="flow-num">4</div>
-    <div class="flow-content">
-      <div class="title">senate_synth.py</div>
-      <div class="desc">Stdlib only. <code>tally</code> + <code>compute_verdict</code> (quorum 5/7) + <code>collect_modify_requests</code> + <code>collect_warnings</code> + <code>write_bundle</code> (collision-safe, second-level granularity + <code>_vN</code> suffix).</div>
+
+    <p>Citește înainte: secțiunea <em>„Senate mode (<code>senate</code>)"</em> din <a href="../../SKILL.md">SKILL.md</a>. Acest doc e schemele; SKILL.md e contractul.</p>
+
+  </section>
+
+  <!-- ══════ TAB: SENATORS ══════ -->
+  <section class="tab" id="senators">
+
+    <h2>§2 — Cei 7 senatori și lensele lor</h2>
+    <p>Fiecare e o <strong>perspectivă cognitivă distinctă</strong>. Scope-ul declarat în <code>## Limite</code> din fiecare prompt; NU se suprapun.</p>
+
+    <div class="senator-grid">
+      <div class="senator-card w">
+        <div class="name">Wittgenstein</div>
+        <div class="spec">operational semantics</div>
+        <div class="question">„E definit operațional? Cum verifici că s-a respectat?"</div>
+        <div class="field">→ vague_terms_found[]</div>
+      </div>
+      <div class="senator-card a">
+        <div class="name">Aurelius</div>
+        <div class="spec">reversibility × magnitude</div>
+        <div class="question">„E proporțional cu stake-ul? Reversibil?"</div>
+        <div class="field">→ reversibility · magnitude · quadrant</div>
+      </div>
+      <div class="senator-card c">
+        <div class="name">Confucius</div>
+        <div class="spec">hierarchy &amp; precedent</div>
+        <div class="question">„Cine are autoritate aici? Avem precedente?"</div>
+        <div class="field">→ hierarchy_check · precedent_search[]</div>
+      </div>
+      <div class="senator-card s">
+        <div class="name">Socrate</div>
+        <div class="spec">hidden assumptions</div>
+        <div class="question">„Ce presupui fără să declari? Dacă-i falsă?"</div>
+        <div class="field">→ hidden_assumptions[].load_bearing</div>
+      </div>
+      <div class="senator-card m">
+        <div class="name">Musk</div>
+        <div class="spec">aggressive deletion</div>
+        <div class="question">„Ce poți șterge fără să pierzi funcția?"</div>
+        <div class="field">→ components_attacked[].vote</div>
+      </div>
+      <div class="senator-card d">
+        <div class="name">Dimon</div>
+        <div class="spec">stress test &amp; counterparty</div>
+        <div class="question">„Ce dacă eșuează? Cine plătește?"</div>
+        <div class="field">→ stress_scenarios[].failure_mode</div>
+      </div>
+      <div class="senator-card n">
+        <div class="name">Napoleon</div>
+        <div class="spec">cost &amp; terrain</div>
+        <div class="question">„Câți tokens? În ce stare e operatorul?"</div>
+        <div class="field">→ cost_estimate · terrain_check</div>
+      </div>
     </div>
-  </div>
-  <div class="flow-arrow">▼</div>
-  <div class="flow-step">
-    <div class="flow-num">5</div>
-    <div class="flow-content">
-      <div class="title">Bundle în runs/senate/</div>
-      <div class="desc"><code>&lt;YYYY-MM-DD_HHMMSS&gt;-&lt;label&gt;.json</code> (gitignored, jurnal local).</div>
+
+    <p class="note">Toți emit <code>vote</code> (GO/MODIFY/STOP) și <code>modify_request</code>. Ortogonalitatea e validată prin secțiunea <code>## Limite</code> din fiecare prompt.</p>
+
+  </section>
+
+  <!-- ══════ TAB: DISPATCH ══════ -->
+  <section class="tab" id="dispatch">
+
+    <h2>§3 — Flow de dispatch</h2>
+    <p>Orchestrator-ul (Claude când execută <code>/consilium senate</code>) urmează acest flow. Senatul nu se invocă automat.</p>
+
+    <div class="mermaid-wrap">
+      <h3>Sequence — orchestrator → 7 senatori → sinteză</h3>
+      <div class="mermaid">
+%%{init:{'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+sequenceDiagram
+    participant U as User
+    participant O as Orchestrator
+    participant W as Wittgenstein
+    participant Au as Aurelius
+    participant Co as Confucius
+    participant So as Socrate
+    participant M as Musk
+    participant D as Dimon
+    participant N as Napoleon
+    participant Sy as senate_synth.py
+
+    U->>O: propunere (ce, de ce, fișiere, criterion)
+    Note over O: /consilium senate
+    O->>W: prompt senator + input (model: sonnet)
+    O->>Au: prompt senator + input (model: sonnet)
+    O->>Co: prompt senator + input (model: sonnet)
+    O->>So: prompt senator + input (model: sonnet)
+    O->>M: prompt senator + input (model: sonnet)
+    O->>D: prompt senator + input (model: sonnet)
+    O->>N: prompt senator + input (model: sonnet)
+    Note over W,N: paralel — nu văd unii pe alții
+    W-->>O: {vote, modify_request, ...}
+    Au-->>O: {vote, modify_request, ...}
+    Co-->>O: {vote, modify_request, ...}
+    So-->>O: {vote, modify_request, ...}
+    M-->>O: {vote, modify_request, ...}
+    D-->>O: {vote, modify_request, ...}
+    N-->>O: {vote, modify_request, ...}
+    O->>Sy: 7 JSON-uri
+    Note over Sy: tally + compute_verdict + collect_modify_requests
+    Sy-->>O: verdict + modify_requests[] + warnings[]
+    O-->>U: verdict + recomandări (user decide)
+      </div>
     </div>
-  </div>
-  <div class="flow-arrow">▼</div>
-  <div class="flow-step">
-    <div class="flow-num">6</div>
-    <div class="flow-content">
-      <div class="title">Orchestrator prezintă verdictul</div>
-      <div class="desc">verdict + modify_requests concrete + warnings structurale. <strong>User decide</strong> — Senatul e advisory.</div>
+
+    <p class="note">Retry 1× pe senator absent / JSON malformat. La eșec persistent → marchează <code>absent</code> și continuă. Dacă <code>voters_present &lt; 5</code> → verdict <code>UNREACHABLE</code>.</p>
+
+  </section>
+
+  <!-- ══════ TAB: VERDICT ══════ -->
+  <section class="tab" id="verdict">
+
+    <h2>§4 — Logica verdictului</h2>
+    <p>Quorum 5/7. Cazul <code>UNREACHABLE</code> surfacează când restul de senatori nu pot atinge matematic quorum-ul.</p>
+
+    <div class="verdict-grid">
+      <div class="verdict-card go">
+        <div class="label">verdict GO</div>
+        <div class="rule">GO ≥ 5/7</div>
+        <div class="action">Procedezi cu implementarea.</div>
+      </div>
+      <div class="verdict-card stop">
+        <div class="label">verdict STOP</div>
+        <div class="rule">STOP ≥ 5/7</div>
+        <div class="action">Revizuie propunerea sau override explicit.</div>
+      </div>
+      <div class="verdict-card mod">
+        <div class="label">verdict MODIFY</div>
+        <div class="rule">orice altă combinație (default)</div>
+        <div class="action">Aplică modify_requests și (opțional) re-rulează.</div>
+      </div>
+      <div class="verdict-card unr">
+        <div class="label">verdict UNREACHABLE</div>
+        <div class="rule">voters_present &lt; 5</div>
+        <div class="action">Verdict structurally biased. Orchestrator escaladează la user.</div>
+      </div>
     </div>
-  </div>
-</div>
 
-<!-- ═══════════════════ §4 VERDICT ═══════════════════ -->
-<h2 id="sec4">§4 — Logica verdictului</h2>
-<p>Quorum 5/7. Cazul <code>UNREACHABLE</code> (introdus post-self-validation) surfacează când restul de senatori nu pot atinge matematic quorum-ul.</p>
+    <div class="mermaid-wrap">
+      <h3>Arborele de decizie</h3>
+      <div class="mermaid">
+%%{init:{'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+flowchart TD
+    IN["7 voturi colectate\n(minus absenți/malformat)"]
+    VP{"voters_present ≥ 5?"}
+    RUNREACH["UNREACHABLE\n+ warning structural"]:::unr
+    COUNT["Numără GO și STOP"]
+    GO{"GO ≥ 5/7?"}
+    STOP{"STOP ≥ 5/7?"}
+    RGO["GO\nProcedezi"]:::go
+    RSTOP["STOP\nRevizuie"]:::stop
+    RMOD["MODIFY (default)\nAplică modify_requests"]:::mod
 
-<div class="verdict-cards">
-  <div class="card go">
-    <div class="label">verdict GO</div>
-    <div class="rule">GO ≥ 5/7</div>
-    <div class="action">Procedezi cu implementarea.</div>
-  </div>
-  <div class="card stop">
-    <div class="label">verdict STOP</div>
-    <div class="rule">STOP ≥ 5/7</div>
-    <div class="action">Revizuie propunerea sau override explicit.</div>
-  </div>
-  <div class="card modify">
-    <div class="label">verdict MODIFY</div>
-    <div class="rule">orice altă combinație (default)</div>
-    <div class="action">Aplică modify_requests și (opțional) re-rulează.</div>
-  </div>
-  <div class="card unreach">
-    <div class="label">verdict UNREACHABLE</div>
-    <div class="rule">voters_present &lt; 5</div>
-    <div class="action">Verdict structurally biased. Orchestrator escaladează la user.</div>
-  </div>
-</div>
+    IN --> VP
+    VP -->|da| COUNT
+    VP -->|nu| RUNREACH
+    COUNT --> GO
+    GO -->|da| RGO
+    GO -->|nu| STOP
+    STOP -->|da| RSTOP
+    STOP -->|nu| RMOD
 
-<pre class="ascii">
-                      ┌──── INPUT: 7 voturi ────┐
-                      │  (sau mai puține dacă   │
-                      │   senatorii sunt absent)│
-                      └────────────┬────────────┘
-                                   │
-                                   ▼
-                   ┌─────────────────────────────────┐
-                   │  voters_present = #(prezenți)   │
-                   └────────────────┬────────────────┘
-                                    │
-                ┌───────────────────┼───────────────────┐
-                ▼                                       ▼
-        voters_present &lt; 5                       voters_present ≥ 5
-                │                                       │
-                ▼                                       │
-        ┌───────────────┐                               │
-        │  UNREACHABLE  │                               │
-        │  + warning    │                               │
-        └───────────────┘                               │
-                                                        ▼
-                                          ┌────────────────────────┐
-                                          │ count(GO), count(STOP) │
-                                          └───────────┬────────────┘
-                                                      │
-                          ┌───────────────────────────┼───────────────────────────┐
-                          ▼                           ▼                           ▼
-                  GO ≥ 5/7                STOP ≥ 5/7                  altfel
-                          │                           │                           │
-                          ▼                           ▼                           ▼
-                         GO                         STOP                       MODIFY
-</pre>
+    classDef go   fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    classDef stop fill:#2a1818,stroke:#5c2a2a,color:#fca5a5
+    classDef mod  fill:#2a2410,stroke:#5c4a14,color:#fbbf24
+    classDef unr  fill:#11151c,stroke:#2d3441,color:#9ca3af
+      </div>
+    </div>
 
-<p><strong>De ce default-ul e MODIFY:</strong> Senatul e advisory. <code>GO</code> și <code>STOP</code> sunt convergențe puternice (≥5/7); orice altă combinație = semnal de dezbatere = <code>MODIFY</code>.</p>
+    <p><strong>De ce default-ul e MODIFY:</strong> GO și STOP sunt convergențe puternice (≥5/7); orice altă combinație = semnal de dezbatere = MODIFY.</p>
 
-<!-- ═══════════════════ §5 FILES ═══════════════════ -->
-<h2 id="sec5">§5 — Hartă fișiere</h2>
-<div class="file-tree">
+  </section>
+
+  <!-- ══════ TAB: FIȘIERE & MOD ══════ -->
+  <section class="tab" id="files">
+
+    <h2>§5 — Hartă fișiere</h2>
+    <div class="file-tree">
 consilium/<br>
-├── SKILL.md <span class="note">              ← secțiunea „Senate mode (<code>senate</code>)"</span><br>
+├── SKILL.md <span class="note">              ← secțiunea „Senate mode"</span><br>
 ├── prompts/<br>
 │   ├── generator.md <span class="note">      ← voce core (nu se atinge)</span><br>
 │   ├── control.md <span class="note">        ← voce core (nu se atinge)</span><br>
 │   ├── conservator.md <span class="note">    ← voce core (nu se atinge)</span><br>
-│   ├── skeptic.md <span class="note">        ← voce focală (nu se atinge)</span><br>
-│   └── <span class="new">senators/</span>                  <span class="note">◄── ADĂUGAT</span><br>
-│       ├── <span class="new">wittgenstein.md</span><br>
-│       ├── <span class="new">aurelius.md</span><br>
-│       ├── <span class="new">confucius.md</span><br>
-│       ├── <span class="new">socrate.md</span><br>
-│       ├── <span class="new">musk.md</span><br>
-│       ├── <span class="new">dimon.md</span><br>
-│       └── <span class="new">napoleon.md</span><br>
+│   └── <span class="new">senators/</span><br>
+│       ├── <span class="new">wittgenstein.md · aurelius.md · confucius.md</span><br>
+│       └── <span class="new">socrate.md · musk.md · dimon.md · napoleon.md</span><br>
 ├── scripts/<br>
 │   ├── aggregator.py <span class="note">     ← nu se atinge</span><br>
-│   ├── confidence.py <span class="note">     ← nu se atinge</span><br>
-│   ├── ...                  <span class="note">← nu se atinge</span><br>
-│   ├── <span class="new">senate_synth.py</span>            <span class="note">◄── ADĂUGAT</span><br>
-│   ├── <span class="new">senate_synth_fixture.json</span>  <span class="note">◄── ADĂUGAT (smoke test fixture)</span><br>
-│   └── <span class="new">test_senate_synth.py</span>       <span class="note">◄── ADĂUGAT (9 smoke tests)</span><br>
+│   ├── <span class="new">senate_synth.py</span>            <span class="note">◄── synth + verdict logic</span><br>
+│   ├── <span class="new">senate_synth_fixture.json</span>  <span class="note">◄── smoke test fixture</span><br>
+│   └── <span class="new">test_senate_synth.py</span>       <span class="note">◄── 14 smoke tests</span><br>
 ├── runs/<br>
-│   ├── &lt;date&gt;_&lt;label&gt;.json    <span class="note">← per-deliberare standard</span><br>
-│   └── <span class="new">senate/</span>                    <span class="note">◄── ADĂUGAT</span><br>
-│       └── &lt;date&gt;_&lt;label&gt;.json  <span class="note">← per-audit Senate</span><br>
-└── <span class="new">docs/senate/</span><br>
-    ├── <span class="new">architecture.md</span>            <span class="note">← varianta markdown</span><br>
-    └── <span class="new">architecture.html</span>          <span class="note">← acest fișier</span>
-</div>
-
-<h4>Principii de izolare</h4>
-<ol>
-  <li><strong>Zero modificări la voci core sau scripts deliberative.</strong> Predicat testabil: <code>git diff &lt;base&gt;..HEAD -- prompts/{generator,control,conservator,skeptic}*.md scripts/{aggregator,confidence,...}.py</code> returnează empty.</li>
-  <li><strong>Storage separat.</strong> <code>runs/senate/</code> e gitignored (<code>runs/senate/*.json</code>) — istoric local parallel cu <code>runs/*.json</code>.</li>
-  <li><strong>Cleanup-safe.</strong> Dacă ștergi <code>prompts/senators/</code> + <code>scripts/senate_synth.py</code> + <code>runs/senate/</code> + secțiunea din SKILL.md, consilium standard rămâne 100% funcțional.</li>
-</ol>
-
-<!-- ═══════════════════ §6 COMPARISON ═══════════════════ -->
-<h2 id="sec6">§6 — Comparație cu modurile existente</h2>
-
-<table class="data">
-  <thead>
-    <tr><th>Mod</th><th>Sub-agenți</th><th>Cost vs Parallel</th><th>Scope</th><th>Trigger</th></tr>
-  </thead>
-  <tbody>
-    <tr><td><code>sequential</code></td><td>1 orchestrator</td><td>0.33×</td><td>întrebare user</td><td>manual / default</td></tr>
-    <tr><td><code>parallel</code></td><td>3</td><td>1×</td><td>întrebare user</td><td>default</td></tr>
-    <tr><td><code>parallel_skeptic</code></td><td>4</td><td>1.33×</td><td>user · conf ∈ [0.5, 0.7]</td><td>auto conf-gated</td></tr>
-    <tr><td><code>dialectic</code></td><td>6</td><td>2×</td><td>user · trade-off-uri</td><td>manual</td></tr>
-    <tr><td><code>dialectic_skeptic</code></td><td>7</td><td>2.3×</td><td>user · medium-stakes</td><td>manual</td></tr>
-    <tr><td><code>trias</code></td><td>9</td><td>3×</td><td>user · high-stakes / ireversibil</td><td>manual</td></tr>
-    <tr><td><code>trias_split</code></td><td>9 (Sonnet+Haiku)</td><td>1×</td><td>cost/diversitate orthogonal</td><td>manual</td></tr>
-    <tr class="mode-senate"><td><strong><code>senate</code></strong></td><td><strong>7</strong></td><td><strong>~2.3×</strong></td><td><strong>modificare la skill</strong></td><td><strong>manual on-demand only</strong></td></tr>
-  </tbody>
-</table>
-
-<p><code>senate</code> e singurul mod care auditează skill-ul însuși. Toate celelalte operează pe cod / decizii user. Aceleași 7 sub-agenți ca <code>dialectic_skeptic</code>, dar perspective complet diferite (audit governance vs. cross-review per-întrebare).</p>
-
-<!-- ═══════════════════ §7 SELF-IMPROVEMENT ═══════════════════ -->
-<h2 id="sec7">§7 — Self-improvement loop</h2>
-<p>Conform CLAUDE.md: <em>„Când editezi skill-ul însuși: rulează <code>/consilium</code> pe propria schimbare."</em> Cu Senatul, dovada e mai puternică (7 perspective ortogonale).</p>
-
-<pre class="ascii">
-   modific consilium  ─→  /consilium senate "&lt;schimbarea mea&gt;"
-                                    │
-                                    ▼
-                          7 senatori audit
-                                    │
-                                    ▼
-                              verdict
-                                    │
-                ┌───────────────────┼───────────────────┐
-                ▼                                       ▼
-              GO                                  MODIFY / STOP
-                │                                       │
-                ▼                                       ▼
-        commit + push                       aplic modify_requests
-                                                        │
-                                                        ▼
-                                                   re-run (opțional)
-                                                        │
-                                                        ▼
-                                                  commit + push
-</pre>
-
-<p>Bundle-ul rămâne în <code>runs/senate/&lt;timestamp&gt;-&lt;label&gt;.json</code> ca jurnal — chiar dacă procedezi împotriva verdictului (override explicit), audit-ul e păstrat pentru audit retroactiv.</p>
-
-<!-- ═══════════════════ §8 CROSS-QUESTIONS ═══════════════════ -->
-<h2 id="sec8">§8 — Cross-questions <em style="font-size: 16px; color: var(--green, #6abf69);">(Laws 2-4 active, opt-in multi-round)</em></h2>
-
-<div class="cq-banner">
-  <strong>Status:</strong> implementat și testat (PR <code>feat/senate-laws-2-3-4</code>). Multi-round e opt-in: orchestrator-ul folosește schema <code>{rounds: [...]}</code> în input-ul de synth doar când vrea să activeze cross-questions; legacy <code>{senators: {...}}</code> rămâne valid (single-pass, Laws 2-4 N/A).
-</div>
-
-<p>Cross-questions transformă Senatul din 7 voci independente într-un grup deliberativ care își poate clarifica pozițiile reciproc. În deliberarea istorică RUND2, <strong>3 senatori și-au schimbat poziții</strong> post-cross-questions (Musk, Wittgenstein, Confucius) — semnal că dinamica funcționează.</p>
-
-<h3>§8.1 Cele 5 Legi ale Senatului</h3>
-<table class="data">
-  <thead><tr><th>#</th><th>Lege</th><th>Esență</th></tr></thead>
-  <tbody>
-    <tr><td>1</td><td>Răspuns obligatoriu</td><td>Fiecare răspunde pe fiecare punct — direct, prin întrebare, sau prin reformulare. <strong>Interzis</strong> „nu am opinie".</td></tr>
-    <tr><td>2</td><td>Cross-questions limitate</td><td>Maximum <strong>3 cross-questions per senator per punct</strong>. Previne spam și ramificare infinită.</td></tr>
-    <tr><td>3</td><td>Blocaj → vot majoritar 5</td><td>Dacă 2 senatori intră în impas, <strong>ceilalți 5 votează</strong>. 7 impar → niciodată 50/50.</td></tr>
-    <tr><td>4</td><td>Sinteza doar la final</td><td>Aggregator pe Senat rulează DUPĂ toate punctele (evită contagiunea de poziții).</td></tr>
-    <tr><td>5</td><td>Auditabilitate</td><td>Toate runde + cross-questions + schimbări de poziție salvate în <code>runs/senate/</code>.</td></tr>
-  </tbody>
-</table>
-
-<h3>§8.2 Matricea cross-questions (cine cu cine)</h3>
-<p>Fiecare senator poate adresa întrebări fiecăruia altul. Matrice 7×7, diagonala goală. Marcate ★ perechile observate ca productive în RUND2 (au schimbat poziții).</p>
-
-<div class="cq-matrix">
-  <table>
-    <thead>
-      <tr><th></th><th>W</th><th>A</th><th>C</th><th>S</th><th>Mu</th><th>D</th><th>N</th></tr>
-    </thead>
-    <tbody>
-      <tr><th class="row-label">Wittgenstein</th><td class="diag">—</td><td class="poss">•</td><td class="poss">•</td><td class="prod">★</td><td class="poss">•</td><td class="poss">•</td><td class="poss">•</td></tr>
-      <tr><th class="row-label">Aurelius</th><td class="poss">•</td><td class="diag">—</td><td class="poss">•</td><td class="poss">•</td><td class="poss">•</td><td class="prod">★</td><td class="prod">★</td></tr>
-      <tr><th class="row-label">Confucius</th><td class="poss">•</td><td class="poss">•</td><td class="diag">—</td><td class="poss">•</td><td class="prod">★</td><td class="poss">•</td><td class="poss">•</td></tr>
-      <tr><th class="row-label">Socrate</th><td class="prod">★</td><td class="poss">•</td><td class="poss">•</td><td class="diag">—</td><td class="poss">•</td><td class="poss">•</td><td class="poss">•</td></tr>
-      <tr><th class="row-label">Musk</th><td class="poss">•</td><td class="poss">•</td><td class="prod">★</td><td class="poss">•</td><td class="diag">—</td><td class="poss">•</td><td class="prod">★</td></tr>
-      <tr><th class="row-label">Dimon</th><td class="poss">•</td><td class="prod">★</td><td class="poss">•</td><td class="poss">•</td><td class="poss">•</td><td class="diag">—</td><td class="prod">★</td></tr>
-      <tr><th class="row-label">Napoleon</th><td class="poss">•</td><td class="prod">★</td><td class="poss">•</td><td class="poss">•</td><td class="prod">★</td><td class="prod">★</td><td class="diag">—</td></tr>
-    </tbody>
-  </table>
-  <div class="cq-legend">
-    <div class="item"><span class="swatch prod"></span>★ a schimbat poziții în RUND2 (productivă empiric)</div>
-    <div class="item"><span class="swatch poss"></span>• pereche posibilă (toate sunt permise)</div>
-    <div class="item"><span class="swatch diag"></span>— self-cell (nu te poți întreba pe tine)</div>
-  </div>
-</div>
-
-<p class="note"><strong>De ce sunt productive perechile ★:</strong> Wittgenstein↔Socrate (semantic vs asumpții — overlap pe „ce e nedeclarat"), Aurelius↔Dimon/Napoleon (risc abstract vs concret), Musk↔Napoleon (cost calitativ vs cantitativ), Musk↔Confucius (delete vs precedent).</p>
-
-<h3>§8.3 Flow runde (max 3 per senator per punct)</h3>
-<div class="round-flow">
-  <div class="round-card r1">
-    <div class="round-num">Runda 1</div>
-    <div class="round-title">Inițial paralel</div>
-    <p style="font-size: 12.5px; color: var(--dim);">Toți 7 răspund simultan pe input identic.</p>
-    <ul>
-      <li>Output structurat per senator</li>
-      <li>Voturi inițiale + concerns</li>
-      <li>Posibil cross-questions emise</li>
-    </ul>
-  </div>
-  <div class="round-arrow">→</div>
-  <div class="round-card r2">
-    <div class="round-num">Runda 2 (dacă există cross-Qs)</div>
-    <div class="round-title">Dispatch focal</div>
-    <p style="font-size: 12.5px; color: var(--dim);">Doar senatorii întrebați răspund. Counter <code>cross_q_used+1</code>.</p>
-    <ul>
-      <li>Input: întrebarea + contextul precedent</li>
-      <li>Output: răspuns + opțional nou cross-Q</li>
-      <li>Verifică <code>cross_q_used &lt; 3</code></li>
-    </ul>
-  </div>
-  <div class="round-arrow">→</div>
-  <div class="round-card r3">
-    <div class="round-num">Runda 3 (max)</div>
-    <div class="round-title">Ultimul cross-Q</div>
-    <p style="font-size: 12.5px; color: var(--dim);">După 3 cross-Qs, STOP forțat per senator pe acel punct.</p>
-    <ul>
-      <li>Răspuns final fix</li>
-      <li>Dacă încă blocaj cu altă voce → §8.4</li>
-    </ul>
-  </div>
-</div>
-
-<p style="text-align: center; color: var(--dim); font-family: var(--mono); margin: 20px 0;">▼<br>sinteză finală via senate_synth.py</p>
-
-<h3>§8.4 Blocaj resolution (Lege 3)</h3>
-<p>2 senatori în impas după 3 cross-Qs, cu poziții opuse? Ceilalți 5 votează. Senatul are 7 impar → 2 în impas + 5 votanți = niciodată 50/50.</p>
-
-<div class="blocaj">
-  <div class="blocaj-row">
-    <div class="blocaj-side X">
-      <div class="who">Senator X</div>
-      <div class="vote">vote: GO</div>
-      <p style="font-size: 12px; color: var(--dim); margin: 6px 0 0;">+ argument cu evidence</p>
+│   └── <span class="new">senate/</span>                    <span class="note">◄── per-audit bundle (gitignored)</span><br>
+│       └── &lt;YYYY-MM-DD_HHMMSS&gt;-&lt;label&gt;.json<br>
+└── docs/senate/ <span class="note">          ← acest fișier</span>
     </div>
-    <div style="font-family: var(--mono); color: var(--dim2); font-size: 18px;">⟷</div>
-    <div class="blocaj-side Y">
-      <div class="who">Senator Y</div>
-      <div class="vote">vote: STOP</div>
-      <p style="font-size: 12px; color: var(--dim); margin: 6px 0 0;">+ argument cu evidence</p>
-    </div>
-  </div>
-  <div class="blocaj-arbiters">
-    <div class="label">Ceilalți 5 senatori primesc ambele argumente + întreabare „care e mai puternic?"</div>
-    <div class="heads">
-      <span class="head">arbiter A</span>
-      <span class="head">arbiter B</span>
-      <span class="head">arbiter C</span>
-      <span class="head">arbiter D</span>
-      <span class="head">arbiter E</span>
-    </div>
-  </div>
-  <p style="text-align: center; color: var(--dim); margin-top: 14px; font-size: 13px;">▼ majoritate (cel mult 4-1, niciodată 50/50) ▼</p>
-  <div class="blocaj-row" style="justify-content: center;">
-    <div class="blocaj-side X" style="max-width: 220px;">
-      <div class="who">X câștigă</div>
-      <div class="vote">GO contează</div>
-    </div>
-    <div style="font-family: var(--sans); color: var(--dim); font-size: 13px;">SAU</div>
-    <div class="blocaj-side Y" style="max-width: 220px;">
-      <div class="who">Y câștigă</div>
-      <div class="vote">STOP contează</div>
-    </div>
-  </div>
-</div>
 
-<h3>§8.5 Ce înseamnă pentru orchestrator când implementezi</h3>
-<table class="data">
-  <thead><tr><th>Capability nouă</th><th>Schimbare față de MVP</th></tr></thead>
-  <tbody>
-    <tr><td>Dispatch multi-round</td><td>Nu doar 1 ciclu paralel — 2-3 cicluri secvențiale; runde 2-3 doar pentru senatorii cu cross-questions</td></tr>
-    <tr><td>State tracking</td><td>Counter <code>cross_questions_used[senator][point]</code> persistent în orchestrator</td></tr>
-    <tr><td>Routing cross-questions</td><td>Parser pe output pentru „întrebare către &lt;senator&gt;" → dispatch focal</td></tr>
-    <tr><td>Blocaj detection</td><td>Orchestrator detectează 2 voturi opuse persistente după 3 runde → dispatch celor 5 senatori neutri</td></tr>
-    <tr><td>Aggregator schema schimbat</td><td><code>vote_counts</code> → <code>vote_counts_per_round[]</code> cu <code>position_changes[]</code> track-uite</td></tr>
-  </tbody>
-</table>
-<p class="note">Cost estimat: ~2-3× MVP-ul curent (per senatorii care intră în cross-questions; restul ies devreme).</p>
+    <h2 style="margin-top:36px">§6 — Comparație cu alte moduri</h2>
+    <table class="data">
+      <thead>
+        <tr><th>Mod</th><th>Când</th><th>Sub-agenți</th><th>Output</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>parallel</code></td><td>schimbări standard</td><td>3 voci independente</td><td><code>runs/*.json</code></td></tr>
+        <tr><td><code>dialectic</code></td><td>conf &lt; 0.7 sau risc mediu</td><td>3 × 2 pass</td><td><code>runs/*.json</code></td></tr>
+        <tr><td><code>trias</code></td><td>schimbări arhitecturale mari</td><td>9 (3 personalități × 3 voci)</td><td><code>runs/*.json</code></td></tr>
+        <tr style="background:rgba(192,132,252,.08)"><td><strong>senate</strong></td><td>modificări la skill însuși (L3 only)</td><td>7 senatori</td><td><code>runs/senate/*.json</code></td></tr>
+      </tbody>
+    </table>
 
-<h3>§8.6 Indicator de calitate: schimbări de poziție</h3>
-<p>În RUND2 reală, 3 senatori și-au schimbat poziții post-cross-questions. Asta e <strong>semnalul</strong> că dinamica funcționează — nu schimbi opinia oarbă, schimbi după ce auzi un counter-argument concret. Un Senat care converge <strong>mereu</strong> fără schimbări de poziție e suspect (groupthink prin structură).</p>
+  </section>
 
-<pre class="ascii">
-"position_changes": [
-  {
-    "senator": "musk",
-    "point": 3,
-    "from": "STOP",
-    "to": "MODIFY",
-    "trigger": "cross-Q from confucius about precedent"
-  }
-]
-</pre>
+  <!-- ══════ TAB: SELF-IMPROVEMENT ══════ -->
+  <section class="tab" id="self-improvement">
 
-<!-- ═══════════════════ §9 LIMITS ═══════════════════ -->
-<h2 id="sec9">§9 — Limitări cunoscute</h2>
-<table class="data">
-  <thead><tr><th>Limitare</th><th>Status</th><th>Plan viitor</th></tr></thead>
-  <tbody>
-    <tr><td>Cross-questions între senatori</td><td>Activ (opt-in multi-round, §8)</td><td>Empirical validation: ≥3 invocări reale care confirmă valoarea</td></tr>
-    <tr><td>Blocaj resolution prin vot majoritar</td><td>Activ (opt-in multi-round, §8.4)</td><td>Empirical validation după prima activare</td></tr>
-    <tr><td>Principle extraction din pattern detection</td><td>Lipsă</td><td>După 30+ runs reale (outcome tracking activ)</td></tr>
-    <tr><td>Scope-overlap detector între senatori</td><td>Lipsă</td><td>Validare statică în CI dacă vreodată CI-uri pe repo</td></tr>
-    <tr><td>Empirical validation Napoleon</td><td>Lipsă</td><td>După 10+ invocări, decide retain vs retire</td></tr>
-  </tbody>
-</table>
+    <h2>§7 — Self-improvement loop</h2>
+    <p>Senatul se poate evalua pe sine. Înainte de orice modificare la <code>SKILL.md</code> sau la prompt-urile senatorilor, rulezi <code>/consilium senate</code> cu propunerea ta ca input.</p>
+    <p>Output-ul merge în <code>runs/senate/</code> (gitignored). Dacă verdictul e GO sau MODIFY cu modify_requests clare, implementezi și comiti. Dacă STOP — revizuiești propunerea.</p>
 
-<!-- ═══════════════════ §10 SMOKE TEST ═══════════════════ -->
-<h2 id="sec10">§10 — Smoke test</h2>
-<p>Două nivele de verificare end-to-end:</p>
+    <h2 style="margin-top:36px">§8 — Cross-questions (extensie)</h2>
+    <p>Opt-in. Multi-round schema: <code>{"rounds": [...]}</code>. Senatorii pot adresa întrebări unii altora; câștigătorul blocajului se determină prin vot majoritar din senatorii rămași.</p>
 
-<h4>1. Synth pe fixture</h4>
-<pre class="ascii">cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py</pre>
-<p><strong>Așteptare:</strong></p>
-<ul>
-  <li><code>verdict: MODIFY</code></li>
-  <li><code>vote_counts: {GO: 3, MODIFY: 3, STOP: 1}</code></li>
-  <li><code>warnings: ["senator 'dimon' voted but omitted/empty 'stress_scenarios' — that axis of audit is silent"]</code></li>
-</ul>
+    <table class="data">
+      <thead><tr><th>Legea</th><th>Condiție de activare</th><th>Efect</th></tr></thead>
+      <tbody>
+        <tr><td>Law 2</td><td><code>rounds</code> prezent în schema</td><td>Cross-questions între senatori (max 4/rundă)</td></tr>
+        <tr><td>Law 3</td><td>GO×STOP pair detectat</td><td>Blocaj — cei doi trebuie să se întrebe reciproc; resolution prin vot majoritar</td></tr>
+        <tr><td>Law 4</td><td>schimbări de poziție în rundă anterioară</td><td><code>position_changes[]</code> populat + trigger inferat</td></tr>
+      </tbody>
+    </table>
 
-<h4>2. Suite completă (14 teste)</h4>
-<pre class="ascii">python -X utf8 scripts/test_senate_synth.py</pre>
-<p><strong>Cazuri acoperite:</strong></p>
-<ul>
-  <li>prompts_consistent — 7 fișiere markdown valide + format consistent (Rol/Specialitate/Output/Limite)</li>
-  <li>fixture_smoke — verdict așteptat din fixture</li>
-  <li>verdict_go_unanimous — 7/7 GO → GO</li>
-  <li>verdict_go_quorum — 5/7 GO + 2 MODIFY → GO</li>
-  <li>verdict_modify_default — 4 GO / 3 MODIFY → MODIFY</li>
-  <li>verdict_unreachable — 4 prezenți / 3 absenți → UNREACHABLE + warning</li>
-  <li>unrecognized_vote — vot invalid → contat MODIFY + warning structural</li>
-  <li><strong>multi_round_position_change (Law 2+4)</strong> — Round 1 STOP → Round 2 GO; <code>position_changes[]</code> populat + trigger inferat din cross-Q</li>
-  <li><strong>cross_questions_law2 (Law 2)</strong> — 4 cross_questions într-o rundă → <code>law_2_violation</code> warning</li>
-  <li><strong>blocaj_pending (Law 3)</strong> — GO×STOP pair fără rezolvare → <code>blocaj_pending</code> warning</li>
-  <li><strong>blocaj_resolution_applied (Law 3)</strong> — resolution dat → vot loser înlocuit, verdict computat post-tiebreaker</li>
-  <li><strong>legacy_single_round_compat</strong> — input <code>{senators: ...}</code> nu emite câmpuri multi-round</li>
-  <li>bundle_persisted — runs/senate/*.json scris cu keys obligatorii</li>
-  <li>collision_safe_write — fără overwrite silent; suffix <code>_vN</code> aplicat</li>
-</ul>
-<p>Toate 14 trebuie să PASS înainte de orice commit pe <code>senate_synth.py</code> sau pe orice <code>prompts/senators/*.md</code>.</p>
+    <p class="note">Schimbările de poziție (<em>position_changes</em>) sunt <strong>semnalul</strong> că dinamica funcționează. Un Senat care converge mereu fără schimbări e suspect (groupthink structural).</p>
 
-<footer>
-  <p>
-    <strong>Surse:</strong>
-    <a href="../../SKILL.md">SKILL.md</a> (contract) ·
-    <a href="../../scripts/senate_synth.py">senate_synth.py</a> (implementare) ·
-    <a href="../../experiments/New%20phase%20senat/">experiments/New phase senat/</a> (istoric deliberativ + justification empirică) ·
-    <a href="./architecture.md">architecture.md</a> (versiunea markdown a acestui doc)
-  </p>
-  <p>Generat <code>2026-05-16</code> pe branch-ul <code>feat/senate-tests-html</code>.</p>
-</footer>
+  </section>
 
-</div>
+  <!-- ══════ TAB: LIMITĂRI & TEST ══════ -->
+  <section class="tab" id="limits">
+
+    <h2>§9 — Limitări cunoscute</h2>
+    <table class="data">
+      <thead><tr><th>Limitare</th><th>Status</th><th>Plan viitor</th></tr></thead>
+      <tbody>
+        <tr><td>Cross-questions între senatori</td><td>Activ (opt-in multi-round)</td><td>Empirical validation: ≥3 invocări reale</td></tr>
+        <tr><td>Blocaj resolution</td><td>Activ (opt-in multi-round)</td><td>Empirical validation după prima activare</td></tr>
+        <tr><td>Principle extraction din pattern detection</td><td>Lipsă</td><td>După 30+ runs reale</td></tr>
+        <tr><td>Scope-overlap detector între senatori</td><td>Lipsă</td><td>Validare statică în CI dacă există</td></tr>
+        <tr><td>Empirical validation Napoleon</td><td>Lipsă</td><td>După 10+ invocări, decide retain vs retire</td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:36px">§10 — Smoke test</h2>
+    <p>Două nivele de verificare end-to-end:</p>
+
+    <h3>1. Synth pe fixture</h3>
+    <pre class="code-block">cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py</pre>
+    <p><strong>Așteptare:</strong> <code>verdict: MODIFY</code>, <code>vote_counts: {GO:3, MODIFY:3, STOP:1}</code>, <code>warnings</code> cu senator dimon silent.</p>
+
+    <h3>2. Suite completă (14 teste)</h3>
+    <pre class="code-block">python -X utf8 scripts/test_senate_synth.py</pre>
+    <p>Toate 14 trebuie să PASS înainte de orice commit pe <code>senate_synth.py</code> sau <code>prompts/senators/*.md</code>. Cazuri acoperite: verdict GO/MODIFY/STOP/UNREACHABLE, quorum, multi-round position changes, blocaj, collision-safe write.</p>
+
+    <footer>
+      <p>
+        <strong>Surse:</strong>
+        <a href="../../SKILL.md">SKILL.md</a> ·
+        <a href="../../scripts/senate_synth.py">senate_synth.py</a> ·
+        <a href="../../experiments/New%20phase%20senat/">experiments/New phase senat/</a> ·
+        <a href="../architecture.html">docs/architecture.html</a> (main)
+      </p>
+    </footer>
+
+  </section>
+
+</main>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, securityLevel: 'loose',
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#21262d', primaryTextColor: '#e5e7eb',
+      primaryBorderColor: '#2d3441', lineColor: '#9ca3af',
+      secondaryColor: '#11151c', tertiaryColor: '#0f1419',
+      edgeLabelBackground: '#11151c'
+    }
+  });
+
+  (function() {
+    var tabs = document.querySelectorAll('nav.tabs button');
+    var sections = document.querySelectorAll('section.tab');
+    tabs.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var target = btn.getAttribute('data-tab');
+        tabs.forEach(function(b) { b.classList.remove('active'); });
+        sections.forEach(function(s) { s.classList.remove('active'); });
+        btn.classList.add('active');
+        var sec = document.getElementById(target);
+        if (sec) sec.classList.add('active');
+      });
+    });
+  })();
+</script>
+
 </body>
 </html>
