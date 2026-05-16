@@ -1342,6 +1342,36 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
   <section class="tab" id="flow">
 
     <h2>Pașii 0 → 6 (cu aux 1.5, 5b, 5c, 5d)</h2>
+
+    <div class="mermaid-wrap" style="max-width:900px;margin-bottom:32px">
+      <h3>Overview — pipeline complet</h3>
+      <div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+flowchart LR
+    S0["Step 0\nBootstrap\npriors.py"]:::aux
+    S1["Step 1\nGoal\nsuccess_criterion"]:::step
+    S15["1.5\nScope Gate\nscope_gate.py"]:::aux
+    S2["Step 2\nGenerator\ncandidates[]"]:::gen
+    S3["Step 3\nControl\nverdicts[]"]:::ctl
+    S4["Step 4\nConservator\nrisk_scores[]"]:::con
+    S5["Step 5\nAggregator"]:::agg
+    S5b["5b\nConfidence\nconfidence.py"]:::aux
+    S5c["5c\nMeta-critic\noptional"]:::aux
+    S6["Step 6\nOutput\nruns/*.json"]:::out
+
+    S0 --> S1 --> S15 --> S2 --> S3 --> S4 --> S5 --> S5b --> S5c --> S6
+    S6 -.->|"priors loop"| S0
+
+    classDef aux  fill:#2a2410,stroke:#5c4a14,color:#fbbf24
+    classDef step fill:#11151c,stroke:#2d3441,color:#e5e7eb
+    classDef gen  fill:#2a2410,stroke:#5c4a14,color:#fbbf24
+    classDef ctl  fill:#182338,stroke:#2a3f5f,color:#93c5fd
+    classDef con  fill:#2a1818,stroke:#5c2a2a,color:#fca5a5
+    classDef agg  fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    classDef out  fill:#221830,stroke:#4c2a6b,color:#d8b4fe
+      </div>
+    </div>
+
     <div class="flow">
       <div class="step aux">
         <div class="n">STEP 0</div>
