@@ -183,6 +183,8 @@ python scripts/run_evals.py
 
 **Audit periodic feedback**: `python scripts/feedback.py [--recent 10 --runs]` (stats), `python scripts/audit_feedback.py [--backfill]` (runs fără rând FB).
 
+**Benchmarking discipline** — orice claim cantitativ pe comportamentul vocilor (`fab-rate`, `accuracy`, `catch-rate`) trebuie să citeze un **oracle independent** (al doilea expert SAU citation explicită din enunț/specs care fixează ground truth), nu quick-take-ul evaluatorului. Înainte de a publica rezultatele unui benchmark: pentru fiecare opțiune plauzibilă (A/B/C/D...), documentează explicit *"există citire alternativă a problemei în care răspunsul X devine corect?"* — răspuns explicit per opțiune. Verdict "fabricație" pe un raționament rămâne blocat până la oracle review separat de intuiția evaluatorului. Aplicată retroactiv: orice claim de fab-rate existent în `experiments/` și `runs/` se revizuiește prin această grilă. Checklist operațional: `experiments/README.md`. Origin: corigendum-ul P3 (vezi `experiments/p3-car-wash.html`) — oracle-ul greșit a inversat semantic concluzia "fabrication" → "real constraint catch".
+
 ## Resources
 
 | Script | Rol |

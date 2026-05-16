@@ -512,9 +512,9 @@ Acțiune:
 
 ---
 
-### 53. Methodologie: oracle verification înainte de orice claim de "fab-rate"
+### 53. Methodologie: oracle verification înainte de orice claim de "fab-rate" ✅ DONE
 **Categorie:** Arch (process) | **Impact:** Înalt | **Efort:** Mic
-**Status:** OPEN — documentare în `experiments/README.md` (sau secțiune nouă SKILL.md "Benchmarking discipline").
+**Status:** ✅ DONE (2026-05-16, branch `fix/oracle-verification-discipline`) — SKILL.md "Skill maintenance → Benchmarking discipline" + `experiments/README.md` (checklist operațional).
 
 Experimentul P3 a etichetat C drept fabricație pe baza quick-take-ului evaluatorului. Oracle-ul a fost greșit → toată concluzia s-a inversat. Risc identic pe P1 (date refactor) și P2 (auth) dacă evaluatorul are quick-take preferat fără oracle independent.
 
@@ -580,4 +580,4 @@ Quick-take-ul evaluatorului ≠ oracle. Această disciplină se aplică retroact
 | 50 | Analiză: time-travel peste runs/ (INVESTIGATE) | Skill | Mic | Mic-Mediu |
 | 51 | Skeptic-on-chosen ca pas opțional (P3 lesson, PROPOSED) | Skill | Înalt | Mediu |
 | 52 | Revizuiește "Haiku = anti-fabrication" în docs (P3 lesson) | Docs | Mediu | Mic |
-| 53 | Oracle verification pe fab-rate claims (P3 lesson) | Arch | Înalt | Mic |
+| 53 | Oracle verification pe fab-rate claims (P3 lesson) ✅ DONE (SKILL.md + experiments/README.md) | Arch | Înalt | Mic |
