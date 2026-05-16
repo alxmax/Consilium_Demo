@@ -3135,6 +3135,38 @@ python scripts/memory.py <span class="k">--tier</span> all <span class="k">--que
       to influence decisions, never enough to dictate them.
     </div>
 
+    <h2>Observe → Think → Act → Learn</h2>
+    <p style="color:var(--muted);font-size:13px;margin:-8px 0 20px">Cum funcționează consilium ca agent loop. Memory tiers se leagă de fiecare fază.</p>
+
+    <div class="mermaid-wrap" style="max-width:1000px">
+      <h3>Agent loop + memory tiers</h3>
+      <div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+flowchart LR
+    OBS["OBSERVE\nStep 1: gather context\nscope_gate.py"]:::obs
+    THINK["THINK\nStep 2: Generator\nStep 3: Control\nStep 4: Conservator"]:::think
+    ACT["ACT\nStep 5: aggregator.py\nchosen_approach"]:::act
+    LEARN["LEARN\nStep 6: log_feedback.py\nFEEDBACK.html"]:::learn
+
+    SHORT["Short-term\ncontext window\ndeliberarea curentă"]:::mem
+    MED["Medium-term\nruns/*.json\nepisodic — fiecare run"]:::mem
+    LONG["Long-term\nFEEDBACK.html\npriors.py soft weights"]:::mem
+
+    OBS --> THINK --> ACT --> LEARN
+    LEARN -.->|"priors loop\nStep 0"| OBS
+
+    ACT --- SHORT
+    LEARN --- MED
+    OBS --- LONG
+
+    classDef obs   fill:#2a2410,stroke:#fbbf24,color:#fbbf24
+    classDef think fill:#182338,stroke:#60a5fa,color:#93c5fd
+    classDef act   fill:#0a2e23,stroke:#34d399,color:#6ee7b7
+    classDef learn fill:#221830,stroke:#c084fc,color:#d8b4fe
+    classDef mem   fill:#11151c,stroke:#2d3441,color:#9ca3af
+      </div>
+    </div>
+
   </section>
 
   <!-- ============== TAB 5 : PATTERNS ============== -->
