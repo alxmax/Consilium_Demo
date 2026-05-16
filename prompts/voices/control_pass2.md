@@ -36,6 +36,22 @@ For **each candidate** you produced a verdict on in Pass 1, review what Generato
 - If both peers confirmed your verdict (Generator's sketch is as you read it, Conservator found no new correctness issues), use `maintained`.
 - Re-emitting your original verdict without either field is invalid. The orchestrator will fall back to your Pass-1 verdict for that candidate.
 
+### What carries over from Pass 1
+
+You only need to emit `{id, revision|maintained}`. The merger (`dialectic_merge.py`) inherits `valid`, `issues`, `tests_to_write`, and `notes` from your Pass-1 verdict for the same `id`. **Re-emit a field only if you want to change it** — for example, flipping `valid: false → true` after the peer evidence resolved your concern requires you to include `valid: true` (and likely an updated `issues: []` and `tests_to_write: [...]`) inside the same item:
+
+```json
+{
+  "id": "<candidate_id>",
+  "revision": { "what_changed": "...", "peer_evidence": "..." },
+  "valid": true,
+  "issues": [],
+  "tests_to_write": ["..."]
+}
+```
+
+A `maintained` item never needs to re-emit Pass-1 fields — they pass through unchanged.
+
 ## Output format
 
 Return STRICTLY the JSON below. No prose before or after.
