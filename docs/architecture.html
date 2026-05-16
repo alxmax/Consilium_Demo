@@ -1485,6 +1485,9 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
         <div class="n">STEP 5d</div>
         <h4>Retry on low confidence <span class="sub" style="margin-left:6px;">single pass</span></h4>
         <div>Dacă <code>confidence &lt; 0.7</code>: rulează <code>scripts/retry_context.py</code> → top-2 candidați cu fișiere/simboluri de citit/grepat. Gather context (Read + Grep) → re-rulează G/C/Cons <b>o singură dată</b> cu input îmbogățit. Dacă confidence încă <code>&lt; 0.7</code>, abia atunci întrebi utilizatorul.</div>
+        <div style="font-size:12px; color:var(--accent); margin-top:6px;">
+          <b>Interacțiune cu <code>skeptic_on_chosen</code>:</b> când flag-ul e activ (manual sau auto-trigger), Skeptic focal rulează <b>în loc de retry</b> în banda [0.5, 0.7]. Retry rămâne fallback condițional doar dacă Skeptic verdict e <code>requires_redesign</code>.
+        </div>
         <div class="io">out: refreshed bundle | escalate</div>
       </div>
     </div>
@@ -1774,12 +1777,27 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
       </div>
     </div>
 
+    <div class="decision">
+      <h3>Benchmarking discipline — process gate pre-claim</h3>
+      <div class="lede">
+        Înainte de a publica orice claim cantitativ pe comportamentul vocilor (<code>fab-rate</code>, <code>accuracy</code>, <code>catch-rate</code>) — 3 verificări obligatorii. Origin: corigendum-ul P3 (vezi <code>experiments/p3-car-wash.html</code>) — oracle-ul greșit a inversat semantic concluzia "fabrication" → "real constraint catch".
+      </div>
+      <ul style="margin: 12px 0; padding-left: 20px; color: var(--ink); font-size: 13px; line-height: 1.6;">
+        <li><b>Oracle independent.</b> Răspunsul corect e fixat de (a) al doilea expert care nu a văzut quick-take-ul evaluatorului, SAU (b) citation explicită din enunț/specs care reduce ambiguitatea. Quick-take-ul evaluatorului ≠ oracle.</li>
+        <li><b>Critique adverbial per opțiune.</b> Pentru fiecare răspuns plauzibil (A/B/C/D...), documentează explicit: <i>"există citire alternativă în care răspunsul X devine corect?"</i>. Răspunsul "nu" trebuie justificat.</li>
+        <li><b>Verdict "fabricație" blocat.</b> Eticheta <code>fabrication</code> pe un raționament cere justificarea oracle-ului independent de intuiția evaluatorului.</li>
+      </ul>
+      <div class="caption">
+        Checklist operațional: <code>experiments/README.md</code>. Doctrinar: SKILL.md "Skill maintenance → Benchmarking discipline". Aplicată retroactiv pe orice fab-rate / accuracy / catch-rate publicat anterior.
+      </div>
+    </div>
+
   </section>
 
   <!-- ============== TAB 3 ============== -->
   <section class="tab" id="modes">
 
-    <h2>Flow models — 9 moduri (8 active + 1 SPEC)</h2>
+    <h2>Flow models — 10 moduri (9 active + 1 SPEC)</h2>
     <div class="modes">
 
       <div class="mode sequential-blind">
@@ -2261,6 +2279,43 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
         </div>
       </div>
 
+      <div class="mode parallel">
+        <h3>Skeptic-on-chosen — flag cross-cutting <span class="mode-badge opt">OPT-IN</span></h3>
+        <div class="subtitle">Flag care compune o voce Skeptic focală peste <b>orice</b> mod de bază (Sequential / Parallel / Dialectic / Trias). Spre deosebire de <code>parallel_skeptic</code> și <code>dialectic_skeptic</code> care sunt moduri fixe, acesta e flag-ul generalizat.</div>
+
+        <div class="stage">
+          <div class="label">cum — flag care extinde orice mod cu o voce focală</div>
+          <div class="actor main">Claude main</div>
+          <div class="arrow-down">↓ rulează modul de bază normal (Sequential / Parallel / Dialectic / Trias)</div>
+          <span class="actor gen">Generator</span>
+          <span class="actor ctl">Control</span>
+          <span class="actor con">Conservator</span>
+          <div class="arrow-down">↓ aggregator → chosen + confidence</div>
+          <div class="label">condiție: confidence ∈ [0.5, 0.7] AND (--skeptic-on-chosen activ OR auto-trigger)</div>
+          <span class="actor" style="background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text);">Skeptic (sub-agent focal · prompts/skeptic.md)</span>
+          <div class="ok">
+            ✓ Înlocuiește Step 5d retry în această bandă. Retry rămâne fallback condițional doar dacă Skeptic verdict e <code>requires_redesign</code>.
+          </div>
+          <div class="ok">
+            ✓ Advisory by default — verdict-ul Skeptic apare ca <code>deliberation_log</code> entry + flag <code>skeptic_caught_constraint</code>, dar nu suprascrie <code>chosen</code>. Override-ul cere opt-in suplimentar via <code>--skeptic-can-override</code>.
+          </div>
+        </div>
+
+        <dl class="mode-meta">
+          <div class="cell"><dt>Sub-agenți</dt><dd><b>+1</b> <span style="color:var(--muted); font-size:11px;">peste modul de bază</span></dd></div>
+          <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">+0.33×</span> <span style="color:var(--muted); font-size:11px;">peste base</span></dd></div>
+          <div class="cell"><dt>Voci</dt><dd><div class="voices-tags"><span class="vt s">Skeptic</span></div><span style="color:var(--muted); font-size:11px;">focal pe chosen</span></dd></div>
+          <div class="cell"><dt>When</dt><dd>conf ∈ [0.5, 0.7] cu flag activ sau auto-trigger; oricare mod de bază</dd></div>
+        </dl>
+
+        <div class="use-when">
+          <b>Use when:</b> vrei o voce focală post-deliberare disponibilă pe <i>orice</i> mod de bază, fără a comuta la modurile fixe <code>parallel_skeptic</code> / <code>dialectic_skeptic</code>. Compune onest cu Sequential și Trias unde altfel n-ai avea acces la Skeptic.
+          <br><b>Override:</b> advisory by default; <code>--skeptic-can-override</code> permite Skeptic verdict să suprascrie <code>chosen</code> dacă <code>addressable: requires_redesign</code>.
+          <br><b>Cost:</b> +1 sub-agent peste modul de bază.
+          <br><b>Origin empiric:</b> <code>chosen_confirmation_pass</code> a obținut 100% catch-rate în sim și 4/7 în reruns reale P3 (vezi <code>experiments/p3-car-wash.html</code>).
+        </div>
+      </div>
+
       <div class="mode sequential">
         <h3>Sequential — naive <span class="mode-badge legacy">LEGACY</span></h3>
         <div class="subtitle">Original mode — păstrat pentru referință.</div>
@@ -2415,7 +2470,7 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
         <div class="item"><span class="swatch" style="background:#34d399; border-top: 1px dashed #34d399;"></span>convergence loop back (iterative — early-stop)</div>
       </div>
       <div style="margin-top: 12px; padding: 10px 12px; background: var(--inset); border-left: 3px solid var(--accent); border-radius: 4px; font-size: 12px; color: var(--muted);">
-        <b style="color: var(--accent-text);">Notă:</b> modurile <code>parallel_skeptic</code> și <code>dialectic_skeptic</code> extind Parallel/Dialectic cu o voce focală pe <code>chosen</code> — nu schimbă topology-ul vocilor de bază. <code>trias_split</code> are topology identic cu Trias, doar cu model split per voce (Generator pe <code>opus 4.7</code>, Control/Conservator pe <code>haiku 4.5</code>).
+        <b style="color: var(--accent-text);">Notă:</b> modurile <code>parallel_skeptic</code> și <code>dialectic_skeptic</code> extind Parallel/Dialectic cu o voce focală pe <code>chosen</code> — nu schimbă topology-ul vocilor de bază. <code>trias_split</code> are topology identic cu Trias, doar cu model split per voce (Generator pe <code>opus 4.7</code>, Control/Conservator pe <code>haiku 4.5</code>). În plus, <code>skeptic_on_chosen</code> e un <b>flag cross-cutting</b> (nu mod fix) — compune Skeptic focal peste <i>orice</i> mod de bază; auto-trigger pe conf ∈ [0.5, 0.7] sau manual via <code>--skeptic-on-chosen</code>.
 
       </div>
     </div>
