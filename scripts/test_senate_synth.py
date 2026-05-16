@@ -458,21 +458,29 @@ def test_collision_safe_write() -> tuple[bool, str]:
 # ─────────────────────── runner ────────────────────────
 
 
-TESTS = [
-    ("prompts_consistent",           test_prompts_are_consistent),
-    ("fixture_smoke",                test_fixture_smoke),
-    ("verdict_go_unanimous",         test_verdict_go_unanimous),
-    ("verdict_go_quorum",            test_verdict_go_quorum),
-    ("verdict_modify_default",       test_verdict_modify_default),
-    ("verdict_unreachable",          test_verdict_unreachable),
-    ("unrecognized_vote",            test_unrecognized_vote_warns_and_counts_modify),
-    ("multi_round_position_change",  test_multi_round_position_change),
-    ("cross_questions_law2",         test_cross_questions_law2_violation),
-    ("blocaj_pending",               test_blocaj_pending),
-    ("blocaj_resolution_applied",    test_blocaj_resolution_applied),
-    ("legacy_single_round_compat",   test_legacy_single_round_omits_multi_round_fields),
-    ("bundle_persisted",             test_bundle_persisted_and_valid_json),
-    ("collision_safe_write",         test_collision_safe_write),
+TEST_GROUPS = [
+    ("Smoke", [
+        ("prompts_consistent",          test_prompts_are_consistent),
+        ("fixture_smoke",               test_fixture_smoke),
+    ]),
+    ("Verdicts", [
+        ("verdict_go_unanimous",        test_verdict_go_unanimous),
+        ("verdict_go_quorum",           test_verdict_go_quorum),
+        ("verdict_modify_default",      test_verdict_modify_default),
+        ("verdict_unreachable",         test_verdict_unreachable),
+        ("unrecognized_vote",           test_unrecognized_vote_warns_and_counts_modify),
+    ]),
+    ("Laws 2-4 (multi-round)", [
+        ("multi_round_position_change", test_multi_round_position_change),
+        ("cross_questions_law2",        test_cross_questions_law2_violation),
+        ("blocaj_pending",              test_blocaj_pending),
+        ("blocaj_resolution_applied",   test_blocaj_resolution_applied),
+    ]),
+    ("Compat & persistence", [
+        ("legacy_single_round_compat",  test_legacy_single_round_omits_multi_round_fields),
+        ("bundle_persisted",            test_bundle_persisted_and_valid_json),
+        ("collision_safe_write",        test_collision_safe_write),
+    ]),
 ]
 
 
@@ -501,22 +509,26 @@ def main() -> int:
     args = parser.parse_args()
 
     failures = 0
-    for name, fn in TESTS:
-        try:
-            ok, message = fn()
-        except Exception as exc:
-            ok, message = False, f"EXCEPTION: {type(exc).__name__}: {exc}"
-        symbol = "PASS" if ok else "FAIL"
-        print(f"  [{symbol}] {name}: {message}")
-        if not ok:
-            failures += 1
+    total = 0
+    for group_name, tests in TEST_GROUPS:
+        print(f"\n── {group_name} {'─' * max(0, 38 - len(group_name))}")
+        for name, fn in tests:
+            total += 1
+            try:
+                ok, message = fn()
+            except Exception as exc:
+                ok, message = False, f"EXCEPTION: {type(exc).__name__}: {exc}"
+            symbol = "PASS" if ok else "FAIL"
+            print(f"  [{symbol}] {name}: {message}")
+            if not ok:
+                failures += 1
 
     if not args.keep:
         removed = cleanup_smoke_runs()
         if args.verbose:
             print(f"\ncleanup: removed {removed} smoke run file(s)")
 
-    print(f"\n{len(TESTS) - failures}/{len(TESTS)} passed")
+    print(f"\n{total - failures}/{total} passed")
     return 0 if failures == 0 else 1
 
 
