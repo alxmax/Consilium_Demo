@@ -534,6 +534,34 @@ Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au defini�
 - Schimbarea e trivial-textuală (typo, rename intern, fix doc) — cost-prohibitive
 - User declină explicit
 
+### Senator context injection (Pilot B)
+
+**Status: pilot — zero code, orchestrator-only behavior.**
+
+La Step 2 (dispatch), înainte de a trimite input-ul fiecărui senator, orchestratorul poate prepend un bloc de context din rulările senate anterioare:
+
+```
+Past votes for <senator_name> (inject only if N≥5 senate runs with recorded outcome):
+- <label> | <vote> | <outcome>   # most recent
+- <label> | <vote> | <outcome>
+- <label> | <vote> | <outcome>   # oldest of 3
+```
+
+**Reguli operaționale:**
+- Schema injectată: `{label, vote, outcome}` triples, N=3 cele mai recente, ordonate descendent după timestamp
+- Sursa: `runs/senate/*.json` — citit manual de orchestrator (nu există script automat în Pilot B)
+- **Activation gate:** nu injecta dacă `runs/senate/` are sub 5 rulări cu outcome confirmat (OK/BAD) în `FEEDBACK.html`. Sub acest prag, datele sunt prea sparse pentru a fi semnal.
+- **Filtrează PEND:** injectează doar rulări cu outcome OK sau BAD — PEND înseamnă verdict neconfirmat
+- **Falsification signal:** Pilot B produce semnal măsurabil dacă `modify_request`-ul unui senator referențiază explicit un label sau outcome din contextul injectat. Fără acest semnal după 5 rulări, Pilot B nu a adăugat valoare.
+- **Reversibilitate completă:** oprești injectarea → comportament identic cu A (do_nothing)
+
+**Escalare la C:** dacă după 5 rulări sub Pilot B cel puțin 1 senator referențiază context injectat, implementează `priors.py --senator <name>`:
+- Flag adaugă filtrare per senator peste logica existentă (~50-60 linii)
+- Trebuie să gestioneze ambele scheme: legacy `{senators: {...}}` și multi-round `{rounds: [...]}`
+- Pentru rulări multi-round: injectează votul din ultima rundă (nu round 1)
+- `priors.py` fără `--senator` returnează output identic cu azi (backward compat garantat)
+- D (per_senator_json, 7 fișiere + update script) rămâne off-table până Napoleon's gate: ≥20 rulări senate, ≥80% outcome tracking
+
 ### Smoke test
 
 Două nivele:
