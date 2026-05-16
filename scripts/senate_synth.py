@@ -487,7 +487,21 @@ def main() -> int:
     except Exception as _e:
         print(f"todo: skip ({_e})", file=sys.stderr)
 
+    _generate_transcript(out_path)
     return 0
+
+
+def _generate_transcript(bundle_path: Path) -> None:
+    try:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location("senate_transcript", Path(__file__).parent / "senate_transcript.py")
+        _mod = _ilu.module_from_spec(_spec)  # type: ignore[arg-type]
+        _spec.loader.exec_module(_mod)  # type: ignore[union-attr]
+        out_file = _mod.generate(bundle_path)
+        if out_file:
+            print(f"transcript: {out_file.relative_to(bundle_path.parent.parent)}", file=sys.stderr)
+    except Exception as exc:
+        print(f"transcript generation skipped: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":
