@@ -65,7 +65,19 @@ def build_todo_block(bundle):
         lines.append(f"> **Absenți:** {', '.join(absent)}")
     lines.append("")
 
-    if not mod_reqs:
+    # DEEPLY_SPLIT always emits a polarization marker even without mod_reqs,
+    # so operators see that the senate fractured rather than mistaking the
+    # entry for a quiet STOP-with-no-requests.
+    if verdict == "DEEPLY_SPLIT":
+        lines.append(
+            f"⚠ **Senatul polarizat** ({go_c} GO × {stop_c} STOP, fără majoritate ≥5/7). "
+            "Verdictul DEEPLY_SPLIT cere escaladare la utilizator cu matricea de vot — vezi bundle."
+        )
+        lines.append("")
+        if not mod_reqs:
+            return "\n".join(lines)
+
+    elif not mod_reqs:
         if verdict == "GO":
             lines.append("_Senatul a aprobat propunerea. Nicio modificare necesară._")
         else:

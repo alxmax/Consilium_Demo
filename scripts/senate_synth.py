@@ -44,10 +44,17 @@ Two input modes (backward compatible):
       }
 
 Verdict rule (same for both modes):
-    UNREACHABLE if voters_present < 5 (matemathically cannot reach quorum)
-    GO          if GO     >= 5 of 7
-    STOP        if STOP   >= 5 of 7
-    MODIFY      otherwise (default — also covers all non-quorum cases)
+    UNREACHABLE  if voters_present < 5 (mathematically cannot reach quorum)
+    GO           if GO   >= 5 of 7
+    STOP         if STOP >= 5 of 7
+    DEEPLY_SPLIT if quorum met, neither majority, AND both GO and STOP factions
+                 reach POLARIZATION_THRESHOLD (currently 3 = QUORUM-2, "within
+                 2 vote flips of majority"). Covers 4-3, 3-3-1, 3-4 patterns.
+    MODIFY       otherwise (default — covers non-polarized non-quorum splits
+                 like 4-0-3, 3-4 with abstentions where one side is below 3, etc.)
+
+DEEPLY_SPLIT is advisory like UNREACHABLE: orchestrator MUST escalate to the
+user with the vote matrix + per-senator modify_requests. No automatic action.
 
 Multi-round semantics (Law 2: max 3 cross_questions per senator per round;
 Law 3: blocaj_resolution.winning_senator's vote replaces loser's vote in the
@@ -86,6 +93,12 @@ SENATORS = (
     "napoleon",
 )
 QUORUM = 5  # >= 5 of 7 needed for GO or STOP verdict
+# A faction is "substantial" if it is within 2 vote flips of becoming majority.
+# With QUORUM=5, that is 3 senators. Used by DEEPLY_SPLIT to detect a polarized
+# split where both GO and STOP factions reach this threshold but neither hits
+# majority. Derived from QUORUM rather than asserted so it scales if QUORUM
+# changes (e.g., a future 9-senator senate with QUORUM=6 → threshold=4).
+POLARIZATION_THRESHOLD = QUORUM - 2
 VOTES = ("GO", "MODIFY", "STOP")
 MAX_CROSS_QUESTIONS_PER_SENATOR_PER_ROUND = 3  # Law 2
 
@@ -293,12 +306,27 @@ def tally(senator_outputs: dict[str, dict]) -> dict[str, int]:
 
 
 def compute_verdict(counts: dict[str, int], voters_present: int) -> str:
+    """Map (counts, voters_present) → verdict string.
+
+    voters_present = number of senators with a recorded ballot in the latest
+    round they appeared in. MODIFY votes count toward voters_present but go
+    into counts["MODIFY"], not counts["GO"]/counts["STOP"]. Senators absent
+    from all rounds do NOT contribute to voters_present.
+
+    Order matters: GO/STOP majority checks run before DEEPLY_SPLIT, so a 5-2
+    or 6-1 split is always reported as the majority verdict even though the
+    minority side may reach POLARIZATION_THRESHOLD (here, 5-3 cannot occur
+    with 7 senators, but 5-4 in a future 9-senator senate would still resolve
+    to GO, not DEEPLY_SPLIT).
+    """
     if voters_present < QUORUM:
         return "UNREACHABLE"
     if counts["GO"] >= QUORUM:
         return "GO"
     if counts["STOP"] >= QUORUM:
         return "STOP"
+    if counts["GO"] >= POLARIZATION_THRESHOLD and counts["STOP"] >= POLARIZATION_THRESHOLD:
+        return "DEEPLY_SPLIT"
     return "MODIFY"
 
 
@@ -367,11 +395,13 @@ def build_bundle(
     cq_used, cq_violations = cross_questions_summary(rounds)
     position_changes = detect_position_changes(rounds)
 
-    # Compute verdict before blocaj_pending: only emit advisory signal when
-    # verdict is MODIFY (no quorum), suppressing it on clean GO/STOP outcomes.
+    # Compute verdict before blocaj_pending: emit advisory signal when verdict
+    # is MODIFY or DEEPLY_SPLIT (both indicate unresolved GO×STOP polarization
+    # the orchestrator may want to put through a 5-vote tiebreaker). Suppressed
+    # on clean GO/STOP outcomes.
     verdict = compute_verdict(final_counts, voters_present)
     blocaj_pending = []
-    if blocaj_info is None and verdict == "MODIFY":
+    if blocaj_info is None and verdict in ("MODIFY", "DEEPLY_SPLIT"):
         blocaj_pending = detect_blocaj_pairs(final_outputs)
 
     warnings = collect_warnings(final_outputs, voters_present)
