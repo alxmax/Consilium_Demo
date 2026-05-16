@@ -415,18 +415,19 @@ def test_blocaj_resolution_applied() -> tuple[bool, str]:
 
 
 def test_legacy_single_round_omits_multi_round_fields() -> tuple[bool, str]:
-    """Backward compat: legacy {senators: ...} input doesn't emit Law-2-4 fields."""
+    """Backward compat: legacy {senators: ...} input doesn't emit Law-2+4 fields.
+    blocaj_pending is Law 3 and IS emitted in legacy when verdict=MODIFY."""
     code, bundle, stderr = run_synth(make_payload(
         proposal="legacy smoke", senators=all_voting("GO"), label="smoke-legacy"))
     guard = _require_bundle(code, bundle, stderr)
     if isinstance(guard, tuple):
         return guard
     bundle = guard
-    forbidden = {"rounds", "position_changes", "cross_questions_used", "blocaj_pending"}
+    forbidden = {"rounds", "position_changes", "cross_questions_used"}
     present = forbidden & set(bundle.keys())
     if present:
         return False, f"legacy input must not emit multi-round fields, found: {present}"
-    return True, "legacy single-round input omits rounds/position_changes/cq_used/blocaj_pending"
+    return True, "legacy single-round input omits rounds/position_changes/cq_used (blocaj_pending emitted only when verdict=MODIFY)"
 
 
 def test_collision_safe_write() -> tuple[bool, str]:
