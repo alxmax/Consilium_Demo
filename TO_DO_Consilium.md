@@ -481,9 +481,9 @@ Decizie soft-pozitivă, dar prioritate scăzută. Implementăm dacă apare o eva
 
 Sursa: `experiments/p3-car-wash.html` (HTML consolidat din run1/run2/run3 + corigendum). User a confirmat pe 2026-05-16 că răspunsul corect la P3 este C (pentru a-ți spăla mașina, mașina trebuie să fie la spălătorie). Toate sintezele inițiale erau inversate semantic — ce numeam "fabricație model-wide" era de fapt prinderea constraint-ului real. Memorie: `memory/project_p3_correct_answer.md`.
 
-### 51. Skeptic-on-chosen ca pas opțional după orice mod
+### 51. Skeptic-on-chosen ca pas opțional după orice mod ✅ DONE
 **Categorie:** Skill | **Impact:** Înalt | **Efort:** Mediu
-**Status:** PROPOSED — necesită analiză design + interacțiune cu `parallel_skeptic` documentat în SKILL.md.
+**Status:** ✅ DONE (2026-05-16, branch `feat/skeptic-on-chosen`) — documented as conceptual mode in SKILL.md (analog cu parallel_skeptic / dialectic_skeptic / trias_split). Design decisions encoded: hybrid trigger (flag + auto on conf∈[0.5,0.7]), advisory-by-default with --skeptic-can-override opt-in.
 
 chosen_confirmation_pass = singurul mod cu catch-rate 100% în sim și 4/7 în reruns reale pe P3. Mecanism: o singură voce skeptic pe `chosen` după Pass-1 obligă re-citirea problemei și prinderea constraint-urilor implicite.
 
@@ -578,6 +578,6 @@ Quick-take-ul evaluatorului ≠ oracle. Această disciplină se aplică retroact
 | 48 | Analiză: checkpoint per-step între voci (INVESTIGATE) | Arch | Mediu | Mediu |
 | 49 | Analiză: streaming / HITL Generator↔Control (INVESTIGATE) | Arch | Mediu | Mare |
 | 50 | Analiză: time-travel peste runs/ (INVESTIGATE) | Skill | Mic | Mic-Mediu |
-| 51 | Skeptic-on-chosen ca pas opțional (P3 lesson, PROPOSED) | Skill | Înalt | Mediu |
+| 51 | Skeptic-on-chosen ca pas opțional (P3 lesson) ✅ DONE | Skill | Înalt | Mediu |
 | 52 | Revizuiește "Haiku = anti-fabrication" în docs (P3 lesson) | Docs | Mediu | Mic |
 | 53 | Oracle verification pe fab-rate claims (P3 lesson) | Arch | Înalt | Mic |

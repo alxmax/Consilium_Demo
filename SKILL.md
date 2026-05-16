@@ -390,3 +390,57 @@ Restul (vote pattern, confidence, failure recovery) identic cu Trias.
 - Verificarea cere adâncime tehnică (security audit, schema migration complexă) — Haiku speculează, folosește Trias full
 - Diff trivial — un mod simplu (Sequential/Parallel) ajunge
 - Output schema strict required cu garanție 100% — Haiku violează ocazional instrucțiuni strict-JSON (vezi Run 1 lite_trias_A — disqualified for verbose output)
+
+## Skeptic-on-chosen mode (`skeptic_on_chosen`)
+
+**Mecanica:** `skeptic_on_chosen` este un **flag cross-cutting**, nu un mod fix. Se compune peste orice mod de bază (Sequential, Parallel, Dialectic, Trias): după ce modul de bază produce `chosen` și `confidence`, se dispatch-uiește 1 voce Skeptic suplimentară pe `chosen`-ul rezultat, cu același prompt `prompts/skeptic.md` și același input minimal ca în `parallel_skeptic`. Diferența față de modurile cu Skeptic baked-in: flagul rulează **secvențial post-hoc** pe orice mod, nu în paralel cu Pass-1. Nu există cod Python dedicat — orchestrarea se face prin dispatch standard al `prompts/skeptic.md` cu chosen-ul curent, identic cu Step 2 din `parallel_skeptic`.
+
+**Cost:** +1 sub-agent față de modul de bază ales (indiferent care e acela).
+
+**vs `parallel_skeptic`:** aceea e un mod fix (Parallel + Skeptic simultan, 4 sub-agenți); `skeptic_on_chosen` e flag composabil pe orice mod.
+**vs `dialectic_skeptic`:** aceea e un mod fix (Dialectic + Skeptic post-Pass-2, 7 sub-agenți); `skeptic_on_chosen` e echivalentul generalizat care produce același efect și pe Sequential / Parallel / Trias.
+
+### Când să folosești
+- Confidence-ul din modul de bază cade în banda `[0.5, 0.7]` — trigger **automat** (același prag ca `parallel_skeptic`; aggregator-ul poate semnala banda, orchestratorul aplică flagul)
+- **Opt-in manual** via `--skeptic-on-chosen` când vrei un challenger focal post-hoc indiferent de confidence (medium-stakes, probleme cu constraint-uri implicite cunoscute)
+- Probleme unde chosen_confirmation_pass a demonstrat valoare empirică — în special situații cu constraint-uri implicite nemenționate explicit în success_criterion (tip P3: precondițiile logice ale soluției nu apar în enunț)
+- Când baza e Sequential sau Trias și vrei challengerul focal fără a rula un întreg `parallel_skeptic` sau `dialectic_skeptic`
+- Cazuri unde vrei să știi dacă chosen a ratat ceva, dar nu ai o bază de comparație (nu ai alternative viabile) — Skeptic-ul focal pe chosen e mai ieftin decât re-rularea întregii deliberări
+
+### Workflow
+1. Rulează modul de bază complet (oricare: Sequential / Parallel / Dialectic / Trias) → produce `chosen`, `confidence`, raport intermediar
+2. Dacă `confidence ∈ [0.5, 0.7]` (auto) sau flagul `--skeptic-on-chosen` e activ, dispatch 1 sub-agent Sonnet 4.6 cu `prompts/skeptic.md` inline + input minimal:
+   ```
+   chosen: <id, summary, sketch, rationale>
+   success_criterion: <propoziția testabilă>
+   verification: <comanda>
+   ```
+   NU pasezi alte candidate, scoruri sau log-uri de deliberare.
+3. Validează skeptic output-ul (identic cu Step 3 din `parallel_skeptic`):
+   - `can_object: true` cu `concrete_concerns` ≥ 2 SAU `quoted_scenario` non-null → accept
+   - `can_object: true` fără evidence → reject (schema fail), ship chosen original
+   - `can_object: false` → ship chosen original, loghează că nu există obiecție concretă
+4. Loghează rezultatul în `deliberation_log` cu step `"skeptic_on_chosen"` și setează flag `skeptic_caught_constraint: true|false` în raport
+5. Aplică override semantics (secțiunea de mai jos)
+
+### Override semantics
+**Advisory by default.** Verdictul Skeptic-ului se loghează în `deliberation_log` ca entry cu step `"skeptic_on_chosen"` și flag `skeptic_caught_constraint: true|false`. `chosen` **nu se înlocuiește** — rămâne cel produs de modul de bază. Utilizatorul vede obiecția în raport și poate acționa sau ignora.
+
+**Opt-in override via `--skeptic-can-override`.** Dacă flagul e activ ȘI Skeptic produce `addressable: requires_redesign`, verdictul Skeptic-ului supersedează `chosen`: orchestratorul prezintă utilizatorului alternativele din raport și întreabă dacă vrea să schimbe alegerea. Dacă Skeptic produce `addressable: in_place`, override-ul nu se aplică (advisory rămâne); dacă produce `addressable: unaddressable` cu `failure_mode: meta_scope_mismatch`, raportul e marcat `misapplied` (identic cu `parallel_skeptic`).
+
+Tabel sumar:
+
+| Skeptic output | Advisory (default) | Cu `--skeptic-can-override` |
+|---|---|---|
+| `can_object: false` | ship chosen original | ship chosen original |
+| `in_place` | log + nota în raport | log + nota în raport (fără override) |
+| `requires_redesign` | log + advisory | orchestratorul propune alternativele |
+| `unaddressable / meta_scope_mismatch` | marchează `misapplied` | marchează `misapplied` |
+
+### Skip dacă
+- Confidence ≥ 0.7 și flagul `--skeptic-on-chosen` nu e activ manual — Skeptic-ul n-are motivație structurală să găsească ceva
+- Confidence < 0.5 — banda e prea jos pentru o singură voce challenger; escaladare la Trias sau user direct
+- Baza e deja `parallel_skeptic` sau `dialectic_skeptic` — Skeptic-ul e deja inclus în acele moduri, a doua rulare ar fi redundantă
+- Diff e high-stakes intrinsec (auth, migrations, security) — folosește Trias full cu cost justificat
+
+**Origine empirică.** Modul a apărut din analiza `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (echivalentul conceptual al acestui flag) a atins catch-rate 100% în simulare și 4/7 în reruns reale pe P3 car wash — performanță superioară oricărui alt mod testat. Mecanismul: o singură voce skeptic pe `chosen` post-hoc obligă re-citirea success_criterion și detectarea constraint-urilor implicite ratate de toate vocile din Pass-1.
