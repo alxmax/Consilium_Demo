@@ -36,7 +36,7 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 ### 0. Bootstrap (înainte de orice grep / Read pe codebase)
 Două acțiuni în ordine:
 
-1. **Citește contractele celor 3 voci** — `prompts/generator.md`, `prompts/control.md`, `prompts/conservator.md`. Definesc câmpurile exacte produse de fiecare voce. **Notă parallel/dialectic:** conținutul fiecărui prompt trebuie *inline-uit* în dispatch-ul sub-agentului — citirea la Step 0 nu e suficientă.
+1. **Citește contractele celor 3 voci** — `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Definesc câmpurile exacte produse de fiecare voce. **Notă parallel/dialectic:** conținutul fiecărui prompt trebuie *inline-uit* în dispatch-ul sub-agentului — citirea la Step 0 nu e suficientă.
 2. **Rulează `python scripts/priors.py`** — întoarce priori soft din `FEEDBACK.html` + `runs/`. Trei câmpuri ne pot bloca deliberarea curentă până sunt rezolvate:
    - `stale_pendings` non-empty (PEND mai vechi de 2 zile): întreabă *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid (OK/BAD/skip)?"* — actualizează cu `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferat) sau cu `Edit` direct pe `FEEDBACK.html`. **Nu** folosi `log_feedback.py` — duplichează rândul.
    - `missing_feedback_runs` non-empty: rulează `python scripts/audit_feedback.py --backfill` ca să creezi PEND-uri pentru runs orfane, apoi rezolvă-le ca mai sus. Dacă lista e mai mare de 3, prefer să rezolvi gap-ul *înainte* de a începe o deliberare nouă.
@@ -66,7 +66,7 @@ Defaults: `max_files=1`, `max_lines=15`, blocklist conservativ (`auth/`, `securi
 **Task-uri non-diff** (audit, architecture review, planning): scope_gate e no-op — poți sări Step 1.5.
 
 ### 2. Conservator — assess risc (runs FIRST)
-Folosește `prompts/conservator.md`. Rulează **înainte** de Generator și Control. Output-ul setează `tokens_budget` pentru celelalte voci.
+Folosește `prompts/voices/conservator.md`. Rulează **înainte** de Generator și Control. Output-ul setează `tokens_budget` pentru celelalte voci.
 
 Required Questions (Q1-Q5): reversibility, magnitude, counterparty_risks, status quo bias check, meta_recommendation.
 
@@ -87,7 +87,7 @@ python scripts/probe_change.py --ref main --churn 30 # + commit count per file l
 Ancorează `magnitude` la `files_changed/lines_*` și `regression_risk.net_concern` la distribuția de churn când prezent.
 
 ### 3. Generator — produce alternative
-Folosește `prompts/generator.md`. Cere **3–5 candidate**, inclusiv `do_nothing`. Stil divergent. Respectă `tokens_budget.generator` setat de Conservator.
+Folosește `prompts/voices/generator.md`. Cere **3–5 candidate**, inclusiv `do_nothing`. Stil divergent. Respectă `tokens_budget.generator` setat de Conservator.
 
 Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fallback_scenario, coverage_check, challenge_upward, abstain, preferred}`. Adversarial e condiționat (clarity gate a returnat 2+ interpretări SAU schimbarea atinge shared/core code) — altfel emit `"adversarial_skipped": "<reason>"`.
 
@@ -96,7 +96,7 @@ Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fal
 **Challenge upward:** If Generator sets `challenge_upward.triggered: true`, re-run Conservator with Generator's context before proceeding to Control.
 
 ### 4. Control — verifică corectitudine
-Folosește `prompts/control.md`. Per candidate: types, logică, tests, style.
+Folosește `prompts/voices/control.md`. Per candidate: types, logică, tests, style.
 
 Required Questions (Q1-Q4): glossary (max 5), hidden_assumptions (max 3), disagreements, fixed/negotiable_constraints.
 
@@ -216,7 +216,7 @@ python scripts/run_evals.py
 | `scripts/strip_context.py` | Proiectează output voce anterioară la minim (Steps 3-4 sequential) |
 | `scripts/dialectic_merge.py` | Combină Pass-1 + Pass-2 în payload aggregator-ready |
 | `scripts/personalities.py` | Trias mode — 3 personalități fixe cu weights + lens paths |
-| `prompts/skeptic.md` | Voce focală pentru `parallel_skeptic` și `dialectic_skeptic` — primește doar chosen, produce obiecție concretă sau `meta_scope_mismatch` |
+| `prompts/voices/skeptic.md` | Voce focală pentru `parallel_skeptic` și `dialectic_skeptic` — primește doar chosen, produce obiecție concretă sau `meta_scope_mismatch` |
 | `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite scripturi deterministe |
 | `scripts/usage.py` | Rollup telemetry din runs/ |
 | `agents/consilium-subagent.md` | Subagent pentru invocare izolată via `Agent(subagent_type="consilium-subagent", ...)` |
@@ -343,7 +343,7 @@ Audit warnings la stderr după merge — verifică-le înainte să consideri 2×
 
 ### Workflow
 1. Rulează Parallel normal (Gen/Ctrl/Cons în paralel pe Sonnet 4.6) → produce `chosen` + `confidence`
-2. Dacă `confidence ∈ [0.5, 0.7]`, dispatch 1 sub-agent Sonnet 4.6 cu `prompts/skeptic.md` inline + input minim:
+2. Dacă `confidence ∈ [0.5, 0.7]`, dispatch 1 sub-agent Sonnet 4.6 cu `prompts/voices/skeptic.md` inline + input minim:
    ```
    chosen: <id, summary, sketch, rationale>
    success_criterion: <propoziția testabilă>
@@ -413,7 +413,7 @@ Restul (vote pattern, confidence, failure recovery) identic cu Trias.
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
-**Mecanica:** `skeptic_on_chosen` este un **flag cross-cutting**, nu un mod fix. Se compune peste orice mod de bază (Sequential, Parallel, Dialectic, Trias): după ce modul de bază produce `chosen` și `confidence`, se dispatch-uiește 1 voce Skeptic suplimentară pe `chosen`-ul rezultat, cu același prompt `prompts/skeptic.md` și același input minimal ca în `parallel_skeptic`. Diferența față de modurile cu Skeptic baked-in: flagul rulează **secvențial post-hoc** pe orice mod, nu în paralel cu Pass-1. Nu există cod Python dedicat — orchestrarea se face prin dispatch standard al `prompts/skeptic.md` cu chosen-ul curent, identic cu Step 2 din `parallel_skeptic`.
+**Mecanica:** `skeptic_on_chosen` este un **flag cross-cutting**, nu un mod fix. Se compune peste orice mod de bază (Sequential, Parallel, Dialectic, Trias): după ce modul de bază produce `chosen` și `confidence`, se dispatch-uiește 1 voce Skeptic suplimentară pe `chosen`-ul rezultat, cu același prompt `prompts/voices/skeptic.md` și același input minimal ca în `parallel_skeptic`. Diferența față de modurile cu Skeptic baked-in: flagul rulează **secvențial post-hoc** pe orice mod, nu în paralel cu Pass-1. Nu există cod Python dedicat — orchestrarea se face prin dispatch standard al `prompts/voices/skeptic.md` cu chosen-ul curent, identic cu Step 2 din `parallel_skeptic`.
 
 **Cost:** +1 sub-agent față de modul de bază ales (indiferent care e acela).
 
@@ -429,7 +429,7 @@ Restul (vote pattern, confidence, failure recovery) identic cu Trias.
 
 ### Workflow
 1. Rulează modul de bază complet (oricare: Sequential / Parallel / Dialectic / Trias) → produce `chosen`, `confidence`, raport intermediar
-2. Dacă `confidence ∈ [0.5, 0.7]` (auto) sau flagul `--skeptic-on-chosen` e activ, dispatch 1 sub-agent Sonnet 4.6 cu `prompts/skeptic.md` inline + input minimal:
+2. Dacă `confidence ∈ [0.5, 0.7]` (auto) sau flagul `--skeptic-on-chosen` e activ, dispatch 1 sub-agent Sonnet 4.6 cu `prompts/voices/skeptic.md` inline + input minimal:
    ```
    chosen: <id, summary, sketch, rationale>
    success_criterion: <propoziția testabilă>
