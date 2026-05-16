@@ -40,3 +40,11 @@ FEEDBACK.html
 
 # Claude Code session metadata (permissions, local settings)
 .claude/
+
+# Local bug tracking / agent reports
+BUGS.md
+bugs-agent-*.md
+
+# Local plans and experiments
+docs/superpowers/plans/2026-05-16-arch-sync-modes-flow.md
+experiments/New phase senat/
