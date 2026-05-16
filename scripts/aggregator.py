@@ -1,10 +1,8 @@
 """Aggregate voice scores into a final decision.
 
-Four schemes:
+Four schemes exposed via CLI (`aggregate_weighted` remains importable but is
+deprecated — see below):
 - majority: average of voices; pick highest mean. Ties broken by lowest variance.
-- weighted: weighted average using personality weights. NOTE: treats every
-  voice as utility (higher = better), which is wrong for conservator —
-  kept for backward compatibility, prefer risk_adjusted_utility.
 - conservative_override: vetoes any candidate with conservator risk >
   veto_threshold; survivors ranked by weighted average of (generator,
   control, 1-conservator) so safer candidates outrank riskier ones when
@@ -71,11 +69,18 @@ def aggregate_majority(candidates: list[dict]) -> dict:
 
 
 def aggregate_weighted(candidates: list[dict], weights: dict) -> dict:
-    """Weighted average across voices using supplied weights."""
+    """Weighted average across voices using supplied weights.
+
+    Deprecated: removed from SCHEMES (CLI). Conservator emits risk (higher=worse),
+    so this scheme inverts safety relative to the others. Use
+    'conservative_override' or 'risk_adjusted_utility' instead.
+    """
     warnings.warn(
-        "aggregate_weighted treats Conservator as utility (higher=better), but Conservator "
-        "emits risk (higher=worse). Scores will be inverted relative to other schemes. "
+        "aggregate_weighted is deprecated and no longer exposed via the CLI scheme map. "
+        "It treats Conservator as utility (higher=better), but Conservator emits risk "
+        "(higher=worse), so scores are inverted relative to the other schemes. "
         "Use 'conservative_override' or 'risk_adjusted_utility' instead.",
+        DeprecationWarning,
         stacklevel=2,
     )
     w = [float(weights[v]) for v in VOICES]
@@ -304,7 +309,6 @@ def aggregate_team_vote(personalities: list[dict], candidates: list[dict]) -> di
 
 SCHEMES = {
     "majority": lambda data: aggregate_majority(data["candidates"]),
-    "weighted": lambda data: aggregate_weighted(data["candidates"], data["weights"]),
     "conservative_override": lambda data: aggregate_conservative_override(
         data["candidates"],
         data.get("weights"),
