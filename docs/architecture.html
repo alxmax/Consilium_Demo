@@ -420,6 +420,23 @@
     .trias-deepdive, .cost-card, .failure-table, .trias-example-json { break-inside: avoid; }
     .veto { color: #fff; }
   }
+  /* ============== TODO MATRIX ============== */
+  .todo-matrix-container { position: relative; background: var(--card-bg);
+    border: 1px solid var(--line); border-radius: 10px; padding: 32px;
+    max-width: 900px; margin: 0 auto; }
+  .todo-matrix-container h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+  .todo-matrix-svg { width: 100%; height: 520px; }
+  .todo-legend { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+  .todo-legend-item { display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted); }
+  .todo-legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  #todoTooltip { position: fixed; background: var(--card-bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 10px 14px; font-size: 12px; max-width: 280px;
+    pointer-events: none; z-index: 999; display: none; line-height: 1.5; }
+  #todoTooltip .tip-title { font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  #todoTooltip .tip-body  { color: var(--muted); }
+
   /* ============== MERMAID ============== */
   .mermaid { text-align: center; margin: 0 auto; }
   .mermaid svg { max-width: 100%; height: auto; }
@@ -1092,6 +1109,7 @@
   <button data-tab="files"><span>Files</span><span class="tab-sub">prompts/ + scripts/ (hover)</span></button>
   <button data-tab="git"><span>Git</span><span class="tab-sub">workflow + self-improvement loop</span></button>
   <button data-tab="dialectic"><span>Dialectic</span><span class="tab-sub">Pass 1 + Pass 2 cross-review</span></button>
+  <button data-tab="todo-matrix"><span>TODO Matrix</span><span class="tab-sub">26 iteme · impact × efort</span></button>
 </nav>
 
 <main>
@@ -3890,6 +3908,23 @@ flowchart LR
     </div>
   </section>
 
+  <!-- ============== TAB: TODO MATRIX ============== -->
+  <section class="tab" id="todo-matrix">
+
+    <div class="todo-matrix-container">
+      <h3>TO_DO Priority Matrix</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:24px">Hover pe fiecare item pentru detalii — impact (sus) × efort (dreapta)</p>
+      <svg class="todo-matrix-svg" id="todoMatrixSvg" viewBox="0 0 820 500"></svg>
+      <div class="todo-legend">
+        <div class="todo-legend-item"><div class="todo-legend-dot" style="background:#fbbf24"></div> Prompt (Pass 1)</div>
+        <div class="todo-legend-item"><div class="todo-legend-dot" style="background:#f97316"></div> Prompt (Pass 2 dialectic)</div>
+        <div class="todo-legend-item"><div class="todo-legend-dot" style="background:#60a5fa"></div> Skill / Script</div>
+        <div class="todo-legend-item"><div class="todo-legend-dot" style="background:#f87171"></div> Arhitectură</div>
+      </div>
+    </div>
+
+  </section>
+
   <!-- ============== TAB: DIALECTIC ============== -->
   <section class="tab" id="dialectic">
 
@@ -3980,8 +4015,112 @@ flowchart LR
 </div>
 
 <div class="pat-tour-progress" id="patTourProgress"><span></span></div>
+<div id="todoTooltip"><div class="tip-title"></div><div class="tip-body"></div></div>
 
 <script>
+  // ── TODO MATRIX ───────────────────────────────────────────────────────
+  var todoItems = [
+    [1,  "#1 success_criterion Input",         3, 0, "prompt1",  "Adaugă success_criterion explicit în Input la toate 3 voci. Impact maxim, 1 linie per fișier."],
+    [2,  "#2 Conservator: risc ≠ valoare",     3, 0, "prompt1",  "Conservator nu trebuie să influențeze outcome prin inflate de scoruri. Mindset fix."],
+    [3,  "#3 Control: standard consistent",    3, 0, "prompt1",  "Aplică același standard tuturor candidaților. Familiarity ≠ validity."],
+    [4,  "#4 Generator: nu ancora",            2, 0, "prompt1",  "Generează soluția obvioasă ultima. Think at multiple levels."],
+    [5,  "#5 ID preservation",                 2, 0, "prompt1",  "id trebuie păstrat verbatim Generator → Control → Conservator."],
+    [6,  "#6 Shared/core code def.",           2, 0, "prompt1",  "Conservator nu are definiție pentru 'shared/core'. Adaugă lista din Generator."],
+    [7,  "#7 Sketch depth",                    2, 0, "prompt1",  "2-5 propoziții sau pseudocod. Nu 'change X to Y'."],
+    [8,  "#8 Control: citește fișiere",        2, 0, "prompt1",  "Dacă nu poți verifica fără fișier, citește-l. Nu specula și marchezi verified."],
+    [9,  "#9 Goal-fit → pasul 0",              2, 1, "prompt1",  "Mută goal-fit check înainte de types/logic în Control. Fail fast."],
+    [10, "#10 Cap regression_risk stack",      2, 0, "prompt1",  "Max -0.20 cumulativ indiferent de câte mitigări. Documentează fiecare."],
+    [11, "#11 Ireversibil by nature",          2, 1, "prompt1",  "Published API → mitigation_steps + irreversible:true în loc de rollback_recipe fake."],
+    [12, "#12 probe_change în Cons. Input",    2, 0, "prompt1",  "Menționează că Conservator poate primi files_changed, lines_changed, churn."],
+    [13, "#13 Single retry confidence",        2, 1, "skill",    "Un singur retry cu context îmbogățit pt top 2 candidați când confidence < 0.7."],
+    [14, "#14 Meta-critic deliberare",         3, 2, "arch",     "Detectează: divergență falsă Generator, speculație Control, 0.5-shrug Conservator."],
+    [15, "#15 Feedback din producție",         3, 2, "arch",     "CLI consilium mark-outcome <run> BAD. Feedback real, nu subiectiv imediat."],
+    [16, "#16 Meta-controller",               2, 2, "arch",     "Componentă care poate decide restart / enrich-context / skip-voice mid-deliberation."],
+    [17, "#17 Semantic memory",               2, 3, "arch",     "Index embeddings pe runs/*.json. Query 'deliberări similare cu această schimbare'."],
+    [18, "#18 Observe→Think→Act formal",      2, 3, "arch",     "State machine explicită. Permite restart, enrichment, skip condiționat."],
+    [19, "#19 Memory tiers formalizate",      1, 2, "arch",     "API uniform short/medium/long. Valoros doar dacă semantic memory e implementată."],
+    [20, "#20 Mechanism variation ex.",       1, 0, "prompt1",  "Exemplu concret pt 'mechanism' axis în Generator Constraints."],
+    [21, "#21 Gen Pass2: nu retrage pt risc", 3, 0, "prompt2",  "Generator nu trebuie să atenueze candidați în Pass 2 pe baza scorului Conservator."],
+    [22, "#22 Ctrl Pass2: re-validare sketch",3, 0, "prompt2",  "Dacă Generator schimbă sketch substanțial → re-validare completă în Control Pass 2."],
+    [23, "#23 Cons Pass2: Control flip",      2, 0, "prompt2",  "Conservator nu știe ce face când Control flips valid: false→true sau invers."],
+    [24, "#24 Candidați noi în Pass 2",       2, 1, "prompt2",  "Protocol explicit: interzis sau mini-pass suplimentar pentru Control + Conservator."],
+    [25, "#25 Convergence check",             2, 0, "skill",    "Dacă toate vocile emit maintained → convergence:true + warning în revision_log."],
+    [26, "#26 Dialectic vs parallel criteria",2, 0, "skill",    "Tabelă de decizie clară în SKILL.md: când folosești fiecare mod."]
+  ];
+  var todoCatColor = { prompt1:'#fbbf24', prompt2:'#f97316', skill:'#60a5fa', arch:'#f87171' };
+  var todoDrawn = false;
+
+  function drawTodoMatrix() {
+    if (todoDrawn) return;
+    todoDrawn = true;
+    var svg = document.getElementById('todoMatrixSvg');
+    if (!svg) return;
+    var W = 820, H = 500;
+    var PAD = { left: 60, right: 20, top: 20, bottom: 50 };
+    var IW = W - PAD.left - PAD.right;
+    var IH = H - PAD.top - PAD.bottom;
+    var effortLabels = ['Mic', 'Mic-Med', 'Mare', 'Foarte Mare'];
+    var impactLabels = ['Scăzut', 'Mediu', 'Înalt'];
+    function xPos(e) { return PAD.left + (e / 3) * IW; }
+    function yPos(i) { return PAD.top + IH - ((i - 1) / 2) * IH; }
+    var html = '';
+    for (var i = 0; i <= 3; i++) {
+      var x = xPos(i);
+      html += '<line x1="'+x+'" y1="'+PAD.top+'" x2="'+x+'" y2="'+(PAD.top+IH)+'" stroke="#2d3441" stroke-width="1"/>';
+      html += '<text x="'+x+'" y="'+(H-10)+'" text-anchor="middle" fill="#9ca3af" font-size="11">'+effortLabels[i]+'</text>';
+    }
+    for (var j = 1; j <= 3; j++) {
+      var y = yPos(j);
+      html += '<line x1="'+PAD.left+'" y1="'+y+'" x2="'+(PAD.left+IW)+'" y2="'+y+'" stroke="#2d3441" stroke-width="1"/>';
+      html += '<text x="'+(PAD.left-8)+'" y="'+(y+4)+'" text-anchor="end" fill="#9ca3af" font-size="11">'+impactLabels[j-1]+'</text>';
+    }
+    html += '<text x="'+(PAD.left+IW/2)+'" y="'+(H-2)+'" text-anchor="middle" fill="#9ca3af" font-size="12" font-weight="600">EFORT →</text>';
+    html += '<text x="12" y="'+(PAD.top+IH/2)+'" text-anchor="middle" fill="#9ca3af" font-size="12" font-weight="600" transform="rotate(-90,12,'+(PAD.top+IH/2)+')">IMPACT →</text>';
+    var placed = [];
+    function jitter(bx, by, r) {
+      var dx = 0, dy = 0;
+      for (var k = 0; k < placed.length; k++) {
+        var dist = Math.sqrt(Math.pow(bx+dx-placed[k].x,2)+Math.pow(by+dy-placed[k].y,2));
+        if (dist < r*2.2) {
+          var angle = Math.atan2(by+dy-placed[k].y, bx+dx-placed[k].x);
+          dx += Math.cos(angle)*(r*2.2-dist)*0.5;
+          dy += Math.sin(angle)*(r*2.2-dist)*0.5;
+        }
+      }
+      placed.push({x:bx+dx, y:by+dy});
+      return [bx+dx, by+dy];
+    }
+    for (var t = 0; t < todoItems.length; t++) {
+      var item = todoItems[t];
+      var id = item[0], label = item[1], impact = item[2], effort = item[3], cat = item[4], desc = item[5];
+      var bx = xPos(effort), by = yPos(impact), r = 16;
+      var pos = jitter(bx, by, r);
+      var cx = pos[0], cy = pos[1];
+      var col = todoCatColor[cat];
+      var safeDesc = desc.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      var safeLabel = label.replace(/"/g,'&quot;');
+      html += '<g class="todo-bubble" data-title="'+safeLabel+'" data-desc="'+safeDesc+'" style="cursor:pointer">';
+      html += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+col+'22" stroke="'+col+'" stroke-width="1.5" opacity="0.9"/>';
+      html += '<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" fill="'+col+'" font-size="10" font-weight="700">'+id+'</text>';
+      html += '</g>';
+    }
+    svg.innerHTML = html;
+    var tip = document.getElementById('todoTooltip');
+    if (!tip) return;
+    var tipTitle = tip.querySelector('.tip-title');
+    var tipBody  = tip.querySelector('.tip-body');
+    svg.querySelectorAll('.todo-bubble').forEach(function(el) {
+      el.addEventListener('mousemove', function(e) {
+        tipTitle.textContent = el.dataset.title;
+        tipBody.textContent  = el.dataset.desc;
+        tip.style.display = 'block';
+        tip.style.left = (e.clientX + 14) + 'px';
+        tip.style.top  = (e.clientY - 10) + 'px';
+      });
+      el.addEventListener('mouseleave', function() { tip.style.display = 'none'; });
+    });
+  }
+
   mermaid.initialize({ startOnLoad: true, securityLevel: 'loose',
     theme: 'dark',
     themeVariables: {
@@ -4008,6 +4147,7 @@ flowchart LR
         tabs.forEach(function(b) { b.classList.toggle('active', b === btn); });
         sections.forEach(function(s) { s.classList.toggle('active', s.id === target); });
         if (target === 'patterns') { window.__patternsRedraw && window.__patternsRedraw(); }
+          if (target === 'todo-matrix') drawTodoMatrix();
         syncPlayBtn(target);
         if (banner) { banner.classList.add('hidden'); sessionStorage.setItem('consiliumBannerDone','1'); }
       });
