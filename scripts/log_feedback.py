@@ -48,7 +48,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from utils import force_utf8_streams, load_json_stdin
+from utils import atomic_write_text, force_utf8_streams, load_json_stdin
 
 
 CONTEXT_MAX = 60
@@ -159,8 +159,14 @@ def build_entry(
     }
 
 
-def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None:
-    """Round-trip the HTML: parse existing rows, append, re-render."""
+def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> bool:
+    """Round-trip the HTML: parse existing rows, append, re-render.
+
+    Returns True if a new row was written, False if the entry was a duplicate
+    of an existing row (same fingerprint) and was skipped. Callers can use the
+    return value to track how many real appends happened — important for
+    audit_feedback's --backfill summary.
+    """
     import importlib.util
     here = Path(__file__).resolve().parent
     import sys as _sys
@@ -180,6 +186,26 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None
     existing = feedback_mod.parse_feedback(feedback_path)
     runs_dir = feedback_path.parent / "runs"
     run_map = _load_map(runs_dir)
+
+    # Idempotent on re-run: same (date, chosen, context[:30]) fingerprint
+    # means the row is already logged. Re-runs would otherwise silently
+    # duplicate entries each time the orchestrator pipes the same report.
+    new_fp = _fingerprint(entry["date"], entry["chosen"], entry["context"])
+    existing_fps = {
+        _fingerprint(row["date"], row["chosen"], row["context"]) for row in existing
+    }
+    if new_fp in existing_fps:
+        print(
+            f"log_feedback: duplicate entry (fp {new_fp[:8]}) — already in FEEDBACK.html, skipping append.",
+            file=sys.stderr,
+        )
+        # Still refresh the sidecar map for the new run_path even when the row
+        # itself is a duplicate (a later mark_outcome may want to drill into the
+        # newer run JSON for the same logical decision).
+        if run_path:
+            run_map[new_fp] = run_path
+            _save_map(runs_dir, run_map)
+        return False
 
     # Restore run_path for existing rows from sidecar map so drill-down survives re-renders.
     entries = [
@@ -202,11 +228,11 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> None
 
     # Persist run_path for the new entry so future re-renders can recover it.
     if run_path:
-        fp = _fingerprint(entry["date"], entry["chosen"], entry["context"])
-        run_map[fp] = run_path
+        run_map[new_fp] = run_path
         _save_map(runs_dir, run_map)
 
-    feedback_path.write_text(render_mod.render(entries, runs_dir), encoding="utf-8")
+    atomic_write_text(feedback_path, render_mod.render(entries, runs_dir))
+    return True
 
 
 def main(argv: list[str] | None = None) -> int:

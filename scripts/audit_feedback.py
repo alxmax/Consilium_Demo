@@ -113,8 +113,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.dry_run:
             print(f"  [dry-run] would append: {entry['date']} | {entry['context']} | {entry['chosen']} | PEND | {entry['note']}")
         else:
-            log_mod.append_entry(feedback_path, entry, rel)
-            appended += 1
+            if log_mod.append_entry(feedback_path, entry, rel):
+                appended += 1
+            else:
+                print(f"  skip {m['run']}: duplicate fingerprint, already in FEEDBACK.html", file=sys.stderr)
 
     if args.dry_run:
         print(f"\ndry-run: {len(missing)} rows would be appended.")

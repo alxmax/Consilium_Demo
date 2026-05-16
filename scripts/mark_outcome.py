@@ -42,7 +42,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-from utils import force_utf8_streams
+from utils import atomic_write_text, force_utf8_streams
 
 
 CONFIRMED_MARKER = "[confirmed]"
@@ -170,7 +170,7 @@ def main(argv: list[str] | None = None) -> int:
         print("(dry-run; no write)")
         return 0
 
-    feedback_path.write_text(render_mod.render(entries, runs_dir), encoding="utf-8")
+    atomic_write_text(feedback_path, render_mod.render(entries, runs_dir))
     print(f"updated {len(matched_idx)} row(s) in {feedback_path.name}")
     return 0
 
