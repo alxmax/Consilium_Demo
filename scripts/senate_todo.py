@@ -20,6 +20,18 @@ TODO_DEFAULT = Path(__file__).parent.parent / "TODO.md"
 MONTHS = ["Ian", "Feb", "Mar", "Apr", "Mai", "Iun",
           "Iul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+# Mirrors senate_transcript._SKIP_WORDS: labels containing these substrings
+# come from the test harness, not real audits, and must not pollute TODO.md.
+# Without this filter, every `python scripts/test_senate_synth.py` run appends
+# 10+ smoke/fixture entries that then have to be cleaned up by hand (see the
+# precedent in PR #68 "fix(todo): cleanup after /consilium audit 2026-05-17").
+_SKIP_LABEL_WORDS = ("smoke", "fixture", "collision")
+
+
+def _is_test_label(label: str) -> bool:
+    low = (label or "").lower()
+    return any(w in low for w in _SKIP_LABEL_WORDS)
+
 
 def find_latest_bundle():
     pattern = str(Path(__file__).parent.parent / "runs" / "senate" / "*.json")
@@ -93,7 +105,10 @@ SECTION_HEADER = "## 🏛 Hotărâri Senate\n"
 
 
 def append_bundle_to_todo(bundle: dict, todo_path: "Path | None" = None) -> bool:
-    """Append bundle decisions to TODO.md. Returns True if written, False if skipped (duplicate)."""
+    """Append bundle decisions to TODO.md. Returns True if written, False if skipped
+    (either duplicate anchor or test label matching _SKIP_LABEL_WORDS)."""
+    if _is_test_label(bundle.get("label", "")):
+        return False
     todo_path = Path(todo_path) if todo_path else TODO_DEFAULT
     anchor = session_anchor(bundle)
 
@@ -141,6 +156,8 @@ def main():
     anchor  = session_anchor(bundle)
     if written:
         print(f"written: {args.todo}  [{anchor}]", file=sys.stderr)
+    elif _is_test_label(bundle.get("label", "")):
+        print(f"INFO: test label ({bundle.get('label')!r}) — not appended to TODO.md.", file=sys.stderr)
     else:
         print(f"INFO: already in TODO.md ({anchor!r}), skipping.", file=sys.stderr)
 
