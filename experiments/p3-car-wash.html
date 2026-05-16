@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Consilium · P3 Car Wash · Experiment consolidat (revizuit)</title>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #1c1c1e;
+    --surface-elevated: #2c2c2e;
+    --border: #38383a;
+    --border-soft: #2c2c2e;
+    --text: #f5f5f7;
+    --text-secondary: #c7c7cc;
+    --text-muted: #8e8e93;
+    --blue: #0a84ff;
+    --green: #30d158;
+    --red: #ff453a;
+    --orange: #ff9f0a;
+    --purple: #bf5af2;
+    --yellow: #ffd60a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  header { margin-bottom: 40px; }
+  .eyebrow {
+    color: var(--blue);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.022em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .meta { color: var(--text-muted); font-size: 14px; }
+  .meta strong { color: var(--text-secondary); font-weight: 500; }
+
+  .corrigendum {
+    background: rgba(191, 90, 242, 0.08);
+    border: 1px solid rgba(191, 90, 242, 0.4);
+    border-radius: 12px;
+    padding: 16px 22px;
+    margin: 16px 0 0;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+  }
+  .corrigendum strong { color: var(--purple); }
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 28px 0 8px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+  }
+  .toc strong { color: var(--text); margin-right: 8px; }
+  .toc a { color: var(--blue); text-decoration: none; margin-right: 14px; }
+  .toc a:hover { text-decoration: underline; }
+
+  section { margin: 56px 0; scroll-margin-top: 20px; }
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 24px 0 10px;
+  }
+  p { margin: 10px 0; color: var(--text-secondary); }
+  p.lead { font-size: 16px; color: var(--text-secondary); max-width: 760px; }
+  ul, ol { margin: 12px 0 16px 24px; color: var(--text-secondary); }
+  ul li, ol li { margin: 6px 0; font-size: 14px; }
+
+  .hero-finding {
+    background: linear-gradient(135deg, rgba(48, 209, 88, 0.10), rgba(10, 132, 255, 0.08));
+    border: 1px solid rgba(48, 209, 88, 0.3);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin: 32px 0;
+  }
+  .hero-finding .label {
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .hero-finding h2 {
+    font-size: 22px;
+    border: none;
+    margin-bottom: 12px;
+    padding: 0;
+  }
+  .hero-finding p { color: var(--text-secondary); font-size: 15px; }
+
+  .problem-block {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 24px;
+    margin: 24px 0;
+    border: 1px solid var(--border-soft);
+  }
+  .problem-block .q {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 14px;
+    color: var(--yellow);
+    background: rgba(255, 214, 10, 0.05);
+    padding: 14px 18px;
+    border-radius: 10px;
+    border-left: 3px solid var(--yellow);
+    margin: 10px 0;
+    line-height: 1.6;
+  }
+
+  .answer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 18px 0;
+  }
+  .answer-chip {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+  .answer-chip .letter {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--blue);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .answer-chip .text { font-size: 13px; color: var(--text-secondary); }
+  .answer-chip.correct { border-color: var(--green); background: rgba(48, 209, 88, 0.06); }
+  .answer-chip.correct .letter { color: var(--green); }
+  .answer-chip.wrong { border-color: rgba(255, 69, 58, 0.4); background: rgba(255, 69, 58, 0.04); }
+  .answer-chip.wrong .letter { color: var(--red); }
+  .answer-chip.absurd .letter { color: var(--text-muted); }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border-radius: 14px;
+    overflow: hidden;
+    font-size: 13.5px;
+    border: 1px solid var(--border-soft);
+  }
+  .summary-table th, .summary-table td {
+    text-align: center;
+    padding: 14px 10px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .summary-table th {
+    background: var(--surface-elevated);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+  .summary-table th:first-child, .summary-table td:first-child {
+    text-align: left;
+    font-weight: 500;
+    padding-left: 18px;
+  }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table .cell-result {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 13.5px;
+  }
+  .summary-table .cell-result .letter {
+    font-size: 18px;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .summary-table .cell-result .conf {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  /* INVERTED: C = correct (green), A = wrong (red) */
+  .cell-result .letter.A { color: var(--red); }
+  .cell-result .letter.C { color: var(--green); }
+  .cell-result .letter.B { color: var(--text-muted); }
+  .cell-result .letter.D { color: var(--purple); }
+  .cell-result.empty { color: var(--text-muted); font-style: italic; font-size: 13px; }
+  .cell-result.refused { color: var(--orange); font-style: italic; font-size: 12px; }
+
+  .stability-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .stability-pill.ok       { background: rgba(48, 209, 88, 0.15);  color: var(--green); }
+  .stability-pill.mixed    { background: rgba(255, 159, 10, 0.15); color: var(--orange); }
+  .stability-pill.wrong    { background: rgba(255, 69, 58, 0.15);  color: var(--red); }
+
+  .findings-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .finding-card {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 22px 26px;
+    border: 1px solid var(--border-soft);
+  }
+  .finding-card.critical { border-color: rgba(255, 69, 58, 0.4); background: rgba(255, 69, 58, 0.04); }
+  .finding-card.warning  { border-color: rgba(255, 159, 10, 0.4); background: rgba(255, 159, 10, 0.04); }
+  .finding-card.insight  { border-color: rgba(10, 132, 255, 0.4); background: rgba(10, 132, 255, 0.04); }
+  .finding-card.win      { border-color: rgba(48, 209, 88, 0.4);  background: rgba(48, 209, 88, 0.05); }
+  .finding-card h3 { font-size: 16px; font-weight: 600; margin: 0 0 8px; }
+  .finding-card p { color: var(--text-secondary); font-size: 14px; margin: 6px 0; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-right: 8px;
+  }
+  .finding-card.critical .badge { background: rgba(255, 69, 58, 0.2);  color: var(--red); }
+  .finding-card.warning  .badge { background: rgba(255, 159, 10, 0.2); color: var(--orange); }
+  .finding-card.insight  .badge { background: rgba(10, 132, 255, 0.2); color: var(--blue); }
+  .finding-card.win      .badge { background: rgba(48, 209, 88, 0.2);  color: var(--green); }
+
+  .method-box {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-left: 4px solid var(--blue);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .method-box h3 { font-size: 14px; font-weight: 600; color: var(--text); margin: 0 0 8px; }
+  .method-box p { font-size: 13.5px; margin: 4px 0; }
+
+  code {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    color: var(--yellow);
+    background: rgba(255, 214, 10, 0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  .verdict-box {
+    background: var(--surface);
+    border: 2px solid var(--green);
+    border-radius: 14px;
+    padding: 22px 28px;
+    margin: 24px 0;
+  }
+  .verdict-box h3 { color: var(--green); margin-top: 0; }
+  .verdict-box .runner-up { color: var(--orange); margin-top: 18px; }
+  .verdict-box .loser { color: var(--red); margin-top: 18px; }
+
+  footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  footer code {
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 800px) {
+    .answer-grid { grid-template-columns: repeat(2, 1fr); }
+    .summary-table { font-size: 12px; }
+    .summary-table th, .summary-table td { padding: 8px 6px; }
+    h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="eyebrow">Consilium · Experiment consolidat (revizuit 2026-05-16)</div>
+  <h1>P3 Car Wash · Mode comparison + reproducibility</h1>
+  <div class="meta">
+    <strong>2026-05-15 → 2026-05-16</strong> &middot;
+    3 etape: <strong>Run 1</strong> (single) · <strong>Reruns</strong> (Run 2/3/4) · <strong>"Fab-rate" test</strong> (15 agenți paralelizați) &middot;
+    ~612K tokens cumulative &middot; Sonnet 4.6 (majoritar), Opus 4.7 (Sequential), Haiku 4.5 (split modes)
+  </div>
+
+  <div class="corrigendum">
+    <strong>⚠ Corrigendum (2026-05-16):</strong> rapoartele inițiale au marcat <strong>A (pe jos)</strong> drept "obvious correct" și au numit C "fabricație model-wide".
+    Aceasta era o citire greșită a problemei. <strong>Răspunsul corect este C (cu mașina)</strong> — pentru a-ți <em>spăla</em> mașina, mașina trebuie să fie la spălătorie.
+    Ce numeam "fabricație" (<em>"mașina trebuie să ajungă fizic la spălătorie"</em>) era de fapt prinderea constraint-ului real implicit.
+    Toate sintezele, verdict-urile și pill-urile au fost inversate; datele brute (vote-uri și confidence-uri) rămân identice.
+  </div>
+
+  <div class="toc">
+    <strong>Quick nav:</strong>
+    <a href="#problem">Problem</a>
+    <a href="#summary">Summary</a>
+    <a href="#sim-test">Sim ×3 test</a>
+    <a href="#findings">Key findings</a>
+    <a href="#verdict">Verdict</a>
+    <a href="#lessons">Meta-lessons</a>
+  </div>
+</header>
+
+<!-- ============== HERO FINDING ============== -->
+<div class="hero-finding">
+  <div class="label">★ Câștigător revizuit</div>
+  <h2>chosen_confirmation_pass e singurul mod care prinde determinist constraint-ul implicit.</h2>
+  <p>
+    Întrebarea pare să fie despre transportul persoanei la 50m. Citirea atentă revelează că obiectul de transportat este <strong>mașina</strong> (pentru spălat).
+    A (pe jos, lăsând mașina acasă) nu rezolvă goal-ul. C (cu mașina) îl rezolvă. Toate modurile shallow ("simplicitatea câștigă") aleg A — corect ca arithmetic, greșit ca task understanding.
+  </p>
+  <p>
+    Pattern-ul: chosen_confirmation_pass plasează un skeptic <strong>pe răspunsul ales</strong>. Skeptic-ul întreabă "care e cel mai concret motiv de eșec pentru A?" și ajunge sistematic la
+    <em>"mașina nu e la spălătorie."</em> Această observație inversează decizia. Pe celelalte moduri, această verificare nu există — deliberarea se termină pe A pentru că nimeni nu interoghează asumpția implicită.
+  </p>
+  <p>
+    Ironia experimentului: modul cu "fab-rate 100%" în simulare e singurul cu <strong>read-rate 100%</strong> pe constraint-ul real. Sub-task-ul auto-impus al skeptic-ului ("găsește un eșec concret") replică exact disciplina de a citi atent o cerință.
+  </p>
+</div>
+
+<!-- ============== PROBLEM ============== -->
+<section id="problem">
+  <h2>Întrebarea (P3)</h2>
+  <div class="problem-block">
+    <div class="q">"Vreau să-mi spăl mașina. Spălătoria auto este la 50 de metri distanță. Ar trebui să merg pe jos sau cu mașina?"</div>
+    <div class="answer-grid">
+      <div class="answer-chip wrong">
+        <div class="letter">A</div>
+        <div class="text">Pe jos</div>
+      </div>
+      <div class="answer-chip absurd">
+        <div class="letter">B</div>
+        <div class="text">Cu tramvaiul</div>
+      </div>
+      <div class="answer-chip correct">
+        <div class="letter">C</div>
+        <div class="text">Cu mașina</div>
+      </div>
+      <div class="answer-chip">
+        <div class="letter">D</div>
+        <div class="text">Alt răspuns</div>
+      </div>
+    </div>
+    <p style="color: var(--text-muted); font-size: 13px; margin-top: 12px;">
+      <strong>C (cu mașina) = corect.</strong> Goal-ul este spălarea mașinii, nu sosirea persoanei. Pentru ca mașina să fie spălată, trebuie să fie la spălătorie.
+      Dacă mergi pe jos, mașina rămâne murdară acasă — defeats the purpose.
+    </p>
+    <p style="color: var(--text-muted); font-size: 13px;">
+      <strong>A (pe jos) = quick-take greșit.</strong> Pare evident dacă citești problema ca "cum mă deplasez la 50m" în loc de "cum spăl mașina la o spălătorie la 50m". Quick-take = shallow; deliberare suplimentară = corect reading.
+    </p>
+  </div>
+</section>
+
+<!-- ============== SUMMARY ============== -->
+<section id="summary">
+  <h2>Rezultate · toate modurile × toate run-urile</h2>
+  <p class="lead">Răspuns ales și confidence per run. <strong>Verde = C (corect, prinde constraint-ul)</strong>; <strong>roșu = A (miss pe constraint)</strong>. Coloana "Stability" agregă toate run-urile disponibile.</p>
+
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th style="min-width: 200px;">Mode</th>
+        <th>Run 1<br><span style="font-size:10px; color: var(--text-muted); font-weight:400; text-transform:none;">2026-05-15</span></th>
+        <th>Run 2</th>
+        <th>Run 3</th>
+        <th>Run 4<br><span style="font-size:10px; color: var(--text-muted); font-weight:400; text-transform:none;">retest</span></th>
+        <th>Sim ×3<br><span style="font-size:10px; color: var(--text-muted); font-weight:400; text-transform:none;">determinist</span></th>
+        <th>Constraint-catch</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Sequential <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(Opus, main ctx)</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.92</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.94</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.92</span></td>
+        <td class="cell-result empty">—</td>
+        <td class="cell-result empty">—</td>
+        <td><span class="stability-pill wrong">0/3 miss constraint</span></td>
+      </tr>
+      <tr>
+        <td>Parallel <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(Sonnet × 3)</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.95</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.65</span></td>
+        <td class="cell-result empty">—</td>
+        <td class="cell-result empty">—</td>
+        <td><span class="stability-pill wrong">0/3 miss constraint</span></td>
+      </tr>
+      <tr>
+        <td>Dialectic <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(Sonnet × 6)</span></td>
+        <td class="cell-result"><span class="letter C">C</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A" style="font-size:15px;">A</span><span class="conf">×3</span></td>
+        <td><span class="stability-pill mixed">1/7 catch · Run 1 only</span></td>
+      </tr>
+      <tr>
+        <td>Trias <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(Sonnet × 9)</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.91</span></td>
+        <td class="cell-result"><span class="letter C">C</span><span class="conf">0.95</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A" style="font-size:15px;">A</span><span class="conf">×3</span></td>
+        <td><span class="stability-pill mixed">1/7 catch · Run 3 only</span></td>
+      </tr>
+      <tr style="background: rgba(48, 209, 88, 0.05);">
+        <td>chosen_confirmation_pass <span style="color: var(--green); font-weight: 400; font-size: 12px;">★ winner</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.99</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter C">C</span><span class="conf">0.61</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.91</span></td>
+        <td class="cell-result"><span class="letter C" style="font-size:15px;">C</span><span class="conf">×3</span></td>
+        <td><span class="stability-pill ok">4/7 catch · sim=3/3</span></td>
+      </tr>
+      <tr>
+        <td>lite_trias_B <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(Sonnet+Haiku, 9 inv.)</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.98</span></td>
+        <td class="cell-result"><span class="letter C">C</span><span class="conf">0.91</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A" style="font-size:15px;">A</span><span class="conf">×3</span></td>
+        <td><span class="stability-pill mixed">1/7 catch · Run 2 only</span></td>
+      </tr>
+      <tr>
+        <td>synod_full <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(Sonnet × 18, proposed)</span></td>
+        <td class="cell-result"><span class="letter C">C</span><span class="conf">0.95</span></td>
+        <td class="cell-result refused">refused</td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.94</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A" style="font-size:15px;">A</span><span class="conf">×3</span></td>
+        <td><span class="stability-pill mixed">1/6 catch · Run 1 only</span></td>
+      </tr>
+      <tr style="background: rgba(255, 69, 58, 0.04);">
+        <td>synod_split <span style="color: var(--red); font-weight: 400; font-size: 12px;">⚠ shallow-failure</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.94</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.91</span></td>
+        <td class="cell-result empty">—</td>
+        <td class="cell-result empty">—</td>
+        <td><span class="stability-pill wrong">0/3 · Haiku too shallow</span></td>
+      </tr>
+      <tr style="background: rgba(255, 69, 58, 0.04);">
+        <td>dialectic_iter3_split <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(Sonnet Gen + Haiku verif, N=3)</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result empty">—</td>
+        <td class="cell-result empty">—</td>
+        <td><span class="stability-pill wrong">0/3 · early-exit Pass 1</span></td>
+      </tr>
+      <tr>
+        <td>dialectic_iter3_full <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(all Sonnet, N=3)</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result empty">—</td>
+        <td class="cell-result empty">—</td>
+        <td><span class="stability-pill wrong">0/3 · early-exit Pass 1</span></td>
+      </tr>
+      <tr>
+        <td>lite_trias_A <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(all Haiku, Run 1 only)</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.92</span></td>
+        <td class="cell-result empty">—</td>
+        <td class="cell-result empty">—</td>
+        <td class="cell-result empty">—</td>
+        <td class="cell-result empty">—</td>
+        <td><span class="stability-pill wrong">0/1 · DQ (24.8K prose)</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="lead" style="margin-top: 20px;">
+    Cost dispatch real (per run): <strong>Sequential</strong> ~3K · <strong>Parallel</strong> ~15K (baseline 1.0×) · <strong>chosen_confirmation_pass</strong> ~20K (1.3×) ·
+    <strong>Dialectic</strong> ~30K (2.0×) · <strong>Trias</strong> ~45K (3.0×) · <strong>synod_split</strong> ~50K Sonnet-equiv (3.3×) · <strong>synod_full</strong> ~90K (6.0×).
+  </p>
+</section>
+
+<!-- ============== SIM ×3 TEST ============== -->
+<section id="sim-test">
+  <h2>Sim ×3 test · 5 moduri × 3 simulări identice</h2>
+  <p class="lead">
+    2026-05-16 · 15 sub-agenți paralelizați (un singur mesaj, 15 tool calls). Metodă: thought-experiment simulation, fără tool use, fără citit fișiere. Token usage per agent: ~13.7K.
+  </p>
+
+  <div class="method-box" style="border-left-color: var(--purple);">
+    <h3>Notă pe denumire: "fab-rate" → "constraint-catch rate"</h3>
+    <p>Acest test a fost rulat inițial sub asumpția că <strong>C = fabricație</strong>. Cu corigendum-ul, interpretarea se inversează: count_C / 3 nu măsoară "fabrication rate" ci <strong>rata cu care un mod prinde constraint-ul implicit al problemei</strong>. Tabelele și valorile sunt aceleași; eticheta semantică e diferită.</p>
+    <p>Consilium fab-rate test = thought-experiment, fără tool use real. Determinismul la nivel de prompt e foarte ridicat — variația stochastică din temperatură există, dar e mai mică decât în dispatch real.</p>
+  </div>
+
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th style="min-width: 220px;">Mode</th>
+        <th>Run 1</th>
+        <th>Run 2</th>
+        <th>Run 3</th>
+        <th>A (miss)</th>
+        <th>C (catch)</th>
+        <th>Catch rate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Dialectic <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">Sonnet × 6, 2-pass</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td>3</td><td>0</td>
+        <td><span class="stability-pill wrong">0/3 · 0%</span></td>
+      </tr>
+      <tr>
+        <td>Trias <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">Sonnet × 9, 3 personalități</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.95</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td>3</td><td>0</td>
+        <td><span class="stability-pill wrong">0/3 · 0%</span></td>
+      </tr>
+      <tr style="background: rgba(48, 209, 88, 0.05);">
+        <td>chosen_confirmation_pass <span style="color: var(--green); font-weight: 400; font-size: 12px;">★ Sonnet × 4, Parallel + skeptic</span></td>
+        <td class="cell-result"><span class="letter C">C</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter C">C</span><span class="conf">0.99</span></td>
+        <td class="cell-result"><span class="letter C">C</span><span class="conf">0.97</span></td>
+        <td>0</td><td>3</td>
+        <td><span class="stability-pill ok">3/3 · 100%</span></td>
+      </tr>
+      <tr>
+        <td>lite_trias_B <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">Sonnet Gen + Haiku verif</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.97</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.98</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.98</span></td>
+        <td>3</td><td>0</td>
+        <td><span class="stability-pill wrong">0/3 · 0%</span></td>
+      </tr>
+      <tr>
+        <td>synod_full <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">Sonnet × 18, Trias × Dialectic</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.98</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.99</span></td>
+        <td class="cell-result"><span class="letter A">A</span><span class="conf">0.99</span></td>
+        <td>3</td><td>0</td>
+        <td><span class="stability-pill wrong">0/3 · 0%</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="font-size: 13.5px; color: var(--text-muted); margin-top: 14px;">
+    Notă: doi din trei agenți chosen_confirmation_pass au încercat să invoce skill-ul <code>/consilium</code> shell real și au primit denial. Au procedat cu deliberarea internă și au returnat tot C — catch-ul vine din raționamentul în sine (skeptic pe răspuns ales), nu din accesul la codebase.
+  </p>
+</section>
+
+<!-- ============== KEY FINDINGS ============== -->
+<section id="findings">
+  <h2>Key findings (reinterpretate)</h2>
+  <div class="findings-grid">
+
+    <div class="finding-card win">
+      <h3><span class="badge">Winner</span> chosen_confirmation_pass: 100% catch-rate în simulare</h3>
+      <p>
+        Singurul mod care prinde determinist constraint-ul implicit. Mecanismul: vocea skeptic primește A (ales) și caută eșecuri concrete → găsește sistematic <em>"mașina nu e la spălătorie"</em> → inversează decizia la C.
+      </p>
+      <p>
+        Skeptic-ul "asupra răspunsului ales" replică exact disciplina de citit atent a unei probleme: "ce ar putea face acest răspuns inadecvat pentru goal-ul real?" Pe P3, structura asta e necesară și suficientă.
+      </p>
+    </div>
+
+    <div class="finding-card critical">
+      <h3><span class="badge">Critical</span> Modurile "deep" deliberează mult, dar pe răspuns greșit</h3>
+      <p>
+        Trias (9 voci), synod_full (18 voci), Dialectic (6 voci) — toate produc confidence-uri 0.95-0.99 pe răspunsul A în simulare. <strong>Profunzimea deliberării nu garantează catch-ul constraint-ului</strong> — fără un mecanism care să interogheze asumpția implicită, toate vocile converg pe ceea ce pare obvios.
+      </p>
+      <p>
+        Lecție: numărul de voci nu compensează structura greșită. Un singur skeptic pe răspuns ales (chosen_confirmation_pass: 4 voci) bate 18 voci care toate se uită în aceeași direcție.
+      </p>
+    </div>
+
+    <div class="finding-card critical">
+      <h3><span class="badge">Critical</span> synod_split (Haiku verifiers) = anti-catch, nu anti-fabrication</h3>
+      <p>
+        Rapoartele inițiale au descris synod_split ca "anti-fabrication brake" pentru că Haiku verifiers acceptă superficial răspunsul evident. Cu corigendum-ul: <strong>Haiku e prea shallow pentru a interoga constraint-ul real</strong>. Verifică A, vede că "50m e o distanță mică", confirmă.
+      </p>
+      <p>
+        3/3 A pe P3 nu e robustețe — e shallow-failure consistent. Pe probleme cu constraint implicit, Haiku verifiers sunt activ contraproductivi.
+      </p>
+    </div>
+
+    <div class="finding-card insight">
+      <h3><span class="badge">Insight</span> Cross-review NU prinde constraint-ul singur (Dialectic)</h3>
+      <p>
+        Dialectic Run 1: <strong>singura</strong> rulare reală care a ales C cu confidence 0.97 — Generator în Pass 2 a revizuit de la A la C citând <em>"mașina trebuie să fie fizic la spălătorie"</em>. Run 2/3/4: toate A.
+      </p>
+      <p>
+        Cross-review e necesar dar nu suficient pentru catch. Trebuie ca cineva — fie Generator în Pass 2, fie un skeptic dedicat — să interogheze asumpția. În Run 1 s-a întâmplat accidental; în reruns, nu.
+      </p>
+    </div>
+
+    <div class="finding-card warning">
+      <h3><span class="badge">Warning</span> Real tool use nu compensează lipsa skeptic-ului</h3>
+      <p>
+        Sub-agenții cu tool use real (Parallel Run 3: 41K tokens, 24 tool_uses; Trias Run 3: 42K, 19 tool_uses; chosen_confirmation_pass Run 3: 48K, 20 tool_uses) au returnat confidence-uri mai mici (0.61-0.65) — dar majoritatea tot pe A.
+      </p>
+      <p>
+        Aggregator-ul real e mai conservator decât stima LLM-ului — bună calibrare. Dar tool use nu obligă la re-citirea problemei — fără structură explicită care să "challenge the chosen", deliberarea adâncă rămâne pe quick-take.
+      </p>
+    </div>
+
+    <div class="finding-card insight">
+      <h3><span class="badge">Insight</span> Determinism perfect la 4/5 moduri — pe răspuns greșit</h3>
+      <p>
+        Dialectic, Trias, lite_trias_B, synod_full: A × 3 în toate runs-urile simulate. Confidence-uri identice (0.97-0.99). Reasoning-urile variază ușor (<em>"50 de metri se merge pe jos"</em> vs <em>"Spălătoria e la 50 metri"</em>) dar concluzia e fixă.
+      </p>
+      <p>
+        Aceleași moduri sunt deterministe și pe răspuns corect dacă structura prompt-ului ar fi corectă. Determinismul nu e bun sau rău în sine — e doar amplificarea structurii. Dacă structura merge pe shallow, deterministul e shallow consistent.
+      </p>
+    </div>
+
+    <div class="finding-card warning">
+      <h3><span class="badge">Notable</span> synod_full Run 1 a prins constraint-ul, dar fragil</h3>
+      <p>
+        Run 1 (18 voci Sonnet): C cu confidence 0.95 — singura rulare a synod_full care a prins. Run 2 a refuzat (Step 0 stale PENDs). Run 3 cu prompt explicit <em>"SKIP Step 0"</em> → A 0.94. Run 4 → A 0.97.
+      </p>
+      <p>
+        Cantitatea de voci în synod_full e suficientă pentru ca o voce să prindă constraint-ul cu probabilitate non-zero, dar nu și pentru a-l prinde determinist. Pentru garanție, structura de tip "skeptic pe ales" e mai eficientă (4 voci) decât scale (18 voci).
+      </p>
+    </div>
+
+    <div class="finding-card warning">
+      <h3><span class="badge">Disqualified</span> lite_trias_A (all Haiku) · output non-compliance</h3>
+      <p>
+        Single run în Run 1, ales A. Dar a returnat ~10KB markdown narration înainte de JSON-ul cerut. În producție, <code>validate_report.py</code> ar respinge acest output (malformed JSON). Independent de problema de catch — pipeline-ul strict elimină modul fără să-l mai testeze pe constraint.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============== VERDICT ============== -->
+<section id="verdict">
+  <h2>Verdict consolidat (revizuit)</h2>
+
+  <div class="verdict-box">
+    <h3>★ Câștigător pe P3: chosen_confirmation_pass</h3>
+    <ul>
+      <li><strong>100% catch-rate</strong> în simulare directă (3/3 C)</li>
+      <li><strong>4/7 catch-uri</strong> în rulările reale — singurul mod care prinde constraint-ul de mai multe ori</li>
+      <li>Mecanism explicit: skeptic pe răspunsul ales obligă re-citirea problemei</li>
+      <li>1.3× cost Parallel — foarte ieftin pentru problema rezolvată</li>
+    </ul>
+
+    <p class="runner-up">Accidental catch în Run 1 (apoi nu se repetă): <strong>Dialectic Run 1</strong>, <strong>synod_full Run 1</strong> — au prins constraint-ul prin cross-review fără mecanism dedicat. Nereproductibil în rerun-uri.</p>
+    <p class="runner-up">Catch izolat: <strong>Trias Run 3</strong> (real tool use, 19 calls), <strong>lite_trias_B Run 2</strong>. Nu există pattern stabil care să prezică când prind.</p>
+
+    <p class="loser">⚠ Shallow consistent: <strong>synod_split / dialectic_iter3_split / Haiku-based modes</strong> — 0/3 catch. Verificatorii Haiku acceptă răspunsul evident fără să interogheze.</p>
+    <p class="loser">⚠ Shallow simple: <strong>Sequential / Parallel</strong> — 0/3 catch. Robuste prin simplitate, dar simplitatea = "nu interoga asumpția".</p>
+    <p class="loser">⚠ Deep dar fără skeptic: <strong>Trias / Dialectic / lite_trias_B / synod_full</strong> — 1/7 sau mai puțin în reruns reale. Sim-ul confirmă: fără structură care să provoace răspunsul, deliberarea adâncă converge pe shallow.</p>
+  </div>
+
+  <h3>Implicații pentru runs viitoare (P1 + P2)</h3>
+  <ul>
+    <li><strong>Skeptic-on-chosen e quick-win structural.</strong> Adaugă 1 voce, schimbă decizia când există constraint implicit. Foarte ieftin față de scale.</li>
+    <li><strong>Test ipoteza pe P1 (date refactor) și P2 (auth):</strong> dacă problema are constraint implicit (ex. backward-compat), chosen_confirmation_pass ar trebui să bată Trias/Dialectic prin acest mecanism.</li>
+    <li><strong>Haiku verifiers sunt periculoși pe probleme cu constraints implicite.</strong> "Anti-fabrication" e iluzia: Haiku e doar prea shallow să prindă constraint-ul real.</li>
+    <li><strong>Cost ≠ catch.</strong> 4 voci (Sonnet × 4) bat 18 voci dacă structura ascultă răspunsul ales. Scale fără structura corectă e waste.</li>
+    <li><strong>Minimum 3 rerun-uri per mod per problemă</strong> — orice claim cu single run e artefact.</li>
+  </ul>
+</section>
+
+<!-- ============== META LESSONS ============== -->
+<section id="lessons">
+  <h2>Meta-lecții din inversare</h2>
+
+  <div class="findings-grid">
+    <div class="finding-card insight">
+      <h3><span class="badge">Lesson 1</span> "Fabrication" labels need a strong oracle</h3>
+      <p>
+        Experimentul a fost construit pe asumpția că A = corect și a etichetat C drept "fabricație". Cu oracle-ul (răspunsul corect) inversat, întregul label semantic se inversează — toate concluziile inițiale erau în direcția greșită.
+      </p>
+      <p>
+        Înainte de a numi reasoning suplimentar "fabricat", e nevoie de oracle independent (alt expert, ground truth verificabil). Quick-take-ul cel mai natural al evaluatorului nu e oracle.
+      </p>
+    </div>
+
+    <div class="finding-card insight">
+      <h3><span class="badge">Lesson 2</span> Skeptic-on-chosen e quick-win structural</h3>
+      <p>
+        Cea mai ieftină modificare structurală (adaugi o voce care provoacă răspunsul ales) produce cea mai mare îmbunătățire pe probleme cu constraint implicit.
+      </p>
+      <p>
+        Aplicat la Consilium: pentru orice deliberare, după Pass-1 ar putea rula automat un mini-skeptic pe `chosen` care întreabă "este asta răspunsul la întrebarea reală sau la o quick-take a ei?". Cost: 1 voce. Beneficiu: prinde constraint-uri pe care toți votanții le-au ratat.
+      </p>
+    </div>
+
+    <div class="finding-card insight">
+      <h3><span class="badge">Lesson 3</span> Shallow ≠ robust</h3>
+      <p>
+        Sequential/Parallel au fost lăudate inițial pentru "robustețe prin simplitate". Cu corigendum-ul: shallow consistent e tot shallow. Robustețea e față de variance stochastic, nu față de citirea greșită a problemei.
+      </p>
+      <p>
+        "Modul X a returnat același răspuns în 3/3 rerun-uri" e un semnal slab dacă răspunsul e greșit determinist. Stability fără catch-rate e zero-information.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Consilium · P3 Car Wash · experiment consolidat din 3 etape, revizuit 2026-05-16 după corigendum (răspunsul corect este C) ·
+  Run 1: 2026-05-15 single-run · Run 2+3+4: 2026-05-16 rerun + retest · Sim ×3 test: 2026-05-16, 15 agenți paralelizați ·
+  Total tokens cumulative: ~612K (Run 1: ~100K, Run 2+3: ~306K, Sim Test: ~206K) ·
+  Sonnet 4.6 majoritar, Opus 4.7 pentru Sequential, Haiku 4.5 simulated în split modes ·
+  Linked deliberation: <code>runs/2026-05-15_2302_trias-lite-design.json</code> (chosen=chosen_confirmation_pass, conf=0.723)
+</footer>
+
+</div>
+</body>
+</html>
