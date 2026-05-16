@@ -8,7 +8,7 @@ Defaults (override via --config PATH or scope_gate.json in cwd):
   max_files = 1
   max_lines = 15            # added + removed
   blocklist = [auth/, security/, migrations/, .github/workflows/,
-               **/secrets*, .env*, Dockerfile, *.tf, *.tfvars,
+               **/*secrets*, .env*, Dockerfile, *.tf, *.tfvars,
                package.json, requirements.txt, go.mod, Cargo.toml, pom.xml]
 
 Escape hatch: env CONSILIUM_FORCE_FULL=1 always returns should_skip=false
@@ -56,7 +56,7 @@ DEFAULT_CONFIG: dict = {
         "security/",
         "migrations/",
         ".github/workflows/",
-        "**/secrets*",
+        "**/*secrets*",
         ".env*",
         "Dockerfile",
         "*.tf",
@@ -210,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
             {
                 "should_skip": False,
                 "reason": "CONSILIUM_FORCE_FULL=1 (override)",
-                "signals": {"files_changed": None, "lines_changed": None, "blocklist_hits": []},
+                "signals": {"files_changed": -1, "lines_changed": -1, "blocklist_hits": []},
                 "config_used": cfg,
             },
             sys.stdout,

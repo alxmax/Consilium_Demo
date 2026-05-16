@@ -274,10 +274,12 @@ def aggregate_team_vote(personalities: list[dict], candidates: list[dict]) -> di
         top = counts[0]
         # Majority = strictly more than half; with 3 voters, majority is >=2 votes.
         if top >= 2:
-            for cid, n in tally.items():
-                if n == top:
-                    chosen = cid
-                    break
+            tied = [cid for cid, n in tally.items() if n == top]
+            if len(tied) > 1:
+                raise ValueError(
+                    f"team_vote tie: multiple candidates have top count {top}: {sorted(tied)}"
+                )
+            chosen = tied[0]
 
     dissent: list = []
     if chosen and len(tally) > 1:
