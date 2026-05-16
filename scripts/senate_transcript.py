@@ -23,7 +23,13 @@ SENATOR_META = {
     "dimon":        {"color": "#F09800", "initial": "D", "role": "Stress Test &amp; Contrapartidă"},
     "napoleon":     {"color": "#2a3942", "initial": "N", "role": "Costuri &amp; Teren"},
 }
-VOTE_COLORS = {"GO": ("#00a884", "#fff"), "STOP": ("#e84545", "#fff"), "MODIFY": ("#f0c429", "#000")}
+VOTE_COLORS = {
+    "GO":            ("#00a884", "#fff"),
+    "STOP":          ("#e84545", "#fff"),
+    "MODIFY":        ("#f0c429", "#000"),
+    "DEEPLY_SPLIT":  ("#f07d00", "#fff"),
+    "UNREACHABLE":   ("#6a737d", "#fff"),
+}
 SENATOR_ORDER = list(SENATOR_META.keys())
 
 def e(s) -> str:

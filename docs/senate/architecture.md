@@ -331,13 +331,17 @@ Cross-questions transformă Senatul din 7 voci independente într-un grup delibe
 
 ### 8.1 Cele 5 Legi ale Senatului
 
-| # | Lege | Esență |
-|---|---|---|
-| 1 | Răspuns obligatoriu | Fiecare senator răspunde pe fiecare punct — direct, prin întrebare, sau prin reformulare. **Interzis** "nu am opinie" |
-| 2 | Cross-questions limitate | Maximum **3 cross-questions per senator per punct**. Previne spam și ramificare infinită. |
-| 3 | Blocaj → vot majoritar 5 | Dacă 2 senatori intră în impas, **ceilalți 5 votează**. 7 impar → niciodată 50/50. |
-| 4 | Sinteza doar la final | Aggregator pe Senat rulează DUPĂ toate punctele (evită contagiunea de poziții). |
-| 5 | Auditabilitate | Toate runde + cross-questions + schimbări de poziție salvate în `runs/senate/`. |
+| # | Lege | Esență | Principiu Constituție |
+|---|---|---|---|
+| 1 | Răspuns obligatoriu | Fiecare senator răspunde pe fiecare punct — direct, prin întrebare, sau prin reformulare. **Interzis** "nu am opinie" | **#4 Goal-driven** — fără răspuns complet, success_criterion nu poate fi evaluat |
+| 2 | Cross-questions limitate | Maximum **3 cross-questions per senator per punct**. Previne spam și ramificare infinită. | **#2 Simplicity first** — cap explicit împotriva proliferării deliberative |
+| 3 | Blocaj → vot majoritar 5 | Dacă 2 senatori intră în impas, **ceilalți 5 votează**. 7 impar → niciodată 50/50. | **#4 Goal-driven** — forțează convergența verdictului în loc să lase decizia suspendată |
+| 4 | Sinteza doar la final | Aggregator pe Senat rulează DUPĂ toate punctele (evită contagiunea de poziții). | **#3 Surgical changes** — agregare atomică, fără contaminare incrementală a pozițiilor |
+| 5 | Auditabilitate | Toate runde + cross-questions + schimbări de poziție salvate în `runs/senate/`. | **#1 Think before coding** — material pentru deliberările viitoare (priors, precedente, calibrare) |
+
+> **Criteriu de mapare:** fiecare Lege e mapată la Principiul Constituției al cărui rol primar îl protejează (violarea Legii ar lăsa Principiul fără execuție). Maparea e 1-la-1 prin convenție — o Lege poate atinge mai multe Principii, dar columnar e listat doar cel **load-bearing**.
+
+> **Adăugare 2026-05-17 (Phase 1, run `2026-05-17_013234-phase1-deeply-split-plus-laws-mapping`):** synthesizer-ul emite acum un al patrulea verdict — `DEEPLY_SPLIT` — pentru splituri polarizate (ambele facțiuni GO și STOP ating threshold `QUORUM-2`, fără majoritate). Documentat în SKILL.md "Senate mode" + comment în `senate_synth.py:compute_verdict`. Advisory like UNREACHABLE: orchestrator escaladează la utilizator.
 
 ### 8.2 Matricea cross-questions (cine cu cine)
 

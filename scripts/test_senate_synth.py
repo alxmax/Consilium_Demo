@@ -414,9 +414,139 @@ def test_blocaj_resolution_applied() -> tuple[bool, str]:
     return True, "blocaj resolution replaces loser's vote, verdict computed post-tiebreaker"
 
 
+def test_deeply_split_4_3() -> tuple[bool, str]:
+    """4 GO + 3 STOP (polarized, both factions >= POLARIZATION_THRESHOLD=3) → DEEPLY_SPLIT."""
+    senators = {
+        "wittgenstein": base_senator_output("GO"),
+        "aurelius":     base_senator_output("GO"),
+        "confucius":    base_senator_output("GO"),
+        "socrate":      base_senator_output("GO"),
+        "musk":         base_senator_output("STOP", "block A"),
+        "dimon":        base_senator_output("STOP", "block B"),
+        "napoleon":     base_senator_output("STOP", "block C"),
+    }
+    code, bundle, stderr = run_synth(make_payload(
+        proposal="4-3 polarized smoke", senators=senators, label="smoke-deeply-split-4-3"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if bundle["verdict"] != "DEEPLY_SPLIT":
+        return False, f"expected DEEPLY_SPLIT, got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    if not bundle.get("blocaj_pending"):
+        return False, f"expected blocaj_pending populated for DEEPLY_SPLIT, got: {bundle.get('blocaj_pending')}"
+    return True, "4 GO / 3 STOP -> DEEPLY_SPLIT + blocaj_pending surfaced"
+
+
+def test_deeply_split_3_3_1() -> tuple[bool, str]:
+    """3 GO + 3 STOP + 1 MODIFY (polarized with abstention) → DEEPLY_SPLIT."""
+    senators = {
+        "wittgenstein": base_senator_output("GO"),
+        "aurelius":     base_senator_output("GO"),
+        "confucius":    base_senator_output("GO"),
+        "socrate":      base_senator_output("STOP", "block X"),
+        "musk":         base_senator_output("STOP", "block Y"),
+        "dimon":        base_senator_output("STOP", "block Z"),
+        "napoleon":     base_senator_output("MODIFY", "tweak Q"),
+    }
+    code, bundle, stderr = run_synth(make_payload(
+        proposal="3-3-1 polarized smoke", senators=senators, label="smoke-deeply-split-3-3-1"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if bundle["verdict"] != "DEEPLY_SPLIT":
+        return False, f"expected DEEPLY_SPLIT, got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    if bundle["vote_counts"] != {"GO": 3, "MODIFY": 1, "STOP": 3}:
+        return False, f"expected GO=3 MODIFY=1 STOP=3, got: {bundle['vote_counts']}"
+    return True, "3 GO / 3 STOP / 1 MODIFY -> DEEPLY_SPLIT (MODIFY abstention does not break polarization)"
+
+
+def test_deeply_split_3_4() -> tuple[bool, str]:
+    """3 GO + 4 STOP (polarized inverse) → DEEPLY_SPLIT (not STOP — 4 < QUORUM=5)."""
+    senators = {
+        "wittgenstein": base_senator_output("GO"),
+        "aurelius":     base_senator_output("GO"),
+        "confucius":    base_senator_output("GO"),
+        "socrate":      base_senator_output("STOP", "block A"),
+        "musk":         base_senator_output("STOP", "block B"),
+        "dimon":        base_senator_output("STOP", "block C"),
+        "napoleon":     base_senator_output("STOP", "block D"),
+    }
+    code, bundle, stderr = run_synth(make_payload(
+        proposal="3-4 polarized smoke", senators=senators, label="smoke-deeply-split-3-4"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if bundle["verdict"] != "DEEPLY_SPLIT":
+        return False, f"expected DEEPLY_SPLIT, got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    return True, "3 GO / 4 STOP -> DEEPLY_SPLIT (STOP=4 < QUORUM=5, no majority)"
+
+
+def test_negative_5_2_not_deeply_split() -> tuple[bool, str]:
+    """5 GO + 2 STOP → GO (majority check runs before DEEPLY_SPLIT; STOP=2 < threshold=3)."""
+    senators = {
+        "wittgenstein": base_senator_output("GO"),
+        "aurelius":     base_senator_output("GO"),
+        "confucius":    base_senator_output("GO"),
+        "socrate":      base_senator_output("GO"),
+        "musk":         base_senator_output("GO"),
+        "dimon":        base_senator_output("STOP", "block"),
+        "napoleon":     base_senator_output("STOP", "block"),
+    }
+    code, bundle, stderr = run_synth(make_payload(
+        proposal="5-2 majority smoke", senators=senators, label="smoke-not-split-5-2"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if bundle["verdict"] != "GO":
+        return False, f"expected GO (5/7 majority), got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    return True, "5 GO / 2 STOP -> GO (majority wins, STOP below polarization threshold)"
+
+
+def test_deeply_split_resolved_via_blocaj() -> tuple[bool, str]:
+    """4-3 polarized + valid blocaj_resolution → GO, NOT DEEPLY_SPLIT (blocaj runs first)."""
+    round1 = {
+        "round": 1,
+        "senators": {
+            "wittgenstein": base_senator_output("GO"),
+            "aurelius":     base_senator_output("GO"),
+            "confucius":    base_senator_output("GO"),
+            "socrate":      base_senator_output("GO"),
+            "musk":         base_senator_output("STOP", "block A"),
+            "dimon":        base_senator_output("STOP", "block B"),
+            "napoleon":     base_senator_output("STOP", "block C"),
+        },
+    }
+    # Blocaj pair: socrate (GO) vs musk (STOP) — 5 others vote, socrate wins
+    blocaj_resolution = {
+        "pair": ["socrate", "musk"],
+        "winning_senator": "socrate",
+        "votes_from_others": {
+            "wittgenstein": "socrate", "aurelius": "socrate", "confucius": "socrate",
+            "dimon": "musk", "napoleon": "musk",
+        },
+    }
+    code, bundle, stderr = run_synth(make_multi_round_payload(
+        proposal="4-3 + blocaj resolution smoke", rounds=[round1],
+        label="smoke-deeply-split-blocaj", blocaj_resolution=blocaj_resolution))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    # After blocaj: musk's STOP becomes GO → counts {GO:5, STOP:2}
+    if bundle["verdict"] != "GO":
+        return False, f"expected GO post-blocaj (5/2), got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    if bundle.get("vote_counts_pre_blocaj", {}).get("GO") != 4:
+        return False, f"expected pre-blocaj GO=4, got: {bundle.get('vote_counts_pre_blocaj')}"
+    return True, "4-3 + blocaj (musk→socrate) -> GO 5/2, DEEPLY_SPLIT bypassed"
+
+
 def test_legacy_single_round_omits_multi_round_fields() -> tuple[bool, str]:
     """Backward compat: legacy {senators: ...} input doesn't emit Law-2+4 fields.
-    blocaj_pending is Law 3 and IS emitted in legacy when verdict=MODIFY."""
+    blocaj_pending is Law 3 and IS emitted in legacy when verdict in (MODIFY, DEEPLY_SPLIT)."""
     code, bundle, stderr = run_synth(make_payload(
         proposal="legacy smoke", senators=all_voting("GO"), label="smoke-legacy"))
     guard = _require_bundle(code, bundle, stderr)
@@ -476,6 +606,13 @@ TEST_GROUPS = [
         ("cross_questions_law2",        test_cross_questions_law2_violation),
         ("blocaj_pending",              test_blocaj_pending),
         ("blocaj_resolution_applied",   test_blocaj_resolution_applied),
+    ]),
+    ("DEEPLY_SPLIT (Phase 1)", [
+        ("deeply_split_4_3",            test_deeply_split_4_3),
+        ("deeply_split_3_3_1",          test_deeply_split_3_3_1),
+        ("deeply_split_3_4",            test_deeply_split_3_4),
+        ("negative_5_2_not_split",      test_negative_5_2_not_deeply_split),
+        ("deeply_split_blocaj_bypass",  test_deeply_split_resolved_via_blocaj),
     ]),
     ("Compat & persistence", [
         ("legacy_single_round_compat",  test_legacy_single_round_omits_multi_round_fields),
