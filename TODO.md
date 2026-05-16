@@ -147,3 +147,37 @@ Pendings empirice după merge-ul RUND2 (PR #59 — `2026-05-16`):
 ---
 
 **End of consolidated TODO.**
+---
+
+## 🏛 Hotărâri Senate
+
+### Hotărârea Senate — test-auto-todo · 16 Mai 2026 · UNREACHABLE (GO 2 · MODIFY 0 · STOP 0)
+
+> **Propunere:** test proposal
+> **Absenți:** aurelius, confucius, dimon, napoleon, socrate
+
+_Nicio cerere de modificare înregistrată._
+
+### Hotărârea Senate — flow-and-modes-audit-r2 · 16 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Evalueaza toti pasii workflow (0,1,1.5,2,3,4,5,5b,5c,5d,6) si toate modurile (Sequential, Dialectic, Trias, parallel_skeptic, dialectic_skeptic, trias_split, skeptic_on_chosen, senate) pentru a determ…
+
+- [ ] **[WITTGENSTEIN]** Propunerea nu e auditabila in forma curenta: termenii-cheie ai intrebarilor (a), (b), (c) nu au definitii operationale verificabile. Inainte de implementare: (1) metrica pentru load-bearing; (2) metrica pentru use-case distinct vs redundant; (3) criteriu de eliminare vs deprecare pentru sectiunile cu probleme documentate.
+- [ ] **[AURELIUS]** Redu scopul propunerii la o intrebare operationala concreta: care moduri cu 0 runs pot fi eliminate fara risc contractual? Aceasta poate fi rezolvata cu Sequential sau un singur agent focal (Musk/Napoleon), nu cu Senate complet. Daca decizia de eliminare are consecinte ireversibile, atunci Senate e justificat — dar numai pentru decizia de stergere, nu pentru audit-ul preliminar.
+- [ ] **[CONFUCIUS]** Conditia non-blocanta din runda 1 partial satisfacuta. Cerinte suplimentare: (1) demotarea Step 5c necesita rezolvarea precedentului neimplementat din runs/2026-05-16_0200_voice_audit_skeptic.json; (2) colapsul Step 5d in skeptic_on_chosen trebuie sa pastreze functia de context enrichment sau sa accepte pierderea cu rationale documentat.
+- [ ] **[SOCRATE]** Propunerea trebuie sa declare: (1) criteriul pozitiv pentru load-bearing — nu doar absenta efectului negativ; (2) daca usage count e criteriu primar sau proxy; (3) daca precedentul RUND2 e argument de autoritate sau exista justificare structurala transferabila. Fara aceste declaratii, auditurile opereaza pe asumptii nerostite.
+- [ ] **[MUSK]** DELETE: Step 5c, Step 5d, parallel_skeptic, dialectic_skeptic, trias_split, principle_extraction.py, RUND2 duplicate sections. SIMPLIFY: Dialectic (demotare la experimental). KEEP: tot restul. Implementare secventiala, nu simultana — un mod per commit pentru a testa regresii.
+- [ ] **[DIMON]** Propunerea trebuie sa adreseze explicit: (1) protocol de deprecare pentru scripturi care raman pe disc dupa eliminarea din contract (rename la *.deprecated.py sau guard INACTIVE flag); (2) versionarea schemei runs/*.json pentru a distinge runs produse cu workflow vechi de cele cu workflow nou; (3) specificarea explicita daca trigger-ul automat al skeptic-on-chosen (banda [0.5, 0.7]) ramane activ dupa consolidare si unde in cod traieste aceasta logica.
+- [ ] **[NAPOLEON]** Narrowing obligatoriu: (1) excludeti din audit modurile cu <2 runs reale; (2) separati analiza pasilor workflow de analiza modurilor in doua deliberari distincte; (3) amanati al doilea run senate pe aceeasi sesiune. Daca continuati acum, limitati la: Sequential vs Parallel (40 runs combinat) + maxim 2 pasi load-bearing din 11.
+
+### Hotărârea Senate — flow-and-modes-audit · 16 Mai 2026 · MODIFY (GO 1 · MODIFY 5 · STOP 0)
+
+> **Propunere:** Evalueaza toti pasii workflow (0,1,1.5,2,3,4,5,5b,5c,5d,6) si toate modurile (Sequential, Dialectic, Trias, parallel_skeptic, dialectic_skeptic, trias_split, skeptic_on_chosen, senate) pentru a determ…
+> **Absenți:** napoleon
+
+- [ ] **[WITTGENSTEIN]** Definiti operational inainte de implementare: (1) load-bearing cu criteriu testabil; (2) empirical support cu prag numeric; (3) clearly marked for removal cu forma fizica exacta din SKILL.md.
+- [ ] **[AURELIUS]** Reduce apparatus la /consilium parallel sau sequential pentru auditul initial. Ruleaza Senate doar dupa ce auditul produce schimbari concrete acceptate pentru implementare.
+- [ ] **[CONFUCIUS]** Non-blocant: output-ul final sa citeze explicit runs-urile precedente relevante per decizie de eliminare.
+- [ ] **[SOCRATE]** Inainte de a continua, declara: (1) definitia operationala a empirical support; (2) daca recomandari anterioare sunt tratate ca priors acceptati; (3) daca skeptic_on_chosen e evaluat ca flag sau mod peer; (4) criteriul de falsificare.
+- [ ] **[MUSK]** 1. DELETE: dialectic_skeptic + trias_split din SKILL.md. 2. DELETE: scripts/principle_extraction.py. 3. REMOVE: parallel_skeptic ca named mode. 4. DEMOTE: Step 5c la Skill maintenance. 5. COLLAPSE: Step 5d in skeptic_on_chosen auto-trigger. 6. ADD: warning fabricatie Dialectic Pass-2. 7. TIGHTEN: dialectic_merge.py dissent fallback la hard rejection.
+- [ ] **[DIMON]** (1) Mecanism de verificare cross-referinta dupa eliminari. (2) Tratament runs/ istorice cu mode labels eliminate. (3) Exit condition pentru auto-modificare reflexiva senate.
