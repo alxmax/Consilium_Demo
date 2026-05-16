@@ -598,4 +598,58 @@ Script: `scripts/principle_extraction.py`
 **Excluded categories (subjective):** career, relationships, mental_health
 
 To activate: flip `_INACTIVE = False` in `scripts/principle_extraction.py` after verifying the 3 conditions. Once active, Conservator consults it before marking `magnitude`.
+
+<!-- === PHILOSOPHICAL VOICES === -->
+## Voice variants
+
+Philosophical lenses extend the three baseline voices without replacing them. Each variant is a separate prompt file.
+
+### Baseline voices (unchanged)
+
+- **Generator** — divergent thinking, candidate generation (`prompts/generator.md`)
+- **Control** — technical validation + glossary + hidden_assumptions (`prompts/control.md`)
+- **Conservator** — risk assessment with reversibility×magnitude matrix (`prompts/conservator.md`)
+
+Note: Control+Wittgenstein (semantic verification) and Conservator+Aurelius (risk decomposition) are absorbed into the baseline voices by RUND2 — no separate variant files needed.
+
+### Philosophical variants
+
+> **Empirical caveat:** These variants have not yet been validated on real deliberations. Phase 13 post-merge validation covers 10-15 questions.
+
+| Variant | Prompt file | Status | When to use |
+|---|---|---|---|
+| Control + Aurelius | `prompts/control_aurelius.md` | Stable (niche) | Questions with hypothetical elements or decisions depending on external factors not in user control |
+| Conservator + Confucius | `prompts/conservator_confucius.md` | **EXPERIMENTAL** | Recurring decision types only — requires runs/ to have >= 3 matching precedents |
+
+### Refinement layer
+
+| Variant | Prompt file | Status | When to use |
+|---|---|---|---|
+| Refiner + Deletion | `prompts/refiner_deletion.md` | Not yet validated | Post-Aggregator; when output > 200 tokens or `--refine` flag; skip if scale_down already active |
+
+### How to use a variant
+
+Replace the standard voice prompt with the variant. Example:
+- Standard: "Use `prompts/control.md`..."
+- Variant: "Use `prompts/control_aurelius.md`..."
+
+Variant output is a superset of standard voice output — backward compatible with `validate_report.py` default. Use `--strict-philosophical=<voice>` for strict validation.
+
+### Conservator + Confucius — precedent injection
+
+When using the Confucius variant, the orchestrator must inject precedent results before dispatching the voice:
+
+```bash
+python scripts/precedent_search.py --query "<success_criterion text>" --limit 5
+```
+
+Inject the JSON output as `precedent_search_results` in the voice's input. If `matches_found = 0` → voice falls back to standard Conservator behavior automatically.
+
+### Empirical validation targets (post-merge)
+
+- **Control+Aurelius:** `wasted_deliberation` flags real waste in > 20% of runs with external factors?
+- **Confucius:** With >= 3 precedents, generates useful `ancestor_guidance`?
+
+If targets missed after 10+ runs → voice deprecated. Results in `experiments/run4-empirical-validation.html`.
+<!-- === END PHILOSOPHICAL VOICES === -->
 <!-- === END RUND2 === -->

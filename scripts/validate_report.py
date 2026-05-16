@@ -107,6 +107,48 @@ def _validate_rund2_fields(report: dict) -> list[str]:
 # === END RUND2 ===
 
 
+# === PHILOSOPHICAL VOICES ===
+_PHILOSOPHICAL_VOICES = frozenset({
+    "aurelius-control", "confucius"
+})
+
+
+def _validate_philosophical_aurelius_control(voice_output: dict) -> list[str]:
+    problems = []
+    for field in ("in_control", "out_of_control"):
+        val = voice_output.get(field)
+        if not isinstance(val, list):
+            problems.append(f"strict-philosophical=aurelius-control: '{field}' must be a list")
+    wasted = voice_output.get("wasted_deliberation")
+    if wasted is not None and not isinstance(wasted, str):
+        problems.append("strict-philosophical=aurelius-control: wasted_deliberation must be string or null")
+    return problems
+
+
+def _validate_philosophical_confucius(voice_output: dict) -> list[str]:
+    problems = []
+    ps = voice_output.get("precedent_search")
+    if not isinstance(ps, dict):
+        problems.append("strict-philosophical=confucius: precedent_search must be a dict")
+    else:
+        for field in ("matches_found", "fallback_to_abstract"):
+            if field not in ps:
+                problems.append(f"strict-philosophical=confucius: precedent_search missing '{field}'")
+    if isinstance(ps, dict) and ps.get("fallback_to_abstract") is False and ps.get("matches_found", 0) < 3:
+        problems.append(
+            "strict-philosophical=confucius: [WARNING] fallback_to_abstract=false but matches_found < 3 — "
+            "EXPERIMENTAL voice with limited precedent data"
+        )
+    return problems
+
+
+_PHILOSOPHICAL_VALIDATORS = {
+    "aurelius-control": _validate_philosophical_aurelius_control,
+    "confucius": _validate_philosophical_confucius,
+}
+# === END PHILOSOPHICAL VOICES ===
+
+
 def _validate_telemetry(telemetry: object) -> list[str]:
     if not isinstance(telemetry, dict):
         return ["telemetry must be a JSON object"]
@@ -299,6 +341,15 @@ def main(argv: list[str] | None = None) -> int:
         help="require RUND2 fields (regression_risk object, tokens_budget) in conservator scores",
     )
     # === END RUND2 ===
+    # === PHILOSOPHICAL VOICES ===
+    ap.add_argument(
+        "--strict-philosophical",
+        choices=sorted(_PHILOSOPHICAL_VOICES),
+        default=None,
+        metavar="VOICE",
+        help=f"require philosophical voice fields; one of: {', '.join(sorted(_PHILOSOPHICAL_VOICES))}",
+    )
+    # === END PHILOSOPHICAL VOICES ===
     args = ap.parse_args(argv)
 
     try:
@@ -316,6 +367,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.strict_rund2:
         problems.extend(_validate_rund2_fields(report))
     # === END RUND2 ===
+    # === PHILOSOPHICAL VOICES ===
+    if args.strict_philosophical:
+        validator = _PHILOSOPHICAL_VALIDATORS.get(args.strict_philosophical)
+        if validator:
+            voice_output = report.get("voice_outputs", {}).get(args.strict_philosophical, report)
+            problems.extend(validator(voice_output))
+    # === END PHILOSOPHICAL VOICES ===
     if problems:
         for p in problems:
             print(p, file=sys.stderr)
