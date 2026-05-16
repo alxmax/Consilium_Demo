@@ -10,6 +10,8 @@ Rankate după raportul impact / efort. Categorii: **Prompt** (prompts/*.md), **S
 
 **Stare 2026-05-16 (audit LangGraph/LangChain):** adăugate #47-#50 din `runs/2026-05-16_1430_audit_langgraph_langchain.json` (chosen=`do_nothing`, conf=0.36 PEND, mode=parallel). Audit-ul a respins integrarea profundă (veto pe full rewrite, invalid pe LangChain output parsers, invalid pe topology-only). #47 e runner-up (sidecar izolat); #48-#50 sunt pattern-uri LangGraph-inspired propuse pentru analiză înainte de orice implementare.
 
+**Stare 2026-05-16 (P3 corrigendum):** adăugate #51-#53 din lecțiile inversării — user a confirmat că răspunsul corect la P3 este C (cu mașina), nu A (pe jos). Toate sintezele inițiale din `experiments/` etichetau eronat C drept "fabricație model-wide"; cu oracle-ul corect, claim-ul se inversează semantic. Vezi `experiments/p3-car-wash.html` (HTML consolidat + corigendum). Cele 3 entry-uri sunt deschise pentru analiză.
+
 **Follow-up eval parity (planificat după parallel-review 0.57 conf):** branch `feat/eval-parity-rest` cu scenarii pentru:
 - `memory.py` tier medium/long/unknown (3 scenarii — cer fixtures runs/)
 - `audit_feedback.py` orphan detection + `--backfill` idempotency (2 scenarii — cer fixture FEEDBACK.html + runs/*.json)
@@ -475,6 +477,56 @@ Decizie soft-pozitivă, dar prioritate scăzută. Implementăm dacă apare o eva
 
 ---
 
+## Lecții din P3 corrigendum (2026-05-16)
+
+Sursa: `experiments/p3-car-wash.html` (HTML consolidat din run1/run2/run3 + corigendum). User a confirmat pe 2026-05-16 că răspunsul corect la P3 este C (pentru a-ți spăla mașina, mașina trebuie să fie la spălătorie). Toate sintezele inițiale erau inversate semantic — ce numeam "fabricație model-wide" era de fapt prinderea constraint-ului real. Memorie: `memory/project_p3_correct_answer.md`.
+
+### 51. Skeptic-on-chosen ca pas opțional după orice mod
+**Categorie:** Skill | **Impact:** Înalt | **Efort:** Mediu
+**Status:** PROPOSED — necesită analiză design + interacțiune cu `parallel_skeptic` documentat în SKILL.md.
+
+chosen_confirmation_pass = singurul mod cu catch-rate 100% în sim și 4/7 în reruns reale pe P3. Mecanism: o singură voce skeptic pe `chosen` după Pass-1 obligă re-citirea problemei și prinderea constraint-urilor implicite.
+
+Propunere: flag `--skeptic-on-chosen` care rulează 1 voce skeptic după Pass-1 al oricărui mod (Sequential/Parallel/Dialectic/Trias). Cost: +1 voce. Beneficiu: prinde constraint-uri ratate de toate vocile.
+
+Întrebări deschise pentru analiză:
+- Trigger automat (la `confidence < threshold` din aggregator) sau opt-in via flag?
+- Skeptic-ul **override** pe chosen dacă produce evidence concrete, sau doar advisory în report cu flag `skeptic_caught_constraint: true`?
+- Cum se reconciliază cu modul `parallel_skeptic` deja documentat? `parallel_skeptic` rulează skeptic în paralel cu Pass-1 (4 sub-agenți total); propunerea aici e secvențial pe `chosen` — semnal diferit, prompt diferit.
+- Risc fals-pozitiv: skeptic-ul pe răspuns ales poate inversa decizii corecte dacă găsește un eșec ipotetic care nu se aplică problemei. Necesită prompt care să distingă "constraint nerezolvat" de "exception case".
+
+---
+
+### 52. Revizuiește descrierile "Haiku verifiers = anti-fabrication"
+**Categorie:** Docs (Skill/Arch HTML) | **Impact:** Mediu | **Efort:** Mic
+**Status:** OPEN — audit grep + revizuire condițională.
+
+Rapoartele inițiale din `experiments/run2-p3-reruns.html` (acum comasat în `p3-car-wash.html`) și posibil `docs/architecture.html` + SKILL.md descriu lite_trias_B / synod_split cu claim-ul că Haiku verifiers funcționează ca "anti-fabrication brake".
+
+Corigendum-ul P3 inversează: Haiku e prea shallow pentru a interoga constraint implicit, deci confirmă răspunsul evident — nu e brake, e amplifier de shallow-failure pe probleme cu constraint implicit.
+
+Acțiune:
+- Audit grep pe "anti-fabrication", "Haiku verif", "anti-fabricație" în `docs/`, `SKILL.md`, `experiments/`
+- Mark-uire condițională: "anti-noise pe probleme triviale fără constraint implicit; anti-catch pe probleme cu constraint implicit"
+- SAU eliminare a claim-ului dacă diferențierea pe tipul de problemă e prea fragilă la documentare
+
+---
+
+### 53. Methodologie: oracle verification înainte de orice claim de "fab-rate"
+**Categorie:** Arch (process) | **Impact:** Înalt | **Efort:** Mic
+**Status:** OPEN — documentare în `experiments/README.md` (sau secțiune nouă SKILL.md "Benchmarking discipline").
+
+Experimentul P3 a etichetat C drept fabricație pe baza quick-take-ului evaluatorului. Oracle-ul a fost greșit → toată concluzia s-a inversat. Risc identic pe P1 (date refactor) și P2 (auth) dacă evaluatorul are quick-take preferat fără oracle independent.
+
+Acțiune: adaugă disciplină de benchmarking — orice claim de tip "fab-rate" / "accuracy" / "catch-rate" trebuie să citeze:
+- **Oracle independent**: al doilea expert SAU ground truth verificabil cu citation explicită (linkuri la specs, citate din enunț care fixează constraint-ul, etc.)
+- **Critique adverbial**: pentru fiecare răspuns (A/B/C/D), documentează "există o citire alternativă a problemei în care răspunsul X devine corect?" — răspuns explicit per opțiune înainte de a rula benchmark-ul
+- **Verdict-ul "fabricație" blocat până la oracle review** — dacă evaluatorul vrea să eticheteze reasoning ca fabricat, trebuie să justifice oracle-ul separat de propria intuiție
+
+Quick-take-ul evaluatorului ≠ oracle. Această disciplină se aplică retroactiv: revizuiește orice fab-rate claim existent în `experiments/` și `runs/` cu această grilă.
+
+---
+
 ## Sumar rapid
 
 | # | Titlu | Categorie | Impact | Efort |
@@ -526,3 +578,6 @@ Decizie soft-pozitivă, dar prioritate scăzută. Implementăm dacă apare o eva
 | 48 | Analiză: checkpoint per-step între voci (INVESTIGATE) | Arch | Mediu | Mediu |
 | 49 | Analiză: streaming / HITL Generator↔Control (INVESTIGATE) | Arch | Mediu | Mare |
 | 50 | Analiză: time-travel peste runs/ (INVESTIGATE) | Skill | Mic | Mic-Mediu |
+| 51 | Skeptic-on-chosen ca pas opțional (P3 lesson, PROPOSED) | Skill | Înalt | Mediu |
+| 52 | Revizuiește "Haiku = anti-fabrication" în docs (P3 lesson) | Docs | Mediu | Mic |
+| 53 | Oracle verification pe fab-rate claims (P3 lesson) | Arch | Înalt | Mic |
