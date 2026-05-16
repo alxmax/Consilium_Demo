@@ -2,8 +2,8 @@
 
 Stdlib-only. No external dependencies.
 
-Used by conservator_confucius voice: the orchestrator calls this script and injects
-the results into the voice's input (Optiunea A — pre-processing injection).
+Returns precedent matches usable as context injection by any voice that requests
+prior similar runs (pre-processing injection pattern).
 
 CLI:
     python scripts/precedent_search.py --query "stop loss trading"

@@ -222,7 +222,6 @@ python scripts/run_evals.py
 | `agents/consilium-subagent.md` | Subagent pentru invocare izolată via `Agent(subagent_type="consilium-subagent", ...)` |
 | `prompts/senators/*.md` | 7 prompturi de audit pre-implementare (mod `senate`); fiecare cu specialitate distinctă (vezi tabelul din Senate mode) |
 | `scripts/vocabulary_map.py` | RUND2: traduceri user-facing (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
-| `scripts/principle_extraction.py` | RUND2 EXPERIMENTAL, INACTIVE — extract principles din `runs/` dacă coverage ≥ 80% și ≥ 10 entries pe categorie verificabilă |
 | `scripts/senate_synth.py` | Synthesizer Senate: agregă 7 output-uri JSON → verdict GO/MODIFY/STOP + modify_requests + risks → salvează în `runs/senate/`. Suportă **multi-round (Laws 2+4)** via schema `{rounds: [...]}` cu `cross_questions[]`, `position_changes[]`, și `blocaj_resolution` (5-vote tiebreaker). **Law 3** (`blocaj_pending` advisory signal) activ pe ambele moduri când `verdict=MODIFY`. Backward compat pe legacy `{senators: {...}}`. |
 
 ## Feedback loop
@@ -612,72 +611,4 @@ The 8 design components (per spec): vocabulary_map, length_targets, priority_vet
 
 Veto budget for `meta_recommendation`: 5 activations of `scale_up` or `scale_down` per month. On exhaustion → soft warning only, not blocking.
 
-## Principle_Extraction (RUND2 — EXPERIMENTAL, inactive)
-
-Script: `scripts/principle_extraction.py`
-
-**Status: INACTIVE.** Blocked until:
-1. `runs/` has >= 10 entries in target category
-2. Outcome tracking active for >= 80% of runs
-3. Category has externally-verifiable outcomes
-
-**Supported categories (once active):** trading, code, real_estate
-
-**Excluded categories (subjective):** career, relationships, mental_health
-
-To activate: flip `_INACTIVE = False` in `scripts/principle_extraction.py` after verifying the 3 conditions. Once active, Conservator consults it before marking `magnitude`.
-
-<!-- === PHILOSOPHICAL VOICES === -->
-## Voice variants
-
-Philosophical lenses extend the three baseline voices without replacing them. Each variant is a separate prompt file.
-
-### Baseline voices (unchanged)
-
-- **Generator** — divergent thinking, candidate generation (`prompts/generator.md`)
-- **Control** — technical validation + glossary + hidden_assumptions (`prompts/control.md`)
-- **Conservator** — risk assessment with reversibility×magnitude matrix (`prompts/conservator.md`)
-
-Note: Control+Wittgenstein (semantic verification) and Conservator+Aurelius (risk decomposition) are absorbed into the baseline voices by RUND2 — no separate variant files needed.
-
-### Philosophical variants
-
-> **Empirical caveat:** These variants have not yet been validated on real deliberations. Phase 13 post-merge validation covers 10-15 questions.
-
-| Variant | Prompt file | Status | When to use |
-|---|---|---|---|
-| Control + Aurelius | `prompts/control_aurelius.md` | Stable (niche) | Questions with hypothetical elements or decisions depending on external factors not in user control |
-| Conservator + Confucius | `prompts/conservator_confucius.md` | **EXPERIMENTAL** | Recurring decision types only — requires runs/ to have >= 3 matching precedents |
-
-### Refinement layer
-
-| Variant | Prompt file | Status | When to use |
-|---|---|---|---|
-| Refiner + Deletion | `prompts/refiner_deletion.md` | Not yet validated | Post-Aggregator; when output > 200 tokens or `--refine` flag; skip if scale_down already active |
-
-### How to use a variant
-
-Replace the standard voice prompt with the variant. Example:
-- Standard: "Use `prompts/control.md`..."
-- Variant: "Use `prompts/control_aurelius.md`..."
-
-Variant output is a superset of standard voice output — backward compatible with `validate_report.py` default. Use `--strict-philosophical=<voice>` for strict validation.
-
-### Conservator + Confucius — precedent injection
-
-When using the Confucius variant, the orchestrator must inject precedent results before dispatching the voice:
-
-```bash
-python scripts/precedent_search.py --query "<success_criterion text>" --limit 5
-```
-
-Inject the JSON output as `precedent_search_results` in the voice's input. If `matches_found = 0` → voice falls back to standard Conservator behavior automatically.
-
-### Empirical validation targets (post-merge)
-
-- **Control+Aurelius:** `wasted_deliberation` flags real waste in > 20% of runs with external factors?
-- **Confucius:** With >= 3 precedents, generates useful `ancestor_guidance`?
-
-If targets missed after 10+ runs → voice deprecated. Results in `experiments/run4-empirical-validation.html`.
-<!-- === END PHILOSOPHICAL VOICES === -->
 <!-- === END RUND2 === -->

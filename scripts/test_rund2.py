@@ -11,7 +11,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vocabulary_map import translate, compute_tokens_budget, VOCABULARY_MAP
-from principle_extraction import _check_status, extract
 import aggregator
 import validate_report
 
@@ -64,36 +63,6 @@ class TestVocabularyMap(unittest.TestCase):
         # moderate+partial base=800; +50% rounded to nearest 100 = 1200
         budget = compute_tokens_budget("moderate", "partial", meta="scale_up")
         self.assertEqual(budget["generator"], 1200)
-
-
-class TestPrincipleExtraction(unittest.TestCase):
-    def test_status_returns_inactive(self):
-        status = _check_status()
-        self.assertTrue(status["inactive"])
-        self.assertIn("blocked_reason", status)
-        self.assertIsNotNone(status["blocked_reason"])
-
-    def test_extract_returns_error_when_inactive(self):
-        result = extract("trading", "stop loss")
-        self.assertIn("error", result)
-        self.assertIn("INACTIVE", result["error"])
-
-    def test_extract_excluded_category(self):
-        import principle_extraction as pe
-        orig = pe._INACTIVE
-        pe._INACTIVE = False
-        result = extract("career", "job change")
-        pe._INACTIVE = orig
-        self.assertIn("excluded", result)
-
-    def test_extract_unsupported_category_when_active(self):
-        import principle_extraction as pe
-        orig = pe._INACTIVE
-        pe._INACTIVE = False
-        result = extract("fantasy", "dragons")
-        pe._INACTIVE = orig
-        self.assertIn("error", result)
-        self.assertIn("unsupported", result["error"])
 
 
 class TestAggregateRund2(unittest.TestCase):
