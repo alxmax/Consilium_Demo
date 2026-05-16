@@ -31,6 +31,7 @@ Thumbs.db
 # Personal deliberation logs (schema in runs/README.md)
 runs/*.json
 runs/senate/*.json
+runs/senate/transcripts/
 # Drill-down sidecar (auto-managed by log_feedback.py)
 runs/.run_path_map.json
 

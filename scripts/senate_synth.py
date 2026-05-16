@@ -68,6 +68,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import importlib.util
 import json
 import re
 import sys
@@ -464,6 +465,23 @@ def main() -> int:
     print(json.dumps(bundle, indent=2, ensure_ascii=False))
     out_path = write_bundle(bundle)
     print(f"\nwritten: {out_path.relative_to(repo_root())}", file=sys.stderr)
+
+    # auto-append decisions to TODO.md
+    try:
+        _spec = importlib.util.spec_from_file_location(
+            "senate_todo", Path(__file__).parent / "senate_todo.py"
+        )
+        if _spec is None or _spec.loader is None:
+            raise ImportError("senate_todo.py not found")
+        _mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)  # type: ignore[union-attr]
+        if _mod.append_bundle_to_todo(bundle):
+            print("todo: hotărârea adăugată în TODO.md", file=sys.stderr)
+        else:
+            print("todo: sesiunea era deja în TODO.md, skip.", file=sys.stderr)
+    except Exception as _e:
+        print(f"todo: skip ({_e})", file=sys.stderr)
+
     return 0
 
 
