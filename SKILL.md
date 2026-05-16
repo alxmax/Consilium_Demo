@@ -515,12 +515,14 @@ Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au defini�
 
 ### Smoke test
 
-Falsification fixture: `scripts/senate_synth_fixture.json` — input cunoscut → verdict așteptat MODIFY (3 GO / 3 MODIFY / 1 STOP) + un warning despre `dimon` cu `stress_scenarios` empty. Rulează:
+Două nivele:
 ```bash
-cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py
+cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py   # fixture quick check
+python -X utf8 scripts/test_senate_synth.py                                       # 9-test suite
 ```
+Suita rulează: prompt structure, fixture, verdict GO unanimous/quorum, MODIFY default, UNREACHABLE, unrecognized-vote, bundle persistence, collision-safe write. Toate 9 trebuie PASS înainte de commit pe `senate_synth.py` sau orice `prompts/senators/*.md`.
 
 ### Origine + arhitectură
 
-- **Arhitectură vizuală + scheme:** [`docs/senate/architecture.md`](docs/senate/architecture.md) — diagrame ASCII, flow de dispatch, logica verdictului, file map, comparație cu alte moduri.
-- **Justification empirică:** `experiments/New phase senat/deliberations/RUND2-deliberari.md`. Implementarea curentă e MVP single-pass parallel; extensii (cross-questions, blocaj resolution) documentate în `experiments/New phase senat/todos/SENAT-todo-rol-legi-functii.md`.
+- **Arhitectură vizuală:** [`docs/senate/architecture.md`](docs/senate/architecture.md) (markdown) sau [`docs/senate/architecture.html`](docs/senate/architecture.html) (dark theme — vizualizări cross-questions matrix + blocaj resolution + flow runde).
+- **Justification empirică:** `experiments/New phase senat/deliberations/RUND2-deliberari.md`. MVP curent = single-pass parallel; cross-questions + blocaj resolution documentate vizual în architecture.html §8 ca extensie viitoare (NU în MVP).
