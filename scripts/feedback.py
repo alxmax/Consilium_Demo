@@ -28,7 +28,8 @@ ROW_RE = re.compile(
     r'<tr class="entry"[^>]*>(?P<body>.*?)</tr>',
     re.DOTALL,
 )
-CELL_RE = re.compile(r'<td[^>]*>(?P<text>.*?)</td>', re.DOTALL)
+CELL_RE = re.compile(r'<td(?P<attrs>[^>]*)>(?P<text>.*?)</td>', re.DOTALL)
+FIELD_ATTR_RE = re.compile(r'data-field="([^"]+)"')
 TAG_RE = re.compile(r'<[^>]+>')
 
 
@@ -45,35 +46,57 @@ def parse_feedback(path: Path) -> list[dict]:
         return entries
     text = path.read_text(encoding="utf-8")
     for m in ROW_RE.finditer(text):
-        cells = CELL_RE.findall(m.group("body"))
-        # Trias layout (8 cells): [chev, date, context, chosen, outcome, tokens, note, vote_pattern]
-        # Previous layout (7 cells): [chev, date, context, chosen, outcome, tokens, note]
-        # Legacy layout (6 cells): [chev, date, context, chosen, outcome, note]
-        # The tokens cell is regenerated at render time from run telemetry,
-        # so we drop it here — the parser only returns the persistent fields.
-        if len(cells) == 8:
-            date = _strip_tags(cells[1])
-            context = _strip_tags(cells[2])
-            chosen = _strip_tags(cells[3])
-            outcome = _strip_tags(cells[4])
-            note = _strip_tags(cells[6])
-            vote_pattern = _strip_tags(cells[7])
-        elif len(cells) == 7:
-            date = _strip_tags(cells[1])
-            context = _strip_tags(cells[2])
-            chosen = _strip_tags(cells[3])
-            outcome = _strip_tags(cells[4])
-            note = _strip_tags(cells[6])
-            vote_pattern = ""
-        elif len(cells) == 6:
-            date = _strip_tags(cells[1])
-            context = _strip_tags(cells[2])
-            chosen = _strip_tags(cells[3])
-            outcome = _strip_tags(cells[4])
-            note = _strip_tags(cells[5])
-            vote_pattern = ""
+        cell_matches = list(CELL_RE.finditer(m.group("body")))
+
+        # --- Attribute-based parsing (preferred, order-independent) ---
+        # Rows written by render_feedback_html.py carry data-field="<name>"
+        # on each <td>. Extract them into a dict keyed by field name.
+        field_map: dict[str, str] = {}
+        for cm in cell_matches:
+            fa = FIELD_ATTR_RE.search(cm.group("attrs"))
+            if fa:
+                field_map[fa.group(1)] = _strip_tags(cm.group("text"))
+
+        if field_map:
+            # data-field rows: require the four mandatory fields.
+            date = field_map.get("date", "")
+            context = field_map.get("context", "")
+            chosen = field_map.get("chosen", "")
+            outcome = field_map.get("outcome", "")
+            note = field_map.get("note", "")
+            vote_pattern = field_map.get("vote_pattern", "")
         else:
-            continue
+            # --- Legacy positional fallback (rows without data-field attrs) ---
+            # Trias layout (8 cells): [chev, date, context, chosen, outcome, tokens, note, vote_pattern]
+            # Previous layout (7 cells): [chev, date, context, chosen, outcome, tokens, note]
+            # Legacy layout (6 cells): [chev, date, context, chosen, outcome, note]
+            # The tokens cell is regenerated at render time from run telemetry,
+            # so we drop it here — the parser only returns the persistent fields.
+            cells = [cm.group("text") for cm in cell_matches]
+            if len(cells) == 8:
+                date = _strip_tags(cells[1])
+                context = _strip_tags(cells[2])
+                chosen = _strip_tags(cells[3])
+                outcome = _strip_tags(cells[4])
+                note = _strip_tags(cells[6])
+                vote_pattern = _strip_tags(cells[7])
+            elif len(cells) == 7:
+                date = _strip_tags(cells[1])
+                context = _strip_tags(cells[2])
+                chosen = _strip_tags(cells[3])
+                outcome = _strip_tags(cells[4])
+                note = _strip_tags(cells[6])
+                vote_pattern = ""
+            elif len(cells) == 6:
+                date = _strip_tags(cells[1])
+                context = _strip_tags(cells[2])
+                chosen = _strip_tags(cells[3])
+                outcome = _strip_tags(cells[4])
+                note = _strip_tags(cells[5])
+                vote_pattern = ""
+            else:
+                continue
+
         if outcome not in ("OK", "BAD", "OVR", "PEND"):
             continue
         entries.append({
