@@ -288,11 +288,25 @@ Return STRICTLY the JSON specified in the "Output format" section above. No pros
 
 **Skip parallel dacă:** schimbarea e trivială (<10 linii), nu ai tool-ul `Agent`, sau vrei să auditezi raționamentul pas-cu-pas.
 
+**Failure-mode recovery:**
+- **Sub-agent crash / timeout:** retry acel Agent call o singură dată; la al doilea eșec, cade pe Sequential pentru vocea respectivă.
+- **JSON malformat din voce:** respinge output-ul vocii, tratează ca lipsă (`{}` pentru verdicts/scores, sau `{"candidates":[]}` pentru generator) și continuă cu celelalte. Loghează eroarea în `deliberation_log` cu step `"<voice>_parse_error"`.
+- **Câmpuri obligatorii lipsă (e.g. `candidates` empty):** ridică avertisment în terminal, sare aggregator-ul și emite raport skipped cu `skip_reason: "voice output incomplete after retry"`.
+- **Strip_context**: necesar doar în modul Sequential (Steps 3-4); în Parallel fiecare voce rulează izolat și nu are nevoie de `strip_context.py`.
+
 ## Dialectic mode (opt-in, two-pass)
 
 Two-pass: Pass 1 = parallel; Pass 2 = fiecare voce revizuiește văzând output-urile celorlalte două. Cost: 2× parallel. Implementat în `scripts/dialectic_merge.py`.
 
 **Pass-2 schema (obligatorie per item).** Fiecare item Pass-2 (candidate / verdict / score) trebuie să emită fie `revision: <noul conținut>` fie `maintained: <motiv>`. Lipsa ambelor → `dialectic_merge.py` îl tratează ca dissent fallback și emite stderr warning (`[warning] dialectic pass-2 dissent fallback for <voice>: <ids>`). Candidate Pass-1 omise complet din Pass-2 generator declanșează `silently_dropped` warning și sunt recuperate din Pass-1.
+
+Per-voice contract (prompt sursă: `prompts/voices/*_pass2.md`):
+
+| Voce | Cheie output | Câmpuri obligatorii per item |
+|------|-------------|------------------------------|
+| Generator | `candidates[]` | `id` + (`revision` cu `summary/sketch/rationale` SAU `maintained` cu `reason`) |
+| Control | `verdicts[]` | `id` + (`revision` cu `valid/issues` SAU `maintained` cu `peer_claim/dissent`) |
+| Conservator | `scores[]` | `id` + (`revision` cu `what_changed/peer_evidence` SAU `maintained` cu `peer_claim/dissent`) |
 
 Audit warnings la stderr după merge — verifică-le înainte să consideri 2× cost-ul justificat.
 

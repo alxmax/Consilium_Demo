@@ -136,7 +136,9 @@ def generator_divergence(candidates: list[dict]) -> float:
 
 def _issue_is_concrete(issue: dict) -> bool:
     detail = issue.get("detail", "") or ""
-    return bool(CONCRETENESS_HINTS.search(detail)) or len(detail) >= 40
+    if not isinstance(detail, str):
+        return False
+    return bool(CONCRETENESS_HINTS.search(detail))
 
 
 def control_concreteness(verdicts: list[dict]) -> float:
@@ -175,7 +177,9 @@ def conservator_spread(scores: list[dict]) -> float:
     if len(risks) < 2:
         return 0.0
     stdev = statistics.pstdev(risks)
-    return max(0.0, min(1.0, stdev / MAX_RISK_STDEV))
+    actual_range = max(risks) - min(risks)
+    denom = max(actual_range, 0.5)
+    return max(0.0, min(1.0, stdev / denom))
 
 
 def critique(bundle: dict) -> dict:
@@ -218,6 +222,10 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(bundle, dict):
         print("meta_critic: bundle must be a JSON object", file=sys.stderr)
         return 2
+
+    mode = (bundle.get("telemetry") or {}).get("mode", "")
+    if mode == "trias":
+        args.strict = True
 
     result = critique(bundle)
     json.dump(result, sys.stdout, indent=2)

@@ -56,6 +56,23 @@ Based on Q1+Q2, set how many tokens Generator and Control should each use:
 If `meta_recommendation = scale_down` → override to 300 regardless.
 If `meta_recommendation = scale_up` → use formula value + 50% (round up to nearest 100).
 
+## Net concern formula
+
+Use this to produce a consistent `net_concern` value:
+
+```
+net_concern = mean(diff_size_score, scope_drift_score, regression_risk_score, reversibility_score)
+if reversibility_score > 0.7:
+    net_concern = max(net_concern, reversibility_score)
+```
+
+Where each component maps to [0, 1]:
+- `reversibility_score`: complete → 0.1, partial → 0.5, irreversible → 0.9
+- `magnitude` anchors `regression_risk_score`: trivial → 0.1, moderate → 0.4, high → 0.7, critical → 0.9
+- `diff_size_score` and `scope_drift_score`: estimate from blast radius (0.0 = no spread, 1.0 = entire codebase)
+
+There is no automated enforcement of this formula — apply it disciplined manually.
+
 ## Veto rule
 
 If `reversibility = irreversible` AND there is no explicit user consent documented in the input, set the `irreversibility_flag` to `true`. The aggregator will BLOCK and request consent before Generator runs.

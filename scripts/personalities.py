@@ -26,7 +26,7 @@ PERSONALITIES = [
     },
     {
         "name": "architect",
-        "weights": {"generator": 0.30, "control": 0.49, "conservator": 0.21},
+        "weights": {"generator": 0.30, "control": 0.40, "conservator": 0.30},
         "lens": "prompts/voices/architect_lens.md",
     },
     {
