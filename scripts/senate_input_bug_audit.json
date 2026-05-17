@@ -1,0 +1,202 @@
+{
+  "proposal": "Audit de buguri HIGH/CRITICAL in codebase-ul Dashboard_Sync (Python trading dashboard). Identifica, prioritizeaza si descrie concret 5-10 buguri care pot cauza date incorecte, ImportError, sau comportament silentios eronat. Propune fix minimal pentru fiecare.",
+  "label": "bug-audit-dashboard-sync",
+  "mode": "code_audit",
+  "files_touched": [
+    "ai_bias_track.py",
+    "RulesFlow_Complete.py",
+    "1.Playbook_pipeline.py",
+    "rebuild_dashboard.py",
+    "Stats_Overview.py",
+    "ai_postmortem.py",
+    "load_rules.py"
+  ],
+  "is_consilium_contribution": false,
+  "senators": {
+    "wittgenstein": {
+      "vague_terms_found": [
+        {"term": "HIGH bug", "in_context": "Identifică, prioritizează și descrie concret 5-10 buguri HIGH/CRITICAL", "why_vague": "Nu există o scală definită. HIGH față de ce baseline? P&L impact > $X? Frecvență > N ori/săptămână? Detectabil automat sau doar la inspecție manuală?"},
+        {"term": "CRITICAL bug", "in_context": "buguri care pot cauza date incorecte, ImportError, sau comportament silențios eronat", "why_vague": "CRITICAL implică severitate mai mare decât HIGH dar nu există prag. O pierdere financiară de $1 e CRITICAL? Sau doar dacă > $100? ImportError e întotdeauna CRITICAL sau depinde dacă apare pe cod path nefolosit?"},
+        {"term": "date incorecte", "in_context": "buguri care pot cauza date incorecte", "why_vague": "Incorect față de ce ground truth? Dacă actual_dir e BUY când ar trebui SELL, e incorect - dar cum verificăm fără un test dataset cu expected output cunoscut?"},
+        {"term": "comportament silențios eronat", "in_context": "pd.to_datetime(errors=coerce) → NaT silențios fără logging", "why_vague": "Silențios înseamnă că nu aruncă excepție. Dar NaT propagat ulterior prin calcule va produce fie NaN în output, fie un alt error. Când devine observabil? La ce nivel al pipeline-ului?"},
+        {"term": "erori silențioase", "in_context": "L77-80: citire Excel fără schema validation, erori silențioase", "why_vague": "Dacă coloana lipsă produce KeyError la acces, nu e silențioasă. Dacă produce NaN, e parțial silențioasă. Definiție necesară: eroare silențioasă = cod path executat fără excepție dar cu output semantic incorect."}
+      ],
+      "operational_definitions_needed": [
+        {"term": "HIGH severity bug", "proposed_definition": "Bug care produce output numeric incorect (valoare diferă de valoarea corectă cu > 5%) SAU care face scriptul să se termine cu exit code != 0 pe input valid, cu frecvență > 1 ori pe săptămână în workflow normal."},
+        {"term": "CRITICAL severity bug", "proposed_definition": "Bug care produce output incorect folosit direct în decizie de trading (entry/exit direction, P&L reporting) SAU ImportError la prima rulare pe environment nou (blochează complet utilizarea)."},
+        {"term": "silent failure", "proposed_definition": "Execuție finalizată cu exit code 0 și fără excepție vizibilă, dar cu output semantic diferit de cel așteptat (NaN unde trebuie float, direcție greșită BUY/SELL, date stale > 24h)."},
+        {"term": "fix minimal", "proposed_definition": "Modificare < 10 linii care elimină cauza directă a bug-ului fără refactoring arhitectural. Testabilă prin compararea output-ului înainte/după pe același input."}
+      ],
+      "false_consensus_risks": [
+        "Se asumă că bug și design choice sunt distincte, dar hardcoded paths pot fi intentionate pentru single-user tool",
+        "Se asumă că auditorul și utilizatorul au același prag de severitate pentru pierdere financiară cauzată de bug",
+        "Se asumă că symbol normalization inconsistentă produce duplicate - dar depinde de cum e folosit downstream"
+      ],
+      "cross_questions": [
+        "Care e workflow-ul normal de rulare? Toate scripturile zilnic? Săptămânal? Unele niciodată?",
+        "Există teste automate care ar detecta regresii după fix?",
+        "Cine citește output-ul dashboard-ului? Dacă e single-user și userul știe limitările, severitatea scade."
+      ],
+      "vote": "GO",
+      "modify_request": "Adaugă în propunere o tabelă de severitate cu praguri numerice (impact P&L, frecvență, detectabilitate) înainte de a clasifica bugurile ca HIGH/CRITICAL."
+    },
+    "aurelius": {
+      "reversibility": "complete",
+      "magnitude": "moderate",
+      "quadrant": "Reversible x Moderate - acțiune recomandată cu prudență, nu urgentă",
+      "scaling_check": "Codebase-ul are ~15 scripturi independente. Fiecare bug fix e izolat. Nu există risc de cascade failure din fix. Auditarea completă a 10 buguri e proporțională cu dimensiunea proiectului.",
+      "smaller_alternative": "Fix doar top 3 buguri CRITICAL (load_rules.py lipsă, hardcoded paths, symbol normalization) și lasă restul pentru backlog",
+      "cross_questions": [
+        "Au existat pierderi financiare reale din cauza vreunui bug identificat?",
+        "Se rulează scripturile în production (live trading) sau doar pentru analiză post-factum?",
+        "Există backup al Playbook_2025.xlsx înainte de orice pipeline run?"
+      ],
+      "vote": "GO",
+      "modify_request": "Prioritizează explicit: (1) CRITICAL = blochează rularea sau produce date financiare greșite direct; (2) HIGH = produce date greșite indirect sau pierdere de portabilitate; (3) MEDIUM = cosmetic/convenience."
+    },
+    "confucius": {
+      "hierarchy_check": {
+        "authority_layer": "Single-developer project cu structură de foldere numerotate (1-9). Nu există review process formal, nu există CI/CD. Autoritatea e utilizatorul unic.",
+        "respects_existing": true,
+        "notes": "Propunerea de audit respectă structura existentă - nu propune reorganizare arhitecturală. Fixurile sunt locale per fișier."
+      },
+      "precedent_search": [
+        {"precedent": "RulesFlow_Complete.py conține deja BUG FIX comentarii inline", "relevance": "Precedentul există: bugurile se fixează in-place cu comentariu explicativ. Pattern-ul trebuie continuat, nu înlocuit cu PR/issue tracker."},
+        {"precedent": "ai_bias_track.py conține Bug fix 2026-05-09 comentariu", "relevance": "Același pattern. Auditorul trebuie să verifice întâi ce buguri sunt deja fixate înainte de a le lista ca active."},
+        {"precedent": "load_rules.py în Fx/ nu în Dashboard_Sync/", "relevance": "Pattern arhitectural: dependențele externe (load_rules, trading_rules.yaml) trăiesc în directorul Fx/, nu în Dashboard_Sync/. Scripturile presupun că rulează din Fx/ cu sys.path.insert. Acesta poate fi un design choice, nu un bug."}
+      ],
+      "institutional_concerns": [
+        "Unele buguri identificate (hardcoded paths, load_rules în Fx/) pot fi design choices deliberate pentru un tool single-user care rulează întotdeauna din același director",
+        "Pattern-ul de cache global (MT4_DAILY_EMA_CACHE) e consistent în toate scripturile Stats_Overview - schimbarea lui rupe consistența internă",
+        "Symbol normalization: normalize_symbol() există în ai_bias_track.py dar dacă alte scripturi nu o folosesc, fixul trebuie aplicat uniform"
+      ],
+      "pattern_break": {"breaks_pattern": false, "pattern_name": "bug-fix-in-place cu comentariu explicativ", "intentional": true},
+      "cross_questions": [
+        "Scripturile din Dashboard_Sync sunt concepute să ruleze standalone sau ca parte din Fx/ monorepo?",
+        "Există un script de setup/bootstrap care configurează sys.path sau copiază load_rules.py?",
+        "Pattern-ul de bugfix în loc cu comentariu e suficient sau e nevoie de test suite?"
+      ],
+      "vote": "GO",
+      "modify_request": "Verifică mai întâi care buguri sunt deja fixate (există comentarii Bug fix în cod). Exclude-le din lista activă. Clarifică dacă load_rules.py în Fx/ e design choice sau bug de deployment."
+    },
+    "socrate": {
+      "hidden_assumptions": [
+        {"assumption": "load_rules.py lipsește din Dashboard_Sync și va cauza ImportError", "if_false_then": "Dacă există un script de setup/bootstrap care copiază fișierul sau dacă scripturile rulează din directorul Fx/ cu sys.path.insert funcțional, bug-ul nu există în production", "load_bearing": true, "category": "existential"},
+        {"assumption": "ai_bias_track.py are bug la L59 (elif buy_pnl > sell_pnl returnează BUY când toate sunt SELL negative)", "if_false_then": "Codul actual conține comentariul Bug fix 2026-05-09 și logica corectată. Bug-ul e deja fixat. Propunerea descrie o versiune anterioară.", "load_bearing": true, "category": "factual - verificabilă prin citirea codului curent"},
+        {"assumption": "MT4_TIME_OFFSET_HOURS se schimbă la runtime, invalidând cache-ul", "if_false_then": "Dacă MT4_TIME_OFFSET_HOURS e o constantă setată la import (valoare 0 în Stats_Overview.py) și niciodată modificată la runtime, cache-ul nu devine stale. Bug-ul e teoretic, nu practic.", "load_bearing": true, "category": "behavioral - necesită verificarea tuturor caller-ilor"},
+        {"assumption": "Symbol normalization inconsistentă produce duplicate trades în agregări", "if_false_then": "Dacă toate punctele de agregare folosesc același normalizator, inconsistența nu produce duplicate. Necesită audit complet al tuturor join-urilor.", "load_bearing": true, "category": "behavioral"},
+        {"assumption": "RulesFlow_Complete.py Path(__file__).parent / Data_Entry e incorect", "if_false_then": "Codul actual conține deja BUG FIX pentru această problemă. Fix-ul e aplicat.", "load_bearing": false, "category": "factual"},
+        {"assumption": "rebuild_dashboard.py citește Excel fără schema validation, producând erori silențioase", "if_false_then": "1.Playbook_pipeline.py conține _validate_playbook_df() cu verificare explicită de coloane necesare. Dacă rebuild_dashboard.py folosește același Excel validat anterior, riscul e redus.", "load_bearing": false, "category": "architectural"}
+      ],
+      "questions_to_user": [
+        "Ai rulat vreunul dintre scripturile din Dashboard_Sync standalone (fără să fii în directorul Fx/)? A produs ImportError?",
+        "Bug-ul din ai_bias_track.py (direction logic) a produs vreodată output greșit vizibil în dashboard?",
+        "MT4_TIME_OFFSET_HOURS e modificat vreodată la runtime sau e constant 0?",
+        "Scripturile Stats_Overview.py și RulesFlow_Complete.py sunt rulate ca procese long-running sau batch?",
+        "Există cazuri cunoscute de duplicate trades în export_stats.csv sau Playbook_2025.xlsx?"
+      ],
+      "missing_falsification_criteria": "Propunerea nu specifică cum să confirmi că un bug există (test case cu input - expected output - actual output). Fără criterii de falsificare, nu putem confirma că bug-urile sunt active și nu deja fixate.",
+      "cross_questions": [
+        "Cum diferențiezi un bug existent de un bug deja fixat cu comentariu în cod?",
+        "Există output cunoscut greșit (ex: zi în care actual_dir a fost BUY când toate tradele erau SELL)?"
+      ],
+      "vote": "MODIFY",
+      "modify_request": "Înainte de audit, verifică starea curentă a fiecărui bug propus (citind codul actual, nu dintr-o descriere). Elimină din lista finală bugurile deja fixate. Adaugă criterii concrete de verificare (input - expected - actual) pentru fiecare bug rămas."
+    },
+    "musk": {
+      "components_attacked": [
+        {"component": "ai_bias_track.py direction logic bug", "vote": "delete", "reason": "Codul actual conține deja Bug fix 2026-05-09 cu logica corectată. Dacă e deja fixat, nu mai e un bug activ - scoate-l din lista de audit.", "alternative": "Verifică dacă bug-ul e în producție sau doar în descrierea istorică."},
+        {"component": "RulesFlow_Complete.py Data_Entry path fix", "vote": "delete", "reason": "Codul conține deja BUG FIX: era relativ, crăpa dacă scriptul era rulat din alt folder cu Path(__file__).parent. Fix-ul e aplicat.", "alternative": null},
+        {"component": "Hardcoded paths în 1.Playbook_pipeline.py", "vote": "keep", "reason": "Real bug. Rup pe orice alt PC sau cont MT4. Fix în 5 minute: Path(__file__).resolve().parent chain.", "alternative": "Folosește Path(__file__).resolve().parents sau citește din env var MT4_FILES_DIR"},
+        {"component": "load_rules.py lipsă în Dashboard_Sync", "vote": "keep", "reason": "Dacă Dashboard_Sync e un repo separat de Fx/, ImportError e garantat pe orice environment nou. Critical bug.", "alternative": "Copiază load_rules.py și trading_rules.yaml în Dashboard_Sync/ sau creează un pip package"},
+        {"component": "Symbol normalization inconsistentă", "vote": "simplify", "reason": "Real bug dar exagerat descris. normalize_symbol() există deja în ai_bias_track.py. Soluția e să imporți și s-o folosești peste tot.", "alternative": "Extrage normalize_symbol() în utils.py și importă din toate scripturile"},
+        {"component": "MT4_DAILY_EMA_CACHE memory leak", "vote": "delete", "reason": "Dacă scriptul rulează batch (start - end în secunde), cache-ul se eliberează la terminare. Nu e memory leak practic pentru scripturi non-daemon.", "alternative": null},
+        {"component": "pd.to_datetime errors coerce fără logging", "vote": "simplify", "reason": "Fix de 1 linie: adaugă warning dacă NaT count > 0. Nu necesită refactoring.", "alternative": "n_nat = df[col].isna().sum(); if n_nat: logging.warning(f'{n_nat} NaT values')"},
+        {"component": "ai_postmortem.py fără ANTHROPIC_API_KEY check", "vote": "keep", "reason": "UX bug real: eroarea de la subprocess claude e confuză. Fix minimal: 3 linii.", "alternative": "if not os.environ.get(ANTHROPIC_API_KEY): sys.exit('[FATAL] Set ANTHROPIC_API_KEY')"},
+        {"component": "rebuild_dashboard.py schema validation lipsă", "vote": "simplify", "reason": "1.Playbook_pipeline.py are deja _validate_playbook_df(). rebuild_dashboard.py trebuie să cheme aceeași funcție.", "alternative": "Importă _validate_playbook_df din pipeline sau mută-o în utils.py"},
+        {"component": "Global cache stale dacă MT4_TIME_OFFSET_HOURS se schimbă", "vote": "delete", "reason": "MT4_TIME_OFFSET_HOURS = 0 hardcodat în Stats_Overview.py. Dacă nu e niciodată schimbat la runtime, bug-ul nu există în practică.", "alternative": null}
+      ],
+      "duplication_with_existing": [
+        "normalize_symbol() există în ai_bias_track.py - nu e nevoie de implementare nouă",
+        "_validate_playbook_df() există în 1.Playbook_pipeline.py - poate fi refolosit",
+        "BUG FIX comentarii există deja în RulesFlow_Complete.py și ai_bias_track.py - audit-ul redesacoperă fix-uri deja aplicate"
+      ],
+      "addback_check": {
+        "if_deleted_all_keep_what": "Dacă trebuia să fixez DOAR 2-3 lucruri: (1) load_rules.py lipsă - ImportError garantat pe environment nou; (2) hardcoded paths în Playbook_pipeline.py - portabilitate 0; (3) symbol normalization inconsistentă - P&L incorect în agregări.",
+        "rationale": "Restul sunt fie deja fixate, fie teoretice (MT4_TIME_OFFSET_HOURS), fie low-impact (NaT logging, API key check). Top 3 au impact direct măsurabil."
+      },
+      "cross_questions": [
+        "Câte din cele 10 buguri propuse sunt deja fixate în codul curent?",
+        "Dashboard_Sync e destinat să ruleze standalone sau împreună cu directorul Fx/?",
+        "A produs vreun bug date financiare greșite în dashboard-ul live?"
+      ],
+      "vote": "MODIFY",
+      "modify_request": "Reduce lista la 5-6 buguri active (verificate în codul curent, nu fixate deja). Elimină bugurile teoretice (cache stale, memory leak pentru scripturi batch). Prioritizează: (1) ImportError blocant; (2) P&L incorect; (3) portabilitate."
+    },
+    "dimon": {
+      "stress_scenarios": [
+        {"scenario": "Primul run pe PC nou fără directorul Fx/ în sys.path", "would_fail": true, "failure_mode": "hard", "impact": "ImportError: No module named load_rules - niciun script nu pornește. 100% blocker.", "mitigation_in_proposal": "Identificat ca bug, fix propus"},
+        {"scenario": "Rulare rebuild_dashboard.py cu Playbook_2025.xlsx corupt sau cu coloane redenumite", "would_fail": true, "failure_mode": "silent", "impact": "Dashboard generat cu NaN/0 în loc de valori reale. Utilizatorul vede cifre dar sunt incorecte. Decizii de trading bazate pe date greșite.", "mitigation_in_proposal": "Identificat parțial. _validate_playbook_df există în pipeline dar rebuild_dashboard.py nu o cheamă."},
+        {"scenario": "US100.cash în MT4 CSV vs US100 în Playbook - join pe simbol", "would_fail": true, "failure_mode": "silent", "impact": "Trades dintr-un simbol nu se leagă de altul - P&L agregat incorect - match rate AI bias incorect - decizie BUY/SELL greșită.", "mitigation_in_proposal": "Identificat. normalize_symbol() există dar nu e folosit uniform."},
+        {"scenario": "ai_postmortem.py rulat fără ANTHROPIC_API_KEY setat", "would_fail": true, "failure_mode": "hard", "impact": "subprocess claude eșuează cu eroare confuză. Script se oprește. Nu afectează date financiare.", "mitigation_in_proposal": "Identificat. Fix minimal propus."},
+        {"scenario": "Stats_Overview.py rulat de 2 ori în aceeași sesiune Python cu date MT4 diferite", "would_fail": true, "failure_mode": "silent", "impact": "Cache EMA returnează date din prima rulare. P&L analysis folosește indicatori tehnici vechi. Impact: semnale de trend incorecte.", "mitigation_in_proposal": "Identificat parțial. Dacă scriptul e rulat ca process separat, cache-ul se resetează automat."},
+        {"scenario": "1.Playbook_pipeline.py rulat pe alt PC (path C:\\Users\\ALEX\\ nu există)", "would_fail": true, "failure_mode": "hard", "impact": "FileNotFoundError la prima linie de config. Script complet inutilizabil pe alt PC.", "mitigation_in_proposal": "Identificat. Fix: Path(__file__).resolve() chain."}
+      ],
+      "counterparty_risks": [
+        {"counterparty": "MT4 terminal (CSV export)", "risk": "Format CSV poate varia între versiuni MT4 sau brokeri. Scripturile presupun coloane specifice fără validare - KeyError sau NaN silențios."},
+        {"counterparty": "Claude API (ai_postmortem.py)", "risk": "Rate limiting, timeout, model deprecation - subprocess returnează eroare - trade analysis lipsă din dashboard fără alertă."},
+        {"counterparty": "Playbook_2025.xlsx (fișier Excel)", "risk": "Corupere Excel, coloane redenumite, sheet redenumit - multiple scripturi eșuează simultan fără propagare clară a erorii."}
+      ],
+      "verifiability_check": {
+        "outcome_measurable": true,
+        "signal_for_success": "Toate scripturile rulează fără ImportError pe un PC nou (fresh clone). Output dashboard conține valori numerice corecte pentru un set de trade-uri de test cunoscut.",
+        "signal_for_failure": "ImportError la import, NaN în dashboard unde ar trebui valori, match rate AI bias diferită de cea calculată manual pentru același input."
+      },
+      "silent_failure_modes": [
+        "Symbol mismatch (US100 vs US100.cash) - trades neaggregate - match rate bias pare 0% pentru zilele respective, fără eroare",
+        "NaT din to_datetime coerce - mean/sum pe coloana de dată returnează NaT - rândul dispare din analiză fără warning",
+        "rebuild_dashboard.py cu coloană lipsă - fillna(0) implicit - dashboard arată $0 P&L pentru zile cu trades - utilizatorul crede că zilele sunt fără tranzacții",
+        "Cache EMA stale - trend direction greșit - regula de trend filtering exclude/include trades incorect - statistici per regulă distorsionate"
+      ],
+      "cross_questions": [
+        "Există un test dataset cu valori cunoscute pentru a verifica output-ul corect al rebuild_dashboard.py?",
+        "Dashboard-ul live arată date corecte față de extrasul de cont real?",
+        "Au existat discrepanțe între P&L din dashboard și P&L real din contul MT4?"
+      ],
+      "vote": "GO",
+      "modify_request": "Adaugă pentru fiecare bug fix un test minimal (input - expected output) pentru a verifica că fix-ul rezolvă efectiv problema și nu introduce regresii."
+    },
+    "napoleon": {
+      "cost_estimate": {
+        "runtime_tokens_per_invocation": "N/A - audit de cod, nu invocare AI recurentă",
+        "subagent_count": "0 subagenti necesari pentru fix-urile propuse",
+        "implementation_hours": "Total estimat: 4-8 ore pentru toate 10 buguri",
+        "complexity_score": "low"
+      },
+      "terrain_check": {
+        "operator_state": "engaged",
+        "deadline_real": false,
+        "context_signals": [
+          "Proiect personal de trading analysis - nu există deadline de producție",
+          "Codebase mic (~15 scripturi), bine înțeles de utilizator",
+          "Bugurile identificate sunt izolate, fără dependențe complexe între fix-uri"
+        ]
+      },
+      "battle_threshold": {
+        "cost_vs_benefit": "favorable",
+        "rationale": "Fix-urile propuse sunt în majoritate sub 30 de minute fiecare. Beneficiul (portabilitate, date corecte, evitarea ImportError) depășește cu mult costul de implementare."
+      },
+      "delay_recommendation": {
+        "should_delay": false,
+        "if_yes_when": null
+      },
+      "cross_questions": [
+        "Cât timp petreci pe săptămână rulând aceste scripturi? Determină ROI-ul fix-urilor.",
+        "Fix-urile pot fi implementate incremental (unul câte unul) sau trebuie o sesiune dedicată?",
+        "Există risc de introducere a regresiilor prin fix-uri dacă nu există teste?"
+      ],
+      "vote": "GO",
+      "modify_request": "Implementează fix-urile în ordinea: (1) Quick wins sub 30 min first; (2) Verifică bugurile deja fixate și scoate-le din listă; (3) Lasă cache/memory issues pentru ultimul (impact practic minim pentru scripturi batch)."
+    }
+  }
+}
