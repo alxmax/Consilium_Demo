@@ -92,19 +92,24 @@
 - [ ] Iese natural din audit Musk HM5 (dual-schema path în senate_synth.py) — aceeași temă: shim-uri retained după migrări, fără cleanup explicit.
 - [ ] Found: 2026-05-17, post Senate top-5 diagnostic audit (sesiunea care a generat manual `runs/senate/transcripts/2026-05-17/top5-diagnostic-audit.html` prin `python -c "import senate_transcript; ..."`).
 
-### Usage & Efficiency reporting — PENDING
+### Usage & Efficiency reporting — IN PROGRESS
 
-> **Status:** PENDING (proposal-only, 2026-05-17). Full design în `experiments/usage-efficiency-proposal-pending.md`. Captured via `/consilium`. No code change yet — awaiting explicit go-ahead.
+> **Status:** Senate deliberation 2026-05-17 (`efficiency-py-design-decisions`) a rezolvat toate 4 open questions. Design în `experiments/usage-efficiency-proposal-pending.md`.
+>
+> **Decizii Senate confirmate (bundle `runs/senate/2026-05-17_194232-efficiency-py-design-decisions.json`):**
+> - Q1: Binary gate — FEEDBACK outcome=OK → OK, orice altceva → exclus din OK_count
+> - Q2: Raw sum (tokens_in + tokens_out); output include și `tokens_per_dispatch` (normalizat, per Socrate)
+> - Q3: Flat Trias schema: `{pioneer_generator, architect_control, ...}`
+> - Q4: `--self-test` flag în efficiency.py + `--feedback`/`--runs` CLI overrides (nu run_evals.py scenario)
 
-- [ ] **Goal:** per-mode efficiency score (`total_tokens / OK_outcomes`) comparable across Sequential / Parallel / Dialectic / Trias / Senate / etc.
-- [ ] **Token capture:** hybrid — estimate `chars/4` per dispatch + record `latency_ms` + `dispatch_count`.
-- [ ] **Senate telemetry gap:** `runs/senate/*.json` currently emits 0 usage data; `senate_synth.py` to accept `telemetry` kwarg.
-- [ ] **New script:** `scripts/efficiency.py` — CLI `--by-mode | --compare <a> <b> | --since <date>`, emits `tokens_per_OK` per mode + ranking.
-- [ ] **`usage.py` extension:** walk `runs/senate/` + add `senators` voice bucket + `--mode` filter.
-- [ ] **SKILL.md Step 6c:** mandatory telemetry emission discipline after each run (chars/4 estimate).
-- [ ] **UI tab:** new "Usage & Efficiency" tab in `docs/architecture.html` cu bar chart per mode.
-- [ ] **Open questions to resolve before impl:** Senate verdict → OK/BAD mapping, tokens_in inflation policy, Trias schema (nested vs flat), eval harness scenario.
-- [ ] **Estimated:** ~425 LOC across 6 files.
+- [x] **Goal:** per-mode efficiency score (`total_tokens / OK_outcomes`) comparable across Sequential / Parallel / Dialectic / Trias / Senate / etc.
+- [x] **Open questions:** rezolvate de Senate 2026-05-17.
+- [x] **Senate telemetry gap:** `senate_synth.py` acceptă `telemetry` kwarg. Branch: `feat/usage-senate-telemetry-and-history`.
+- [x] **`usage.py` extension:** walk `runs/senate/` + senators bucket + `--mode` filter. Branch: `feat/usage-senate-telemetry-and-history`.
+- [x] **New script:** `scripts/efficiency.py` livrat. Branch: `feat/efficiency-py`. Self-test PASS.
+- [ ] **Token capture (orchestrator):** emite `telemetry` la fiecare run (chars/4 pe promptul complet — proposal + persona + context, nu doar propunere). Afectează acuratețea cross-mode.
+- [ ] **SKILL.md Step 6c:** mandatory telemetry emission discipline după fiecare run.
+- [ ] **UI tab:** "Usage & Efficiency" tab în `docs/architecture.html` cu bar chart per mode.
 
 ### Philosophical voice variants — REMAINING
 
@@ -194,6 +199,8 @@ mitigations are present. Document each reduction applied in notes.
 ```
 
 #### 11. Handling pentru candidați ireversibili by nature · Prompt · Mediu · Mediu
+> **Status (2026-05-17):** ✅ DONE — `prompts/voices/conservator.md` extins cu `mitigation_steps` + `"irreversible": true` pentru candidații ireversibili by nature (branch `fix/doc-prompt-clarify`).
+>
 Published API change, migration live — `rollback_recipe` executabil e imposibil. Fix:
 ```
 If rollback is structurally impossible (published API already consumed by clients,
@@ -286,6 +293,8 @@ Sub-agent crash / JSON malformed / timeout nu au recovery path documentat.
 `validate_report.py:161` și `personalities.py:21-37` duplică lista. Fix: import din `personalities.NAMES`.
 
 #### 33. Documentează că `strip_context.py` se skip-uiește în Parallel · Skill · Mic · Trivial
+> **Status (2026-05-17):** ✅ DONE — notă adăugată în `SKILL.md` § Sequential dispatch (branch `fix/doc-prompt-clarify`).
+>
 SKILL.md Step 3-4 zice "Sequential: rulează `strip_context.py`" fără să clarifice că Parallel nu are nevoie.
 
 #### 34. Şterge sau wrap deprecated `aggregate_weighted` · Skill · Mic · Mic
@@ -310,6 +319,8 @@ SKILL.md Step 3-4 zice "Sequential: rulează `strip_context.py`" fără să clar
 `docs/architecture.html` descrie modul iterative cu N=1..3 runde + convergence stop, marcat `SPEC`. `dialectic_merge.py` acceptă strict `{pass1, pass2}`. Fix: ori implementează schema `{rounds: [...]}` cu convergence detection, ori șterge modul din HTML.
 
 #### 44. Sequential "Chinese wall" iluzoriu — clarify în docs · Arch · Mediu · Mic
+> **Status (2026-05-17):** ✅ DONE (parțial) — clarificare adăugată în `SKILL.md` § Sequential dispatch. HTML (`docs/architecture.html`) neactualizat — rămas pentru un viitor task de docs.
+>
 Sequential rulează același LLM care joacă 3 roluri în acelaşi context. `strip_context.py` doar curăță prompt-ul. Nu e Chinese wall real. Fix: notă explicită în HTML + SKILL.md.
 
 #### 45. Lens injection validation end-to-end · Skill · Mediu · Mediu
@@ -373,7 +384,7 @@ Decizie soft-pozitivă, prioritate scăzută.
 | 8 | Control: citește fișierele, nu specula ✅ DONE | Prompt | Mediu | Mic |
 | 9 | Goal-fit → pasul 0 în Control (INVESTIGATE) | Prompt | Mediu | Mic-Mediu |
 | 10 | Cap stacking regression_risk ✅ DONE | Prompt | Mediu | Mic |
-| 11 | Candidați ireversibili by nature | Prompt | Mediu | Mediu |
+| 11 | Candidați ireversibili by nature ✅ DONE | Prompt | Mediu | Mediu |
 | 12 | probe_change data în Conservator Input ✅ DONE | Prompt | Mediu | Mic |
 | 13 | Single retry la confidence scăzut ✅ DONE | Skill | Mediu | Mediu |
 | 14 | Meta-critic calitate deliberare ✅ DONE | Arch | Înalt | Mare |
@@ -393,18 +404,18 @@ Decizie soft-pozitivă, prioritate scăzută.
 | 30 | Failure-mode section în Parallel ✅ DONE | Skill | Înalt | Mic |
 | 31 | VOTE_PATTERN_CONFIDENCE reorder | Skill | Mic | Mic |
 | 32 | Deduplică _TRIAS_EXPECTED_NAMES | Skill | Mic | Mic |
-| 33 | strip_context skip în Parallel — doc | Skill | Mic | Trivial |
-| 34 | Şterge deprecated aggregate_weighted | Skill | Mic | Mic |
+| 33 | strip_context skip în Parallel — doc ✅ DONE | Skill | Mic | Trivial |
+| 34 | Şterge deprecated aggregate_weighted ✅ DONE | Skill | Mic | Mic |
 | 35 | Severity-aware control score | Skill | Mediu | Mic |
 | 36 | Trias telemetry required ✅ DONE | Skill | Înalt | Mic |
 | 37 | Steward-aware confidence ✅ DONE | Skill | Înalt | Mediu |
 | 38 | Pass-2 silent fallback warning ✅ DONE | Skill | Mediu | Mic |
-| 39 | scope_gate blocklist `*secrets*` folder | Skill | Mic | Trivial |
-| 40 | Parallel telemetry empty → eroare | Skill | Mediu | Trivial |
-| 41 | team_vote tie-break determinist | Skill | Mic | Trivial |
-| 42 | scope_gate None signals type-safe | Skill | Mic | Trivial |
+| 39 | scope_gate blocklist `*secrets*` folder ✅ DONE | Skill | Mic | Trivial |
+| 40 | Parallel telemetry empty → eroare ✅ DONE | Skill | Mediu | Trivial |
+| 41 | team_vote tie-break determinist ✅ DONE | Skill | Mic | Trivial |
+| 42 | scope_gate None signals type-safe ✅ DONE | Skill | Mic | Trivial |
 | 43 | Iterative Dialectic — SPEC fără implementare | Arch | Mediu | Mare |
-| 44 | Sequential Chinese wall — clarify docs | Arch | Mediu | Mic |
+| 44 | Sequential Chinese wall — clarify docs ✅ DONE (SKILL.md; HTML pending) | Arch | Mediu | Mic |
 | 45 | Lens injection validation end-to-end | Skill | Mediu | Mediu |
 | 46 | Pass-2 diff semantic în revision_log | Skill | Mic | Mediu |
 | 47 | `optional_sidecar_visualizer` PROPOSED | Arch | Mediu | Mediu |
@@ -570,7 +581,7 @@ Decizie soft-pozitivă, prioritate scăzută.
 #### [scripts/dialectic_merge.py:124-126] `validate_input` strictly requires all 3 voices in pass1 (uses `sys.exit`)
 - **Fix:** Tolerate missing voices as `{}` in `merge()`, sau raise în loc de `sys.exit`.
 
-#### [scripts/memory.py:104-114] `--n` cap is ignored when `--query` is set
+#### ~~[scripts/memory.py:104-114] `--n` cap is ignored when `--query` is set~~ — ✅ DONE (branch `fix/bug-merge-render`)
 - **Fix:** Apply `[-n:]` after filtering în both tiers.
 
 #### [scripts/run_evals.py:49-55] `subprocess.run(text=True)` uses platform encoding for stdin/stdout
@@ -579,7 +590,7 @@ Decizie soft-pozitivă, prioritate scăzută.
 #### [scripts/utils.py:50-65] `validate_keys` calls `sys.exit(1)` — fatal for in-process callers
 - **Fix:** Raise `ValidationError`; convert to exit code only în `main()` wrappers.
 
-#### [scripts/strip_context.py:51,61] `data.get("candidates"/"verdicts")` crashes on explicit `null` or non-list
+#### ~~[scripts/strip_context.py:51,61] `data.get("candidates"/"verdicts")` crashes on explicit `null` or non-list~~ — ✅ DONE (branch `fix/bug-merge-render`)
 - **Fix:** `candidates = data.get("candidates") or []`; isinstance guard.
 
 #### [scripts/probe_change.py:60-84] `parse_numstat` mis-handles rename syntax `{old => new}`
@@ -812,6 +823,35 @@ Decizie soft-pozitivă, prioritate scăzută.
 
 ## 🏛 Hotărâri Senate
 
+### Hotărârea Senate — bug-audit-dashboard-sync · 17 Mai 2026 · GO (GO 5 · MODIFY 2 · STOP 0)
+
+> **Propunere:** Audit de buguri HIGH/CRITICAL in codebase-ul Dashboard_Sync (Python trading dashboard). Identifica, prioritizeaza si descrie concret 5-10 buguri care pot cauza date incorecte, ImportError, sau comport…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Adaugă în propunere o tabelă de severitate cu praguri numerice (impact P&L, frecvență, detectabilitate) înainte de a clasifica bugurile ca HIGH/CRITICAL.
+- [ ] **[AURELIUS]** Prioritizează explicit: (1) CRITICAL = blochează rularea sau produce date financiare greșite direct; (2) HIGH = produce date greșite indirect sau pierdere de portabilitate; (3) MEDIUM = cosmetic/convenience.
+- [ ] **[CONFUCIUS]** Verifică mai întâi care buguri sunt deja fixate (există comentarii Bug fix în cod). Exclude-le din lista activă. Clarifică dacă load_rules.py în Fx/ e design choice sau bug de deployment.
+- [ ] **[SOCRATE]** Înainte de audit, verifică starea curentă a fiecărui bug propus (citind codul actual, nu dintr-o descriere). Elimină din lista finală bugurile deja fixate. Adaugă criterii concrete de verificare (input - expected - actual) pentru fiecare bug rămas.
+- [ ] **[MUSK]** Reduce lista la 5-6 buguri active (verificate în codul curent, nu fixate deja). Elimină bugurile teoretice (cache stale, memory leak pentru scripturi batch). Prioritizează: (1) ImportError blocant; (2) P&L incorect; (3) portabilitate.
+- [ ] **[DIMON]** Adaugă pentru fiecare bug fix un test minimal (input - expected output) pentru a verifica că fix-ul rezolvă efectiv problema și nu introduce regresii.
+- [ ] **[NAPOLEON]** Implementează fix-urile în ordinea: (1) Quick wins sub 30 min first; (2) Verifică bugurile deja fixate și scoate-le din listă; (3) Lasă cache/memory issues pentru ultimul (impact practic minim pentru scripturi batch).
+
+### Hotărârea Senate — refactoring-dedup-dashboard-sync · 17 Mai 2026 · MODIFY (GO 0 · MODIFY 6 · STOP 1)
+
+> **Propunere:** Refactoring pentru eliminarea codului duplicat in Dashboard_Sync Python codebase. Propunem extragerea functiilor comune intr-un modul shared (7.Analysis_Clasification/scripts/utils.py). Duplicatele id…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Propunerea trebuie sa includa o matrice de echivalenta explicita: pentru fiecare pereche de implementari, demonstreaza output identic pentru inputuri din domeniul de overlap. Recomand: unifica DOAR normalize_symbol dupa ce dovedesti echivalenta, lasa load_playbook variantele separate cu comentarii explicative.
+- [ ] **[AURELIUS]** Propunerea trebuie stagata in ordine strict crescatoare de irreversibilitate: (1) normalize_symbol - complet reversibil, fa-l primul; (2) safe_str/safe_f - complet reversibil, fa-l al doilea; (3) path resolution - moderat reversibil, fa-l al treilea cu script de migrare; (4) load_playbook - partial ireversibil, NU fara teste automate. load_rules ramane neatins pana se gaseste load_rules.py.
+- [ ] **[CONFUCIUS]** Inainte de utils.py: rezolva worktree-ul duplicat si documenteaza locatia load_rules.py. utils.py ar trebui sa fie un proper Python package (cu __init__.py in scripts/) nu un script adaugat in acelasi director.
+- [ ] **[SOCRATE]** Nu procedati la utils.py pana nu aveti: (1) matrice de echivalenta demonstrata empiric, (2) locatia load_rules.py documentata, (3) worktree-ul duplicat eliminat sau sincronizat.
+- [ ] **[MUSK]** Propunerea e over-scoped. Reduce la: (1) normalize_symbol -> symbol_utils.py (5 linii, 30 min); (2) safe_str/safe_f -> utils.py NUMAI daca dovedite identice. Elimina din scope: load_playbook, path resolution, load_rules.
+- [ ] **[DIMON]** Propunerea TREBUIE sa includa: (1) test de echivalenta output inainte/dupa, (2) strategie path resolution documentata, (3) plan pentru worktree duplicat, (4) comportament normalize_symbol definit pentru edge cases (None, simbol cu punct, simbol gol).
+- [ ] **[NAPOLEON]** Decompune in 3 PR-uri cu ROI diferit: PR1 (normalize_symbol in symbol_utils.py, 0.5h, GO imediat), PR2 (safe_str/safe_f, 0.5h, GO dupa verificare), PR3 (load_playbook, 4-6h, STOP pana la CI). Ordinea cost-efficiency: PR1 > PR2 >>> PR3 (PR3 posibil niciodata, ROI negativ).
+
+
 ### Hotărârea Senate — top5-diagnostic-audit · 17 Mai 2026 · DIAGNOSTIC (no vote — 14 issues found, top-5 synthesized)
 
 > **Scope:** Diagnostic audit on the existing Consilium skill (not a proposal vote). Each senator scanned through their lens; top 5 selected by severity + convergence + concreteness.
@@ -830,20 +870,39 @@ Decizie soft-pozitivă, prioritate scăzută.
     - `aggregator.py:46` DEFAULT_VETO=0.8 sits in the high-variance region of the score distribution — Dimon predicts inter-run pstdev 0.12-0.18 on `risk_score`, meaning the veto fires NON-DETERMINISTICALLY on boundary cases (the cases where it matters most).
     - Concrete experiment (1-day feasible per Dimon): 5 historical diffs × 2 runs each, mode=sequential, identical params. Measure pstdev per voice. If `mean(pstdev) > 0.10` on risk_score → Socrate's claim empirically confirmed.
   - **Refined AC:** (1) document calibration asymmetry in SKILL.md (Conservator anchored, Gen/Ctrl unanchored); (2) run the 1-day experiment; (3) IF pstdev > 0.10 → either add multi-sample averaging step or raise veto threshold above high-variance region. Fix priority per R2: `next_session`.
+  - **EXPERIMENT RUN 2026-05-17:** `experiments/voice-score-stability-2026-05-17.md` — 10 paired Conservator dispatches across 5 risk-spectrum cases (LOW/MED/BOUNDARY_LO/BOUNDARY_HI/HIGH). Findings:
+    - **F1** Mean pstdev on `net_concern` = **0.038**, max = 0.100. **Refutes** Dimon's 0.12-0.18 prediction.
+    - **F2** Categorical flip rate on `magnitude`: **40%** (2/5 pairs). On `reversibility`: 20% (1/5). The real noise is *upstream of the formula*, in Q1-Q5 categorical assignment.
+    - **F3** `do_nothing` baseline stable at pstdev 0.012 across 10 runs.
+    - **F4** Veto threshold region (0.8) NOT probed — max observed `net_concern` was 0.42. Dimon's main claim (non-deterministic veto firing near 0.8) **remains unfalsifiable** until [0.7, 0.9] cases are sampled.
+    - **F5** `meta_recommendation` disagrees in 2/5 pairs — same input could trigger different deliberation paths.
+  - **Spawned follow-ups:**
+    - [ ] **#1-A** Drop the `pstdev > 0.15` check from AC — never fires for typical cases (max observed 0.10).
+    - [ ] **#1-B** Add a categorical-stability check instead: sample Conservator twice; surface `magnitude`/`reversibility` disagreement to orchestrator (don't auto-resolve). Catches the 40% flip rate at its source.
+    - [ ] **#1-C** Re-run with 2-3 cases that produce `net_concern ∈ [0.7, 0.9]` to probe the veto-threshold variance region (F4 gap).
+    - [ ] **#1-D** Probe Generator + Control stability (untested here — Wittgenstein's asymmetry claim is half-supported by this experiment).
+    - [ ] **#1-E** SKILL.md edits per experiment's "Suggested SKILL.md edits" section (calibration-asymmetry note + 0.8 veto caveat) — separate PR.
 
-- [ ] **#2 [HIGH × 3-way convergence] zombie_deprecated_modes** *(Confucius + Musk + Napoleon)*
+- [x] **#2 [HIGH × 3-way convergence] zombie_deprecated_modes** *(Confucius + Musk + Napoleon)* — ✅ SHIPPED PR #102 (`fix/zombie-deprecated-modes`, commit `b5fbe2f`, merged 2026-05-17)
   - Where: `docs/architecture.html` lines 583/588/609/701/715/759 + `docs/architecture.js:300` + `scripts/validate_report.py:218-221` frozenset + ~25/58 runs with `mode=parallel` in telemetry
-  - Issue: RUND2 collapsed `parallel_skeptic`/`dialectic_skeptic` into `skeptic_on_chosen` flag on 2026-05-17 but zombie refs remain in three places. Architecture.js:300 actively instructs orchestrator to use retired name.
-  - AC: single PR removing zombie names from `validate_report.py` frozenset (handle backward-compat via alias-resolution at read-time); rewrite arch.html cards to one "Legacy (collapsed)" notice; replace arch.js:300 reference; enforce sequential-as-default at dispatch with telemetry justification for any parallel use.
-  - Status: ✅ CONCRETE — verified in code 2026-05-17. Ready to ship.
+  - Issue: RUND2 collapsed `parallel_skeptic`/`dialectic_skeptic` into `skeptic_on_chosen` flag on 2026-05-17 but zombie refs remained in three places.
+  - Shipped: removed legacy names from `validate_report.py` frozenset (kept backward-compat for historical runs/); two standalone mode cards collapsed into single "Legacy (collapsed) RETIRED 2026-05-17" notice; cost-table rows removed; routing-table entry rewritten as `dialectic + skeptic_on_chosen`; arch.js skeptic-challenge flow + step-3 narration rewritten to flag form. +17/-55 net across 3 files. Eval suite 18/18 + senate_synth 19/19 pass post-merge.
+  - Deferred (out of scope for this fix): "enforce sequential-as-default at dispatch with telemetry justification" — broader policy change.
 
-- [ ] **#3 [HIGH] risk_score_field_mismatch_silent_default** *(Wittgenstein)*
-  - Where: `scripts/build_report.py:74` reads `score.get("risk_score", 0.5)` — but `prompts/voices/conservator.md` schema only defines `regression_risk.net_concern` (verified at conservator.md:92-95). `aggregator.py:428` correctly uses `regression_risk.net_concern`.
-  - Issue: Every RUND2 deliberation's `voice_scores.conservator` silently resolves to the 0.5 default in the FINAL REPORT. Aggregator is unaffected (uses correct path); display + downstream confidence calc on `voice_scores` are affected.
-  - AC: change `build_report.py:74` to `float(score.get("regression_risk", {}).get("net_concern", 0.5))`. Also fix `build_report.py:87-88` `_why_not` which has the same bug. Re-run `validate_report.py` on recent runs to detect affected decisions.
-  - Status: ✅ CONCRETE — verified in code 2026-05-17. ~5-line fix. Ready to ship.
+- [x] **#3 [HIGH] risk_score_field_mismatch_silent_default** *(Wittgenstein)* — ✅ SHIPPED PR #100 (`fix/build-report-risk-score`, commit `18ece76`, merged 2026-05-17)
+  - Where: `scripts/build_report.py:74` was reading `score.get("risk_score", 0.5)` — but `prompts/voices/conservator.md:92-95` schema only defined `regression_risk.net_concern`. `aggregator.py:428` already used the correct path.
+  - Issue: Every RUND2 deliberation's `voice_scores.conservator` silently resolved to the 0.5 default in the FINAL REPORT + `_why_not` risk annotation in alternatives also affected.
+  - Shipped: added `_conservator_risk()` helper that reads `regression_risk.net_concern` with legacy `risk_score` fallback for backward-compat with old bundles. `_voice_scores_for()` and `_why_not()` both rewired to the helper. +17/-5 net.
 
-- [ ] **#4 [HIGH] irreversibility_flag_bypassed_in_subagent_path** *(Aurelius)*
+- [x] **#4 [HIGH] irreversibility_flag_bypassed_in_subagent_path** *(Aurelius)* — ✅ SHIPPED PR #101 (`fix/subagent-blocking-gates`, commit `5709151`, merged 2026-05-17)
+  - Where: SKILL.md Step 2 + `agents/consilium-subagent.md` rule 2
+  - Issue: Conservator's `irreversibility_flag: true` documented to BLOCK + require explicit user consent. Subagent wrapper forbids interactive prompts and was silent on this case — safety gate bypassed in the execution context where human oversight is lowest.
+  - Shipped: added single generic rule under rule 2 covering ALL blocking-class gates (irreversibility_flag, glossary_fail, ESCALATE on 3+ simultaneous triggers, any `result: BLOCK*` from `aggregate_rund2`). Forces `chosen_approach: null` + `confidence: null` + populates `subagent_notes.blocked_reason` with the trigger name so orchestrator can distinguish a safety-blocked deliberation from a low-confidence one. +1 line.
+  - Deferred (out of scope, R2 expanded scope): write exhaustive output contracts for the OTHER 6 missing gates Confucius enumerated (`disagreements substantial REWORK`, `meta_recommendation: scale_up`, `challenge_upward triggered`, `retry_context single-pass`, `pend_pressure soft alert`, `glossary_fail BLOCK soft` — partially covered by generic rule but no dedicated contract).
+
+- [ ] **#4-followup [MED] subagent-output-contracts-for-6-remaining-gates** *(Confucius R2 scope expansion)*
+  - Spawned by #4 ship. The generic `blocking_gates` rule handles BLOCK-class catch-all, but the 6 non-BLOCK gates (REWORK / ADAPT / soft alerts) still have no explicit non-interactive substitute in consilium-subagent.md.
+  - AC: enumerate each SKILL.md interactive checkpoint, map to a deterministic non-interactive output contract, document under `subagent_notes.*` field naming convention. Estimated +30 lines.
   - Where: SKILL.md Step 2 + `agents/consilium-subagent.md`
   - Issue: Conservator's `irreversibility_flag: true` is documented to BLOCK + require explicit user consent. The subagent wrapper forbids interactive prompts and is silent on this case — the safety gate is bypassed in the execution context where human oversight is lowest.
   - AC: add explicit subagent rule: when `irreversibility_flag=true`, surface `subagent_notes.irreversibility_blocked: true` and force `confidence: null` + `chosen_approach: null` so orchestrator cannot silently act.
@@ -855,11 +914,12 @@ Decizie soft-pozitivă, prioritate scăzută.
     - **Realness check** (Musk): subagent path is live but zero recorded runs have triggered irreversibility yet → risk is structural-imminence, not historical-occurrence.
   - **Refined AC:** (1) ship-now minimum fix per Musk (4-6 lines, generic `blocking_gates` rule in consilium-subagent.md); (2) follow-up audit pass over all 7 missing gates to write exhaustive output contracts (next-session); (3) re-validate by running a synthetic subagent dispatch with irreversibility_flag=true and asserting `subagent_notes.blocked_reason` populated.
 
-- [ ] **#5 [HIGH] priors_poisoning_via_html_parse_drift** *(Dimon)*
+- [x] **#5 [HIGH] priors_poisoning_via_html_parse_drift** *(Dimon)*
   - Where: `scripts/feedback.py:50-86` (parse_feedback cell-count branches 6/7/8) + `scripts/render_feedback_html.py`
   - Issue: Cell-count heuristic with `outcome not in OUTCOMES: continue` as the only guard. Any future column addition/reorder in render_feedback_html silently misaligns every existing row → `priors.py` rate computations poisoned (`bad_rate`, `override_rate`, `weighted_bad_rate`), no error raised.
   - AC: anchor parsing on `data-field="<name>"` attributes in rendered HTML rather than positional index. Add a round-trip smoke test (render → parse → assert field values match).
   - Status: ✅ CONCRETE — verified in code 2026-05-17. Ready to ship.
+  - **FIXED (2026-05-17):** `fix/feedback-html-parse-drift` — `render_feedback_html.py` adds `data-field` attrs to all `<td>` cells; `feedback.py` uses attribute-based parsing as primary path (positional fallback for legacy rows).
 
 **Honorable mentions (medium severity):**
 
@@ -868,7 +928,7 @@ Decizie soft-pozitivă, prioritate scăzută.
 - [ ] **HM3 [MED] pilot_b_unenforced_activation_gate** *(Confucius)* — SKILL.md documents Pilot B with `N≥5 senate runs` gate; no script enforces or surfaces it. AC: either add `priors.py --senator-gate` check, or demote Pilot B to "design sketch / NOT YET ACTIVE" banner.
 - [ ] **HM4 [HIGH] skeptic_catchrate_overgeneralized_from_P3** *(Socrate)* — SKILL.md claims `skeptic_on_chosen` catch-rate "100% simulation, 4/7 real" but all reruns on n=1 problem (P3). Cross-mode comparison claim built on n=1. AC: replace with explicit scope bound + falsification criterion on ≥3 distinct problems.
 - [ ] **HM5 [MED] senate_synth_dual_schema_path** *(Musk)* — `normalize_rounds` wrapper + `is_multi_round_input` bool threads through 606 LOC for legacy `{senators:{}}` shape that no live dispatch path emits. AC: require multi-round unconditionally; drop wrapper + bool (~40 lines).
-- [ ] **HM6 [MED] fingerprint_collision_silent_suppression** *(Dimon)* — `log_feedback.py:_fingerprint` truncates context to 30 chars; same-day+same-chosen+same-30char-prefix collides → row silently dropped (stderr only, exit 0). AC: include monotonic counter or run filename in fingerprint; exit code 3 on collision.
+- [x] **HM6 [MED] fingerprint_collision_silent_suppression** *(Dimon)* — `log_feedback.py:_fingerprint` truncates context to 30 chars; same-day+same-chosen+same-30char-prefix collides → row silently dropped (stderr only, exit 0). AC: include monotonic counter or run filename in fingerprint; exit code 3 on collision. **FIXED (2026-05-17):** `fix/fingerprint-collision` — `_fingerprint` now includes `run_id` (basename) or microsecond timestamp; collision handler exits 3; `audit_feedback.py` updated for new int return code.
 - [ ] **HM7 [MED] senate_test_surface_vs_usage_ratio** *(Napoleon)* — 674 LOC test suite for Senate mode with 1 historical run. AC: freeze Senate test suite at current coverage; mark `dispatch_senate_on_code.py` + `compare_senate_vs_trias.py` maintenance-deferred until Senate usage exceeds 5 runs/month.
 
 **Meta-pattern:** Three convergent root causes — (a) rhetorical deprecation without operational enforcement, (b) schema drift between prompts and scripts with no validation layer, (c) load-bearing quantitative claims built on n=1 problem.

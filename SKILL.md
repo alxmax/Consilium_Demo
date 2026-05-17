@@ -138,6 +138,18 @@ cat bundle.json | python scripts/retry_context.py
 Returnează top-2 candidați cu fișiere/simboluri de citit/grepat. Folosește hint-urile → gather context (Read + Grep) → re-rulează Generator/Control/Conservator **o singură dată** cu input îmbogățit. Dacă confidence încă < 0.7, abia atunci întrebi utilizatorul (Step 6).
 
 ### 6. Report
+
+**Telemetry emission (obligatoriu — înainte de `build_report.py`).**
+
+La fiecare dispatch (voce sau senator), imediat după return, acumulează în bundle:
+
+- `telemetry.voices.<voice_name>` sau `telemetry.senators.<senator_name>` (Senate): `{tokens_in: ceil(len(prompt)/4), tokens_out: ceil(len(response)/4), latency_ms: <wall-clock>}` — prompt = text complet trimis (persona + context + propunere, nu doar propunerea).
+- Suma tokens + latency per voce dacă există retry-uri pe același dispatch.
+- `telemetry.mode` ← label canonic (`"sequential"`, `"senate"`, `"trias"` etc. — din `## Dispatch defaults`).
+- `telemetry.dispatch_count` ← total dispatch-uri (inclusiv retry-uri).
+
+De ce obligatoriu: `scripts/efficiency.py` returnează `null` pentru orice run fără telemetry, poluând mediile per mod — un run fără telemetry e invizibil în comparațiile de eficiență.
+
 ```bash
 cat bundle.json | python scripts/build_report.py | python scripts/validate_report.py
 ```
