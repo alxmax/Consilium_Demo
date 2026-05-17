@@ -831,19 +831,26 @@ Decizie soft-pozitivă, prioritate scăzută.
     - Concrete experiment (1-day feasible per Dimon): 5 historical diffs × 2 runs each, mode=sequential, identical params. Measure pstdev per voice. If `mean(pstdev) > 0.10` on risk_score → Socrate's claim empirically confirmed.
   - **Refined AC:** (1) document calibration asymmetry in SKILL.md (Conservator anchored, Gen/Ctrl unanchored); (2) run the 1-day experiment; (3) IF pstdev > 0.10 → either add multi-sample averaging step or raise veto threshold above high-variance region. Fix priority per R2: `next_session`.
 
-- [ ] **#2 [HIGH × 3-way convergence] zombie_deprecated_modes** *(Confucius + Musk + Napoleon)*
+- [x] **#2 [HIGH × 3-way convergence] zombie_deprecated_modes** *(Confucius + Musk + Napoleon)* — ✅ SHIPPED PR #102 (`fix/zombie-deprecated-modes`, commit `b5fbe2f`, merged 2026-05-17)
   - Where: `docs/architecture.html` lines 583/588/609/701/715/759 + `docs/architecture.js:300` + `scripts/validate_report.py:218-221` frozenset + ~25/58 runs with `mode=parallel` in telemetry
-  - Issue: RUND2 collapsed `parallel_skeptic`/`dialectic_skeptic` into `skeptic_on_chosen` flag on 2026-05-17 but zombie refs remain in three places. Architecture.js:300 actively instructs orchestrator to use retired name.
-  - AC: single PR removing zombie names from `validate_report.py` frozenset (handle backward-compat via alias-resolution at read-time); rewrite arch.html cards to one "Legacy (collapsed)" notice; replace arch.js:300 reference; enforce sequential-as-default at dispatch with telemetry justification for any parallel use.
-  - Status: ✅ CONCRETE — verified in code 2026-05-17. Ready to ship.
+  - Issue: RUND2 collapsed `parallel_skeptic`/`dialectic_skeptic` into `skeptic_on_chosen` flag on 2026-05-17 but zombie refs remained in three places.
+  - Shipped: removed legacy names from `validate_report.py` frozenset (kept backward-compat for historical runs/); two standalone mode cards collapsed into single "Legacy (collapsed) RETIRED 2026-05-17" notice; cost-table rows removed; routing-table entry rewritten as `dialectic + skeptic_on_chosen`; arch.js skeptic-challenge flow + step-3 narration rewritten to flag form. +17/-55 net across 3 files. Eval suite 18/18 + senate_synth 19/19 pass post-merge.
+  - Deferred (out of scope for this fix): "enforce sequential-as-default at dispatch with telemetry justification" — broader policy change.
 
-- [ ] **#3 [HIGH] risk_score_field_mismatch_silent_default** *(Wittgenstein)*
-  - Where: `scripts/build_report.py:74` reads `score.get("risk_score", 0.5)` — but `prompts/voices/conservator.md` schema only defines `regression_risk.net_concern` (verified at conservator.md:92-95). `aggregator.py:428` correctly uses `regression_risk.net_concern`.
-  - Issue: Every RUND2 deliberation's `voice_scores.conservator` silently resolves to the 0.5 default in the FINAL REPORT. Aggregator is unaffected (uses correct path); display + downstream confidence calc on `voice_scores` are affected.
-  - AC: change `build_report.py:74` to `float(score.get("regression_risk", {}).get("net_concern", 0.5))`. Also fix `build_report.py:87-88` `_why_not` which has the same bug. Re-run `validate_report.py` on recent runs to detect affected decisions.
-  - Status: ✅ CONCRETE — verified in code 2026-05-17. ~5-line fix. Ready to ship.
+- [x] **#3 [HIGH] risk_score_field_mismatch_silent_default** *(Wittgenstein)* — ✅ SHIPPED PR #100 (`fix/build-report-risk-score`, commit `18ece76`, merged 2026-05-17)
+  - Where: `scripts/build_report.py:74` was reading `score.get("risk_score", 0.5)` — but `prompts/voices/conservator.md:92-95` schema only defined `regression_risk.net_concern`. `aggregator.py:428` already used the correct path.
+  - Issue: Every RUND2 deliberation's `voice_scores.conservator` silently resolved to the 0.5 default in the FINAL REPORT + `_why_not` risk annotation in alternatives also affected.
+  - Shipped: added `_conservator_risk()` helper that reads `regression_risk.net_concern` with legacy `risk_score` fallback for backward-compat with old bundles. `_voice_scores_for()` and `_why_not()` both rewired to the helper. +17/-5 net.
 
-- [ ] **#4 [HIGH] irreversibility_flag_bypassed_in_subagent_path** *(Aurelius)*
+- [x] **#4 [HIGH] irreversibility_flag_bypassed_in_subagent_path** *(Aurelius)* — ✅ SHIPPED PR #101 (`fix/subagent-blocking-gates`, commit `5709151`, merged 2026-05-17)
+  - Where: SKILL.md Step 2 + `agents/consilium-subagent.md` rule 2
+  - Issue: Conservator's `irreversibility_flag: true` documented to BLOCK + require explicit user consent. Subagent wrapper forbids interactive prompts and was silent on this case — safety gate bypassed in the execution context where human oversight is lowest.
+  - Shipped: added single generic rule under rule 2 covering ALL blocking-class gates (irreversibility_flag, glossary_fail, ESCALATE on 3+ simultaneous triggers, any `result: BLOCK*` from `aggregate_rund2`). Forces `chosen_approach: null` + `confidence: null` + populates `subagent_notes.blocked_reason` with the trigger name so orchestrator can distinguish a safety-blocked deliberation from a low-confidence one. +1 line.
+  - Deferred (out of scope, R2 expanded scope): write exhaustive output contracts for the OTHER 6 missing gates Confucius enumerated (`disagreements substantial REWORK`, `meta_recommendation: scale_up`, `challenge_upward triggered`, `retry_context single-pass`, `pend_pressure soft alert`, `glossary_fail BLOCK soft` — partially covered by generic rule but no dedicated contract).
+
+- [ ] **#4-followup [MED] subagent-output-contracts-for-6-remaining-gates** *(Confucius R2 scope expansion)*
+  - Spawned by #4 ship. The generic `blocking_gates` rule handles BLOCK-class catch-all, but the 6 non-BLOCK gates (REWORK / ADAPT / soft alerts) still have no explicit non-interactive substitute in consilium-subagent.md.
+  - AC: enumerate each SKILL.md interactive checkpoint, map to a deterministic non-interactive output contract, document under `subagent_notes.*` field naming convention. Estimated +30 lines.
   - Where: SKILL.md Step 2 + `agents/consilium-subagent.md`
   - Issue: Conservator's `irreversibility_flag: true` is documented to BLOCK + require explicit user consent. The subagent wrapper forbids interactive prompts and is silent on this case — the safety gate is bypassed in the execution context where human oversight is lowest.
   - AC: add explicit subagent rule: when `irreversibility_flag=true`, surface `subagent_notes.irreversibility_blocked: true` and force `confidence: null` + `chosen_approach: null` so orchestrator cannot silently act.
@@ -855,11 +862,14 @@ Decizie soft-pozitivă, prioritate scăzută.
     - **Realness check** (Musk): subagent path is live but zero recorded runs have triggered irreversibility yet → risk is structural-imminence, not historical-occurrence.
   - **Refined AC:** (1) ship-now minimum fix per Musk (4-6 lines, generic `blocking_gates` rule in consilium-subagent.md); (2) follow-up audit pass over all 7 missing gates to write exhaustive output contracts (next-session); (3) re-validate by running a synthetic subagent dispatch with irreversibility_flag=true and asserting `subagent_notes.blocked_reason` populated.
 
-- [ ] **#5 [HIGH] priors_poisoning_via_html_parse_drift** *(Dimon)*
+- [ ] **#5 [HIGH] priors_poisoning_via_html_parse_drift** *(Dimon)* — ⏸ DISCUSSION-PENDING (deferred 2026-05-17, user choice — needs design call)
   - Where: `scripts/feedback.py:50-86` (parse_feedback cell-count branches 6/7/8) + `scripts/render_feedback_html.py`
   - Issue: Cell-count heuristic with `outcome not in OUTCOMES: continue` as the only guard. Any future column addition/reorder in render_feedback_html silently misaligns every existing row → `priors.py` rate computations poisoned (`bad_rate`, `override_rate`, `weighted_bad_rate`), no error raised.
-  - AC: anchor parsing on `data-field="<name>"` attributes in rendered HTML rather than positional index. Add a round-trip smoke test (render → parse → assert field values match).
-  - Status: ✅ CONCRETE — verified in code 2026-05-17. Ready to ship.
+  - **Three approaches on table (decision required before ship):**
+    1. **data-field anchors** (Dimon's recommendation, ~30 LOC): `render_feedback_html.py` emits `data-field="date|context|chosen|outcome|note"` per `<td>`; `feedback.py` parse reads by attribute, not cell-index. Deterministic. Add round-trip smoke test. **Tradeoff:** all historical HTML rows lack `data-field` → need migration step or graceful fallback to cell-index for rows without attributes.
+    2. **Per-field validation only** (~15 LOC): leave cell-index parsing, add format checks (date regex, chosen non-empty, outcome ∈ OUTCOMES). Continue silently on validation fail. **Tradeoff:** lowers blast radius but doesn't fully fix the drift problem; misaligned-but-valid rows still pass.
+    3. **Alternative format** (e.g., JSONL audit log instead of HTML cells): replace FEEDBACK.html as the priors source with a structured machine-readable log. HTML becomes a derived view. **Tradeoff:** larger refactor; touches log_feedback.py, render_feedback_html.py, priors.py, feedback.py — full audit trail of changes; better long-term but heavier.
+  - **Status:** CONCRETE bug verified in code 2026-05-17 (feedback.py:54-86 confirmed cell-count heuristic with no field-name anchor). Ship blocked on design choice. Reopen when ready to decide.
 
 **Honorable mentions (medium severity):**
 
