@@ -223,8 +223,12 @@ def _validate_telemetry_required(report: dict) -> list[str]:
         "dialectic_skeptic": "skeptic_on_chosen",
     }
     mode = _LEGACY_MODE_ALIASES.get(mode.strip(), mode.strip())
+    # All modes that dispatch multiple voices require per-voice telemetry so
+    # usage.py can roll up cost across runs/. parallel_skeptic/dialectic_skeptic
+    # are resolved via _LEGACY_MODE_ALIASES above before this check.
     _MULTI_VOICE_MODES = frozenset({
         "parallel", "trias", "dialectic", "trias_split",
+        "skeptic_on_chosen",
     })
     if mode in _MULTI_VOICE_MODES:
         voices = telemetry.get("voices")
@@ -240,7 +244,6 @@ def _validate_telemetry_required(report: dict) -> list[str]:
 VOTE_PATTERN_REGEX = re.compile(r"^[0-3]-[0-3](-[0-1])?$")
 
 _TRIAS_NULL_PATTERNS = {"1-1-1", "1-1-0", "1-0-0", "0-0-0"}
-_TRIAS_EXPECTED_NAMES = frozenset(NAMES)
 
 
 def _validate_trias(report: dict, errors: list) -> None:
@@ -251,6 +254,9 @@ def _validate_trias(report: dict, errors: list) -> None:
         return
     names_seen: set[str] = set()
     for i, p in enumerate(personalities):
+        if not isinstance(p, dict):
+            errors.append(f"trias: personalities[{i}] must be a JSON object, got {type(p).__name__}")
+            continue
         for f in ("name", "weights", "lens", "chose"):
             if f not in p:
                 errors.append(f"trias: personalities[{i}] missing field {f!r}")
@@ -258,9 +264,9 @@ def _validate_trias(report: dict, errors: list) -> None:
             if p["name"] in names_seen:
                 errors.append(f"trias: duplicate personality name {p['name']!r}")
             names_seen.add(p["name"])
-    if names_seen and names_seen != _TRIAS_EXPECTED_NAMES:
+    if names_seen and names_seen != frozenset(NAMES):
         errors.append(
-            f"trias: personality names must be exactly {sorted(_TRIAS_EXPECTED_NAMES)},"
+            f"trias: personality names must be exactly {sorted(NAMES)},"
             f" got {sorted(names_seen)}"
         )
 
