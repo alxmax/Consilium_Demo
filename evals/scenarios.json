@@ -231,7 +231,7 @@
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
-      "confidence": 0.6,
+      "confidence": 0.65,
       "source": "vote_pattern"
     }
   },
@@ -245,7 +245,7 @@
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
-      "confidence": 0.7,
+      "confidence": 0.75,
       "source": "vote_pattern"
     }
   },
@@ -259,7 +259,7 @@
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
-      "confidence": 0.6,
+      "confidence": 0.55,
       "source": "vote_pattern"
     }
   },
@@ -1548,7 +1548,14 @@
         {"name": "steward", "weights": {}, "lens": "p", "chose": "approach_a"}
       ],
       "vote_pattern": "3-0",
-      "telemetry": {"mode": "trias"}
+      "telemetry": {
+        "mode": "trias",
+        "voices": {
+          "pioneer": {"tokens_in": 100, "tokens_out": 50, "latency_ms": 1000},
+          "architect": {"tokens_in": 100, "tokens_out": 50, "latency_ms": 1000},
+          "steward": {"tokens_in": 100, "tokens_out": 50, "latency_ms": 1000}
+        }
+      }
     },
     "expect_exit": 0
   },

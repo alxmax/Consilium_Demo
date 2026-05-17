@@ -67,8 +67,8 @@ CONFIDENCE_CEIL = 0.99
 
 VOTE_PATTERN_CONFIDENCE = {
     "3-0": 0.95,
-    "2-1": 0.70,
-    "2-0": 0.75,
+    "2-1": 0.75,  # dissent: one personality chose a different candidate (recoverable)
+    "2-0": 0.70,  # veto: one personality had all candidates vetoed (stronger risk signal)
     "1-1-1": None,
     "1-1-0": None,
     "1-0-0": None,

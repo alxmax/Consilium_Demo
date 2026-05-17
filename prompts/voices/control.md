@@ -81,7 +81,9 @@ For each `valid: true` candidate (except `do_nothing`), produce `tests_to_write`
     {
       "id": "inline_fix",
       "valid": true,
-      "issues": [],
+      "issues": [
+        {"category": "logic", "detail": "...", "severity": "low|medium|high"}
+      ],
       "tests_to_write": [
         {"name": "rejects empty input", "assert": "fn('') raises ValueError"}
       ],

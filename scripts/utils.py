@@ -66,6 +66,20 @@ def atomic_write_text(path, content: str, encoding: str = "utf-8") -> None:
     os.replace(tmp, path)
 
 
+_ISSUE_PENALTIES = {"low": 0.05, "medium": 0.15, "high": 0.30}
+
+
+def issue_penalty(issue: object) -> float:
+    """Return the score penalty for a single Control issue based on severity.
+
+    Severity levels: low=0.05, medium=0.15 (default), high=0.30.
+    If the issue dict has no severity field, 0.15 is used (backward-compatible).
+    """
+    if isinstance(issue, dict):
+        return _ISSUE_PENALTIES.get(issue.get("severity", "medium"), 0.15)
+    return 0.15
+
+
 def validate_keys(data: dict, required: list[str], context: str) -> None:
     """Assert that *data* contains all keys in *required*.
 

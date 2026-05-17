@@ -57,7 +57,7 @@ import json
 import sys
 from typing import Any
 
-from utils import force_utf8_streams, validate_keys
+from utils import force_utf8_streams, issue_penalty, validate_keys
 
 VOICES = ("generator", "control", "conservator")
 VOICE_KEY = {
@@ -88,14 +88,14 @@ def _final_voice_output(
 def _voice_score_from_verdict(verdict: dict) -> float:
     """Translate Control's binary verdict into a [0,1] utility score.
 
-    Valid with no issues = 1.0; each issue subtracts 0.15 (down to 0.3).
-    Invalid = 0.0. This is intentionally crude — Control's job is
-    correctness, not nuanced ranking; nuance lives in Conservator.
+    Valid with no issues = 1.0; penalty per issue scaled by severity
+    (low=0.05, medium=0.15, high=0.30); floor at 0.3.
+    Invalid = 0.0.
     """
     if not verdict.get("valid"):
         return 0.0
     issues = verdict.get("issues") or []
-    return max(0.3, 1.0 - 0.15 * len(issues))
+    return max(0.3, 1.0 - sum(issue_penalty(i) for i in issues))
 
 
 def _merge_pass2_control_verdict(p2_verdict: dict, p1_verdict: dict) -> dict:

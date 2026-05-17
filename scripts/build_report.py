@@ -47,7 +47,7 @@ import json
 import sys
 from typing import Any
 
-from utils import force_utf8_streams, validate_keys
+from utils import force_utf8_streams, issue_penalty, validate_keys
 
 
 def _err(msg: str) -> None:
@@ -67,7 +67,7 @@ def _voice_scores_for(chosen: str | None, control: dict, conservator: dict) -> d
     verdict = _candidate_by_id(control.get("verdicts") or [], chosen) or {}
     score = _candidate_by_id(conservator.get("scores") or [], chosen) or {}
     issues = verdict.get("issues") or []
-    control_score = 0.0 if not verdict.get("valid") else max(0.3, 1.0 - 0.15 * len(issues))
+    control_score = 0.0 if not verdict.get("valid") else max(0.3, 1.0 - sum(issue_penalty(i) for i in issues))
     return {
         "generator": 0.5 if chosen == "do_nothing" or chosen.startswith("adversarial_") else 1.0,
         "control": round(control_score, 3),
