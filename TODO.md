@@ -92,19 +92,24 @@
 - [ ] Iese natural din audit Musk HM5 (dual-schema path în senate_synth.py) — aceeași temă: shim-uri retained după migrări, fără cleanup explicit.
 - [ ] Found: 2026-05-17, post Senate top-5 diagnostic audit (sesiunea care a generat manual `runs/senate/transcripts/2026-05-17/top5-diagnostic-audit.html` prin `python -c "import senate_transcript; ..."`).
 
-### Usage & Efficiency reporting — PENDING
+### Usage & Efficiency reporting — IN PROGRESS
 
-> **Status:** PENDING (proposal-only, 2026-05-17). Full design în `experiments/usage-efficiency-proposal-pending.md`. Captured via `/consilium`. No code change yet — awaiting explicit go-ahead.
+> **Status:** Senate deliberation 2026-05-17 (`efficiency-py-design-decisions`) a rezolvat toate 4 open questions. Design în `experiments/usage-efficiency-proposal-pending.md`.
+>
+> **Decizii Senate confirmate (bundle `runs/senate/2026-05-17_194232-efficiency-py-design-decisions.json`):**
+> - Q1: Binary gate — FEEDBACK outcome=OK → OK, orice altceva → exclus din OK_count
+> - Q2: Raw sum (tokens_in + tokens_out); output include și `tokens_per_dispatch` (normalizat, per Socrate)
+> - Q3: Flat Trias schema: `{pioneer_generator, architect_control, ...}`
+> - Q4: `--self-test` flag în efficiency.py + `--feedback`/`--runs` CLI overrides (nu run_evals.py scenario)
 
-- [ ] **Goal:** per-mode efficiency score (`total_tokens / OK_outcomes`) comparable across Sequential / Parallel / Dialectic / Trias / Senate / etc.
-- [ ] **Token capture:** hybrid — estimate `chars/4` per dispatch + record `latency_ms` + `dispatch_count`.
-- [ ] **Senate telemetry gap:** `runs/senate/*.json` currently emits 0 usage data; `senate_synth.py` to accept `telemetry` kwarg.
-- [ ] **New script:** `scripts/efficiency.py` — CLI `--by-mode | --compare <a> <b> | --since <date>`, emits `tokens_per_OK` per mode + ranking.
-- [ ] **`usage.py` extension:** walk `runs/senate/` + add `senators` voice bucket + `--mode` filter.
-- [ ] **SKILL.md Step 6c:** mandatory telemetry emission discipline after each run (chars/4 estimate).
-- [ ] **UI tab:** new "Usage & Efficiency" tab in `docs/architecture.html` cu bar chart per mode.
-- [ ] **Open questions to resolve before impl:** Senate verdict → OK/BAD mapping, tokens_in inflation policy, Trias schema (nested vs flat), eval harness scenario.
-- [ ] **Estimated:** ~425 LOC across 6 files.
+- [x] **Goal:** per-mode efficiency score (`total_tokens / OK_outcomes`) comparable across Sequential / Parallel / Dialectic / Trias / Senate / etc.
+- [x] **Open questions:** rezolvate de Senate 2026-05-17.
+- [x] **Senate telemetry gap:** `senate_synth.py` acceptă `telemetry` kwarg. Branch: `feat/usage-senate-telemetry-and-history`.
+- [x] **`usage.py` extension:** walk `runs/senate/` + senators bucket + `--mode` filter. Branch: `feat/usage-senate-telemetry-and-history`.
+- [x] **New script:** `scripts/efficiency.py` livrat. Branch: `feat/efficiency-py`. Self-test PASS.
+- [ ] **Token capture (orchestrator):** emite `telemetry` la fiecare run (chars/4 pe promptul complet — proposal + persona + context, nu doar propunere). Afectează acuratețea cross-mode.
+- [ ] **SKILL.md Step 6c:** mandatory telemetry emission discipline după fiecare run.
+- [ ] **UI tab:** "Usage & Efficiency" tab în `docs/architecture.html` cu bar chart per mode.
 
 ### Philosophical voice variants — REMAINING
 
@@ -817,6 +822,34 @@ Decizie soft-pozitivă, prioritate scăzută.
 ---
 
 ## 🏛 Hotărâri Senate
+
+### Hotărârea Senate — bug-audit-dashboard-sync · 17 Mai 2026 · GO (GO 5 · MODIFY 2 · STOP 0)
+
+> **Propunere:** Audit de buguri HIGH/CRITICAL in codebase-ul Dashboard_Sync (Python trading dashboard). Identifica, prioritizeaza si descrie concret 5-10 buguri care pot cauza date incorecte, ImportError, sau comport…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Adaugă în propunere o tabelă de severitate cu praguri numerice (impact P&L, frecvență, detectabilitate) înainte de a clasifica bugurile ca HIGH/CRITICAL.
+- [ ] **[AURELIUS]** Prioritizează explicit: (1) CRITICAL = blochează rularea sau produce date financiare greșite direct; (2) HIGH = produce date greșite indirect sau pierdere de portabilitate; (3) MEDIUM = cosmetic/convenience.
+- [ ] **[CONFUCIUS]** Verifică mai întâi care buguri sunt deja fixate (există comentarii Bug fix în cod). Exclude-le din lista activă. Clarifică dacă load_rules.py în Fx/ e design choice sau bug de deployment.
+- [ ] **[SOCRATE]** Înainte de audit, verifică starea curentă a fiecărui bug propus (citind codul actual, nu dintr-o descriere). Elimină din lista finală bugurile deja fixate. Adaugă criterii concrete de verificare (input - expected - actual) pentru fiecare bug rămas.
+- [ ] **[MUSK]** Reduce lista la 5-6 buguri active (verificate în codul curent, nu fixate deja). Elimină bugurile teoretice (cache stale, memory leak pentru scripturi batch). Prioritizează: (1) ImportError blocant; (2) P&L incorect; (3) portabilitate.
+- [ ] **[DIMON]** Adaugă pentru fiecare bug fix un test minimal (input - expected output) pentru a verifica că fix-ul rezolvă efectiv problema și nu introduce regresii.
+- [ ] **[NAPOLEON]** Implementează fix-urile în ordinea: (1) Quick wins sub 30 min first; (2) Verifică bugurile deja fixate și scoate-le din listă; (3) Lasă cache/memory issues pentru ultimul (impact practic minim pentru scripturi batch).
+
+### Hotărârea Senate — refactoring-dedup-dashboard-sync · 17 Mai 2026 · MODIFY (GO 0 · MODIFY 6 · STOP 1)
+
+> **Propunere:** Refactoring pentru eliminarea codului duplicat in Dashboard_Sync Python codebase. Propunem extragerea functiilor comune intr-un modul shared (7.Analysis_Clasification/scripts/utils.py). Duplicatele id…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Propunerea trebuie sa includa o matrice de echivalenta explicita: pentru fiecare pereche de implementari, demonstreaza output identic pentru inputuri din domeniul de overlap. Recomand: unifica DOAR normalize_symbol dupa ce dovedesti echivalenta, lasa load_playbook variantele separate cu comentarii explicative.
+- [ ] **[AURELIUS]** Propunerea trebuie stagata in ordine strict crescatoare de irreversibilitate: (1) normalize_symbol - complet reversibil, fa-l primul; (2) safe_str/safe_f - complet reversibil, fa-l al doilea; (3) path resolution - moderat reversibil, fa-l al treilea cu script de migrare; (4) load_playbook - partial ireversibil, NU fara teste automate. load_rules ramane neatins pana se gaseste load_rules.py.
+- [ ] **[CONFUCIUS]** Inainte de utils.py: rezolva worktree-ul duplicat si documenteaza locatia load_rules.py. utils.py ar trebui sa fie un proper Python package (cu __init__.py in scripts/) nu un script adaugat in acelasi director.
+- [ ] **[SOCRATE]** Nu procedati la utils.py pana nu aveti: (1) matrice de echivalenta demonstrata empiric, (2) locatia load_rules.py documentata, (3) worktree-ul duplicat eliminat sau sincronizat.
+- [ ] **[MUSK]** Propunerea e over-scoped. Reduce la: (1) normalize_symbol -> symbol_utils.py (5 linii, 30 min); (2) safe_str/safe_f -> utils.py NUMAI daca dovedite identice. Elimina din scope: load_playbook, path resolution, load_rules.
+- [ ] **[DIMON]** Propunerea TREBUIE sa includa: (1) test de echivalenta output inainte/dupa, (2) strategie path resolution documentata, (3) plan pentru worktree duplicat, (4) comportament normalize_symbol definit pentru edge cases (None, simbol cu punct, simbol gol).
+- [ ] **[NAPOLEON]** Decompune in 3 PR-uri cu ROI diferit: PR1 (normalize_symbol in symbol_utils.py, 0.5h, GO imediat), PR2 (safe_str/safe_f, 0.5h, GO dupa verificare), PR3 (load_playbook, 4-6h, STOP pana la CI). Ordinea cost-efficiency: PR1 > PR2 >>> PR3 (PR3 posibil niciodata, ROI negativ).
 
 ### Hotărârea Senate — top5-diagnostic-audit · 17 Mai 2026 · DIAGNOSTIC (no vote — 14 issues found, top-5 synthesized)
 
