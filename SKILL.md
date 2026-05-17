@@ -316,8 +316,8 @@ Audit warnings la stderr după merge — verifică-le înainte să consideri 2×
 | Pattern | Confidence | Outcome |
 |---|---|---|
 | 3-0 | 0.95 | OK auto |
-| 2-1 | 0.70 | OK auto |
-| 2-0 | 0.75 | OK auto |
+| 2-1 | 0.75 | OK auto |
+| 2-0 | 0.70 | OK auto |
 | 1-1-1 / 1-1-0 / 1-0-0 | null | PEND |
 | 0-0-0 | null | PEND + retry_suggested |
 

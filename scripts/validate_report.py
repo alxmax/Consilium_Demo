@@ -227,11 +227,15 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     mode = telemetry.get("mode")
     if not isinstance(mode, str) or not mode.strip():
         return ["telemetry.mode required (non-empty string) for non-skipped reports"]
-    if mode.strip() == "parallel":
+    _MULTI_VOICE_MODES = frozenset({
+        "parallel", "trias", "dialectic",
+        "trias_split", "parallel_skeptic", "dialectic_skeptic",
+    })
+    if mode.strip() in _MULTI_VOICE_MODES:
         voices = telemetry.get("voices")
         if not isinstance(voices, dict) or len(voices) == 0:
             return [
-                "telemetry.voices required (non-empty dict) for parallel mode; "
+                f"telemetry.voices required (non-empty dict) for {mode!r} mode; "
                 "capture per-voice tokens/latency at dispatch for usage rollup "
                 "(scripts/usage.py would skip this run)"
             ]
