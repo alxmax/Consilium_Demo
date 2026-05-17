@@ -216,14 +216,17 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     mode = telemetry.get("mode")
     if not isinstance(mode, str) or not mode.strip():
         return ["telemetry.mode required (non-empty string) for non-skipped reports"]
-    # parallel_skeptic / dialectic_skeptic were collapsed on 2026-05-17 into the
-    # composable skeptic_on_chosen flag; the names are still accepted as legacy
-    # mode strings on historical runs/ but the live dispatcher never emits them,
-    # so they no longer participate in the voices-required check.
+    # Alias resolution — collapsed 2026-05-17.  The live dispatcher no longer
+    # emits these names; historical runs/*.json may still carry them.
+    _LEGACY_MODE_ALIASES: dict[str, str] = {
+        "parallel_skeptic": "skeptic_on_chosen",
+        "dialectic_skeptic": "skeptic_on_chosen",
+    }
+    mode = _LEGACY_MODE_ALIASES.get(mode.strip(), mode.strip())
     _MULTI_VOICE_MODES = frozenset({
         "parallel", "trias", "dialectic", "trias_split",
     })
-    if mode.strip() in _MULTI_VOICE_MODES:
+    if mode in _MULTI_VOICE_MODES:
         voices = telemetry.get("voices")
         if not isinstance(voices, dict) or len(voices) == 0:
             return [
