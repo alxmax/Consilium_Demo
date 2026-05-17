@@ -880,14 +880,12 @@ Decizie soft-pozitivă, prioritate scăzută.
     - **Realness check** (Musk): subagent path is live but zero recorded runs have triggered irreversibility yet → risk is structural-imminence, not historical-occurrence.
   - **Refined AC:** (1) ship-now minimum fix per Musk (4-6 lines, generic `blocking_gates` rule in consilium-subagent.md); (2) follow-up audit pass over all 7 missing gates to write exhaustive output contracts (next-session); (3) re-validate by running a synthetic subagent dispatch with irreversibility_flag=true and asserting `subagent_notes.blocked_reason` populated.
 
-- [ ] **#5 [HIGH] priors_poisoning_via_html_parse_drift** *(Dimon)* — ⏸ DISCUSSION-PENDING (deferred 2026-05-17, user choice — needs design call)
+- [x] **#5 [HIGH] priors_poisoning_via_html_parse_drift** *(Dimon)*
   - Where: `scripts/feedback.py:50-86` (parse_feedback cell-count branches 6/7/8) + `scripts/render_feedback_html.py`
   - Issue: Cell-count heuristic with `outcome not in OUTCOMES: continue` as the only guard. Any future column addition/reorder in render_feedback_html silently misaligns every existing row → `priors.py` rate computations poisoned (`bad_rate`, `override_rate`, `weighted_bad_rate`), no error raised.
-  - **Three approaches on table (decision required before ship):**
-    1. **data-field anchors** (Dimon's recommendation, ~30 LOC): `render_feedback_html.py` emits `data-field="date|context|chosen|outcome|note"` per `<td>`; `feedback.py` parse reads by attribute, not cell-index. Deterministic. Add round-trip smoke test. **Tradeoff:** all historical HTML rows lack `data-field` → need migration step or graceful fallback to cell-index for rows without attributes.
-    2. **Per-field validation only** (~15 LOC): leave cell-index parsing, add format checks (date regex, chosen non-empty, outcome ∈ OUTCOMES). Continue silently on validation fail. **Tradeoff:** lowers blast radius but doesn't fully fix the drift problem; misaligned-but-valid rows still pass.
-    3. **Alternative format** (e.g., JSONL audit log instead of HTML cells): replace FEEDBACK.html as the priors source with a structured machine-readable log. HTML becomes a derived view. **Tradeoff:** larger refactor; touches log_feedback.py, render_feedback_html.py, priors.py, feedback.py — full audit trail of changes; better long-term but heavier.
-  - **Status:** CONCRETE bug verified in code 2026-05-17 (feedback.py:54-86 confirmed cell-count heuristic with no field-name anchor). Ship blocked on design choice. Reopen when ready to decide.
+  - AC: anchor parsing on `data-field="<name>"` attributes in rendered HTML rather than positional index. Add a round-trip smoke test (render → parse → assert field values match).
+  - Status: ✅ CONCRETE — verified in code 2026-05-17. Ready to ship.
+  - **FIXED (2026-05-17):** `fix/feedback-html-parse-drift` — `render_feedback_html.py` adds `data-field` attrs to all `<td>` cells; `feedback.py` uses attribute-based parsing as primary path (positional fallback for legacy rows).
 
 **Honorable mentions (medium severity):**
 

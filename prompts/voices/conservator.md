@@ -70,7 +70,29 @@ if reversibility_score > 0.7:
 Where each component maps to [0, 1]:
 - `reversibility_score`: complete → 0.1, partial → 0.5, irreversible → 0.9
 - `magnitude` anchors `regression_risk_score`: trivial → 0.1, moderate → 0.4, high → 0.7, critical → 0.9
-- `diff_size_score` and `scope_drift_score`: estimate from blast radius (0.0 = no spread, 1.0 = entire codebase)
+- `diff_size_score`: use probe data when available (see anchoring table below); else estimate from blast radius — mark as unanchored in `notes`
+- `scope_drift_score`: count distinct unrelated modules touched (see table below); else estimate — mark as unanchored in `notes`
+
+**Anchoring `diff_size_score`** (when `files_changed`/`lines_changed` probe data is present):
+
+| files_changed | lines_changed | diff_size_score |
+|---|---|---|
+| ≤ 2 | ≤ 50 | 0.1 |
+| ≤ 5 | ≤ 150 | 0.2 |
+| ≤ 10 | ≤ 500 | 0.4 |
+| ≤ 30 | ≤ 2000 | 0.6 |
+| > 30 or > 2000 lines | — | 0.9 |
+
+Use the MAX of the two columns when they diverge.
+
+**Anchoring `scope_drift_score`** (distinct unrelated modules/packages touched):
+
+| unrelated modules | scope_drift_score |
+|---|---|
+| 0 (all in-scope) | 0.1 |
+| 1–2 | 0.3 |
+| 3–5 | 0.6 |
+| > 5 | 0.9 |
 
 Regression_risk reduction: apply up to two mitigations (e.g. test coverage, feature flag, rollback < 3 steps); cap total at −0.20, regardless of how many mitigations are present. Document each reduction applied in `notes`.
 
