@@ -92,6 +92,15 @@ SENATORS = (
     "dimon",
     "napoleon",
 )
+# code_audit mode (EXPERIMENTAL_DRAFT): tokens whose presence in senator output
+# signals skill-audit framing leak on a user-code review. Allowed when the user
+# code under audit IS a Consilium contribution (caller sets is_consilium_contribution).
+SKILL_INTERNAL_ARTIFACTS = frozenset({
+    "prompts/voices/", "prompts/senators/", "prompts/lenses/",
+    "scripts/aggregator.py", "scripts/conservator", "scripts/generator",
+    "scripts/senate_synth", "scripts/dialectic_merge", "scripts/personalities",
+    "skill.md", "claude.md", "consilium internals", "consilium skill",
+})
 QUORUM = 5  # >= 5 of 7 needed for GO or STOP verdict
 # A faction is "substantial" if it is within 2 vote flips of becoming majority.
 # With QUORUM=5, that is 3 senators. Used by DEEPLY_SPLIT to detect a polarized
@@ -367,6 +376,37 @@ def collect_warnings(senator_outputs: dict[str, dict], voters_present: int) -> l
     return warnings
 
 
+def artifact_leak_count(senator_output: dict) -> int:
+    """Count substring matches of skill-internal artifacts in senator output JSON.
+    Threshold > 1 marks output off-target on code_audit mode."""
+    text = json.dumps(senator_output, ensure_ascii=False).lower()
+    return sum(1 for a in SKILL_INTERNAL_ARTIFACTS if a in text)
+
+
+def extract_verdict_artifacts(senator_output: dict, files_touched: list) -> list:
+    """Post-hoc orchestrator-extracted file refs; not LLM self-reported.
+    Substring match; caller is responsible for path normalization upstream."""
+    text = json.dumps(senator_output, ensure_ascii=False)
+    return [f for f in files_touched if f in text]
+
+
+def apply_code_audit_filter(
+    senator_outputs: dict, files_touched: list, is_consilium_contribution: bool,
+) -> tuple[dict, dict, list]:
+    """Mark senators suspect on zero file refs or skill-vocabulary leak.
+    Returns (filtered_outputs, verdict_artifacts_per_senator, suspect_names)."""
+    filtered, artifacts, suspects = {}, {}, []
+    for name, output in senator_outputs.items():
+        refs = extract_verdict_artifacts(output, files_touched)
+        leak = (not is_consilium_contribution) and artifact_leak_count(output) > 1
+        artifacts[name] = refs
+        if not refs or leak:
+            suspects.append(name)
+            continue  # excluded from quorum
+        filtered[name] = output
+    return filtered, artifacts, suspects
+
+
 def slugify(label: str) -> str:
     s = re.sub(r"[^A-Za-z0-9_-]+", "-", label.strip())
     s = re.sub(r"-+", "-", s).strip("-")
@@ -381,11 +421,20 @@ def build_bundle(
     absent: list[str],
     label: str,
     timestamp: str,
+    mode: str = "skill_audit",
+    files_touched: list | None = None,
+    is_consilium_contribution: bool = False,
 ) -> dict:
     senators_appearing = {n for r in rounds for n in r["senators"].keys()}
     senators_absent = sorted({n for n in SENATORS if n not in senators_appearing} | set(absent))
 
     final_outputs = collect_final_outputs(rounds)
+    code_audit_artifacts, code_audit_suspects = None, []
+    if mode == "code_audit" and files_touched:
+        final_outputs, code_audit_artifacts, code_audit_suspects = apply_code_audit_filter(
+            final_outputs, files_touched, is_consilium_contribution,
+        )
+        senators_absent = sorted(set(senators_absent) | set(code_audit_suspects))
     voters_present = len(final_outputs)
 
     raw_counts = tally(final_outputs)
@@ -420,6 +469,7 @@ def build_bundle(
         "timestamp": timestamp,
         "label": label,
         "proposal": proposal,
+        "mode": mode,
         "senators_absent": senators_absent,
         "outputs": outputs_for_bundle,
         "vote_counts": final_counts,
@@ -427,6 +477,14 @@ def build_bundle(
         "modify_requests": collect_modify_requests(final_outputs),
         "warnings": warnings,
     }
+    if mode == "code_audit":
+        bundle["verdict_artifacts"] = code_audit_artifacts or {}
+        bundle["semantic_suspects"] = code_audit_suspects
+        if code_audit_suspects:
+            warnings.append(
+                f"code_audit: {len(code_audit_suspects)} senator(s) marked semantic_suspect "
+                f"(zero file refs or skill-vocabulary leak): {', '.join(code_audit_suspects)}"
+            )
     if is_multi_round_input:
         bundle["rounds"] = rounds
         bundle["position_changes"] = position_changes
@@ -491,10 +549,20 @@ def main() -> int:
     label = data.get("label") or "senate"
     timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M%S")
     blocaj_resolution = data.get("blocaj_resolution")
+    mode = data.get("mode", "skill_audit")
+    if mode not in ("skill_audit", "code_audit"):
+        print(f"senate_synth: unknown mode {mode!r}; expected skill_audit|code_audit", file=sys.stderr)
+        return 1
+    files_touched = data.get("files_touched") or []
+    if not isinstance(files_touched, list):
+        files_touched = []
+    is_consilium_contribution = bool(data.get("is_consilium_contribution", False))
 
     bundle = build_bundle(
         proposal, rounds, is_multi_round_input, blocaj_resolution,
         absent, label, timestamp,
+        mode=mode, files_touched=files_touched,
+        is_consilium_contribution=is_consilium_contribution,
     )
 
     print(json.dumps(bundle, indent=2, ensure_ascii=False))
