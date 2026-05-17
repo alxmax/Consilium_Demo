@@ -1,6 +1,6 @@
 ---
 name: consilium
-description: Evaluate code changes through Generator/Control/Conservator deliberation. Use when reviewing PRs, planning refactors, assessing risk of proposed changes, before committing non-trivial changes, or when uncertain between multiple implementation approaches.
+description: Evaluate code changes through Generator/Control/Conservator deliberation. Use when reviewing PRs, planning refactors, assessing risk of proposed changes, before committing non-trivial changes, before implementing non-trivial features (to catch missing tests and prevent code loss), or when uncertain between multiple implementation approaches.
 ---
 
 # Consilium — Code Deliberation Skill
@@ -28,8 +28,10 @@ Activează acest skill când:
 - Trebuie să alegi între **mai multe abordări**
 - Ești pe punctul de a face **commit pe cod shared/core**
 - Vrei o **assessment de risc** înainte de a accepta o sugestie
+- Ești pe punctul de a **implementa** o funcționalitate non-trivială (>1 fișier sau >30 linii)
+- Vrei să verifici că o implementare completă nu a pierdut funcționalitate existentă, edge case-uri sau teste
 
-Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment", "should I commit", "which approach".
+Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment", "should I commit", "which approach", "before implementing", "implement feature", "code quality", "missing tests".
 
 ## Workflow
 
