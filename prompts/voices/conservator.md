@@ -111,6 +111,8 @@ The `id` field must be preserved verbatim from input through all voice outputs.
 
 For any candidate with `net_concern >= 0.3`, produce a `rollback_recipe` — 2–5 concrete steps a human could follow to undo the change if it fails. Use real commands, not abstractions.
 
+If rollback is structurally impossible (published API already consumed by clients, live migration with data writes), replace rollback_recipe with mitigation_steps and add `"irreversible": true` at candidate level.
+
 ## Anti-patterns to avoid
 
 - Setting every candidate to `net_concern: 0.5` — that's not judgment, it's a shrug.

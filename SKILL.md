@@ -574,9 +574,13 @@ Suita rulează: prompt structure, fixture, verdict GO unanimous/quorum, MODIFY d
 
 Default order: **Conservator → Generator → Control**
 
+`strip_context.py` applies ONLY in Sequential mode (Steps 3-4) — Parallel dispatches sub-agents in isolation and does not use it.
+
 1. Conservator sets `tokens_budget` and `irreversibility_flag`
 2. Generator receives `magnitude`, `counterparty_risks`, `tokens_budget.generator` (NOT `meta_recommendation`)
 3. Control receives full outputs from both Conservator and Generator
+
+**Role separation, not Chinese wall.** Sequential runs the same LLM playing three roles in the same context window; `strip_context.py` strips the prior voice's prompt, but does not clear the model's in-context memory. This is a known, deliberate limitation — role prompts provide separation, not true isolation. True isolation requires Parallel sub-agents.
 
 Auto-parallel cross-check: triggered only when Conservator outputs `magnitude: critical` AND `reversibility: irreversible`. Not user-selectable.
 
