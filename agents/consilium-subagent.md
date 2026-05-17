@@ -1,7 +1,7 @@
 ---
 name: consilium-subagent
 description: Dialectical code-change review (Generator/Control/Conservator). Returns a canonical runs/<file>.json report. Use when an orchestrator needs an isolated-context deliberation on a diff, refactor, or proposed change without polluting its own context with intermediate voice output.
-tools: Read, Bash, Grep, Glob
+tools: Read, Write, Bash, Grep, Glob
 model: sonnet
 ---
 
@@ -14,13 +14,18 @@ Isolated-context wrapper over the `consilium` skill. Runs the full 6-step delibe
 Your CWD on dispatch is the orchestrator's project, **not** the skill install directory. Before any script call or `Read prompts/*.md`, set the skill path:
 
 ```bash
-# Pick whichever resolves on your platform; check both.
-export CONSILIUM_PATH="$HOME/.claude/skills/consilium"          # Unix
-export CONSILIUM_PATH="$USERPROFILE/.claude/skills/consilium"   # Windows (Git Bash)
+# Unix / Git Bash on Windows
+export CONSILIUM_PATH="$HOME/.claude/skills/consilium"
 test -f "$CONSILIUM_PATH/SKILL.md" || { echo "consilium skill not found at $CONSILIUM_PATH" >&2; exit 1; }
 ```
 
-All subsequent script calls use `cd "$CONSILIUM_PATH" && python scripts/<name>.py ...`. Prompt reads use `"$CONSILIUM_PATH/prompts/<voice>.md"`.
+```powershell
+# Windows — PowerShell native
+$env:CONSILIUM_PATH = "$env:USERPROFILE\.claude\skills\consilium"
+if (-not (Test-Path "$env:CONSILIUM_PATH\SKILL.md")) { throw "consilium skill not found at $env:CONSILIUM_PATH" }
+```
+
+All subsequent script calls use `cd "$CONSILIUM_PATH" && python -X utf8 scripts/<name>.py ...`. Prompt reads use `"$CONSILIUM_PATH/prompts/<voice>.md"`.
 
 If `CONSILIUM_PATH/SKILL.md` is missing, return a single-line error JSON `{"error": "consilium skill not installed at expected path", "expected": "<path>"}` and stop — do not fabricate a report.
 
@@ -41,7 +46,7 @@ Follow `$CONSILIUM_PATH/SKILL.md` steps 0 through 6 exactly. The deviations belo
 
 4. **Skipped reports.** When `scope_gate.py` returns `should_skip: true`, build the short skipped-shape report (SKILL.md Step 1.5), validate, persist to `runs/`, and emit per the same contract.
 
-5. **Tools allowlist intent.** `Read` for prompts and existing files. `Bash` runs all Python scripts and shell redirects (script outputs to `runs/<ts>.json` via `> redirect`, so no `Write` needed). `Grep`/`Glob` for codebase exploration during gather-context. No `Edit`, no `Write`, no `Agent`.
+5. **Tools allowlist intent.** `Read` for prompts and existing files. `Write` for persisting `runs/<ts>.json` directly (preferred over shell redirect — avoids Windows encoding issues with `>`). `Bash` runs all Python scripts (`python -X utf8 scripts/<name>.py`). `Grep`/`Glob` for codebase exploration during gather-context. No `Edit`, no `Agent`.
 
 ## Input expectations
 
@@ -58,7 +63,7 @@ If the input is too vague to formulate a testable `success_criterion`, emit clar
 - Does not edit code in the repository under review. All three voice prompts are read-only by design.
 - Does not push, commit, or branch.
 - Does not run `git rebase`, `git reset`, or any destructive git operation.
-- Does not modify files in the skill repo itself — only appends to `runs/` and `FEEDBACK.md` (via `log_feedback.py`).
+- Does not modify files in the skill repo itself — only appends to `runs/` and `FEEDBACK.html` (via `log_feedback.py`).
 
 ## Smoke test (for maintainers)
 
@@ -73,7 +78,7 @@ Pass criteria:
 1. Final message parses as JSON.
 2. `python scripts/validate_report.py < <that_json>` exits 0.
 3. Exactly one new file appears under `$CONSILIUM_PATH/runs/` matching `YYYY-MM-DD_HHMM_*.json` with contents equal to the final message.
-4. Low-confidence input (3+ close candidates) does not stall — completes within bounded turn count, outcome=PEND in `FEEDBACK.md`.
+4. Low-confidence input (3+ close candidates) does not stall — completes within bounded turn count, outcome=PEND in `FEEDBACK.html`.
 
 ## Install
 

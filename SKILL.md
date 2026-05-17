@@ -45,7 +45,7 @@ Două acțiuni în ordine:
 ### 1. Gather context & state the goal
 Citește schimbarea propusă. Identifică scope (fișiere, module, linii), tip (bugfix/feature/refactor/cleanup), blast radius. Formulează `success_criterion` — o propoziție testabilă.
 
-**Clarity gate.** Înainte de Generator: *poți scrie 2+ interpretări plauzibile distincte?* Dacă da — Stop, listează-le, întreabă care e reală. Semnale roșii: verbe vagi fără obiect concret, referințe nedezambiguate, scope implicit, limite lipsă. Dacă toate sunt clare → continuă fără să întrebi.
+**Clarity gate.** Înainte de Generator: *poți scrie 2+ interpretări plauzibile distincte?* Dacă da — Stop, listează-le, întreabă care e reală. Semnale roșii: verbe vagi fără obiect concret, referințe nedezambiguate, scope implicit, limite lipsă. Dacă toate sunt clare → continuă fără să întrebi. **Excepție non-interactivă (subagent):** nu poți întreba utilizatorul — emite fiecare interpretare ca Generator candidate cu prefix `interp_a_*`, `interp_b_*` și documentează ramificațiile în `subagent_notes.clarity_branches`.
 
 ### 1.5. Scope gate (auto)
 ```bash
