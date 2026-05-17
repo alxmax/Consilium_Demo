@@ -1,6 +1,16 @@
 """
 senate_todo.py — Append senate decisions to TODO.md as action items.
 
+Dual format (per refactor-bundle-7items Opt B, 2026-05-17):
+  Section A — Per-senator decisions (one [ ] per senator's modify_request)
+  Section B — Actionable items (extracted from request text via token regex;
+              emitted only when ≥1 item token found)
+
+Item tokens recognized: `S1`-`S99`, `P1`-`P99`, `B`, `B-refined`, `C`.
+Section B helps track multi-item bundles where one senator's request mentions
+multiple items — Section A alone is hard to bifa when scope is split across
+shipping/deferring rounds.
+
 CLI:
     python scripts/senate_todo.py                       # latest bundle → TODO.md
     python scripts/senate_todo.py runs/senate/<f>.json  # specific bundle
@@ -11,6 +21,7 @@ CLI:
 import argparse
 import json
 import os
+import re
 import sys
 from glob import glob
 from pathlib import Path
@@ -26,6 +37,38 @@ MONTHS = ["Ian", "Feb", "Mar", "Apr", "Mai", "Iun",
 # 10+ smoke/fixture entries that then have to be cleaned up by hand (see the
 # precedent in PR #68 "fix(todo): cleanup after /consilium audit 2026-05-17").
 _SKIP_LABEL_WORDS = ("smoke", "fixture", "collision")
+
+# Item token regex for Section B extraction. Matches word-boundary tokens:
+#   S1..S99, P1..P99, B, B-refined, C
+# Designed for bundle naming conventions seen in /consilium senate audits.
+_ITEM_TOKEN_RE = re.compile(r'\b(S\d{1,2}|P\d{1,2}|B(?:-refined)?|C)\b')
+
+
+def _extract_item_refs(mod_reqs):
+    """Returns dict {token: [senator, ...]} sorted (S* asc, then B/B-refined, then C, then P* asc)."""
+    items = {}
+    for r in mod_reqs:
+        senator = r.get("senator", "?").upper()
+        request = r.get("request", "") or ""
+        for token in set(m.group(1) for m in _ITEM_TOKEN_RE.finditer(request)):
+            items.setdefault(token, [])
+            if senator not in items[token]:
+                items[token].append(senator)
+    return items
+
+
+def _sort_item_tokens(tokens):
+    def key(t):
+        if t.startswith('S'):
+            return (0, int(t[1:]))
+        if t.startswith('B'):
+            return (1, 0 if t == 'B' else 1)
+        if t == 'C':
+            return (2, 0)
+        if t.startswith('P'):
+            return (3, int(t[1:]))
+        return (4, 0)
+    return sorted(tokens, key=key)
 
 
 def _is_test_label(label: str) -> bool:
@@ -97,12 +140,25 @@ def build_todo_block(bundle):
         lines.append("")
         return "\n".join(lines)
 
+    # Section A — Per-senator decisions
+    lines.append("**A. Per-senator decisions:**")
+    lines.append("")
     for r in mod_reqs:
         senator = r.get("senator", "?").upper()
         request = r.get("request", "")
         lines.append(f"- [ ] **[{senator}]** {request}")
-
     lines.append("")
+
+    # Section B — Actionable items extracted from modify_requests
+    item_refs = _extract_item_refs(mod_reqs)
+    if item_refs:
+        lines.append("**B. Actionable items (extracted from requests above):**")
+        lines.append("")
+        for token in _sort_item_tokens(item_refs.keys()):
+            senators = ", ".join(item_refs[token])
+            lines.append(f"- [ ] **{token}** (cross-ref: {senators})")
+        lines.append("")
+
     return "\n".join(lines)
 
 
