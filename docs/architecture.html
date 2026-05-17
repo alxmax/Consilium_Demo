@@ -503,7 +503,7 @@ flowchart TD
         <div class="cell"><dt>Voci</dt><dd>Gen · Ctrl · Cons × 2 pass-uri</dd></div>
         <div class="cell"><dt>When</dt><dd>O voce ar putea schimba opinia după ce vede celelalte</dd></div>
       </dl>
-      <div class="use-when"><b>Limitare cunoscută:</b> Dialectic Pass 2 poate introduce fabricații (constraint drift Pass 1 → Pass 2). Dacă bănuiești drift, adaugă <code>skeptic_on_chosen</code> sau folosește <code>dialectic_skeptic</code>. Audit warnings la stderr după <code>dialectic_merge.py</code> — verifică înainte să consideri 2× cost-ul justificat.</div>
+      <div class="use-when"><b>Limitare cunoscută:</b> Dialectic Pass 2 poate introduce fabricații (constraint drift Pass 1 → Pass 2). Dacă bănuiești drift, adaugă flag-ul <code>skeptic_on_chosen</code> peste Dialectic. Audit warnings la stderr după <code>dialectic_merge.py</code> — verifică înainte să consideri 2× cost-ul justificat.</div>
     </div>
 
     <!-- 4. TRIAS -->
@@ -580,44 +580,17 @@ flowchart TD
         <div class="cell"><dt>Voci</dt><dd>Gen (sonnet) · Ctrl+Cons (haiku) × 3 personalități</dd></div>
         <div class="cell"><dt>When</dt><dd>Diversitate Trias la cost redus; nu dacă există constraint-uri implicite</dd></div>
       </dl>
-      <div class="use-when"><b>Atenție:</b> Haiku verifiers sunt shallow-amplifiers pe probleme cu constraint implicit — confirmă răspunsul evident fără să interogheze asumpția ascunsă (P3 corrigendum, <code>experiments/p3-car-wash.html</code>). Nu folosi <code>trias_split</code> dacă problema poate conține constraints implicite — preferă Trias full sau <code>parallel_skeptic</code>.</div>
+      <div class="use-when"><b>Atenție:</b> Haiku verifiers sunt shallow-amplifiers pe probleme cu constraint implicit — confirmă răspunsul evident fără să interogheze asumpția ascunsă (P3 corrigendum, <code>experiments/p3-car-wash.html</code>). Nu folosi <code>trias_split</code> dacă problema poate conține constraints implicite — preferă Trias full sau <code>parallel + skeptic_on_chosen</code>.</div>
     </div>
 
-    <!-- 6. PARALLEL + SKEPTIC -->
-    <div class="mode parallel">
-      <h3>Parallel + Skeptic <code>(parallel_skeptic)</code> <span class="mode-badge opt">OPT-IN</span></h3>
-      <div class="subtitle">Parallel standard + voce focală <b>Skeptic</b> când confidence ∈ [0.5, 0.7].</div>
-      <div class="stage">
-        <span class="actor gen">Generator</span>
-        <span class="actor ctl">Control</span>
-        <span class="actor con">Conservator</span>
-        <div class="arrow-down">↓ aggregator → chosen (confidence ∈ [0.5, 0.7])</div>
-        <span class="actor" style="background:var(--accent-soft);border-color:var(--accent-border);color:var(--accent-text);">Skeptic (sub-agent focal · prompts/voices/skeptic.md)</span>
-        <div class="ok">✓ Skeptic primește <b>doar</b> <code>chosen</code> și <code>success_criterion</code> — provocare „blind" pe alegere. Nu primește candidates sau verdicts.</div>
-      </div>
-      <dl class="mode-meta">
-        <div class="cell"><dt>Sub-agenți</dt><dd><b>4</b></dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">1.33×</span></dd></div>
-        <div class="cell"><dt>Voci</dt><dd>Gen · Ctrl · Cons + Skeptic focal</dd></div>
-        <div class="cell"><dt>When</dt><dd>Confidence ∈ [0.5, 0.7] — nu suficient pentru ship, nu suficient de jos pentru retry</dd></div>
-      </dl>
-      <div class="use-when"><b>Skip dacă:</b> confidence ≥ 0.7 (Skeptic n-are ce găsi) sau &lt; 0.5 (escaladare directă la Trias). Nu pentru schimbări high-stakes intrinsec (auth, migrations) — folosește Trias direct.</div>
+    <!-- 6. LEGACY (collapsed) — parallel_skeptic + dialectic_skeptic -->
+    <div class="mode" style="opacity:0.75;border-style:dashed;">
+      <h3>Legacy (collapsed) <code>parallel_skeptic</code> · <code>dialectic_skeptic</code> <span class="mode-badge opt">RETIRED 2026-05-17</span></h3>
+      <div class="subtitle">Cele două moduri fixe au fost colapsate în flag-ul composabil <code>skeptic_on_chosen</code>. Aceeași funcționalitate: <code>parallel + skeptic_on_chosen</code> · <code>dialectic + skeptic_on_chosen</code>. Numele vechi rămân acceptate de <code>validate_report.py</code> doar pe runs/ istorice — dispatcher-ul live nu le mai emite.</div>
+      <div class="use-when">Vezi cardul <a href="#"><code>skeptic_on_chosen</code></a> mai jos pentru semantica completă (advisory by default, override opt-in).</div>
     </div>
 
-    <!-- 7. DIALECTIC + SKEPTIC -->
-    <div class="mode dialectic">
-      <h3>Dialectic + Skeptic <code>(dialectic_skeptic)</code> <span class="mode-badge opt">OPT-IN</span></h3>
-      <div class="subtitle">Dialectic two-pass + voce focală <b>Skeptic</b> pe <code>chosen</code> final, după Pass 2. 7 sub-agenți total.</div>
-      <dl class="mode-meta">
-        <div class="cell"><dt>Sub-agenți</dt><dd><b>7</b></dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">~2.3×</span></dd></div>
-        <div class="cell"><dt>Voci</dt><dd>Gen · Ctrl · Cons × 2 pass-uri + Skeptic focal</dd></div>
-        <div class="cell"><dt>When</dt><dd>Trade-off-uri reale cu cross-review + challenge focal final</dd></div>
-      </dl>
-      <div class="use-when"><b>Limitare:</b> Skeptic-ul vede DOAR chosen final, nu și Pass 1 vs Pass 2 drift. Nu detectează fabricații introduse de Dialectic Pass 2. Pentru drift detection, folosește un alt approach (planificat: <code>dialectic_drift_guard</code>).</div>
-    </div>
-
-    <!-- 8. SKEPTIC-ON-CHOSEN -->
+    <!-- 7. SKEPTIC-ON-CHOSEN -->
     <div class="mode parallel">
       <h3>Skeptic-on-chosen — flag cross-cutting <code>(skeptic_on_chosen)</code> <span class="mode-badge opt">OPT-IN</span></h3>
       <div class="subtitle">Flag composabil peste <b>orice</b> mod de bază. Advisory by default; opt-in override via <code>--skeptic-can-override</code>.</div>
@@ -698,25 +671,11 @@ flowchart TD
         <td>Auto: magnitude=critical ∧ reversibility=irreversible; silent audit /20 runs</td>
       </tr>
       <tr>
-        <td><b>parallel_skeptic</b></td>
-        <td>4</td>
-        <td class="cost">1.33×</td>
-        <td>da</td>
-        <td>confidence ∈ [0.5, 0.7], challenge focal</td>
-      </tr>
-      <tr>
         <td><b>Dialectic</b></td>
         <td>6</td>
         <td class="cost">2.0×</td>
         <td>da</td>
         <td>O voce ar schimba opinia după cross-review</td>
-      </tr>
-      <tr>
-        <td><b>dialectic_skeptic</b></td>
-        <td>7</td>
-        <td class="cost">~2.3×</td>
-        <td>da</td>
-        <td>Dialectic + challenge focal final</td>
       </tr>
       <tr>
         <td><b>Senate</b></td>
@@ -756,7 +715,7 @@ flowchart TD
     <tbody>
       <tr><td>Bugfix evident SAU diff &lt;20 lines / 1 fișier</td><td>Sequential (<code>scope_gate.py</code> sare oricum)</td></tr>
       <tr><td>Toate PR-urile standard</td><td>Sequential / Parallel auto cross-check</td></tr>
-      <tr><td>confidence ∈ [0.5, 0.7] din mod standard, singur concern de drift</td><td><code>dialectic_skeptic</code></td></tr>
+      <tr><td>confidence ∈ [0.5, 0.7] din mod standard, singur concern de drift</td><td><code>dialectic + skeptic_on_chosen</code></td></tr>
       <tr><td>2+ abordări arhitecturale plauzibile fără câștigător clar</td><td><code>trias</code></td></tr>
       <tr><td><code>reversibility=irreversible</code> SAU <code>magnitude=critical</code> + ≥2 layere arhitecturale</td><td><code>senate --on-code</code> (*EXPERIMENTAL) sau <code>trias</code></td></tr>
       <tr><td>Modificări la skill însuși (prompturi, scripts, SKILL.md)</td><td><code>senate</code> (default scope)</td></tr>
@@ -991,7 +950,7 @@ flowchart TD
   <h2 style="margin-top:36px;">Skeptic — focal challenger</h2>
   <div class="authoritative-zone">
     <p style="font-size:13.5px;margin:0 0 10px;">
-      Challenger focal pe un singur candidate ales. Folosit în <code>parallel_skeptic</code>, <code>dialectic_skeptic</code>, și flag-ul composabil <code>skeptic_on_chosen</code>. Nu e un adversar general — operează <em>după</em> ce pipeline-ul a ales un câștigător.
+      Challenger focal pe un singur candidate ales. Activat prin flag-ul composabil <code>skeptic_on_chosen</code> peste orice mod de bază (Sequential / Parallel / Dialectic / Trias). Nu e un adversar general — operează <em>după</em> ce pipeline-ul a ales un câștigător.
     </p>
     <ul style="font-size:13px;margin:0 0 10px;padding-left:20px;line-height:1.7;">
       <li><b>Input:</b> Primește <em>doar</em> <code>chosen</code> + <code>success_criterion</code> + <code>verification</code> + context codebase. Nu vede ceilalți candidați, nu vede scorurile Conservatorului, nu vede verdictele Control.</li>

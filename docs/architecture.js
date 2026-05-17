@@ -284,7 +284,7 @@
       {
         id: 'skeptic-challenge',
         name: 'Provocare Skeptic',
-        mode: 'Parallel + Skeptic',
+        mode: 'Parallel + skeptic_on_chosen',
         desc: 'Când confidence ∈ [0.5, 0.7], un Skeptic focal provoacă <code>chosen</code> — primește doar chosen, nu și ceilalți candidați.',
         path: ['dev', 'cc-session', 'skill-md', 'mode', 'generator', 'control', 'conservator', 'agg', 'skeptic', 'gate', 'output'],
         auxNodes: ['scope-gate'],
@@ -297,7 +297,7 @@
         steps: [
           '<b>Developer-ul</b> rulează un Parallel review obișnuit.',
           'Trei voci dispatch-uite ca sub-agenți independenți; aggregator-ul produce <code>chosen</code> + confidence.',
-          'Confidence cade în zona marginală <code>[0.5, 0.7]</code> — orchestratorul activează automat <b>parallel_skeptic</b>.',
+          'Confidence cade în zona marginală <code>[0.5, 0.7]</code> — orchestratorul activează automat flag-ul <b><code>skeptic_on_chosen</code></b> peste Parallel.',
           'Un sub-agent focal <b>Skeptic</b> (<code>prompts/voices/skeptic.md</code>) primește <i>doar</i> <code>chosen</code> și <code>success_criterion</code> — fără ceilalți candidați, fără voturile vocilor de bază.',
           'Skeptic-ul produce un challenge focal: dacă întărește alegerea, gate-ul <b>trece</b>; dacă găsește un risc serios, deliberarea escaladează.',
           'Cost total: 1.33× Parallel (4 sub-agenți). Skeptic-ul nu se activează dacă confidence ≥ 0.7 sau confidence < 0.5.'
