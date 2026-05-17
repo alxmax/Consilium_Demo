@@ -18,7 +18,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent  # scripts/deprecated/ -> scripts/ -> repo root
 
 LEGACY_ENTRY_RE = re.compile(
     r"^- (?P<date>\d{4}-\d{2}-\d{2})\s*\|\s*"

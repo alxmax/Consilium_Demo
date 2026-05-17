@@ -39,7 +39,7 @@ Modul **`senate`** are două scope-uri: (a) audit pe **modificările skill-ului 
 
 ## Fișiere locale (gitignored)
 
-- `FEEDBACK.html` — jurnal de uz real, append-only via `scripts/log_feedback.py` (atomic writes). Vezi `scripts/migrate_feedback_md_to_html.py` pentru istoricul migrării din format `.md`.
+- `FEEDBACK.html` — jurnal de uz real, append-only via `scripts/log_feedback.py` (atomic writes). Vezi `scripts/deprecated/migrate_feedback_md_to_html.py` pentru istoricul migrării din format `.md` (retired one-shot tool).
 - `runs/*.json` — output-urile fiecărei deliberări (păstrate `runs/README.md` și `runs/senate/` ca singurele tracked).
 
 ## Self-improvement loop

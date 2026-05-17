@@ -126,20 +126,8 @@ def _validate_philosophical_aurelius_control(voice_output: dict) -> list[str]:
 
 
 def _validate_philosophical_confucius(voice_output: dict) -> list[str]:
-    problems = []
-    ps = voice_output.get("precedent_search")
-    if not isinstance(ps, dict):
-        problems.append("strict-philosophical=confucius: precedent_search must be a dict")
-    else:
-        for field in ("matches_found", "fallback_to_abstract"):
-            if field not in ps:
-                problems.append(f"strict-philosophical=confucius: precedent_search missing '{field}'")
-    if isinstance(ps, dict) and ps.get("fallback_to_abstract") is False and ps.get("matches_found", 0) < 3:
-        problems.append(
-            "strict-philosophical=confucius: [WARNING] fallback_to_abstract=false but matches_found < 3 — "
-            "EXPERIMENTAL voice with limited precedent data"
-        )
-    return problems
+    # confucius-strict validation removed when precedent_search deprecated 2026-05-17
+    return []
 
 
 _PHILOSOPHICAL_VALIDATORS = {
