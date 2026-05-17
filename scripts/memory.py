@@ -101,7 +101,7 @@ def read_medium(n: int = 10, query: str | None = None) -> dict:
             if not _matches(hay, query):
                 continue
         entries.append(summary)
-        if len(entries) >= n and not query:
+        if len(entries) >= n:
             break
     return {"tier": "medium", "entries": entries, "total": len(files)}
 
@@ -110,6 +110,7 @@ def read_long(query: str | None = None, n: int = 20) -> dict:
     rows = parse_feedback(FEEDBACK)
     if query:
         rows = [r for r in rows if _matches(f"{r['context']} {r['chosen']} {r.get('note', '')}", query)]
+        rows = rows[-n:]
     else:
         rows = rows[-n:]
     out = []
