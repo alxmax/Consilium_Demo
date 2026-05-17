@@ -75,7 +75,7 @@
 
 ### Senate auto-TODO + auto-transcript
 - [x] `scripts/senate_todo.py` — auto-append hotărâri în TODO.md (idempotent)
-- [x] `scripts/senate_transcript.py` + `scripts/show_senate_transcript.py` — generator WhatsApp-style HTML transcript
+- [x] `scripts/senate_transcript.py` — generator WhatsApp-style HTML transcript (auto-called by senate_synth.py)
 - [x] Integrare în `senate_synth.py` (commit `4755ced`)
 
 ---
@@ -838,6 +838,30 @@ Decizie soft-pozitivă, prioritate scăzută.
 - [ ] Operational defs pentru "unused" / "non-blocking" / "composable" / disambiguare semantică R2 (B vs C) [WITTGENSTEIN]
 - [ ] Falsification criteria pentru SUCCESS CRITERION — observable failure signals per item [SOCRATE+WITTGENSTEIN]
 - [ ] Heterogeneous bundle pattern → MODIFY precedent confirmat; split done partially via Q5 [CONFUCIUS+NAPOLEON]
+
+### Hotărârea Senate — senate-on-user-code-lens-r3 · 17 Mai 2026 · GO (GO 7 · MODIFY 0 · STOP 0)
+
+> **Propunere:** R3: senate --on-code via code_domain in renamed domain_lens.md. EXPERIMENTAL_DRAFT until empirical gate (>=3 pilots, >=2/3 info-add, semantic_suspect <=20%). HARD orchestrator pre-compute (Patch 1: ex…
+
+_Senatul a aprobat propunerea. Nicio modificare necesară._
+
+### Hotărârea Senate — senate-on-user-code-lens-r2 · 17 Mai 2026 · MODIFY (GO 4 · MODIFY 3 · STOP 0)
+
+> **Propunere:** R2: Extend senate mode for user-code audit via code_domain section in existing frontend_domain_lens.md (renamed to prompts/lenses/domain_lens.md). EXPERIMENTAL_DRAFT — NOT wired in SKILL.md dispatch t…
+
+- [ ] **[WITTGENSTEIN]** (1) 'semantic off-target detection' needs explicit artifact_leak_count threshold. (2) Rewrite 'info-add < 0/3' as measurable string-containment test. (3) Declare verdict_artifacts[] as orchestrator-extracted. (4) Platform-neutral revertibility check (git-hash, not sha256sum).
+- [ ] **[CONFUCIUS]** Routing table must carry pre-gate caveat (1-2 line footnote): 'senate --on-code routing applies only post-gate promotion; during EXPERIMENTAL_DRAFT, use trias or dialectic_skeptic for critical/irreversible.' Otherwise table authorizes routing highest-stakes to unvalidated mode — hierarchy inversion. One-line fix.
+- [ ] **[DIMON]** (1) files_touched emptiness must be HARD-raise separately: assert len(fields['files_touched']) > 0 explicitly. (2) prompt_user_if_missing must have non-interactive mode: if stdin not TTY or CONSILIUM_NON_INTERACTIVE set, raise immediately. The is_consilium_contribution flag risk acceptable if documented in code comments.
+
+### Hotărârea Senate — senate-on-user-code-lens · 17 Mai 2026 · MODIFY (GO 2 · MODIFY 5 · STOP 0)
+
+> **Propunere:** Extend the senate mode of the Consilium skill so it can audit user-code decisions (PRs, refactors, architectural choices in user projects), not only modifications to the skill itself. Mechanism: intro…
+
+- [ ] **[WITTGENSTEIN]** Before implementation, deliver: (1) testable operational definition of 'coherent output' — at least a shell command or Python assertion that can reject senator output; (2) explicit criteria for 'high-stakes user code' independent of examples; (3) exact mandatory syntax for --on-code in SKILL.md, not just 'e.g.'; (4) concrete regression test for lens reversibility — reference run + comparison command. Without these 4 points, the proposal is a well-intentioned wish, not an implementable spec.
+- [ ] **[CONFUCIUS]** 1. Add CLAUDE.md to touched files and specify what sentence changes — invariant 'nu pe cod user' must be updated simultaneously with SKILL.md. 2. Define explicit empirical gate (min 3-5 pilot runs with outcome tracking) before adding senate --on-code to SKILL.md as documented mode — follow frontend_domain_lens.md precedent which entered as EXPERIMENTAL_DRAFT with not_in_dispatch_table:true. 3. Specify what changes in senate_synth.py: if bundles in runs/senate/ can contain both skill-audit and code-audit outputs, synthesizer must distinguish them (mode:'skill_audit'|'code_audit' field in bundle schema). 4. Define routing boundary: at what magnitude/reversibility threshold senate --on-code vs trias vs dialectic_skeptic for user-code — without this boundary, orchestrators will use senate --on-code ad-hoc.
+- [ ] **[SOCRATE]** Three load-bearing assumptions must be declared explicitly and verified before implementation: (1) empirical pilot — run senate with manual lens on real PR and evaluate if verdict adds information over Sequential; (2) declare operational falsification criterion (what output classifies proposal as failed); (3) specify in SKILL.md that senate-on-code is experimental and user bears responsibility for translation input quality.
+- [ ] **[MUSK]** 1) Replace new code_to_senate_lens.md file with extension of frontend_domain_lens.md (or rename to domain_lens.md) — max 20 lines added, not separate 40-80 line file. 2) Remove dedicated SKILL.md subsection — add 2 lines in existing Senate section. 3) Prepend mechanism: single injection at orchestrator level, not per-senator x 7. 4) Don't touch senate_synth.py if schema doesn't change — zero preventive modifications.
+- [ ] **[DIMON]** Three conditions before GO: (1) Spec that orchestrator MUST pre-compute all lens fields (diff, files, magnitude, blast_radius) and fail hard (not silent) if any field empty. (2) Semantic off-target detection mechanism: synth checks if senator output contains references to real diff artifacts (file path match); if zero references → senator marked 'suspect', not included in quorum. (3) Lens must explicitly reaffirm each senator's role at start (injected per-senator, not generic text) to prevent identity collapse when lens vs prompt conflict.
 
 ### Hotărârea Senate — per-voice-dispatch-pinning · 17 Mai 2026 · MODIFY (GO 3 · MODIFY 3 · STOP 1)
 
