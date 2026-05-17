@@ -37,7 +37,7 @@ Modurile selectabile de user (SKILL.md le documentează în detaliu):
 
 **Parallel removed (RUND2).** Nu mai e selectabil de user. Rămâne ca auto cross-check intern când `magnitude=critical ∧ reversibility=irreversible`, plus audit silențios la fiecare 20 runs.
 
-Modul **`senate`** are scope distinct: audit pe **modificările skill-ului însuși** (7 senatori), nu pe cod user. On-demand only.
+Modul **`senate`** are două scope-uri: (a) audit pe **modificările skill-ului însuși** (default, well-tested, 7 senatori); (b) audit pe **cod user** via flag `--on-code` (EXPERIMENTAL_DRAFT — vezi gate empiric în SKILL.md). On-demand only.
 
 ## Fișiere locale (gitignored)
 
