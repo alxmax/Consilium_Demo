@@ -572,8 +572,8 @@ Suita rulează: prompt structure, fixture, verdict GO unanimous/quorum, MODIFY d
 
 ### Origine + arhitectură
 
-- **Arhitectură vizuală:** [`docs/senate/architecture.md`](docs/senate/architecture.md) (markdown) sau [`docs/senate/architecture.html`](docs/senate/architecture.html) (dark theme — vizualizări cross-questions matrix + blocaj resolution + flow runde).
-- **Justification empirică:** `experiments/New phase senat/deliberations/RUND2-deliberari.md`. MVP curent = single-pass parallel; cross-questions + blocaj resolution documentate vizual în architecture.html §8 ca extensie viitoare (NU în MVP).
+- **Arhitectură vizuală:** [`docs/architecture.html`](docs/architecture.html) — tab **Senate** (dark theme; cei 7 senatori cu specialități + flow dispatch + verdict logic + cross-questions matrix + blocaj resolution + cele 5 Legi + file map).
+- **Justification empirică:** `experiments/New phase senat/deliberations/RUND2-deliberari.md`. Post PR `feat/senate-laws-2-3-4`, Laws 2-4 sunt opt-in multi-round; legacy `{senators: {...}}` rămâne backward-compat (single-pass).
 
 <!-- === RUND2 === -->
 ## Three-layer architecture (RUND2)
