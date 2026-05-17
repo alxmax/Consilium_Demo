@@ -197,6 +197,40 @@ python scripts/mark_outcome.py --run-path runs/<file>.json --outcome BAD --reaso
 ```
 Marker-ul `[confirmed]` apare în note; `priors.py` ponderează aceste rânduri 2x față de feedback-ul subiectiv (vezi `weighted_bad_rate`).
 
+### 7. Auto-pipeline (opt-in, post-report)
+
+După ce Step 6 e complet (raport salvat, feedback logat), poți infera și confirma pașii de implementare:
+
+```bash
+cat runs/<file>.json | python scripts/infer_pipeline.py          # interactiv
+python scripts/infer_pipeline.py --input runs/<file>.json --yes  # CI/headless
+python scripts/infer_pipeline.py --input runs/<file>.json --dry-run  # print only
+```
+
+Scriptul citește `chosen_approach`, `magnitude` și `reversibility` din raport și caută în tabelul de mai jos:
+
+| magnitude | reversibility | pași inferați |
+|---|---|---|
+| trivial | complete | implement |
+| trivial | partial | implement → compile |
+| trivial | irreversible | implement → compile → test |
+| moderate | complete | implement → compile |
+| moderate | partial | implement → compile → test |
+| moderate | irreversible | implement → compile → review → test |
+| high/critical | orice | implement → compile → review → test |
+
+**Definiții pași:**
+- `implement` — reminder să scrii codul per `chosen_approach` (nu automatizat)
+- `compile` — rulează target-ul, verifică exit code 0 (runtime check)
+- `review` — re-rulează Control voice pe codul efectiv scris (nu propunerea)
+- `test` — rulează test suite existent (pytest/unittest autodiscovery)
+
+Output JSON: `{"steps": [...], "rationale": {"chosen": "...", "magnitude": "...", "reversibility": "...", "lookup_key": "..."}}`.
+
+Reject (`n` la prompt) → rejection logat în `runs/YYYY-MM-DD_HHMM_pipeline_rejected.json`. Rerun cu `--yes` pentru CI sau `--dry-run` pentru audit fără confirmare.
+
+**Skip Step 7 dacă:** `chosen_approach` e `do_nothing` sau `skipped` (scriptul iese cu exit 1 și mesaj clar).
+
 ## Skill maintenance
 
 Aplică doar când editezi skill-ul (`scripts/*.py`, `prompts/*.md`, `SKILL.md`), nu la fiecare deliberare.
@@ -227,6 +261,7 @@ python scripts/run_evals.py
 | `scripts/validate_report.py` | Gate Principle #4: success_criterion + verification + chosen_approach |
 | `scripts/log_feedback.py` | Auto-append în FEEDBACK.html la finalul Step 6 |
 | `scripts/mark_outcome.py` | Suprascriere outcome retroactiv (`[confirmed]` în note → pondere 2x) |
+| `scripts/infer_pipeline.py` | Step 7: infer + confirmare pași de implementare din raport; `--dry-run` / `--yes` |
 | `scripts/audit_feedback.py` | Listează runs fără rând FB; cu `--backfill` adaugă PEND default |
 | `scripts/memory.py` | Read API uniform peste cele 3 tiers (short/medium/long) |
 | `scripts/strip_context.py` | Proiectează output voce anterioară la minim (Steps 3-4 sequential) |
