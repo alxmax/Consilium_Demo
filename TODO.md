@@ -88,10 +88,10 @@
 >
 > **Livrate** (nu mai sunt TODO): `prompts/control_aurelius.md`, `prompts/conservator_confucius.md`, `prompts/refiner_deletion.md`, `scripts/precedent_search.py`, `scripts/test_philosophical_voices.py` (27 tests PASS), `validate_report.py --strict-philosophical={aurelius-control,confucius}`.
 
-**Open:**
+**Closed:**
 
-- [ ] **Phase 13 — empirical validation** (10-15 întrebări reale): măsoară `wasted_deliberation` flag-rate pentru Control+Aurelius și `ancestor_guidance` utility pentru Confucius (≥3 precedents). Target: în 10+ runs; dacă fail → voice deprecated. Output: `experiments/run4-empirical-validation.html`.
-- [ ] **Phase 5c — internal question audit** (INVESTIGATE): verifică dacă cele 4 criterii (operațională, discretă, self-scaling, bounded) au fost aplicate manual la prompt-uri în `2d96d1d` sau e încă open. Dacă nu, audit per voce.
+- [x] ~~**Phase 13 — empirical validation**~~ — ✅ CLOSED (2026-05-17). Vocile țintite (`control_aurelius`, `conservator_confucius`) au fost șterse în `b76e0cb` ("fix(deprecate): remove 4 unvalidated experimentals — Senate-approved"). Validarea empirică nu mai are subiect.
+- [x] ~~**Phase 5c — internal question audit**~~ — ✅ CLOSED (2026-05-17). Audit-ul a fost executat în plan-ul `docs/superpowers/plans/2026-05-16-philosophical-voice-variants.md` Task 7.2: verdict acceptable (1 ⚠️ pe Conservator+Aurelius bias_check discreteness, sub pragul 2 ⚠️). 3 din 6 voci auditate au fost șterse în `b76e0cb`; cele 3 întrebări absorbite în vocile core (`control.md` Q1 glossary, `conservator.md` Q1 reversibility, Q4 bias_check) re-verificate 2026-05-17 — same verdict, 1 ⚠️ bias_check, acceptable.
 
 ---
 
