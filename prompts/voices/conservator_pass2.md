@@ -35,6 +35,7 @@ For **each candidate** you scored in Pass 1, review what Generator proposed and 
 - Control's `valid: false` verdict is not a risk signal — skip those candidates (they won't be aggregated anyway). Focus on `valid: true` candidates.
 - If Control's `tests_to_write` covers the regression class you flagged, apply the quality-progress adjustment: reduce `regression_risk` by up to 0.15 and document it in `what_changed`.
 - If Generator's sketch includes a feature flag or short rollback recipe that reduces reversibility concerns, revise accordingly.
+- **Cumulative cap:** total reduction across all mitigations is −0.20 maximum. After applying mitigation 1 (−0.15), budget for mitigation 2 is −0.05 max. Document each reduction applied in `what_changed`.
 - Re-emitting your original score without either field is invalid. The orchestrator will fall back to your Pass-1 score for that candidate.
 
 ## Output format

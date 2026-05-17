@@ -344,7 +344,7 @@ Decizie soft-pozitivă, prioritate scăzută.
 | 7 | Sketch depth specificat ✅ DONE | Prompt | Mediu | Mic |
 | 8 | Control: citește fișierele, nu specula ✅ DONE | Prompt | Mediu | Mic |
 | 9 | Goal-fit → pasul 0 în Control (INVESTIGATE) | Prompt | Mediu | Mic-Mediu |
-| 10 | Cap stacking regression_risk | Prompt | Mediu | Mic |
+| 10 | Cap stacking regression_risk ✅ DONE | Prompt | Mediu | Mic |
 | 11 | Candidați ireversibili by nature | Prompt | Mediu | Mediu |
 | 12 | probe_change data în Conservator Input | Prompt | Mediu | Mic |
 | 13 | Single retry la confidence scăzut ✅ DONE | Skill | Mediu | Mediu |
@@ -352,17 +352,17 @@ Decizie soft-pozitivă, prioritate scăzută.
 | 15 | Feedback din outcome real ✅ DONE | Arch | Înalt | Mare |
 | 18 | Observe→Think→Act→Learn formal (INVESTIGATE) | Arch | Mediu | Foarte Mare |
 | 19 | Memory tiers formalizate ✅ DONE | Arch | Scăzut | Mare |
-| 20 | Skeptic rename: Conservator → Risk Assessor | Prompt | Înalt | Mic |
-| 21 | Fix meta_critic.conservator_spread denominator | Skill | Mediu | Mic |
-| 22 | Fix meta_critic.control_concreteness 40-char fallback | Skill | Mediu | Mic |
-| 23 | Codifică formula Conservator în prompt | Prompt | Mediu | Mic |
-| 24 | Rebalance Architect lens weights | Skill | Mediu | Mic |
-| 25 | --strict default pe mode=trias | Skill | Mediu | Mic |
-| 26 | Lărgește trigger adversarial Generator (hot-path) | Prompt | Mediu | Mic |
+| 20 | Skeptic rename: Conservator → Risk Assessor ✅ DONE | Prompt | Înalt | Mic |
+| 21 | Fix meta_critic.conservator_spread denominator ✅ DONE | Skill | Mediu | Mic |
+| 22 | Fix meta_critic.control_concreteness 40-char fallback ✅ DONE | Skill | Mediu | Mic |
+| 23 | Codifică formula Conservator în prompt ✅ DONE | Prompt | Mediu | Mic |
+| 24 | Rebalance Architect lens weights ✅ DONE | Skill | Mediu | Mic |
+| 25 | --strict default pe mode=trias ✅ DONE | Skill | Mediu | Mic |
+| 26 | Lărgește trigger adversarial Generator (hot-path) ✅ DONE | Prompt | Mediu | Mic |
 | 27 | confidence_in_verdict în Control | Prompt+Skill | Scăzut | Mediu |
 | 28 | pass2_revision + personalities_divergence metrics | Skill | Scăzut | Mediu |
-| 29 | Pass-2 schema în SKILL.md | Skill | Mediu | Mic |
-| 30 | Failure-mode section în Parallel | Skill | Înalt | Mic |
+| 29 | Pass-2 schema în SKILL.md ✅ DONE | Skill | Mediu | Mic |
+| 30 | Failure-mode section în Parallel ✅ DONE | Skill | Înalt | Mic |
 | 31 | VOTE_PATTERN_CONFIDENCE reorder | Skill | Mic | Mic |
 | 32 | Deduplică _TRIAS_EXPECTED_NAMES | Skill | Mic | Mic |
 | 33 | strip_context skip în Parallel — doc | Skill | Mic | Trivial |
@@ -783,6 +783,28 @@ Decizie soft-pozitivă, prioritate scăzută.
 ---
 
 ## 🏛 Hotărâri Senate
+
+### Hotărârea Senate — per-voice-dispatch-pinning · 17 Mai 2026 · MODIFY (GO 3 · MODIFY 3 · STOP 1)
+
+> **Propunere:** Add canonical dispatch-defaults table to SKILL.md mapping each voice/senator prompt path to (default model, default tools). Zero new files, zero deletions. 1 file edit (~15-25 lines diff on SKILL.md o…
+
+- [ ] **[WITTGENSTEIN]** Define operationally: (1) 'default model' — MUST-pass vs recommended; reconcile with existing 'Fără override, vocile moștenesc modelul orchestratorului' text; (2) 'tool allowlist' in absence of technical enforcement — if advisory, say so and remove word 'allowlist'; (3) verification procedure that makes override 'auditable' beyond co-location; (4) correct '6 sections' claim to actual count (3 sections — Parallel/trias_split/Senate).
+- [ ] **[CONFUCIUS]** Single advisory clarification: add table header/footnote marking columns as 'descriptive defaults, not enforced constraints' to prevent future readers from treating tools column as hard allowlist. Does not block GO.
+- [ ] **[SOCRATE]** Specify explicitly: (1) tools per voce exists as operational distinction or conceptual only — if all voices receive same tools via Agent(), table invents structure that doesn't exist; (2) the 6 'model: sonnet' sections — edited to reference table or coexist with it (latter grows inconsistency); (3) what happens with agents/consilium-subagent.md if it contains its own model defaults.
+- [ ] **[MUSK]** Real consolidation is SUBTRACTION, not ADDITION. If repetition is the bug, delete 5 of 6 inline mentions and point all modes to the one canonical paragraph in Parallel mode. Tool allowlist column is unenforceable documentation that rots the moment someone dispatches without consulting it. Resources pointer is category mismatch (Resources tracks scripts/CLIs, not doc anchors).
+- [ ] **[DIMON]** Before GO: (1) Specify if lens files and skeptic.md are in or out of table; if in, add 'supplementary — not standalone' annotation per row; (2) Declare which is canonical when table and Parallel prose diverge (table wins / prose wins); (3) Provide runnable regex fixture for criterion 3 OR remove 'regex-verifiable' from success criteria — aspirational criteria are misleading.
+
+### Hotărârea Senate — voices-and-senators-to-subagents · 17 Mai 2026 · MODIFY (GO 0 · MODIFY 3 · STOP 4)
+
+> **Propunere:** Refactor consilium architecture: voices core (Generator/Control/Conservator/Skeptic) and 7 senators become subagents in agents/; frontend_domain_lens stays as voice. Pass-2 variants and attitudinal le…
+
+- [ ] **[WITTGENSTEIN]** Operational definitions needed for: 'auto-discovered' (verify orchestrator no longer reads prompts/voices/ for promoted voices); 'promotion' (binary 3-condition definition applied consistently to explain why Skeptic is promoted but Pass-2 and frontend_domain_lens are not); verification method for SUCCESS CRITERION #3 that distinguishes subagent dispatch from inline-prompt dispatch.
+- [ ] **[AURELIUS]** Scope to minimum reversible increment: (1) model pinning via dispatch parameters in SKILL.md only, no new agent files; (2) if agent files necessary, scope to voices only (Part A), defer senators (Part B); eliminate install script requirement (portability is core); revisit full promotion only after falsification gate of >=3 successful parallel runs with agent-file dispatch.
+- [ ] **[CONFUCIUS]** Three precedent-based reasons for STOP: (1) per_voice_subagents_only was explicitly evaluated and rejected in runs/2026-05-12_1530 — current proposal resubmits without addressing rejection cause (Agent-inside-Agent uncertainty + Trias composition breakage); (2) senate_synth.py SENATORS hardcoded references prompts/senators/ — Part B deletes folder without atomic patch, repeats silent-dispatch-risk; (3) install step breaks self-contained-skill pattern without accepted precedent. If reformulated: separate Part A/B in distinct PRs; eliminate install step (symlink optional); include atomic patch of senate_synth.py + SKILL.md + Trias composition in same commit.
+- [ ] **[SOCRATE]** Declare explicitly: (1) whether voice subagent dispatch uses Agent(subagent_type=...) auto-routing OR Read-then-inline — opposite implications for boilerplate; (2) add falsification criterion running test_senate_synth.py with prompts/senators/ deleted; (3) specify failure mode for users who pull commit without running install; (4) declare whether 'lens injected via prompt' in Trias is blocking or advisory — if blocking, N×M problem must be solved before Part A ships.
+- [ ] **[MUSK]** Proposal adds 13 files + deletes 7 to solve 3 problems already solved by existing infrastructure: model pinning in SKILL.md Parallel dispatch; tool allowlist in consilium-subagent.md frontmatter; auto-discovery has no value for internal pipeline components. Verdict STOP: 0 of 3 stated benefits justify 13 new files + install dependency. If a real unmet need exists (voices running independent of orchestrator with own isolated context), formulate that use case concretely as new proposal with 1-2 files, not 13.
+- [ ] **[DIMON]** Before proceeding: (1) Concrete Trias composition remediation plan — new lens-injection mechanism for agents/ YAML frontmatter OR documented Trias deprecation; (2) Fallback path for missing agent files (inline fallback + warning, not silent UNREACHABLE); (3) Resolve Pass-2 dialectic two-source problem with single canonical definition; (4) Verifiable install-check step (script validates all 11 symlinks exist non-stale before senate dispatch). Until these 4 addressed, silent failure modes outweigh benefits.
+- [ ] **[NAPOLEON]** STOP on terrain, not merit. Real upside but implementation cost (6-10h, 1500-1800 lines diff, permanent install friction) not justified in stretched multi-change session with unresolved design tensions (Trias breakage, Pass-2 two-sources, consilium-subagent overlap). Defer to fresh session after: (1) quantifying invocation frequency to validate 30-line/call savings payback; (2) resolving 3 design tensions with explicit decisions; (3) confirming user's distribution model tolerates mandatory install step.
 
 > Auto-append din `senate_synth.py` via `senate_todo.py`. Format: GO/MODIFY/STOP per senator.
 >

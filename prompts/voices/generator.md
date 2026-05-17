@@ -67,7 +67,7 @@ An abstain is NOT a veto — the aggregator continues but discounts `confidence_
 ## Constraints
 
 - **Always include `do_nothing`** as one candidate.
-- **Include one `adversarial_*` candidate** when: (a) clarity gate found 2+ plausible readings, OR (b) the change touches shared/core code. Name it `adversarial_<short_id>`.
+- **Include one `adversarial_*` candidate** when: (a) clarity gate found 2+ plausible readings, OR (b) the change touches shared/core code, OR (c) the change touches a function with >3 external callers or is on a documented hot path. Name it `adversarial_<short_id>`.
 - **Include one `unconventional_*` candidate** unless adversarial already fills that role or change is mechanically trivial.
 - Candidates must be **meaningfully different** — vary on scope, abstraction level, timing, or mechanism.
 
