@@ -802,6 +802,88 @@ Decizie soft-pozitivă, prioritate scăzută.
 
 ## 🏛 Hotărâri Senate
 
+### Hotărârea Senate — top5-diagnostic-audit · 17 Mai 2026 · DIAGNOSTIC (no vote — 14 issues found, top-5 synthesized)
+
+> **Scope:** Diagnostic audit on the existing Consilium skill (not a proposal vote). Each senator scanned through their lens; top 5 selected by severity + convergence + concreteness.
+> **Bundle JSON:** `runs/senate/2026-05-17_161608-top5-diagnostic-audit.json`
+> **Verification status:** Concrete code claims (#2/#3/#5) verified directly against current source on 2026-05-17.
+
+**Top 5 — actionable, ranked:**
+
+- [ ] **#1 [CRITICAL] voice_scores_uncalibrated_measurements** *(Socrate)*
+  - Where: `scripts/aggregator.py` (all schemes) + `scripts/confidence.py:derive()` + SKILL.md Step 5
+  - Issue: Aggregation veto (`risk > 0.8`) and confidence `pstdev(scores)` treat model self-assigned floats as calibrated [0,1] measurements. Same base model under different prompts produces three numbers; no inter-run stability test exists.
+  - AC: declare in SKILL.md that voice scores are uncalibrated model estimates; add inter-run stability check (run identical input twice; flag if stdev > 0.15) before authoritative veto.
+  - **R2 OUTCOME (Wittgenstein + Dimon, 2026-05-17):** VALIDATE-WITH-REFINEMENT. R2 sharpened the claim:
+    - Calibration ASYMMETRY: Conservator IS anchored via `conservator.md:62-75` formula (categorical→numeric mapping: complete→0.1, irreversible→0.9, trivial→0.1, critical→0.9). Generator + Control emit UNANCHORED floats with no calibration protocol.
+    - `confidence.py:194` "agreement" measures role-prompt divergence across 3 voices from the SAME base model — not measurement error, not inter-run stability.
+    - `aggregator.py:46` DEFAULT_VETO=0.8 sits in the high-variance region of the score distribution — Dimon predicts inter-run pstdev 0.12-0.18 on `risk_score`, meaning the veto fires NON-DETERMINISTICALLY on boundary cases (the cases where it matters most).
+    - Concrete experiment (1-day feasible per Dimon): 5 historical diffs × 2 runs each, mode=sequential, identical params. Measure pstdev per voice. If `mean(pstdev) > 0.10` on risk_score → Socrate's claim empirically confirmed.
+  - **Refined AC:** (1) document calibration asymmetry in SKILL.md (Conservator anchored, Gen/Ctrl unanchored); (2) run the 1-day experiment; (3) IF pstdev > 0.10 → either add multi-sample averaging step or raise veto threshold above high-variance region. Fix priority per R2: `next_session`.
+
+- [ ] **#2 [HIGH × 3-way convergence] zombie_deprecated_modes** *(Confucius + Musk + Napoleon)*
+  - Where: `docs/architecture.html` lines 583/588/609/701/715/759 + `docs/architecture.js:300` + `scripts/validate_report.py:218-221` frozenset + ~25/58 runs with `mode=parallel` in telemetry
+  - Issue: RUND2 collapsed `parallel_skeptic`/`dialectic_skeptic` into `skeptic_on_chosen` flag on 2026-05-17 but zombie refs remain in three places. Architecture.js:300 actively instructs orchestrator to use retired name.
+  - AC: single PR removing zombie names from `validate_report.py` frozenset (handle backward-compat via alias-resolution at read-time); rewrite arch.html cards to one "Legacy (collapsed)" notice; replace arch.js:300 reference; enforce sequential-as-default at dispatch with telemetry justification for any parallel use.
+  - Status: ✅ CONCRETE — verified in code 2026-05-17. Ready to ship.
+
+- [ ] **#3 [HIGH] risk_score_field_mismatch_silent_default** *(Wittgenstein)*
+  - Where: `scripts/build_report.py:74` reads `score.get("risk_score", 0.5)` — but `prompts/voices/conservator.md` schema only defines `regression_risk.net_concern` (verified at conservator.md:92-95). `aggregator.py:428` correctly uses `regression_risk.net_concern`.
+  - Issue: Every RUND2 deliberation's `voice_scores.conservator` silently resolves to the 0.5 default in the FINAL REPORT. Aggregator is unaffected (uses correct path); display + downstream confidence calc on `voice_scores` are affected.
+  - AC: change `build_report.py:74` to `float(score.get("regression_risk", {}).get("net_concern", 0.5))`. Also fix `build_report.py:87-88` `_why_not` which has the same bug. Re-run `validate_report.py` on recent runs to detect affected decisions.
+  - Status: ✅ CONCRETE — verified in code 2026-05-17. ~5-line fix. Ready to ship.
+
+- [ ] **#4 [HIGH] irreversibility_flag_bypassed_in_subagent_path** *(Aurelius)*
+  - Where: SKILL.md Step 2 + `agents/consilium-subagent.md`
+  - Issue: Conservator's `irreversibility_flag: true` is documented to BLOCK + require explicit user consent. The subagent wrapper forbids interactive prompts and is silent on this case — the safety gate is bypassed in the execution context where human oversight is lowest.
+  - AC: add explicit subagent rule: when `irreversibility_flag=true`, surface `subagent_notes.irreversibility_blocked: true` and force `confidence: null` + `chosen_approach: null` so orchestrator cannot silently act.
+  - **R2 OUTCOME (Confucius + Musk, 2026-05-17):** VALIDATE-AND-EXPAND. R2 sharpened the claim:
+    - **Scope expanded** (Confucius): not just irreversibility. `consilium-subagent.md` rule 2 defines non-interactive substitutes for 3 SKILL.md interactive checkpoints (stale_pendings, clarity gate, confidence < 0.7) while leaving **7 OTHER gates undefined**: `irreversibility BLOCK hard`, `glossary_fail BLOCK soft`, `disagreements substantial REWORK`, `meta_recommendation: scale_up`, `challenge_upward triggered`, `retry_context single-pass`, `3+ simultaneous ESCALATE`.
+    - **Mechanism refined** (Musk): aggregator.py already returns `result=BLOCK` on `irreversibility_flag=true`. The actual gap is a missing OUTPUT CONTRACT in subagent.md for what to emit when aggregator returns BLOCK — not a missing safety check upstream.
+    - **Minimum viable fix** (Musk): 4-6 lines added to `consilium-subagent.md` only. Generic `blocking_gates` rule: pattern-match on aggregator `result=BLOCK` → set `subagent_notes.blocked_reason=<reason>` + force `confidence: null` + `chosen_approach: null`. One mechanism covers irreversibility + glossary_fail + future gates.
+    - **Precedent** (Confucius): `runs/senate/2026-05-17_094306-voices-and-senators-to-subagents.json` (STOP UNANIMOUS) already flagged "subagent dispatch mechanism unspecified empirically" — Aurelius's R2 position. The current diagnostic confirms the prior STOP was load-bearing on this exact gap.
+    - **Realness check** (Musk): subagent path is live but zero recorded runs have triggered irreversibility yet → risk is structural-imminence, not historical-occurrence.
+  - **Refined AC:** (1) ship-now minimum fix per Musk (4-6 lines, generic `blocking_gates` rule in consilium-subagent.md); (2) follow-up audit pass over all 7 missing gates to write exhaustive output contracts (next-session); (3) re-validate by running a synthetic subagent dispatch with irreversibility_flag=true and asserting `subagent_notes.blocked_reason` populated.
+
+- [ ] **#5 [HIGH] priors_poisoning_via_html_parse_drift** *(Dimon)*
+  - Where: `scripts/feedback.py:50-86` (parse_feedback cell-count branches 6/7/8) + `scripts/render_feedback_html.py`
+  - Issue: Cell-count heuristic with `outcome not in OUTCOMES: continue` as the only guard. Any future column addition/reorder in render_feedback_html silently misaligns every existing row → `priors.py` rate computations poisoned (`bad_rate`, `override_rate`, `weighted_bad_rate`), no error raised.
+  - AC: anchor parsing on `data-field="<name>"` attributes in rendered HTML rather than positional index. Add a round-trip smoke test (render → parse → assert field values match).
+  - Status: ✅ CONCRETE — verified in code 2026-05-17. Ready to ship.
+
+**Honorable mentions (medium severity):**
+
+- [ ] **HM1 [MED] meta_recommendation_per_candidate_vs_pipeline** *(Wittgenstein)* — Conservator emits per-candidate inside `scores[]`; aggregator reads top-level (`aggregator.py:372`-area). Top-level `meta_recommendation` is always missing → `scale_down`/`scale_up` triggers never fire in `aggregate_rund2`.
+- [ ] **HM2 [MED] trias_cost_gate_soft_not_enforced** *(Aurelius)* — Trias `Skip if` rules are advisory prose; no mechanical check maps `magnitude × reversibility` to mode cost ceiling. AC: extend `scope_gate.py` with `mode_ceiling` derived from Conservator signals.
+- [ ] **HM3 [MED] pilot_b_unenforced_activation_gate** *(Confucius)* — SKILL.md documents Pilot B with `N≥5 senate runs` gate; no script enforces or surfaces it. AC: either add `priors.py --senator-gate` check, or demote Pilot B to "design sketch / NOT YET ACTIVE" banner.
+- [ ] **HM4 [HIGH] skeptic_catchrate_overgeneralized_from_P3** *(Socrate)* — SKILL.md claims `skeptic_on_chosen` catch-rate "100% simulation, 4/7 real" but all reruns on n=1 problem (P3). Cross-mode comparison claim built on n=1. AC: replace with explicit scope bound + falsification criterion on ≥3 distinct problems.
+- [ ] **HM5 [MED] senate_synth_dual_schema_path** *(Musk)* — `normalize_rounds` wrapper + `is_multi_round_input` bool threads through 606 LOC for legacy `{senators:{}}` shape that no live dispatch path emits. AC: require multi-round unconditionally; drop wrapper + bool (~40 lines).
+- [ ] **HM6 [MED] fingerprint_collision_silent_suppression** *(Dimon)* — `log_feedback.py:_fingerprint` truncates context to 30 chars; same-day+same-chosen+same-30char-prefix collides → row silently dropped (stderr only, exit 0). AC: include monotonic counter or run filename in fingerprint; exit code 3 on collision.
+- [ ] **HM7 [MED] senate_test_surface_vs_usage_ratio** *(Napoleon)* — 674 LOC test suite for Senate mode with 1 historical run. AC: freeze Senate test suite at current coverage; mark `dispatch_senate_on_code.py` + `compare_senate_vs_trias.py` maintenance-deferred until Senate usage exceeds 5 runs/month.
+
+**Meta-pattern:** Three convergent root causes — (a) rhetorical deprecation without operational enforcement, (b) schema drift between prompts and scripts with no validation layer, (c) load-bearing quantitative claims built on n=1 problem.
+
+---
+
+### Hotărârea Senate — en-translation-senator-memory-fullnames · 17 Mai 2026 · MODIFY (GO 0 · MODIFY 5 · STOP 2)
+
+> **Propunere:** Three bundled changes to the Consilium skill: (1) Full-repo English translation of all Romanian content (SKILL.md, CLAUDE.md, prompts/, scripts/ docstrings, memory/, FEEDBACK.html history). (2) Senato…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Make four definitions operational: (1) 'zero non-English content' scope+exemption list; (2) 'persistent memory' storage boundary + retrieval contract; (3) replace 'smoke test' with named script + assertion; (4) commit to exactly one memory mechanism or rank with selection rule.
+- [ ] **[AURELIUS]** Split bundle into three independent PRs ordered: (1) renames, (2) translation, (3) memory. Each with own success criterion + smoke test. Memory PR must include at least one pilot run logged + validated.
+- [ ] **[CONFUCIUS]** Split into three independent sequential proposals. Item 1 must exclude FEEDBACK.html history (irreversible audit trail destruction). Item 2 must commit to one mechanism + respect Pilot B activation gate before Pilot C. Item 3 must include atomic migration script for runs/senate/*.json senator name keys.
+- [ ] **[SOCRATE]** Split bundle with independent validation gates. For Item 2: require explicit user confirmation 'debate to choose one' vs 'combine all three'. For Item 3: pre-merge grep audit confirming zero remaining short-name references. Memory translation needs per-instruction human review.
+- [ ] **[MUSK]** Split into three sequential PRs: (1) Item 3 alone (renames, mechanical, ships now); (2) Item 2b alone (priors.py --senator, ~60 LOC); (3) Item 1 scoped (SKILL.md + CLAUDE.md + memory/*.md only, exclude FEEDBACK.html history, defer prompt translation pending voice regression). Drop Item 2a (no-op) and Item 2c (superseded by extended priors.py).
+- [ ] **[DIMON]** Split with sequencing gates: (1) Item 3 needs key-alias migration layer for runs/senate/*.json + all 14 tests green before other items; (2) Item 1 explicitly exclude FEEDBACK.html append-only entries + define session-invalidation protocol; (3) Item 2 commit to exactly one mechanism before implementation.
+- [ ] **[NAPOLEON]** Unbundle. Sequence: (1) Item 2 alone this session — focused, high-value, low-risk; (2) Item 3 separate mechanical PR; (3) Item 1 dedicated translation session when operator is fresh. Do NOT merge 1+2+3 — review noise from 2500-line translation will obscure Item 2 behavioral changes.
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **B** (cross-ref: CONFUCIUS)
+- [ ] **C** (cross-ref: CONFUCIUS)
+
 ### Hotărârea Senate — refactor-bundle-7items · 17 Mai 2026 · MODIFY (GO 1 · MODIFY 6 · STOP 0)
 
 > **Propunere:** 7-item refactor bundle to reduce Consilium over-engineering (S1 dedup transcripts + S2 collapse skeptic modes + S3 veto cascade 4→2 + S4 delete Dialectic + S5 scripts cleanup + B cross-Qs to user + C R2 prompt on MODIFY). User narrowed scope post-R1 (S3+S4 deferred per Napoleon split); B refined (factual→user, opinion-senator→internal per user Q3).
