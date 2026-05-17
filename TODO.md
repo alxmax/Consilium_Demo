@@ -194,6 +194,8 @@ mitigations are present. Document each reduction applied in notes.
 ```
 
 #### 11. Handling pentru candidați ireversibili by nature · Prompt · Mediu · Mediu
+> **Status (2026-05-17):** ✅ DONE — `prompts/voices/conservator.md` extins cu `mitigation_steps` + `"irreversible": true` pentru candidații ireversibili by nature (branch `fix/doc-prompt-clarify`).
+>
 Published API change, migration live — `rollback_recipe` executabil e imposibil. Fix:
 ```
 If rollback is structurally impossible (published API already consumed by clients,
@@ -286,6 +288,8 @@ Sub-agent crash / JSON malformed / timeout nu au recovery path documentat.
 `validate_report.py:161` și `personalities.py:21-37` duplică lista. Fix: import din `personalities.NAMES`.
 
 #### 33. Documentează că `strip_context.py` se skip-uiește în Parallel · Skill · Mic · Trivial
+> **Status (2026-05-17):** ✅ DONE — notă adăugată în `SKILL.md` § Sequential dispatch (branch `fix/doc-prompt-clarify`).
+>
 SKILL.md Step 3-4 zice "Sequential: rulează `strip_context.py`" fără să clarifice că Parallel nu are nevoie.
 
 #### 34. Şterge sau wrap deprecated `aggregate_weighted` · Skill · Mic · Mic
@@ -310,6 +314,8 @@ SKILL.md Step 3-4 zice "Sequential: rulează `strip_context.py`" fără să clar
 `docs/architecture.html` descrie modul iterative cu N=1..3 runde + convergence stop, marcat `SPEC`. `dialectic_merge.py` acceptă strict `{pass1, pass2}`. Fix: ori implementează schema `{rounds: [...]}` cu convergence detection, ori șterge modul din HTML.
 
 #### 44. Sequential "Chinese wall" iluzoriu — clarify în docs · Arch · Mediu · Mic
+> **Status (2026-05-17):** ✅ DONE (parțial) — clarificare adăugată în `SKILL.md` § Sequential dispatch. HTML (`docs/architecture.html`) neactualizat — rămas pentru un viitor task de docs.
+>
 Sequential rulează același LLM care joacă 3 roluri în acelaşi context. `strip_context.py` doar curăță prompt-ul. Nu e Chinese wall real. Fix: notă explicită în HTML + SKILL.md.
 
 #### 45. Lens injection validation end-to-end · Skill · Mediu · Mediu
@@ -373,7 +379,7 @@ Decizie soft-pozitivă, prioritate scăzută.
 | 8 | Control: citește fișierele, nu specula ✅ DONE | Prompt | Mediu | Mic |
 | 9 | Goal-fit → pasul 0 în Control (INVESTIGATE) | Prompt | Mediu | Mic-Mediu |
 | 10 | Cap stacking regression_risk ✅ DONE | Prompt | Mediu | Mic |
-| 11 | Candidați ireversibili by nature | Prompt | Mediu | Mediu |
+| 11 | Candidați ireversibili by nature ✅ DONE | Prompt | Mediu | Mediu |
 | 12 | probe_change data în Conservator Input ✅ DONE | Prompt | Mediu | Mic |
 | 13 | Single retry la confidence scăzut ✅ DONE | Skill | Mediu | Mediu |
 | 14 | Meta-critic calitate deliberare ✅ DONE | Arch | Înalt | Mare |
@@ -393,18 +399,18 @@ Decizie soft-pozitivă, prioritate scăzută.
 | 30 | Failure-mode section în Parallel ✅ DONE | Skill | Înalt | Mic |
 | 31 | VOTE_PATTERN_CONFIDENCE reorder | Skill | Mic | Mic |
 | 32 | Deduplică _TRIAS_EXPECTED_NAMES | Skill | Mic | Mic |
-| 33 | strip_context skip în Parallel — doc | Skill | Mic | Trivial |
-| 34 | Şterge deprecated aggregate_weighted | Skill | Mic | Mic |
+| 33 | strip_context skip în Parallel — doc ✅ DONE | Skill | Mic | Trivial |
+| 34 | Şterge deprecated aggregate_weighted ✅ DONE | Skill | Mic | Mic |
 | 35 | Severity-aware control score | Skill | Mediu | Mic |
 | 36 | Trias telemetry required ✅ DONE | Skill | Înalt | Mic |
 | 37 | Steward-aware confidence ✅ DONE | Skill | Înalt | Mediu |
 | 38 | Pass-2 silent fallback warning ✅ DONE | Skill | Mediu | Mic |
-| 39 | scope_gate blocklist `*secrets*` folder | Skill | Mic | Trivial |
-| 40 | Parallel telemetry empty → eroare | Skill | Mediu | Trivial |
-| 41 | team_vote tie-break determinist | Skill | Mic | Trivial |
-| 42 | scope_gate None signals type-safe | Skill | Mic | Trivial |
+| 39 | scope_gate blocklist `*secrets*` folder ✅ DONE | Skill | Mic | Trivial |
+| 40 | Parallel telemetry empty → eroare ✅ DONE | Skill | Mediu | Trivial |
+| 41 | team_vote tie-break determinist ✅ DONE | Skill | Mic | Trivial |
+| 42 | scope_gate None signals type-safe ✅ DONE | Skill | Mic | Trivial |
 | 43 | Iterative Dialectic — SPEC fără implementare | Arch | Mediu | Mare |
-| 44 | Sequential Chinese wall — clarify docs | Arch | Mediu | Mic |
+| 44 | Sequential Chinese wall — clarify docs ✅ DONE (SKILL.md; HTML pending) | Arch | Mediu | Mic |
 | 45 | Lens injection validation end-to-end | Skill | Mediu | Mediu |
 | 46 | Pass-2 diff semantic în revision_log | Skill | Mic | Mediu |
 | 47 | `optional_sidecar_visualizer` PROPOSED | Arch | Mediu | Mediu |
@@ -570,7 +576,7 @@ Decizie soft-pozitivă, prioritate scăzută.
 #### [scripts/dialectic_merge.py:124-126] `validate_input` strictly requires all 3 voices in pass1 (uses `sys.exit`)
 - **Fix:** Tolerate missing voices as `{}` in `merge()`, sau raise în loc de `sys.exit`.
 
-#### [scripts/memory.py:104-114] `--n` cap is ignored when `--query` is set
+#### ~~[scripts/memory.py:104-114] `--n` cap is ignored when `--query` is set~~ — ✅ DONE (branch `fix/bug-merge-render`)
 - **Fix:** Apply `[-n:]` after filtering în both tiers.
 
 #### [scripts/run_evals.py:49-55] `subprocess.run(text=True)` uses platform encoding for stdin/stdout
@@ -579,7 +585,7 @@ Decizie soft-pozitivă, prioritate scăzută.
 #### [scripts/utils.py:50-65] `validate_keys` calls `sys.exit(1)` — fatal for in-process callers
 - **Fix:** Raise `ValidationError`; convert to exit code only în `main()` wrappers.
 
-#### [scripts/strip_context.py:51,61] `data.get("candidates"/"verdicts")` crashes on explicit `null` or non-list
+#### ~~[scripts/strip_context.py:51,61] `data.get("candidates"/"verdicts")` crashes on explicit `null` or non-list~~ — ✅ DONE (branch `fix/bug-merge-render`)
 - **Fix:** `candidates = data.get("candidates") or []`; isinstance guard.
 
 #### [scripts/probe_change.py:60-84] `parse_numstat` mis-handles rename syntax `{old => new}`
@@ -830,6 +836,18 @@ Decizie soft-pozitivă, prioritate scăzută.
     - `aggregator.py:46` DEFAULT_VETO=0.8 sits in the high-variance region of the score distribution — Dimon predicts inter-run pstdev 0.12-0.18 on `risk_score`, meaning the veto fires NON-DETERMINISTICALLY on boundary cases (the cases where it matters most).
     - Concrete experiment (1-day feasible per Dimon): 5 historical diffs × 2 runs each, mode=sequential, identical params. Measure pstdev per voice. If `mean(pstdev) > 0.10` on risk_score → Socrate's claim empirically confirmed.
   - **Refined AC:** (1) document calibration asymmetry in SKILL.md (Conservator anchored, Gen/Ctrl unanchored); (2) run the 1-day experiment; (3) IF pstdev > 0.10 → either add multi-sample averaging step or raise veto threshold above high-variance region. Fix priority per R2: `next_session`.
+  - **EXPERIMENT RUN 2026-05-17:** `experiments/voice-score-stability-2026-05-17.md` — 10 paired Conservator dispatches across 5 risk-spectrum cases (LOW/MED/BOUNDARY_LO/BOUNDARY_HI/HIGH). Findings:
+    - **F1** Mean pstdev on `net_concern` = **0.038**, max = 0.100. **Refutes** Dimon's 0.12-0.18 prediction.
+    - **F2** Categorical flip rate on `magnitude`: **40%** (2/5 pairs). On `reversibility`: 20% (1/5). The real noise is *upstream of the formula*, in Q1-Q5 categorical assignment.
+    - **F3** `do_nothing` baseline stable at pstdev 0.012 across 10 runs.
+    - **F4** Veto threshold region (0.8) NOT probed — max observed `net_concern` was 0.42. Dimon's main claim (non-deterministic veto firing near 0.8) **remains unfalsifiable** until [0.7, 0.9] cases are sampled.
+    - **F5** `meta_recommendation` disagrees in 2/5 pairs — same input could trigger different deliberation paths.
+  - **Spawned follow-ups:**
+    - [ ] **#1-A** Drop the `pstdev > 0.15` check from AC — never fires for typical cases (max observed 0.10).
+    - [ ] **#1-B** Add a categorical-stability check instead: sample Conservator twice; surface `magnitude`/`reversibility` disagreement to orchestrator (don't auto-resolve). Catches the 40% flip rate at its source.
+    - [ ] **#1-C** Re-run with 2-3 cases that produce `net_concern ∈ [0.7, 0.9]` to probe the veto-threshold variance region (F4 gap).
+    - [ ] **#1-D** Probe Generator + Control stability (untested here — Wittgenstein's asymmetry claim is half-supported by this experiment).
+    - [ ] **#1-E** SKILL.md edits per experiment's "Suggested SKILL.md edits" section (calibration-asymmetry note + 0.8 veto caveat) — separate PR.
 
 - [x] **#2 [HIGH × 3-way convergence] zombie_deprecated_modes** *(Confucius + Musk + Napoleon)* — ✅ SHIPPED PR #102 (`fix/zombie-deprecated-modes`, commit `b5fbe2f`, merged 2026-05-17)
   - Where: `docs/architecture.html` lines 583/588/609/701/715/759 + `docs/architecture.js:300` + `scripts/validate_report.py:218-221` frozenset + ~25/58 runs with `mode=parallel` in telemetry
