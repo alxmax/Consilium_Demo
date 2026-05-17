@@ -2,6 +2,11 @@
 same input. Implements the falsification criterion declared in the
 EXPERIMENTAL_DRAFT phase of `senate --on-code` (SKILL.md Drafts footnote).
 
+MAINTENANCE-DEFERRED: This script is frozen at current coverage until Senate
+usage exceeds 5 runs/month. Do not add features or tests until gate criteria
+are met (see SKILL.md Drafts footnote for gate definition).
+
+
 Usage:
     python -X utf8 scripts/compare_senate_vs_trias.py <senate_bundle.json> <trias_bundle.json>
 

@@ -12,7 +12,7 @@
     "load_rules.py"
   ],
   "is_consilium_contribution": false,
-  "senators": {
+  "rounds": [{"round": 1, "senators": {
     "wittgenstein": {
       "vague_terms_found": [
         {"term": "HIGH bug", "in_context": "Identifică, prioritizează și descrie concret 5-10 buguri HIGH/CRITICAL", "why_vague": "Nu există o scală definită. HIGH față de ce baseline? P&L impact > $X? Frecvență > N ori/săptămână? Detectabil automat sau doar la inspecție manuală?"},
@@ -198,5 +198,5 @@
       "vote": "GO",
       "modify_request": "Implementează fix-urile în ordinea: (1) Quick wins sub 30 min first; (2) Verifică bugurile deja fixate și scoate-le din listă; (3) Lasă cache/memory issues pentru ultimul (impact practic minim pentru scripturi batch)."
     }
-  }
+  }}]
 }

@@ -2,7 +2,7 @@
   "_description": "Smoke-test fixture for senate_synth.py. Known input -> known verdict. Use: cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py. Expected: verdict='MODIFY', vote_counts={GO:3,MODIFY:3,STOP:1}, voters_present=7, warnings includes one 'omitted/empty stress_scenarios' (dimon emits empty list deliberately), no 'unrecognized vote' warnings.",
   "proposal": "Fixture proposal: pretend audit on a trivial code change. Used only to verify senate_synth.py contract end-to-end.",
   "label": "fixture-smoke",
-  "senators": {
+  "rounds": [{"round": 1, "senators": {
     "wittgenstein": {
       "vague_terms_found": [{"term": "trivial", "in_context": "fixture proposal", "why_vague": "no metric"}],
       "operational_definitions_needed": [],
@@ -57,5 +57,5 @@
       "vote": "MODIFY",
       "modify_request": "Confirm fixture is excluded from production telemetry."
     }
-  }
+  }}]
 }
