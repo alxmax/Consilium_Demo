@@ -83,8 +83,7 @@ Skill-ul se activează automat când keywords precum "review PR", "evaluate chan
 - **Dialectic** — two-pass; Pass-2 vede output-ul celorlalte voci
 - **Trias** — 3 personalități × 3 voci (Pioneer/Architect/Steward); 9 sub-agenți
 - **`trias_split`** — Trias cu Sonnet Generator + Haiku verifiers
-- **`parallel_skeptic`** / **`dialectic_skeptic`** — modul de bază + 1 voce focală Skeptic
-- **`skeptic_on_chosen`** — flag composabil peste orice mod
+- **`skeptic_on_chosen`** — flag composabil peste orice mod (+1 sub-agent peste cost). Înlocuiește modurile fixe `parallel_skeptic` / `dialectic_skeptic` (colapsate 2026-05-17; nume vechi în `validate_report.py` MODE enum pentru backward-compat)
 - **Senate** — audit pe modificările skill-ului însuși (7 senatori, on-demand)
 
 Parallel-ul ca opțiune selectabilă a fost retras în RUND2; rămâne ca auto cross-check când `magnitude=critical ∧ reversibility=irreversible`.
