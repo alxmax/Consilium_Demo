@@ -103,6 +103,8 @@ The `id` field must be preserved verbatim from input through all voice outputs.
       },
       "irreversibility_flag": false,
       "rollback_recipe": [],
+      "mitigation_steps": [],
+      "irreversible": false,
       "notes": "one sentence summary"
     }
   ]
