@@ -11,18 +11,8 @@ This script consumes the senator JSON outputs and produces one bundle:
   - warnings (only structural anomalies; absent senators surface via
     senators_absent rather than warning duplication)
 
-Two input modes (backward compatible):
+Input format (multi-round, Laws 1-5 active):
 
-  1. Legacy single-round (Law 1 + Law 5 active, Laws 2-4 N/A):
-      {
-        "proposal": "<text>",
-        "label":    "<short>",
-        "senators": {"wittgenstein": {...}, ...},
-        "absent":   ["<senator_name>", ...]    # optional
-      }
-
-  2. Multi-round (Laws 2-4 active — cross-questions, blocaj resolution,
-     final-only synthesis):
       {
         "proposal": "<text>",
         "label":    "<short>",
@@ -136,36 +126,6 @@ def normalize_vote(raw) -> str | None:
     upper = raw.strip().upper()
     return upper if upper in VOTES else None
 
-
-def normalize_rounds(data: dict) -> tuple[list[dict], bool]:
-    """Return (rounds_list, is_multi_round_input).
-
-    - Multi-round input: data["rounds"] is a non-empty list of {round, senators}.
-    - Legacy single-round input: data["senators"] holds the per-senator outputs.
-
-    The returned list always has the shape [{"round": <int>, "senators": {...}}, ...]
-    so downstream code is uniform. is_multi_round_input is True only when the
-    user explicitly supplied data["rounds"] — used to decide which extra bundle
-    fields to emit (Laws 2+4 metadata only on multi-round; Law 3 blocaj_pending
-    emitted on both when verdict=MODIFY).
-    """
-    rounds_in = data.get("rounds")
-    if isinstance(rounds_in, list) and rounds_in:
-        rounds = []
-        for i, r in enumerate(rounds_in):
-            if not isinstance(r, dict):
-                continue
-            senators = r.get("senators")
-            if not isinstance(senators, dict):
-                continue
-            rounds.append({"round": r.get("round", i + 1), "senators": senators})
-        if rounds:
-            return rounds, True
-    # Legacy single-round
-    senators = data.get("senators")
-    if not isinstance(senators, dict):
-        senators = {}
-    return [{"round": 1, "senators": senators}], False
 
 
 def collect_final_outputs(rounds: list[dict]) -> dict[str, dict]:
@@ -416,7 +376,6 @@ def slugify(label: str) -> str:
 def build_bundle(
     proposal: str,
     rounds: list[dict],
-    is_multi_round_input: bool,
     blocaj_resolution,
     absent: list[str],
     label: str,
@@ -485,13 +444,12 @@ def build_bundle(
                 f"code_audit: {len(code_audit_suspects)} senator(s) marked semantic_suspect "
                 f"(zero file refs or skill-vocabulary leak): {', '.join(code_audit_suspects)}"
             )
-    if is_multi_round_input:
-        bundle["rounds"] = rounds
-        bundle["position_changes"] = position_changes
-        bundle["cross_questions_used"] = cq_used
-        if blocaj_info:
-            bundle["blocaj_resolution"] = blocaj_info
-            bundle["vote_counts_pre_blocaj"] = raw_counts
+    bundle["rounds"] = rounds
+    bundle["position_changes"] = position_changes
+    bundle["cross_questions_used"] = cq_used
+    if blocaj_info:
+        bundle["blocaj_resolution"] = blocaj_info
+        bundle["vote_counts_pre_blocaj"] = raw_counts
     if blocaj_pending:
         bundle["blocaj_pending"] = blocaj_pending
     return bundle
@@ -556,8 +514,8 @@ def main() -> int:
     parse_args()
     data = load_json_stdin("senate_synth.py")
     validate_keys(data, ["proposal"], "senate_synth input")
-    if "rounds" not in data and "senators" not in data:
-        print("senate_synth: input must contain either 'rounds' or 'senators'", file=sys.stderr)
+    if "rounds" not in data:
+        print("senate_synth: input must contain 'rounds' list; legacy 'senators' format no longer supported", file=sys.stderr)
         return 1
 
     proposal = str(data["proposal"]).strip()
@@ -565,7 +523,21 @@ def main() -> int:
         print("senate_synth: 'proposal' must be a non-empty string", file=sys.stderr)
         return 1
 
-    rounds, is_multi_round_input = normalize_rounds(data)
+    rounds_raw = data["rounds"]
+    if not isinstance(rounds_raw, list) or not rounds_raw:
+        print("senate_synth: 'rounds' must be a non-empty list", file=sys.stderr)
+        return 1
+    rounds = []
+    for i, r in enumerate(rounds_raw):
+        if not isinstance(r, dict):
+            continue
+        senators = r.get("senators")
+        if not isinstance(senators, dict):
+            continue
+        rounds.append({"round": r.get("round", i + 1), "senators": senators})
+    if not rounds:
+        print("senate_synth: 'rounds' contains no valid senator entries", file=sys.stderr)
+        return 1
 
     absent = data.get("absent", [])
     if not isinstance(absent, list):
@@ -584,7 +556,7 @@ def main() -> int:
     is_consilium_contribution = bool(data.get("is_consilium_contribution", False))
 
     bundle = build_bundle(
-        proposal, rounds, is_multi_round_input, blocaj_resolution,
+        proposal, rounds, blocaj_resolution,
         absent, label, timestamp,
         mode=mode, files_touched=files_touched,
         is_consilium_contribution=is_consilium_contribution,

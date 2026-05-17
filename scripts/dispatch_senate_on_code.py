@@ -1,5 +1,10 @@
 """Pre-compute and validate the input fields required for `senate --on-code`.
 
+MAINTENANCE-DEFERRED: This script is frozen at current coverage until Senate
+usage exceeds 5 runs/month. Do not add features or tests until gate criteria
+are met (see SKILL.md Drafts footnote for gate definition).
+
+
 This script does NOT dispatch sub-agents — that is the orchestrator's job
 (Claude in `/consilium senate --on-code`). This script's contract is to
 produce the JSON input for `senate_synth.py` (and the per-senator prompts)

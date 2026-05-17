@@ -70,7 +70,7 @@ def make_payload(
     return {
         "proposal": proposal,
         "label": label,
-        "senators": senators,
+        "rounds": [{"round": 1, "senators": senators}],
         "absent": absent or [],
     }
 
@@ -544,21 +544,6 @@ def test_deeply_split_resolved_via_blocaj() -> tuple[bool, str]:
     return True, "4-3 + blocaj (musk→socrate) -> GO 5/2, DEEPLY_SPLIT bypassed"
 
 
-def test_legacy_single_round_omits_multi_round_fields() -> tuple[bool, str]:
-    """Backward compat: legacy {senators: ...} input doesn't emit Law-2+4 fields.
-    blocaj_pending is Law 3 and IS emitted in legacy when verdict in (MODIFY, DEEPLY_SPLIT)."""
-    code, bundle, stderr = run_synth(make_payload(
-        proposal="legacy smoke", senators=all_voting("GO"), label="smoke-legacy"))
-    guard = _require_bundle(code, bundle, stderr)
-    if isinstance(guard, tuple):
-        return guard
-    bundle = guard
-    forbidden = {"rounds", "position_changes", "cross_questions_used"}
-    present = forbidden & set(bundle.keys())
-    if present:
-        return False, f"legacy input must not emit multi-round fields, found: {present}"
-    return True, "legacy single-round input omits rounds/position_changes/cq_used (blocaj_pending emitted only when verdict=MODIFY)"
-
 
 def test_collision_safe_write() -> tuple[bool, str]:
     """Forcing same-timestamp collision: pre-write a stub at the path the next
@@ -615,7 +600,6 @@ TEST_GROUPS = [
         ("deeply_split_blocaj_bypass",  test_deeply_split_resolved_via_blocaj),
     ]),
     ("Compat & persistence", [
-        ("legacy_single_round_compat",  test_legacy_single_round_omits_multi_round_fields),
         ("bundle_persisted",            test_bundle_persisted_and_valid_json),
         ("collision_safe_write",        test_collision_safe_write),
     ]),
