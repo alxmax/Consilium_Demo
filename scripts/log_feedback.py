@@ -45,7 +45,7 @@ import argparse
 import hashlib
 import json
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from utils import atomic_write_text, force_utf8_streams, load_json_stdin
@@ -57,9 +57,19 @@ HEADER_LINES = ()  # legacy MD header no longer used
 RUN_PATH_MAP = ".run_path_map.json"
 
 
-def _fingerprint(date_str: str, chosen: str, context: str) -> str:
-    """16-char hex fingerprint for a feedback entry (used as sidecar map key)."""
-    raw = f"{date_str}|{chosen}|{context[:30]}"
+def _fingerprint(date_str: str, chosen: str, context: str, run_id: str | None = None) -> str:
+    """16-char hex fingerprint for a feedback entry (used as sidecar map key).
+
+    ``run_id`` is the basename of the run JSON file (e.g. ``2026-05-17_foo.json``).
+    When provided it makes the fingerprint unique per run, preventing collisions
+    between same-day entries with the same chosen+context prefix.  When absent
+    (e.g. when recomputing fingerprints for rows already in FEEDBACK.html that
+    were written without a run_id), we fall back to a microsecond-precision
+    timestamp component so that two distinct logging calls on the same day
+    cannot silently collide on the old 30-char context truncation.
+    """
+    disambiguator = run_id if run_id else datetime.now().strftime("%f")
+    raw = f"{date_str}|{chosen}|{context}|{disambiguator}"
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
@@ -159,13 +169,16 @@ def build_entry(
     }
 
 
-def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> bool:
+def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> int:
     """Round-trip the HTML: parse existing rows, append, re-render.
 
-    Returns True if a new row was written, False if the entry was a duplicate
-    of an existing row (same fingerprint) and was skipped. Callers can use the
-    return value to track how many real appends happened — important for
-    audit_feedback's --backfill summary.
+    Returns:
+        0  — new row written successfully.
+        3  — duplicate fingerprint detected; row skipped (caller should exit 3
+             so the caller can distinguish "duplicate" from "success").
+
+    Callers can use the return value to track how many real appends happened —
+    important for audit_feedback's --backfill summary.
     """
     import importlib.util
     here = Path(__file__).resolve().parent
@@ -187,10 +200,13 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> bool
     runs_dir = feedback_path.parent / "runs"
     run_map = _load_map(runs_dir)
 
-    # Idempotent on re-run: same (date, chosen, context[:30]) fingerprint
-    # means the row is already logged. Re-runs would otherwise silently
-    # duplicate entries each time the orchestrator pipes the same report.
-    new_fp = _fingerprint(entry["date"], entry["chosen"], entry["context"])
+    # Idempotent on re-run: same fingerprint (now incorporating run_id so
+    # same-day same-chosen entries from *different* runs are never silently
+    # merged) means the row is already logged.
+    run_id = Path(run_path).name if run_path else None
+    new_fp = _fingerprint(entry["date"], entry["chosen"], entry["context"], run_id=run_id)
+    # Existing rows were stored without run_id; reconstruct their fingerprints
+    # the same way they were originally written (run_id=None).
     existing_fps = {
         _fingerprint(row["date"], row["chosen"], row["context"]) for row in existing
     }
@@ -205,7 +221,7 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> bool
         if run_path:
             run_map[new_fp] = run_path
             _save_map(runs_dir, run_map)
-        return False
+        return 3
 
     # Restore run_path for existing rows from sidecar map so drill-down survives re-renders.
     entries = [
@@ -232,7 +248,7 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> bool
         _save_map(runs_dir, run_map)
 
     atomic_write_text(feedback_path, render_mod.render(entries, runs_dir))
-    return True
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -283,7 +299,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.dry_run:
         feedback_path = Path(args.feedback) if args.feedback else Path.cwd() / "FEEDBACK.html"
-        append_entry(feedback_path, entry, args.run_path)
+        rc = append_entry(feedback_path, entry, args.run_path)
+        if rc != 0:
+            # Exit 3 means duplicate detected — propagate so callers can distinguish
+            # "duplicate skipped" from "success".
+            print(f"{entry['date']} | {entry['context']} | {entry['chosen']} | {entry['outcome']} | {entry['note']}")
+            return rc
 
     print(f"{entry['date']} | {entry['context']} | {entry['chosen']} | {entry['outcome']} | {entry['note']}")
     return 0
