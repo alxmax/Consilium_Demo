@@ -63,7 +63,7 @@ def strip_for_conservator(data: dict) -> dict:
     verdicts = data.get("verdicts") or []
     out = []
     for v in verdicts:
-        if not v.get("valid"):
+        if not isinstance(v, dict) or not v.get("valid"):
             continue
         cid = v["id"]
         if cid not in candidates:
