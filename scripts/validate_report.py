@@ -127,6 +127,7 @@ def _validate_philosophical_aurelius_control(voice_output: dict) -> list[str]:
 
 def _validate_philosophical_confucius(voice_output: dict) -> list[str]:
     # confucius-strict validation removed when precedent_search deprecated 2026-05-17
+    del voice_output
     return []
 
 
