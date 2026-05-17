@@ -122,6 +122,8 @@ echo '{"candidates": [...], "chosen": "approach_id"}' | python scripts/confidenc
 ```
 Returnează `{confidence, agreement, separation}`. Dacă `chosen` e `null` (toți vetoiți), `confidence` e `null`.
 
+> **Calibrare (audit R2 2026-05-17):** `agreement` măsoară divergența între roluri în cadrul UNUI run — nu stabilitatea inter-run. Scorurile Conservator sunt ancorate prin formulă categorică (vezi `conservator.md`); scorurile Generator/Control sunt float-uri self-assigned neancorate. Un al doilea run cu același input poate produce scoruri diferite (pstdev estimat 0.12–0.18 pe `risk_score`). Valoarea `confidence` nu e o probabilitate calibrată — e un semnal de consistență internă.
+
 **Quoting:** Evită construirea de Python inline via `-c "..."` cu payload JSON — apostrofurile din cod pot rupe quoting-ul bash. Folosește pipe pe stdin (ca mai sus) sau flag-ul `--input <file>`.
 
 ### 5c. Meta-critic (auto, advisory)

@@ -42,6 +42,8 @@ from utils import force_utf8_streams
 VOICES = ("generator", "control", "conservator")
 DEFAULT_VETO = 0.8
 RELAXED_VETO_CAP = 0.85
+# Predicted inter-run pstdev for conservator risk_score is 0.12–0.18 (Dimon R2 2026-05-17).
+VETO_UNCERTAINTY_BAND = 0.15
 # Sigmoid risk penalty parameters: 50% at risk=0.5, ~0.79 at 0.7, ~0.93 at 0.85
 SIGMOID_MIDPOINT = 0.5
 SIGMOID_STEEPNESS = 10.0
@@ -176,7 +178,7 @@ def aggregate_conservative_override(
         ranked.append((score, c))
     ranked.sort(key=lambda t: t[0], reverse=True)
     winner = ranked[0][1]
-    return {
+    result = {
         "scheme": "conservative_override",
         "veto_threshold": veto_threshold,
         "chosen": winner["id"],
@@ -184,6 +186,11 @@ def aggregate_conservative_override(
         "vetoed": vetoed,
         "weights": dict(zip(VOICES, w)),
     }
+    uncertain = [v["id"] for v in vetoed if abs(v["risk"] - veto_threshold) <= VETO_UNCERTAINTY_BAND]
+    if uncertain:
+        result["veto_uncertain"] = True
+        result["veto_uncertain_ids"] = uncertain
+    return result
 
 
 def _sigmoid_penalty(risk: float) -> float:
@@ -310,7 +317,7 @@ def aggregate_team_vote(personalities: list[dict], candidates: list[dict]) -> di
 
 
 # === RUND2 ===
-def _rund2_methodology_notes(g: dict, c: dict, _cons: dict) -> str:
+def _rund2_methodology_notes(g: dict, c: dict) -> str:
     notes = []
     if g.get("abstain", {}).get("triggered"):
         notes.append(f"Generator abstain: {g['abstain'].get('reason', '?')}")
@@ -451,7 +458,7 @@ def aggregate_rund2(
         "chosen": preferred,
         "confidence_per_option": confidence_per_option,
         "confidence_methodology": methodology_confidence,
-        "methodology_notes": _rund2_methodology_notes(generator_out, control_out, conservator_out),
+        "methodology_notes": _rund2_methodology_notes(generator_out, control_out),
     }
     if methodology_confidence < 0.5:
         result["warning"] = "Deliberare incompletă — consideră rezultatul ca preliminar"
