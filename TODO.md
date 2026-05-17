@@ -112,7 +112,7 @@ Din `TODO_RUND2.md` Anexa D — decizii personale care nu blochează implementar
 
 - [ ] **Veto budget pentru `meta_recommendation`: 5/lună acceptabil?** Aurelius+Napoleon au propus, dar numărul e arbitrar. Poate vrei 10 sau 3.
 - [ ] **Outcome tracking — manual sau automat?** Pentru trading se poate automat din MT4. Pentru altele cere completare manuală. Dacă nu, `principle_extraction` nu se activează niciodată.
-- [ ] **Napoleon rămâne senator după empirical validation?** Phase 14B din TODO_RUND2 verifică over-fit la P3. Decide după validare.
+- [x] ~~**Napoleon rămâne senator după empirical validation?**~~ — ✅ CLOSED (2026-05-17). **Verdict: STAYS.** Analiza pe 17 senate runs (N=15 voturi valide): participation 88%, distribuție bi-directional (GO=5, MODIFY=7, STOP=3), disagreement-cu-verdict 43% bi-directional (3× mai permissive, 2× mai cautious), rationale-uri cross-domain (ROI/terrain/cost/deferment/narrowing) — zero semnal P3 over-fit. Detalii: `experiments/napoleon-validation-2026-05-17.md`. Re-evaluează dacă apare >3 STOP consecutiv pe propuneri neagresive în următoarele 10 runs.
 
 Din `TODO_SENAT.md` Anexa D:
 
