@@ -14,30 +14,39 @@ Acest repo este sursa skill-ului `consilium`. Pentru a-l **folosi**, invocă `/c
 
 ## Zone autoritative (atinge cu grijă)
 
-- **`prompts/*.md`** — citite de fiecare voce la rulare. O schimbare aici afectează toate deliberările viitoare → `regression_risk` mare în Conservator. Preferă să injectezi context suplimentar în input-ul vocii, nu în prompt.
+- **`prompts/voices/*.md`** — citite de fiecare voce la rulare. O schimbare aici afectează toate deliberările viitoare → `regression_risk` mare în Conservator. Preferă să injectezi context suplimentar în input-ul vocii, nu în prompt.
   - Vocile core: `generator.md`, `control.md`, `conservator.md` — rulate în orice mod
-  - `skeptic.md` — focal challenger, rulat doar în `parallel_skeptic` și `dialectic_skeptic`
+  - Pass-2: `generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md` — folosite doar de Dialectic
+  - `skeptic.md` — focal challenger, rulat în `parallel_skeptic`, `dialectic_skeptic`, `skeptic_on_chosen`
   - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended peste core voices în `trias` și `trias_split`
+  - `frontend_domain_lens.md` — draft experimental (Senate R2), fără dispatch entry încă
+- **`prompts/senators/*.md`** — cei 7 senatori folosiți doar în mod `senate` (audit pe skill, nu pe cod user). Schimbarea unui prompt modifică distribuția de verdicts pentru audit-uri viitoare.
 - **`SKILL.md` Constitution + workflow** — schimbarea pașilor 1-6 rupe formatul JSON așteptat de `aggregator.py` și `validate_report.py`. Modifică deodată ambele.
 
 ## Moduri disponibile
 
-Pe lângă cele 4 moduri originale (Sequential, Parallel, Dialectic, Trias), skill-ul documentează 3 moduri suplimentare în SKILL.md:
+Modurile selectabile de user (SKILL.md le documentează în detaliu):
 
-- **`parallel_skeptic`** — Parallel + 1 voce Skeptic focală pe chosen (4 sub-agenți, 1.33× Parallel). Pentru medium-stakes când conf cade în `[0.5, 0.7]`.
-- **`dialectic_skeptic`** — Dialectic + 1 voce Skeptic focală pe chosen (7 sub-agenți, ~2.3× Parallel). Cross-review + challenge focal final.
-- **`trias_split`** — Trias cu model override (Sonnet Gen + Haiku verifiers, ~3.3× Parallel). Anti-zgomot pe probleme triviale; shallow-amplifier pe probleme cu constraint implicit (vezi `experiments/p3-car-wash.html`).
+- **Sequential** (default RUND2) — Conservator → Generator → Control single-context.
+- **Dialectic** — two-pass cu cross-review în Pass-2 (`scripts/dialectic_merge.py`).
+- **Trias** — 3 personalități × 3 voci, vot democratic peste cele 3 chosen-uri (9 sub-agenți).
+- **`trias_split`** — Trias cu Sonnet Generator + Haiku verifiers (~3.3× Parallel). Shallow-amplifier pe probleme cu constraint implicit — vezi `experiments/p3-car-wash.html`.
+- **`parallel_skeptic`** — Parallel intern + 1 Skeptic focal pe chosen (4 sub-agenți, 1.33× Parallel). Pentru medium-stakes când conf cade în `[0.5, 0.7]`.
+- **`dialectic_skeptic`** — Dialectic + 1 Skeptic focal post-Pass-2 (7 sub-agenți, ~2.3× Parallel).
+- **`skeptic_on_chosen`** — flag composabil peste orice mod de bază. Advisory by default; opt-in override via `--skeptic-can-override`.
 
-Aceste 3 moduri sunt **conceptuale + documentate**, fără cod dedicat (orchestrate prin dispatch standard cu prompts existente + skeptic.md). Pentru testare empirică pe P3, vezi `experiments/run2-p3-reruns.html`.
+**Parallel removed (RUND2).** Nu mai e selectabil de user. Rămâne ca auto cross-check intern când `magnitude=critical ∧ reversibility=irreversible`, plus audit silențios la fiecare 20 runs.
+
+Modul **`senate`** are scope distinct: audit pe **modificările skill-ului însuși** (7 senatori), nu pe cod user. On-demand only.
 
 ## Fișiere locale (gitignored)
 
-- `FEEDBACK.md` — jurnal personal, păstrat pe disc.
-- `runs/*.json` — output-urile fiecărei deliberări (păstrate `runs/README.md` ca singur tracked).
+- `FEEDBACK.html` — jurnal de uz real, append-only via `scripts/log_feedback.py` (atomic writes). Vezi `scripts/migrate_feedback_md_to_html.py` pentru istoricul migrării din format `.md`.
+- `runs/*.json` — output-urile fiecărei deliberări (păstrate `runs/README.md` și `runs/senate/` ca singurele tracked).
 
 ## Self-improvement loop
 
-Când editezi skill-ul însuși: rulează `/consilium` pe propria schimbare. Dacă modul paralel e activat, vocile sunt sub-agenți independenți — dovadă mai puternică decât deliberarea single-context. Salvează run-ul în `runs/` și adaugă o linie în `FEEDBACK.md`.
+Când editezi skill-ul însuși: rulează `/consilium` pe propria schimbare. Pentru schimbări la prompts core / arhitectură, modul `senate` (7 senatori) e versiunea mai puternică a self-improvement-ului decât deliberarea single-context. Salvează run-ul în `runs/` și loghează în `FEEDBACK.html` prin `log_feedback.py`.
 
 ## Git workflow
 
