@@ -31,11 +31,9 @@ Modurile selectabile de user (SKILL.md le documentează în detaliu):
 - **Dialectic** — two-pass cu cross-review în Pass-2 (`scripts/dialectic_merge.py`).
 - **Trias** — 3 personalități × 3 voci, vot democratic peste cele 3 chosen-uri (9 sub-agenți).
 - **`trias_split`** — Trias cu Sonnet Generator + Haiku verifiers (~3.3× Parallel). Shallow-amplifier pe probleme cu constraint implicit — vezi `experiments/p3-car-wash.html`.
-- **`parallel_skeptic`** — Parallel intern + 1 Skeptic focal pe chosen (4 sub-agenți, 1.33× Parallel). Pentru medium-stakes când conf cade în `[0.5, 0.7]`.
-- **`dialectic_skeptic`** — Dialectic + 1 Skeptic focal post-Pass-2 (7 sub-agenți, ~2.3× Parallel).
-- **`skeptic_on_chosen`** — flag composabil peste orice mod de bază. Advisory by default; opt-in override via `--skeptic-can-override`.
+- **`skeptic_on_chosen`** — flag composabil peste orice mod de bază (+1 sub-agent peste cost). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-trigger pe `confidence ∈ [0.5, 0.7]`. Înlocuiește modurile fixe `parallel_skeptic` (= `parallel + skeptic_on_chosen`) și `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — colapsate pe 2026-05-17, nume vechi rămân în `validate_report.py` MODE enum pentru backward-compat.
 
-**Parallel removed (RUND2).** Nu mai e selectabil de user. Rămâne ca auto cross-check intern când `magnitude=critical ∧ reversibility=irreversible`, plus audit silențios la fiecare 20 runs.
+**Parallel removed (RUND2).** Nu mai e selectabil direct de user (doar via `parallel + skeptic_on_chosen`). Rămâne ca auto cross-check intern când `magnitude=critical ∧ reversibility=irreversible`, plus audit silențios la fiecare 20 runs.
 
 Modul **`senate`** are două scope-uri: (a) audit pe **modificările skill-ului însuși** (default, well-tested, 7 senatori); (b) audit pe **cod user** via flag `--on-code` (EXPERIMENTAL_DRAFT — vezi gate empiric în SKILL.md). On-demand only.
 

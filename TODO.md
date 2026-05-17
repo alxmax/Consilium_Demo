@@ -784,6 +784,47 @@ Decizie soft-pozitivă, prioritate scăzută.
 
 ## 🏛 Hotărâri Senate
 
+### Hotărârea Senate — refactor-bundle-7items · 17 Mai 2026 · MODIFY (GO 1 · MODIFY 6 · STOP 0)
+
+> **Propunere:** 7-item refactor bundle to reduce Consilium over-engineering (S1 dedup transcripts + S2 collapse skeptic modes + S3 veto cascade 4→2 + S4 delete Dialectic + S5 scripts cleanup + B cross-Qs to user + C R2 prompt on MODIFY). User narrowed scope post-R1 (S3+S4 deferred per Napoleon split); B refined (factual→user, opinion-senator→internal per user Q3).
+>
+> Bundle JSON: `runs/senate/2026-05-17_122622-refactor-bundle-7items.json`. Position changes R1→R2: aurelius MODIFY→GO (deferral resolves concerns), musk GO→MODIFY (wants pre-delete grep table).
+>
+> **Formatul Opt B (item-grouped cu acceptance criteria cross-referenced)** — supersede auto-generated senator-grouped entry (vezi `feat/dedup-senate-transcript` branch pentru forma originală).
+
+**Items shipped:**
+
+- [x] **S1 — dedup transcript scripts** ✅ commit `69bff98`, branch `feat/dedup-senate-transcript`, -742L net
+  - AC met: pre-delete grep audit table în PR description [MUSK]; smoke test 19/19 [DIMON]; live ref `senate_synth.py:527` preservată [DIMON silent-failure check]
+- [x] **S2 — collapse skeptic mode sections** ✅ commit `65f08c5`, branch `feat/collapse-skeptic-modes`, -58L net, modes 8→6
+  - AC met: pre-delete grep audit table [MUSK]; `validate_report.py` MODE enum unchanged pentru backward-compat istorice [DIMON]; smoke 19/19 [DIMON]
+
+**Items deferred to fresh session(s):**
+
+- [ ] **S5 — scripts/ cleanup (~9 candidates: `migrate_feedback_md_to_html.py`, `senate_todo.py`, `precedent_search.py`, others TBD)**
+  - AC: grep table `{script → referenced_in → verdict}` în PR description [MUSK]
+  - AC: muta întâi în `scripts/deprecated/`, delete final după un sprint [MUSK]
+  - AC: verifică zero orphan refs post-delete (priors.py, usage.py, audit_feedback.py) [DIMON]
+- [ ] **B-refined — cross-questions UX (post-R1 factual→user, opinion-senator→internal)**
+  - AC: classification rule documentată per cross-Q type (factual vs opinion) [USER Q3]
+  - AC: explicit timeout T default 30min cu autoresolve fallback + audit trail pentru Q-urile autoresolved [DIMON]
+  - AC: cross-Qs reformulate în limbaj user-friendly (nu verbatim din output senatorial) [SOCRATE]
+- [ ] **C — explicit prompt on MODIFY (R2 sau accept)**
+  - AC: inline 1-sentence definition pentru R2 vs accept în prompt [SOCRATE]
+  - AC: soft convergence signal (flag user după 3 cicluri R2 fără verdict change) [DIMON]
+  - AC: default "accept" preserves status quo [USER Q4 declined hard cap]
+
+**Deferred — necesită empirical audit înainte de execuție:**
+
+- [ ] **S3 — veto cascade 4→2** — Aurelius propune compromis 4→3 (păstrează REWORK+ESCALATE). Necesită coverage audit pe `aggregator.py`: care din cele 7 routing outcomes apar real în `runs/*.json`? [MUSK+AURELIUS]
+- [ ] **S4 — delete Dialectic mode** — Necesită empirical usage data din `runs/` (Dialectic frequency vs Sequential) + migration handler în `priors.py`/`usage.py` pentru mode=dialectic orphan runs [DIMON+SOCRATE]
+
+**Cross-cutting concerns (toate item-urile):**
+
+- [ ] Operational defs pentru "unused" / "non-blocking" / "composable" / disambiguare semantică R2 (B vs C) [WITTGENSTEIN]
+- [ ] Falsification criteria pentru SUCCESS CRITERION — observable failure signals per item [SOCRATE+WITTGENSTEIN]
+- [ ] Heterogeneous bundle pattern → MODIFY precedent confirmat; split done partially via Q5 [CONFUCIUS+NAPOLEON]
+
 ### Hotărârea Senate — per-voice-dispatch-pinning · 17 Mai 2026 · MODIFY (GO 3 · MODIFY 3 · STOP 1)
 
 > **Propunere:** Add canonical dispatch-defaults table to SKILL.md mapping each voice/senator prompt path to (default model, default tools). Zero new files, zero deletions. 1 file edit (~15-25 lines diff on SKILL.md o…
