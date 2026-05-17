@@ -82,6 +82,20 @@
 
 ## ❌ NEIMPLEMENTAT
 
+### Usage & Efficiency reporting — PENDING
+
+> **Status:** PENDING (proposal-only, 2026-05-17). Full design în `experiments/usage-efficiency-proposal-pending.md`. Captured via `/consilium`. No code change yet — awaiting explicit go-ahead.
+
+- [ ] **Goal:** per-mode efficiency score (`total_tokens / OK_outcomes`) comparable across Sequential / Parallel / Dialectic / Trias / Senate / etc.
+- [ ] **Token capture:** hybrid — estimate `chars/4` per dispatch + record `latency_ms` + `dispatch_count`.
+- [ ] **Senate telemetry gap:** `runs/senate/*.json` currently emits 0 usage data; `senate_synth.py` to accept `telemetry` kwarg.
+- [ ] **New script:** `scripts/efficiency.py` — CLI `--by-mode | --compare <a> <b> | --since <date>`, emits `tokens_per_OK` per mode + ranking.
+- [ ] **`usage.py` extension:** walk `runs/senate/` + add `senators` voice bucket + `--mode` filter.
+- [ ] **SKILL.md Step 6c:** mandatory telemetry emission discipline after each run (chars/4 estimate).
+- [ ] **UI tab:** new "Usage & Efficiency" tab in `docs/architecture.html` cu bar chart per mode.
+- [ ] **Open questions to resolve before impl:** Senate verdict → OK/BAD mapping, tokens_in inflation policy, Trias schema (nested vs flat), eval harness scenario.
+- [ ] **Estimated:** ~425 LOC across 6 files.
+
 ### Philosophical voice variants — REMAINING
 
 > **Status (audit 2026-05-17 via /consilium):** PR #62 (`c358484`) a livrat 3 variante + script + tests. Wittgenstein și Aurelius (conservator) au fost absorbiți în vocile core în RUND2.
