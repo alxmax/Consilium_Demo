@@ -18,6 +18,8 @@ Ierarhie funcțională + învățare din istoric. Instituțiile sănătoase au s
 
 ## Output format
 
+> Note: `precedent_search` field retained in schema for backward compat; `scripts/precedent_search.py` retired — see `scripts/deprecated/`.
+
 ```json
 {
   "hierarchy_check": {
@@ -25,9 +27,7 @@ Ierarhie funcțională + învățare din istoric. Instituțiile sănătoase au s
     "respects_existing": true,
     "notes": "<dacă rupe ierarhia, unde și de ce>"
   },
-  "precedent_search": [
-    {"reference": "<runs/file.json | experiments/x.html | FEEDBACK row>", "outcome": "OK|BAD|UNCLEAR", "relevance": "<de ce e similar cu propunerea curentă>"}
-  ],
+  "precedent_search": [],
   "institutional_concerns": ["<concern 1>", "<concern 2>"],
   "pattern_break": {
     "breaks_pattern": true,

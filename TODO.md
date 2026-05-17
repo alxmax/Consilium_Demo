@@ -175,6 +175,8 @@ Total ~9 scenarii noi. Cere extensie a `run_evals.py` să accepte fixtures de fi
 Acum Control face types → logic → tests → style → goal-fit. Dacă candidatul nu adresează success_criterion, primele 4 verificări sunt irosite. Fix: mută goal-fit ca **pasul 0** în Task, înainte de types. Fail fast.
 
 #### 10. Cap pe stacking regression_risk reduction în Conservator · Prompt · Mediu · Mic
+> **Status (2026-05-17):** ✅ DONE — `prompts/voices/conservator.md` updated with cumulative cap −0.20.
+>
 Prompt-ul spune `-0.15` pentru test coverage dar nu specifică dacă se aplică și pentru feature flag și rollback < 3 pași simultan. Fix:
 ```
 regression_risk reduction: max cumulative −0.20, regardless of how many
@@ -190,6 +192,8 @@ and add "irreversible": true at candidate level.
 ```
 
 #### 12. `probe_change.py` data menționată explicit în Conservator Input · Prompt · Mediu · Mic
+> **Status (2026-05-17):** ✅ DONE — `prompts/voices/conservator.md` ## Input updated with Optional probe data.
+>
 `probe_change.py` produce `files_changed`, `lines_changed`, `churn` — date concrete dar prompt-ul nu menționează că le poate primi. Fix: adaugă în `## Input`:
 ```
 Optional: probe data — files_changed, lines_changed, churn_per_file (last N days).
@@ -360,7 +364,7 @@ Decizie soft-pozitivă, prioritate scăzută.
 | 9 | Goal-fit → pasul 0 în Control (INVESTIGATE) | Prompt | Mediu | Mic-Mediu |
 | 10 | Cap stacking regression_risk ✅ DONE | Prompt | Mediu | Mic |
 | 11 | Candidați ireversibili by nature | Prompt | Mediu | Mediu |
-| 12 | probe_change data în Conservator Input | Prompt | Mediu | Mic |
+| 12 | probe_change data în Conservator Input ✅ DONE | Prompt | Mediu | Mic |
 | 13 | Single retry la confidence scăzut ✅ DONE | Skill | Mediu | Mediu |
 | 14 | Meta-critic calitate deliberare ✅ DONE | Arch | Înalt | Mare |
 | 15 | Feedback din outcome real ✅ DONE | Arch | Înalt | Mare |

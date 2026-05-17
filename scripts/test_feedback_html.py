@@ -188,7 +188,7 @@ def test_migration_parses_legacy_md_and_emits_html():
             encoding="utf-8",
         )
         result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "migrate_feedback_md_to_html.py"),
+            [sys.executable, str(ROOT / "scripts" / "deprecated" / "migrate_feedback_md_to_html.py"),
              "--md", str(md_path),
              "--html", str(html_path),
              "--runs-dir", str(ROOT / "runs")],
