@@ -1,0 +1,8 @@
+{
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic",
+  "extraPaths": ["scripts"],
+  "exclude": [
+    ".claude/worktrees/**"
+  ]
+}
