@@ -20,6 +20,7 @@
   <button data-tab="voices"><span>Voices</span><span class="tab-sub">3 voci + 3 lenses + skeptic</span></button>
   <button data-tab="internals"><span>Internals</span><span class="tab-sub">memory tiers + flow patterns</span></button>
   <button data-tab="reference"><span>Reference</span><span class="tab-sub">files · git · dialectic · senate · todo</span></button>
+  <button data-tab="efficiency"><span>Efficiency</span><span class="tab-sub">tokens/OK · cost/mod</span></button>
 </nav>
 
 <div class="start-banner" id="startBanner">
@@ -1625,6 +1626,215 @@ flowchart LR
   </div>
 
   <div id="todoTooltip"><div class="tip-title"></div><div class="tip-body"></div></div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     EFFICIENCY TAB
+══════════════════════════════════════════════════════════════════ -->
+<section class="tab" id="efficiency">
+
+  <p style="color:var(--muted);font-size:13.5px;margin:0 0 28px;">
+    Câți tokeni costă fiecare <code>OK</code> per mod? Date live: <code style="color:#6ee7b7;">python -X utf8 scripts/efficiency.py --by-mode</code>.
+    Estimare chars/4 (±10–20%), comparabilă cross-mod.
+  </p>
+
+  <!-- ── 1. TELEMETRY PIPELINE ────────────────────────────────── -->
+  <h2>Pipeline: dispatch → telemetry → ranking</h2>
+  <div class="mermaid-wrap" style="max-width:900px;margin-bottom:32px;">
+    <div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+flowchart LR
+    D["dispatch\n(voce / senator)"]:::step
+    T["ceil(len·prompt / 4)\nceil(len·response / 4)\nlatency_ms"]:::est
+    V["bundle\ntelemetry.voices\n[voice_name]"]:::store
+    R["runs/*.json\n(persisted Step 6)"]:::store
+    E["efficiency.py\n--by-mode"]:::script
+    K["tokens/OK\nranking"]:::out
+    D --> T --> V --> R --> E --> K
+    K -.->|"live snapshot\n baked la rebuild"| H["architecture.html\nEfficiency tab"]:::html
+    classDef step  fill:#182338,stroke:#2a3f5f,color:#93c5fd
+    classDef est   fill:#2a2410,stroke:#5c4a14,color:#fbbf24
+    classDef store fill:#221830,stroke:#4c2a6b,color:#d8b4fe
+    classDef script fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    classDef out   fill:#11151c,stroke:#2d3441,color:#e5e7eb
+    classDef html  fill:#1a1a2e,stroke:#2d3441,color:#6b7280
+    </div>
+  </div>
+
+  <!-- ── 2. WHEN TO USE EACH MODE ────────────────────────────── -->
+  <h2>Routing: când alegi fiecare mod</h2>
+  <div class="mermaid-wrap" style="max-width:900px;margin-bottom:32px;">
+    <div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+flowchart TD
+    Q1{"reversible?"}:::q
+    Q2{"magnitude?"}:::q
+    Q3{"confidence\n∈ [0.5, 0.7]?"}:::q
+    Q4{"3 personalități\nnecesare?"}:::q
+    SQ["Sequential\n1×"]:::mode_sq
+    SK["+ skeptic_on_chosen\n+1 sub-agent"]:::mode_sk
+    TS["trias_split\n3.3×"]:::mode_ts
+    TR["trias\n9×"]:::mode_tr
+    DI["dialectic\n6×"]:::mode_di
+    SE["senate\n2.3×"]:::mode_se
+    SKIP["scope_gate skip\n(trivial diff)"]:::skip
+    Q1 -->|"irreversible\n+ critical"| SE
+    Q1 -->|"partial"| Q2
+    Q1 -->|"trivial"| SKIP
+    Q2 -->|"high / critical"| Q3
+    Q2 -->|"moderate"| SQ
+    Q3 -->|"da → challenger"| SK
+    Q3 -->|"nu"| Q4
+    Q4 -->|"da, medium"| TS
+    Q4 -->|"da, high-stakes"| TR
+    Q4 -->|"nu"| DI
+    classDef q     fill:#11151c,stroke:#2d3441,color:#e5e7eb
+    classDef mode_sq fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    classDef mode_sk fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    classDef mode_ts fill:#2a1a00,stroke:#7c3a00,color:#f97316
+    classDef mode_tr fill:#3a1212,stroke:#7c2020,color:#f87171
+    classDef mode_di fill:#2a2410,stroke:#5c4a14,color:#fbbf24
+    classDef mode_se fill:#221830,stroke:#4c2a6b,color:#d8b4fe
+    classDef skip  fill:#1a1a1a,stroke:#2d3441,color:#6b7280
+    </div>
+  </div>
+
+  <!-- ── 3. COST CHART + TABLE ────────────────────────────────── -->
+  <h2>Cost relativ <span style="color:var(--muted);font-weight:400;font-size:14px;">— baseline = Sequential 1×</span></h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start;margin-bottom:28px;">
+
+    <!-- SVG HORIZONTAL BAR CHART -->
+    <svg viewBox="0 0 460 296" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:460px;" role="img" aria-label="Cost per mode bar chart">
+      <!-- grid lines -->
+      <line x1="115" y1="0"   x2="115" y2="286" stroke="#1e2733" stroke-width="1"/>
+      <line x1="225" y1="6"   x2="225" y2="286" stroke="#1e2733" stroke-width="0.5" stroke-dasharray="3,3"/>
+      <line x1="335" y1="6"   x2="335" y2="286" stroke="#1e2733" stroke-width="0.5" stroke-dasharray="3,3"/>
+      <line x1="445" y1="6"   x2="445" y2="286" stroke="#1e2733" stroke-width="0.5" stroke-dasharray="3,3"/>
+      <!-- axis labels -->
+      <text x="115" y="6" text-anchor="middle" fill="#374151" font-size="9">0×</text>
+      <text x="225" y="6" text-anchor="middle" fill="#374151" font-size="9">3×</text>
+      <text x="335" y="6" text-anchor="middle" fill="#374151" font-size="9">6×</text>
+      <text x="445" y="6" text-anchor="middle" fill="#374151" font-size="9">9×</text>
+
+      <!-- sequential 1× → 36.7px -->
+      <text x="111" y="38"  text-anchor="end" fill="#e5e7eb" font-size="11">sequential</text>
+      <rect x="115" y="20"  width="37"  height="28" rx="3" fill="#6ee7b7"/>
+      <text x="156" y="37"  fill="#6ee7b7" font-size="10" font-weight="600">1×</text>
+      <text x="156" y="47"  fill="#4b5563" font-size="9">default</text>
+
+      <!-- senate ~2.3× → 84px -->
+      <text x="111" y="82"  text-anchor="end" fill="#e5e7eb" font-size="11">senate</text>
+      <rect x="115" y="64"  width="84"  height="28" rx="3" fill="#a78bfa"/>
+      <text x="203" y="81"  fill="#a78bfa" font-size="10" font-weight="600">2.3×</text>
+      <text x="203" y="91"  fill="#4b5563" font-size="9">7 senatori</text>
+
+      <!-- parallel 3× → 110px (auto-only, muted) -->
+      <text x="111" y="126" text-anchor="end" fill="#6b7280" font-size="11">parallel</text>
+      <rect x="115" y="108" width="110" height="28" rx="3" fill="#1a3050" stroke="#2a3f5f" stroke-dasharray="5,3"/>
+      <text x="229" y="125" fill="#6b7280" font-size="10">3× (auto-only)</text>
+
+      <!-- trias_split 3.3× → 121px -->
+      <text x="111" y="170" text-anchor="end" fill="#e5e7eb" font-size="11">trias_split</text>
+      <rect x="115" y="152" width="121" height="28" rx="3" fill="#f97316"/>
+      <text x="240" y="169" fill="#f97316" font-size="10" font-weight="600">3.3×</text>
+      <text x="240" y="179" fill="#4b5563" font-size="9">9 sub-agenți</text>
+
+      <!-- dialectic 6× → 220px -->
+      <text x="111" y="214" text-anchor="end" fill="#e5e7eb" font-size="11">dialectic</text>
+      <rect x="115" y="196" width="220" height="28" rx="3" fill="#fbbf24"/>
+      <text x="339" y="213" fill="#fbbf24" font-size="10" font-weight="600">6×</text>
+      <text x="339" y="223" fill="#4b5563" font-size="9">two-pass</text>
+
+      <!-- trias 9× → 330px -->
+      <text x="111" y="258" text-anchor="end" fill="#e5e7eb" font-size="11">trias</text>
+      <rect x="115" y="240" width="330" height="28" rx="3" fill="#f87171"/>
+      <text x="449" y="257" fill="#f87171" font-size="10" font-weight="600">9×</text>
+      <text x="449" y="267" fill="#4b5563" font-size="9">3 pers.</text>
+
+      <!-- skeptic note -->
+      <text x="115" y="292" fill="#6b7280" font-size="9">skeptic_on_chosen = +1 sub-agent pest modul de bază</text>
+    </svg>
+
+    <!-- TABLE -->
+    <table style="border-collapse:collapse;font-size:13px;width:100%;">
+      <thead>
+        <tr style="border-bottom:1px solid #2d3441;">
+          <th style="text-align:left;padding:8px 10px;color:#9ca3af;font-weight:500;">Mod</th>
+          <th style="text-align:center;padding:8px 6px;color:#9ca3af;font-weight:500;">Sub-agenți</th>
+          <th style="text-align:center;padding:8px 6px;color:#9ca3af;font-weight:500;">Cost ×</th>
+          <th style="text-align:center;padding:8px 6px;color:#9ca3af;font-weight:500;">tokens/OK†</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:7px 10px;color:#6ee7b7;font-weight:600;">sequential</td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">0</td>
+          <td style="text-align:center;padding:7px 6px;color:#6ee7b7;font-weight:600;">1×</td>
+          <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:7px 10px;color:#a78bfa;font-weight:600;">senate</td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">7</td>
+          <td style="text-align:center;padding:7px 6px;color:#a78bfa;font-weight:600;">~2.3×</td>
+          <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;opacity:0.45;">
+          <td style="padding:7px 10px;color:#60a5fa;font-weight:600;">parallel <span style="font-size:10px;">(auto)</span></td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">3</td>
+          <td style="text-align:center;padding:7px 6px;color:#60a5fa;font-weight:600;">3×</td>
+          <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:7px 10px;color:#f97316;font-weight:600;">trias_split</td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">9</td>
+          <td style="text-align:center;padding:7px 6px;color:#f97316;font-weight:600;">3.3×</td>
+          <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:7px 10px;color:#fbbf24;font-weight:600;">dialectic</td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">6</td>
+          <td style="text-align:center;padding:7px 6px;color:#fbbf24;font-weight:600;">6×</td>
+          <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 10px;color:#f87171;font-weight:600;">trias</td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">9</td>
+          <td style="text-align:center;padding:7px 6px;color:#f87171;font-weight:600;">9×</td>
+          <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── 4. METRIC FORMULA ────────────────────────────────────── -->
+  <h2>Metrică: <code style="color:#6ee7b7;">tokens / OK</code></h2>
+  <div class="mermaid-wrap" style="max-width:680px;margin-bottom:20px;">
+    <div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+flowchart LR
+    TI["tokens_in\n= ceil(len·prompt/4)"]:::t
+    TO["tokens_out\n= ceil(len·response/4)"]:::t
+    SUM["total_tokens\n= tokens_in + tokens_out\n(suma toate vocile)"]:::sum
+    OK["OK_count\n= FEEDBACK outcomes OK\n(binary gate)"]:::ok
+    M["tokens / OK\n← lower = better"]:::metric
+    TI --> SUM
+    TO --> SUM
+    SUM --> M
+    OK --> M
+    classDef t      fill:#2a2410,stroke:#5c4a14,color:#fbbf24
+    classDef sum    fill:#182338,stroke:#2a3f5f,color:#93c5fd
+    classDef ok     fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    classDef metric fill:#221830,stroke:#4c2a6b,color:#d8b4fe
+    </div>
+  </div>
+
+  <!-- ── 5. CAVEATS ──────────────────────────────────────────── -->
+  <p style="color:var(--muted);font-size:12.5px;margin-top:4px;line-height:1.6;">
+    † Date live după ≥3 runs cu telemetry per mod: <code>python -X utf8 scripts/efficiency.py --by-mode</code>. Telemetry se populează din Step 6 (orchestrator emite chars/4 per dispatch). ·
+    <code>tokens/OK</code> nu e comparabil direct cross-mod — un Senate OK implică deliberare mai profundă decât un Sequential OK.
+  </p>
 
 </section>
 
