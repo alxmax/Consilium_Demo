@@ -851,7 +851,6 @@ Decizie soft-pozitivă, prioritate scăzută.
 - [ ] **[DIMON]** Propunerea TREBUIE sa includa: (1) test de echivalenta output inainte/dupa, (2) strategie path resolution documentata, (3) plan pentru worktree duplicat, (4) comportament normalize_symbol definit pentru edge cases (None, simbol cu punct, simbol gol).
 - [ ] **[NAPOLEON]** Decompune in 3 PR-uri cu ROI diferit: PR1 (normalize_symbol in symbol_utils.py, 0.5h, GO imediat), PR2 (safe_str/safe_f, 0.5h, GO dupa verificare), PR3 (load_playbook, 4-6h, STOP pana la CI). Ordinea cost-efficiency: PR1 > PR2 >>> PR3 (PR3 posibil niciodata, ROI negativ).
 
-
 ### Hotărârea Senate — top5-diagnostic-audit · 17 Mai 2026 · DIAGNOSTIC (no vote — 14 issues found, top-5 synthesized)
 
 > **Scope:** Diagnostic audit on the existing Consilium skill (not a proposal vote). Each senator scanned through their lens; top 5 selected by severity + convergence + concreteness.

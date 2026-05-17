@@ -1,8 +1,8 @@
 """Aggregate voice scores into a final decision.
 
-Four schemes exposed via CLI (`aggregate_weighted` remains importable but is
-deprecated — see below):
-- majority: average of voices; pick highest mean. Ties broken by lowest variance.
+Four schemes exposed via CLI:
+- majority: average of voices; pick highest mean. Ties broken by lowest stdev,
+  then by insertion order (stable, deterministic).
 - conservative_override: vetoes any candidate with conservator risk >
   veto_threshold; survivors ranked by weighted average of (generator,
   control, 1-conservator) so safer candidates outrank riskier ones when
@@ -34,7 +34,6 @@ import json
 import math
 import statistics
 import sys
-import warnings
 from typing import Any
 
 from utils import force_utf8_streams
@@ -42,6 +41,8 @@ from utils import force_utf8_streams
 VOICES = ("generator", "control", "conservator")
 DEFAULT_VETO = 0.8
 RELAXED_VETO_CAP = 0.85
+# Predicted inter-run pstdev for conservator risk_score is 0.12–0.18 (Dimon R2 2026-05-17).
+VETO_UNCERTAINTY_BAND = 0.15
 # Sigmoid risk penalty parameters: 50% at risk=0.5, ~0.79 at 0.7, ~0.93 at 0.85
 SIGMOID_MIDPOINT = 0.5
 SIGMOID_STEEPNESS = 10.0
@@ -52,55 +53,22 @@ def _voice_vec(scores: dict) -> list[float]:
 
 
 def aggregate_majority(candidates: list[dict]) -> dict:
-    """Pick candidate with highest mean voice score; tiebreak by lowest stdev."""
-    ranked = []
-    for c in candidates:
+    """Pick candidate with highest mean voice score; tiebreak by lowest stdev,
+    then by original insertion order (stable — avoids TypeError on dict comparisons
+    when both mean and stdev are equal)."""
+    rows = []
+    for i, c in enumerate(candidates):
         vec = _voice_vec(c["scores"])
         mean = statistics.fmean(vec)
         stdev = statistics.pstdev(vec)
-        ranked.append((mean, -stdev, c))
-    ranked.sort(reverse=True)
-    winner = ranked[0][2]
+        rows.append((mean, stdev, i, c))
+    # Sort: highest mean first; on tie, lowest stdev; on tie, earliest index.
+    rows.sort(key=lambda t: (-t[0], t[1], t[2]))
+    winner = rows[0][3]
     return {
         "scheme": "majority",
         "chosen": winner["id"],
-        "ranking": [{"id": c["id"], "mean": m, "stdev": -ns} for m, ns, c in ranked],
-    }
-
-
-def aggregate_weighted(candidates: list[dict], weights: dict) -> dict:
-    """Weighted average across voices using supplied weights.
-
-    Deprecated: removed from SCHEMES (CLI). Conservator emits risk (higher=worse),
-    so this scheme inverts safety relative to the others. Use
-    'conservative_override' or 'risk_adjusted_utility' instead.
-    """
-    warnings.warn(
-        "aggregate_weighted is deprecated and no longer exposed via the CLI scheme map. "
-        "It treats Conservator as utility (higher=better), but Conservator emits risk "
-        "(higher=worse), so scores are inverted relative to the other schemes. "
-        "Use 'conservative_override' or 'risk_adjusted_utility' instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    w = [float(weights[v]) for v in VOICES]
-    s = sum(w)
-    if s <= 0:
-        raise ValueError("weights must sum to a positive value")
-    w = [x / s for x in w]
-
-    ranked = []
-    for c in candidates:
-        vec = _voice_vec(c["scores"])
-        score = sum(a * b for a, b in zip(vec, w))
-        ranked.append((score, c))
-    ranked.sort(key=lambda t: t[0], reverse=True)
-    winner = ranked[0][1]
-    return {
-        "scheme": "weighted",
-        "weights": dict(zip(VOICES, w)),
-        "chosen": winner["id"],
-        "ranking": [{"id": c["id"], "score": s} for s, c in ranked],
+        "ranking": [{"id": c["id"], "mean": m, "stdev": s} for m, s, _i, c in rows],
     }
 
 
@@ -176,7 +144,7 @@ def aggregate_conservative_override(
         ranked.append((score, c))
     ranked.sort(key=lambda t: t[0], reverse=True)
     winner = ranked[0][1]
-    return {
+    result = {
         "scheme": "conservative_override",
         "veto_threshold": veto_threshold,
         "chosen": winner["id"],
@@ -184,6 +152,11 @@ def aggregate_conservative_override(
         "vetoed": vetoed,
         "weights": dict(zip(VOICES, w)),
     }
+    uncertain = [v["id"] for v in vetoed if abs(v["risk"] - veto_threshold) <= VETO_UNCERTAINTY_BAND]
+    if uncertain:
+        result["veto_uncertain"] = True
+        result["veto_uncertain_ids"] = uncertain
+    return result
 
 
 def _sigmoid_penalty(risk: float) -> float:
@@ -310,7 +283,7 @@ def aggregate_team_vote(personalities: list[dict], candidates: list[dict]) -> di
 
 
 # === RUND2 ===
-def _rund2_methodology_notes(g: dict, c: dict, _cons: dict) -> str:
+def _rund2_methodology_notes(g: dict, c: dict) -> str:
     notes = []
     if g.get("abstain", {}).get("triggered"):
         notes.append(f"Generator abstain: {g['abstain'].get('reason', '?')}")
@@ -451,7 +424,7 @@ def aggregate_rund2(
         "chosen": preferred,
         "confidence_per_option": confidence_per_option,
         "confidence_methodology": methodology_confidence,
-        "methodology_notes": _rund2_methodology_notes(generator_out, control_out, conservator_out),
+        "methodology_notes": _rund2_methodology_notes(generator_out, control_out),
     }
     if methodology_confidence < 0.5:
         result["warning"] = "Deliberare incompletă — consideră rezultatul ca preliminar"

@@ -40,6 +40,9 @@ FEEDBACK.md
 FEEDBACK.html
 *.md.bak
 
+# Generated HTML dashboards (regenerable from runs/senate/)
+senate-history.html
+
 # Claude Code session metadata (permissions, local settings)
 .claude/
 

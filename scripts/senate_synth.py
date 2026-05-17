@@ -501,12 +501,37 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+REQUIRED_BUNDLE_KEYS = (
+    "timestamp", "label", "proposal", "mode",
+    "senators_absent", "outputs", "vote_counts", "verdict",
+    "modify_requests", "warnings",
+)
+
+
+def validate_bundle(bundle: dict) -> None:
+    """Fail-fast guard before write: ensure required top-level keys exist.
+
+    Raises ValueError citing the missing key. Dimon R2 modify_request: synth.py
+    must refuse to write incomplete bundles rather than emit JSON that downstream
+    consumers (senate_history.py, transcripts) might render with inverted/missing
+    verdicts.
+    """
+    for key in REQUIRED_BUNDLE_KEYS:
+        if key not in bundle:
+            raise ValueError(f"senate_synth: bundle missing required key {key!r}")
+    if not isinstance(bundle["vote_counts"], dict):
+        raise ValueError("senate_synth: 'vote_counts' must be a dict")
+    if bundle["verdict"] not in ("GO", "MODIFY", "STOP", "DEEPLY_SPLIT", "UNREACHABLE"):
+        raise ValueError(f"senate_synth: invalid verdict {bundle['verdict']!r}")
+
+
 def write_bundle(bundle: dict) -> Path:
     """Write bundle to runs/senate/, avoiding silent overwrite.
 
     Filename: <timestamp>-<slug(label)>.json with second-level granularity.
     On collision (same timestamp + label), suffix `_v2`, `_v3`, ... is added.
     """
+    validate_bundle(bundle)
     out_dir = repo_root() / "runs" / "senate"
     out_dir.mkdir(parents=True, exist_ok=True)
     base = f"{bundle['timestamp']}-{slugify(bundle['label'])}"
@@ -564,6 +589,15 @@ def main() -> int:
         mode=mode, files_touched=files_touched,
         is_consilium_contribution=is_consilium_contribution,
     )
+
+    # Optional telemetry passthrough: orchestrator may include per-senator
+    # tokens/latency captured from Agent dispatch (e.g. <usage>total_tokens: N</usage>)
+    # in the input JSON. Shape matches usage.py expectations:
+    #   {"mode": "senate", "voices": {"<senator>": {"tokens_in": N, "tokens_out": N,
+    #    "latency_ms": N, "source": "api_usage_field"|"estimate_chars_div_4"}}}
+    telemetry = data.get("telemetry")
+    if isinstance(telemetry, dict):
+        bundle["telemetry"] = telemetry
 
     print(json.dumps(bundle, indent=2, ensure_ascii=False))
     out_path = write_bundle(bundle)

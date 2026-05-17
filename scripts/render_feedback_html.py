@@ -14,7 +14,7 @@ import argparse
 import html
 import json
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -94,19 +94,19 @@ def _esc(text: str) -> str:
     return html.escape(text or "", quote=True)
 
 
-def _row_html(idx: int, e: Entry, drill_inner: str, tokens_str: str) -> str:
+def _row_html(e: Entry, drill_inner: str, tokens_str: str) -> str:
     chev = "▸"
     tokens_cls = "tokens" if tokens_str != "—" else "tokens na"
     return (
         f'<tr class="entry" onclick="toggleDrill(this)">'
         f'<td class="chev">{chev}</td>'
-        f'<td class="date">{_esc(e.date)}</td>'
-        f'<td>{_esc(e.context)}</td>'
-        f'<td class="chosen">{_esc(e.chosen)}</td>'
-        f'<td class="outcome {_esc(e.outcome)}">{_esc(e.outcome)}</td>'
-        f'<td class="{tokens_cls}">{tokens_str}</td>'
-        f'<td class="note">{_esc(e.note)}</td>'
-        f'<td>{_esc(e.vote_pattern)}</td>'
+        f'<td class="date" data-field="date">{_esc(e.date)}</td>'
+        f'<td data-field="context">{_esc(e.context)}</td>'
+        f'<td class="chosen" data-field="chosen">{_esc(e.chosen)}</td>'
+        f'<td class="outcome {_esc(e.outcome)}" data-field="outcome">{_esc(e.outcome)}</td>'
+        f'<td class="{tokens_cls}" data-field="tokens">{tokens_str}</td>'
+        f'<td class="note" data-field="note">{_esc(e.note)}</td>'
+        f'<td data-field="vote_pattern">{_esc(e.vote_pattern)}</td>'
         f'</tr>\n'
         f'<tr class="drill"><td colspan="8">{drill_inner}</td></tr>\n'
     )
@@ -262,7 +262,7 @@ def _legacy_stub() -> str:
 
 def render(entries: list[Entry], runs_dir: Path) -> str:
     rows = []
-    for idx, e in enumerate(entries):
+    for e in entries:
         run_dict = None
         if e.run_path:
             run_file = runs_dir.parent / e.run_path if not Path(e.run_path).is_absolute() else Path(e.run_path)
@@ -276,7 +276,7 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
                     run_dict = None
         drill = render_drill(run_dict, e.chosen) if run_dict else _legacy_stub()
         tokens_str = _total_tokens(run_dict)
-        rows.append(_row_html(idx, e, drill, tokens_str))
+        rows.append(_row_html(e, drill, tokens_str))
     rows_html = "".join(rows)
     return (
         "<!doctype html>\n"

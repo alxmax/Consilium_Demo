@@ -23,6 +23,13 @@ Two signals get folded in:
 Final confidence is a weighted blend: 0.7 * agreement + 0.3 * separation.
 Clamped to [0.05, 0.99] — we never claim absolute certainty, nor zero.
 
+CALIBRATION NOTE (R2 audit 2026-05-17): ``agreement`` measures role-prompt
+divergence within one run — how much Generator/Control/Conservator disagree
+with each other. It is NOT inter-run stability. Running the same input twice
+may produce different voice scores (predicted pstdev 0.12–0.18 for
+risk_score). Conservator scores are anchored via categorical formula;
+Generator/Control scores are self-assigned unanchored floats.
+
 Input format on stdin (JSON):
     {
       "candidates": [
