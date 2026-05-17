@@ -80,6 +80,13 @@ There is no automated enforcement of this formula — apply it disciplined manua
 
 If `reversibility = irreversible` AND there is no explicit user consent documented in the input, set the `irreversibility_flag` to `true`. The aggregator will BLOCK and request consent before Generator runs.
 
+Note on field distinctions:
+- `irreversibility_flag` — consent gate. Signals that `reversibility = irreversible` and the aggregator must obtain user consent before proceeding. Orthogonal to whether rollback is possible.
+- `irreversible: true` (candidate-level) — structural fact. Signals that no rollback path exists at all (e.g. published API already consumed by clients, live migration with data writes). When this is true, a fictional `rollback_recipe` would be worse than none — replace it with `mitigation_steps` instead.
+- `regression_risk.reversibility` — effort-of-reversal assessment (complete / partial / irreversible). Always present; drives `net_concern` and `tokens_budget`.
+
+These three fields can coexist. A candidate can have `irreversibility_flag: true` (needs consent) AND `irreversible: true` (no rollback path) AND `reversibility: "irreversible"` (high effort-of-reversal score). They are not redundant.
+
 ## Output format
 
 The `id` field must be preserved verbatim from input through all voice outputs.
@@ -103,8 +110,6 @@ The `id` field must be preserved verbatim from input through all voice outputs.
       },
       "irreversibility_flag": false,
       "rollback_recipe": [],
-      "mitigation_steps": [],
-      "irreversible": false,
       "notes": "one sentence summary"
     }
   ]
@@ -113,7 +118,42 @@ The `id` field must be preserved verbatim from input through all voice outputs.
 
 For any candidate with `net_concern >= 0.3`, produce a `rollback_recipe` — 2–5 concrete steps a human could follow to undo the change if it fails. Use real commands, not abstractions.
 
-If rollback is structurally impossible (published API already consumed by clients, live migration with data writes), replace rollback_recipe with mitigation_steps and add `"irreversible": true` at candidate level.
+**Structurally irreversible candidates.** If rollback is structurally impossible (published API already consumed by clients, live migration with data writes), replace `rollback_recipe` with `mitigation_steps` and add `"irreversible": true` at the candidate level.
+
+- `mitigation_steps`: 2–5 concrete steps that reduce blast radius or aid recovery WITHOUT undoing the change (e.g. "issue v2 endpoint with deprecation header", "replay log for forward-fix", "add circuit-breaker on consumer side").
+- `irreversible: true`: marks that no reversal path exists — only forward mitigation. Distinct from `regression_risk.reversibility` (effort-of-reversal) and from `irreversibility_flag` (consent gate).
+
+Both fields are optional. Omit them when a genuine rollback recipe can be produced.
+
+```json
+{
+  "scores": [
+    {
+      "id": "approach_b",
+      "regression_risk": {
+        "reversibility": "irreversible",
+        "magnitude": "high",
+        "net_concern": 0.75
+      },
+      "counterparty_risks": ["clients already calling v1 endpoint"],
+      "bias_check": "Real irreversibility — clients have already integrated the published contract.",
+      "meta_recommendation": "scale_up",
+      "tokens_budget": {
+        "generator": 3000,
+        "control": 3000
+      },
+      "irreversibility_flag": true,
+      "irreversible": true,
+      "mitigation_steps": [
+        "Issue v2 endpoint alongside v1 with Deprecation header pointing to sunset date.",
+        "Add monitoring alert if v1 call volume exceeds threshold post-migration.",
+        "Publish migration guide and notify downstream teams via changelog."
+      ],
+      "notes": "No rollback path; clients have consumed the published API contract."
+    }
+  ]
+}
+```
 
 ## Anti-patterns to avoid
 
