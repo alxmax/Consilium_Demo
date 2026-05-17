@@ -1085,6 +1085,132 @@
     nav.tabs { flex-wrap: wrap; }
     nav.tabs button { padding: 8px 12px; font-size: 13px; }
   }
+
+  /* ============== SENATE ============== */
+  :root {
+    --sen: #c084fc;
+    --sen-soft: #1e1530;
+    --sen-border: #4a2d6b;
+    --sen-text: #d8b4fe;
+    --sen-deep: #7c3aed;
+  }
+  .senate-intro { background: linear-gradient(135deg, var(--sen-soft) 0%, var(--card-bg) 70%);
+    border: 1px solid var(--sen-border); border-radius: 12px; padding: 22px 26px; margin-bottom: 28px; }
+  .senate-intro h3 { margin: 0 0 8px; font-size: 16px; color: var(--sen-text); letter-spacing: -0.005em; }
+  .senate-intro p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+  .senate-intro p:last-child { margin-bottom: 0; }
+  .senate-intro b { color: var(--sen-text); }
+  .senate-intro .scope-tag { display: inline-block; margin-top: 6px;
+    background: var(--sen-soft); border: 1px solid var(--sen-border); border-radius: 999px;
+    padding: 3px 12px; font-size: 11px; color: var(--sen-text); letter-spacing: 0.04em; }
+
+  .senator-grid { display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin-bottom: 28px; }
+  .senator-card { background: var(--card-bg); border: 1px solid var(--line);
+    border-left: 3px solid var(--sen); border-radius: 8px; padding: 14px 16px;
+    transition: border-color 150ms; }
+  .senator-card:hover { border-color: var(--sen); }
+  .senator-card .name { font-size: 14px; font-weight: 700; color: var(--sen-text);
+    margin: 0 0 2px; }
+  .senator-card .key-q { font-size: 12px; color: var(--muted); font-style: italic;
+    margin: 0 0 8px; }
+  .senator-card .spec { font-size: 12.5px; color: var(--ink); line-height: 1.5; margin: 0 0 8px; }
+  .senator-card .output-field { font-size: 10.5px; color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    border-top: 1px dashed var(--line); padding-top: 6px; }
+  .senator-card .output-field code { color: var(--sen-text); }
+
+  .verdict-grid { display: grid; gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: 16px 0 24px; }
+  .verdict-cell { background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; }
+  .verdict-cell .verdict { font-size: 14px; font-weight: 700; letter-spacing: 0.06em;
+    margin-bottom: 4px; }
+  .verdict-cell .rule { font-size: 11.5px; color: var(--muted); margin-bottom: 6px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .verdict-cell .meaning { font-size: 12px; line-height: 1.5; }
+  .verdict-cell.go      { border-left: 3px solid var(--accent); }
+  .verdict-cell.go .verdict { color: var(--accent-text); }
+  .verdict-cell.modify  { border-left: 3px solid var(--gold); }
+  .verdict-cell.modify .verdict { color: var(--gold); }
+  .verdict-cell.stop    { border-left: 3px solid var(--bad); }
+  .verdict-cell.stop .verdict { color: var(--bad); }
+  .verdict-cell.unreach { border-left: 3px solid var(--neutral); }
+  .verdict-cell.unreach .verdict { color: var(--neutral); }
+  .verdict-cell.split   { border-left: 3px solid var(--sen); }
+  .verdict-cell.split .verdict { color: var(--sen-text); }
+
+  .laws-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 12px 0 24px; }
+  .laws-table th, .laws-table td { padding: 9px 11px; text-align: left;
+    border-bottom: 1px solid var(--line); vertical-align: top; }
+  .laws-table th { color: var(--muted); font-weight: 500; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.05em; background: var(--inset); }
+  .laws-table .num { color: var(--sen-text); font-weight: 700; width: 36px; }
+  .laws-table .law-name { font-weight: 600; color: var(--ink); }
+  .laws-table .essence { color: var(--ink); line-height: 1.5; }
+  .laws-table .principle { color: var(--muted); font-size: 11.5px; font-family: ui-monospace, monospace; }
+
+  .cross-q-matrix { background: var(--inset); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px 22px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--ink); line-height: 1.5; overflow-x: auto; margin: 12px 0 18px; }
+  .cross-q-matrix pre { margin: 0; white-space: pre; color: var(--ink); }
+  .cross-q-matrix .star { color: var(--sen-text); font-weight: 700; }
+  .cross-q-legend { font-size: 11.5px; color: var(--muted); margin-bottom: 24px;
+    line-height: 1.55; }
+  .cross-q-legend code { color: var(--sen-text); }
+
+  .senate-flow { background: var(--inset); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px 22px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; color: var(--ink); line-height: 1.55; overflow-x: auto; margin: 12px 0 24px; }
+  .senate-flow pre { margin: 0; white-space: pre; }
+
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 12px 0; }
+  .compare-table th, .compare-table td { padding: 8px 10px; text-align: left;
+    border-bottom: 1px solid var(--line); }
+  .compare-table th { color: var(--muted); font-weight: 500; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.05em; background: var(--inset); }
+  .compare-table tr.highlight { background: var(--sen-soft); }
+  .compare-table tr.highlight td { color: var(--sen-text); }
+  .compare-table code { color: var(--ink); font-size: 11.5px; }
+
+  .ops-def { background: var(--card-bg); border: 1px solid var(--line);
+    border-left: 3px solid var(--gold); border-radius: 8px; padding: 14px 18px; margin: 16px 0; }
+  .ops-def h4 { margin: 0 0 8px; font-size: 13px; color: var(--gold);
+    letter-spacing: 0.04em; }
+  .ops-def p { margin: 4px 0; font-size: 12.5px; color: var(--ink); line-height: 1.55; }
+  .ops-def code { color: var(--gold); }
+
+  /* ============== RUND2 layers ============== */
+  .rund2-layers { display: grid; gap: 10px; margin: 16px 0 22px; }
+  .rund2-layer { display: grid; grid-template-columns: 140px 1fr 1fr;
+    gap: 14px; align-items: start; padding: 14px 16px;
+    background: var(--inset); border: 1px solid var(--line); border-radius: 8px; }
+  .rund2-layer .layer-name { font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--gold); }
+  .rund2-layer .components { font-size: 12.5px; color: var(--ink); line-height: 1.5; }
+  .rund2-layer .role { font-size: 12px; color: var(--muted); line-height: 1.55; }
+  .rund2-layer.delib { border-left: 3px solid var(--ctl); }
+  .rund2-layer.delib .layer-name { color: var(--ctl-text); }
+  .rund2-layer.agg   { border-left: 3px solid var(--accent); }
+  .rund2-layer.agg .layer-name { color: var(--accent-text); }
+  .rund2-layer.sen   { border-left: 3px solid var(--sen); }
+  .rund2-layer.sen .layer-name { color: var(--sen-text); }
+  @media (max-width: 720px) {
+    .rund2-layer { grid-template-columns: 1fr; gap: 6px; }
+  }
+
+  .veto-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .veto-table th, .veto-table td { padding: 8px 10px; text-align: left;
+    border-bottom: 1px solid var(--line); vertical-align: top; }
+  .veto-table th { color: var(--muted); font-weight: 500; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.05em; background: var(--inset); }
+  .veto-table .trigger { color: var(--bad); font-family: ui-monospace, monospace; font-size: 11.5px; }
+  .veto-table .source  { color: var(--muted); font-size: 11.5px; }
+  .veto-table .effect  { font-weight: 600; }
+  .veto-table .effect.block  { color: var(--bad); }
+  .veto-table .effect.rework { color: var(--gold); }
+  .veto-table .effect.adapt  { color: var(--sen-text); }
+  .veto-table .effect.escal  { color: var(--neutral); }
 </style>
 </head>
 <body>
@@ -1109,6 +1235,7 @@
   <button data-tab="files"><span>Files</span><span class="tab-sub">prompts/ + scripts/ (hover)</span></button>
   <button data-tab="git"><span>Git</span><span class="tab-sub">workflow + self-improvement loop</span></button>
   <button data-tab="dialectic"><span>Dialectic</span><span class="tab-sub">Pass 1 + Pass 2 cross-review</span></button>
+  <button data-tab="senate"><span>Senate</span><span class="tab-sub">7 senatori · audit skill-ului</span></button>
   <button data-tab="todo-matrix"><span>TODO Matrix</span><span class="tab-sub">26 iteme · impact × efort</span></button>
 </nav>
 
@@ -1354,6 +1481,88 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers</
   </table>
   <p style="margin:10px 0 0; font-size:12px; color:var(--muted);">Importat de toate scriptele care citeau stdin sau aveau <code>_force_utf8_streams</code> local. Scriptele rămân executabile independent — <code>utils.py</code> e stdlib-only.</p>
 </div>
+
+    <h2 style="margin-top: 32px;">Three-layer architecture (RUND2)</h2>
+    <p style="color: var(--muted); font-size: 13px; margin: -8px 0 12px;">
+      Consilium are 3 layere distincte. Deliberation rulează pe fiecare întrebare user. Aggregation decide ce vede user-ul. Senate intervine doar când e modificat skill-ul însuși.
+    </p>
+
+    <div class="rund2-layers">
+      <div class="rund2-layer delib">
+        <div class="layer-name">Deliberation</div>
+        <div class="components">Conservator → Generator → Control <span style="color: var(--muted); font-size: 11px;">(sequential, default)</span></div>
+        <div class="role">Rulează pe fiecare întrebare user. Conservator runs FIRST și setează <code>tokens_budget</code> + <code>irreversibility_flag</code> înainte de Generator. Auto cross-check parallel se declanșează doar la <code>magnitude: critical</code> ȘI <code>reversibility: irreversible</code>.</div>
+      </div>
+      <div class="rund2-layer agg">
+        <div class="layer-name">Aggregation</div>
+        <div class="components"><code>aggregate_rund2()</code> cu 8-component veto cascade → 7 routing outcomes</div>
+        <div class="role">Sintetizează output-urile vocilor. Decide BLOCK / REWORK / ADAPT_SHORT / ADAPT_EXTENDED / ESCALATE / AGGREGATE pe baza flagurilor primite. Veto budget: 5 activări <code>scale_up</code>/<code>scale_down</code> per lună.</div>
+      </div>
+      <div class="rund2-layer sen">
+        <div class="layer-name">Senate</div>
+        <div class="components">7 senatori (Wittgenstein, Aurelius, Confucius, Socrate, Musk, Dimon, Napoleon)</div>
+        <div class="role">On-demand audit pentru schimbări la <i>skill</i>-ul însuși — prompturi, scripts, SKILL.md. Niciun trigger automat. Verdictul e advisory. Vezi tab-ul <b>Senate</b>.</div>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 24px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">8-component veto cascade — Aggregation layer</h3>
+    <p style="font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 8px 0 0;">
+      Cele 8 design components (vocabulary_map, length_targets, priority_veto_order, tension_expose, metadata, user_profile, multi_confidence, escalation_rule) sunt componentele structurale ale <code>aggregate_rund2()</code>. Ele produc 7 routing outcomes pe baza flagurilor emise de Conservator + Control:
+    </p>
+
+    <table class="veto-table">
+      <thead>
+        <tr><th>Trigger</th><th>Source</th><th>Effect</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="trigger">irreversibility_flag: true</td>
+          <td class="source">Conservator</td>
+          <td class="effect block">BLOCK (hard)</td>
+          <td>Ask user for explicit consent before Generator</td>
+        </tr>
+        <tr>
+          <td class="trigger">glossary_fail: true</td>
+          <td class="source">Control</td>
+          <td class="effect block">BLOCK (soft)</td>
+          <td>Ask user to reformulate with operational terms</td>
+        </tr>
+        <tr>
+          <td class="trigger">disagreements: substantial</td>
+          <td class="source">Control</td>
+          <td class="effect rework">REWORK</td>
+          <td>Re-run Generator with clarification context</td>
+        </tr>
+        <tr>
+          <td class="trigger">meta_recommendation: scale_down</td>
+          <td class="source">Conservator</td>
+          <td class="effect adapt">ADAPT_SHORT</td>
+          <td>Short path: max 2 candidates, 2-sentence output</td>
+        </tr>
+        <tr>
+          <td class="trigger">meta_recommendation: scale_up</td>
+          <td class="source">Conservator</td>
+          <td class="effect adapt">ADAPT_EXTENDED</td>
+          <td>Warn user, add context before Generator</td>
+        </tr>
+        <tr>
+          <td class="trigger">3+ of above simultaneously</td>
+          <td class="source">Aggregator</td>
+          <td class="effect escal">ESCALATE</td>
+          <td>Present trigger table to user, request decision</td>
+        </tr>
+        <tr>
+          <td class="trigger">none of above</td>
+          <td class="source">—</td>
+          <td class="effect">AGGREGATE</td>
+          <td>Default path — voci agregate prin <code>conservative_override</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size: 11.5px; color: var(--muted); line-height: 1.5; margin: 8px 0 0;">
+      <b>Veto budget</b>: 5 activări <code>scale_up</code> sau <code>scale_down</code> per lună. La epuizare → soft warning only, not blocking. <b>Silent audit</b>: la fiecare 20 runs, parallel mode rulează silent alături de sequential. Dacă se detectează divergență sistematică → frecvența auditului crește la 1/5.
+    </p>
 
   </section>
 
@@ -3709,6 +3918,31 @@ flowchart LR
       </div>
     </div>
 
+    <h2 style="margin-top: 36px;">Domain lens — Frontend Specialist <span style="background: var(--gold-soft); border: 1px solid var(--gold-border); color: var(--gold); font-size: 10px; padding: 2px 8px; border-radius: 999px; letter-spacing: 0.04em; vertical-align: middle; margin-left: 8px;">EXPERIMENTAL</span></h2>
+    <p style="color: var(--muted); font-size: 13.5px; margin: -8px 0 14px;">
+      Lens <i>de domeniu</i> (specialty technic) — separat de axa <i>atitudinală</i> Pioneer/Architect/Steward. Nu referit din dispatch tables din SKILL.md; folosit doar via override explicit <code>--lens prompts/voices/frontend_domain_lens.md</code> în deliberări pilot pentru a strânge date empirice.
+    </p>
+
+    <div class="card" style="border-left: 3px solid var(--gold); padding: 14px 18px; background: var(--card-bg);">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+        <h3 style="margin: 0; font-size: 14px; color: var(--gold);">Frontend Specialist</h3>
+        <span style="font-size: 11px; color: var(--muted);">domain: frontend · status: EXPERIMENTAL_DRAFT</span>
+      </div>
+      <p style="font-size: 12.5px; line-height: 1.55; margin: 0 0 10px; color: var(--ink);">
+        Evaluează schimbarea prin lentila <b>suprafeței user-facing</b>: ce un om în browser vede, tipează, dă click, așteaptă. Corectitudinea backend-equivalent e necesară dar nu suficientă.
+      </p>
+      <ul style="margin: 0 0 10px; padding-left: 20px; font-size: 12px; color: var(--ink); line-height: 1.6;">
+        <li><b>A11y &amp; keyboard reach</b> — Tab/Enter, semantic HTML over <code>&lt;div onClick&gt;</code>, ARIA, focus states</li>
+        <li><b>Bundle/runtime cost</b> — bytes pe wire + JS exec pe mobil mid-tier, nu pe laptop dev</li>
+        <li><b>Render correctness</b> — mobile (&lt;640px), tablet, desktop; cls/lcp; touch targets ≥44px</li>
+        <li><b>State/perceived perf</b> — optimistic UI, skeleton vs spinner, request waterfalls</li>
+      </ul>
+      <div style="font-size: 11.5px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 6px;">
+        <b>Empirical gate:</b> needs ≥ 5 trias runs cu lens-ul injectat înainte de scale-up decision. <br>
+        <b>Naming-collision discipline:</b> nu împărtășește axa Pioneer/Architect/Steward — cuvântul "Architect" e deliberat absent din numele fișierului. Prompt: <code>prompts/voices/frontend_domain_lens.md</code>
+      </div>
+    </div>
+
     <div class="authoritative-zone" style="margin-top: 32px;">
       <h3 style="margin: 0 0 8px; font-size: 14px; color: var(--gold);">Skeptic voice — focal challenger</h3>
       <p style="font-size: 12.5px; margin: 0 0 8px; color: var(--ink); line-height: 1.55;">
@@ -3730,7 +3964,7 @@ flowchart LR
 
     <div class="file-tree">
       <div class="file-group">
-        <h3>prompts/ — voice contracts <span class="file-count">10 files</span></h3>
+        <h3>prompts/voices/ — voice contracts <span class="file-count">11 files</span></h3>
         <div class="file-list">
           <div class="file auth" data-role="Generator voice contract — divergent thinking, produce 3-5 candidates cu {id, summary, sketch, rationale}. Mereu include do_nothing. Conditional adversarial_* + unconventional_*. Citit în fiecare deliberare.">
             <code>generator.md</code><span class="auth-mark">⚠ AUTH</span>
@@ -3744,29 +3978,59 @@ flowchart LR
           <div class="file" data-role="Generator Pass-2 — fiecare candidate trebuie să emită fie revision: fie maintained: (dialectic mode). Lipsa ambelor → dissent fallback warning.">
             <code>generator_pass2.md</code>
           </div>
-          <div class="file" data-role="Control Pass-2 — revizuiește verdicts după ce vede Pass-1 al celorlalți (dialectic mode).">
+          <div class="file" data-role="Control Pass-2 — moștenește valid/issues din Pass-1 dacă nu emite revision; control_pass2 verdict-uri sunt aliniate cu cele Pass-1 când Pass-2 doar reconfirmă (fix 3b18083).">
             <code>control_pass2.md</code>
           </div>
-          <div class="file" data-role="Conservator Pass-2 — revizuiește risk scores după Pass-1 (dialectic mode).">
+          <div class="file" data-role="Conservator Pass-2 — revizuiește risk scores după Pass-1. risk_score null e gestionat ca floor, nu ca semnal de bună execuție (fix 3b18083).">
             <code>conservator_pass2.md</code>
           </div>
-          <div class="file" data-role="Pioneer lens — prepended peste voice prompt în Trias mode. Bias: bold, novel, forward momentum. Weights: gen 0.49, ctl 0.30, cons 0.21.">
+          <div class="file" data-role="Pioneer lens (atitudinal) — prepended peste voice prompt în Trias mode. Bias: bold, novel, forward momentum. Weights: gen 0.49, ctl 0.30, cons 0.21.">
             <code>pioneer_lens.md</code>
           </div>
-          <div class="file" data-role="Architect lens — prepended în Trias mode. Bias: invariants, type safety, structural soundness. Weights: gen 0.30, ctl 0.49, cons 0.21.">
+          <div class="file" data-role="Architect lens (atitudinal) — prepended în Trias mode. Bias: invariants, type safety, structural soundness. Weights: gen 0.30, ctl 0.49, cons 0.21.">
             <code>architect_lens.md</code>
           </div>
-          <div class="file" data-role="Steward lens — prepended în Trias mode. Bias: minimal scope, reversibility, protect working systems. Weights: gen 0.30, ctl 0.30, cons 0.40.">
+          <div class="file" data-role="Steward lens (atitudinal) — prepended în Trias mode. Bias: minimal scope, reversibility, protect working systems. Weights: gen 0.30, ctl 0.30, cons 0.40.">
             <code>steward_lens.md</code>
           </div>
           <div class="file" data-role="Skeptic voice — focal challenger pentru parallel_skeptic și dialectic_skeptic. Primește DOAR chosen (nu candidates, nu verdicts). Produce obiecție concretă sau meta_scope_mismatch.">
             <code>skeptic.md</code>
           </div>
+          <div class="file" data-role="Frontend Specialist lens (domain) — EXPERIMENTAL DRAFT. Bias pe user-facing surface: a11y, bundle cost, render correctness, perceived perf. Folosit doar via --lens override; needs ≥5 trias runs înainte de scale-up.">
+            <code>frontend_domain_lens.md</code>
+          </div>
         </div>
       </div>
 
       <div class="file-group">
-        <h3>scripts/ — core pipeline (stdlib-only) <span class="file-count">19 files</span></h3>
+        <h3>prompts/senators/ — Senate mode <span class="file-count">7 files</span></h3>
+        <div class="file-list">
+          <div class="file" data-role="Wittgenstein senator — semantic + operational definitions. Caută vague_terms_found[] în propunere și cere reformulare cu predicate testabile.">
+            <code>wittgenstein.md</code>
+          </div>
+          <div class="file" data-role="Aurelius senator — reversibility × magnitude. Plasează propunerea pe cadran cost-revers și verifică proporționalitatea efort/stake.">
+            <code>aurelius.md</code>
+          </div>
+          <div class="file" data-role="Confucius senator — hierarchy + precedent_search[]. Caută în runs/ + experiments/ dacă ceva similar a fost decis înainte, și cine a decis.">
+            <code>confucius.md</code>
+          </div>
+          <div class="file" data-role="Socrate senator — hidden_assumptions[] cu load_bearing. Identifică premize nedeclarate care ar invalida propunerea dacă cad.">
+            <code>socrate.md</code>
+          </div>
+          <div class="file" data-role="Musk senator — aggressive deletion + 10% add-back. components_attacked[] cu vot keep/delete/simplify pentru fiecare componentă a propunerii.">
+            <code>musk.md</code>
+          </div>
+          <div class="file" data-role="Dimon senator — stress_scenarios[] cu failure_mode. Counterparty risk, silent failure modes, observability + recovery.">
+            <code>dimon.md</code>
+          </div>
+          <div class="file" data-role="Napoleon senator — cost_estimate + terrain_check. Tokens, ore, complexitate operațională, starea operatorului (oboseală, deadline-uri).">
+            <code>napoleon.md</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="file-group">
+        <h3>scripts/ — core pipeline (stdlib-only) <span class="file-count">33 files</span></h3>
         <div class="file-list">
           <div class="file" data-role="Step 0 bootstrap — soft priors din FEEDBACK.html + runs/. Surface stale_pendings (2-day threshold), missing_feedback_runs, pend_pressure (>0.3 alertă), weighted_bad_rate.">
             <code>priors.py</code>
@@ -3827,6 +4091,45 @@ flowchart LR
           </div>
           <div class="file" data-role="Utils stdlib-only — force_utf8_streams (fix Windows cp1252), load_json_stdin (clear hint la stdin gol), validate_keys (exit 1 cu mesaj specific). Importat de scripturile care citeau stdin.">
             <code>utils.py</code>
+          </div>
+          <div class="file" data-role="RUND2 — traduceri user-facing (reversibility/magnitude/meta_recommendation/verdict) + compute_tokens_budget(magnitude, reversibility, meta). Folosit de aggregate_rund2() pentru routing outcomes.">
+            <code>vocabulary_map.py</code>
+          </div>
+          <div class="file" data-role="Senate synthesizer — agregă 7 output-uri JSON → verdict GO/MODIFY/STOP/UNREACHABLE/DEEPLY_SPLIT + modify_requests + risks → salvează în runs/senate/. Suportă multi-round schema {rounds: [...]} + legacy {senators: {...}}.">
+            <code>senate_synth.py</code>
+          </div>
+          <div class="file" data-role="Senate fixture pentru smoke test — cat senate_synth_fixture.json | python senate_synth.py → verdict MODIFY cu warning explicit. Folosit în test_senate_synth.py.">
+            <code>senate_synth_fixture.json</code>
+          </div>
+          <div class="file" data-role="Senate transcript export — formatează multi-round bundle în transcript human-readable cu cross-questions și position_changes.">
+            <code>senate_transcript.py</code>
+          </div>
+          <div class="file" data-role="Display senate transcript — wrapper UI peste senate_transcript.py pentru consultare interactivă a unui bundle din runs/senate/.">
+            <code>show_senate_transcript.py</code>
+          </div>
+          <div class="file" data-role="Senate TODO management — listează modify_requests outstanding din runs/senate/ + dispoziția fiecăruia (Resolved / Deferred / N/A).">
+            <code>senate_todo.py</code>
+          </div>
+          <div class="file" data-role="Senate test suite — 14 teste: prompt structure, fixture, verdict (GO unanimous/quorum/MODIFY default/UNREACHABLE/DEEPLY_SPLIT/unrecognized-vote), multi-round position change (Law 2+4), cross-questions violation (Law 2), blocaj pending + resolution (Law 3), legacy backward compat, bundle persistence, collision-safe write.">
+            <code>test_senate_synth.py</code>
+          </div>
+          <div class="file" data-role="Precedent search — caută în runs/ + experiments/ pentru decizii similare. Folosit de Confucius senator (read-only API).">
+            <code>precedent_search.py</code>
+          </div>
+          <div class="file" data-role="FEEDBACK.html renderer — generează HTML dark-theme din rândurile FEEDBACK.html cu drill-down pe fiecare entry către runs/.">
+            <code>render_feedback_html.py</code>
+          </div>
+          <div class="file" data-role="Migrare FEEDBACK.md → FEEDBACK.html cu re-populare drill-down. Folosit când log_feedback.py appendează și rândurile existente pierd drill-down-ul.">
+            <code>migrate_feedback_md_to_html.py</code>
+          </div>
+          <div class="file" data-role="Test feedback HTML — verifică rendering FEEDBACK.html: rânduri, drill-down, outcome distribution display.">
+            <code>test_feedback_html.py</code>
+          </div>
+          <div class="file" data-role="Test philosophical voices — smoke test pentru personality lenses (pioneer/architect/steward) + prompt structure validation.">
+            <code>test_philosophical_voices.py</code>
+          </div>
+          <div class="file" data-role="Test RUND2 — verifică aggregate_rund2() routing (BLOCK/REWORK/ADAPT_SHORT/ADAPT_EXTENDED/ESCALATE/AGGREGATE) + vocabulary_map translations.">
+            <code>test_rund2.py</code>
           </div>
         </div>
       </div>
@@ -3996,6 +4299,399 @@ flowchart LR
     style P2K  fill:#2a1818,stroke:#5c2a2a,color:#fca5a5
     style MERGE fill:#0a2e23,stroke:#145c45,color:#6ee7b7
       </div>
+    </div>
+
+  </section>
+
+  <!-- ============== TAB: SENATE ============== -->
+  <section class="tab" id="senate">
+
+    <h2>Senate — audit pentru skill-ul însuși</h2>
+    <p style="color: var(--muted); font-size: 13.5px; margin: -8px 0 22px;">
+      Layer separat de governance. Nu rulează pe întrebări user — rulează doar când <i>skill-ul</i> e modificat (prompturi, scripts, SKILL.md). 7 perspective independente, on-demand only.
+    </p>
+
+    <div class="senate-intro">
+      <h3>De ce un layer distinct</h3>
+      <p>
+        Modurile clasice (<code>sequential</code> / <code>parallel</code> / <code>dialectic</code> / <code>trias</code>) evaluează <b>schimbări de cod</b> propuse de user. Senate evaluează <b>schimbări la consilium însuși</b> — adăugări de voci, modificări de prompturi, restructurări de workflow.
+      </p>
+      <p>
+        Cele două nu se invocă niciodată împreună pe aceeași execuție. <b>Întrebare user</b> → Deliberation + Aggregation. <b>Modificare la skill</b> → Senate. <span class="scope-tag">scope: governance, on-demand only</span>
+      </p>
+    </div>
+
+    <h2 style="margin-top: 8px;">Cei 7 senatori</h2>
+    <p style="color: var(--muted); font-size: 13px; margin: -8px 0 14px;">
+      Fiecare are un <b>scope declarat ortogonal</b> în <code>## Limite</code>. Toți emit câmpurile structurale comune (<code>vote ∈ {GO, MODIFY, STOP}</code>, <code>modify_request</code>) + un câmp specific perspectivei lor.
+    </p>
+
+    <div class="senator-grid">
+      <div class="senator-card">
+        <h4 class="name">Wittgenstein</h4>
+        <p class="key-q">"E definit operațional? Poți falsifica?"</p>
+        <p class="spec">Semantic + operational definitions. Caută termeni vagi în propunere și cere reformulare cu predicate testabile.</p>
+        <div class="output-field">specific: <code>vague_terms_found[]</code></div>
+      </div>
+      <div class="senator-card">
+        <h4 class="name">Aurelius</h4>
+        <p class="key-q">"E proporțional cu stake-ul?"</p>
+        <p class="spec">Reversibility × magnitude. Plasează propunerea pe un cadran cost-revers și verifică dacă efortul e calibrat la consecințe.</p>
+        <div class="output-field">specific: <code>reversibility</code>, <code>magnitude</code>, <code>quadrant</code></div>
+      </div>
+      <div class="senator-card">
+        <h4 class="name">Confucius</h4>
+        <p class="key-q">"Cine are autoritate? S-a mai făcut?"</p>
+        <p class="spec">Hierarchy + precedent. Caută în <code>runs/</code> + <code>experiments/</code> dacă ceva similar a fost decis înainte, și cine a luat decizia.</p>
+        <div class="output-field">specific: <code>hierarchy_check</code>, <code>precedent_search[]</code></div>
+      </div>
+      <div class="senator-card">
+        <h4 class="name">Socrate</h4>
+        <p class="key-q">"Ce presupui fără să declari?"</p>
+        <p class="spec">Hidden assumptions. Identifică premize load-bearing nedeclarate explicit care ar invalida propunerea dacă cad.</p>
+        <div class="output-field">specific: <code>hidden_assumptions[]</code> cu <code>load_bearing</code></div>
+      </div>
+      <div class="senator-card">
+        <h4 class="name">Musk</h4>
+        <p class="key-q">"Ce poți șterge? Ce dacă scoți 10%?"</p>
+        <p class="spec">Aggressive deletion + 10% add-back. Atacă fiecare componentă cu vote keep/delete/simplify; presupune că tot ce nu e load-bearing trebuie șters.</p>
+        <div class="output-field">specific: <code>components_attacked[]</code> cu vot</div>
+      </div>
+      <div class="senator-card">
+        <h4 class="name">Dimon</h4>
+        <p class="key-q">"Ce dacă eșuează? Silent fail unde?"</p>
+        <p class="spec">Stress test + counterparty. Scenarii de pică sub volum, partener nemuncitor, mod de eșec silențios; verifică observability + recovery.</p>
+        <div class="output-field">specific: <code>stress_scenarios[]</code> cu <code>failure_mode</code></div>
+      </div>
+      <div class="senator-card">
+        <h4 class="name">Napoleon</h4>
+        <p class="key-q">"Câți tokens? În ce stare ești?"</p>
+        <p class="spec">Cost + terrain. Estimează tokens, ore, complexitate operațională; verifică starea operatorului (oboseală, deadline-uri concurente).</p>
+        <div class="output-field">specific: <code>cost_estimate</code>, <code>terrain_check</code></div>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 28px;">Flow de dispatch</h2>
+    <p style="color: var(--muted); font-size: 13px; margin: -8px 0 12px;">
+      Single-round paralel = MVP (legacy schema). Multi-round opt-in cu cross-questions + blocaj resolution = schema <code>{rounds: [...]}</code>, activă post PR <code>feat/senate-laws-2-3-4</code>.
+    </p>
+
+    <div class="senate-flow"><pre>USER:   /consilium senate "&lt;propunere&gt;"
+                  │
+                  ▼
+   ┌──────────────────────────────────┐
+   │  Orchestrator (Claude session)   │
+   │  - Citește prompts/senators/*.md │
+   │  - Formulează input identic      │
+   └──────────────┬───────────────────┘
+                  │
+                  ▼
+   ┌──────────────────────────────────┐
+   │  ROUND 1 — DISPATCH PARALEL (7×) │
+   │  model: "sonnet" explicit        │
+   ├──────────────────────────────────┤
+   │  Wittgenstein · Aurelius ·       │
+   │  Confucius · Socrate · Musk ·    │  ◄── toți primesc același input
+   │  Dimon · Napoleon                │       (propunere + context +
+   │                                  │        prompt-ul lor inline)
+   └──────────────┬───────────────────┘
+                  │ 7 JSON-uri paralel
+                  ▼
+   ┌──────────────────────────────────┐
+   │  Orchestrator colectează output  │
+   │  - Retry 1× pe JSON malformat    │
+   │  - Marchează `absent` pe eșec    │
+   │  - Detectează cross_questions[]  │
+   └──────────────┬───────────────────┘
+                  │
+       ┌──────────┴──────────┐
+       │ Cross-questions?    │
+       ├──────────┬──────────┤
+       │ NU       │ DA       │
+       ▼          ▼
+   synth      ┌──────────────────────────────┐
+   (verdict   │  ROUND 2 — focal dispatch    │
+   imediat)   │  Senator X primește întrebarea│
+              │  Y, răspunde. Counter X+1.   │
+              │  Max 3 cross-Qs/senator      │
+              └──────────────┬───────────────┘
+                             │
+                  ┌──────────┴──────────┐
+                  │ Round 3 (max)?      │
+                  │ Blocaj GO×STOP?     │
+                  └──────────┬──────────┘
+                             │
+                             ▼
+   ┌──────────────────────────────────┐
+   │  scripts/senate_synth.py         │
+   │  ─ tally(voturi din ultima rundă)│
+   │  ─ compute_verdict(quorum=5/7)   │
+   │  ─ collect_modify_requests       │
+   │  ─ blocaj_resolution (Lege 3)    │
+   │  ─ write_bundle (collision-safe) │
+   └──────────────┬───────────────────┘
+                  │
+                  ▼
+        runs/senate/&lt;timestamp&gt;-&lt;label&gt;.json
+                  │
+                  ▼
+   ┌──────────────────────────────────┐
+   │  Orchestrator prezintă user-ului │
+   │  - verdict (advisory)            │
+   │  - modify_requests concrete      │
+   │  - position_changes (cine schimbat)│
+   └──────────────────────────────────┘</pre></div>
+
+    <h2 style="margin-top: 28px;">Verdictul</h2>
+    <p style="color: var(--muted); font-size: 13px; margin: -8px 0 6px;">
+      Reguli de tally aplicate de <code>senate_synth.py:compute_verdict</code>. Quorum minim: <b>5 din 7</b> senatori prezenți.
+    </p>
+
+    <div class="verdict-grid">
+      <div class="verdict-cell go">
+        <div class="verdict">GO</div>
+        <div class="rule">count(GO) ≥ 5</div>
+        <div class="meaning">Convergență puternică. Procedezi cu propunerea.</div>
+      </div>
+      <div class="verdict-cell stop">
+        <div class="verdict">STOP</div>
+        <div class="rule">count(STOP) ≥ 5</div>
+        <div class="meaning">Convergență puternică contra. Revizuiește sau override explicit.</div>
+      </div>
+      <div class="verdict-cell modify">
+        <div class="verdict">MODIFY</div>
+        <div class="rule">default (orice altă combinație)</div>
+        <div class="meaning">Concerns concrete — aplică <code>modify_requests</code> sau respinge explicit.</div>
+      </div>
+      <div class="verdict-cell unreach">
+        <div class="verdict">UNREACHABLE</div>
+        <div class="rule">voters_present &lt; 5</div>
+        <div class="meaning">Quorum matematic imposibil. Synth emite warning explicit, orchestratorul escaladează.</div>
+      </div>
+      <div class="verdict-cell split">
+        <div class="verdict">DEEPLY_SPLIT</div>
+        <div class="rule">GO ≥ Q-2 ȘI STOP ≥ Q-2</div>
+        <div class="meaning">Polarizare reală — ambele facțiuni ating threshold fără majoritate. Advisory; escaladare la user.</div>
+      </div>
+    </div>
+
+    <p style="font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 0 0 24px;">
+      <b>De ce default-ul e MODIFY:</b> Senatul e advisory. <code>MODIFY</code> nu blochează — semnalează că rămân concerns concrete care merită aplicate sau respinse explicit, nu ignorate tăcut. <code>GO</code> și <code>STOP</code> cer convergență (≥5/7); orice altă combinație e semnal de dezbatere.
+    </p>
+
+    <h2 style="margin-top: 8px;">Cele 5 Legi (multi-round opt-in)</h2>
+    <p style="color: var(--muted); font-size: 13px; margin: -8px 0 0;">
+      Active după PR <code>feat/senate-laws-2-3-4</code>. Legile 2-4 sunt opt-in: orchestratorul activează multi-round folosind schema <code>{rounds: [...]}</code>. Legacy <code>{senators: {...}}</code> rămâne valid (single-pass, Laws 2-4 N/A).
+    </p>
+
+    <table class="laws-table">
+      <thead>
+        <tr><th>#</th><th>Lege</th><th>Esență</th><th>Principiu Constituție</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="num">1</td>
+          <td class="law-name">Răspuns obligatoriu</td>
+          <td class="essence">Fiecare senator răspunde pe fiecare punct — direct, prin întrebare, sau prin reformulare. Interzis "nu am opinie".</td>
+          <td class="principle">#4 Goal-driven</td>
+        </tr>
+        <tr>
+          <td class="num">2</td>
+          <td class="law-name">Cross-questions limitate</td>
+          <td class="essence">Maximum <b>3 cross-questions per senator per punct</b>. Previne spam și ramificare infinită.</td>
+          <td class="principle">#2 Simplicity first</td>
+        </tr>
+        <tr>
+          <td class="num">3</td>
+          <td class="law-name">Blocaj → vot majoritar de 5</td>
+          <td class="essence">Dacă 2 senatori intră în impas <code>GO×STOP</code>, ceilalți 5 votează care argument e mai puternic. 7 impar → niciodată 50/50.</td>
+          <td class="principle">#4 Goal-driven</td>
+        </tr>
+        <tr>
+          <td class="num">4</td>
+          <td class="law-name">Sinteza doar la final</td>
+          <td class="essence">Aggregator pe Senat rulează DUPĂ toate runde (evită contagiunea de poziții). <code>collect_final_outputs(rounds)</code> ia ultima rundă per senator.</td>
+          <td class="principle">#3 Surgical changes</td>
+        </tr>
+        <tr>
+          <td class="num">5</td>
+          <td class="law-name">Auditabilitate</td>
+          <td class="essence">Toate runde + cross-questions + schimbări de poziție salvate în <code>runs/senate/</code>. Multi-round bundle include <code>position_changes</code> + <code>vote_counts_pre_blocaj</code>.</td>
+          <td class="principle">#1 Think before coding</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top: 28px;">Cross-questions matrix</h2>
+    <p style="color: var(--muted); font-size: 13px; margin: -8px 0 8px;">
+      Orice senator poate adresa întrebări oricărui altul (7×7, diagonala goală). <span class="star">★</span> = perechi care au schimbat poziții în deliberarea istorică RUND2 — semnal că dinamica funcționează.
+    </p>
+
+    <div class="cross-q-matrix"><pre>              W   A   C   S   Mu  D   N
+            ┌───┬───┬───┬───┬───┬───┬───┐
+Wittgenst.  │ — │ • │ • │ <span class="star">★</span> │ • │ • │ • │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Aurelius    │ • │ — │ • │ • │ • │ <span class="star">★</span> │ <span class="star">★</span> │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Confucius   │ • │ • │ — │ • │ <span class="star">★</span> │ • │ • │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Socrate     │ <span class="star">★</span> │ • │ • │ — │ • │ • │ • │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Musk        │ • │ • │ <span class="star">★</span> │ • │ — │ • │ <span class="star">★</span> │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Dimon       │ • │ <span class="star">★</span> │ • │ • │ • │ — │ <span class="star">★</span> │
+            ├───┼───┼───┼───┼───┼───┼───┤
+Napoleon    │ • │ <span class="star">★</span> │ • │ • │ <span class="star">★</span> │ <span class="star">★</span> │ — │
+            └───┴───┴───┴───┴───┴───┴───┘</pre></div>
+
+    <p class="cross-q-legend">
+      <b>De ce perechile cu <span class="star">★</span> sunt productive:</b> Wittgenstein↔Socrate (semantic vs asumpții, overlap pe "ce e nedeclarat"), Aurelius↔Dimon/Napoleon (risc abstract vs concret), Musk↔Napoleon (cost calitativ vs cantitativ), Musk↔Confucius (delete vs precedent).
+    </p>
+
+    <h2 style="margin-top: 24px;">Blocaj resolution (Lege 3)</h2>
+    <p style="color: var(--muted); font-size: 13px; margin: -8px 0 8px;">
+      Dacă după 3 cross-Qs, 2 senatori rămân în opoziție <code>GO×STOP</code> persistentă, ceilalți 5 primesc argumentele ambelor părți și votează care e mai puternic. Votul loser-ului e înlocuit cu cel al winner-ului în tally; <code>_blocaj_override</code> marker preservă originalul pentru audit.
+    </p>
+
+    <div class="senate-flow"><pre>   2 senatori în impas:  X (GO) ←→ Y (STOP)
+              │
+              ▼
+   ┌──────────────────────────────────┐
+   │  Ceilalți 5 senatori primesc:    │
+   │  - argumentul X (cu evidence)    │
+   │  - argumentul Y (cu evidence)    │
+   │  - întrebare: care e mai puternic│
+   └────────────────┬─────────────────┘
+                    │
+                    ▼  (5 voturi: X | Y)
+        ┌───────────────────────────┐
+        │  Majoritate (cel mult 4-1)│
+        └─────────────┬─────────────┘
+                      │
+        ┌─────────────┴─────────────┐
+        ▼                           ▼
+     X câștigă (GO contează)     Y câștigă (STOP contează)
+
+   Senatul are 7 impar → 2 impas + 5 votanți = niciodată 50/50.</pre></div>
+
+    <h2 style="margin-top: 28px;">Definiții operaționale (testabile)</h2>
+
+    <div class="ops-def">
+      <h4>"Senate run end-to-end"</h4>
+      <p>(a) bundle <code>runs/senate/&lt;timestamp&gt;-&lt;label&gt;.json</code> există pe disc;</p>
+      <p>(b) parsabil JSON;</p>
+      <p>(c) conține <code>verdict ∈ {GO, MODIFY, STOP, UNREACHABLE, DEEPLY_SPLIT}</code> și <code>vote_counts</code>;</p>
+      <p>(d) <code>senate_synth.py</code> exit 0.</p>
+    </div>
+
+    <div class="ops-def">
+      <h4>"Senate nu atinge voci/moduri existente"</h4>
+      <p style="font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--ink);">git diff &lt;base&gt;..HEAD -- prompts/{generator,control,conservator,skeptic,*_pass2,*_lens}.md scripts/{aggregator,confidence,dialectic_merge,validate_report,build_report,personalities,strip_context,priors}.py</p>
+      <p style="margin-top: 8px;">→ trebuie să returneze <b>empty</b>. Adăugiri la SKILL.md Resources table sau secțiuni noi sunt explicit permise.</p>
+    </div>
+
+    <h2 style="margin-top: 28px;">Comparație cu modurile clasice</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Mod</th><th>Sub-agenți</th><th>Cost vs Parallel</th><th>Scope</th><th>Trigger</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>sequential</code></td><td>1 orchestrator</td><td>0.33×</td><td>întrebare user</td><td>default</td></tr>
+        <tr><td><code>parallel</code></td><td>3</td><td>1×</td><td>întrebare user</td><td>auto cross-check</td></tr>
+        <tr><td><code>parallel_skeptic</code></td><td>4</td><td>1.33×</td><td>conf ∈ [0.5, 0.7]</td><td>auto conf-gated</td></tr>
+        <tr><td><code>dialectic</code></td><td>6</td><td>2×</td><td>trade-offs reale</td><td>manual</td></tr>
+        <tr><td><code>dialectic_skeptic</code></td><td>7</td><td>2.3×</td><td>medium-stakes</td><td>manual</td></tr>
+        <tr><td><code>trias</code></td><td>9</td><td>3×</td><td>high-stakes / ireversibil</td><td>manual</td></tr>
+        <tr><td><code>trias_split</code></td><td>9 (Sonnet+Haiku)</td><td>~3.3×</td><td>diversitate ortogonală</td><td>manual</td></tr>
+        <tr class="highlight"><td><code><b>senate</b></code></td><td><b>7</b></td><td><b>~2.3×</b> (single-round) <br>~5-7× (multi-round)</td><td><b>modificare la skill</b></td><td><b>manual on-demand</b></td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 12px 0 24px;">
+      <code>senate</code> e singurul mod care auditează <b>skill-ul însuși</b>. Toate celelalte operează pe cod / decizii user. Aceleași 7 sub-agenți ca <code>dialectic_skeptic</code>, dar perspective complet diferite (audit governance vs. cross-review per-întrebare).
+    </p>
+
+    <h2 style="margin-top: 24px;">Self-improvement loop</h2>
+    <p style="color: var(--muted); font-size: 13px; margin: -8px 0 12px;">
+      Din CLAUDE.md: <i>"Când editezi skill-ul însuși: rulează <code>/consilium</code> pe propria schimbare."</i> Cu Senatul:
+    </p>
+
+    <div class="senate-flow"><pre>   modific consilium  ─→  /consilium senate "&lt;schimbarea mea&gt;"
+                                    │
+                                    ▼
+                          7 senatori audit (Round 1)
+                                    │
+                          ┌─────────┴─────────┐
+                          │ cross-questions?  │
+                          └─────────┬─────────┘
+                                    │ DA → Rounds 2-3
+                                    ▼
+                              verdict final
+                                    │
+                ┌───────────────────┼───────────────────┐
+                ▼                                       ▼
+              GO                                  MODIFY / STOP
+                │                                       │
+                ▼                                       ▼
+        commit + push                       aplic modify_requests
+                                                        │
+                                                        ▼
+                                                    re-run (opțional)
+                                                        │
+                                                        ▼
+                                                 commit + push</pre></div>
+
+    <p style="font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 12px 0 24px;">
+      Bundle-ul rămâne în <code>runs/senate/&lt;timestamp&gt;-&lt;label&gt;.json</code> ca jurnal — chiar dacă procedezi împotriva verdictului (override explicit), audit-ul e păstrat.
+    </p>
+
+    <h2 style="margin-top: 8px;">Fișiere adăugate de Senate</h2>
+    <p style="color: var(--muted); font-size: 13px; margin: -8px 0 8px;">
+      Toate sub <b>principiul de izolare</b>: dacă ștergi prompts/senators/ + scripts/senate_synth.py + runs/senate/ + secțiunea Senate din SKILL.md, consilium standard rămâne funcțional 100%.
+    </p>
+
+    <div class="senate-flow"><pre>consilium/
+├── SKILL.md                              ← secțiunea "Senate mode (`senate`)"
+├── prompts/
+│   ├── voices/                           ← voci core (nu se atinge)
+│   └── senators/                         ◄── ADĂUGAT
+│       ├── wittgenstein.md
+│       ├── aurelius.md
+│       ├── confucius.md
+│       ├── socrate.md
+│       ├── musk.md
+│       ├── dimon.md
+│       └── napoleon.md
+├── scripts/
+│   ├── senate_synth.py                   ◄── ADĂUGAT (synthesizer)
+│   ├── senate_synth_fixture.json         ◄── ADĂUGAT (smoke test)
+│   ├── senate_todo.py                    ◄── ADĂUGAT (TODO management)
+│   ├── senate_transcript.py              ◄── ADĂUGAT (transcript export)
+│   └── test_senate_synth.py              ◄── ADĂUGAT (14-test suite)
+├── runs/
+│   └── senate/                           ◄── ADĂUGAT (gitignored)
+│       └── &lt;date&gt;_&lt;label&gt;.json           ← per-audit Senate</pre></div>
+
+    <h2 style="margin-top: 24px;">Indicator de calitate: schimbări de poziție</h2>
+    <p style="font-size: 12.5px; line-height: 1.55; margin: 0 0 12px;">
+      În deliberarea istorică RUND2, <b>3 senatori și-au schimbat poziții</b> post-cross-questions (Musk, Wittgenstein, Confucius). Asta e <b>semnalul</b> că dinamica funcționează — nu schimbi opinia oarbă, schimbi după ce auzi un counter-argument concret. Un Senat care converge <i>mereu</i> fără schimbări de poziție e suspect (groupthink prin structură).
+    </p>
+
+    <p style="font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 0 0 24px;">
+      Track-uit în bundle ca <code>position_changes: [{senator, point, from, to, trigger}]</code> — folosit pentru calibrare și pattern detection în deliberările viitoare.
+    </p>
+
+    <div class="authoritative-zone" style="margin-top: 8px;">
+      <h3 style="margin: 0 0 8px; font-size: 14px; color: var(--gold);">Smoke test</h3>
+      <p style="font-size: 12.5px; margin: 0 0 8px; color: var(--ink); line-height: 1.55;">
+        Două nivele de verificare după orice schimbare în <code>senate_synth.py</code> sau <code>prompts/senators/*.md</code>:
+      </p>
+      <pre style="background: var(--inset); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font-size: 11.5px; margin: 6px 0; overflow-x: auto; color: var(--ink);">cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py
+python -X utf8 scripts/test_senate_synth.py</pre>
+      <p style="font-size: 11.5px; margin: 0; color: var(--muted);">
+        Suita rulează 14 teste: prompt structure, fixture, verdict (GO unanimous / quorum / MODIFY default / UNREACHABLE / DEEPLY_SPLIT / unrecognized-vote), multi-round position change (Law 2+4), cross-questions violation (Law 2), blocaj pending + resolution (Law 3), legacy backward compat, bundle persistence, collision-safe write. Toate 14 trebuie PASS înainte de commit.
+      </p>
     </div>
 
   </section>
