@@ -82,6 +82,16 @@
 
 ## ❌ NEIMPLEMENTAT
 
+### Investigate: senate_transcript.py — deprecated dar încă apelat — INVESTIGATE
+
+> **Status:** INVESTIGATE (2026-05-17, descoperit la generarea transcript-urilor pentru Senate top-5 diagnostic audit).
+
+- [ ] `scripts/deprecated/senate_transcript.py` e marcat ca deprecated dar **activ apelat** de `scripts/senate_synth.py:595` (`_generate_transcript()` via `importlib.util.spec_from_file_location`).
+- [ ] Schema bundle pe care o renderează e cea legacy single-round `{senators: {...}, vote_counts: ...}`. Pe bundle-uri non-standard (ex: diagnostic audit cu schema `{top_5: [...], honorable_mentions: [...]}`) funcționează doar parțial — produce HTML mai scurt fără voturi.
+- [ ] **De decis:** (a) re-promovează `senate_transcript.py` din `scripts/deprecated/` la `scripts/` (clarifică statusul real); SAU (b) inline-uiește generarea în `senate_synth.py` și șterge fișierul; SAU (c) extinde-l să suporte și schema diagnostic (top_5 + honorable_mentions) ca prima clasă.
+- [ ] Iese natural din audit Musk HM5 (dual-schema path în senate_synth.py) — aceeași temă: shim-uri retained după migrări, fără cleanup explicit.
+- [ ] Found: 2026-05-17, post Senate top-5 diagnostic audit (sesiunea care a generat manual `runs/senate/transcripts/2026-05-17/top5-diagnostic-audit.html` prin `python -c "import senate_transcript; ..."`).
+
 ### Usage & Efficiency reporting — PENDING
 
 > **Status:** PENDING (proposal-only, 2026-05-17). Full design în `experiments/usage-efficiency-proposal-pending.md`. Captured via `/consilium`. No code change yet — awaiting explicit go-ahead.
