@@ -450,6 +450,7 @@ flowchart TD
         <div class="cell"><dt>When</dt><dd>Default — majoritatea deliberărilor</dd></div>
       </dl>
       <div class="use-when"><b>Ordinea RUND2:</b> Conservator rulează <i>înainte</i> de Generator și Control. Output-ul său setează <code>tokens_budget</code> și poate ridica <code>irreversibility_flag</code> — care blochează pipeline-ul până la consimțământul explicit al user-ului.</div>
+      <div class="use-when" style="margin-top:6px;border-left:3px solid var(--bad);padding-left:10px;"><b>Caveat — Role separation, not Chinese wall.</b> Sequential rulează același LLM în 3 roluri, în același context window. <code>strip_context.py</code> elimină prompt-ul vocii anterioare, dar nu șterge memoria in-context a modelului. Separarea vine din role prompts, nu din izolare reală. Izolare reală = Parallel sub-agenți.</div>
     </div>
 
     <!-- 2. PARALLEL — REMOVED -->
@@ -466,7 +467,7 @@ flowchart TD
           <div class="parallel-col"><span class="actor con">Conservator (sub-agent)</span></div>
         </div>
         <div class="wall" title="chinese wall — sub-agenții nu se văd"></div>
-        <div class="ok">✓ Independență reală — sub-agenții returnează doar JSON final, fără reasoning comun.</div>
+        <div class="ok">✓ Independență reală — sub-agenții returnează doar JSON final, fără reasoning comun. <code>strip_context.py</code> <b>nu se folosește</b> în Parallel — izolarea e garantată prin dispatch separat, nu prin sanitizarea promptului.</div>
       </div>
       <dl class="mode-meta">
         <div class="cell"><dt>Sub-agenți</dt><dd><b>3</b> <span style="color:var(--muted);font-size:11px;">(auto cross-check)</span></dd></div>
