@@ -247,6 +247,12 @@ python scripts/memory.py --tier long --query auth        # substring filter
 python scripts/memory.py --tier all --query feedback     # union peste 3 tiers
 ```
 
+## Dispatch defaults (per voice / per senator)
+
+Default behavior unless overridden by project memory (`MEMORY.md`). All voices și senatori pinned la `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `haiku` verifiers în `trias_split`, `opus` Generator pentru high-stakes) — single source of truth per mod, descriptive nu enforced.
+
+Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 6× · Trias 9× · `parallel_skeptic` 1.33× · `dialectic_skeptic` 2.3× · `trias_split` 3.3× · Senate ~2.3× (7 senatori).
+
 ## Parallel voices mode
 
 <!-- === RUND2 === -->
@@ -266,7 +272,7 @@ python scripts/memory.py --tier all --query feedback     # union peste 3 tiers
 
 Fiecare sub-agent primește: `success_criterion`, diff/context, **conținutul integral al prompt-ului vocii sale**, instrucția de a returna strict JSON.
 
-**Model default: Sonnet 4.6.** Dispatch explicit cu `model: "sonnet"`. Override: `model: "opus"` pe Generator pentru high-stakes/ambigue; `model: "haiku"` pe Control/Conservator pentru diff-uri mici. Fără override, vocile moștenesc modelul orchestratorului — setează explicit.
+**Override semantics (Parallel mode):** `model: "opus"` pe Generator pentru high-stakes/ambigue; `model: "haiku"` pe Control/Conservator pentru diff-uri mici. Default per `## Dispatch defaults`.
 
 **Prompt template:**
 ```
@@ -500,7 +506,7 @@ Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au defini�
 ### Workflow
 
 1. **Formulează propunerea concret** — paragraf: ce schimbi, de ce, fișiere atinse, success criterion.
-2. **Dispatch 7 sub-agenți paralel** (`model: "sonnet"` explicit), fiecare cu prompt-ul senatorului inline. Input identic:
+2. **Dispatch 7 sub-agenți paralel** (model default per `## Dispatch defaults`), fiecare cu prompt-ul senatorului inline. Input identic:
    ```
    Proposal under audit: <textul>
    Context: <fișiere atinse, success criterion>
