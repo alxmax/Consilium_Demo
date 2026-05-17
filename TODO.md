@@ -823,10 +823,10 @@ Decizie soft-pozitivă, prioritate scăzută.
   - AC: classification rule documentată per cross-Q type (factual vs opinion) [USER Q3]
   - AC: explicit timeout T default 30min cu autoresolve fallback + audit trail pentru Q-urile autoresolved [DIMON]
   - AC: cross-Qs reformulate în limbaj user-friendly (nu verbatim din output senatorial) [SOCRATE]
-- [ ] **C — explicit prompt on MODIFY (R2 sau accept)**
-  - AC: inline 1-sentence definition pentru R2 vs accept în prompt [SOCRATE]
-  - AC: soft convergence signal (flag user după 3 cicluri R2 fără verdict change) [DIMON]
-  - AC: default "accept" preserves status quo [USER Q4 declined hard cap]
+- [x] **C — explicit prompt on MODIFY (R2 sau accept)** — branch `feat/modify-explicit-prompt` (commit `f0dd242`, pushed, pending PR merge)
+  - AC: inline 1-sentence definition pentru R2 vs accept în prompt [SOCRATE] ✅
+  - AC: soft convergence signal (flag user după 3 cicluri R2 fără verdict change) [DIMON] ✅
+  - AC: default "accept" preserves status quo [USER Q4 declined hard cap] ✅
 
 **Deferred — necesită empirical audit înainte de execuție:**
 
@@ -889,12 +889,15 @@ _Senatul a aprobat propunerea. Nicio modificare necesară._
 >
 > **Status (audit 2026-05-17):** Senator critiques marked `[DEFERRED]` per item — feedback on never-executed audit proposals ("flow-and-modes-audit"). Lighter touch: păstrăm în TODO pentru referință, dar nu sunt action items live. Re-evaluează când re-deschizi propunerea sau când `senate_todo.py` produce alte blocuri.
 
-### Hotărârea Senate — phase1-deeply-split-plus-laws-mapping · 17 Mai 2026 · GO (GO 5 · MODIFY 2 · STOP 0)
+### Hotărârea Senate — phase1-deeply-split-plus-laws-mapping · 17 Mai 2026 · GO (GO 5 · MODIFY 2 · STOP 0) ✅ IMPLEMENTAT
 
 > **Propunere:** Phase 1 (3 changes): P1.1 augment docs/senate/architecture.md §8.1 table (5 existing Senate Laws) with column mapping each Law to one of the 4 Consilium Constitution Principles. P1.2 add DEEPLY_SPLIT …
+>
+> **Status (2026-05-17):** P1.2 (DEEPLY_SPLIT verdict în `senate_synth.py`) + Dimon co-changes (`senate_transcript.py` VOTE_COLORS `#f07d00` + `senate_todo.py` polarization branch) + P1.3 teste — shipped pe `main` via `feat/senate-phase1-deeply-split`. Caption auditabil în `docs/architecture.html` (mapping criterion verbatim) — branch `feat/deeply-split-verdict` (commit `0b9c25f`, pushed). 19/19 teste PASS.
 
-- [ ] **[WITTGENSTEIN]** Three operational definitions required: (1) voters_present — count of senators with non-null ballot; specify whether ABSTAIN counts toward quorum and add abstain_votes variable in formula; (2) threshold 3 must be derived (e.g., floor(quorum/2)+1 = 3 when quorum=5) or explicitly committed as constant with rationale in code comments; (3) Principle mapping table needs caption stating mapping criterion (e.g., 'each Law maps to the Principle whose violation it primarily prevents') — otherwise column is editorial opinion, not auditable.
-- [ ] **[DIMON]** P1.2 must include co-changes to: (a) senate_transcript.py — add DEEPLY_SPLIT to VOTE_COLORS with distinct color (e.g., orange #f07d00); (b) senate_todo.py — add explicit DEEPLY_SPLIT branch emitting polarization-signal line in TODO.md. Without these, DEEPLY_SPLIT is a verdict synthesizer emits but downstream consumers render silently wrong. Additionally P1.3 should add negative test confirming 4-3 + valid blocaj_resolution resolving to 5-2 does NOT produce DEEPLY_SPLIT.
+- [x] **[WITTGENSTEIN]** Three operational definitions required: (1) voters_present — count of senators with non-null ballot; specify whether ABSTAIN counts toward quorum and add abstain_votes variable in formula; (2) threshold 3 must be derived (e.g., floor(quorum/2)+1 = 3 when quorum=5) or explicitly committed as constant with rationale in code comments; (3) Principle mapping table needs caption stating mapping criterion (e.g., 'each Law maps to the Principle whose violation it primarily prevents') — otherwise column is editorial opinion, not auditable.
+- [x] **[DIMON]** P1.2 must include co-changes to: (a) senate_transcript.py — add DEEPLY_SPLIT to VOTE_COLORS with distinct color (e.g., orange #f07d00); (b) senate_todo.py — add explicit DEEPLY_SPLIT branch emitting polarization-signal line in TODO.md. Without these, DEEPLY_SPLIT is a verdict synthesizer emits but downstream consumers render silently wrong. Additionally P1.3 should add negative test confirming 4-3 + valid blocaj_resolution resolving to 5-2 does NOT produce DEEPLY_SPLIT.
+- [ ] **[SOCRATE — neabordat]** Coverage table formal disjoint între DEEPLY_SPLIT și restul verdictelor (GO/MODIFY/STOP/UNREACHABLE) peste toate tuplurile (GO, STOP, MODIFY, ABSENT) ce însumează 7 — cele 5 teste unitare existente nu constituie coverage exhaustiv pe boundary.
 
 ### Hotărârea Senate — bundle-2-senators-plus-5-improvements · 17 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
 
