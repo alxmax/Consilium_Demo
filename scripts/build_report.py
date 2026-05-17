@@ -61,6 +61,18 @@ def _candidate_by_id(items: list[dict], cid: str) -> dict | None:
     return None
 
 
+def _conservator_risk(score: dict) -> float | None:
+    # Conservator schema (prompts/voices/conservator.md): risk lives at
+    # regression_risk.net_concern. Legacy bundles may have top-level risk_score.
+    rr = score.get("regression_risk")
+    if isinstance(rr, dict) and isinstance(rr.get("net_concern"), (int, float)):
+        return float(rr["net_concern"])
+    legacy = score.get("risk_score")
+    if isinstance(legacy, (int, float)):
+        return float(legacy)
+    return None
+
+
 def _voice_scores_for(chosen: str | None, control: dict, conservator: dict) -> dict | None:
     if chosen is None:
         return None
@@ -68,10 +80,11 @@ def _voice_scores_for(chosen: str | None, control: dict, conservator: dict) -> d
     score = _candidate_by_id(conservator.get("scores") or [], chosen) or {}
     issues = verdict.get("issues") or []
     control_score = 0.0 if not verdict.get("valid") else max(0.3, 1.0 - sum(issue_penalty(i) for i in issues))
+    risk = _conservator_risk(score)
     return {
         "generator": 0.5 if chosen == "do_nothing" or chosen.startswith("adversarial_") else 1.0,
         "control": round(control_score, 3),
-        "conservator": float(score.get("risk_score", 0.5)),
+        "conservator": 0.5 if risk is None else risk,
     }
 
 
@@ -84,10 +97,9 @@ def _why_not(verdict: dict | None, score: dict | None) -> str:
         first = verdict["issues"][0] if verdict["issues"] else {}
         if isinstance(first, dict) and first.get("detail"):
             bits.append(f"control: {first['detail'][:80]}")
-    if score and isinstance(score.get("risk_score"), (int, float)):
-        risk = float(score["risk_score"])
-        if risk >= 0.5:
-            bits.append(f"risk={risk:.2f}")
+    risk = _conservator_risk(score) if score else None
+    if risk is not None and risk >= 0.5:
+        bits.append(f"risk={risk:.2f}")
     return "; ".join(bits) or "ranked below chosen"
 
 
