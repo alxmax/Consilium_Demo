@@ -29,7 +29,7 @@ RUNS_DIR = REPO / "runs" / "senate"
 
 SENATORS = (
     "wittgenstein", "aurelius", "confucius", "socrate",
-    "musk", "dimon", "napoleon",
+    "musk", "dimon", "napoleon", "deming", "tacitus",
 )
 REQUIRED_PROMPT_SECTIONS = ("## Rol", "## Specialitate", "## Output format", "## Limite")
 
@@ -99,7 +99,7 @@ def test_prompts_are_consistent() -> tuple[bool, str]:
             missing.append(f"{name}.md output format missing 'modify_request' field declaration")
     if missing:
         return False, "; ".join(missing)
-    return True, f"all 7 prompts present, structured, declare vote + modify_request"
+    return True, f"all {len(SENATORS)} prompts present, structured, declare vote + modify_request"
 
 
 def test_fixture_smoke() -> tuple[bool, str]:
@@ -129,7 +129,7 @@ def _require_bundle(code: int, bundle: dict | None, stderr: str) -> tuple[bool, 
 
 
 def test_verdict_go_unanimous() -> tuple[bool, str]:
-    """7-of-7 GO yields verdict GO."""
+    """All-of-N GO yields verdict GO."""
     code, bundle, stderr = run_synth(make_payload(
         proposal="all-GO smoke test",
         senators=all_voting("GO"),
@@ -141,9 +141,9 @@ def test_verdict_go_unanimous() -> tuple[bool, str]:
     bundle = guard
     if bundle["verdict"] != "GO":
         return False, f"expected GO, got {bundle['verdict']}"
-    if bundle["vote_counts"]["GO"] != 7:
-        return False, f"expected 7 GO, got {bundle['vote_counts']}"
-    return True, "7/7 GO -> verdict GO"
+    if bundle["vote_counts"]["GO"] != len(SENATORS):
+        return False, f"expected {len(SENATORS)} GO, got {bundle['vote_counts']}"
+    return True, f"{len(SENATORS)}/{len(SENATORS)} GO -> verdict GO"
 
 
 def test_verdict_go_quorum() -> tuple[bool, str]:
@@ -163,9 +163,9 @@ def test_verdict_go_quorum() -> tuple[bool, str]:
 
 
 def test_verdict_modify_default() -> tuple[bool, str]:
-    """No-quorum split (e.g. 4 GO / 3 MODIFY) yields MODIFY."""
+    """No-quorum split (4 GO / 5 MODIFY out of 9) yields MODIFY."""
     senators = all_voting("GO")
-    for name in ("musk", "dimon", "socrate"):
+    for name in ("musk", "dimon", "socrate", "deming", "tacitus"):
         senators[name] = base_senator_output("MODIFY", "x")
     code, bundle, stderr = run_synth(make_payload(
         proposal="no-quorum smoke", senators=senators, label="smoke-modify"))
@@ -175,17 +175,18 @@ def test_verdict_modify_default() -> tuple[bool, str]:
     bundle = guard
     if bundle["verdict"] != "MODIFY":
         return False, f"expected MODIFY, got {bundle['verdict']} (counts {bundle['vote_counts']})"
-    return True, "4 GO / 3 MODIFY -> verdict MODIFY"
+    return True, "4 GO / 5 MODIFY -> verdict MODIFY"
 
 
 def test_verdict_unreachable() -> tuple[bool, str]:
-    """4 senators voting (3 absent) is below quorum -> UNREACHABLE."""
+    """4 senators voting is below quorum -> UNREACHABLE."""
     present = ("wittgenstein", "aurelius", "confucius", "socrate")
+    absent = [n for n in SENATORS if n not in present]
     senators = {name: base_senator_output("GO") for name in present}
     code, bundle, stderr = run_synth(make_payload(
         proposal="unreachable smoke",
         senators=senators,
-        absent=["musk", "dimon", "napoleon"],
+        absent=absent,
         label="smoke-unreachable",
     ))
     guard = _require_bundle(code, bundle, stderr)
@@ -196,9 +197,9 @@ def test_verdict_unreachable() -> tuple[bool, str]:
         return False, f"expected UNREACHABLE, got {bundle['verdict']}"
     if not any("quorum_unreachable" in w for w in bundle["warnings"]):
         return False, f"expected quorum_unreachable warning, got: {bundle['warnings']}"
-    if sorted(bundle["senators_absent"]) != ["dimon", "musk", "napoleon"]:
+    if sorted(bundle["senators_absent"]) != sorted(absent):
         return False, f"unexpected senators_absent: {bundle['senators_absent']}"
-    return True, "4 present / 3 absent -> UNREACHABLE + quorum_unreachable warning"
+    return True, f"4 present / {len(absent)} absent -> UNREACHABLE + quorum_unreachable warning"
 
 
 def test_unrecognized_vote_warns_and_counts_modify() -> tuple[bool, str]:
@@ -211,8 +212,9 @@ def test_unrecognized_vote_warns_and_counts_modify() -> tuple[bool, str]:
     if isinstance(guard, tuple):
         return guard
     bundle = guard
-    if bundle["vote_counts"]["MODIFY"] != 1 or bundle["vote_counts"]["GO"] != 6:
-        return False, f"expected 6 GO + 1 MODIFY, got {bundle['vote_counts']}"
+    expected_go = len(SENATORS) - 1
+    if bundle["vote_counts"]["MODIFY"] != 1 or bundle["vote_counts"]["GO"] != expected_go:
+        return False, f"expected {expected_go} GO + 1 MODIFY, got {bundle['vote_counts']}"
     if not any("aurelius" in w and "unrecognized" in w for w in bundle["warnings"]):
         return False, f"expected unrecognized-vote warning for aurelius, got: {bundle['warnings']}"
     return True, "invalid vote -> counted MODIFY + structural warning surfaced"
@@ -545,6 +547,30 @@ def test_deeply_split_resolved_via_blocaj() -> tuple[bool, str]:
 
 
 
+def test_abstain_excluded_from_voters_present() -> tuple[bool, str]:
+    """ABSTAIN votes are recognized (no unrecognized-vote warning) but excluded
+    from tally and voters_present. With 5 ABSTAIN + 4 GO out of 9, voters_present
+    drops to 4 -> UNREACHABLE (degraded-mode signal from Deming/Tacitus must not
+    silently boost MODIFY count).
+    """
+    senators = all_voting("GO")
+    for name in ("musk", "dimon", "napoleon", "deming", "tacitus"):
+        senators[name] = base_senator_output("ABSTAIN", "insufficient sample")
+    code, bundle, stderr = run_synth(make_payload(
+        proposal="abstain smoke", senators=senators, label="smoke-abstain"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if bundle["vote_counts"]["GO"] != 4 or bundle["vote_counts"]["MODIFY"] != 0:
+        return False, f"expected GO=4 MODIFY=0 (ABSTAIN excluded), got {bundle['vote_counts']}"
+    if bundle["verdict"] != "UNREACHABLE":
+        return False, f"expected UNREACHABLE (4 < QUORUM=5 after ABSTAIN), got {bundle['verdict']}"
+    if any("unrecognized" in w for w in bundle["warnings"]):
+        return False, f"ABSTAIN must not trigger unrecognized-vote warning, got: {bundle['warnings']}"
+    return True, "5 ABSTAIN + 4 GO -> voters_present=4 -> UNREACHABLE, no unrecognized warning"
+
+
 def test_collision_safe_write() -> tuple[bool, str]:
     """Forcing same-timestamp collision: pre-write a stub at the path the next
     synth invocation will try to use, then verify synth produces a `_v2`
@@ -598,6 +624,9 @@ TEST_GROUPS = [
         ("deeply_split_3_4",            test_deeply_split_3_4),
         ("negative_5_2_not_split",      test_negative_5_2_not_deeply_split),
         ("deeply_split_blocaj_bypass",  test_deeply_split_resolved_via_blocaj),
+    ]),
+    ("ABSTAIN (9-senator)", [
+        ("abstain_excluded",            test_abstain_excluded_from_voters_present),
     ]),
     ("Compat & persistence", [
         ("bundle_persisted",            test_bundle_persisted_and_valid_json),
