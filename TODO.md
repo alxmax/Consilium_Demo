@@ -823,6 +823,82 @@ Decizie soft-pozitivă, prioritate scăzută.
 
 ## 🏛 Hotărâri Senate
 
+### Hotărârea Senate — mode-bugfix-performance · 18 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Mode bugfix + performance v2: BUG-1 (Dialectic nu scrie artifact-ul la root), BUG-2 (_safe_risk_score default 0.5 distruge separatia pe deliberari unanime), BUG-3 (Trias dispatch crash pe T01). Propun…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Definitii operationale obligatorii: artifact ca set de fisiere specificat in task spec; schema JSON Pass-1 strict (chosen required, disagreements.severity enum) pt P2; info_gain_pass2 pe campuri JSON indexabile; B1 separare fix primar vs safety net.
+- [ ] **[AURELIUS]** Split in 2 transe. Transa 1 GO: B1 (complete×high, evidenta directa), B2 (complete×moderate, 5 LOC), B3 (complete×moderate), P1 (partial×trivial, user agreed), E1+E2 (complete×trivial). Transa 2 STOP provizoriu: P2 necesita info_gain >= 0 pe majoritate; P3 contrazice SKILL.md fara evidenta empirica; P4 necesita test prompt integrity.
+- [ ] **[CONFUCIUS]** GO necondiționat: B2, B3, E2. GO conditionat: B1 (specifica textul exact in SKILL.md); P1 (DEPRECATED marker explicit + runs-citation, NU stergere silentioasa). MODIFY: P2 (definire operationala 'unanim'). STOP provizoriu: P3 (contrazice contract SKILL.md + personalities.py weights[conservator] devine dead code). E1 GO ca experiment dar tabel decizie predefinit.
+- [ ] **[SOCRATE]** Declara: (1) sursa BUG-1 (benchmark prompt vs Dialectic orchestrator); (2) semantica intentionata pentru 'maintained' fara risk_score; (3) >=1 run empiric care arata Pass-2 valoare pe unanim inainte de P2; (4) smoke test P3 (Conservator cu/fara lens pe acelasi input). B1+B3 forward; B2, P2, P3 necesita dovada empirica.
+- [ ] **[MUSK]** Minimum viable patch: B1+B2+P2 batch (fix correctness inainte de optimizare). Simplifica B3 (loud-fail+timeout). Simplifica P3 (1-sentence stripped lens). Simplifica E2 (camp in revision_log). Deletion *_pass2.md + dialectic_merge.py gated pe E1. P1+P4 forward (P4 ca proiectie noua).
+- [ ] **[DIMON]** B1 content-validation (non-empty + path exact, NU doar exists). B2 ID-matching validation Pass-1/Pass-2 inainte de preluare risk_score. P2 'unanim' formal include toate grades disagreement (NU doar substantial). P3 experiment empiric obligatoriu (Conservator cu/fara lens pe acelasi input) inainte de activare.
+- [ ] **[NAPOLEON]** GO B1+B2+E2+P1 in 4h block (~3.25h total). P2 gated pe E2 baseline data. STOP P3+P4+B3 acest block. Optimal sequence: B2 (0.25h) → B1 (0.5h) → E2 (1.5h) → P1 (1h) → P2 (2h, daca E2 cu date). B3 defer pana Trias volume >20/lună.
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **P1** (cross-ref: AURELIUS, CONFUCIUS, MUSK, NAPOLEON)
+- [ ] **P2** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, SOCRATE, MUSK, DIMON, NAPOLEON)
+- [ ] **P3** (cross-ref: AURELIUS, CONFUCIUS, SOCRATE, MUSK, DIMON, NAPOLEON)
+- [ ] **P4** (cross-ref: AURELIUS, MUSK, NAPOLEON)
+
+### Hotărârea Senate — benchmark-modes-efficiency-audit · 18 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Benchmark-modes audit: verifica analiza rezultatelor benchmark si propune imbunatatiri de eficienta (P1-P6) pentru modurile consilium. P1: output-contract self-verify in final dispatch. P2: cost-aware…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** P1+P2 necesita clarificari operationale obligatorii: sursa expected_files, retry semantics, definitie testabila easy_code, recalcul 25% excluzand superpowers. P3/P5/P4/P6 pot trece GO.
+- [ ] **[AURELIUS]** P1 GO, P3+P5 GO imediat ca pre-conditii. P2 STOP provizoriu. P4 MODIFY (deja in SKILL.md). P6 MODIFY ($/verified ca metric secundar nu principal).
+- [ ] **[CONFUCIUS]** P1 GO conditionat (max 1 re-dispatch, fallback warning). P2 STOP/DEFER (clasificare fara autoritate, contrazice P3 car-wash). P3+P5 one-liners fara Senate. P4 GO. P6 MODIFY (recalculare retroactiva).
+- [ ] **[SOCRATE]** Inainte de GO: (1) decide daca n=4 e suficient; (2) diagnoza empirica T04; (3) recalcula $/verified excluzand T00; (4) P1 declara protocol expected_files.
+- [ ] **[MUSK]** Sterge trias_split + avg proxy. Colapseaza P2 in P4. Merge P3+P5. Implementeaza P1, P4, P6. Dialectic: fix path bug, keep.
+- [ ] **[DIMON]** P3 prerequisite. P2 include failure signal + override + fallback. P1 extins la non-empty + syntax check. P4 cu decision tree documentat.
+- [ ] **[NAPOLEON]** GO {P3, P4, P5, P6} imediat. HOLD P1 pana T04 re-run. STOP P2 (cost prohibitive pt $17 savings).
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **P1** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, SOCRATE, MUSK, DIMON, NAPOLEON)
+- [ ] **P2** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, DIMON, NAPOLEON)
+- [ ] **P3** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, DIMON, NAPOLEON)
+- [ ] **P4** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, DIMON, NAPOLEON)
+- [ ] **P5** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, NAPOLEON)
+- [ ] **P6** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, NAPOLEON)
+
+### Hotărârea Senate — benchmark-report-audit · 18 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Benchmark framework: verificare rezultate, analiza HTML display bugs, eficienta si cost per rezultat, propuneri.
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Defineste operational: run_completat (num_turns>=2 + output_tokens>=500), mod_real (intersectie dinamica MODES si workspace/), raport_corect (test grep), metrice_eficienta (4 coloane), proxy_score (validare cu ground-truth).
+- [ ] **[AURELIUS]** Reduce scope: fix-urile A+B sunt triviale (one-liners), nu necesita Senate. Senate-ul e util doar pentru redesign proxy score.
+- [ ] **[CONFUCIUS]** Fix consilium_parallel->trias e GO neconditionat. Marcheaza superpowers INVALID (vizibil). Adauga prag N>=2 inainte de scor agregat. Nu cupla bug fixes cu formula proxy schimbare in acelasi commit.
+- [ ] **[SOCRATE]** Audit complet al tuturor referintelor la consilium_parallel in repo. Clarifica definitia operationala BROKEN (prag testabil). Clarifica daca trias 1-run e inclus sau marcat insufficient_data. Verifica daca alte hooks contamineaza alte moduri.
+- [ ] **[MUSK]** Sterge propunerile D si F. Fix root cause superpowers (dezactivare hook), nu heuristica input_tokens<10. Proxy = verify_score * completion_flag, nu 40+30+30. Minimum viable: A + C + E.
+- [ ] **[DIMON]** MODES derivat dinamic din workspace/, nu hardcodat. verify/report.json citit cu try/except + 3 stari (OK/BROKEN/UNVERIFIED). Proxy score gate: verify=false -> scor=0. Smoke test: coloana mod complet goala -> WARNING stdout.
+- [ ] **[NAPOLEON]** GO pe A+B+C (~2.6h). AMANA D. STOP pe E (>1 zi). Terrain: operator engaged, ROI A+B+C = 25-50x, go acum.
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **B** (cross-ref: AURELIUS, NAPOLEON)
+- [ ] **C** (cross-ref: MUSK, NAPOLEON)
+
+### Hotărârea Senate — blind-benchmark-wrapper · 18 Mai 2026 · MODIFY (GO 1 · MODIFY 6 · STOP 0)
+
+> **Propunere:** Construieste un wrapper extern (scripts/fix_benchmark_pendings.py) care post-hoc converteste PEND entries la PEND_HEADLESS dupa ce claude -p termina, permitand evaluare oarba: Claude ruleaza normal fa…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Specifice: (1) definitia operationala a 'evaluarii oarbe'; (2) algoritmul exact de identificare a PEND-urilor din sesiune; (3) definitia cantitativa a succesului; (4) contractul complet al extensiei mark_outcome.py.
+- [ ] **[CONFUCIUS]** fix_benchmark_pendings.py trebuie sa includa: (1) guard de idempotenta; (2) documentatie inline ca e wrapper de benchmark exclusiv. mark_outcome.py extins trebuie sa valideze ca PEND_HEADLESS e permis doar cu flag explicit --benchmark.
+- [ ] **[SOCRATE]** Adauga mecanism de izolare mai ferm decat timestamp (ex. env var sau run-ID injectat de wrapper). Clarifica daca mark_outcome.py face in-place edit sau appenda intrare de corectie — contractul append-only trebuie mentinut.
+- [ ] **[MUSK]** Elimina wrapping-ul lui claude -p din script. Reduce fix_benchmark_pendings.py la ~15-20 linii: primeste --since <timestamp>, itereaza runs/, patching via mark_outcome.py extins. Verifica daca logica de iterare runs/ poate fi importata din priors.py.
+- [ ] **[DIMON]** Inlocuieste timestamp-based matching cu run-path fingerprint matching: fix_benchmark_pendings.py colecteaza run-path-urile produse de claude -p, apoi apeleaza mark_outcome.py cu fingerprint exact. Elimina complet dependenta de fereastra temporala.
+- [ ] **[NAPOLEON]** Merge PR-ul curent as-is, sesiune noua pentru fix_benchmark_pendings.py pe branch separat, context curat.
+
 ### Hotărârea Senate — bug-audit-dashboard-sync · 17 Mai 2026 · GO (GO 5 · MODIFY 2 · STOP 0)
 
 > **Propunere:** Audit de buguri HIGH/CRITICAL in codebase-ul Dashboard_Sync (Python trading dashboard). Identifica, prioritizeaza si descrie concret 5-10 buguri care pot cauza date incorecte, ImportError, sau comport…
