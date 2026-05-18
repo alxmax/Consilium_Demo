@@ -146,47 +146,44 @@ def test_verdict_go_unanimous() -> tuple[bool, str]:
     return True, f"{len(SENATORS)}/{len(SENATORS)} GO -> verdict GO"
 
 
-def test_verdict_go_quorum() -> tuple[bool, str]:
-    """5-of-7 GO + 2 MODIFY yields verdict GO."""
+def test_verdict_go_supermajority() -> tuple[bool, str]:
+    """7-of-9 GO + 2 STOP + 0 MODIFY yields verdict GO (supermajority reached, no MODIFY blocks)."""
     senators = all_voting("GO")
-    senators["musk"] = base_senator_output("MODIFY", "trim something")
-    senators["dimon"] = base_senator_output("MODIFY", "add stress test")
+    senators["musk"] = base_senator_output("STOP", "oppose")
+    senators["dimon"] = base_senator_output("STOP", "oppose")
     code, bundle, stderr = run_synth(make_payload(
-        proposal="quorum smoke", senators=senators, label="smoke-quorum-go"))
+        proposal="supermajority smoke", senators=senators, label="smoke-supermaj-go"))
     guard = _require_bundle(code, bundle, stderr)
     if isinstance(guard, tuple):
         return guard
     bundle = guard
     if bundle["verdict"] != "GO":
-        return False, f"expected GO at 5/7, got {bundle['verdict']} (counts {bundle['vote_counts']})"
-    return True, "5/7 GO + 2 MODIFY -> verdict GO"
+        return False, f"expected GO at 7/9 GO + 2 STOP, got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    return True, "7 GO + 2 STOP -> verdict GO (supermajority, no MODIFY)"
 
 
-def test_verdict_modify_default() -> tuple[bool, str]:
-    """No-quorum split (4 GO / 5 MODIFY out of 9) yields MODIFY."""
+def test_verdict_modify_blocks() -> tuple[bool, str]:
+    """Any MODIFY vote blocks GO — even 7 GO + 1 MODIFY yields MODIFY, not GO."""
     senators = all_voting("GO")
-    for name in ("musk", "dimon", "socrate", "deming", "tacitus"):
-        senators[name] = base_senator_output("MODIFY", "x")
+    senators["musk"] = base_senator_output("MODIFY", "resolve this first")
+    # 8 GO + 1 MODIFY — would be supermajority without the MODIFY, but MODIFY blocks
     code, bundle, stderr = run_synth(make_payload(
-        proposal="no-quorum smoke", senators=senators, label="smoke-modify"))
+        proposal="modify-blocks smoke", senators=senators, label="smoke-modify-blocks"))
     guard = _require_bundle(code, bundle, stderr)
     if isinstance(guard, tuple):
         return guard
     bundle = guard
     if bundle["verdict"] != "MODIFY":
-        return False, f"expected MODIFY, got {bundle['verdict']} (counts {bundle['vote_counts']})"
-    return True, "4 GO / 5 MODIFY -> verdict MODIFY"
+        return False, f"expected MODIFY (blocked by 1 MODIFY vote), got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    return True, "8 GO + 1 MODIFY -> verdict MODIFY (MODIFY always blocks)"
 
 
 def test_verdict_unreachable() -> tuple[bool, str]:
-    """4 senators voting is below quorum -> UNREACHABLE."""
-    present = ("wittgenstein", "aurelius", "confucius", "socrate")
-    absent = [n for n in SENATORS if n not in present]
-    senators = {name: base_senator_output("GO") for name in present}
+    """All senators ABSTAIN -> UNREACHABLE (zero active votes)."""
+    senators = all_voting("ABSTAIN")
     code, bundle, stderr = run_synth(make_payload(
-        proposal="unreachable smoke",
+        proposal="all-abstain smoke",
         senators=senators,
-        absent=absent,
         label="smoke-unreachable",
     ))
     guard = _require_bundle(code, bundle, stderr)
@@ -194,12 +191,12 @@ def test_verdict_unreachable() -> tuple[bool, str]:
         return guard
     bundle = guard
     if bundle["verdict"] != "UNREACHABLE":
-        return False, f"expected UNREACHABLE, got {bundle['verdict']}"
-    if not any("quorum_unreachable" in w for w in bundle["warnings"]):
-        return False, f"expected quorum_unreachable warning, got: {bundle['warnings']}"
-    if sorted(bundle["senators_absent"]) != sorted(absent):
-        return False, f"unexpected senators_absent: {bundle['senators_absent']}"
-    return True, f"4 present / {len(absent)} absent -> UNREACHABLE + quorum_unreachable warning"
+        return False, f"expected UNREACHABLE (all ABSTAIN), got {bundle['verdict']}"
+    if any("unrecognized" in w for w in bundle["warnings"]):
+        return False, f"ABSTAIN must not trigger unrecognized warning, got: {bundle['warnings']}"
+    if bundle["voters_present"] != len(SENATORS):
+        return False, f"expected voters_present={len(SENATORS)} (ABSTAIN = present), got {bundle['voters_present']}"
+    return True, f"{len(SENATORS)} ABSTAIN -> UNREACHABLE, voters_present={len(SENATORS)}"
 
 
 def test_unrecognized_vote_warns_and_counts_modify() -> tuple[bool, str]:
@@ -417,7 +414,7 @@ def test_blocaj_resolution_applied() -> tuple[bool, str]:
 
 
 def test_deeply_split_4_3() -> tuple[bool, str]:
-    """4 GO + 3 STOP (polarized, both factions >= POLARIZATION_THRESHOLD=3) → DEEPLY_SPLIT."""
+    """4 GO + 3 STOP + 2 ABSTAIN, MODIFY==0 → DEEPLY_SPLIT (neither reaches QUORUM=7)."""
     senators = {
         "wittgenstein": base_senator_output("GO"),
         "aurelius":     base_senator_output("GO"),
@@ -426,6 +423,8 @@ def test_deeply_split_4_3() -> tuple[bool, str]:
         "musk":         base_senator_output("STOP", "block A"),
         "dimon":        base_senator_output("STOP", "block B"),
         "napoleon":     base_senator_output("STOP", "block C"),
+        "deming":       base_senator_output("ABSTAIN"),
+        "tacitus":      base_senator_output("ABSTAIN"),
     }
     code, bundle, stderr = run_synth(make_payload(
         proposal="4-3 polarized smoke", senators=senators, label="smoke-deeply-split-4-3"))
@@ -437,11 +436,11 @@ def test_deeply_split_4_3() -> tuple[bool, str]:
         return False, f"expected DEEPLY_SPLIT, got {bundle['verdict']} (counts {bundle['vote_counts']})"
     if not bundle.get("blocaj_pending"):
         return False, f"expected blocaj_pending populated for DEEPLY_SPLIT, got: {bundle.get('blocaj_pending')}"
-    return True, "4 GO / 3 STOP -> DEEPLY_SPLIT + blocaj_pending surfaced"
+    return True, "4 GO / 3 STOP / 2 ABSTAIN -> DEEPLY_SPLIT + blocaj_pending (user can force ABSTAIN)"
 
 
-def test_deeply_split_3_3_1() -> tuple[bool, str]:
-    """3 GO + 3 STOP + 1 MODIFY (polarized with abstention) → DEEPLY_SPLIT."""
+def test_modify_blocks_deeply_split() -> tuple[bool, str]:
+    """3 GO + 3 STOP + 1 MODIFY → MODIFY (MODIFY always blocks, even in a polarized split)."""
     senators = {
         "wittgenstein": base_senator_output("GO"),
         "aurelius":     base_senator_output("GO"),
@@ -450,22 +449,24 @@ def test_deeply_split_3_3_1() -> tuple[bool, str]:
         "musk":         base_senator_output("STOP", "block Y"),
         "dimon":        base_senator_output("STOP", "block Z"),
         "napoleon":     base_senator_output("MODIFY", "tweak Q"),
+        "deming":       base_senator_output("ABSTAIN"),
+        "tacitus":      base_senator_output("ABSTAIN"),
     }
     code, bundle, stderr = run_synth(make_payload(
-        proposal="3-3-1 polarized smoke", senators=senators, label="smoke-deeply-split-3-3-1"))
+        proposal="3-3-1 modify blocks smoke", senators=senators, label="smoke-modify-blocks-split"))
     guard = _require_bundle(code, bundle, stderr)
     if isinstance(guard, tuple):
         return guard
     bundle = guard
-    if bundle["verdict"] != "DEEPLY_SPLIT":
-        return False, f"expected DEEPLY_SPLIT, got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    if bundle["verdict"] != "MODIFY":
+        return False, f"expected MODIFY (MODIFY blocks even when GO==STOP), got {bundle['verdict']} (counts {bundle['vote_counts']})"
     if bundle["vote_counts"] != {"GO": 3, "MODIFY": 1, "STOP": 3}:
         return False, f"expected GO=3 MODIFY=1 STOP=3, got: {bundle['vote_counts']}"
-    return True, "3 GO / 3 STOP / 1 MODIFY -> DEEPLY_SPLIT (MODIFY abstention does not break polarization)"
+    return True, "3 GO / 3 STOP / 1 MODIFY -> MODIFY (MODIFY blocks regardless of GO vs STOP split)"
 
 
 def test_deeply_split_3_4() -> tuple[bool, str]:
-    """3 GO + 4 STOP (polarized inverse) → DEEPLY_SPLIT (not STOP — 4 < QUORUM=5)."""
+    """3 GO + 4 STOP + 2 ABSTAIN, MODIFY==0 → DEEPLY_SPLIT (STOP=4 < QUORUM=7)."""
     senators = {
         "wittgenstein": base_senator_output("GO"),
         "aurelius":     base_senator_output("GO"),
@@ -474,6 +475,8 @@ def test_deeply_split_3_4() -> tuple[bool, str]:
         "musk":         base_senator_output("STOP", "block B"),
         "dimon":        base_senator_output("STOP", "block C"),
         "napoleon":     base_senator_output("STOP", "block D"),
+        "deming":       base_senator_output("ABSTAIN"),
+        "tacitus":      base_senator_output("ABSTAIN"),
     }
     code, bundle, stderr = run_synth(make_payload(
         proposal="3-4 polarized smoke", senators=senators, label="smoke-deeply-split-3-4"))
@@ -483,11 +486,11 @@ def test_deeply_split_3_4() -> tuple[bool, str]:
     bundle = guard
     if bundle["verdict"] != "DEEPLY_SPLIT":
         return False, f"expected DEEPLY_SPLIT, got {bundle['verdict']} (counts {bundle['vote_counts']})"
-    return True, "3 GO / 4 STOP -> DEEPLY_SPLIT (STOP=4 < QUORUM=5, no majority)"
+    return True, "3 GO / 4 STOP / 2 ABSTAIN -> DEEPLY_SPLIT (STOP=4 < QUORUM=7)"
 
 
-def test_negative_5_2_not_deeply_split() -> tuple[bool, str]:
-    """5 GO + 2 STOP → GO (majority check runs before DEEPLY_SPLIT; STOP=2 < threshold=3)."""
+def test_supermajority_required_not_simple_majority() -> tuple[bool, str]:
+    """5 GO + 2 STOP + 2 ABSTAIN → DEEPLY_SPLIT (5 < QUORUM=7, not enough for GO)."""
     senators = {
         "wittgenstein": base_senator_output("GO"),
         "aurelius":     base_senator_output("GO"),
@@ -496,20 +499,22 @@ def test_negative_5_2_not_deeply_split() -> tuple[bool, str]:
         "musk":         base_senator_output("GO"),
         "dimon":        base_senator_output("STOP", "block"),
         "napoleon":     base_senator_output("STOP", "block"),
+        "deming":       base_senator_output("ABSTAIN"),
+        "tacitus":      base_senator_output("ABSTAIN"),
     }
     code, bundle, stderr = run_synth(make_payload(
-        proposal="5-2 majority smoke", senators=senators, label="smoke-not-split-5-2"))
+        proposal="5-2 not-supermajority smoke", senators=senators, label="smoke-supermaj-required"))
     guard = _require_bundle(code, bundle, stderr)
     if isinstance(guard, tuple):
         return guard
     bundle = guard
-    if bundle["verdict"] != "GO":
-        return False, f"expected GO (5/7 majority), got {bundle['verdict']} (counts {bundle['vote_counts']})"
-    return True, "5 GO / 2 STOP -> GO (majority wins, STOP below polarization threshold)"
+    if bundle["verdict"] != "DEEPLY_SPLIT":
+        return False, f"expected DEEPLY_SPLIT (5 GO < QUORUM=7), got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    return True, "5 GO / 2 STOP / 2 ABSTAIN -> DEEPLY_SPLIT (supermajority requires 7, not simple majority)"
 
 
 def test_deeply_split_resolved_via_blocaj() -> tuple[bool, str]:
-    """4-3 polarized + valid blocaj_resolution → GO, NOT DEEPLY_SPLIT (blocaj runs first)."""
+    """6-3 polarized + blocaj flips one STOP to GO → 7 GO, DEEPLY_SPLIT bypassed."""
     round1 = {
         "round": 1,
         "senators": {
@@ -517,41 +522,42 @@ def test_deeply_split_resolved_via_blocaj() -> tuple[bool, str]:
             "aurelius":     base_senator_output("GO"),
             "confucius":    base_senator_output("GO"),
             "socrate":      base_senator_output("GO"),
+            "napoleon":     base_senator_output("GO"),
+            "deming":       base_senator_output("GO"),
             "musk":         base_senator_output("STOP", "block A"),
             "dimon":        base_senator_output("STOP", "block B"),
-            "napoleon":     base_senator_output("STOP", "block C"),
+            "tacitus":      base_senator_output("STOP", "block C"),
         },
     }
-    # Blocaj pair: socrate (GO) vs musk (STOP) — 5 others vote, socrate wins
+    # 6 GO + 3 STOP → DEEPLY_SPLIT (6 < QUORUM=7). Blocaj: deming vs musk.
     blocaj_resolution = {
-        "pair": ["socrate", "musk"],
-        "winning_senator": "socrate",
+        "pair": ["deming", "musk"],
+        "winning_senator": "deming",
         "votes_from_others": {
-            "wittgenstein": "socrate", "aurelius": "socrate", "confucius": "socrate",
-            "dimon": "musk", "napoleon": "musk",
+            "wittgenstein": "deming", "aurelius": "deming", "confucius": "deming",
+            "dimon": "musk", "tacitus": "musk",
         },
     }
     code, bundle, stderr = run_synth(make_multi_round_payload(
-        proposal="4-3 + blocaj resolution smoke", rounds=[round1],
+        proposal="6-3 + blocaj resolution smoke", rounds=[round1],
         label="smoke-deeply-split-blocaj", blocaj_resolution=blocaj_resolution))
     guard = _require_bundle(code, bundle, stderr)
     if isinstance(guard, tuple):
         return guard
     bundle = guard
-    # After blocaj: musk's STOP becomes GO → counts {GO:5, STOP:2}
+    # After blocaj: musk's STOP → GO → counts {GO:7, STOP:2} → GO (QUORUM reached)
     if bundle["verdict"] != "GO":
-        return False, f"expected GO post-blocaj (5/2), got {bundle['verdict']} (counts {bundle['vote_counts']})"
-    if bundle.get("vote_counts_pre_blocaj", {}).get("GO") != 4:
-        return False, f"expected pre-blocaj GO=4, got: {bundle.get('vote_counts_pre_blocaj')}"
-    return True, "4-3 + blocaj (musk→socrate) -> GO 5/2, DEEPLY_SPLIT bypassed"
+        return False, f"expected GO post-blocaj (7/2), got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    if bundle.get("vote_counts_pre_blocaj", {}).get("GO") != 6:
+        return False, f"expected pre-blocaj GO=6, got: {bundle.get('vote_counts_pre_blocaj')}"
+    return True, "6-3 + blocaj (musk→deming) -> GO 7/2, DEEPLY_SPLIT bypassed"
 
 
 
-def test_abstain_excluded_from_voters_present() -> tuple[bool, str]:
-    """ABSTAIN votes are recognized (no unrecognized-vote warning) but excluded
-    from tally and voters_present. With 5 ABSTAIN + 4 GO out of 9, voters_present
-    drops to 4 -> UNREACHABLE (degraded-mode signal from Deming/Tacitus must not
-    silently boost MODIFY count).
+def test_abstain_doesnt_reduce_voters_present() -> tuple[bool, str]:
+    """ABSTAIN = present-but-no-position: excluded from tally, does NOT reduce voters_present.
+    5 ABSTAIN + 4 GO: voters_present=9, active=4 (< QUORUM=7, no MODIFY) → DEEPLY_SPLIT.
+    No unrecognized-vote warning for ABSTAIN.
     """
     senators = all_voting("GO")
     for name in ("musk", "dimon", "napoleon", "deming", "tacitus"):
@@ -563,12 +569,16 @@ def test_abstain_excluded_from_voters_present() -> tuple[bool, str]:
         return guard
     bundle = guard
     if bundle["vote_counts"]["GO"] != 4 or bundle["vote_counts"]["MODIFY"] != 0:
-        return False, f"expected GO=4 MODIFY=0 (ABSTAIN excluded), got {bundle['vote_counts']}"
-    if bundle["verdict"] != "UNREACHABLE":
-        return False, f"expected UNREACHABLE (4 < QUORUM=5 after ABSTAIN), got {bundle['verdict']}"
+        return False, f"expected GO=4 MODIFY=0 (ABSTAIN excluded from tally), got {bundle['vote_counts']}"
+    if bundle["voters_present"] != len(SENATORS):
+        return False, f"expected voters_present={len(SENATORS)} (ABSTAIN = present), got {bundle['voters_present']}"
+    if bundle["verdict"] != "DEEPLY_SPLIT":
+        return False, f"expected DEEPLY_SPLIT (4 GO < QUORUM=7, MODIFY==0), got {bundle['verdict']}"
     if any("unrecognized" in w for w in bundle["warnings"]):
         return False, f"ABSTAIN must not trigger unrecognized-vote warning, got: {bundle['warnings']}"
-    return True, "5 ABSTAIN + 4 GO -> voters_present=4 -> UNREACHABLE, no unrecognized warning"
+    if not any("high_abstain_rate" in w for w in bundle["warnings"]):
+        return False, f"expected high_abstain_rate warning (5 >= threshold=3), got: {bundle['warnings']}"
+    return True, f"5 ABSTAIN + 4 GO: voters_present={len(SENATORS)}, DEEPLY_SPLIT, high_abstain_rate warning"
 
 
 def test_collision_safe_write() -> tuple[bool, str]:
@@ -607,8 +617,8 @@ TEST_GROUPS = [
     ]),
     ("Verdicts", [
         ("verdict_go_unanimous",        test_verdict_go_unanimous),
-        ("verdict_go_quorum",           test_verdict_go_quorum),
-        ("verdict_modify_default",      test_verdict_modify_default),
+        ("verdict_go_supermajority",    test_verdict_go_supermajority),
+        ("verdict_modify_blocks",       test_verdict_modify_blocks),
         ("verdict_unreachable",         test_verdict_unreachable),
         ("unrecognized_vote",           test_unrecognized_vote_warns_and_counts_modify),
     ]),
@@ -618,15 +628,15 @@ TEST_GROUPS = [
         ("blocaj_pending",              test_blocaj_pending),
         ("blocaj_resolution_applied",   test_blocaj_resolution_applied),
     ]),
-    ("DEEPLY_SPLIT (Phase 1)", [
+    ("DEEPLY_SPLIT (supermajority model)", [
         ("deeply_split_4_3",            test_deeply_split_4_3),
-        ("deeply_split_3_3_1",          test_deeply_split_3_3_1),
+        ("modify_blocks_deeply_split",  test_modify_blocks_deeply_split),
         ("deeply_split_3_4",            test_deeply_split_3_4),
-        ("negative_5_2_not_split",      test_negative_5_2_not_deeply_split),
+        ("supermajority_required",      test_supermajority_required_not_simple_majority),
         ("deeply_split_blocaj_bypass",  test_deeply_split_resolved_via_blocaj),
     ]),
     ("ABSTAIN (9-senator)", [
-        ("abstain_excluded",            test_abstain_excluded_from_voters_present),
+        ("abstain_voters_present",      test_abstain_doesnt_reduce_voters_present),
     ]),
     ("Compat & persistence", [
         ("bundle_persisted",            test_bundle_persisted_and_valid_json),
