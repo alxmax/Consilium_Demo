@@ -4,9 +4,7 @@ Acest repo este sursa skill-ului `consilium`. Pentru a-l **folosi**, invocă `/c
 
 ## Contract
 
-`SKILL.md` e contractul public. Citește-l înainte de orice modificare — Constitution (4 principii) și workflow-ul în 6 pași guvernează skill-ul, nu doar utilizatorii lui.
-
-# CLAUDE.md
+`SKILL.md` e contractul public. Citește-l înainte de orice modificare — Constitution (4 principii) și workflow-ul în 8 pași guvernează skill-ul, nu doar utilizatorii lui.
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
@@ -95,7 +93,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
   - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended peste core voices în `trias` și `trias_split`
   - `frontend_domain_lens.md` — draft experimental (Senate R2), fără dispatch entry încă
 - **`prompts/senators/*.md`** — cei 9 senatori folosiți doar în mod `senate` (audit pe skill, nu pe cod user). Schimbarea unui prompt modifică distribuția de verdicts pentru audit-uri viitoare.
-- **`SKILL.md` Constitution + workflow** — schimbarea pașilor 1-6 rupe formatul JSON așteptat de `aggregator.py` și `validate_report.py`. Modifică deodată ambele.
+- **`SKILL.md` Constitution + workflow** — schimbarea pașilor 0-7 rupe formatul JSON așteptat de `aggregator.py` și `validate_report.py`. Modifică deodată ambele.
 
 ## Moduri disponibile
 

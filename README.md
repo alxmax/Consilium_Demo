@@ -52,7 +52,7 @@ Apoi în Claude Code (sesiune nouă): `Review the last commit using the consiliu
 
 ```
 consilium/
-├── SKILL.md                 # contract: Constitution + workflow în 6 pași
+├── SKILL.md                 # contract: Constitution + workflow în 8 pași
 ├── README.md
 ├── FEEDBACK.html            # jurnal de uz real (gitignored)
 ├── prompts/
