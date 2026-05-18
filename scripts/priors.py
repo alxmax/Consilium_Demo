@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import sys
 from collections import Counter
@@ -203,7 +204,7 @@ def find_stale_pendings(entries: list[dict], days_old: int = STALE_PEND_DAYS) ->
     ][:STALE_PEND_CAP]
 
 
-def build_priors(n: int = 10, include_runs: bool = True) -> dict:
+def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False) -> dict:
     entries = parse_feedback(FEEDBACK)
     recent = entries[-n:]
     counts = dict(_outcome_counts(recent))
@@ -227,6 +228,10 @@ def build_priors(n: int = 10, include_runs: bool = True) -> dict:
         out["source"]["runs_total"] = len(runs)
         out.update(_veto_rate(runs))
         out["missing_feedback_runs"] = find_missing_feedback_runs(RUNS, entries)
+    if headless:
+        out["stale_pendings"] = []
+        out["missing_feedback_runs"] = []
+        out["headless_mode"] = True
     return out
 
 
@@ -234,9 +239,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--n", type=int, default=10, help="number of recent FEEDBACK entries to summarize")
     ap.add_argument("--no-runs", dest="runs", action="store_false", help="skip scanning runs/*.json")
+    ap.add_argument("--headless", action="store_true", help="suppress stale_pendings and missing_feedback_runs for non-interactive/CI runs")
     args = ap.parse_args(argv)
 
-    priors = build_priors(n=args.n, include_runs=args.runs)
+    _headless = args.headless or (not sys.stdin.isatty()) or (os.environ.get("CONSILIUM_HEADLESS") == "1")
+    priors = build_priors(n=args.n, include_runs=args.runs, headless=_headless)
     json.dump(priors, sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0

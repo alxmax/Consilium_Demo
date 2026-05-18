@@ -898,6 +898,107 @@ Decizie soft-pozitivă, prioritate scăzută.
 - [ ] **[MUSK]** Nu folosi Senate pentru operații CLI triviale. Rulează python scripts/mark_outcome.py --run-path runs/2026-05-15_2236_todo-triage.json --outcome OK direct. Senate e rezervat pentru decizii arhitecturale asupra skill-ului, nu pentru confirmarea că un triaj executat poate fi marcat OK.
 - [ ] **[DIMON]** Înainte de marcarea OK: (1) adaugă deviation log explicit la runs/2026-05-15_2236_todo-triage.json sau într-un fișier asociat care documentează #1 DEFER→DROP și over-delivery pe #4–#7; (2) clarifică dacă skeptic_on_chosen s-a activat pe acest run (confidence 0.52) și dacă nu, motivul; (3) definește cum priors.py va înregistra acest outcome — 'deliberarea OK' vs. 'execuția OK', distinție care altfel produce calibrare silențios greșită pe parallel mode.
 
+### Follow-up — feat/senate-senators-deming-tacitus (Phase A shipped 2026-05-18)
+
+Bundle implementat după Senate R3 GO 7-0-0 (`runs/senate/2026-05-18_211621-2-senators-phase-a-r3-final.json`). Scope livrat: 2 prompts noi (Deming + Tacitus), SENATORS tuple 7→9 în synth.py + test, ABSTAIN handling minim (exclus din tally, reduce voters_present), 1 test nou (`abstain_excluded`).
+
+**De analizat (cerut de user explicit, 2026-05-18):**
+
+- [ ] **Demotion — de ce s-a scos limbajul complet în R3?** Reconstituie raționamentul: în R2 propunerea avea "5 consecutive ABSTAIN OR correlation >0.9 → demoted". Wittgenstein/Dimon/Napoleon convergent în R2 au cerut fie persistence layer (`runs/senate/senator_state.json` + evaluator), fie deletion. R3 a ales deletion. Întrebare: dacă reluăm demotion ca feature separat (Phase B?), care e arhitectura corectă — stateful counter în synth.py, sau script extern care marchează `registry.yaml`? Implicit: cine ia decizia de demotare — orchestratorul automat sau userul după review? Implicit: care e criteriul reverse — re-promote după ce senator-ul re-câștigă acuratețe? Audit Senate separat înainte de orice implementare.
+
+**Non-blocking nits R3 (TODO, nu blochează):**
+
+- [ ] **WITTGENSTEIN:** comment one-liner în `senate_synth.py` — `voters_present := count of non-ABSTAIN votes` (clarifică dual-use quorum vs tie-breaking)
+- [ ] **WITTGENSTEIN:** comment one-liner în `tacitus.md` — pipeline `html.unescape() → str.casefold() → substring check` (în loc de simplu lowercase, ca să prindă diacritice + entități HTML)
+- [ ] **SOCRATE:** optional one-liner strip+casefold normalization note în label-match operational definition
+- [ ] **CONFUCIUS:** test case explicit pentru tie-breaking rule (voter_present par → MODIFY default) — acoperă regresii viitoare pe synth.py
+- [ ] **DIMON:** substring collision pe label match (`STOP_LIGHT` matches `STOP`) — adaugă word-boundary guard SAU ABSTAIN-on-ambiguity în implementarea Tacitus
+- [ ] **CONFUCIUS:** tacitus.md note despre cold-start period (~30 zile post-deploy ABSTAIN expected) — verifică dacă e suficient documentat în prompt
+- [ ] **AURELIUS:** monitorizare empirică — după 10+ runs cu Deming/Tacitus, validează că ABSTAIN nu e activ pe majoritatea audit-urilor (drag proporțional bounded vs aspirational)
+
+**Decizii architecturale deschise (Phase B):**
+
+- [ ] **QUORUM scaling cu 9 senatori** — actual `QUORUM=5` (5/9 = 56%). Confucius R1 a flagat: "DEEPLY_SPLIT threshold defined for N=7 patterns but N=9 has different distributions (5-4, 4-3-2)". De analizat: scalare la QUORUM=6 (6/9 = 67%, mai aproape de 5/7 = 71%) pune verdictele istorice pe pragul corect? Cere senate audit înainte.
+- [ ] **Timestamp field explicit în JSON schema** — actual timestamp e în numele fișierului (`YYYY-MM-DD_HHMMSS`) + în bundle. Tacitus citește din nume + bundle field. Wittgenstein R3 a cerut anchor explicit la nivel top-level. Verifică dacă synth-ul îl emite consistent în toate code paths.
+- [ ] **`vote_counts` field validation in `validate_report.py`** — verifică dacă tolerează 9-senator output fără să dropeze câmpuri noi (Deming/Tacitus). Dry-run pe bundle 9-senator înainte de prima rulare reală.
+- [ ] **Falsification metrics infrastructure** — dacă demotion revine în Phase B, trebuie storage (`runs/senate/senator_state.json` sau extensie `priors.py --senator`) + script evaluator + criteriu reverse (re-promote).
+
+### Hotărârea Senate — mode-bugfix-performance · 18 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Mode bugfix + performance v2: BUG-1 (Dialectic nu scrie artifact-ul la root), BUG-2 (_safe_risk_score default 0.5 distruge separatia pe deliberari unanime), BUG-3 (Trias dispatch crash pe T01). Propun…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Definitii operationale obligatorii: artifact ca set de fisiere specificat in task spec; schema JSON Pass-1 strict (chosen required, disagreements.severity enum) pt P2; info_gain_pass2 pe campuri JSON indexabile; B1 separare fix primar vs safety net.
+- [ ] **[AURELIUS]** Split in 2 transe. Transa 1 GO: B1 (complete×high, evidenta directa), B2 (complete×moderate, 5 LOC), B3 (complete×moderate), P1 (partial×trivial, user agreed), E1+E2 (complete×trivial). Transa 2 STOP provizoriu: P2 necesita info_gain >= 0 pe majoritate; P3 contrazice SKILL.md fara evidenta empirica; P4 necesita test prompt integrity.
+- [ ] **[CONFUCIUS]** GO necondiționat: B2, B3, E2. GO conditionat: B1 (specifica textul exact in SKILL.md); P1 (DEPRECATED marker explicit + runs-citation, NU stergere silentioasa). MODIFY: P2 (definire operationala 'unanim'). STOP provizoriu: P3 (contrazice contract SKILL.md + personalities.py weights[conservator] devine dead code). E1 GO ca experiment dar tabel decizie predefinit.
+- [ ] **[SOCRATE]** Declara: (1) sursa BUG-1 (benchmark prompt vs Dialectic orchestrator); (2) semantica intentionata pentru 'maintained' fara risk_score; (3) >=1 run empiric care arata Pass-2 valoare pe unanim inainte de P2; (4) smoke test P3 (Conservator cu/fara lens pe acelasi input). B1+B3 forward; B2, P2, P3 necesita dovada empirica.
+- [ ] **[MUSK]** Minimum viable patch: B1+B2+P2 batch (fix correctness inainte de optimizare). Simplifica B3 (loud-fail+timeout). Simplifica P3 (1-sentence stripped lens). Simplifica E2 (camp in revision_log). Deletion *_pass2.md + dialectic_merge.py gated pe E1. P1+P4 forward (P4 ca proiectie noua).
+- [ ] **[DIMON]** B1 content-validation (non-empty + path exact, NU doar exists). B2 ID-matching validation Pass-1/Pass-2 inainte de preluare risk_score. P2 'unanim' formal include toate grades disagreement (NU doar substantial). P3 experiment empiric obligatoriu (Conservator cu/fara lens pe acelasi input) inainte de activare.
+- [ ] **[NAPOLEON]** GO B1+B2+E2+P1 in 4h block (~3.25h total). P2 gated pe E2 baseline data. STOP P3+P4+B3 acest block. Optimal sequence: B2 (0.25h) → B1 (0.5h) → E2 (1.5h) → P1 (1h) → P2 (2h, daca E2 cu date). B3 defer pana Trias volume >20/lună.
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **P1** (cross-ref: AURELIUS, CONFUCIUS, MUSK, NAPOLEON)
+- [ ] **P2** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, SOCRATE, MUSK, DIMON, NAPOLEON)
+- [ ] **P3** (cross-ref: AURELIUS, CONFUCIUS, SOCRATE, MUSK, DIMON, NAPOLEON)
+- [ ] **P4** (cross-ref: AURELIUS, MUSK, NAPOLEON)
+
+### Hotărârea Senate — benchmark-modes-efficiency-audit · 18 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Benchmark-modes audit: verifica analiza rezultatelor benchmark si propune imbunatatiri de eficienta (P1-P6) pentru modurile consilium. P1: output-contract self-verify in final dispatch. P2: cost-aware…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** P1+P2 necesita clarificari operationale obligatorii: sursa expected_files, retry semantics, definitie testabila easy_code, recalcul 25% excluzand superpowers. P3/P5/P4/P6 pot trece GO.
+- [ ] **[AURELIUS]** P1 GO, P3+P5 GO imediat ca pre-conditii. P2 STOP provizoriu. P4 MODIFY (deja in SKILL.md). P6 MODIFY ($/verified ca metric secundar nu principal).
+- [ ] **[CONFUCIUS]** P1 GO conditionat (max 1 re-dispatch, fallback warning). P2 STOP/DEFER (clasificare fara autoritate, contrazice P3 car-wash). P3+P5 one-liners fara Senate. P4 GO. P6 MODIFY (recalculare retroactiva).
+- [ ] **[SOCRATE]** Inainte de GO: (1) decide daca n=4 e suficient; (2) diagnoza empirica T04; (3) recalcula $/verified excluzand T00; (4) P1 declara protocol expected_files.
+- [ ] **[MUSK]** Sterge trias_split + avg proxy. Colapseaza P2 in P4. Merge P3+P5. Implementeaza P1, P4, P6. Dialectic: fix path bug, keep.
+- [ ] **[DIMON]** P3 prerequisite. P2 include failure signal + override + fallback. P1 extins la non-empty + syntax check. P4 cu decision tree documentat.
+- [ ] **[NAPOLEON]** GO {P3, P4, P5, P6} imediat. HOLD P1 pana T04 re-run. STOP P2 (cost prohibitive pt $17 savings).
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **P1** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, SOCRATE, MUSK, DIMON, NAPOLEON)
+- [ ] **P2** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, DIMON, NAPOLEON)
+- [ ] **P3** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, DIMON, NAPOLEON)
+- [ ] **P4** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, DIMON, NAPOLEON)
+- [ ] **P5** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, NAPOLEON)
+- [ ] **P6** (cross-ref: WITTGENSTEIN, AURELIUS, CONFUCIUS, MUSK, NAPOLEON)
+
+### Hotărârea Senate — benchmark-report-audit · 18 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Benchmark framework: verificare rezultate, analiza HTML display bugs, eficienta si cost per rezultat, propuneri.
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Defineste operational: run_completat (num_turns>=2 + output_tokens>=500), mod_real (intersectie dinamica MODES si workspace/), raport_corect (test grep), metrice_eficienta (4 coloane), proxy_score (validare cu ground-truth).
+- [ ] **[AURELIUS]** Reduce scope: fix-urile A+B sunt triviale (one-liners), nu necesita Senate. Senate-ul e util doar pentru redesign proxy score.
+- [ ] **[CONFUCIUS]** Fix consilium_parallel->trias e GO neconditionat. Marcheaza superpowers INVALID (vizibil). Adauga prag N>=2 inainte de scor agregat. Nu cupla bug fixes cu formula proxy schimbare in acelasi commit.
+- [ ] **[SOCRATE]** Audit complet al tuturor referintelor la consilium_parallel in repo. Clarifica definitia operationala BROKEN (prag testabil). Clarifica daca trias 1-run e inclus sau marcat insufficient_data. Verifica daca alte hooks contamineaza alte moduri.
+- [ ] **[MUSK]** Sterge propunerile D si F. Fix root cause superpowers (dezactivare hook), nu heuristica input_tokens<10. Proxy = verify_score * completion_flag, nu 40+30+30. Minimum viable: A + C + E.
+- [ ] **[DIMON]** MODES derivat dinamic din workspace/, nu hardcodat. verify/report.json citit cu try/except + 3 stari (OK/BROKEN/UNVERIFIED). Proxy score gate: verify=false -> scor=0. Smoke test: coloana mod complet goala -> WARNING stdout.
+- [ ] **[NAPOLEON]** GO pe A+B+C (~2.6h). AMANA D. STOP pe E (>1 zi). Terrain: operator engaged, ROI A+B+C = 25-50x, go acum.
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **B** (cross-ref: AURELIUS, NAPOLEON)
+- [ ] **C** (cross-ref: MUSK, NAPOLEON)
+
+### Hotărârea Senate — blind-benchmark-wrapper · 18 Mai 2026 · MODIFY (GO 1 · MODIFY 6 · STOP 0)
+
+> **Propunere:** Construieste un wrapper extern (scripts/fix_benchmark_pendings.py) care post-hoc converteste PEND entries la PEND_HEADLESS dupa ce claude -p termina, permitand evaluare oarba: Claude ruleaza normal fa…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Specifice: (1) definitia operationala a 'evaluarii oarbe'; (2) algoritmul exact de identificare a PEND-urilor din sesiune; (3) definitia cantitativa a succesului; (4) contractul complet al extensiei mark_outcome.py.
+- [ ] **[CONFUCIUS]** fix_benchmark_pendings.py trebuie sa includa: (1) guard de idempotenta; (2) documentatie inline ca e wrapper de benchmark exclusiv. mark_outcome.py extins trebuie sa valideze ca PEND_HEADLESS e permis doar cu flag explicit --benchmark.
+- [ ] **[SOCRATE]** Adauga mecanism de izolare mai ferm decat timestamp (ex. env var sau run-ID injectat de wrapper). Clarifica daca mark_outcome.py face in-place edit sau appenda intrare de corectie — contractul append-only trebuie mentinut.
+- [ ] **[MUSK]** Elimina wrapping-ul lui claude -p din script. Reduce fix_benchmark_pendings.py la ~15-20 linii: primeste --since <timestamp>, itereaza runs/, patching via mark_outcome.py extins. Verifica daca logica de iterare runs/ poate fi importata din priors.py.
+- [ ] **[DIMON]** Inlocuieste timestamp-based matching cu run-path fingerprint matching: fix_benchmark_pendings.py colecteaza run-path-urile produse de claude -p, apoi apeleaza mark_outcome.py cu fingerprint exact. Elimina complet dependenta de fereastra temporala.
+- [ ] **[NAPOLEON]** Merge PR-ul curent as-is, sesiune noua pentru fix_benchmark_pendings.py pe branch separat, context curat.
+
 ### Hotărârea Senate — bug-audit-dashboard-sync · 17 Mai 2026 · GO (GO 5 · MODIFY 2 · STOP 0)
 
 > **Propunere:** Audit de buguri HIGH/CRITICAL in codebase-ul Dashboard_Sync (Python trading dashboard). Identifica, prioritizeaza si descrie concret 5-10 buguri care pot cauza date incorecte, ImportError, sau comport…
@@ -1173,6 +1274,25 @@ _Nicio cerere de modificare înregistrată._
 - [ ] **[DEFERRED]** **[SOCRATE]** Inainte de a continua, declara: (1) definitia operationala a empirical support; (2) daca recomandari anterioare sunt tratate ca priors acceptati; (3) daca skeptic_on_chosen e evaluat ca flag sau mod peer; (4) criteriul de falsificare.
 - [ ] **[DEFERRED]** **[MUSK]** 1. DELETE: dialectic_skeptic + trias_split din SKILL.md. 2. DELETE: scripts/principle_extraction.py. 3. REMOVE: parallel_skeptic ca named mode. 4. DEMOTE: Step 5c la Skill maintenance. 5. COLLAPSE: Step 5d in skeptic_on_chosen auto-trigger. 6. ADD: warning fabricatie Dialectic Pass-2. 7. TIGHTEN: dialectic_merge.py dissent fallback la hard rejection.
 - [ ] **[DEFERRED]** **[DIMON]** (1) Mecanism de verificare cross-referinta dupa eliminari. (2) Tratament runs/ istorice cu mode labels eliminate. (3) Exit condition pentru auto-modificare reflexiva senate.
+
+---
+
+## Benchmark — two-pass runner (de investigat)
+
+**Context:** consilium_sequential benchmark runs produc 0/4 verify:OK cu fix-ul curent (CLAUDE_HEADLESS + CONSILIUM_SUFFIX). Sufixul nu ajunge la sub-agenții interni din trias/dialectic — implementarea post-deliberare depinde de orchestratorul fiecărui mod.
+
+**Propunere:** redesign `run_task.py` pentru modurile `consilium_trias` și `consilium_dialectic` (și opțional sequential) cu doi pași separați:
+- **Pass 1:** `claude -p "/consilium [--mode X] <task>"` → deliberare, raport în `runs/<file>.json`
+- **Pass 2:** `claude -p "chosen_approach: <extras din runs/...json>. Task: <task>. Implement now: write output files."` → context fresh, 0 turns anterior, implementare directă
+
+**De investigat:**
+- [ ] Cum se extrage `chosen_approach` din Pass 1 response / `runs/<file>.json` în mod robust
+- [ ] Ce se întâmplă dacă `runs/<file>.json` nu e scris (consilium fail) — fallback la Pass 2 generic?
+- [ ] Impact pe cost: ~2× per run consilium ($3 vs $1.5); acceptabil?
+- [ ] Trias sub-agenți scriu fișiere intermediare în workspace în Pass 1? Dacă da, Pass 2 trebuie să le vadă
+- [ ] Măsurare: rulează consilium_trias + consilium_dialectic cu two-pass și compară verify rate cu fix-ul curent
+
+**Prioritate:** după ce se confirmă că CONSILIUM_SUFFIX fix-ul ridică sequential la >2/4 verify. Dacă sequential rămâne 0/4, two-pass devine prioritar.
 
 ---
 

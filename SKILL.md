@@ -40,9 +40,11 @@ Două acțiuni în ordine:
 
 1. **Citește contractele celor 3 voci** — `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Definesc câmpurile exacte produse de fiecare voce. **Notă parallel/dialectic:** conținutul fiecărui prompt trebuie *inline-uit* în dispatch-ul sub-agentului — citirea la Step 0 nu e suficientă.
 2. **Rulează `python scripts/priors.py`** — întoarce priori soft din `FEEDBACK.html` + `runs/`. Trei câmpuri ne pot bloca deliberarea curentă până sunt rezolvate:
-   - `stale_pendings` non-empty (PEND mai vechi de 2 zile): întreabă *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid (OK/BAD/skip)?"* — actualizează cu `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferat) sau cu `Edit` direct pe `FEEDBACK.html`. **Nu** folosi `log_feedback.py` — duplichează rândul.
-   - `missing_feedback_runs` non-empty: rulează `python scripts/audit_feedback.py --backfill` ca să creezi PEND-uri pentru runs orfane, apoi rezolvă-le ca mai sus. Dacă lista e mai mare de 3, prefer să rezolvi gap-ul *înainte* de a începe o deliberare nouă.
-   - `pend_pressure > 0.3` (raportul PEND în ultimele N=20 entries — pragul a scăzut de la 0.5): alertă soft *"{pend_count}/{window_size} entries recente sunt PEND — consideri să le închizi?"* — nu bloca, dar înregistrează semnalul.
+   - `stale_pendings` non-empty (PEND mai vechi de 2 zile): întreabă *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid (OK/BAD/skip)?"* — actualizează cu `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferat) sau cu `Edit` direct pe `FEEDBACK.html`. **Nu** folosi `log_feedback.py` — duplichează rândul. **Headless** (`is_headless()`): loghează `[priors] stale_pendings: N entries — skipping prompt` pe stderr și continuă fără să întrebi.
+   - `missing_feedback_runs` non-empty: rulează `python scripts/audit_feedback.py --backfill` ca să creezi PEND-uri pentru runs orfane, apoi rezolvă-le ca mai sus. Dacă lista e mai mare de 3, prefer să rezolvi gap-ul *înainte* de a începe o deliberare nouă. **Headless**: rulează `audit_feedback.py --backfill` automat și continuă.
+   - `pend_pressure > 0.3` (raportul PEND în ultimele N=20 entries — pragul a scăzut de la 0.5): alertă soft *"{pend_count}/{window_size} entries recente sunt PEND — consideri să le închizi?"* — nu bloca, dar înregistrează semnalul. **Headless**: log only, no prompt.
+
+   **Headless (non-interactiv — `claude -p` sau CI):** `stale_pendings` și `missing_feedback_runs` sunt suprimate automat (returnate `[]`) când `sys.stdin.isatty()` e `False`. Override explicit: flag `--headless` sau env var `CONSILIUM_HEADLESS=1`. Output include `headless_mode: true` ca marcaj pentru consumatori.
 
 ### 1. Gather context & state the goal
 Citește schimbarea propusă. Identifică scope (fișiere, module, linii), tip (bugfix/feature/refactor/cleanup), blast radius. Formulează `success_criterion` — o propoziție testabilă.
@@ -77,9 +79,9 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
 **Sequential-first.** Conservator runs before Generator and Control. Its `tokens_budget` output caps how deep the other voices go. Its `irreversibility_flag: true` BLOCKS the pipeline — confirm user consent before proceeding.
 
 **Veto check (auto, after Conservator output):**
-- If `irreversibility_flag: true` → stop, ask user: *"Conservator marcheaza aceasta decizie ca ireversibila. Confirmi ca vrei sa continui?"* — proceed only with explicit YES.
+- If `irreversibility_flag: true` → stop, ask user: *"Conservator marcheaza aceasta decizie ca ireversibila. Confirmi ca vrei sa continui?"* — proceed only with explicit YES. **Headless** (`is_headless()`): NU bloca; setează `metadata.headless_overridden: true` în bundle și continuă. Orchestratorul extern care a setat `CLAUDE_HEADLESS=1` și-a asumat stake-ul.
 - If `meta_recommendation: scale_down` → skip Generator's unconventional/adversarial candidates; cap at 2 candidates; use short path.
-- If `meta_recommendation: scale_up` → warn user, add context request before Generator.
+- If `meta_recommendation: scale_up` → warn user, add context request before Generator. **Headless**: warning emis pe stderr, contextul nu poate fi cerut interactiv — continuă cu input-ul existent.
 
 **Opțional — autoprobe:**
 ```bash
@@ -138,6 +140,8 @@ Dacă `confidence < 0.7`, **înainte** să întrebi utilizatorul:
 cat bundle.json | python scripts/retry_context.py
 ```
 Returnează top-2 candidați cu fișiere/simboluri de citit/grepat. Folosește hint-urile → gather context (Read + Grep) → re-rulează Generator/Control/Conservator **o singură dată** cu input îmbogățit. Dacă confidence încă < 0.7, abia atunci întrebi utilizatorul (Step 6).
+
+**Headless** (`is_headless()`): skip Step 5d integral — merge direct la Step 6 unde `PEND_HEADLESS` e logat. Notă empirică: `retry_context.py` are zero labeled usage în corpus `runs/` (vezi audit senate `2026-05-16_220025-flow-and-modes-audit-r2`); skip-ul în headless e aliniat cu acel deletion-vote și nu pierde un mecanism activ.
 
 ### 6. Report
 
@@ -230,7 +234,7 @@ Output JSON: `{"steps": [...], "rationale": {"chosen": "...", "magnitude": "..."
 
 Reject (`n` la prompt) → rejection logat în `runs/YYYY-MM-DD_HHMM_pipeline_rejected.json`. Rerun cu `--yes` pentru CI sau `--dry-run` pentru audit fără confirmare.
 
-**Skip Step 7 dacă:** `chosen_approach` e `do_nothing` sau `skipped` (scriptul iese cu exit 1 și mesaj clar).
+**Skip Step 7 dacă:** `chosen_approach` e `do_nothing` sau `skipped` (scriptul iese cu exit 1 și mesaj clar) — **SAU** `is_headless()` (orchestratorul extern decide pipeline-ul; sub-agentul Consilium nu execută implement/compile/test în context `claude -p`).
 
 ## Skill maintenance
 
@@ -299,6 +303,23 @@ python scripts/memory.py --tier long --query auth        # substring filter
 python scripts/memory.py --tier all --query feedback     # union peste 3 tiers
 ```
 
+## Headless invariants
+
+Când `CLAUDE_HEADLESS=1` (set de orchestratorul extern care a invocat `claude -p`), 4 puncte din workflow renunță la prompt-urile user-facing și folosesc default-uri documentate. Pattern aliniat cu `CONSILIUM_FORCE_FULL` din `scope_gate.py`. Helper: `from utils import is_headless`.
+
+| Step | Default headless |
+|---|---|
+| 0 (`stale_pendings`, `missing_feedback_runs`, `pend_pressure`) | log warning pe stderr + continuă; pentru `missing_feedback_runs` rulează `audit_feedback.py --backfill` automat |
+| 2 (`irreversibility_flag: true`) | setează `metadata.headless_overridden: true` în bundle + continuă (orchestratorul extern și-a asumat stake-ul) |
+| 5d (retry on low confidence) | skip integral; merge direct la Step 6 cu `PEND_HEADLESS` |
+| 7 (auto-pipeline) | skip integral; orchestratorul extern decide implement/compile/test |
+
+`is_headless() == False` (env var absent) → comportament curent neschimbat. Backward compat 100%.
+
+**Pattern adopted:** boolean strict `CLAUDE_HEADLESS=1` (alte valori → False). Aliniat cu `CONSILIUM_FORCE_FULL=1` precedent (vezi `scripts/scope_gate.py`). Orchestratorul extern (run_task.py, CI script, parent agent) setează env var înainte de invocare; skill-ul nu modifică niciodată env-ul.
+
+**Nota Senate:** `runs/senate/2026-05-18_164154-mode-bugfix-performance.json` + mini-senate H2+H4 (verdict B+X 5/7 + 4/7) au validat acest contract.
+
 ## Dispatch defaults (per voice / per senator)
 
 Default behavior unless overridden by project memory (`MEMORY.md`). All voices și senatori pinned la `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `haiku` verifiers în `trias_split`, `opus` Generator pentru high-stakes) — single source of truth per mod, descriptive nu enforced.
@@ -361,6 +382,8 @@ Per-voice contract (prompt sursă: `prompts/voices/*_pass2.md`):
 | Conservator | `scores[]` | `id` + (`revision` cu `what_changed/peer_evidence` SAU `maintained` cu `peer_claim/dissent`) |
 
 Audit warnings la stderr după merge — verifică-le înainte să consideri 2× cost-ul justificat.
+
+**Effort guidance în headless.** În `claude -p` (`is_headless()`), Pass-1 sub-agents pot rula la `effort=medium` — Pass-2 cross-review rămâne `high`. Decizia aparține orchestratorului extern care invocă `claude -p --effort medium`; skill-ul documentează posibilitatea, nu enforce-ază flag-ul CLI.
 
 ## Trias mode (high-stakes opt-in)
 
