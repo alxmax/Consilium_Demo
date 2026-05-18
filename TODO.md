@@ -139,6 +139,8 @@
 
 Din `TODO_RUND2.md` Anexa D — decizii personale care nu blochează implementarea curentă:
 
+- [ ] **[SENAT] Consilium ca tool de deliberare + implementare** — În contextul benchmark, Consilium deliberează dar nu implementează. Fix temporar: Step 7 `implement` extins (2026-05-18) să scrie fișiere când prompt declară `**Required output files**`. Decizie de arhitectură nerezolvată: vrem ca Consilium să fie un tool de *deliberare pură* (verdict + raport → implementatorul decide) sau *deliberare + implementare* (verdict → Consilium scrie codul)? Implicații: (1) dacă implementare e in-scope, cine decide unde se scriu fișierele în contexte non-benchmark? (2) step-ul `implement` devine o operație blocking (Write tool), nu un reminder advisory. De discutat în Senate înainte de a extinde scope-ul dincolo de benchmark fix-ul curent.
+
 - [ ] **Veto budget pentru `meta_recommendation`: 5/lună acceptabil?** Aurelius+Napoleon au propus, dar numărul e arbitrar. Poate vrei 10 sau 3.
 - [ ] **Outcome tracking — manual sau automat?** Pentru trading se poate automat din MT4. Pentru altele cere completare manuală. Dacă nu, `principle_extraction` nu se activează niciodată.
 - [x] ~~**Napoleon rămâne senator după empirical validation?**~~ — ✅ CLOSED (2026-05-17). **Verdict: STAYS.** Analiza pe 17 senate runs (N=15 voturi valide): participation 88%, distribuție bi-directional (GO=5, MODIFY=7, STOP=3), disagreement-cu-verdict 43% bi-directional (3× mai permissive, 2× mai cautious), rationale-uri cross-domain (ROI/terrain/cost/deferment/narrowing) — zero semnal P3 over-fit. Detalii: `experiments/napoleon-validation-2026-05-17.md`. Re-evaluează dacă apare >3 STOP consecutiv pe propuneri neagresive în următoarele 10 runs.
@@ -822,6 +824,79 @@ Decizie soft-pozitivă, prioritate scăzută.
 ---
 
 ## 🏛 Hotărâri Senate
+
+### Hotărârea Senate — 2-senators-phase-a-r3-final · 18 Mai 2026 · GO (GO 7 · MODIFY 0 · STOP 0)
+
+> **Propunere:** Phase A re-audit (2026-05-18): Add 2 new senators to Senate mode — Deming (statistical-discipline: hit-rate, calibration, sample size, anti-anecdote) and Tacitus (retrospective-historian: compares pas…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** None blocking. Recommended inline comments: voters_present single-definition note, casefold+unescape pipeline note, graceful-degradation scope as run-level no_data not evaluation-level ABSTAIN.
+- [ ] **[SOCRATE]** Optional one-liner: strip+casefold normalization note in label match operational definition. Not a blocker.
+
+### Hotărârea Senate — 2-senators-phase-a-r2 · 18 Mai 2026 · MODIFY (GO 3 · MODIFY 4 · STOP 0)
+
+> **Propunere:** Phase A re-audit (2026-05-18): Add 2 new senators to Senate mode — Deming (statistical-discipline: hit-rate, calibration, sample size, anti-anecdote) and Tacitus (retrospective-historian: compares pas…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** (1) Operational def of label match (verbatim substring, case-insensitive). (2) Add timestamp field to runs/senate JSON schema. (3) Define demotion mechanism concretely (registry.yaml + synth.py reader) or remove falsification language.
+- [ ] **[CONFUCIUS]** Add to pre-merge checklist (item 5): audit test_senate_synth.py for coverage of (a) ABSTAIN branch corpus<5, (b) voters_present-1 arithmetic, (c) new Deming/Tacitus tuple fields. tacitus.md must include note about ABSTAIN for first 30 days post-deployment.
+- [ ] **[SOCRATE]** (1) Verify vote_counts field exists in current schema or scope migration in this PR. (2) Correlation falsification needs concrete storage (runs/senate/vote_history.json) and named evaluation script. (3) Expand grep pattern to range(7), N_SENATORS, senators[:7].
+- [ ] **[DIMON]** (1) Corpus-diversity check alongside count gate — entries span >=2 distinct outcome categories. (2) Define ABSTAIN-streak persistence explicitly (runs/senator_state.json) or remove demotion. (3) Specify tie-breaking rule for even voter_present counts.
+
+### Hotărârea Senate — 2-senators-phase-a-reaudit · 18 Mai 2026 · MODIFY (GO 3 · MODIFY 4 · STOP 0)
+
+> **Propunere:** Phase A re-audit (2026-05-18): Add 2 new senators to Senate mode — Deming (statistical-discipline: hit-rate, calibration, sample size, anti-anecdote) and Tacitus (retrospective-historian: compares pas…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Before merging: (1) deming.md must define 'calibration data' as reference to specific field in runs/senate/ JSON schema or explicitly state schema not yet extended (advisory-only); (2) tacitus.md must specify exact evidence source for 'what actually happened' (FEEDBACK.html structured entry, commit log, user annotation) and acknowledge limitation if source is unstructured; (3) both prompts must include one concrete example question. Test update 7-to-9 is necessary and correct — no objection there.
+- [ ] **[CONFUCIUS]** Before merge: (1) confirm Tacitus prompt specifies which JSON fields it reads from runs/senate/ entries and has graceful degradation path if fields missing; (2) confirm Deming's calibration output fields are either already in aggregator schema or explicitly marked advisory-only so aggregator.py does not silently drop them.
+- [ ] **[SOCRATE]** Before merging: deming.md and tacitus.md must each contain explicit 'degraded mode' section — what senator outputs when required corpus/data absent, and clear statement this degraded output should be weighted lower by synth.py. Additionally: verify via grep/test that no other assertion encodes literal integer 7 as senator count.
+- [ ] **[MUSK]** Add Tacitus only (7-to-8, not 7-to-9). Merge Deming's calibration checklist into Musk prompt as structured sub-section ('statistical discipline questions') — zero sub-agent cost, same function. If user has concrete senate run where missing Deming verdict changed outcome, I retract and vote GO on both.
+- [ ] **[DIMON]** Before GO: (1) Tacitus prompt must include explicit 'no-data' guard; (2) Deming prompt must specify minimum-evidence threshold behavior — what to output when n is structurally small; (3) confirm single-commit atomicity for all 4 changes; (4) verify validate_report.py and aggregator.py tolerate 9-senator output without dropping new senator fields.
+
+### Hotărârea Senate — deliverable-enforcement-r3 · 18 Mai 2026 · MODIFY (GO 0 · MODIFY 4 · STOP 3)
+
+> **Propunere:** Add Step 6.5 'Deliverable contract enforcement (auto)' to Consilium SKILL.md (+17 lines, between Step 6 and Step 7). Behavioral rule (text-only, no regex/parsing): if task prompt declares deliverable …
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Trei precizări operaționale obligatorii: (1) trigger testabil binar, nu listă enumerativă deschisă; (2) definiție testabilă pentru conținut acceptabil (pytest 8/8, nu doar non-empty); (3) schema JSON Step 6 + validate_report.py extinse cu câmpul notes opțional.
+- [ ] **[AURELIUS]** SKILL.md nu e locul corect pentru enforcement determinist de fișiere. STOP pe inserarea în SKILL.md; GO imediat pe implementarea în run_task.py fără audit suplimentar.
+- [ ] **[CONFUCIUS]** STOP pe orice variantă care plasează enforcement-ul în SKILL.md. Precedentele empirice (n=2 eșecuri) și verdict senate R2 (7-0-0 MODIFY) sunt concluzia instituțională. Singura cale validată: implementarea harness-level în run_task.py.
+- [ ] **[SOCRATE]** Patru asumpții load-bearing nedeclarate. Cel puțin (1) text-în-SKILL.md ≠ text-în-suffix și (2) SKILL.md ajunge în context agentului executor trebuie declarate și testate. STOP nu înseamnă abandon — înseamnă reformulare cu investigarea cauzei + precondiții verificabile + test minimal de falsificare.
+- [ ] **[MUSK]** Two targeted cuts: (1) reduce trigger examples 5→2 (un header, un inline); (2) trim spec doc 230→60 linii. Core enforcement mechanism (gate + retry + soft-fail + exceptions) stays intact.
+- [ ] **[DIMON]** Two preconditions remain unmet from R2: (1) Harness-level assertion in run_task.py — file exists + non-empty + distinct exit code on failure. Only structural guarantee against silent 0-scores. (2) Over-trigger disambiguation: distinguish 'filename declared as output' vs 'filename mentioned in context' — explicit negative example în rule text. Fără astea, proposal modifies cosmetic location, leaves counterparty risk unchanged.
+- [ ] **[NAPOLEON]** MERGE SKILL.md change now — cost negligible, benefit real. Track run_task.py companion ca separate issue. Close Senate thread după T1+T2 retest. No R4.
+
+### Hotărârea Senate — deliverable-enforcement-r2 · 18 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Step 6.5 in SKILL.md (deliverable contract enforcement, text-only behavioral rule with verify-then-emit gate) was implemented to force Sonnet 4.6 headless to call Write for declared deliverable files.…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Supply (1) deterministic extract_declared_files() function, (2) measurable pass rate across full benchmark suite, (3) explicit causal hypothesis for WHY model didn't call Write before choosing (a) vs (b).
+- [ ] **[AURELIUS]** Drop senate-deliberation framing for this decision. Approve (b): define exact filename-declaration pattern, confirm claude_raw.json exposes fenced block content, add soft-fail log when extraction finds no match. Skip (a) entirely.
+- [ ] **[CONFUCIUS]** Option (a) is STOP. Option (b) GO conditionat: implement harness-level fenced-block extraction in run_task.py with non-empty file validation and explicit filename collision semantics. Option (c) two-pass is architecturally cleaner — if pursued, the pass-2 invocation should be unconditional. SKILL.md must NOT be the enforcement layer for file writes.
+- [ ] **[SOCRATE]** Before implementation: (1) verify Write is available in headless mode; (2) determine exact failure cause for Attempt 2 (was Step 6.5 read?); (3) explicit silent-wrong-write criterion for (b).
+- [ ] **[MUSK]** Delete Step 6.5 from SKILL.md entirely. Delete option (a) as candidate. Implement only (b): minimal stdlib Python post-processing in run_task.py. No new SKILL.md sections.
+- [ ] **[DIMON]** Two preconditions: (1) harness-level assertion after claude -p before scoring: file exists + non-empty + no placeholder markers + distinct exit code on failure. (2) For (b): strict extraction contract — fence must contain exact declared filename as label; reject ambiguous blocks; hard error on no match (not silent skip).
+- [ ] **[NAPOLEON]** GO on (b); STOP further investment in (a). Modify condition: (b) implementation plan must specify idempotency, error logging, filename matching logic before coding. Avoid third sunk-cost iteration.
+
+### Hotărârea Senate — pend-triage-ok-outcome · 18 Mai 2026 · MODIFY (GO 1 · MODIFY 4 · STOP 2)
+
+> **Propunere:** Marchează PEND-ul din 2026-05-15 (run runs/2026-05-15_2236_todo-triage.json, chosen minimal_next_ship, conf=0.52) ca OK — triage-ul a fost executat substanțial: #2-#8 livrate, #16/#17/#20 droppate, #1…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Înainte de a marca PEND ca OK, propunerea trebuie să definească operațional trei lucruri: (1) pragul numeric pentru 'executat substanțial' (ex. N/M items conform chosen >= X%), (2) criteriul care separă deviația acceptabilă de cea invalidantă — în special pentru #1 (DEFER→DROP), și (3) definiția explicită a outcome-ului OK față de BAD/OVR în sistemul PEND, astfel încât doi auditori independenți să ajungă la același verdict aplicând aceleași criterii.
+- [ ] **[AURELIUS]** Nu Senate pentru aceasta. Propunerea ar trebui retrasă din Senate și executată direct: mark_outcome cu justificarea că execuția a acoperit substanțial chosen-ul (7/7 SHIP items livrate, deviațiile minore documentate). Senate e rezervat pentru modificări la skill însuși sau cod user cu impact real — nu pentru bookkeeping pe PEND-uri de 3 zile cu confidence 0.52.
+- [ ] **[CONFUCIUS]** Acceptarea OK este legitimă și user-ul are autoritate deplină să o facă prin mark_outcome.py. Totuși, pentru a respecta pattern-ul [confirmed] existent în FEEDBACK.html (care impune outcome_reason cu artefact verificabil), marcarea ca OK ar trebui să includă un --reason explicit care: (1) documentează de ce #1 a fost DROP-at și nu DEFER-at ca în chosen, și (2) confirmă că decizia de a livra #2–#8 în loc de doar #2/3/8 a fost conștientă și intenționată, nu accidentală.
+- [ ] **[SOCRATE]** Înainte de a marca OK, trebuie declarate explicit: (1) definiția operațională a OK în priors.py — validează chosen-ul sau rezolvarea problemei?; (2) un prag de deviație acceptabilă (ex: cel mult N items deviază față de chosen pentru a considera semnalul valid); (3) o explicație cauzală minimă pentru deviații (#1 droppat, #4–#8 shipate) care să confirme că deviațiile nu provin dintr-un plan alternativ implicit.
+- [ ] **[MUSK]** Nu folosi Senate pentru operații CLI triviale. Rulează python scripts/mark_outcome.py --run-path runs/2026-05-15_2236_todo-triage.json --outcome OK direct. Senate e rezervat pentru decizii arhitecturale asupra skill-ului, nu pentru confirmarea că un triaj executat poate fi marcat OK.
+- [ ] **[DIMON]** Înainte de marcarea OK: (1) adaugă deviation log explicit la runs/2026-05-15_2236_todo-triage.json sau într-un fișier asociat care documentează #1 DEFER→DROP și over-delivery pe #4–#7; (2) clarifică dacă skeptic_on_chosen s-a activat pe acest run (confidence 0.52) și dacă nu, motivul; (3) definește cum priors.py va înregistra acest outcome — 'deliberarea OK' vs. 'execuția OK', distinție care altfel produce calibrare silențios greșită pe parallel mode.
 
 ### Follow-up — feat/senate-senators-deming-tacitus (Phase A shipped 2026-05-18)
 

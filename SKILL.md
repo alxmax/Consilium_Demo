@@ -225,7 +225,7 @@ Scriptul citește `chosen_approach`, `magnitude` și `reversibility` din raport 
 | high/critical | orice | implement → compile → review → test |
 
 **Definiții pași:**
-- `implement` — reminder să scrii codul per `chosen_approach` (nu automatizat)
+- `implement` — Scrie codul per `chosen_approach`. Dacă prompt-ul conține o secțiune `**Required output files**` sau `**Deliverables**`, folosește Write tool pentru fiecare fișier declarat la calea specificată — nu emite implementarea doar ca fenced block în chat. Fișierele trebuie să existe pe disc, nu doar în răspuns.
 - `compile` — rulează target-ul, verifică exit code 0 (runtime check)
 - `review` — re-rulează Control voice pe codul efectiv scris (nu propunerea)
 - `test` — rulează test suite existent (pytest/unittest autodiscovery)
