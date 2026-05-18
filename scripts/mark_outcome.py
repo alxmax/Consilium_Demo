@@ -80,10 +80,14 @@ def _load_run_map(runs_dir: Path) -> dict[str, str]:
         return {}
 
 
-def _annotate_note(note: str, reason: str | None) -> str:
+def _annotate_note(note: str, reason: str | None, outcome: str = "") -> str:
     parts = [p.strip() for p in note.split(";") if p.strip()]
-    if CONFIRMED_MARKER not in parts:
-        parts.append(CONFIRMED_MARKER)
+    if outcome == "PEND_HEADLESS":
+        if "benchmark_headless" not in parts:
+            parts.append("benchmark_headless")
+    else:
+        if CONFIRMED_MARKER not in parts:
+            parts.append(CONFIRMED_MARKER)
     if reason:
         clean = reason.replace("|", "/").replace("\n", " ").strip()
         if clean:
@@ -100,16 +104,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--chosen", default=None, help="match by chosen id (with --date)")
     ap.add_argument(
         "--outcome",
-        choices=("OK", "BAD", "OVR", "PEND"),
+        choices=("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS"),
         required=True,
-        help="new outcome value (BAD usually — production confirmed regression)",
+        help="new outcome value; PEND_HEADLESS requires --benchmark flag",
     )
+    ap.add_argument("--benchmark", action="store_true",
+        help="required when --outcome PEND_HEADLESS; marks entry as headless benchmark run")
     ap.add_argument("--reason", default=None, help="short string appended to note as outcome_reason=...")
     ap.add_argument("--dry-run", action="store_true", help="print matched rows; don't write")
     args = ap.parse_args(argv)
 
     if not args.run_path and not (args.date and args.chosen):
         print("mark_outcome: provide --run-path OR (--date AND --chosen)", file=sys.stderr)
+        return 1
+
+    if args.outcome == "PEND_HEADLESS" and not args.benchmark:
+        print("mark_outcome: --outcome PEND_HEADLESS requires --benchmark flag", file=sys.stderr)
         return 1
 
     fb_mod, render_mod = _load_modules()
@@ -159,19 +169,33 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # Update outcome + annotate note
+    updated = 0
     for i in matched_idx:
         e = entries[i]
+        if e.outcome == args.outcome:
+            print(f"skip [{i}]: already {args.outcome}")
+            continue
+        if args.outcome == "PEND_HEADLESS" and e.outcome != "PEND":
+            print(
+                f"skip [{i}]: outcome is {e.outcome}, only PEND rows can be converted to PEND_HEADLESS",
+                file=sys.stderr,
+            )
+            continue
         old_outcome = e.outcome
         e.outcome = args.outcome
-        e.note = _annotate_note(e.note, args.reason)
+        e.note = _annotate_note(e.note, args.reason, outcome=args.outcome)
         print(f"matched [{i}]: {e.date} | {e.chosen} | {old_outcome} -> {args.outcome}")
+        updated += 1
 
     if args.dry_run:
         print("(dry-run; no write)")
         return 0
 
+    if not updated:
+        return 0
+
     atomic_write_text(feedback_path, render_mod.render(entries, runs_dir))
-    print(f"updated {len(matched_idx)} row(s) in {feedback_path.name}")
+    print(f"updated {updated} row(s) in {feedback_path.name}")
     return 0
 
 
