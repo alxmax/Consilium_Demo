@@ -25,6 +25,21 @@ def force_utf8_streams() -> None:
             reconfigure(encoding="utf-8")
 
 
+def is_headless() -> bool:
+    """True when CLAUDE_HEADLESS=1 — orchestrator runs via `claude -p`
+    without an interactive user.
+
+    Skill workflow steps that emit user-facing prompts (Step 0 stale_pendings,
+    Step 2 irreversibility, Step 5d retry, Step 7 auto-pipeline) MUST check
+    this and fall through to a documented default instead. See
+    SKILL.md §"Headless invariants" for the per-step contract.
+
+    Pattern aligned with CONSILIUM_FORCE_FULL=1 in scope_gate.py: strict
+    boolean check on string '1'. Other values (true/yes/0/empty) → False.
+    """
+    return os.environ.get("CLAUDE_HEADLESS") == "1"
+
+
 def load_json_stdin(script_name: str) -> Any:
     """Read and parse JSON from stdin.
 
