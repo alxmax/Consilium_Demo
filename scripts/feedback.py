@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 FEEDBACK = ROOT / "FEEDBACK.html"
 RUNS = ROOT / "runs"
 
-OUTCOMES = ("OK", "BAD", "OVR", "PEND")
+OUTCOMES = ("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS")
 
 ROW_RE = re.compile(
     r'<tr class="entry"[^>]*>(?P<body>.*?)</tr>',
@@ -97,7 +97,7 @@ def parse_feedback(path: Path) -> list[dict]:
             else:
                 continue
 
-        if outcome not in ("OK", "BAD", "OVR", "PEND"):
+        if outcome not in ("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS"):
             continue
         entries.append({
             "date": date,

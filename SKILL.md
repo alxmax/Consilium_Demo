@@ -190,6 +190,7 @@ Cele două apeluri de mai jos sunt **obligatorii**. Dacă orchestratorul opreșt
    - `confidence >= 0.7` → `python -X utf8 scripts/log_feedback.py --outcome OK --run-path runs/<file>.json < runs/<file>.json`
    - `confidence < 0.7` → întreabă: *"Confidence sub prag (`<X>`). Vrei să override-ezi `<chosen>`? Alternative: `<alt_ids>`. Răspunde alt_id, 'no', sau 'skip'."* Apoi: `no` → `--outcome OK --force-override`; `<alt_id>` → `--outcome OVR --override-target <alt_id>`; `skip` → fără flag (PEND, dar **nu lăsa apelul să fie sărit**).
    - `confidence null` (toți vetoiți) → `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json`
+   - **Cale non-interactivă (headless — `claude -p`).** Sari promptul de la `confidence < 0.7` și apelează direct: `python -X utf8 scripts/log_feedback.py --outcome PEND_HEADLESS --run-path runs/<file>.json < runs/<file>.json`. `PEND_HEADLESS` e exclus structural din `pend_pressure` și `stale_pendings` (PEND_HEADLESS ≠ „PEND" în Counter) — nu necesită rezolvare manuală.
 
 **Outcome confirmation (retroactiv).** Outcome-ul logat la pasul 2 e subiectiv — reflectă impresia imediată. Dacă mai târziu producția dezvăluie un regression sau o alegere bună, suprascrie-l cu marker confirmat:
 ```bash
