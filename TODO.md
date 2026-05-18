@@ -1101,6 +1101,25 @@ _Nicio cerere de modificare înregistrată._
 
 ---
 
+## Benchmark — two-pass runner (de investigat)
+
+**Context:** consilium_sequential benchmark runs produc 0/4 verify:OK cu fix-ul curent (CLAUDE_HEADLESS + CONSILIUM_SUFFIX). Sufixul nu ajunge la sub-agenții interni din trias/dialectic — implementarea post-deliberare depinde de orchestratorul fiecărui mod.
+
+**Propunere:** redesign `run_task.py` pentru modurile `consilium_trias` și `consilium_dialectic` (și opțional sequential) cu doi pași separați:
+- **Pass 1:** `claude -p "/consilium [--mode X] <task>"` → deliberare, raport în `runs/<file>.json`
+- **Pass 2:** `claude -p "chosen_approach: <extras din runs/...json>. Task: <task>. Implement now: write output files."` → context fresh, 0 turns anterior, implementare directă
+
+**De investigat:**
+- [ ] Cum se extrage `chosen_approach` din Pass 1 response / `runs/<file>.json` în mod robust
+- [ ] Ce se întâmplă dacă `runs/<file>.json` nu e scris (consilium fail) — fallback la Pass 2 generic?
+- [ ] Impact pe cost: ~2× per run consilium ($3 vs $1.5); acceptabil?
+- [ ] Trias sub-agenți scriu fișiere intermediare în workspace în Pass 1? Dacă da, Pass 2 trebuie să le vadă
+- [ ] Măsurare: rulează consilium_trias + consilium_dialectic cu two-pass și compară verify rate cu fix-ul curent
+
+**Prioritate:** după ce se confirmă că CONSILIUM_SUFFIX fix-ul ridică sequential la >2/4 verify. Dacă sequential rămâne 0/4, two-pass devine prioritar.
+
+---
+
 ## Rollback hooks
 
 - **R.1** Toate vocile noi (philosophical variants) sunt **paralele**, nu înlocuiesc — zero risc dacă nu sunt apelate.
