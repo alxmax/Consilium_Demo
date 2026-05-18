@@ -7,7 +7,7 @@ model: sonnet
 
 # Consilium Subagent
 
-Isolated-context wrapper over the `consilium` skill. Runs the full 6-step deliberation in a fresh context and returns the canonical JSON report as your final assistant message. The skill (`SKILL.md`) remains the single source of truth for workflow; this file only specifies the deviations forced by subagent execution.
+Isolated-context wrapper over the `consilium` skill. Runs the full 8-step deliberation in a fresh context and returns the canonical JSON report as your final assistant message. The skill (`SKILL.md`) remains the single source of truth for workflow; this file only specifies the deviations forced by subagent execution.
 
 ## Working directory
 
