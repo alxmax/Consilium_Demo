@@ -234,7 +234,7 @@ Output JSON: `{"steps": [...], "rationale": {"chosen": "...", "magnitude": "..."
 
 Reject (`n` la prompt) → rejection logat în `runs/YYYY-MM-DD_HHMM_pipeline_rejected.json`. Rerun cu `--yes` pentru CI sau `--dry-run` pentru audit fără confirmare.
 
-**Skip Step 7 dacă:** `chosen_approach` e `do_nothing` sau `skipped` (scriptul iese cu exit 1 și mesaj clar) — **SAU** `is_headless()` (orchestratorul extern decide pipeline-ul; sub-agentul Consilium nu execută implement/compile/test în context `claude -p`).
+**Skip Step 7 dacă:** `chosen_approach` e `do_nothing` sau `skipped` (scriptul iese cu exit 1 și mesaj clar). În context headless (`claude -p`), rulează cu `--yes` (non-interactiv, fără prompt de confirmare).
 
 ## Skill maintenance
 
@@ -312,7 +312,7 @@ Când `CLAUDE_HEADLESS=1` (set de orchestratorul extern care a invocat `claude -
 | 0 (`stale_pendings`, `missing_feedback_runs`, `pend_pressure`) | log warning pe stderr + continuă; pentru `missing_feedback_runs` rulează `audit_feedback.py --backfill` automat |
 | 2 (`irreversibility_flag: true`) | setează `metadata.headless_overridden: true` în bundle + continuă (orchestratorul extern și-a asumat stake-ul) |
 | 5d (retry on low confidence) | skip integral; merge direct la Step 6 cu `PEND_HEADLESS` |
-| 7 (auto-pipeline) | skip integral; orchestratorul extern decide implement/compile/test |
+| 7 (auto-pipeline) | rulează cu `--yes` (non-interactiv, fără prompt de confirmare) |
 
 `is_headless() == False` (env var absent) → comportament curent neschimbat. Backward compat 100%.
 
