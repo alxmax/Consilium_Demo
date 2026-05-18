@@ -44,6 +44,8 @@ Două acțiuni în ordine:
    - `missing_feedback_runs` non-empty: rulează `python scripts/audit_feedback.py --backfill` ca să creezi PEND-uri pentru runs orfane, apoi rezolvă-le ca mai sus. Dacă lista e mai mare de 3, prefer să rezolvi gap-ul *înainte* de a începe o deliberare nouă.
    - `pend_pressure > 0.3` (raportul PEND în ultimele N=20 entries — pragul a scăzut de la 0.5): alertă soft *"{pend_count}/{window_size} entries recente sunt PEND — consideri să le închizi?"* — nu bloca, dar înregistrează semnalul.
 
+   **Headless (non-interactiv — `claude -p` sau CI):** `stale_pendings` și `missing_feedback_runs` sunt suprimate automat (returnate `[]`) când `sys.stdin.isatty()` e `False`. Override explicit: flag `--headless` sau env var `CONSILIUM_HEADLESS=1`. Output include `headless_mode: true` ca marcaj pentru consumatori.
+
 ### 1. Gather context & state the goal
 Citește schimbarea propusă. Identifică scope (fișiere, module, linii), tip (bugfix/feature/refactor/cleanup), blast radius. Formulează `success_criterion` — o propoziție testabilă.
 
