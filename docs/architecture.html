@@ -11,7 +11,7 @@
 
 <header>
   <h1>Consilium</h1>
-  <div class="sub">Pattern de deliberare multi-perspectivă pentru orice modificare de cod — 3 voci · 8 moduri · 7 senatori</div>
+  <div class="sub">Pattern de deliberare multi-perspectivă pentru orice modificare de cod — 3 voci · 8 moduri · 9 senatori</div>
 </header>
 
 <nav class="tabs" role="tablist">
@@ -73,6 +73,50 @@
     </div>
   </div>
 
+  <div class="why-three" style="margin:24px 0;">
+  <h2>De ce 3 voci, nu una?</h2>
+  <p style="color:var(--muted);font-size:13px;max-width:720px;">Un singur LLM evaluând propria propunere are blind spots predictibile: produce idei și le validează din aceeași perspectivă. Trei voci cu mandate disjuncte (creativă · analitică · risc) cross-validate înainte de aggregation.</p>
+  <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="1 voice vs 3 voices coverage">
+    <!-- LEFT: 1 voice -->
+    <text x="90" y="22" fill="#e5e7eb" font-size="13" font-weight="600" text-anchor="middle">1 voce (self-eval)</text>
+    <circle cx="90" cy="120" r="58" fill="#2a2410" stroke="#5c4a14" opacity="0.85"/>
+    <text x="90" y="125" fill="#fbbf24" font-size="11" text-anchor="middle">acoperire creativă</text>
+    <text x="90" y="200" fill="#fca5a5" font-size="10" text-anchor="middle" font-style="italic">blind spots: risc, edge cases</text>
+    <!-- DIVIDER -->
+    <line x1="240" y1="40" x2="240" y2="200" stroke="#2d3441" stroke-width="1" stroke-dasharray="3,4"/>
+    <!-- RIGHT: 3 voices -->
+    <text x="480" y="22" fill="#e5e7eb" font-size="13" font-weight="600" text-anchor="middle">3 voci independente</text>
+    <circle cx="430" cy="110" r="55" fill="#2a2410" stroke="#5c4a14" opacity="0.7"/>
+    <text x="430" y="105" fill="#fbbf24" font-size="11" text-anchor="middle">Generator</text>
+    <text x="430" y="118" fill="#fbbf24" font-size="9" text-anchor="middle">creative</text>
+    <circle cx="510" cy="110" r="55" fill="#182338" stroke="#2a3f5f" opacity="0.7"/>
+    <text x="540" y="105" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+    <text x="540" y="118" fill="#93c5fd" font-size="9" text-anchor="middle">verify</text>
+    <circle cx="470" cy="160" r="55" fill="#2a1818" stroke="#5c2a2a" opacity="0.7"/>
+    <text x="470" y="190" fill="#fca5a5" font-size="11" text-anchor="middle">Conservator</text>
+    <text x="470" y="202" fill="#fca5a5" font-size="9" text-anchor="middle">risk</text>
+  </svg>
+</div>
+
+  <div class="voices-mini" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;">
+  <div class="voice-mini gen" style="padding:12px;border:1px solid var(--gen);border-radius:8px;background:#1a1408;">
+    <h4 style="margin:0 0 4px;color:#fbbf24;">Generator</h4>
+    <div style="color:var(--muted);font-size:11px;margin-bottom:8px;">creativ · rulează al 2-lea</div>
+    <div style="font-size:11px;"><b>in:</b> diff + tokens_budget · <b>out:</b> candidates[] + preferred</div>
+  </div>
+  <div class="voice-mini ctl" style="padding:12px;border:1px solid var(--ctl);border-radius:8px;background:#0d1320;">
+    <h4 style="margin:0 0 4px;color:#93c5fd;">Control</h4>
+    <div style="color:var(--muted);font-size:11px;margin-bottom:8px;">analitic · rulează al 3-lea</div>
+    <div style="font-size:11px;"><b>in:</b> candidates + full output · <b>out:</b> verdicts[] + glossary</div>
+  </div>
+  <div class="voice-mini con" style="padding:12px;border:1px solid var(--con);border-radius:8px;background:#1a0a0a;">
+    <h4 style="margin:0 0 4px;color:#fca5a5;">Conservator</h4>
+    <div style="color:var(--muted);font-size:11px;margin-bottom:8px;">risc · rulează primul</div>
+    <div style="font-size:11px;"><b>in:</b> diff + context · <b>out:</b> risk_score + tokens_budget</div>
+  </div>
+</div>
+<p style="font-size:11px;color:var(--muted);margin:-8px 0 24px;">Detalii complete: tab <b>Voices</b>.</p>
+
   <div class="constitution">
     <div class="label">Constitution — guvernează fiecare deliberare</div>
     <div class="principles">
@@ -84,10 +128,10 @@
   </div>
 
   <!-- ===== PIPELINE OVERVIEW MERMAID ===== -->
-  <h2>Pipeline complet — Pașii 0 → 6</h2>
+  <h2>Pipeline complet — Pașii 0 → 7</h2>
 
   <div class="mermaid-wrap" style="max-width:960px;margin-bottom:28px">
-    <h3>Overview — pipeline complet (RUND2 order)</h3>
+    <h3>Overview — pipeline complet</h3>
     <div class="mermaid">
 %%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
 flowchart LR
@@ -102,8 +146,9 @@ flowchart LR
     S5c["5c\nMeta-critic\nmeta_critic.py"]:::aux
     S5d["5d\nRetry\nretry_context.py"]:::aux
     S6["Step 6\nOutput\nruns/*.json"]:::out
-    S0 --> S1 --> S15 --> S2 --> S3 --> S4 --> S5 --> S5b --> S5c --> S5d --> S6
-    S6 -.->|"priors loop"| S0
+    S7["Step 7\nInfer pipeline\ninfer_pipeline.py"]:::aux
+    S0 --> S1 --> S15 --> S2 --> S3 --> S4 --> S5 --> S5b --> S5c --> S5d --> S6 --> S7
+    S7 -.->|"priors loop"| S0
     S5d -. "conf≥0.7\nskip" .-> S6
     classDef aux  fill:#2a2410,stroke:#5c4a14,color:#fbbf24
     classDef step fill:#11151c,stroke:#2d3441,color:#e5e7eb
@@ -143,7 +188,7 @@ flowchart LR
     </div>
   </div>
 
-  <div class="flow" style="grid-template-columns:repeat(4,1fr);margin-bottom:28px;">
+  <div class="flow" style="grid-template-columns:repeat(5,1fr);margin-bottom:28px;">
     <div class="step gen">
       <div class="n">STEP 3</div>
       <h4>Generator</h4>
@@ -167,6 +212,12 @@ flowchart LR
       <h4>Report</h4>
       <p><code>build_report.py | validate_report.py</code>. Persistă în <code>runs/</code>. Loghează în <code>FEEDBACK.html</code> via <code>log_feedback.py</code>. Gate: exit 0=OK, exit 1=field gol, exit 2=JSON malformat.</p>
       <div class="io">runs/YYYY-MM-DD_HHMM_&lt;label&gt;.json → FEEDBACK.html</div>
+    </div>
+    <div class="step aux">
+      <div class="n">STEP 7</div>
+      <h4>Infer pipeline <span class="sub">conditional</span></h4>
+      <p>Mandatory când promptul declară <code>Required output files</code> / <code>Deliverables</code> — <code>infer_pipeline.py</code> deduce și execută pașii de implementare după Step 6. Skip dacă <code>chosen_approach ∈ {do_nothing, skipped}</code>. Headless: <code>--yes</code>.</p>
+      <div class="io">infer_pipeline.py → {steps[], rationale}</div>
     </div>
   </div>
 
@@ -252,15 +303,11 @@ flowchart TD
 
   <!-- ===== AGGREGATION SCHEMES ===== -->
   <div class="agg">
-    <h3>Aggregation — 3 scheme active (+ 1 deprecated)</h3>
+    <h3>Aggregation — 3 scheme active</h3>
     <div class="schemes">
       <div class="scheme">
         <b>majority</b>
         Media voturilor; tiebreak pe varianță minimă.
-      </div>
-      <div class="scheme" style="opacity:0.6;">
-        <b>weighted <span style="color:var(--muted);font-weight:400;">(deprecated)</span></b>
-        Medie ponderată cu weights ∈ [0.2, 0.49]. Scoasă din CLI — tratează <code>conservator</code> ca utility. Funcția rămâne importabilă cu <code>DeprecationWarning</code>.
       </div>
       <div class="scheme default">
         <b>conservative_override <span style="color:var(--muted);font-weight:400;">(default)</span></b>
@@ -295,14 +342,14 @@ flowchart TD
     </div>
   </div>
 
-  <!-- ===== RUND2 THREE-LAYER ARCHITECTURE ===== -->
-  <h2 style="margin-top:32px;">Three-layer architecture (RUND2)</h2>
+  <!-- ===== THREE-LAYER ARCHITECTURE ===== -->
+  <h2 style="margin-top:32px;">Three-layer architecture</h2>
   <p style="color:var(--muted);font-size:13px;margin:-8px 0 12px;">Consilium are 3 layere distincte. Deliberation rulează pe fiecare întrebare user. Aggregation decide ce vede user-ul. Senate intervine doar când e modificat skill-ul însuși.</p>
 
   <div class="rund2-layers">
     <div class="rund2-layer delib">
       <div class="layer-name">Deliberation</div>
-      <div class="components">Conservator → Generator → Control <span style="color:var(--muted);font-size:11px;">(sequential, default RUND2)</span></div>
+      <div class="components">Conservator → Generator → Control <span style="color:var(--muted);font-size:11px;">(sequential, default)</span></div>
       <div class="role">Rulează pe fiecare întrebare user. Auto cross-check parallel se declanșează doar la <code>magnitude: critical</code> ȘI <code>reversibility: irreversible</code>. Silent audit la fiecare 20 runs. <b>Parallel nu mai e selectabil de user.</b></div>
     </div>
     <div class="rund2-layer agg">
@@ -312,10 +359,34 @@ flowchart TD
     </div>
     <div class="rund2-layer sen">
       <div class="layer-name">Senate</div>
-      <div class="components">7 senatori (Wittgenstein, Aurelius, Confucius, Socrate, Musk, Dimon, Napoleon)</div>
+      <div class="components">9 senatori (Aurelius, Confucius, Deming, Dimon, Musk, Napoleon, Socrate, Tacitus, Wittgenstein)</div>
       <div class="role">On-demand audit pentru schimbări la <i>skill</i>-ul însuși. Niciun trigger automat. Verdictul e advisory. Vezi tab-ul <b>Reference → Senate</b>.</div>
     </div>
   </div>
+
+  <div class="mermaid-wrap" style="max-width:900px;margin:24px 0;">
+  <h3>Veto cascade — de la triggers la outcomes</h3>
+  <div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+flowchart LR
+    T1["irreversibility_flag"]:::con --> O1["BLOCK hard"]:::block
+    T2["glossary_fail"]:::ctl --> O2["BLOCK soft"]:::block
+    T3["disagreements: substantial"]:::ctl --> O3["REWORK"]:::rework
+    T4["meta_recommendation: scale_down"]:::con --> O4["ADAPT_SHORT"]:::adapt
+    T5["meta_recommendation: scale_up"]:::con --> O5["ADAPT_EXTENDED"]:::adapt
+    T6["3+ triggers simultane"]:::agg --> O6["ESCALATE"]:::escal
+    T7["none of above"]:::aux --> O7["AGGREGATE (default)"]:::ok
+    classDef con fill:#2a1818,stroke:#5c2a2a,color:#fca5a5
+    classDef ctl fill:#182338,stroke:#2a3f5f,color:#93c5fd
+    classDef agg fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    classDef aux fill:#11151c,stroke:#2d3441,color:#9ca3af
+    classDef block fill:#3a1d1d,stroke:#7a3030,color:#fca5a5
+    classDef rework fill:#2a2410,stroke:#5c4a14,color:#fbbf24
+    classDef adapt fill:#1a2a3d,stroke:#2a3f5f,color:#93c5fd
+    classDef escal fill:#3a1d2a,stroke:#7a3030,color:#fca5a5
+    classDef ok fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+  </div>
+</div>
 
   <h3 style="margin-top:24px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">8-component veto cascade — Aggregation layer</h3>
   <table class="veto-table">
@@ -339,6 +410,26 @@ flowchart TD
   <div class="decision" style="margin-top:24px;">
     <h3>Step 1.5 — scope gate decision tree</h3>
     <div class="lede">Când deliberăm full vs când sărim direct la report. <code>scripts/scope_gate.py</code>, defaults: <code>max_files=1</code>, <code>max_lines=15</code>.</div>
+    <div class="scope-gate-compare" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0;">
+  <div style="padding:10px;background:#0a2e23;border:1px solid #145c45;border-radius:6px;">
+    <h4 style="margin:0 0 6px;color:#6ee7b7;">SKIP (skipped_report)</h4>
+    <ul style="margin:0;padding-left:18px;font-size:11.5px;color:#6ee7b7;line-height:1.6;">
+      <li>diff ≤ 1 file</li>
+      <li>diff ≤ 15 lines</li>
+      <li>nu hit pe blocklist</li>
+      <li>ex: typo, rename, comment fix</li>
+    </ul>
+  </div>
+  <div style="padding:10px;background:#182338;border:1px solid #2a3f5f;border-radius:6px;">
+    <h4 style="margin:0 0 6px;color:#93c5fd;">DELIBERATE (full pipeline)</h4>
+    <ul style="margin:0;padding-left:18px;font-size:11.5px;color:#93c5fd;line-height:1.6;">
+      <li>multi-file SAU &gt;15 lines</li>
+      <li>blocklist hit (auth, crypto, migrations)</li>
+      <li>fail-open: probe error → deliberate</li>
+      <li>ex: refactor, feature, migration</li>
+    </ul>
+  </div>
+</div>
     <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scope gate decision tree">
       <rect x="80" y="10" width="200" height="36" rx="6" fill="#11151c" stroke="#2d3441"/>
       <text x="180" y="33" text-anchor="middle" fill="#e5e7eb" font-size="12">probe_change.py → signals</text>
@@ -421,17 +512,186 @@ flowchart TD
     </svg>
   </div>
 
+  <div class="glossary">
+  <h3>Glosar Overview</h3>
+  <dl>
+    <dt>aggregator</dt><dd>Scriptul care transformă voturile celor 3 voci într-un singur <code>chosen_approach</code>. 4 scheme, default <code>conservative_override</code>. <code>scripts/aggregator.py</code>.</dd>
+    <dt>veto cascade</dt><dd>Set de 8 triggere derivate din output-urile vocilor care decid routing-ul deliberării (BLOCK/REWORK/ADAPT/ESCALATE/AGGREGATE) înainte de aggregation propriu-zisă.</dd>
+    <dt>conservative_override</dt><dd>Schema default de aggregation: medie ponderată cu safety = 1 − conservator, plus veto unilateral pentru Conservator la <code>risk_score &gt; 0.8</code>.</dd>
+    <dt>scope_gate</dt><dd>Step 1.5: auto-skip pentru diff-uri triviale (≤1 file, ≤15 linii). Fail-open: dacă probe-ul eșuează, deliberează. <code>scripts/scope_gate.py</code>.</dd>
+    <dt>priors</dt><dd>Soft signals derivate din FEEDBACK.html și runs/ trecute (weighted_bad_rate, stale_pendings, pend_pressure), injectate la Step 0. <code>scripts/priors.py</code>.</dd>
+    <dt>confidence gate</dt><dd>Step 5b: dacă <code>confidence &lt; 0.7</code> după aggregation, declanșează retry single-pass cu context îmbogățit (Step 5d).</dd>
+    <dt>three-layer architecture</dt><dd>Deliberation (3 voci per întrebare) + Aggregation (synthesis output) + Senate (on-demand audit pe skill changes). Layere distincte, scope-uri diferite.</dd>
+  </dl>
+</div>
+
 </section>
 <section class="tab" id="modes">
 
-  <h2>Flow models — 8 active modes + Parallel (auto-only)</h2>
+  <h2>Care mod folosesc?</h2>
+  <p style="color:var(--muted);font-size:13px;margin:-8px 0 16px;">Decision tree — pornind de la profilul deciziei, către modul recomandat. Skeptic e flag composabil, nu mod separat.</p>
+  <div class="mermaid-wrap" style="max-width:980px;margin-bottom:24px;">
+    <div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
+flowchart TD
+    Q1{"Diff trivial?\n≤1 file, ≤15 linii"}
+    Q1 -->|"da"| SKIP["scope_gate skip\n(no mode needed)"]:::skip
+    Q1 -->|"nu"| Q2{"Reversibility?"}
+    Q2 -->|"reversible"| Q3{"≥2 abordări\nplauzibile?"}
+    Q2 -->|"irreversible\n+ critical"| TRIAS["trias\n(9 sub-agents)"]:::trias
+    Q3 -->|"nu"| SEQ["sequential\n(default)"]:::seq
+    Q3 -->|"da"| Q4{"O voce ar putea\nflip după cross-review?"}
+    Q4 -->|"nu"| TRIAS2["trias"]:::trias
+    Q4 -->|"da"| DIAL["dialectic\n(6 sub-agents)"]:::dial
+    Q5{"Modificare la\nskill însuși?"}
+    SKIP -.->|"sau"| Q5
+    SEQ -.->|"plus"| Q5
+    Q5 -->|"da"| SEN["senate\n(9 senatori, advisory)"]:::sen
+    Q6{"confidence ∈ [0.5, 0.7]?"}
+    SEQ --> Q6
+    DIAL --> Q6
+    TRIAS --> Q6
+    Q6 -->|"da"| SKEP["+ skeptic_on_chosen\n(auto-trigger)"]:::skep
+    Q6 -->|"nu"| OUT["ship chosen"]:::ok
+    classDef skip fill:#11151c,stroke:#2d3441,color:#9ca3af
+    classDef seq fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    classDef dial fill:#182338,stroke:#2a3f5f,color:#93c5fd
+    classDef trias fill:#221830,stroke:#4c2a6b,color:#d8b4fe
+    classDef sen fill:#2a2410,stroke:#5c4a14,color:#fbbf24
+    classDef skep fill:#2a1818,stroke:#5c2a2a,color:#fca5a5
+    classDef ok fill:#0a2e23,stroke:#145c45,color:#6ee7b7
+    </div>
+  </div>
+
+  <div class="cost-map" style="margin:20px 0;">
+    <h3>Cost vs. independență — la o privire</h3>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cost vs independence scatter">
+      <!-- axes -->
+      <line x1="60" y1="280" x2="680" y2="280" stroke="#9ca3af" stroke-width="1.5"/>
+      <line x1="60" y1="280" x2="60" y2="30" stroke="#9ca3af" stroke-width="1.5"/>
+      <text x="370" y="305" fill="#e5e7eb" font-size="11" text-anchor="middle">Independență voci →</text>
+      <text x="32" y="155" fill="#e5e7eb" font-size="11" text-anchor="middle" transform="rotate(-90 32 155)">Cost (× Sequential) →</text>
+      <!-- gridlines -->
+      <line x1="60" y1="220" x2="680" y2="220" stroke="#2d3441" stroke-width="0.5" stroke-dasharray="2,3"/>
+      <line x1="60" y1="140" x2="680" y2="140" stroke="#2d3441" stroke-width="0.5" stroke-dasharray="2,3"/>
+      <line x1="60" y1="60" x2="680" y2="60" stroke="#2d3441" stroke-width="0.5" stroke-dasharray="2,3"/>
+      <text x="50" y="224" fill="#9ca3af" font-size="9" text-anchor="end">1×</text>
+      <text x="50" y="144" fill="#9ca3af" font-size="9" text-anchor="end">2×</text>
+      <text x="50" y="64" fill="#9ca3af" font-size="9" text-anchor="end">3×</text>
+      <!-- Sequential: low cost, low independence (same context) -->
+      <circle cx="140" cy="270" r="14" fill="#0a2e23" stroke="#145c45"/>
+      <text x="140" y="274" fill="#6ee7b7" font-size="10" text-anchor="middle" font-weight="700">SEQ</text>
+      <text x="140" y="252" fill="#6ee7b7" font-size="9" text-anchor="middle">0.33×</text>
+      <!-- Parallel auto: medium cost, high independence -->
+      <circle cx="480" cy="220" r="14" fill="#2a2410" stroke="#5c4a14" opacity="0.6"/>
+      <text x="480" y="224" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="700">PAR*</text>
+      <text x="480" y="202" fill="#fbbf24" font-size="9" text-anchor="middle">1× (auto)</text>
+      <!-- Dialectic: cost 2x, independence + cross-review -->
+      <circle cx="430" cy="140" r="14" fill="#182338" stroke="#2a3f5f"/>
+      <text x="430" y="144" fill="#93c5fd" font-size="10" text-anchor="middle" font-weight="700">DIAL</text>
+      <text x="430" y="122" fill="#93c5fd" font-size="9" text-anchor="middle">2×</text>
+      <!-- Senate -->
+      <circle cx="560" cy="116" r="14" fill="#2a2410" stroke="#5c4a14"/>
+      <text x="560" y="120" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="700">SEN</text>
+      <text x="560" y="98" fill="#fbbf24" font-size="9" text-anchor="middle">2.3×</text>
+      <!-- Trias -->
+      <circle cx="620" cy="60" r="14" fill="#221830" stroke="#4c2a6b"/>
+      <text x="620" y="64" fill="#d8b4fe" font-size="10" text-anchor="middle" font-weight="700">TRI</text>
+      <text x="620" y="42" fill="#d8b4fe" font-size="9" text-anchor="middle">3×</text>
+      <!-- Trias split -->
+      <circle cx="600" cy="48" r="12" fill="#221830" stroke="#4c2a6b" opacity="0.65"/>
+      <text x="600" y="52" fill="#d8b4fe" font-size="8" text-anchor="middle">TRI-s</text>
+      <text x="540" y="38" fill="#d8b4fe" font-size="9">3.3×</text>
+      <!-- Note -->
+      <text x="60" y="20" fill="#9ca3af" font-size="9">* PAR = auto cross-check only la critical+irreversible — nu selectabil de user</text>
+    </svg>
+  </div>
+
+  <div class="mode-compare" style="margin:20px 0;">
+    <h3>Cine vede ce, când</h3>
+    <table class="compare-table" style="font-size:12px;">
+      <thead>
+        <tr>
+          <th>Mod</th>
+          <th>Context per voce</th>
+          <th>Cross-review</th>
+          <th>Dispatch</th>
+          <th>Voting</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Sequential</b></td>
+          <td>același context (cu <code>strip_context.py</code>)</td>
+          <td>nu</td>
+          <td>in-process</td>
+          <td>aggregate scheme</td>
+        </tr>
+        <tr>
+          <td><b>Parallel</b> (auto)</td>
+          <td>context separat per voce</td>
+          <td>nu</td>
+          <td>3 sub-agents paralel</td>
+          <td>aggregate scheme</td>
+        </tr>
+        <tr>
+          <td><b>Dialectic</b></td>
+          <td>context separat (Pass 1) → vede outputs (Pass 2)</td>
+          <td>da (Pass 2)</td>
+          <td>6 sub-agents (3+3)</td>
+          <td>aggregate pe revisions</td>
+        </tr>
+        <tr>
+          <td><b>Trias</b></td>
+          <td>context separat per personalitate; intra-personalitate sequential</td>
+          <td>nu între personalități (chinese wall)</td>
+          <td>9 sub-agents (3×3)</td>
+          <td>vot democratic peste 3 chosen</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dispatch-anatomy" style="margin:20px 0;">
+    <h3>Ce e, de fapt, un "sub-agent"?</h3>
+    <p style="color:var(--muted);font-size:12.5px;max-width:780px;">Nu e un proces sau un model nou — e o nouă invocare API cu propriul context window și propriul prompt. Orchestratorul (Claude main) primește înapoi doar JSON-ul final declarat în system prompt-ul vocii. Niciun shared state.</p>
+    <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sub-agent dispatch anatomy">
+      <rect x="20" y="20" width="180" height="60" rx="6" fill="#0a2e23" stroke="#145c45"/>
+      <text x="110" y="44" fill="#6ee7b7" font-size="13" font-weight="700" text-anchor="middle">Claude main</text>
+      <text x="110" y="62" fill="#9ca3af" font-size="10" text-anchor="middle">orchestrator</text>
+      <line x1="200" y1="50" x2="260" y2="50" stroke="#c084fc" stroke-width="2"/>
+      <polygon points="255,46 262,50 255,54" fill="#c084fc"/>
+      <text x="230" y="42" fill="#d8b4fe" font-size="9" text-anchor="middle">dispatch</text>
+      <text x="230" y="68" fill="#9ca3af" font-size="9" text-anchor="middle">prompt + input</text>
+      <rect x="265" y="10" width="280" height="80" rx="6" fill="#221830" stroke="#4c2a6b"/>
+      <text x="405" y="32" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">sub-agent (e.g. Generator)</text>
+      <text x="405" y="50" fill="#9ca3af" font-size="10" text-anchor="middle">own context window · own system prompt</text>
+      <text x="405" y="68" fill="#9ca3af" font-size="9" text-anchor="middle">nu vede deliberarea altor sub-agenți</text>
+      <text x="405" y="82" fill="#9ca3af" font-size="9" text-anchor="middle">nu vede ce face Claude main între dispatches</text>
+      <line x1="545" y1="50" x2="605" y2="50" stroke="#34d399" stroke-width="2"/>
+      <polygon points="600,46 607,50 600,54" fill="#34d399"/>
+      <text x="575" y="42" fill="#6ee7b7" font-size="9" text-anchor="middle">return</text>
+      <text x="575" y="68" fill="#6ee7b7" font-size="9" text-anchor="middle">final JSON only</text>
+      <rect x="610" y="20" width="90" height="60" rx="6" fill="#11151c" stroke="#2d3441"/>
+      <text x="655" y="48" fill="#e5e7eb" font-size="11" text-anchor="middle">candidates[]</text>
+      <text x="655" y="62" fill="#9ca3af" font-size="9" text-anchor="middle">verdicts[]</text>
+      <!-- bottom: cost implication -->
+      <rect x="20" y="130" width="680" height="90" rx="6" fill="#11151c" stroke="#2d3441"/>
+      <text x="40" y="152" fill="#e5e7eb" font-size="12" font-weight="600">Cost implication</text>
+      <text x="40" y="172" fill="#9ca3af" font-size="11">Fiecare sub-agent = restart de context = input tokens duplicate (system prompt + diff + context).</text>
+      <text x="40" y="190" fill="#9ca3af" font-size="11">Trias = 9 sub-agents = ~9× Sequential baseline.</text>
+      <text x="40" y="208" fill="#9ca3af" font-size="11">Sequential evită overhead-ul → folosește același context window pentru 3 roluri (cu strip).</text>
+    </svg>
+  </div>
+
+  <h2 style="margin-top:32px;">Flow models — toate modurile</h2>
   <p style="color:var(--muted);font-size:13px;margin:-8px 0 18px;">Costul baseline = Sequential. <b>Parallel</b> nu mai e selectabil — rulează automat intern. Modurile Skeptic sunt composabile; Senate are scope distinct.</p>
 
   <div class="modes">
 
     <!-- 1. SEQUENTIAL -->
     <div class="mode sequential-blind">
-      <h3>Sequential — blind <span class="mode-badge default">DEFAULT (RUND2)</span></h3>
+      <h3>Sequential — blind <span class="mode-badge default">DEFAULT</span></h3>
       <div class="subtitle">Un context, dar fiecare voce primește doar strictul necesar prin <code>strip_context.py</code>.</div>
       <div class="stage">
         <div class="label">turn 1 — context unic, strip între voci</div>
@@ -446,40 +706,67 @@ flowchart TD
       </div>
       <dl class="mode-meta">
         <div class="cell"><dt>Sub-agenți</dt><dd><b>0</b></dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">0.33×</span></dd></div>
+        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">1×</span> <span style="color:var(--muted);font-size:11px;">baseline</span></dd></div>
         <div class="cell"><dt>Voci</dt><dd>Conservator → Generator → Control</dd></div>
         <div class="cell"><dt>When</dt><dd>Default — majoritatea deliberărilor</dd></div>
       </dl>
-      <div class="use-when"><b>Ordinea RUND2:</b> Conservator rulează <i>înainte</i> de Generator și Control. Output-ul său setează <code>tokens_budget</code> și poate ridica <code>irreversibility_flag</code> — care blochează pipeline-ul până la consimțământul explicit al user-ului.</div>
-      <div class="use-when" style="margin-top:6px;border-left:3px solid var(--bad);padding-left:10px;"><b>Caveat — Role separation, not Chinese wall.</b> Sequential rulează același LLM în 3 roluri, în același context window. <code>strip_context.py</code> elimină prompt-ul vocii anterioare, dar nu șterge memoria in-context a modelului. Separarea vine din role prompts, nu din izolare reală. Izolare reală = Parallel sub-agenți.</div>
-    </div>
+      <div class="use-when"><b>Ordine:</b> Conservator rulează <i>înainte</i> de Generator și Control. Output-ul său setează <code>tokens_budget</code> și poate ridica <code>irreversibility_flag</code> — care blochează pipeline-ul până la consimțământul explicit al user-ului.</div>
 
-    <!-- 2. PARALLEL — REMOVED -->
-    <div class="mode parallel" style="border-top-color:var(--bad);">
-      <h3>Parallel voices <span class="mode-badge legacy">REMOVED (RUND2)</span></h3>
-      <div class="subtitle">Nu mai e selectabil direct de user. Rulează automat ca <b>cross-check intern</b> când <code>magnitude=critical ∧ reversibility=irreversible</code>. Silent audit la fiecare 20 runs.</div>
-      <div class="stage">
-        <div class="label">auto cross-check intern — condiție dublă</div>
-        <div class="actor main">Claude main</div>
-        <div class="arrow-down">↓ auto-trigger: magnitude=critical AND reversibility=irreversible</div>
-        <div class="parallel-row">
-          <div class="parallel-col"><span class="actor gen">Generator (sub-agent)</span></div>
-          <div class="parallel-col"><span class="actor ctl">Control (sub-agent)</span></div>
-          <div class="parallel-col"><span class="actor con">Conservator (sub-agent)</span></div>
+      <div class="mode-workflow">
+        <h4>Workflow — 4 pași</h4>
+        <ol class="workflow-steps">
+          <li><b>Step 1 — Conservator</b> citește <code>diff + context</code>, întoarce <code>risk_score + tokens_budget + irreversibility_flag</code>. Dacă <code>irreversibility_flag=true</code> → pipeline blocat, cere consimțământ user.</li>
+          <li><b>Step 2 — Generator</b> primește <code>diff + tokens_budget</code> (din pasul 1), produce 3–5 <code>candidates[]</code> + <code>preferred</code>. Include obligatoriu <code>do_nothing</code>.</li>
+          <li><b>Step 3 — Control</b> primește <code>candidates[] + full_output</code>, validează per-candidate: <code>{id, valid, issues, tests_to_write}</code>. <code>strip_context.py</code> înlătură rationale-ul Generator-ului.</li>
+          <li><b>Step 4 — Aggregator</b> rulează <code>conservative_override</code>: medie ponderată cu veto Conservator la <code>risk_score &gt; 0.8</code>. Întoarce <code>chosen_approach + confidence + alternatives</code>.</li>
+        </ol>
+        <div class="io-grid">
+          <div class="io-block">
+            <h5 class="in">Input</h5>
+            <pre>{
+  <span class="k">"diff"</span>: <span class="s">"&lt;unified diff&gt;"</span>,
+  <span class="k">"context"</span>: <span class="s">"&lt;files + intent&gt;"</span>,
+  <span class="k">"success_criterion"</span>: <span class="s">"&lt;...&gt;"</span>
+}</pre>
+          </div>
+          <div class="io-block">
+            <h5 class="out">Output</h5>
+            <pre>{
+  <span class="k">"chosen_approach"</span>: <span class="s">"&lt;id&gt;"</span>,
+  <span class="k">"confidence"</span>: <span class="s">0.85</span>,
+  <span class="k">"alternatives"</span>: [<span class="c">/* why_not */</span>],
+  <span class="k">"voice_scores"</span>: {<span class="c">…</span>}
+}</pre>
+          </div>
         </div>
-        <div class="wall" title="chinese wall — sub-agenții nu se văd"></div>
-        <div class="ok">✓ Independență reală — sub-agenții returnează doar JSON final, fără reasoning comun. <code>strip_context.py</code> <b>nu se folosește</b> în Parallel — izolarea e garantată prin dispatch separat, nu prin sanitizarea promptului.</div>
       </div>
-      <dl class="mode-meta">
-        <div class="cell"><dt>Sub-agenți</dt><dd><b>3</b> <span style="color:var(--muted);font-size:11px;">(auto cross-check)</span></dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">1.0×</span> <span style="color:var(--muted);font-size:11px;">baseline</span></dd></div>
-        <div class="cell"><dt>Voci</dt><dd>Gen · Ctrl · Cons în paralel</dd></div>
-        <div class="cell"><dt>When</dt><dd><span style="color:var(--bad);">REMOVED din selecție manuală.</span> Auto pe critical+irreversible.</dd></div>
-      </dl>
-      <div class="use-when"><b>Notă:</b> flag-ul CLI <code>--mode parallel</code> nu mai e valid de la RUND2. Dacă <code>magnitude=critical ∧ reversibility=irreversible</code>, sequential rulează automat + cross-check parallel silențios. La fiecare 20 runs, un silent audit parallel rulează automat; dacă se detectează divergență sistematică → frecvența crește la 1/5.</div>
+
+      <div class="use-when" style="margin-top:10px;border-left:3px solid var(--bad);padding-left:10px;"><b>Caveat — Role separation, not Chinese wall.</b> Sequential rulează același LLM în 3 roluri, în același context window. <code>strip_context.py</code> elimină prompt-ul vocii anterioare, dar nu șterge memoria in-context a modelului. Separarea vine din role prompts, nu din izolare reală — vezi diagrama de mai jos.</div>
+
+      <svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chinese wall illusion in Sequential" style="max-width:720px;width:100%;margin-top:10px;">
+        <rect x="20" y="40" width="680" height="80" rx="8" fill="#11151c" stroke="#2d3441"/>
+        <text x="40" y="62" fill="#e5e7eb" font-size="12" font-weight="700">1 LLM, 1 context window</text>
+        <text x="40" y="78" fill="#9ca3af" font-size="10">conversation history în memorie</text>
+        <rect x="60" y="92" width="100" height="20" rx="3" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="110" y="106" fill="#fbbf24" font-size="10" text-anchor="middle">Cons</text>
+        <rect x="170" y="92" width="100" height="20" rx="3" fill="#182338" stroke="#2a3f5f"/>
+        <text x="220" y="106" fill="#93c5fd" font-size="10" text-anchor="middle">Gen</text>
+        <rect x="280" y="92" width="100" height="20" rx="3" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="330" y="106" fill="#fca5a5" font-size="10" text-anchor="middle">Ctrl</text>
+        <line x1="160" y1="102" x2="170" y2="102" stroke="#9ca3af" stroke-dasharray="2,2"/>
+        <line x1="270" y1="102" x2="280" y2="102" stroke="#9ca3af" stroke-dasharray="2,2"/>
+        <text x="220" y="138" fill="#fbbf24" font-size="11" text-anchor="middle">strip_context.py — taie prompturile vizibile</text>
+        <text x="220" y="154" fill="#fca5a5" font-size="11" text-anchor="middle" font-weight="700">DAR memoria in-context rămâne</text>
+        <rect x="430" y="50" width="250" height="60" rx="8" fill="#0a2e23" stroke="#145c45"/>
+        <text x="555" y="72" fill="#6ee7b7" font-size="12" text-anchor="middle" font-weight="700">Izolare reală</text>
+        <text x="555" y="92" fill="#6ee7b7" font-size="11" text-anchor="middle">Trias / Dialectic / Senate</text>
+        <text x="555" y="106" fill="#9ca3af" font-size="10" text-anchor="middle">dispatch sub-agenți cu context window propriu</text>
+        <line x1="386" y1="80" x2="426" y2="80" stroke="#fbbf24" stroke-dasharray="3,3"/>
+        <text x="406" y="74" fill="#fbbf24" font-size="9" text-anchor="middle">vs.</text>
+      </svg>
     </div>
 
-    <!-- 3. DIALECTIC -->
+    <!-- 2. DIALECTIC -->
     <div class="mode dialectic">
       <h3>Dialectic — two-pass <span class="mode-badge advanced">OPT-IN</span></h3>
       <div class="subtitle">Două runde paralele cu revizuire cross-context controlată. Implementat în <code>scripts/dialectic_merge.py</code>.</div>
@@ -501,14 +788,47 @@ flowchart TD
       </div>
       <dl class="mode-meta">
         <div class="cell"><dt>Sub-agenți</dt><dd><b>6</b></dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">2.0×</span></dd></div>
+        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">6×</span></dd></div>
         <div class="cell"><dt>Voci</dt><dd>Gen · Ctrl · Cons × 2 pass-uri</dd></div>
         <div class="cell"><dt>When</dt><dd>O voce ar putea schimba opinia după ce vede celelalte</dd></div>
       </dl>
-      <div class="use-when"><b>Limitare cunoscută:</b> Dialectic Pass 2 poate introduce fabricații (constraint drift Pass 1 → Pass 2). Dacă bănuiești drift, adaugă flag-ul <code>skeptic_on_chosen</code> peste Dialectic. Audit warnings la stderr după <code>dialectic_merge.py</code> — verifică înainte să consideri 2× cost-ul justificat.</div>
+      <div class="use-when"><b>Limitare cunoscută:</b> Dialectic Pass 2 poate introduce fabricații (constraint drift Pass 1 → Pass 2). Dacă bănuiești drift, adaugă flag-ul <code>skeptic_on_chosen</code> peste Dialectic.</div>
+
+      <div class="mode-workflow">
+        <h4>Workflow — 5 pași</h4>
+        <ol class="workflow-steps">
+          <li><b>Step 1 — Pass 1 parallel</b>: dispatch 3 sub-agenți izolați (Gen/Ctrl/Cons). Fiecare primește doar <code>diff + context</code>, nu vede ce produc ceilalți.</li>
+          <li><b>Step 2 — merge intermediar</b>: <code>dialectic_merge.py</code> colectează cele 3 output-uri Pass 1 + le distribuie per voce pentru Pass 2.</li>
+          <li><b>Step 3 — Pass 2 cross-review</b>: 3 sub-agenți noi (Gen<sub>p2</sub>/Ctrl<sub>p2</sub>/Cons<sub>p2</sub>) primesc fiecare <code>Pass 1 al celorlalți 2</code>. Emit <code>revision:</code> sau <code>maintained:</code> per item.</li>
+          <li><b>Step 4 — convergence check</b>: <code>dialectic_merge.py</code> agregă revision_log. Dacă toate vocile <code>maintained</code> → convergence=true. Detectează <code>silently_dropped</code> warnings.</li>
+          <li><b>Step 5 — Aggregator</b>: aceleași reguli ca Sequential, dar pe candidați merge-uiți + revision_log auditabil.</li>
+        </ol>
+        <div class="io-grid">
+          <div class="io-block">
+            <h5 class="in">Input (per voce, Pass 2)</h5>
+            <pre>{
+  <span class="k">"my_pass1"</span>: {<span class="c">…</span>},
+  <span class="k">"peers_pass1"</span>: {
+    <span class="k">"control"</span>: {<span class="c">…</span>},
+    <span class="k">"conservator"</span>: {<span class="c">…</span>}
+  }
+}</pre>
+          </div>
+          <div class="io-block">
+            <h5 class="out">Output (per voce, Pass 2)</h5>
+            <pre>{
+  <span class="k">"items"</span>: [{
+    <span class="k">"id"</span>: <span class="s">"A"</span>,
+    <span class="k">"revision"</span>: {<span class="c">/* sau */</span>},
+    <span class="k">"maintained"</span>: {<span class="c">…</span>}
+  }]
+}</pre>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- 4. TRIAS -->
+    <!-- 3. TRIAS -->
     <div class="mode trias">
       <h3>Trias <span class="mode-badge advanced">OPT-IN</span></h3>
       <div class="subtitle">3 personalități × 3 voci = 9 sub-agenți, vot democratic majoritar (3-0 / 2-1 / 2-0).</div>
@@ -565,40 +885,180 @@ flowchart TD
       </div>
       <dl class="mode-meta">
         <div class="cell"><dt>Sub-agenți</dt><dd><b>9</b></dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">3.0×</span></dd></div>
+        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">9×</span></dd></div>
         <div class="cell"><dt>Voci</dt><dd>Pioneer · Architect · Steward × Gen/Ctrl/Cons</dd></div>
         <div class="cell"><dt>When</dt><dd>DB migration, security, refactor mare ≥5 fișiere, ireversibil</dd></div>
       </dl>
+
+      <div class="mode-workflow">
+        <h4>Workflow — 4 pași</h4>
+        <ol class="workflow-steps">
+          <li><b>Step 1 — Dispatch 9 sub-agenți</b>: 3 personalități (Pioneer/Architect/Steward) × 3 voci (Gen/Ctrl/Cons). Fiecare personalitate prepend-ează propriul lens peste prompt-ul vocii core; <code>personalities.py</code> emite weights.</li>
+          <li><b>Step 2 — Pipeline intern per personalitate</b>: în fiecare sub-tree (3 voci), aggregatorul rulează cu weights specifice (ex. Pioneer: G=0.49, C=0.30, K=0.21). Output: 1 <code>chosen</code> per personalitate.</li>
+          <li><b>Step 3 — Democratic tally</b>: cei 3 chosen sunt comparați. 3-0 → confidence 0.95; 2-1 → 0.70; 2-0 (cu 1 abținere) → 0.75; 1-1-1 sau 0-0-0 → <code>PEND</code> + escalare.</li>
+          <li><b>Step 4 — Output</b>: chosen final = vot democratic. Toate cele 3 chosen-uri intermediate logate în <code>deliberation_log</code> pentru audit.</li>
+        </ol>
+        <div class="io-grid">
+          <div class="io-block">
+            <h5 class="in">Input (per sub-agent)</h5>
+            <pre>{
+  <span class="k">"diff"</span>: <span class="s">"&lt;...&gt;"</span>,
+  <span class="k">"personality"</span>: <span class="s">"pioneer"</span>,
+  <span class="k">"lens_prompt"</span>: <span class="s">"&lt;prepended&gt;"</span>,
+  <span class="k">"weights"</span>: {<span class="k">"G"</span>: 0.49, <span class="c">…</span>}
+}</pre>
+          </div>
+          <div class="io-block">
+            <h5 class="out">Output (per personalitate → tally)</h5>
+            <pre>{
+  <span class="k">"pioneer_chosen"</span>: <span class="s">"A"</span>,
+  <span class="k">"architect_chosen"</span>: <span class="s">"A"</span>,
+  <span class="k">"steward_chosen"</span>: <span class="s">"B"</span>,
+  <span class="k">"vote"</span>: <span class="s">"2-1"</span>, <span class="k">"confidence"</span>: 0.70
+}</pre>
+          </div>
+        </div>
+      </div>
+
       <div class="use-when"><a href="#trias-deepdive" style="color:var(--accent-text);">↓ Deep-dive Trias</a> — flow detaliat, cost &amp; failure modes.</div>
     </div>
 
-    <!-- 5. TRIAS SPLIT -->
+    <!-- TRIAS DEEP DIVE (integrated under Trias card) -->
+    <div class="trias-deepdive" id="trias-deepdive">
+      <h3>Trias — deep dive</h3>
+      <div class="lede">Cum circulă informația între voci în Trias, și când e (și când nu e) potrivit.</div>
+
+      <h4>1. Cum circulă informația</h4>
+      <svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trias information flow diagram" class="trias-flow-svg">
+        <defs>
+          <marker id="arrow-trias-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c084fc"/></marker>
+          <marker id="arrow-trias-intra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34d399"/></marker>
+        </defs>
+        <rect x="320" y="14" width="260" height="48" rx="8" fill="#0a2e23" stroke="#145c45" stroke-width="1.5"/>
+        <text x="450" y="36" fill="#6ee7b7" font-size="14" text-anchor="middle" font-weight="700">Claude main — orchestrator</text>
+        <text x="450" y="52" fill="#9ca3af" font-size="10.5" text-anchor="middle">success_criterion + diff + 3 personalities config</text>
+        <line x1="450" y1="62" x2="450" y2="78" stroke="#c084fc" stroke-width="2"/>
+        <line x1="170" y1="78" x2="730" y2="78" stroke="#c084fc" stroke-width="2"/>
+        <line x1="170" y1="78" x2="170" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <line x1="450" y1="78" x2="450" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <line x1="730" y1="78" x2="730" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <text x="450" y="74" fill="#d8b4fe" font-size="10" text-anchor="middle">3 dispatches paralele, fiecare cu weights diferite</text>
+        <!-- Pioneer -->
+        <rect x="70" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
+        <text x="170" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Pioneer</text>
+        <text x="170" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.49 · C=0.30 · K=0.21</text>
+        <rect x="85" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/><text x="170" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
+        <line x1="170" y1="184" x2="170" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="85" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/><text x="125" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+        <rect x="175" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/><text x="215" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
+        <line x1="170" y1="205" x2="170" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
+        <line x1="125" y1="237" x2="155" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <line x1="215" y1="237" x2="185" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="85" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/><text x="170" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Pioneer weights)</text>
+        <line x1="170" y1="287" x2="170" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="85" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/><text x="170" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_pioneer</text>
+        <!-- Architect -->
+        <rect x="350" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
+        <text x="450" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Architect</text>
+        <text x="450" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.30 · C=0.49 · K=0.21</text>
+        <rect x="365" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/><text x="450" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
+        <line x1="450" y1="184" x2="450" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="365" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/><text x="405" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+        <rect x="455" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/><text x="495" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
+        <line x1="450" y1="205" x2="450" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
+        <line x1="405" y1="237" x2="435" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <line x1="495" y1="237" x2="465" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="365" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/><text x="450" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Architect weights)</text>
+        <line x1="450" y1="287" x2="450" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="365" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/><text x="450" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_architect</text>
+        <!-- Steward -->
+        <rect x="630" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
+        <text x="730" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Steward</text>
+        <text x="730" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.30 · C=0.30 · K=0.40</text>
+        <rect x="645" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/><text x="730" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
+        <line x1="730" y1="184" x2="730" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="645" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/><text x="685" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
+        <rect x="735" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/><text x="775" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
+        <line x1="730" y1="205" x2="730" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
+        <line x1="685" y1="237" x2="715" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <line x1="775" y1="237" x2="745" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
+        <rect x="645" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/><text x="730" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Steward weights)</text>
+        <line x1="730" y1="287" x2="730" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="645" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/><text x="730" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_steward</text>
+        <!-- Chinese walls -->
+        <line x1="288" y1="125" x2="288" y2="370" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
+        <line x1="568" y1="125" x2="568" y2="370" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
+        <text x="288" y="100" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.8" font-style="italic">chinese wall</text>
+        <text x="568" y="100" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.8" font-style="italic">chinese wall</text>
+        <!-- Convergence to vote tally -->
+        <line x1="170" y1="340" x2="170" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="450" y1="340" x2="450" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="730" y1="340" x2="730" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="170" y1="412" x2="730" y2="412" stroke="#c084fc" stroke-width="2"/>
+        <line x1="450" y1="412" x2="450" y2="440" stroke="#c084fc" stroke-width="2.5" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="270" y="445" width="360" height="58" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="2"/>
+        <text x="450" y="470" fill="#d8b4fe" font-size="14" font-weight="700" text-anchor="middle">vote tally (3 chosen → 1 verdict)</text>
+        <text x="450" y="490" fill="#9ca3af" font-size="10.5" text-anchor="middle">majority simplă · 3-0 / 2-1 / 2-0 = OK auto · 1-1-1 / 0-0-0 = PEND</text>
+        <line x1="450" y1="503" x2="450" y2="525" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
+        <rect x="290" y="530" width="320" height="40" rx="6" fill="#11151c" stroke="#2d3441"/>
+        <text x="450" y="554" fill="#e5e7eb" font-size="12" text-anchor="middle">team verdict → <tspan font-family="ui-monospace,monospace" fill="#34d399">runs/&lt;ts&gt;_trias.json</tspan></text>
+      </svg>
+
+      <h4>2. Cost &amp; failure modes</h4>
+      <div class="cost-grid">
+        <div class="cost-card use">
+          <div class="cost-card-header">USE TRIAS WHEN</div>
+          <ul>
+            <li>Schema/DB migration <b>ireversibilă</b></li>
+            <li>Security audit — paths auth, crypto, secrets</li>
+            <li>Refactor mare — atinge ≥5 fișiere sau interfețe core</li>
+            <li>Cost-of-wrong-decision &gt;&gt; cost-of-running (9 sub-agenți)</li>
+          </ul>
+        </div>
+        <div class="cost-card avoid">
+          <div class="cost-card-header">DO NOT USE WHEN</div>
+          <ul>
+            <li>Diff &lt; 20 lines / 1 fișier — <code>scope_gate.py</code> va skip oricum</li>
+            <li>Iterare rapidă — Trias ~7× cost vs Sequential</li>
+            <li>Bugfix evident, single approach — Sequential blind ajunge</li>
+            <li>Problema conține constraints implicite — folosește Trias full, nu <code>trias_split</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="failure-modes">
+        <table class="failure-table">
+          <thead><tr><th>Failure</th><th>Trigger</th><th>Recovery</th></tr></thead>
+          <tbody>
+            <tr><td><b>1-1-1 fragmentation</b></td><td>3 personalități, 3 chosen-uri distincte → no majority</td><td>Escalate la user; re-run Generator cu constraints adăugate</td></tr>
+            <tr><td><b>0-0-0 total veto</b></td><td>Toate personalitățile vetoiate toate candidates</td><td><code>retry_suggested</code> cu <code>relaxed_threshold</code></td></tr>
+            <tr><td><b>Sub-agent timeout</b></td><td>O voce nu răspunde în budget</td><td>Emite <code>null</code> pentru personalitatea afectată; ceilalți votează 2-0</td></tr>
+            <tr><td><b>Steward abstain</b></td><td>Steward = null, ceilalți au chosen (vot 2-0)</td><td>OK auto la confidence 0.75; Steward's veto reasoning flagged separat</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /.trias-deepdive -->
+
+    <!-- 4. TRIAS SPLIT -->
     <div class="mode trias" style="border-top-color:var(--ctl);">
       <h3>Trias split-model <code>(trias_split)</code> <span class="mode-badge advanced">ADVANCED</span></h3>
       <div class="subtitle">Trias normal cu <b>split de model pe voci</b>: Generator pe <code>sonnet</code>, Control + Conservator pe <code>haiku 4.5</code>. Reduce costul fără să sacrifice calitatea creativă.</div>
       <dl class="mode-meta">
         <div class="cell"><dt>Sub-agenți</dt><dd><b>9</b> <span style="color:var(--muted);font-size:11px;">(mixed model)</span></dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">~3.3×</span></dd></div>
+        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">~3.3×</span></dd></div>
         <div class="cell"><dt>Voci</dt><dd>Gen (sonnet) · Ctrl+Cons (haiku) × 3 personalități</dd></div>
         <div class="cell"><dt>When</dt><dd>Diversitate Trias la cost redus; nu dacă există constraint-uri implicite</dd></div>
       </dl>
       <div class="use-when"><b>Atenție:</b> Haiku verifiers sunt shallow-amplifiers pe probleme cu constraint implicit — confirmă răspunsul evident fără să interogheze asumpția ascunsă (P3 corrigendum, <code>experiments/p3-car-wash.html</code>). Nu folosi <code>trias_split</code> dacă problema poate conține constraints implicite — preferă Trias full sau <code>parallel + skeptic_on_chosen</code>.</div>
     </div>
 
-    <!-- 6. LEGACY (collapsed) — parallel_skeptic + dialectic_skeptic -->
-    <div class="mode" style="opacity:0.75;border-style:dashed;">
-      <h3>Legacy (collapsed) <code>parallel_skeptic</code> · <code>dialectic_skeptic</code> <span class="mode-badge opt">RETIRED 2026-05-17</span></h3>
-      <div class="subtitle">Cele două moduri fixe au fost colapsate în flag-ul composabil <code>skeptic_on_chosen</code>. Aceeași funcționalitate: <code>parallel + skeptic_on_chosen</code> · <code>dialectic + skeptic_on_chosen</code>. Numele vechi rămân acceptate de <code>validate_report.py</code> doar pe runs/ istorice — dispatcher-ul live nu le mai emite.</div>
-      <div class="use-when">Vezi cardul <a href="#"><code>skeptic_on_chosen</code></a> mai jos pentru semantica completă (advisory by default, override opt-in).</div>
-    </div>
-
-    <!-- 7. SKEPTIC-ON-CHOSEN -->
+    <!-- 5. SKEPTIC-ON-CHOSEN -->
     <div class="mode parallel">
       <h3>Skeptic-on-chosen — flag cross-cutting <code>(skeptic_on_chosen)</code> <span class="mode-badge opt">OPT-IN</span></h3>
       <div class="subtitle">Flag composabil peste <b>orice</b> mod de bază. Advisory by default; opt-in override via <code>--skeptic-can-override</code>.</div>
       <dl class="mode-meta">
         <div class="cell"><dt>Sub-agenți</dt><dd><b>+1</b> peste modul de bază</dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">+0.33×</span></dd></div>
+        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">+1×</span></dd></div>
         <div class="cell"><dt>Trigger</dt><dd>Auto dacă conf ∈ [0.5, 0.7]; manual via <code>--skeptic-on-chosen</code></dd></div>
         <div class="cell"><dt>When</dt><dd>Oricare mod de bază + challenger focal post-hoc</dd></div>
       </dl>
@@ -617,42 +1077,30 @@ flowchart TD
       </div>
     </div>
 
-    <!-- 9. SENATE -->
+    <!-- 6. SENATE -->
     <div class="mode sequential" style="grid-column:1/-1;border-top-color:var(--ctl);">
       <h3>Senate <span class="mode-badge advanced">ON-DEMAND</span></h3>
-      <div class="subtitle"><b>Scope distinct:</b> auditează modificări la <i>skill-ul însuși</i> (prompturi, scripts, SKILL.md) — nu pe cod user. 7 senatori independenți, vot advisory.</div>
+      <div class="subtitle"><b>Scope distinct:</b> auditează modificări la <i>skill-ul însuși</i> (prompturi, scripts, SKILL.md) — nu pe cod user. 9 senatori independenți, vot advisory.</div>
       <dl class="mode-meta">
-        <div class="cell"><dt>Sub-agenți</dt><dd><b>7</b> senatori Sonnet</dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">~2.3×</span></dd></div>
-        <div class="cell"><dt>Voci</dt><dd>Wittgenstein · Aurelius · Confucius · Socrate · Musk · Dimon · Napoleon</dd></div>
+        <div class="cell"><dt>Sub-agenți</dt><dd><b>9</b> senatori Sonnet</dd></div>
+        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">~2.3×</span></dd></div>
+        <div class="cell"><dt>Voci</dt><dd>Aurelius · Confucius · Deming · Dimon · Musk · Napoleon · Socrate · Tacitus · Wittgenstein</dd></div>
         <div class="cell"><dt>When</dt><dd>Self-improvement pe skill: prompturi core, Constitution/Workflow, arhitectură</dd></div>
       </dl>
-      <div class="use-when"><b>EXPERIMENTAL:</b> flag <code>--on-code</code> permite Senate audit pe schimbări de cod user (nu doar pe skill) — needs empirical gate (≥3 pilot runs) înainte de promovare în producție. Detalii complete în tab-ul <b>Reference → Senate</b>.</div>
-    </div>
-
-    <!-- LEGACY -->
-    <div class="mode sequential">
-      <h3>Sequential — naive <span class="mode-badge legacy">LEGACY</span></h3>
-      <div class="subtitle">Original mode — păstrat pentru referință. Context partajat complet → cross-contamination.</div>
-      <dl class="mode-meta">
-        <div class="cell"><dt>Sub-agenți</dt><dd><b>0</b></dd></div>
-        <div class="cell"><dt>Cost vs Parallel</dt><dd><span class="cost">0.33×</span></dd></div>
-        <div class="cell"><dt>Voci</dt><dd>Gen · Ctrl · Cons fără strip</dd></div>
-        <div class="cell"><dt>When</dt><dd><span style="color:var(--bad);">LEGACY</span> — debugging skill, NU deliberări reale</dd></div>
-      </dl>
+      <div class="use-when">Detalii complete: <a href="architecture_senate.html" style="color:#d8b4fe;">architecture_senate.html</a> (round-by-round flow, cele 5 legi, cross-Q matrix).</div>
     </div>
 
   </div><!-- /.modes -->
 
   <!-- COST COMPARISON TABLE -->
   <h2 style="margin-top:32px;">Cost multipliers — toate modurile</h2>
-  <p style="color:var(--muted);font-size:12.5px;margin:-8px 0 14px;">Baseline: Parallel = 1× (3 sub-agenți). Sequential ≈ 0.33×. Costul include <i>toate</i> sub-agenții (inclusive Skeptic focal dacă e activ).</p>
+  <p style="color:var(--muted);font-size:12.5px;margin:-8px 0 14px;">Baseline: <b>Sequential = 1×</b>. Costul include <i>toate</i> sub-agenții (inclusive Skeptic focal dacă e activ).</p>
   <table>
     <thead>
       <tr>
         <th>Mod</th>
         <th>Sub-agenți</th>
-        <th>Cost vs Parallel</th>
+        <th>Cost ×</th>
         <th>Selectabil manual</th>
         <th>Trigger principal</th>
       </tr>
@@ -661,27 +1109,20 @@ flowchart TD
       <tr>
         <td><b>Sequential</b> (blind)</td>
         <td>0</td>
-        <td class="cost">0.33×</td>
+        <td class="cost">1×</td>
         <td>da — default</td>
         <td>Orice deliberare standard</td>
-      </tr>
-      <tr style="opacity:0.6;">
-        <td><b>Parallel</b> <span class="mode-badge legacy" style="font-size:9px;">REMOVED</span></td>
-        <td>3</td>
-        <td class="cost">1.0×</td>
-        <td><span style="color:var(--bad);">nu</span></td>
-        <td>Auto: magnitude=critical ∧ reversibility=irreversible; silent audit /20 runs</td>
       </tr>
       <tr>
         <td><b>Dialectic</b></td>
         <td>6</td>
-        <td class="cost">2.0×</td>
+        <td class="cost">6×</td>
         <td>da</td>
         <td>O voce ar schimba opinia după cross-review</td>
       </tr>
       <tr>
         <td><b>Senate</b></td>
-        <td>7</td>
+        <td>9</td>
         <td class="cost">~2.3×</td>
         <td>da (on-demand)</td>
         <td>Modificări la skill însuși</td>
@@ -696,157 +1137,68 @@ flowchart TD
       <tr>
         <td><b>Trias</b></td>
         <td>9</td>
-        <td class="cost">3.0×</td>
+        <td class="cost">9×</td>
         <td>da</td>
         <td>Ireversibil, security, refactor mare</td>
       </tr>
       <tr>
         <td><b>skeptic_on_chosen</b> <i>(flag)</i></td>
         <td>base + 1</td>
-        <td class="cost">+0.33×</td>
+        <td class="cost">+1×</td>
         <td>da (flag)</td>
         <td>Auto conf ∈ [0.5, 0.7] sau <code>--skeptic-on-chosen</code></td>
       </tr>
     </tbody>
   </table>
 
-  <!-- ROUTING -->
-  <h2 style="margin-top:32px;">Routing — ce mod pentru ce situație</h2>
-  <table>
-    <thead><tr><th>Profil decizie</th><th>Mod recomandat</th></tr></thead>
-    <tbody>
-      <tr><td>Bugfix evident SAU diff &lt;20 lines / 1 fișier</td><td>Sequential (<code>scope_gate.py</code> sare oricum)</td></tr>
-      <tr><td>Toate PR-urile standard</td><td>Sequential / Parallel auto cross-check</td></tr>
-      <tr><td>confidence ∈ [0.5, 0.7] din mod standard, singur concern de drift</td><td><code>dialectic + skeptic_on_chosen</code></td></tr>
-      <tr><td>2+ abordări arhitecturale plauzibile fără câștigător clar</td><td><code>trias</code></td></tr>
-      <tr><td><code>reversibility=irreversible</code> SAU <code>magnitude=critical</code> + ≥2 layere arhitecturale</td><td><code>senate --on-code</code> (*EXPERIMENTAL) sau <code>trias</code></td></tr>
-      <tr><td>Modificări la skill însuși (prompturi, scripts, SKILL.md)</td><td><code>senate</code> (default scope)</td></tr>
-    </tbody>
-  </table>
 
-  <!-- TRIAS DEEP DIVE -->
-  <div class="trias-deepdive" id="trias-deepdive">
-    <h3>Trias — deep dive</h3>
-    <div class="lede">Cum circulă informația între voci în Trias, și când e (și când nu e) potrivit.</div>
-
-    <h4>1. Cum circulă informația</h4>
-    <svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trias information flow diagram" class="trias-flow-svg">
-      <defs>
-        <marker id="arrow-trias-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c084fc"/></marker>
-        <marker id="arrow-trias-intra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34d399"/></marker>
-      </defs>
-      <rect x="320" y="14" width="260" height="48" rx="8" fill="#0a2e23" stroke="#145c45" stroke-width="1.5"/>
-      <text x="450" y="36" fill="#6ee7b7" font-size="14" text-anchor="middle" font-weight="700">Claude main — orchestrator</text>
-      <text x="450" y="52" fill="#9ca3af" font-size="10.5" text-anchor="middle">success_criterion + diff + 3 personalities config</text>
-      <line x1="450" y1="62" x2="450" y2="78" stroke="#c084fc" stroke-width="2"/>
-      <line x1="170" y1="78" x2="730" y2="78" stroke="#c084fc" stroke-width="2"/>
-      <line x1="170" y1="78" x2="170" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
-      <line x1="450" y1="78" x2="450" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
-      <line x1="730" y1="78" x2="730" y2="98" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
-      <text x="450" y="74" fill="#d8b4fe" font-size="10" text-anchor="middle">3 dispatches paralele, fiecare cu weights diferite</text>
-      <!-- Pioneer -->
-      <rect x="70" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
-      <text x="170" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Pioneer</text>
-      <text x="170" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.49 · C=0.30 · K=0.21</text>
-      <rect x="85" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/><text x="170" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
-      <line x1="170" y1="184" x2="170" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
-      <rect x="85" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/><text x="125" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
-      <rect x="175" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/><text x="215" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
-      <line x1="170" y1="205" x2="170" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
-      <line x1="125" y1="237" x2="155" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
-      <line x1="215" y1="237" x2="185" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
-      <rect x="85" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/><text x="170" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Pioneer weights)</text>
-      <line x1="170" y1="287" x2="170" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
-      <rect x="85" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/><text x="170" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_pioneer</text>
-      <!-- Architect -->
-      <rect x="350" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
-      <text x="450" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Architect</text>
-      <text x="450" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.30 · C=0.49 · K=0.21</text>
-      <rect x="365" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/><text x="450" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
-      <line x1="450" y1="184" x2="450" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
-      <rect x="365" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/><text x="405" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
-      <rect x="455" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/><text x="495" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
-      <line x1="450" y1="205" x2="450" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
-      <line x1="405" y1="237" x2="435" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
-      <line x1="495" y1="237" x2="465" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
-      <rect x="365" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/><text x="450" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Architect weights)</text>
-      <line x1="450" y1="287" x2="450" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
-      <rect x="365" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/><text x="450" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_architect</text>
-      <!-- Steward -->
-      <rect x="630" y="105" width="200" height="280" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="1.5"/>
-      <text x="730" y="124" fill="#d8b4fe" font-size="13" font-weight="700" text-anchor="middle">Steward</text>
-      <text x="730" y="139" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="ui-monospace,monospace">G=0.30 · C=0.30 · K=0.40</text>
-      <rect x="645" y="152" width="170" height="32" rx="5" fill="#2a2410" stroke="#5c4a14"/><text x="730" y="172" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="600">Generator</text>
-      <line x1="730" y1="184" x2="730" y2="200" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
-      <rect x="645" y="205" width="80" height="32" rx="5" fill="#182338" stroke="#2a3f5f"/><text x="685" y="225" fill="#93c5fd" font-size="11" text-anchor="middle">Control</text>
-      <rect x="735" y="205" width="80" height="32" rx="5" fill="#2a1818" stroke="#5c2a2a"/><text x="775" y="225" fill="#fca5a5" font-size="11" text-anchor="middle">Cons.</text>
-      <line x1="730" y1="205" x2="730" y2="237" stroke="#9ca3af" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.5"/>
-      <line x1="685" y1="237" x2="715" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
-      <line x1="775" y1="237" x2="745" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-trias-intra)"/>
-      <rect x="645" y="257" width="170" height="30" rx="5" fill="#11151c" stroke="#2d3441"/><text x="730" y="276" fill="#e5e7eb" font-size="10.5" text-anchor="middle" font-style="italic">aggregate(Steward weights)</text>
-      <line x1="730" y1="287" x2="730" y2="303" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arrow-trias-flow)"/>
-      <rect x="645" y="308" width="170" height="32" rx="5" fill="#0a2e23" stroke="#145c45"/><text x="730" y="328" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">chosen_steward</text>
-      <!-- Chinese walls -->
-      <line x1="288" y1="125" x2="288" y2="370" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
-      <line x1="568" y1="125" x2="568" y2="370" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
-      <text x="288" y="100" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.8" font-style="italic">chinese wall</text>
-      <text x="568" y="100" fill="#9ca3af" font-size="9" text-anchor="middle" opacity="0.8" font-style="italic">chinese wall</text>
-      <!-- Convergence to vote tally -->
-      <line x1="170" y1="340" x2="170" y2="412" stroke="#c084fc" stroke-width="2"/>
-      <line x1="450" y1="340" x2="450" y2="412" stroke="#c084fc" stroke-width="2"/>
-      <line x1="730" y1="340" x2="730" y2="412" stroke="#c084fc" stroke-width="2"/>
-      <line x1="170" y1="412" x2="730" y2="412" stroke="#c084fc" stroke-width="2"/>
-      <line x1="450" y1="412" x2="450" y2="440" stroke="#c084fc" stroke-width="2.5" marker-end="url(#arrow-trias-flow)"/>
-      <rect x="270" y="445" width="360" height="58" rx="8" fill="#221830" stroke="#4c2a6b" stroke-width="2"/>
-      <text x="450" y="470" fill="#d8b4fe" font-size="14" font-weight="700" text-anchor="middle">vote tally (3 chosen → 1 verdict)</text>
-      <text x="450" y="490" fill="#9ca3af" font-size="10.5" text-anchor="middle">majority simplă · 3-0 / 2-1 / 2-0 = OK auto · 1-1-1 / 0-0-0 = PEND</text>
-      <line x1="450" y1="503" x2="450" y2="525" stroke="#c084fc" stroke-width="2" marker-end="url(#arrow-trias-flow)"/>
-      <rect x="290" y="530" width="320" height="40" rx="6" fill="#11151c" stroke="#2d3441"/>
-      <text x="450" y="554" fill="#e5e7eb" font-size="12" text-anchor="middle">team verdict → <tspan font-family="ui-monospace,monospace" fill="#34d399">runs/&lt;ts&gt;_trias.json</tspan></text>
-    </svg>
-
-    <h4>2. Cost &amp; failure modes</h4>
-    <div class="cost-grid">
-      <div class="cost-card use">
-        <div class="cost-card-header">USE TRIAS WHEN</div>
-        <ul>
-          <li>Schema/DB migration <b>ireversibilă</b></li>
-          <li>Security audit — paths auth, crypto, secrets</li>
-          <li>Refactor mare — atinge ≥5 fișiere sau interfețe core</li>
-          <li>Cost-of-wrong-decision &gt;&gt; cost-of-running (9 sub-agenți)</li>
-        </ul>
-      </div>
-      <div class="cost-card avoid">
-        <div class="cost-card-header">DO NOT USE WHEN</div>
-        <ul>
-          <li>Diff &lt; 20 lines / 1 fișier — <code>scope_gate.py</code> va skip oricum</li>
-          <li>Iterare rapidă — Trias ~7× cost vs Sequential</li>
-          <li>Bugfix evident, single approach — Sequential blind ajunge</li>
-          <li>Problema conține constraints implicite — folosește Trias full, nu <code>trias_split</code></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="failure-modes">
-      <table class="failure-table">
-        <thead><tr><th>Failure</th><th>Trigger</th><th>Recovery</th></tr></thead>
-        <tbody>
-          <tr><td><b>1-1-1 fragmentation</b></td><td>3 personalități, 3 chosen-uri distincte → no majority</td><td>Escalate la user; re-run Generator cu constraints adăugate</td></tr>
-          <tr><td><b>0-0-0 total veto</b></td><td>Toate personalitățile vetoiate toate candidates</td><td><code>retry_suggested</code> cu <code>relaxed_threshold</code></td></tr>
-          <tr><td><b>Sub-agent timeout</b></td><td>O voce nu răspunde în budget</td><td>Emite <code>null</code> pentru personalitatea afectată; ceilalți votează 2-0</td></tr>
-          <tr><td><b>Steward abstain</b></td><td>Steward = null, ceilalți au chosen (vot 2-0)</td><td>OK auto la confidence 0.75; Steward's veto reasoning flagged separat</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div><!-- /.trias-deepdive -->
-
-  <div class="note">Max 3 sub-agenți activi simultan în modurile standard (1 + 2 pattern); până la 9 în <b>Trias</b>. Prompts-urile <code>prompts/*.md</code> sunt self-contained — pot fi date direct unui sub-agent fără ajustări.</div>
+  <div class="glossary">
+    <h3>Glosar Modes</h3>
+    <dl>
+      <dt>chinese wall</dt><dd>Izolare informațională între sub-agenți — niciun sub-agent nu vede deliberarea altuia. Vine din dispatch separat, nu din sanitizare prompt.</dd>
+      <dt>strip_context</dt><dd>Util Sequential — proiectează output-ul vocii anterioare la minim (id+summary+sketch) înainte de a-l pasa următoarei voci. <code>scripts/strip_context.py</code>.</dd>
+      <dt>skeptic_on_chosen</dt><dd>Flag composabil peste orice mod — adaugă 1 sub-agent care contestă <code>chosen</code> post-hoc. Advisory default; override opt-in via <code>--skeptic-can-override</code>.</dd>
+      <dt>lens</dt><dd>Prompt suplimentar prepended peste vocea core (Pioneer/Architect/Steward) — biasează percepția fără să schimbe rolul vocii. Folosit doar în Trias.</dd>
+      <dt>magnitude / reversibility</dt><dd>Două dimensiuni ale unei schimbări extrase de Conservator: <code>magnitude</code> (small/medium/critical) și <code>reversibility</code> (reversible/expensive/irreversible). Combinația critical+irreversible declanșează auto cross-check.</dd>
+      <dt>scope_gate</dt><dd>Step 1.5: auto-skip pentru diff-uri triviale (vezi Overview glosar).</dd>
+      <dt>silent audit</dt><dd>La fiecare 20 runs, Parallel rulează automat lângă Sequential, fără să afecteze output-ul. Dacă apare divergență sistematică → frecvența crește la 1/5.</dd>
+    </dl>
+  </div>
 
 </section>
 <section class="tab" id="voices">
 
   <h2>Voices</h2>
   <p class="lede">Trei voci core (<b>Generator / Control / Conservator</b>) + 3 personality lenses pentru Trias + Skeptic focal + Domain lens experimental. Această pagină este sursa canonică unică pentru descrierile vocilor — alte taburi referențiază vocile doar după nume.</p>
+
+  <div class="roles-overview" style="margin:18px 0 24px;">
+  <h3>Cele 3 voci — ordine + ce primește fiecare</h3>
+  <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Voices role overview">
+    <!-- 1. Conservator first -->
+    <rect x="30" y="60" width="180" height="90" rx="8" fill="#2a1818" stroke="#5c2a2a"/>
+    <text x="120" y="80" fill="#fca5a5" font-size="13" font-weight="700" text-anchor="middle">1. Conservator</text>
+    <text x="120" y="96" fill="#9ca3af" font-size="10" text-anchor="middle">risc</text>
+    <text x="120" y="118" fill="#fca5a5" font-size="10" text-anchor="middle">in: diff + context</text>
+    <text x="120" y="132" fill="#fca5a5" font-size="10" text-anchor="middle">out: risk + tokens_budget</text>
+    <line x1="210" y1="105" x2="270" y2="105" stroke="#9ca3af" stroke-width="2"/>
+    <polygon points="265,101 272,105 265,109" fill="#9ca3af"/>
+    <!-- 2. Generator -->
+    <rect x="280" y="60" width="180" height="90" rx="8" fill="#2a2410" stroke="#5c4a14"/>
+    <text x="370" y="80" fill="#fbbf24" font-size="13" font-weight="700" text-anchor="middle">2. Generator</text>
+    <text x="370" y="96" fill="#9ca3af" font-size="10" text-anchor="middle">creativ</text>
+    <text x="370" y="118" fill="#fbbf24" font-size="10" text-anchor="middle">in: + tokens_budget</text>
+    <text x="370" y="132" fill="#fbbf24" font-size="10" text-anchor="middle">out: candidates[]</text>
+    <line x1="460" y1="105" x2="520" y2="105" stroke="#9ca3af" stroke-width="2"/>
+    <polygon points="515,101 522,105 515,109" fill="#9ca3af"/>
+    <!-- 3. Control -->
+    <rect x="530" y="60" width="180" height="90" rx="8" fill="#182338" stroke="#2a3f5f"/>
+    <text x="620" y="80" fill="#93c5fd" font-size="13" font-weight="700" text-anchor="middle">3. Control</text>
+    <text x="620" y="96" fill="#9ca3af" font-size="10" text-anchor="middle">analitic</text>
+    <text x="620" y="118" fill="#93c5fd" font-size="10" text-anchor="middle">in: candidates + full out</text>
+    <text x="620" y="132" fill="#93c5fd" font-size="10" text-anchor="middle">out: verdicts[]</text>
+    <text x="370" y="180" fill="#9ca3af" font-size="10" text-anchor="middle" font-style="italic">ordinea Conservator-First — output-ul lui calibrează efortul restului</text>
+  </svg>
+</div>
 
   <!-- ── Core voices ─────────────────────────────────────────────────── -->
   <div class="authoritative-zone">
@@ -912,6 +1264,95 @@ flowchart TD
     </div><!-- .voices -->
   </div><!-- .authoritative-zone -->
 
+  <h3 style="margin-top:32px;">Input / Output exact per voce</h3>
+<div class="io-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px;">
+  <div style="padding:14px;background:#1a0a0a;border:1px solid #5c2a2a;border-radius:8px;">
+    <h4 style="margin:0 0 8px;color:#fca5a5;">Conservator</h4>
+    <div style="font-size:11.5px;line-height:1.7;">
+      <div><b>in:</b></div>
+      <pre style="margin:4px 0;color:#9ca3af;font-size:10.5px;">{diff, context,
+ success_criterion}</pre>
+      <div><b>out:</b></div>
+      <pre style="margin:4px 0;color:#fca5a5;font-size:10.5px;">{risk_score,
+ tokens_budget,
+ irreversibility_flag,
+ meta_recommendation}</pre>
+    </div>
+  </div>
+  <div style="padding:14px;background:#1a1408;border:1px solid #5c4a14;border-radius:8px;">
+    <h4 style="margin:0 0 8px;color:#fbbf24;">Generator</h4>
+    <div style="font-size:11.5px;line-height:1.7;">
+      <div><b>in:</b></div>
+      <pre style="margin:4px 0;color:#9ca3af;font-size:10.5px;">{diff, context,
+ tokens_budget.generator,
+ clarity_flag?}</pre>
+      <div><b>out:</b></div>
+      <pre style="margin:4px 0;color:#fbbf24;font-size:10.5px;">{candidates[],
+ preferred,
+ fallback_scenario}</pre>
+    </div>
+  </div>
+  <div style="padding:14px;background:#0d1320;border:1px solid #2a3f5f;border-radius:8px;">
+    <h4 style="margin:0 0 8px;color:#93c5fd;">Control</h4>
+    <div style="font-size:11.5px;line-height:1.7;">
+      <div><b>in:</b></div>
+      <pre style="margin:4px 0;color:#9ca3af;font-size:10.5px;">{candidates[],
+ conservator_out,
+ tokens_budget.control}</pre>
+      <div><b>out:</b></div>
+      <pre style="margin:4px 0;color:#93c5fd;font-size:10.5px;">{verdicts[],
+ glossary,
+ disagreements,
+ tests_to_write}</pre>
+    </div>
+  </div>
+</div>
+
+  <h3 style="margin-top:32px;">Sequential vs. Trias — cum sunt dispatched aceleași voci</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px;">
+  <div style="padding:14px;background:#0a2e23;border:1px solid #145c45;border-radius:8px;">
+    <h4 style="margin:0 0 10px;color:#6ee7b7;">Sequential — 1 context, 3 roluri</h4>
+    <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="20" width="280" height="140" rx="8" fill="#11151c" stroke="#2d3441" stroke-dasharray="4,3"/>
+      <text x="160" y="40" fill="#9ca3af" font-size="11" text-anchor="middle" font-style="italic">single context window (Claude main)</text>
+      <rect x="40" y="55" width="80" height="30" rx="4" fill="#2a1818" stroke="#5c2a2a"/>
+      <text x="80" y="74" fill="#fca5a5" font-size="11" text-anchor="middle">Cons</text>
+      <rect x="125" y="55" width="80" height="30" rx="4" fill="#2a2410" stroke="#5c4a14"/>
+      <text x="165" y="74" fill="#fbbf24" font-size="11" text-anchor="middle">Gen</text>
+      <rect x="210" y="55" width="80" height="30" rx="4" fill="#182338" stroke="#2a3f5f"/>
+      <text x="250" y="74" fill="#93c5fd" font-size="11" text-anchor="middle">Ctrl</text>
+      <text x="160" y="110" fill="#e5e7eb" font-size="10" text-anchor="middle">strip_context.py între voci</text>
+      <text x="160" y="130" fill="#9ca3af" font-size="9" text-anchor="middle">role separation, NU chinese wall</text>
+      <text x="160" y="148" fill="#9ca3af" font-size="9" text-anchor="middle">cost: 1× (baseline)</text>
+    </svg>
+  </div>
+  <div style="padding:14px;background:#221830;border:1px solid #4c2a6b;border-radius:8px;">
+    <h4 style="margin:0 0 10px;color:#d8b4fe;">Trias — 9 sub-agents, 3 lenses × 3 voci</h4>
+    <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+      <text x="160" y="20" fill="#9ca3af" font-size="11" text-anchor="middle" font-style="italic">3 lenses prepended × 3 voci core</text>
+      <!-- Pioneer column -->
+      <rect x="20" y="30" width="80" height="130" rx="6" fill="#11151c" stroke="#4c2a6b"/>
+      <text x="60" y="48" fill="#d8b4fe" font-size="10" text-anchor="middle" font-weight="700">Pioneer</text>
+      <rect x="28" y="58" width="64" height="22" rx="3" fill="#2a2410"/><text x="60" y="73" fill="#fbbf24" font-size="9" text-anchor="middle">Gen</text>
+      <rect x="28" y="84" width="64" height="22" rx="3" fill="#182338"/><text x="60" y="99" fill="#93c5fd" font-size="9" text-anchor="middle">Ctrl</text>
+      <rect x="28" y="110" width="64" height="22" rx="3" fill="#2a1818"/><text x="60" y="125" fill="#fca5a5" font-size="9" text-anchor="middle">Cons</text>
+      <!-- Architect -->
+      <rect x="115" y="30" width="80" height="130" rx="6" fill="#11151c" stroke="#4c2a6b"/>
+      <text x="155" y="48" fill="#d8b4fe" font-size="10" text-anchor="middle" font-weight="700">Architect</text>
+      <rect x="123" y="58" width="64" height="22" rx="3" fill="#2a2410"/><text x="155" y="73" fill="#fbbf24" font-size="9" text-anchor="middle">Gen</text>
+      <rect x="123" y="84" width="64" height="22" rx="3" fill="#182338"/><text x="155" y="99" fill="#93c5fd" font-size="9" text-anchor="middle">Ctrl</text>
+      <rect x="123" y="110" width="64" height="22" rx="3" fill="#2a1818"/><text x="155" y="125" fill="#fca5a5" font-size="9" text-anchor="middle">Cons</text>
+      <!-- Steward -->
+      <rect x="210" y="30" width="80" height="130" rx="6" fill="#11151c" stroke="#4c2a6b"/>
+      <text x="250" y="48" fill="#d8b4fe" font-size="10" text-anchor="middle" font-weight="700">Steward</text>
+      <rect x="218" y="58" width="64" height="22" rx="3" fill="#2a2410"/><text x="250" y="73" fill="#fbbf24" font-size="9" text-anchor="middle">Gen</text>
+      <rect x="218" y="84" width="64" height="22" rx="3" fill="#182338"/><text x="250" y="99" fill="#93c5fd" font-size="9" text-anchor="middle">Ctrl</text>
+      <rect x="218" y="110" width="64" height="22" rx="3" fill="#2a1818"/><text x="250" y="125" fill="#fca5a5" font-size="9" text-anchor="middle">Cons</text>
+      <text x="155" y="178" fill="#9ca3af" font-size="9" text-anchor="middle">cost: 9× Sequential</text>
+    </svg>
+  </div>
+</div>
+
   <!-- ── Personality lenses ─────────────────────────────────────────── -->
   <h2 style="margin-top:36px;">3 personality lenses — Pioneer / Architect / Steward</h2>
   <p style="color:var(--muted);font-size:13.5px;margin:-8px 0 14px;">
@@ -948,6 +1389,36 @@ flowchart TD
 
   </div><!-- .lens-grid -->
 
+  <h3 style="margin-top:24px;">Lens weights — heatmap</h3>
+<div style="overflow-x:auto;margin-top:8px;">
+  <table style="border-collapse:collapse;font-size:12px;text-align:center;">
+    <thead>
+      <tr><th></th><th style="padding:6px 12px;">gen</th><th style="padding:6px 12px;">ctl</th><th style="padding:6px 12px;">cons</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th style="text-align:right;padding:6px 12px;color:#d8b4fe;">Pioneer</th>
+        <td style="padding:8px 14px;background:#3a5121;color:#e5e7eb;font-weight:700;">0.49</td>
+        <td style="padding:8px 14px;background:#2a3b1f;color:#e5e7eb;">0.30</td>
+        <td style="padding:8px 14px;background:#1a2a1a;color:#e5e7eb;">0.21</td>
+      </tr>
+      <tr>
+        <th style="text-align:right;padding:6px 12px;color:#d8b4fe;">Architect</th>
+        <td style="padding:8px 14px;background:#2a3b1f;color:#e5e7eb;">0.30</td>
+        <td style="padding:8px 14px;background:#3a5121;color:#e5e7eb;font-weight:700;">0.40</td>
+        <td style="padding:8px 14px;background:#2a3b1f;color:#e5e7eb;">0.30</td>
+      </tr>
+      <tr>
+        <th style="text-align:right;padding:6px 12px;color:#d8b4fe;">Steward</th>
+        <td style="padding:8px 14px;background:#2a3b1f;color:#e5e7eb;">0.30</td>
+        <td style="padding:8px 14px;background:#2a3b1f;color:#e5e7eb;">0.30</td>
+        <td style="padding:8px 14px;background:#3a5121;color:#e5e7eb;font-weight:700;">0.40</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:11px;color:var(--muted);margin:8px 0 0;">Suma fiecărei linii = 1.0. Culoarea cea mai închisă = ponderea dominantă a lensei.</p>
+</div>
+
   <!-- ── Skeptic voice ───────────────────────────────────────────────── -->
   <h2 style="margin-top:36px;">Skeptic — focal challenger</h2>
   <div class="authoritative-zone">
@@ -967,14 +1438,42 @@ flowchart TD
     </p>
   </div>
 
-  <!-- ── Domain lens (experimental) ────────────────────────────────── -->
-  <h2 style="margin-top:36px;">
-    Domain lens — experimental
-    <span style="background:var(--gold-soft);border:1px solid var(--gold-border);color:var(--gold);font-size:10px;padding:2px 8px;border-radius:999px;letter-spacing:.04em;vertical-align:middle;margin-left:8px;">EXPERIMENTAL</span>
-  </h2>
-  <p style="color:var(--muted);font-size:13.5px;margin:-8px 0 0;">
-    Lens <em>de domeniu tehnic</em> (specialty / artifact translation) — axis separată față de lensele atitudinale Pioneer/Architect/Steward. Fișier: <code>prompts/lenses/domain_lens.md</code> (redenumit din <code>frontend_domain_lens.md</code> la ultimul update pe main). Conține două secțiuni: <b>frontend_domain</b> (lens pentru surface user-facing) și <b>code_domain</b> (lens de traducere pentru <code>senate --on-code</code>). Nu are entry în dispatch tables din SKILL.md — folosit exclusiv via override explicit în run-uri pilot. Necesită ≥5 trias baseline runs înainte de scale-up; rezultatele se loghează în <code>experiments/frontend-domain-lens-pilot.html</code>. Sub evaluare în Senate Pilot.
-  </p>
+  <h3 style="margin-top:20px;">Ce vede / ce NU vede Skeptic</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px;">
+  <div style="padding:12px;background:#0a2e23;border:1px solid #145c45;border-radius:6px;">
+    <h4 style="margin:0 0 6px;color:#6ee7b7;">VEDE</h4>
+    <ul style="margin:0;padding-left:18px;font-size:12px;color:#6ee7b7;line-height:1.7;">
+      <li><code>chosen</code> candidate</li>
+      <li><code>success_criterion</code></li>
+      <li><code>verification</code> steps</li>
+      <li>codebase context (Read, Grep)</li>
+    </ul>
+  </div>
+  <div style="padding:12px;background:#3a1d1d;border:1px solid #7a3030;border-radius:6px;">
+    <h4 style="margin:0 0 6px;color:#fca5a5;">NU VEDE</h4>
+    <ul style="margin:0;padding-left:18px;font-size:12px;color:#fca5a5;line-height:1.7;">
+      <li>ceilalți candidați</li>
+      <li>scorurile Conservatorului</li>
+      <li>verdictele Control</li>
+      <li>deliberarea însăși</li>
+    </ul>
+  </div>
+</div>
+<p style="font-size:11px;color:var(--muted);margin:8px 0 0;">Izolarea informațională = Skeptic nu poate fabrica obiecții bazate pe ceea ce alții au spus deja; trebuie să găsească concerns concrete pe cont propriu sau să tacă (<code>can_object: false</code>).</p>
+
+  <div class="glossary">
+  <h3>Glosar Voices</h3>
+  <dl>
+    <dt>clarity gate</dt><dd>Step 1: dacă există 2+ interpretări plauzibile ale request-ului, pipeline-ul se oprește și cere clarificare înainte de Generator.</dd>
+    <dt>tokens_budget</dt><dd>Conservator setează un budget per voce downstream (generator/control) bazat pe magnitude-ul deciziei — micșorează cost-ul pentru triviale.</dd>
+    <dt>irreversibility_flag</dt><dd>Output Conservator: dacă <code>true</code>, pipeline blocat până la consimțământ explicit user. Default trigger pe migration/security/permanent state.</dd>
+    <dt>glossary_fail</dt><dd>Output Control: când vocile folosesc terminologie abstractă neancorată în deliberare; soft veto care cere reformulare.</dd>
+    <dt>net_concern</dt><dd>Scor Conservator ∈ [0,1] din 4 componente (diff_size, scope_drift, regression_risk, reversibility). Floor rule: <code>reversibility &gt; 0.7</code> ⇒ <code>net_concern ≥ reversibility</code>.</dd>
+    <dt>addressable</dt><dd>Output Skeptic — clasifică obiecția: <code>in_place</code> (fix mic), <code>requires_redesign</code> (alt candidate), <code>unaddressable</code> (escaladare).</dd>
+    <dt>meta_scope_mismatch</dt><dd>Failure mode Skeptic: chosen e corect, dar deliberarea însăși a fost over-aplicată pe o problemă trivială.</dd>
+    <dt>prepended lens</dt><dd>Personality lens (Pioneer/Architect/Steward) injectat înainte de prompt-ul vocii core, schimbă biasul fără să schimbe rolul.</dd>
+  </dl>
+</div>
 
 </section>
 <!-- ============== TAB 4: INTERNALS ============== -->
@@ -1052,6 +1551,63 @@ flowchart TD
     </div>
   </div>
 
+  <h3 style="margin-top:28px;">Read / Write paths — care script atinge ce tier</h3>
+<table class="rw-matrix" style="font-size:12px;border-collapse:collapse;width:100%;max-width:800px;">
+  <thead>
+    <tr>
+      <th style="padding:6px 10px;text-align:left;">Script</th>
+      <th style="padding:6px 10px;text-align:center;background:#0a2e23;color:#6ee7b7;">SHORT</th>
+      <th style="padding:6px 10px;text-align:center;background:#182338;color:#93c5fd;">MEDIUM (runs/)</th>
+      <th style="padding:6px 10px;text-align:center;background:#2a2410;color:#fbbf24;">LONG (FEEDBACK)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:6px 10px;"><code>priors.py</code></td>
+      <td style="text-align:center;color:#9ca3af;">—</td>
+      <td style="text-align:center;color:#6ee7b7;">R</td>
+      <td style="text-align:center;color:#6ee7b7;">R</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;"><code>build_report.py</code></td>
+      <td style="text-align:center;color:#6ee7b7;">R</td>
+      <td style="text-align:center;color:#fca5a5;">W</td>
+      <td style="text-align:center;color:#9ca3af;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;"><code>log_feedback.py</code></td>
+      <td style="text-align:center;color:#9ca3af;">—</td>
+      <td style="text-align:center;color:#6ee7b7;">R</td>
+      <td style="text-align:center;color:#fca5a5;">W (append)</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;"><code>memory.py</code></td>
+      <td style="text-align:center;color:#9ca3af;">—</td>
+      <td style="text-align:center;color:#6ee7b7;">R</td>
+      <td style="text-align:center;color:#6ee7b7;">R</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;"><code>mark_outcome.py</code></td>
+      <td style="text-align:center;color:#9ca3af;">—</td>
+      <td style="text-align:center;color:#9ca3af;">—</td>
+      <td style="text-align:center;color:#fca5a5;">W (overwrite row)</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;"><code>audit_feedback.py</code></td>
+      <td style="text-align:center;color:#9ca3af;">—</td>
+      <td style="text-align:center;color:#6ee7b7;">R</td>
+      <td style="text-align:center;color:#6ee7b7;">R + W (backfill)</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;"><code>infer_pipeline.py</code></td>
+      <td style="text-align:center;color:#9ca3af;">—</td>
+      <td style="text-align:center;color:#6ee7b7;">R</td>
+      <td style="text-align:center;color:#9ca3af;">—</td>
+    </tr>
+  </tbody>
+</table>
+<p style="font-size:11px;color:var(--muted);margin:6px 0 0;">R = read, W = write. SHORT = active conversation, scriptable doar prin Claude main, nu disk-backed.</p>
+
   <h2 style="margin-top:32px;">Signals derived by <code>priors.py</code></h2>
   <table class="signals-table">
     <thead><tr><th>Signal</th><th>Meaning</th><th>Action</th></tr></thead>
@@ -1064,6 +1620,38 @@ flowchart TD
     </tbody>
   </table>
 
+  <h3 style="margin-top:24px;">Step 0 gate — state machine</h3>
+  <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="priors.py gate state machine">
+    <circle cx="80" cy="110" r="22" fill="#11151c" stroke="#2d3441"/>
+    <text x="80" y="114" fill="#e5e7eb" font-size="10" text-anchor="middle">start</text>
+    <line x1="102" y1="110" x2="160" y2="110" stroke="#9ca3af" stroke-width="1.5"/>
+    <polygon points="155,106 162,110 155,114" fill="#9ca3af"/>
+    <rect x="165" y="80" width="160" height="60" rx="8" fill="#182338" stroke="#2a3f5f"/>
+    <text x="245" y="105" fill="#93c5fd" font-size="12" text-anchor="middle" font-weight="600">priors.py check</text>
+    <text x="245" y="122" fill="#9ca3af" font-size="10" text-anchor="middle">stale + missing + pressure</text>
+    <line x1="325" y1="100" x2="450" y2="55" stroke="#34d399" stroke-width="1.5"/>
+    <polygon points="446,53 452,56 447,60" fill="#34d399"/>
+    <text x="380" y="70" fill="#6ee7b7" font-size="10">clean</text>
+    <rect x="455" y="30" width="160" height="50" rx="8" fill="#0a2e23" stroke="#145c45"/>
+    <text x="535" y="50" fill="#6ee7b7" font-size="12" text-anchor="middle" font-weight="700">proceed</text>
+    <text x="535" y="68" fill="#6ee7b7" font-size="10" text-anchor="middle">Step 1 unlocked</text>
+    <line x1="325" y1="120" x2="450" y2="120" stroke="#f87171" stroke-width="1.5"/>
+    <polygon points="445,116 452,120 445,124" fill="#f87171"/>
+    <text x="380" y="114" fill="#fca5a5" font-size="10">stale ∨ missing</text>
+    <rect x="455" y="95" width="160" height="50" rx="8" fill="#3a1d1d" stroke="#7a3030"/>
+    <text x="535" y="115" fill="#fca5a5" font-size="12" text-anchor="middle" font-weight="700">BLOCKED</text>
+    <text x="535" y="133" fill="#fca5a5" font-size="9" text-anchor="middle">resolve via mark_outcome / backfill</text>
+    <line x1="325" y1="140" x2="450" y2="180" stroke="#fbbf24" stroke-width="1.5"/>
+    <polygon points="446,176 452,180 447,184" fill="#fbbf24"/>
+    <text x="380" y="170" fill="#fbbf24" font-size="10">pend_pressure &gt; 0.3</text>
+    <rect x="455" y="160" width="160" height="50" rx="8" fill="#2a2410" stroke="#5c4a14"/>
+    <text x="535" y="180" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="700">ALERT (soft)</text>
+    <text x="535" y="198" fill="#fbbf24" font-size="9" text-anchor="middle">warn; nu blochează</text>
+    <path d="M 535 145 Q 535 200 200 200 Q 100 200 100 132" stroke="#9ca3af" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+    <polygon points="96,127 100,134 104,127" fill="#9ca3af"/>
+    <text x="300" y="215" fill="#9ca3af" font-size="9">re-run după resolve</text>
+  </svg>
+
   <h2 style="margin-top:32px;">Observe → Think → Act → Learn</h2>
   <div class="mermaid-wrap" style="max-width:1000px">
     <h3>Agent loop + memory tiers</h3>
@@ -1072,7 +1660,7 @@ flowchart TD
 flowchart LR
     OBS["OBSERVE\nStep 1: gather context\nscope_gate.py"]:::obs
     THINK["THINK\nStep 2: Generator\nStep 3: Control\nStep 4: Conservator"]:::think
-    ACT["ACT\nStep 5: aggregator.py\nchosen_approach"]:::act
+    ACT["ACT\nStep 5: aggregator → chosen\nStep 7: infer_pipeline (cond)"]:::act
     LEARN["LEARN\nStep 6: log_feedback.py\nFEEDBACK.html"]:::learn
     SHORT["Short-term\ncontext window\ndeliberarea curentă"]:::mem
     MED["Medium-term\nruns/*.json\nepisodic — fiecare run"]:::mem
@@ -1096,6 +1684,30 @@ flowchart LR
     <p><code>python scripts/mark_outcome.py --run-path runs/&lt;file&gt;.json --outcome BAD --reason "broke prod migration"</code></p>
     <p><code>priors.py</code> ponderează rândurile cu <span class="marker">[confirmed]</span> <b>2×</b> față de feedback-ul subiectiv în <code>weighted_bad_rate</code>.</p>
   </div>
+
+  <h3 style="margin-top:24px;">[confirmed] — cum se ponderează retroactiv</h3>
+  <svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="confirmed marker timeline">
+    <line x1="40" y1="100" x2="680" y2="100" stroke="#9ca3af" stroke-width="1.5"/>
+    <polygon points="675,96 682,100 675,104" fill="#9ca3af"/>
+    <text x="685" y="104" fill="#9ca3af" font-size="10">t</text>
+    <circle cx="120" cy="100" r="6" fill="#fbbf24"/>
+    <text x="120" y="84" fill="#fbbf24" font-size="11" text-anchor="middle" font-weight="700">T₀</text>
+    <text x="120" y="125" fill="#fbbf24" font-size="10" text-anchor="middle">Step 6: outcome=OK</text>
+    <text x="120" y="138" fill="#9ca3af" font-size="9" text-anchor="middle">weight = 1×</text>
+    <text x="120" y="152" fill="#9ca3af" font-size="9" text-anchor="middle">(subiectiv)</text>
+    <circle cx="360" cy="100" r="6" fill="#f87171"/>
+    <text x="360" y="84" fill="#fca5a5" font-size="11" text-anchor="middle" font-weight="700">T₁</text>
+    <text x="360" y="125" fill="#fca5a5" font-size="10" text-anchor="middle">prod regression</text>
+    <text x="360" y="138" fill="#fca5a5" font-size="9" text-anchor="middle">mark_outcome.py</text>
+    <text x="360" y="152" fill="#fca5a5" font-size="9" text-anchor="middle">→ BAD [confirmed]</text>
+    <circle cx="600" cy="100" r="6" fill="#34d399"/>
+    <text x="600" y="84" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="700">T₂</text>
+    <text x="600" y="125" fill="#6ee7b7" font-size="10" text-anchor="middle">priors.py next run</text>
+    <text x="600" y="138" fill="#6ee7b7" font-size="9" text-anchor="middle">weight = 2×</text>
+    <text x="600" y="152" fill="#6ee7b7" font-size="9" text-anchor="middle">în weighted_bad_rate</text>
+    <line x1="120" y1="100" x2="360" y2="100" stroke="#2d3441" stroke-width="1" stroke-dasharray="4,3"/>
+    <line x1="360" y1="100" x2="600" y2="100" stroke="#2d3441" stroke-width="1" stroke-dasharray="4,3"/>
+  </svg>
 
   <h2 style="margin-top:32px;">CLI uniform — <code>scripts/memory.py</code></h2>
   <div class="mem-cli">
@@ -1309,135 +1921,67 @@ flowchart LR
   </div><!-- /.pat-layout -->
 
   <p style="font-size:11.5px;color:var(--muted);margin:10px 0 0;line-height:1.5;">
-    <b>Notă mod Parallel:</b> nu mai e selectabil direct de user de la RUND2. Rulează automat ca auto cross-check intern la <code>magnitude=critical ∧ reversibility=irreversible</code>. Flux-ul „Review PR" din diagramă descrie comportamentul intern, nu un mod selectabil.
+    <b>Notă mod Parallel:</b> nu mai e selectabil de user. Rulează automat ca auto cross-check intern la <code>magnitude=critical ∧ reversibility=irreversible</code>.
   </p>
+
+  <div class="glossary">
+    <h3>Glosar Internals</h3>
+    <dl>
+      <dt>priors</dt><dd>Vezi Overview glosar — soft signals derivate din feedback istoric.</dd>
+      <dt>stale_pending</dt><dd>O intrare PEND în FEEDBACK.html mai veche de 2 zile — blochează deliberări noi până e închisă retroactiv via <code>mark_outcome.py</code>.</dd>
+      <dt>weighted_bad_rate</dt><dd>Procentaj BAD în istoric, cu intrările marcate <code>[confirmed]</code> ponderate 2× față de cele subiective.</dd>
+      <dt>episodic memory</dt><dd>Tier-ul MEDIUM (<code>runs/*.json</code>) — un fișier per deliberare, păstrat indefinit (gitignored).</dd>
+      <dt>soft signal</dt><dd>Semnal din <code>priors.py</code> care influențează deliberarea fără s-o blocheze (vs. <i>hard gate</i> = block).</dd>
+      <dt>fail-open</dt><dd>Strategia <code>scope_gate.py</code>: dacă probe-ul Git eșuează (nu suntem în repo), gate-ul nu skip-uiește — deliberează by default. "Open" = pipeline-ul rulează.</dd>
+      <dt>[confirmed] marker</dt><dd>String "[confirmed]" în nota outcome — semnalează că outcome-ul a fost validat în producție (nu doar impresie imediată). 2× weight.</dd>
+      <dt>pend_pressure</dt><dd>Raportul PEND/total în ultimele 20 entries. Peste 0.3 → alertă soft (nu block); semnal că pipeline-ul produce prea multe outcomes neclasificate.</dd>
+    </dl>
+  </div>
 
 </section>
 <section class="tab" id="reference">
 
+  <h2>Reference</h2>
+  <h3>Repo map — unde stă ce</h3>
+  <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Repo map tree" style="max-width:760px;width:100%;">
+    <text x="20" y="25" fill="#e5e7eb" font-size="13" font-weight="700">Consilium/</text>
+    <text x="40" y="50" fill="#fbbf24" font-size="12" font-family="ui-monospace,monospace">├── prompts/</text>
+    <text x="220" y="50" fill="#9ca3af" font-size="11">contracte voci, lenses, senatori</text>
+    <text x="60" y="68" fill="#9ca3af" font-size="11" font-family="ui-monospace,monospace">├── voices/</text>
+    <text x="220" y="68" fill="#9ca3af" font-size="10">generator.md · control.md · conservator.md · skeptic.md · *_pass2.md</text>
+    <text x="60" y="84" fill="#9ca3af" font-size="11" font-family="ui-monospace,monospace">├── lenses/</text>
+    <text x="220" y="84" fill="#9ca3af" font-size="10">pioneer · architect · steward · domain (experimental)</text>
+    <text x="60" y="100" fill="#9ca3af" font-size="11" font-family="ui-monospace,monospace">└── senators/</text>
+    <text x="220" y="100" fill="#9ca3af" font-size="10">9 senatori — folosiți doar în mod senate</text>
+    <text x="40" y="124" fill="#93c5fd" font-size="12" font-family="ui-monospace,monospace">├── scripts/</text>
+    <text x="220" y="124" fill="#9ca3af" font-size="11">Python stdlib-only, fiecare CLI cu argparse + JSON I/O</text>
+    <text x="60" y="142" fill="#9ca3af" font-size="10">deliberation: priors · scope_gate · probe_change · aggregator · confidence · meta_critic · retry_context</text>
+    <text x="60" y="158" fill="#9ca3af" font-size="10">feedback: build_report · validate_report · log_feedback · infer_pipeline</text>
+    <text x="60" y="174" fill="#9ca3af" font-size="10">maintenance: audit_feedback · mark_outcome · memory · usage · run_evals</text>
+    <text x="40" y="214" fill="#6ee7b7" font-size="12" font-family="ui-monospace,monospace">├── runs/</text>
+    <text x="220" y="214" fill="#9ca3af" font-size="11">JSON per deliberare (gitignored) + senate/ tracked + README</text>
+    <text x="40" y="238" fill="#d8b4fe" font-size="12" font-family="ui-monospace,monospace">├── experiments/</text>
+    <text x="220" y="238" fill="#9ca3af" font-size="11">P3 car wash, benchmark runs</text>
+    <text x="40" y="262" fill="#fbbf24" font-size="12" font-family="ui-monospace,monospace">├── docs/</text>
+    <text x="220" y="262" fill="#9ca3af" font-size="11">architecture.html (acest fișier) · superpowers/specs/ · plans/</text>
+    <text x="40" y="286" fill="#fca5a5" font-size="12" font-family="ui-monospace,monospace">├── SKILL.md</text>
+    <text x="220" y="286" fill="#9ca3af" font-size="11">contract public — Constitution + 8-step workflow</text>
+    <text x="40" y="310" fill="#fca5a5" font-size="12" font-family="ui-monospace,monospace">├── CLAUDE.md</text>
+    <text x="220" y="310" fill="#9ca3af" font-size="11">project rules — convenții Python, git workflow, zone autoritative</text>
+    <text x="40" y="334" fill="#fbbf24" font-size="12" font-family="ui-monospace,monospace">└── FEEDBACK.html</text>
+    <text x="220" y="334" fill="#9ca3af" font-size="11">jurnal long-tier (gitignored, append-only via log_feedback.py)</text>
+    <text x="40" y="365" fill="#9ca3af" font-size="10" font-style="italic">Fișiere tracked toate; gitignored = vezi .gitignore.</text>
+  </svg>
+
   <!-- ═══════════════════════════════════════════════════════
-       1. SENATE
+       1. SENATE (extras în architecture_senate.html)
   ══════════════════════════════════════════════════════════ -->
-  <h2>Senate — audit pe modificările skill-ului</h2>
-  <p style="color:var(--muted);font-size:13.5px;margin:-8px 0 22px;">
-    Layer separat de governance. Multi-round standard post PR <code>feat/senate-laws-2-3-4</code> (Laws 2+4 active); legacy single-round <code>&#123;senators:&#123;&#125;&#125;</code> rămâne backward-compat.
+  <h2 style="margin-top:32px;">Senate — governance layer</h2>
+  <p style="color:var(--muted);font-size:13.5px;max-width:780px;margin:-8px 0 14px;">
+    9 sub-agenți cu optici disjuncte care evaluează modificări la <b>skill-ul însuși</b> (prompts, scripts, SKILL.md). On-demand · multi-round · verdict advisory. Scope distinct față de modurile clasice (care evaluează cod user) — niciodată invocate împreună.
   </p>
-
-  <div class="senate-intro">
-    <p>Modurile clasice evaluează <b>schimbări de cod</b> propuse de user. Senate evaluează <b>schimbările aduse skill-ului însuși</b> (prompturi, scripts, SKILL.md, arhitectură). Cele două nu se invocă niciodată împreună pe aceeași execuție. <span class="scope-tag">scope: governance, on-demand only</span></p>
-    <p>EXPERIMENTAL: flag <code>--on-code</code> permite Senate audit pe schimbări de cod user (nu doar pe skill) — advisory, orchestratorul TREBUIE să pre-computeze <code>diff</code>, <code>files_touched</code>, <code>success_criterion</code>, <code>magnitude</code>, <code>reversibility</code>, <code>blast_radius</code> înainte de dispatch (vezi <code>scripts/dispatch_senate_on_code.py</code>). NOT wired în dispatch table până la empirical gate (≥3 pilots, ≥2/3 info-add over Trias, <code>semantic_suspect</code> ≤20%).</p>
-  </div>
-
-  <h3 style="margin-top:20px;">Cei 7 senatori</h3>
-  <div class="senator-grid">
-    <div class="senator-card">
-      <h4 class="name">Wittgenstein</h4>
-      <p class="key-q">"E definit operațional? Poți falsifica?"</p>
-      <p class="spec">Semantic + operational definitions. Caută termeni vagi, cere reformulare cu predicate testabile.</p>
-      <div class="output-field">specific: <code>vague_terms_found[]</code></div>
-    </div>
-    <div class="senator-card">
-      <h4 class="name">Aurelius</h4>
-      <p class="key-q">"E proporțional cu stake-ul?"</p>
-      <p class="spec">Reversibility × magnitude. Plasează propunerea pe cadran cost-revers.</p>
-      <div class="output-field">specific: <code>reversibility</code>, <code>magnitude</code>, <code>quadrant</code></div>
-    </div>
-    <div class="senator-card">
-      <h4 class="name">Confucius</h4>
-      <p class="key-q">"Cine are autoritate? S-a mai făcut?"</p>
-      <p class="spec">Hierarchy + precedent. Caută în <code>runs/</code> + <code>experiments/</code> dacă ceva similar a fost decis.</p>
-      <div class="output-field">specific: <code>hierarchy_check</code>, <code>precedent_search[]</code></div>
-    </div>
-    <div class="senator-card">
-      <h4 class="name">Socrate</h4>
-      <p class="key-q">"Ce presupui fără să declari?"</p>
-      <p class="spec">Hidden assumptions. Identifică premize load-bearing nedeclarate care ar invalida propunerea.</p>
-      <div class="output-field">specific: <code>hidden_assumptions[]</code> cu <code>load_bearing</code></div>
-    </div>
-    <div class="senator-card">
-      <h4 class="name">Musk</h4>
-      <p class="key-q">"Ce poți șterge? Ce dacă scoți 10%?"</p>
-      <p class="spec">Aggressive deletion + 10% add-back. Atacă fiecare componentă cu vote keep/delete/simplify.</p>
-      <div class="output-field">specific: <code>components_attacked[]</code></div>
-    </div>
-    <div class="senator-card">
-      <h4 class="name">Dimon</h4>
-      <p class="key-q">"Ce dacă eșuează? Silent fail unde?"</p>
-      <p class="spec">Stress test + counterparty. Scenarii de pică, mod de eșec silențios; verifică observability.</p>
-      <div class="output-field">specific: <code>stress_scenarios[]</code> cu <code>failure_mode</code></div>
-    </div>
-    <div class="senator-card">
-      <h4 class="name">Napoleon</h4>
-      <p class="key-q">"Câți tokens? În ce stare ești?"</p>
-      <p class="spec">Cost + terrain. Estimează tokens, ore, complexitate; verifică starea operatorului.</p>
-      <div class="output-field">specific: <code>cost_estimate</code>, <code>terrain_check</code></div>
-    </div>
-  </div>
-
-  <h3 style="margin-top:24px;">Verdict types</h3>
-  <div class="verdict-grid">
-    <div class="verdict-cell go"><div class="verdict">GO</div><div class="rule">count(GO) ≥ 5</div><div class="meaning">Convergență puternică. Procedezi cu propunerea.</div></div>
-    <div class="verdict-cell stop"><div class="verdict">STOP</div><div class="rule">count(STOP) ≥ 5</div><div class="meaning">Convergență puternică contra. Revizuiește sau override explicit.</div></div>
-    <div class="verdict-cell modify"><div class="verdict">MODIFY</div><div class="rule">default (orice altă combinație)</div><div class="meaning">Concerns concrete — aplică <code>modify_requests</code> sau respinge explicit.</div></div>
-    <div class="verdict-cell unreach"><div class="verdict">UNREACHABLE</div><div class="rule">voters_present &lt; 5</div><div class="meaning">Quorum matematic imposibil. Escaladează la user cu vote matrix.</div></div>
-    <div class="verdict-cell split"><div class="verdict">DEEPLY_SPLIT</div><div class="rule">GO ≥ Q-2 ȘI STOP ≥ Q-2</div><div class="meaning">Polarizare reală (4-3, 3-4, 3-3-1). Advisory: escaladare la user.</div></div>
-  </div>
-
-  <h3 style="margin-top:24px;">Cele 5 Legi (multi-round)</h3>
-  <table class="laws-table">
-    <caption style="caption-side:bottom;font-size:11.5px;color:var(--muted);text-align:left;padding:6px 0 0;font-style:italic;">Mapping criterion: each Law maps to the Principle whose violation it primarily prevents.</caption>
-    <thead><tr><th>#</th><th>Lege</th><th>Esență</th><th>Principiu</th></tr></thead>
-    <tbody>
-      <tr><td class="num">1</td><td class="law-name">Răspuns obligatoriu</td><td class="essence">Fiecare senator răspunde pe fiecare punct. Interzis "nu am opinie".</td><td class="principle">#4 Goal-driven</td></tr>
-      <tr><td class="num">2</td><td class="law-name">Cross-questions limitate</td><td class="essence">Max <b>3 cross-questions/senator/rundă</b> × max <b>3 runde</b>. Round 3 = STOP forțat.</td><td class="principle">#2 Simplicity first</td></tr>
-      <tr><td class="num">3</td><td class="law-name">Blocaj → vot majoritar de 5</td><td class="essence">Dacă 2 senatori rămân în GO×STOP după Round 3, ceilalți 5 votează care argument e mai puternic.</td><td class="principle">#4 Goal-driven</td></tr>
-      <tr><td class="num">4</td><td class="law-name">Sinteza doar la final</td><td class="essence"><code>senate_synth.py</code> rulează DUPĂ toate rundele. Position changes logate în bundle.</td><td class="principle">#3 Surgical changes</td></tr>
-      <tr><td class="num">5</td><td class="law-name">Auditabilitate</td><td class="essence">Toate runde + cross-questions + schimbări de poziție salvate în <code>runs/senate/</code>.</td><td class="principle">#1 Think before coding</td></tr>
-    </tbody>
-  </table>
-
-  <p style="color:var(--muted);font-size:12.5px;margin:10px 0 0;">
-    Multi-round (Laws 2+4) now standard post PR <code>feat/senate-laws-2-3-4</code>. Legacy single-round schema <code>&#123;"senators": &#123;...&#125;&#125;</code> rămâne backward-compat — <code>senate_synth.py</code> detectează automat formatul din bundle.
-  </p>
-
-  <h3 style="margin-top:24px;">Cross-questions matrix</h3>
-  <div class="cross-q-matrix"><pre>              W   A   C   S   Mu  D   N
-            ┌───┬───┬───┬───┬───┬───┬───┐
-Wittgenst.  │ — │ • │ • │ <span class="star">★</span> │ • │ • │ • │
-            ├───┼───┼───┼───┼───┼───┼───┤
-Aurelius    │ • │ — │ • │ • │ • │ <span class="star">★</span> │ <span class="star">★</span> │
-            ├───┼───┼───┼───┼───┼───┼───┤
-Confucius   │ • │ • │ — │ • │ <span class="star">★</span> │ • │ • │
-            ├───┼───┼───┼───┼───┼───┼───┤
-Socrate     │ <span class="star">★</span> │ • │ • │ — │ • │ • │ • │
-            ├───┼───┼───┼───┼───┼───┼───┤
-Musk        │ • │ • │ <span class="star">★</span> │ • │ — │ • │ <span class="star">★</span> │
-            ├───┼───┼───┼───┼───┼───┼───┤
-Dimon       │ • │ <span class="star">★</span> │ • │ • │ • │ — │ <span class="star">★</span> │
-            ├───┼───┼───┼───┼───┼───┼───┤
-Napoleon    │ • │ <span class="star">★</span> │ • │ • │ <span class="star">★</span> │ <span class="star">★</span> │ — │
-            └───┴───┴───┴───┴───┴───┴───┘</pre></div>
-  <p class="cross-q-legend"><span class="star">★</span> = perechi care au schimbat poziții în deliberarea istorică RUND2.</p>
-
-  <h3 style="margin-top:24px;">Senate flow (7 pași)</h3>
-  <div class="senate-flow"><pre>
-Step 1  Formulează propunerea concret (fișiere, success criterion, de ce).
-Step 2  Dispatch 7 sub-agenți Sonnet 4.6 în paralel (Round 1).
-        Input per senator: proposal + context + conținut prompts/senators/&lt;senator&gt;.md inline.
-Step 3  Retry 1× pe senator absent / JSON malformat → marchează absent și continuă.
-Step 4  Cross-questions (Law 2 — opțional). Scanează cross_questions[] din Round 1.
-        Per pereche {to, question}: dispatch focal pe senatorul-țintă.
-        Counter: max 3 cross-q/senator/rundă · max 3 runde · Round 3 = STOP forțat.
-Step 5  Blocaj resolution (Law 3 — opțional).
-        Dacă 2 senatori rămân GO×STOP după Round 3 → ceilalți 5 votează argumentul mai puternic.
-Step 6  Rulează synthesizer:
-          cat senate_input.json | python -X utf8 scripts/senate_synth.py
-        Salvează automat în runs/senate/&lt;YYYY-MM-DD_HHMMSS&gt;-&lt;label&gt;.json (collision-safe).
-Step 7  Verdictul e advisory — user-ul decide: GO / MODIFY / STOP / DEEPLY_SPLIT / UNREACHABLE.
-</pre></div>
-
-  <p style="color:var(--muted);font-size:12.5px;margin:8px 0 0;">
-    <b>Nota:</b> <code>scripts/dispatch_senate_on_code.py</code> — script EXPERIMENTAL_DRAFT care pre-computează inputul pentru <code>--on-code</code>. NOT wired în dispatch table; salvat în scripts/ pentru pilot runs.
+  <p style="margin:0 0 8px;">
+    <a href="architecture_senate.html" style="color:#d8b4fe;font-weight:600;text-decoration:none;border:1px solid #4c2a6b;background:#221830;padding:8px 14px;border-radius:6px;display:inline-block;font-size:13px;">→ architecture_senate.html — arhitectură completă (round-by-round flow · 5 legi · cross-Q matrix · glosar)</a>
   </p>
 
   <!-- ═══════════════════════════════════════════════════════
@@ -1448,7 +1992,7 @@ Step 7  Verdictul e advisory — user-ul decide: GO / MODIFY / STOP / DEEPLY_SPL
 
   <div class="file-tree">
     <div class="file-group">
-      <h3>prompts/voices/ — voice contracts <span class="file-count">11 files</span></h3>
+      <h3>prompts/voices/ — voice contracts <span class="file-count">10 files</span></h3>
       <div class="file-list">
         <div class="file auth" data-role="Generator voice contract — divergent thinking, 3-5 candidates. Mereu include do_nothing. Conditional adversarial_* + unconventional_*."><code>generator.md</code><span class="auth-mark">⚠ AUTH</span></div>
         <div class="file auth" data-role="Control voice contract — per-candidate verdict: types/logic/tests/style. Output {id, valid, issues, tests_to_write}."><code>control.md</code><span class="auth-mark">⚠ AUTH</span></div>
@@ -1460,12 +2004,11 @@ Step 7  Verdictul e advisory — user-ul decide: GO / MODIFY / STOP / DEEPLY_SPL
         <div class="file" data-role="Architect lens (atitudinal) — prepended în Trias. Bias: invariants, type safety. Weights: gen 0.30, ctl 0.49, cons 0.21."><code>architect_lens.md</code></div>
         <div class="file" data-role="Steward lens (atitudinal) — prepended în Trias. Bias: minimal scope, reversibility. Weights: gen 0.30, ctl 0.30, cons 0.40."><code>steward_lens.md</code></div>
         <div class="file" data-role="Skeptic voice — focal challenger. Primește DOAR chosen (nu candidates, nu verdicts). Produce obiecție concretă sau meta_scope_mismatch."><code>skeptic.md</code></div>
-        <div class="file" data-role="Frontend / Domain lens — EXPERIMENTAL DRAFT. Bias pe user-facing surface: a11y, bundle cost, render correctness. Folosit doar via --lens override sau --on-code."><code>domain_lens.md</code> <span style="color:var(--muted);font-size:10px;">(în prompts/lenses/)</span></div>
       </div>
     </div>
 
     <div class="file-group">
-      <h3>prompts/senators/ — Senate mode <span class="file-count">7 files</span></h3>
+      <h3>prompts/senators/ — Senate mode <span class="file-count">9 files</span></h3>
       <div class="file-list">
         <div class="file auth" data-role="Wittgenstein senator — semantic + operational definitions. Output: vague_terms_found[]."><code>wittgenstein.md</code><span class="auth-mark">⚠ AUTH</span></div>
         <div class="file auth" data-role="Aurelius senator — reversibility × magnitude. Cadran cost-revers."><code>aurelius.md</code><span class="auth-mark">⚠ AUTH</span></div>
@@ -1474,6 +2017,8 @@ Step 7  Verdictul e advisory — user-ul decide: GO / MODIFY / STOP / DEEPLY_SPL
         <div class="file auth" data-role="Musk senator — aggressive deletion + 10% add-back. components_attacked[]."><code>musk.md</code><span class="auth-mark">⚠ AUTH</span></div>
         <div class="file auth" data-role="Dimon senator — stress_scenarios[] cu failure_mode. Observability + recovery."><code>dimon.md</code><span class="auth-mark">⚠ AUTH</span></div>
         <div class="file auth" data-role="Napoleon senator — cost_estimate + terrain_check. Tokens, ore, starea operatorului."><code>napoleon.md</code><span class="auth-mark">⚠ AUTH</span></div>
+        <div class="file auth" data-role="Deming senator — process quality. n_runs, variance, baseline_compare. Cere evidence empirică înainte de claim-uri de proces."><code>deming.md</code><span class="auth-mark">⚠ AUTH</span></div>
+        <div class="file auth" data-role="Tacitus senator — istorician. historical_precedents[], past_outcomes. Caută în runs/ + FEEDBACK.html."><code>tacitus.md</code><span class="auth-mark">⚠ AUTH</span></div>
       </div>
     </div>
 
@@ -1496,19 +2041,16 @@ Step 7  Verdictul e advisory — user-ul decide: GO / MODIFY / STOP / DEEPLY_SPL
         <div class="file" data-role="Steps 3-4 sequential — proiectează output voce anterioară la minim ({id, summary, sketch})."><code>strip_context.py</code></div>
         <div class="file" data-role="Combină Pass-1 + Pass-2 în payload aggregator-ready. Detectează silently_dropped + dissent fallback warnings."><code>dialectic_merge.py</code></div>
         <div class="file" data-role="Trias mode — emite cele 3 personalități (pioneer/architect/steward) cu weights + lens paths."><code>personalities.py</code></div>
-        <div class="file" data-role="RUND2 — traduceri user-facing (reversibility/magnitude/meta_recommendation/verdict) + compute_tokens_budget(). Folosit de aggregate_rund2() pentru routing outcomes."><code>vocabulary_map.py</code></div>
+        <div class="file" data-role="Traduceri user-facing (reversibility/magnitude/meta_recommendation/verdict) + compute_tokens_budget(). Folosit pentru routing outcomes."><code>vocabulary_map.py</code></div>
         <div class="file" data-role="Senate synthesizer — agregă 7 JSON-uri → verdict GO/MODIFY/STOP/UNREACHABLE/DEEPLY_SPLIT. Suportă multi-round {rounds:[...]} + legacy {senators:{...}}. Law 3 blocaj_pending advisory."><code>senate_synth.py</code></div>
         <div class="file" data-role="Formatează multi-round bundle în transcript human-readable cu cross-questions."><code>senate_transcript.py</code></div>
         <div class="file" data-role="Listează modify_requests outstanding din runs/senate/."><code>senate_todo.py</code></div>
-        <div class="file" data-role="EXPERIMENTAL_DRAFT — pre-computează diff, files_touched, success_criterion, magnitude, reversibility, blast_radius pentru senate --on-code dispatch."><code>dispatch_senate_on_code.py</code></div>
-        <div class="file" data-role="Compară senate vs trias pe aceeași propunere. Măsoară info-add și semantic_suspect rate. Folosit pentru empirical gate --on-code."><code>compare_senate_vs_trias.py</code></div>
         <div class="file" data-role="Regression suite — rulează scripts deterministe pe evals/scenarios.json. 17+ scenarii."><code>run_evals.py</code></div>
         <div class="file" data-role="Telemetry rollup din runs/. Tokens in/out, latency_ms per voce."><code>usage.py</code></div>
         <div class="file" data-role="Stats peste FEEDBACK.html — recent decisions + outcome distribution."><code>feedback.py</code></div>
         <div class="file" data-role="Utils stdlib-only — force_utf8_streams, load_json_stdin, validate_keys."><code>utils.py</code></div>
         <div class="file" data-role="Precedent search — caută în runs/ + experiments/ pentru decizii similare. Folosit de Confucius senator."><code>precedent_search.py</code></div>
         <div class="file" data-role="FEEDBACK.html renderer — generează HTML dark-theme cu drill-down."><code>render_feedback_html.py</code></div>
-        <div class="file" data-role="Migrare FEEDBACK.md → FEEDBACK.html cu re-populare drill-down."><code>migrate_feedback_md_to_html.py</code></div>
       </div>
     </div>
   </div>
@@ -1517,20 +2059,64 @@ Step 7  Verdictul e advisory — user-ul decide: GO / MODIFY / STOP / DEEPLY_SPL
        3. GIT WORKFLOW + SELF-IMPROVEMENT LOOP
   ══════════════════════════════════════════════════════════ -->
   <h3 style="margin-top:40px;">Git workflow + self-improvement loop</h3>
-  <div class="git-rules">
-    <div class="rule"><h4>1. Branch nou de la <code>main</code> înainte de a edita</h4><p>Naming: <code>feat/&lt;slug&gt;</code> sau <code>fix/&lt;slug&gt;</code>. Slug kebab-case. Doar aceste 2 prefixe.</p></div>
-    <div class="rule"><h4>2. Un singur commit per branch (amend strategy)</h4><p>Primul <code>git commit</code>, apoi <code>git commit --amend --no-edit</code> la fiecare modificare ulterioară din aceeași sesiune.</p></div>
-    <div class="rule"><h4>3. Înainte de push, întreb explicit</h4><p>"Totul ok sau mai vrei schimbări?" Dacă cere modificări → amend + reia întrebarea.</p></div>
-    <div class="rule"><h4>4. Push o singură dată → <code>git checkout main</code></h4><p>După push, nu mai amend + force-push fără cerere explicită. Schimbări noi = branch nou.</p></div>
-    <div class="rule"><h4>5. PR-ul îl face utilizatorul manual</h4><p>Nu rulez <code>gh pr create</code>. La final, doar raportez branch-ul push-uit.</p></div>
-    <div class="rule"><h4>6. Mesajele de commit = Conventional Commits</h4><p>Format: <code>feat(scope): ...</code> / <code>fix(scope): ...</code>. Omit <code>Co-Authored-By: Claude ...</code> pe Consilium.</p></div>
-    <div class="rule"><h4>7. Excepție typo / fix 1-linie</h4><p>Poate merge direct pe <code>main</code> dacă utilizatorul cere explicit. Restul intră în workflow-ul de mai sus.</p></div>
-  </div>
+  <svg viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Git workflow lifecycle" style="max-width:780px;width:100%;margin-bottom:14px;">
+    <rect x="10" y="60" width="100" height="50" rx="6" fill="#0a2e23" stroke="#145c45"/>
+    <text x="60" y="80" fill="#6ee7b7" font-size="11" text-anchor="middle" font-weight="600">1. branch</text>
+    <text x="60" y="96" fill="#9ca3af" font-size="9" text-anchor="middle">feat/&lt;slug&gt;</text>
+    <line x1="110" y1="85" x2="140" y2="85" stroke="#9ca3af"/>
+    <polygon points="135,81 142,85 135,89" fill="#9ca3af"/>
+    <rect x="142" y="60" width="100" height="50" rx="6" fill="#182338" stroke="#2a3f5f"/>
+    <text x="192" y="80" fill="#93c5fd" font-size="11" text-anchor="middle" font-weight="600">2. edit</text>
+    <text x="192" y="96" fill="#9ca3af" font-size="9" text-anchor="middle">Write/Edit tools</text>
+    <line x1="242" y1="85" x2="272" y2="85" stroke="#9ca3af"/>
+    <polygon points="267,81 274,85 267,89" fill="#9ca3af"/>
+    <rect x="274" y="60" width="100" height="50" rx="6" fill="#2a2410" stroke="#5c4a14"/>
+    <text x="324" y="80" fill="#fbbf24" font-size="11" text-anchor="middle" font-weight="600">3. commit</text>
+    <text x="324" y="96" fill="#9ca3af" font-size="9" text-anchor="middle">conventional</text>
+    <path d="M 374 85 Q 414 85 414 50 Q 414 30 274 30 Q 230 30 230 60" stroke="#fbbf24" stroke-width="1.5" fill="none" stroke-dasharray="3,3"/>
+    <polygon points="226,55 230,62 234,55" fill="#fbbf24"/>
+    <text x="324" y="22" fill="#fbbf24" font-size="9" text-anchor="middle">amend --no-edit (loop iterații)</text>
+    <line x1="374" y1="85" x2="404" y2="85" stroke="#9ca3af"/>
+    <polygon points="399,81 406,85 399,89" fill="#9ca3af"/>
+    <rect x="406" y="60" width="100" height="50" rx="6" fill="#221830" stroke="#4c2a6b"/>
+    <text x="456" y="80" fill="#d8b4fe" font-size="11" text-anchor="middle" font-weight="600">4. push (1x)</text>
+    <text x="456" y="96" fill="#9ca3af" font-size="9" text-anchor="middle">automat</text>
+    <line x1="506" y1="85" x2="536" y2="85" stroke="#9ca3af"/>
+    <polygon points="531,81 538,85 531,89" fill="#9ca3af"/>
+    <rect x="538" y="60" width="120" height="50" rx="6" fill="#11151c" stroke="#2d3441"/>
+    <text x="598" y="80" fill="#e5e7eb" font-size="11" text-anchor="middle" font-weight="600">5. checkout main</text>
+    <text x="598" y="96" fill="#9ca3af" font-size="9" text-anchor="middle">automat</text>
+    <line x1="658" y1="85" x2="688" y2="85" stroke="#9ca3af"/>
+    <polygon points="683,81 690,85 683,89" fill="#9ca3af"/>
+    <rect x="690" y="60" width="80" height="50" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+    <text x="730" y="80" fill="#fca5a5" font-size="11" text-anchor="middle" font-weight="600">6. PR</text>
+    <text x="730" y="96" fill="#9ca3af" font-size="9" text-anchor="middle">manual user</text>
+    <text x="10" y="150" fill="#9ca3af" font-size="11">După push: schimbări noi = branch nou. Excepție: typo-uri 1-line direct pe main.</text>
+    <text x="10" y="168" fill="#9ca3af" font-size="11">Naming: <tspan font-family="ui-monospace,monospace" fill="#e5e7eb">feat/&lt;slug&gt;</tspan> pentru features, <tspan font-family="ui-monospace,monospace" fill="#e5e7eb">fix/&lt;slug&gt;</tspan> pentru bugfixes.</text>
+  </svg>
+  <table style="font-size:12.5px;border-collapse:collapse;width:100%;max-width:880px;margin-top:8px;">
+    <thead>
+      <tr style="border-bottom:1px solid #2d3441;">
+        <th style="text-align:left;padding:6px 10px;color:#9ca3af;font-weight:500;width:32px;">#</th>
+        <th style="text-align:left;padding:6px 10px;color:#9ca3af;font-weight:500;">Rule</th>
+        <th style="text-align:left;padding:6px 10px;color:#9ca3af;font-weight:500;">Detaliu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #1e2733;"><td style="padding:7px 10px;color:#6ee7b7;font-weight:700;">1</td><td style="padding:7px 10px;"><b>Branch nou de la <code>main</code></b></td><td style="padding:7px 10px;color:#9ca3af;">Naming: <code>feat/&lt;slug&gt;</code> sau <code>fix/&lt;slug&gt;</code>. Slug kebab-case. Doar aceste 2 prefixe.</td></tr>
+      <tr style="border-bottom:1px solid #1e2733;"><td style="padding:7px 10px;color:#fbbf24;font-weight:700;">2</td><td style="padding:7px 10px;"><b>Un singur commit per branch (amend)</b></td><td style="padding:7px 10px;color:#9ca3af;">Primul <code>git commit</code>, apoi <code>git commit --amend --no-edit</code> la fiecare iterație.</td></tr>
+      <tr style="border-bottom:1px solid #1e2733;"><td style="padding:7px 10px;color:#fbbf24;font-weight:700;">3</td><td style="padding:7px 10px;"><b>Push automat după commit</b></td><td style="padding:7px 10px;color:#9ca3af;">Fără să întreb. Dacă user cere modificări înainte de push → amend + push imediat.</td></tr>
+      <tr style="border-bottom:1px solid #1e2733;"><td style="padding:7px 10px;color:#d8b4fe;font-weight:700;">4</td><td style="padding:7px 10px;"><b>Push o singură dată → <code>git checkout main</code></b></td><td style="padding:7px 10px;color:#9ca3af;">După push, nu mai amend + force-push fără cerere explicită. Schimbări noi = branch nou.</td></tr>
+      <tr style="border-bottom:1px solid #1e2733;"><td style="padding:7px 10px;color:#fca5a5;font-weight:700;">5</td><td style="padding:7px 10px;"><b>PR-ul îl face utilizatorul manual</b></td><td style="padding:7px 10px;color:#9ca3af;">Nu rulez <code>gh pr create</code>. La final, doar raportez branch-ul push-uit.</td></tr>
+      <tr style="border-bottom:1px solid #1e2733;"><td style="padding:7px 10px;color:#93c5fd;font-weight:700;">6</td><td style="padding:7px 10px;"><b>Conventional Commits</b></td><td style="padding:7px 10px;color:#9ca3af;">Format: <code>feat(scope): ...</code> / <code>fix(scope): ...</code>. Omit <code>Co-Authored-By: Claude ...</code> pe Consilium.</td></tr>
+      <tr><td style="padding:7px 10px;color:#9ca3af;font-weight:700;">7</td><td style="padding:7px 10px;"><b>Excepție typo / fix 1-linie</b></td><td style="padding:7px 10px;color:#9ca3af;">Poate merge direct pe <code>main</code> dacă utilizatorul cere explicit.</td></tr>
+    </tbody>
+  </table>
 
   <div class="self-loop" style="margin-top:20px;">
     <div class="loop-step">Când editezi skill-ul însuși, rulează <code>/consilium</code> pe propria schimbare.</div>
     <div class="loop-arrow">→</div>
-    <div class="loop-step">Pentru schimbări la <code>prompts/voices/*.md</code>, <code>prompts/senators/*.md</code> sau arhitectură → preferă modul <code>senate</code> (7 senatori, mai puternic decât single-context).</div>
+    <div class="loop-step">Pentru schimbări la <code>prompts/voices/*.md</code>, <code>prompts/senators/*.md</code> sau arhitectură → preferă modul <code>senate</code> (9 senatori, mai puternic decât single-context).</div>
     <div class="loop-arrow">→</div>
     <div class="loop-step">Salvează run-ul în <code>runs/</code> și loghează în <code>FEEDBACK.html</code> prin <code>log_feedback.py</code>.</div>
   </div>
@@ -1539,7 +2125,7 @@ Step 7  Verdictul e advisory — user-ul decide: GO / MODIFY / STOP / DEEPLY_SPL
        4. DIALECTIC
   ══════════════════════════════════════════════════════════ -->
   <h3 style="margin-top:40px;">Dialectic — Pass 1 + Pass 2 cross-review</h3>
-  <p style="color:var(--muted);font-size:13.5px;margin:-8px 0 16px;">Two-pass: Pass 1 = parallel (izolat). Pass 2 = fiecare voce vede output-urile celorlalte și revizuiește sau menține. Cost: 6 sub-agenți (~2× Parallel). Implementat în <code>scripts/dialectic_merge.py</code>.</p>
+  <p style="color:var(--muted);font-size:13.5px;margin:-8px 0 16px;">Two-pass: Pass 1 = parallel (izolat). Pass 2 = fiecare voce vede output-urile celorlalte și revizuiește sau menține. Cost: 6 sub-agenți (~6× Sequential). Implementat în <code>scripts/dialectic_merge.py</code>.</p>
   <p style="color:var(--muted);font-size:13px;margin:-4px 0 20px;">Per-voice contract complet: SKILL.md secțiunea "Dialectic mode". Pass-2 schema per item: <code>revision: &#123;...&#125;</code> SAU <code>maintained: &#123;reason&#125;</code> — lipsa ambelor declanșează <code>silently_dropped</code> warning.</p>
 
   <div class="mermaid-wrap" style="max-width:900px;margin-bottom:28px">
@@ -1609,23 +2195,18 @@ flowchart LR
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       5. TODO MATRIX
-  ══════════════════════════════════════════════════════════ -->
-  <h3 style="margin-top:40px;">TODO Matrix — 26 iteme · impact × efort</h3>
-  <p style="color:var(--muted);font-size:13px;margin:-8px 0 16px;">Hover pentru detalii. Items mapped impact (Scăzut→Înalt) vs effort (Mic→Foarte Mare).</p>
-
-  <div class="todo-matrix-container">
-    <svg class="todo-matrix-svg" id="todoMatrixSvg" viewBox="0 0 820 500"></svg>
-    <div class="todo-legend">
-      <div class="todo-legend-item"><div class="todo-legend-dot" style="background:#fbbf24"></div> Prompt (Pass 1)</div>
-      <div class="todo-legend-item"><div class="todo-legend-dot" style="background:#f97316"></div> Prompt (Pass 2 dialectic)</div>
-      <div class="todo-legend-item"><div class="todo-legend-dot" style="background:#60a5fa"></div> Skill / Script</div>
-      <div class="todo-legend-item"><div class="todo-legend-dot" style="background:#f87171"></div> Arhitectură</div>
-    </div>
+  <div class="glossary">
+    <h3>Glosar Reference</h3>
+    <dl>
+      <dt>senator</dt><dd>Un sub-agent în modul Senate cu prompt distinct (filozof istoric/CEO/etc.). 9 total, fiecare cu o optică disjunctă. Vot advisory.</dd>
+      <dt>advisory verdict</dt><dd>Output care e citat în raport dar nu blochează deliberarea — vs. <i>blocking verdict</i> care oprește pipeline.</dd>
+      <dt>dispatch</dt><dd>Apelul API care lansează un sub-agent — alocă propriul context window și pasează prompt + input.</dd>
+      <dt>prepended prompt</dt><dd>Lens (Trias) sau senator role injectat la începutul system prompt-ului unui sub-agent înainte de prompt-ul vocii core.</dd>
+      <dt>on-demand audit</dt><dd>Audit care rulează doar la cererea explicită user (Senate default) — vs. <i>auto cross-check</i> (Parallel) care se declanșează din triggere derivate.</dd>
+      <dt>revision_log</dt><dd>Output Dialectic Pass 2: înregistrează ce a schimbat fiecare voce între Pass 1 și Pass 2 (<code>revision:</code> sau <code>maintained:</code>).</dd>
+      <dt>empirical gate</dt><dd>Cerință de a colecta date pilot (ex. 3-5 runs cu outcome OK) înainte de promovarea unei capabilități experimentale în prod.</dd>
+    </dl>
   </div>
-
-  <div id="todoTooltip"><div class="tip-title"></div><div class="tip-body"></div></div>
 
 </section>
 
@@ -1728,7 +2309,7 @@ flowchart TD
       <text x="111" y="82"  text-anchor="end" fill="#e5e7eb" font-size="11">senate</text>
       <rect x="115" y="64"  width="84"  height="28" rx="3" fill="#a78bfa"/>
       <text x="203" y="81"  fill="#a78bfa" font-size="10" font-weight="600">2.3×</text>
-      <text x="203" y="91"  fill="#4b5563" font-size="9">7 senatori</text>
+      <text x="203" y="91"  fill="#4b5563" font-size="9">9 senatori</text>
 
       <!-- parallel 3× → 110px (auto-only, muted) -->
       <text x="111" y="126" text-anchor="end" fill="#6b7280" font-size="11">parallel</text>
@@ -1776,7 +2357,7 @@ flowchart TD
         </tr>
         <tr style="border-bottom:1px solid #1e2733;">
           <td style="padding:7px 10px;color:#a78bfa;font-weight:600;">senate</td>
-          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">7</td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">9</td>
           <td style="text-align:center;padding:7px 6px;color:#a78bfa;font-weight:600;">~2.3×</td>
           <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
         </tr>
@@ -1835,6 +2416,47 @@ flowchart LR
     † Date live după ≥3 runs cu telemetry per mod: <code>python -X utf8 scripts/efficiency.py --by-mode</code>. Telemetry se populează din Step 6 (orchestrator emite chars/4 per dispatch). ·
     <code>tokens/OK</code> nu e comparabil direct cross-mod — un Senate OK implică deliberare mai profundă decât un Sequential OK.
   </p>
+
+  <h2 style="margin-top:32px;">Când merită cost-ul — cost-of-mistake × cost-of-running</h2>
+  <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cost vs consequence quadrant" style="max-width:720px;width:100%;">
+    <line x1="60" y1="320" x2="660" y2="320" stroke="#9ca3af" stroke-width="1.5"/>
+    <line x1="60" y1="320" x2="60" y2="40" stroke="#9ca3af" stroke-width="1.5"/>
+    <text x="360" y="345" fill="#e5e7eb" font-size="12" text-anchor="middle">cost-of-running →</text>
+    <text x="30" y="180" fill="#e5e7eb" font-size="12" text-anchor="middle" transform="rotate(-90 30 180)">cost-of-mistake →</text>
+    <line x1="360" y1="320" x2="360" y2="40" stroke="#2d3441" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="60" y1="180" x2="660" y2="180" stroke="#2d3441" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="80" y="65" fill="#34d399" font-size="13" font-weight="700">SWEET SPOT</text>
+    <text x="80" y="82" fill="#6ee7b7" font-size="11">cost-of-mistake high,</text>
+    <text x="80" y="96" fill="#6ee7b7" font-size="11">cost-of-running low</text>
+    <text x="80" y="116" fill="#6ee7b7" font-size="10" font-style="italic">→ Trias / Senate justified</text>
+    <text x="380" y="65" fill="#fbbf24" font-size="13" font-weight="700">JUSTIFIED</text>
+    <text x="380" y="82" fill="#fbbf24" font-size="11">high mistake + high running</text>
+    <text x="380" y="116" fill="#fbbf24" font-size="10" font-style="italic">→ Trias, dar verifică decision speed</text>
+    <text x="80" y="230" fill="#9ca3af" font-size="13" font-weight="700">USE Sequential</text>
+    <text x="80" y="247" fill="#9ca3af" font-size="11">low mistake + low running</text>
+    <text x="80" y="281" fill="#9ca3af" font-size="10" font-style="italic">→ Sequential or scope_gate skip</text>
+    <text x="380" y="230" fill="#fca5a5" font-size="13" font-weight="700">WASTE</text>
+    <text x="380" y="247" fill="#fca5a5" font-size="11">low mistake, high running</text>
+    <text x="380" y="281" fill="#fca5a5" font-size="10" font-style="italic">→ Trias pe typo = waste</text>
+  </svg>
+
+  <h3 style="margin-top:20px;">Benchmark methodology — pe scurt</h3>
+  <p style="font-size:12.5px;line-height:1.6;color:var(--muted);max-width:780px;">
+    Toate modurile primesc același flag <code>--effort</code> în benchmark — modelele decid intern cât deliberează. Nu tunăm parametri per-mod. Problemele din benchmark sunt designed să pună în dificultate modelele; nu sunt înlocuite cu variante mai simple pentru cost reduction. Vezi <code>experiments/</code> pentru runs concrete (P3 car wash, benchmark wrapper).
+  </p>
+
+  <div class="glossary">
+    <h3>Glosar Efficiency</h3>
+    <dl>
+      <dt>tokens/OK</dt><dd>Total tokens consumați împărțit la numărul de outcomes OK confirmate în același set de runs. Metrică-cheie de cost-efficiency.</dd>
+      <dt>baseline</dt><dd>Sequential = 1×. Toate celelalte cost-uri se raportează la asta.</dd>
+      <dt>multiplier vs Sequential</dt><dd>Raportul cost al modului față de Sequential — ex. Senate ≈ 2.3×, Trias = 9×.</dd>
+      <dt>effort flag</dt><dd><code>--effort low|medium|high</code> în CLI — controlează intensitatea efortului per sub-agent (max tokens, retry tolerance). Uniform în benchmark.</dd>
+      <dt>OK / PEND / BAD / OVR</dt><dd>Cele 4 outcomes posibile pentru un run: OK (success), PEND (pending review), BAD (failed in prod), OVR (user override). <code>[confirmed]</code> în notă = ponderează 2× în <code>weighted_bad_rate</code>.</dd>
+      <dt>cost-of-mistake</dt><dd>Costul presupus al unei decizii greșite — ireversibilitate, blast radius, downtime, lost trust. Folosit în decision-making pentru cost-justification (vezi quadrant).</dd>
+      <dt>cost-of-running</dt><dd>Costul tokenilor + latency-ului propriu-zis al deliberării. Direct proporțional cu numărul de sub-agenți.</dd>
+    </dl>
+  </div>
 
 </section>
 
