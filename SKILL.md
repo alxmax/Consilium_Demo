@@ -202,9 +202,13 @@ python scripts/mark_outcome.py --run-path runs/<file>.json --outcome BAD --reaso
 ```
 Marker-ul `[confirmed]` apare în note; `priors.py` ponderează aceste rânduri 2x față de feedback-ul subiectiv (vezi `weighted_bad_rate`).
 
-### 7. Auto-pipeline (opt-in, post-report)
+### 7. Auto-pipeline (post-report)
 
-După ce Step 6 e complet (raport salvat, feedback logat), poți infera și confirma pașii de implementare:
+**Mandatory dacă promptul user-ului conține o secțiune `**Required output files**` sau `**Deliverables**`** — adică declară fișiere ce trebuie să existe pe disc. În acest caz Step 7 nu mai e opțional: după ce Step 6 e complet, treci direct la `infer_pipeline.py` și execută toți pașii inferați (cel puțin `implement` cu Write tool pentru fiecare cale declarată). Raportul de deliberare singur nu satisface contractul — fișierele trebuie să existe pe disc înainte ca turn-ul să se închidă.
+
+**Opt-in altfel** — când promptul nu declară livrabile (audit, "should I commit", "which approach", "before implementing"-fără-cod-cerut), Step 7 rămâne la latitudinea userului.
+
+După ce Step 6 e complet (raport salvat, feedback logat), inferă și confirmă pașii de implementare:
 
 ```bash
 cat runs/<file>.json | python scripts/infer_pipeline.py          # interactiv
@@ -235,6 +239,8 @@ Output JSON: `{"steps": [...], "rationale": {"chosen": "...", "magnitude": "..."
 Reject (`n` la prompt) → rejection logat în `runs/YYYY-MM-DD_HHMM_pipeline_rejected.json`. Rerun cu `--yes` pentru CI sau `--dry-run` pentru audit fără confirmare.
 
 **Skip Step 7 dacă:** `chosen_approach` e `do_nothing` sau `skipped` (scriptul iese cu exit 1 și mesaj clar). În context headless (`claude -p`), rulează cu `--yes` (non-interactiv, fără prompt de confirmare).
+
+**Skip-ul NU se aplică pentru cerința mandatory de mai sus:** dacă promptul declară `**Required output files**` / `**Deliverables**` și totuși ajungi la `chosen=do_nothing`, asta înseamnă că deliberarea a respins implementarea unei cereri explicite a userului — caz care necesită semnal vizibil (eroare hard în răspuns: *"deliberarea a ales `do_nothing` pe un prompt cu livrabile declarate — userul trebuie să decidă"*), nu skip silențios.
 
 ## Skill maintenance
 
@@ -312,7 +318,7 @@ Când `CLAUDE_HEADLESS=1` (set de orchestratorul extern care a invocat `claude -
 | 0 (`stale_pendings`, `missing_feedback_runs`, `pend_pressure`) | log warning pe stderr + continuă; pentru `missing_feedback_runs` rulează `audit_feedback.py --backfill` automat |
 | 2 (`irreversibility_flag: true`) | setează `metadata.headless_overridden: true` în bundle + continuă (orchestratorul extern și-a asumat stake-ul) |
 | 5d (retry on low confidence) | skip integral; merge direct la Step 6 cu `PEND_HEADLESS` |
-| 7 (auto-pipeline) | rulează cu `--yes` (non-interactiv, fără prompt de confirmare) |
+| 7 (auto-pipeline) | rulează cu `--yes` (non-interactiv, fără prompt de confirmare); **mandatory** dacă promptul declară `**Required output files**` / `**Deliverables**` — implementarea efectivă (Write tool pe căile declarate) e parte din contract, nu post-step opțional |
 
 `is_headless() == False` (env var absent) → comportament curent neschimbat. Backward compat 100%.
 
