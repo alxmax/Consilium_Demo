@@ -34,17 +34,20 @@ Input format (multi-round, Laws 1-5 active):
       }
 
 Verdict rule (same for both modes):
-    UNREACHABLE  if voters_present < 5 (mathematically cannot reach quorum)
-    GO           if GO   >= 5 of 7
-    STOP         if STOP >= 5 of 7
-    DEEPLY_SPLIT if quorum met, neither majority, AND both GO and STOP factions
-                 reach POLARIZATION_THRESHOLD (currently 3 = QUORUM-2, "within
-                 2 vote flips of majority"). Covers 4-3, 3-3-1, 3-4 patterns.
-    MODIFY       otherwise (default — covers non-polarized non-quorum splits
-                 like 4-0-3, 3-4 with abstentions where one side is below 3, etc.)
+    UNREACHABLE  if total active votes < MIN_ACTIVE_VOTES (5/9) — too few senators took a position
+    MODIFY       if any senator voted MODIFY (always blocks — must be resolved first)
+    GO           if GO   >= QUORUM (7/9) AND MODIFY == 0
+    STOP         if STOP >= QUORUM (7/9) AND MODIFY == 0
+    DEEPLY_SPLIT otherwise (neither GO nor STOP reached QUORUM, MODIFY == 0).
+                 Covers 4-3, 5-2, 6-0, etc. patterns below threshold.
 
-DEEPLY_SPLIT is advisory like UNREACHABLE: orchestrator MUST escalate to the
-user with the vote matrix + per-senator modify_requests. No automatic action.
+ABSTAIN = present-but-no-position. Excluded from tally, does NOT reduce
+voters_present. When >= HIGH_ABSTAIN_THRESHOLD (3/9) abstain, a
+high_abstain_rate warning is emitted.
+
+DEEPLY_SPLIT: orchestrator escalates to user. User may force ABSTAIN senators
+to declare (GO or STOP) and re-run, OR switch to normal Consilium mode.
+UNREACHABLE: orchestrator presents user with the same two options.
 
 Multi-round semantics (Law 2: max 3 cross_questions per senator per round;
 Law 3: blocaj_resolution.winning_senator's vote replaces loser's vote in the
@@ -67,6 +70,7 @@ import argparse
 import datetime as dt
 import importlib.util
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -93,14 +97,17 @@ SKILL_INTERNAL_ARTIFACTS = frozenset({
     "scripts/senate_synth", "scripts/dialectic_merge", "scripts/personalities",
     "skill.md", "claude.md", "consilium internals", "consilium skill",
 })
-QUORUM = 5  # >= 5 needed for GO or STOP verdict (kept at 5 with 9 senators; see TODO: scaling)
-# A faction is "substantial" if it is within 2 vote flips of becoming majority.
-# With QUORUM=5, that is 3 senators. Used by DEEPLY_SPLIT to detect a polarized
-# split where both GO and STOP factions reach this threshold but neither hits
-# majority. Derived from QUORUM rather than asserted so it scales if QUORUM
-# changes (e.g., a future 9-senator senate with QUORUM=6 → threshold=4).
-POLARIZATION_THRESHOLD = QUORUM - 2
 VOTES = ("GO", "MODIFY", "STOP")
+# Minimum active votes (GO+MODIFY+STOP) for a valid deliberation.
+# Below this, verdict is UNREACHABLE — too few senators took a position.
+# For 9 senators: 5 (more than half must have an active position).
+MIN_ACTIVE_VOTES = 5
+# Minimum votes required for GO or STOP verdict. 7/9 senators must agree.
+# MODIFY votes always block: if any senator votes MODIFY, verdict cannot be GO or STOP.
+QUORUM = 7
+# Warning threshold: emit high_abstain_rate when >= ceil(N/3) senators abstain.
+# For 9 senators: threshold = 3. Shares value with MIN_ACTIVE_VOTES by design.
+HIGH_ABSTAIN_THRESHOLD = math.ceil(len(SENATORS) / 3)
 MAX_CROSS_QUESTIONS_PER_SENATOR_PER_ROUND = 3  # Law 2
 
 # Per-senator structural expectations: if a senator votes but omits its
@@ -124,8 +131,8 @@ def normalize_vote(raw) -> str | None:
 
     Returns None on missing/unrecognized — caller surfaces this as a warning
     AND counts it as MODIFY in the tally (most-conservative non-blocking).
-    ABSTAIN is recognized but NOT in VOTES tally — it reduces voters_present
-    by 1 (degraded mode signal from Deming/Tacitus when corpus is insufficient).
+    ABSTAIN is recognized but NOT in VOTES tally — excluded from tally() but
+    does NOT reduce voters_present (present-but-no-position, not absent).
     """
     if not isinstance(raw, str):
         return None
@@ -275,9 +282,8 @@ def apply_blocaj_resolution(
 
 
 def tally(senator_outputs: dict[str, dict]) -> dict[str, int]:
-    """Tally GO/MODIFY/STOP. ABSTAIN votes are excluded from the tally
-    (they reduce voters_present in build_bundle instead). Unrecognized votes
-    fall through to MODIFY per most-conservative-non-blocking principle.
+    """Tally GO/MODIFY/STOP. ABSTAIN is excluded from tally (present-but-no-position).
+    Unrecognized votes fall through to MODIFY per most-conservative-non-blocking principle.
     """
     counts = {v: 0 for v in VOTES}
     for output in senator_outputs.values():
@@ -289,28 +295,26 @@ def tally(senator_outputs: dict[str, dict]) -> dict[str, int]:
 
 
 def compute_verdict(counts: dict[str, int], voters_present: int) -> str:
-    """Map (counts, voters_present) → verdict string.
+    """Supermajority verdict with MODIFY-blocks rule.
 
-    voters_present = number of senators with a recorded ballot in the latest
-    round they appeared in. MODIFY votes count toward voters_present but go
-    into counts["MODIFY"], not counts["GO"]/counts["STOP"]. Senators absent
-    from all rounds do NOT contribute to voters_present.
-
-    Order matters: GO/STOP majority checks run before DEEPLY_SPLIT, so a 5-2
-    or 6-1 split is always reported as the majority verdict even though the
-    minority side may reach POLARIZATION_THRESHOLD (here, 5-3 cannot occur
-    with 7 senators, but 5-4 in a future 9-senator senate would still resolve
-    to GO, not DEEPLY_SPLIT).
+    GO requires >= QUORUM GO votes AND zero MODIFY votes.
+    STOP requires >= QUORUM STOP votes AND zero MODIFY votes.
+    Any MODIFY vote blocks GO/STOP — proposal must be reworked first.
+    DEEPLY_SPLIT: no supermajority reached AND MODIFY == 0 — ABSTAIN senators
+      are forced to choose a side; orchestrator/user resolves.
+    UNREACHABLE: all senators abstained or all absent (total active == 0).
     """
-    if voters_present < QUORUM:
+    total_active = counts["GO"] + counts["MODIFY"] + counts["STOP"]
+    if total_active < MIN_ACTIVE_VOTES:
         return "UNREACHABLE"
+    if counts["MODIFY"] > 0:
+        return "MODIFY"
+    # MODIFY == 0 from here
     if counts["GO"] >= QUORUM:
         return "GO"
     if counts["STOP"] >= QUORUM:
         return "STOP"
-    if counts["GO"] >= POLARIZATION_THRESHOLD and counts["STOP"] >= POLARIZATION_THRESHOLD:
-        return "DEEPLY_SPLIT"
-    return "MODIFY"
+    return "DEEPLY_SPLIT"
 
 
 def collect_modify_requests(senator_outputs: dict[str, dict]) -> list[dict]:
@@ -322,7 +326,7 @@ def collect_modify_requests(senator_outputs: dict[str, dict]) -> list[dict]:
     return requests
 
 
-def collect_warnings(senator_outputs: dict[str, dict], voters_present: int) -> list[str]:
+def collect_warnings(senator_outputs: dict[str, dict]) -> list[str]:
     """Surface only structural anomalies. Absent senators are recorded in
     `senators_absent`, so they do not generate redundant warnings here.
     """
@@ -342,10 +346,14 @@ def collect_warnings(senator_outputs: dict[str, dict], voters_present: int) -> l
                 warnings.append(
                     f"senator '{name}' voted but omitted/empty '{field}' — that axis of audit is silent"
                 )
-    if voters_present < QUORUM:
+    n_abstain = sum(
+        1 for o in senator_outputs.values()
+        if normalize_vote(o.get("vote")) == "ABSTAIN"
+    )
+    if n_abstain >= HIGH_ABSTAIN_THRESHOLD:
         warnings.append(
-            f"quorum_unreachable: only {voters_present} of {len(SENATORS)} senators voted "
-            f"(need >= {QUORUM} to reach GO or STOP); verdict structurally biased toward MODIFY"
+            f"high_abstain_rate: {n_abstain} of {len(SENATORS)} senators abstained "
+            "— verdict reflects a minority of active positions"
         )
     return warnings
 
@@ -408,12 +416,8 @@ def build_bundle(
             final_outputs, files_touched, is_consilium_contribution,
         )
         senators_absent = sorted(set(senators_absent) | set(code_audit_suspects))
-    # voters_present excludes ABSTAIN — abstaining senators do not contribute
-    # to quorum because they explicitly cannot form a position.
-    voters_present = sum(
-        1 for o in final_outputs.values()
-        if normalize_vote(o.get("vote")) != "ABSTAIN"
-    )
+    # voters_present = all dispatched senators (ABSTAIN = present-but-no-position, not absent).
+    voters_present = len(final_outputs)
 
     raw_counts = tally(final_outputs)
     adjusted_outputs, blocaj_info = apply_blocaj_resolution(final_outputs, blocaj_resolution)
@@ -431,7 +435,7 @@ def build_bundle(
     if blocaj_info is None and verdict in ("MODIFY", "DEEPLY_SPLIT"):
         blocaj_pending = detect_blocaj_pairs(final_outputs)
 
-    warnings = collect_warnings(final_outputs, voters_present)
+    warnings = collect_warnings(final_outputs)
     warnings.extend(cq_violations)
     if blocaj_pending:
         warnings.append(
@@ -449,6 +453,7 @@ def build_bundle(
         "proposal": proposal,
         "mode": mode,
         "senators_absent": senators_absent,
+        "voters_present": voters_present,
         "outputs": outputs_for_bundle,
         "vote_counts": final_counts,
         "verdict": verdict,
