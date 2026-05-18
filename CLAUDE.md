@@ -72,6 +72,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
+## 5. Question Everything
+
+**Requirements, tech choices, and generated code are starting points — not answers.**
+
+- "Everyone does it this way" is not a reason. Cargo cult patterns and trending frameworks need justification before adoption.
+- AI-generated implementations require the same scrutiny as any other code — verify the logic, don't just accept the output.
+- Unit and integration tests are the most reliable bug prevention. They catch what reviews and type checkers miss.
+
 ## Convenții Python
 
 - **Stdlib-only.** Niciun script nu introduce dependențe externe. Dacă pare necesar, e probabil semn că feature-ul depășește scope-ul skill-ului.
