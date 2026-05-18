@@ -34,7 +34,7 @@ Input format (multi-round, Laws 1-5 active):
       }
 
 Verdict rule (same for both modes):
-    UNREACHABLE  if all senators abstained or all absent (total active votes == 0)
+    UNREACHABLE  if total active votes < MIN_ACTIVE_VOTES (5/9) — too few senators took a position
     MODIFY       if any senator voted MODIFY (always blocks — must be resolved first)
     GO           if GO   >= QUORUM (7/9) AND MODIFY == 0
     STOP         if STOP >= QUORUM (7/9) AND MODIFY == 0
@@ -45,8 +45,9 @@ ABSTAIN = present-but-no-position. Excluded from tally, does NOT reduce
 voters_present. When >= HIGH_ABSTAIN_THRESHOLD (3/9) abstain, a
 high_abstain_rate warning is emitted.
 
-DEEPLY_SPLIT is advisory: orchestrator MUST escalate to the user. ABSTAIN
-senators may be forced to declare a position (GO or STOP) by the user.
+DEEPLY_SPLIT: orchestrator escalates to user. User may force ABSTAIN senators
+to declare (GO or STOP) and re-run, OR switch to normal Consilium mode.
+UNREACHABLE: orchestrator presents user with the same two options.
 
 Multi-round semantics (Law 2: max 3 cross_questions per senator per round;
 Law 3: blocaj_resolution.winning_senator's vote replaces loser's vote in the
@@ -97,11 +98,15 @@ SKILL_INTERNAL_ARTIFACTS = frozenset({
     "skill.md", "claude.md", "consilium internals", "consilium skill",
 })
 VOTES = ("GO", "MODIFY", "STOP")
+# Minimum active votes (GO+MODIFY+STOP) for a valid deliberation.
+# Below this, verdict is UNREACHABLE — too few senators took a position.
+# For 9 senators: 5 (more than half must have an active position).
+MIN_ACTIVE_VOTES = 5
 # Minimum votes required for GO or STOP verdict. 7/9 senators must agree.
 # MODIFY votes always block: if any senator votes MODIFY, verdict cannot be GO or STOP.
 QUORUM = 7
 # Warning threshold: emit high_abstain_rate when >= ceil(N/3) senators abstain.
-# For 9 senators: threshold = 3.
+# For 9 senators: threshold = 3. Shares value with MIN_ACTIVE_VOTES by design.
 HIGH_ABSTAIN_THRESHOLD = math.ceil(len(SENATORS) / 3)
 MAX_CROSS_QUESTIONS_PER_SENATOR_PER_ROUND = 3  # Law 2
 
@@ -300,7 +305,7 @@ def compute_verdict(counts: dict[str, int], voters_present: int) -> str:
     UNREACHABLE: all senators abstained or all absent (total active == 0).
     """
     total_active = counts["GO"] + counts["MODIFY"] + counts["STOP"]
-    if total_active == 0:
+    if total_active < MIN_ACTIVE_VOTES:
         return "UNREACHABLE"
     if counts["MODIFY"] > 0:
         return "MODIFY"

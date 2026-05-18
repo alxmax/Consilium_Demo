@@ -556,8 +556,8 @@ def test_deeply_split_resolved_via_blocaj() -> tuple[bool, str]:
 
 def test_abstain_doesnt_reduce_voters_present() -> tuple[bool, str]:
     """ABSTAIN = present-but-no-position: excluded from tally, does NOT reduce voters_present.
-    5 ABSTAIN + 4 GO: voters_present=9, active=4 (< QUORUM=7, no MODIFY) → DEEPLY_SPLIT.
-    No unrecognized-vote warning for ABSTAIN.
+    5 ABSTAIN + 4 GO: active=4 < MIN_ACTIVE_VOTES=5 → UNREACHABLE.
+    voters_present stays 9. high_abstain_rate fires (5 >= 3). No unrecognized warning.
     """
     senators = all_voting("GO")
     for name in ("musk", "dimon", "napoleon", "deming", "tacitus"):
@@ -572,13 +572,41 @@ def test_abstain_doesnt_reduce_voters_present() -> tuple[bool, str]:
         return False, f"expected GO=4 MODIFY=0 (ABSTAIN excluded from tally), got {bundle['vote_counts']}"
     if bundle["voters_present"] != len(SENATORS):
         return False, f"expected voters_present={len(SENATORS)} (ABSTAIN = present), got {bundle['voters_present']}"
-    if bundle["verdict"] != "DEEPLY_SPLIT":
-        return False, f"expected DEEPLY_SPLIT (4 GO < QUORUM=7, MODIFY==0), got {bundle['verdict']}"
+    if bundle["verdict"] != "UNREACHABLE":
+        return False, f"expected UNREACHABLE (active=4 < MIN_ACTIVE=5), got {bundle['verdict']}"
     if any("unrecognized" in w for w in bundle["warnings"]):
         return False, f"ABSTAIN must not trigger unrecognized-vote warning, got: {bundle['warnings']}"
     if not any("high_abstain_rate" in w for w in bundle["warnings"]):
         return False, f"expected high_abstain_rate warning (5 >= threshold=3), got: {bundle['warnings']}"
-    return True, f"5 ABSTAIN + 4 GO: voters_present={len(SENATORS)}, DEEPLY_SPLIT, high_abstain_rate warning"
+    return True, f"5 ABSTAIN + 4 GO: voters_present={len(SENATORS)}, UNREACHABLE (active < MIN_ACTIVE=5)"
+
+
+def test_min_active_boundary() -> tuple[bool, str]:
+    """Exactly MIN_ACTIVE_VOTES=5 active votes → DEEPLY_SPLIT (not UNREACHABLE).
+    4 GO + 1 STOP + 4 ABSTAIN: active=5 = threshold → DEEPLY_SPLIT.
+    """
+    senators = {
+        "wittgenstein": base_senator_output("GO"),
+        "aurelius":     base_senator_output("GO"),
+        "confucius":    base_senator_output("GO"),
+        "socrate":      base_senator_output("GO"),
+        "musk":         base_senator_output("STOP", "oppose"),
+        "dimon":        base_senator_output("ABSTAIN"),
+        "napoleon":     base_senator_output("ABSTAIN"),
+        "deming":       base_senator_output("ABSTAIN"),
+        "tacitus":      base_senator_output("ABSTAIN"),
+    }
+    code, bundle, stderr = run_synth(make_payload(
+        proposal="min-active boundary smoke", senators=senators, label="smoke-min-active"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if bundle["verdict"] != "DEEPLY_SPLIT":
+        return False, f"expected DEEPLY_SPLIT (active=5 = MIN_ACTIVE=5), got {bundle['verdict']} (counts {bundle['vote_counts']})"
+    if bundle["voters_present"] != len(SENATORS):
+        return False, f"expected voters_present={len(SENATORS)}, got {bundle['voters_present']}"
+    return True, "4 GO + 1 STOP + 4 ABSTAIN: active=5 = MIN_ACTIVE_VOTES → DEEPLY_SPLIT (threshold boundary)"
 
 
 def test_collision_safe_write() -> tuple[bool, str]:
@@ -635,8 +663,9 @@ TEST_GROUPS = [
         ("supermajority_required",      test_supermajority_required_not_simple_majority),
         ("deeply_split_blocaj_bypass",  test_deeply_split_resolved_via_blocaj),
     ]),
-    ("ABSTAIN (9-senator)", [
+    ("ABSTAIN / MIN_ACTIVE (9-senator)", [
         ("abstain_voters_present",      test_abstain_doesnt_reduce_voters_present),
+        ("min_active_boundary",         test_min_active_boundary),
     ]),
     ("Compat & persistence", [
         ("bundle_persisted",            test_bundle_persisted_and_valid_json),
