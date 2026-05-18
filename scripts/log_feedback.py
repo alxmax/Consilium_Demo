@@ -258,9 +258,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="print summary, don't write file")
     ap.add_argument(
         "--outcome",
-        choices=("OK", "BAD", "OVR", "PEND"),
+        choices=("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS"),
         default="PEND",
-        help="outcome to record (default: PEND; set OK/OVR after confidence-gated user prompt)",
+        help="outcome to record (default: PEND; set OK/OVR after confidence-gated user prompt; use PEND_HEADLESS in headless/CI context to avoid polluting pend_pressure)",
     )
     ap.add_argument("--override-target", default=None, help="alt_id when --outcome=OVR")
     ap.add_argument("--user-note", default=None, help="optional user-supplied note appended to auto-note")
