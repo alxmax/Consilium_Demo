@@ -81,6 +81,8 @@ SENATORS = (
     "musk",
     "dimon",
     "napoleon",
+    "deming",
+    "tacitus",
 )
 # code_audit mode (EXPERIMENTAL_DRAFT): tokens whose presence in senator output
 # signals skill-audit framing leak on a user-code review. Allowed when the user
@@ -91,7 +93,7 @@ SKILL_INTERNAL_ARTIFACTS = frozenset({
     "scripts/senate_synth", "scripts/dialectic_merge", "scripts/personalities",
     "skill.md", "claude.md", "consilium internals", "consilium skill",
 })
-QUORUM = 5  # >= 5 of 7 needed for GO or STOP verdict
+QUORUM = 5  # >= 5 needed for GO or STOP verdict (kept at 5 with 9 senators; see TODO: scaling)
 # A faction is "substantial" if it is within 2 vote flips of becoming majority.
 # With QUORUM=5, that is 3 senators. Used by DEEPLY_SPLIT to detect a polarized
 # split where both GO and STOP factions reach this threshold but neither hits
@@ -112,18 +114,24 @@ SENATOR_REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
     "musk":         ("components_attacked",),
     "dimon":        ("stress_scenarios",),
     "napoleon":     ("cost_estimate",),
+    "deming":       ("sample_size_check",),
+    "tacitus":      ("retrospective_matches",),
 }
 
 
 def normalize_vote(raw) -> str | None:
-    """Map a senator's vote string to GO/MODIFY/STOP, or None if unrecognized.
+    """Map a senator's vote string to GO/MODIFY/STOP/ABSTAIN, or None if unrecognized.
 
     Returns None on missing/unrecognized — caller surfaces this as a warning
     AND counts it as MODIFY in the tally (most-conservative non-blocking).
+    ABSTAIN is recognized but NOT in VOTES tally — it reduces voters_present
+    by 1 (degraded mode signal from Deming/Tacitus when corpus is insufficient).
     """
     if not isinstance(raw, str):
         return None
     upper = raw.strip().upper()
+    if upper == "ABSTAIN":
+        return "ABSTAIN"
     return upper if upper in VOTES else None
 
 
@@ -267,9 +275,15 @@ def apply_blocaj_resolution(
 
 
 def tally(senator_outputs: dict[str, dict]) -> dict[str, int]:
+    """Tally GO/MODIFY/STOP. ABSTAIN votes are excluded from the tally
+    (they reduce voters_present in build_bundle instead). Unrecognized votes
+    fall through to MODIFY per most-conservative-non-blocking principle.
+    """
     counts = {v: 0 for v in VOTES}
     for output in senator_outputs.values():
         vote = normalize_vote(output.get("vote"))
+        if vote == "ABSTAIN":
+            continue
         counts[vote if vote is not None else "MODIFY"] += 1
     return counts
 
@@ -394,7 +408,12 @@ def build_bundle(
             final_outputs, files_touched, is_consilium_contribution,
         )
         senators_absent = sorted(set(senators_absent) | set(code_audit_suspects))
-    voters_present = len(final_outputs)
+    # voters_present excludes ABSTAIN — abstaining senators do not contribute
+    # to quorum because they explicitly cannot form a position.
+    voters_present = sum(
+        1 for o in final_outputs.values()
+        if normalize_vote(o.get("vote")) != "ABSTAIN"
+    )
 
     raw_counts = tally(final_outputs)
     adjusted_outputs, blocaj_info = apply_blocaj_resolution(final_outputs, blocaj_resolution)

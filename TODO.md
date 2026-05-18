@@ -823,6 +823,31 @@ Decizie soft-pozitivă, prioritate scăzută.
 
 ## 🏛 Hotărâri Senate
 
+### Follow-up — feat/senate-senators-deming-tacitus (Phase A shipped 2026-05-18)
+
+Bundle implementat după Senate R3 GO 7-0-0 (`runs/senate/2026-05-18_211621-2-senators-phase-a-r3-final.json`). Scope livrat: 2 prompts noi (Deming + Tacitus), SENATORS tuple 7→9 în synth.py + test, ABSTAIN handling minim (exclus din tally, reduce voters_present), 1 test nou (`abstain_excluded`).
+
+**De analizat (cerut de user explicit, 2026-05-18):**
+
+- [ ] **Demotion — de ce s-a scos limbajul complet în R3?** Reconstituie raționamentul: în R2 propunerea avea "5 consecutive ABSTAIN OR correlation >0.9 → demoted". Wittgenstein/Dimon/Napoleon convergent în R2 au cerut fie persistence layer (`runs/senate/senator_state.json` + evaluator), fie deletion. R3 a ales deletion. Întrebare: dacă reluăm demotion ca feature separat (Phase B?), care e arhitectura corectă — stateful counter în synth.py, sau script extern care marchează `registry.yaml`? Implicit: cine ia decizia de demotare — orchestratorul automat sau userul după review? Implicit: care e criteriul reverse — re-promote după ce senator-ul re-câștigă acuratețe? Audit Senate separat înainte de orice implementare.
+
+**Non-blocking nits R3 (TODO, nu blochează):**
+
+- [ ] **WITTGENSTEIN:** comment one-liner în `senate_synth.py` — `voters_present := count of non-ABSTAIN votes` (clarifică dual-use quorum vs tie-breaking)
+- [ ] **WITTGENSTEIN:** comment one-liner în `tacitus.md` — pipeline `html.unescape() → str.casefold() → substring check` (în loc de simplu lowercase, ca să prindă diacritice + entități HTML)
+- [ ] **SOCRATE:** optional one-liner strip+casefold normalization note în label-match operational definition
+- [ ] **CONFUCIUS:** test case explicit pentru tie-breaking rule (voter_present par → MODIFY default) — acoperă regresii viitoare pe synth.py
+- [ ] **DIMON:** substring collision pe label match (`STOP_LIGHT` matches `STOP`) — adaugă word-boundary guard SAU ABSTAIN-on-ambiguity în implementarea Tacitus
+- [ ] **CONFUCIUS:** tacitus.md note despre cold-start period (~30 zile post-deploy ABSTAIN expected) — verifică dacă e suficient documentat în prompt
+- [ ] **AURELIUS:** monitorizare empirică — după 10+ runs cu Deming/Tacitus, validează că ABSTAIN nu e activ pe majoritatea audit-urilor (drag proporțional bounded vs aspirational)
+
+**Decizii architecturale deschise (Phase B):**
+
+- [ ] **QUORUM scaling cu 9 senatori** — actual `QUORUM=5` (5/9 = 56%). Confucius R1 a flagat: "DEEPLY_SPLIT threshold defined for N=7 patterns but N=9 has different distributions (5-4, 4-3-2)". De analizat: scalare la QUORUM=6 (6/9 = 67%, mai aproape de 5/7 = 71%) pune verdictele istorice pe pragul corect? Cere senate audit înainte.
+- [ ] **Timestamp field explicit în JSON schema** — actual timestamp e în numele fișierului (`YYYY-MM-DD_HHMMSS`) + în bundle. Tacitus citește din nume + bundle field. Wittgenstein R3 a cerut anchor explicit la nivel top-level. Verifică dacă synth-ul îl emite consistent în toate code paths.
+- [ ] **`vote_counts` field validation in `validate_report.py`** — verifică dacă tolerează 9-senator output fără să dropeze câmpuri noi (Deming/Tacitus). Dry-run pe bundle 9-senator înainte de prima rulare reală.
+- [ ] **Falsification metrics infrastructure** — dacă demotion revine în Phase B, trebuie storage (`runs/senate/senator_state.json` sau extensie `priors.py --senator`) + script evaluator + criteriu reverse (re-promote).
+
 ### Hotărârea Senate — mode-bugfix-performance · 18 Mai 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
 
 > **Propunere:** Mode bugfix + performance v2: BUG-1 (Dialectic nu scrie artifact-ul la root), BUG-2 (_safe_risk_score default 0.5 distruge separatia pe deliberari unanime), BUG-3 (Trias dispatch crash pe T01). Propun…
