@@ -612,6 +612,22 @@ Soft-positive decision, low priority.
 
 ## 🏛 Senate Resolutions
 
+### Hotărârea Senate — langgraph-langchain-integration-audit · 19 Mai 2026 · MODIFY (GO 0 · MODIFY 3 · STOP 6)
+
+> **Propunere:** Decizie arhitecturală: Ar trebui Consilium skill să integreze LangGraph/LangChain (oricare formă)? Deliberare anterioară (2026-05-16, confidence=0.36): do_nothing câștigat prin eliminare. Candidat via…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Reformulează propunerea ca decizie binară pe un singur candidate cu termeni operaționali: 'Adoptăm candidate #2 (optional_sidecar_visualizer) cu invariante verificabile: (1) grep -r scripts/ → 0 match-uri (CI check); (2) experiments/langgraph_replay/ are propriul venv gitignored și requirements.txt; (3) validate_report.py și run_evals.py trec înainte și după adopție; (4) CLAUDE.md adaugă secțiune care exceptează explicit experiments/ de la constraint-ul stdlib-only, condiționat de no-import-back.' Fără aceste definiții, votul produce o decizie false-clear.
+- [ ] **[AURELIUS]** do_nothing rămâne decizia proporțională pentru quadrantul partial×high cu beneficiu slab articulat. MODIFY ar fi justificat doar dacă există un use-case concret, frecvent, neacoperit de stdlib — nedemonstrat. Dacă vizualizarea e scopul real, se reexaminează ca propunere separată, mai mică: scripts/trace_run.py stdlib-only, fără LangGraph, fără venv extern.
+- [ ] **[CONFUCIUS]** Deliberarea anterioară (2026-05-16) a produs deja un veto pe toate formele care ating scripts/ sau introduc deps externe. Senate-ul poate confirma STOP. Dacă se dorește redeschiderea pentru optional_sidecar_visualizer, condiția prealabilă este formalizarea contractului de izolare în CLAUDE.md: (1) never-imported de scripts/; (2) never tracked în CI; (3) self-contained venv; (4) deletable unilateral. Până când contractul nu e scris și aprobat, optional_sidecar_visualizer rămâne STOP.
+- [ ] **[SOCRATE]** Înainte de GO pe optional_sidecar_visualizer, autorul trebuie să declare: (1) cazul de uz concret care cere vizualizare; (2) un kill-criterion falsifiabil cu deadline; (3) contractul de schema între runs/*.json și parser-ul sidecar; (4) confirmarea că adăugarea unui venv separat în experiments/ nu setează precedent pentru deps în scripts/ core. Fără aceste asumpții declarate, MODIFY-ul e do_nothing cu overhead.
+- [ ] **[MUSK]** Nu există modificare viabilă. Niciun candidat LangGraph/LangChain nu adaugă funcție care să nu fie deja acoperită sau acoperibilă fără deps externe. do_nothing e decizia corectă și e deja la minim.
+- [ ] **[DIMON]** Address all critical stress scenarios before any GO: (1) Add explicit CI check banning imports of experiments/ in scripts/ (pre-commit hook, grep assertion); (2) Provide platform-specific venv setup for Windows (pathlib.Path, .bat activation); (3) Document schema versioning for runs/*.json replay compatibility with version guard in replay.py; (4) Make sidecar startup bounded timeout with loud failure, not silent degradation; (5) Add kill-criterion in CLAUDE.md: if sidecar unused after N months, delete.
+- [ ] **[NAPOLEON]** STOP pe toate variantele care implică LangGraph/LangChain. Calculul de cost e decisiv: do_nothing costă 0h; optional_sidecar_visualizer costă 8-16h pentru beneficiu marginal nevalidat empiric. Recomand reluarea întrebării doar dacă apare evidență empirică din FEEDBACK.html că operatorii au nevoie concretă de vizualizare.
+- [ ] **[DEMING]** Re-run the deliberation under the current pipeline (RUND2) at least once more to establish n≥2 with comparable inputs. If the two runs agree on chosen_approach and both produce confidence>0.5, that constitutes minimally sufficient evidence. If they diverge, produce n≥5 or explicitly label the recommendation as provisional with stated uncertainty bounds.
+- [ ] **[TACITUS]** Adopt optional_sidecar_visualizer (candidate #2) bounded by explicit historical conditions: (a) lives only under experiments/langgraph_replay/ with separate venv; (b) zero edits to scripts/, prompts/, runs/*.json schema, or SKILL.md Constitution; (c) the 3 Control acceptance tests are gating CI before merge; (d) cite this run AND row 156 in CLAUDE.md so the next re-audit inherits the precedent chain. If any of (a)-(c) cannot be enforced mechanically, fall back to do_nothing.
+
 ### Senate Resolution — consilium-refactor-cleanup-20pct · 19 May 2026 · MODIFY (GO 2 · MODIFY 6 · STOP 1)
 
 > **Proposal:** Refactor Consilium with a 20-30% LOC/bytes reduction target via 5 pure-cleanup actions (zero semantics changed): (1) TODO consolidation 3 files → 1 reorganized by categories; (2) Junk cleanup root (…
@@ -1119,3 +1135,35 @@ _No modification requests recorded._
 ---
 
 **End of consolidated TODO.**
+---
+
+## 🏛 Hotărâri Senate
+
+### Hotărârea Senate — law9-senate-scope-definition · 19 Mai 2026 · MODIFY (GO 2 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Adăugăm Law 9 în Senate care definește când Senate e instrumentul corect — criterii clare de scope, routing, și calificare a propunerilor. Scopul: ca Senate să fie mai inteligent (evită mis-invocări),…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Law 9 are 9 termeni vagi neoperaționalizați. Propun reformulare ca funcție evaluabilă justifies_senate(proposal) → bool cu 3 criterii threshold-based (reversibility×magnitude, architectural tiers afectate, confidence floor). Această funcție e Law 9. O enumerare de tipuri de propuneri nu rezolvă problema — adaugă ambiguitate de tip 2 (edge cases între categorii). Adaugă: baseline empiric al mis-invocărilor actuale înainte de promulgare.
+- [ ] **[AURELIUS]** Alternativa mai mică: patch de 3-5 linii la SKILL.md §'Routing boundary', fără numerotare de lege nouă. Legile Senate sunt pentru invarianți de comportament al senatorilor, nu pentru documentare de routing. Law 9 ca lege e o abstracție greșit adresată. MODIFY: reformulează ca addendum la §'Routing boundary' existent.
+- [ ] **[SOCRATE]** 4 asumpții load-bearing nedeclarate. Înainte de Law 9: (1) adaugă baseline empiric — câte runs/senate/ ar fi fost filtrate de Law 9 dacă ar fi existat? (2) dacă baseline e zero, reformulează ca prevenție prospectivă cu clauză de auto-calibrare: 'Law 9 se reevaluează după 20 de runs Senate și se abrogă dacă rata de filtraj e sub 5%'; (3) testează partiția: ia ultimele 10 runs/senate/ și aplică manual criteriile propuse — câte ar fi OUT_OF_SCOPE? Dacă răspunsul e 0, criteriile sunt prea laxe.
+- [ ] **[MUSK]** Nu crea Law 9 ca lege numerotată — adaugă 1 rând la tabelul de routing existent din SKILL.md: 'Not Senate if: reversibility=complete AND magnitude=trivial/moderate; sau confidence>0.7 pe modul standard; sau propunerea afectează ≤1 tier arhitectural.' Această linie face tot ce face Law 9 propusă, fără overhead de lege nouă și fără duplicat.
+- [ ] **[DIMON]** 5 scenarii de eșec neadresate. Law 9 ca text manual e ornamentală. MODIFY: (1) implementează scripts/law9_scope_gate.py care evaluează automat justifies_senate(proposal) pe baza unor criterii obiective bazate pe fișiere (ex. input conține cuvintele 'scripts/', 'prompts/', 'SKILL.md', 'runs/senate/', 'architecture'); (2) criterii bazate pe pattern-matching fișiere din propunere, nu pe judecată subiectivă; (3) output al scriptului: GO/SCOPE_WARN/OUT_OF_SCOPE cu reasoning; (4) telemetry: fiecare invocare Law 9 se loghează în FEEDBACK.html cu outcome pentru calibrare; (5) clauză de auto-abrogare dacă rata de filtraj e sub 5% după 20 de runs.
+- [ ] **[DEMING]** Baseline empiric: 54 senate runs, 0 scope_veto organice. Problema documentată nu există în corpus curent. MODIFY: (1) dacă Law 9 e prospectivă (prevenție), declară explicit că e prevenție, nu remediere; (2) adaugă clauză de auto-calibrare: 'Law 9 se reevaluează după fiecare 20 senate runs; dacă filtraj rate <5%, legea se abrogă automat'; (3) runs retrospective: aplică manual criteriile propuse pe ultimele 20 runs/senate/ și raportează câte ar fi filtrate — dacă 0, criteriile sunt fie prea laxe, fie problema nu există.
+- [ ] **[TACITUS]** Nu adăuga criterii noi nedocumentate în runs/senate/. Promovează conținutul existent: (1) §'Routing boundary' din SKILL.md → Law 9, §1 (scope positiv); (2) §'Skip Senate dacă' din SKILL.md → Law 9, §2 (scope negativ); (3) Law 7 (scope_veto) → Law 9, §3 (corecție post-facto). Fiecare criteriu din §1 și §2 trebuie să citeze linia SKILL.md sau runs/senate/ precedent ca sursă. Nu adăuga criterii noi care nu au bază empirică în corpus.
+
+### Hotărârea Senate — langgraph-sidecar-binary-r2 · 19 Mai 2026 · MODIFY (GO 1 · MODIFY 2 · STOP 6)
+
+> **Propunere:** Decizie binară: Adoptăm optional_sidecar_visualizer (experiments/langgraph_replay/ izolat) cu 6 invariante verificabile: (1) grep -r 'langgraph|langchain' scripts/ prompts/ agents/ → 0 match-uri (CI g…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** 3 addenda rămân nerezolvate: (a) kill-criterion trebuie să măsoare valoarea, nu doar invocarea (.last_invoked insuficient — adaugă cerință de ≥1 insight documentat în FEEDBACK.html); (b) documentul de adopție trebuie marcat explicit ca elimination_certification (nu positive_certification); (c) CLAUDE.md sau sidecar README trebuie să citeze lanțul complet de deliberare ca proveniență. Cu aceste 3 addenda adăugate, devin GO.
+- [ ] **[AURELIUS]** do_nothing rămâne proporțional pentru partial×high cu beneficiu slab articulat. Reexaminează dacă există use-case concret, frecvent, neacoperit de stdlib.
+- [ ] **[CONFUCIUS]** Condiție prealabilă: formalizarea contractului de izolare în CLAUDE.md înainte de redeschidere.
+- [ ] **[SOCRATE]** 2 asumpții rămân nedeclarate: (1) mecanismul kill-criterion trebuie să specifice ce contează drept invocație utilă vs. game-abil (adaugă în CLAUDE.md: kill-criterion se declanșează dacă .last_invoked > 90 zile SAU dacă nu există niciun rând în FEEDBACK.html referind un insight din sidecar în aceeași perioadă); (2) sidecar-ul trebuie să fie explicit EXPERIMENTAL_DRAFT în README până când prima utilizare reală e documentată în FEEDBACK.html. Cu aceste două declarate, devin GO.
+- [ ] **[MUSK]** Nu există modificare viabilă. do_nothing e decizia corectă.
+- [ ] **[DIMON]** Adresează toate scenariile critice înainte de GO.
+- [ ] **[NAPOLEON]** STOP. Cost-benefit unfavorable; reluare doar cu evidență empirică din FEEDBACK.html.
+- [ ] **[DEMING]** Re-run deliberarea sub RUND2 pentru n≥2 cu confidence>0.5 înainte de decizie.
