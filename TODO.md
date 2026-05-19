@@ -228,6 +228,19 @@ Soft-positive decision, low priority.
 > Source: `BUGS.md` (audit 2026-05-16, 4 parallel sub-agents × 2 waves). Previously gitignored — promoted into TODO.md as single source.
 > **Method:** Per file, 3-lens reasoning (Pioneer / Architect / Steward) inline. ≥2 lenses agreeing required.
 > **Total:** 107 bugs · 4 critical · 12 high · 39 medium · 52 low.
+>
+> **Status update 2026-05-19:** All 4 Critical and 12 High audit-flagged bugs are now closed.
+> - 6 High fixed in `feat/fix-high-bugs` (commit 542c0d1): H2 priors.py backfill sidecar, H3 fuzzy-match zero-overlap guard, H5 SKILL.md unconventional documentation, H7 skeptic.md orchestrator-side validation, H9 pioneer_lens conservator carve-out, H12 clarity-gate 3-way reconciliation. H6 already-fixed.
+> - C1+C2 atomic FEEDBACK.html writes: `utils.atomic_write_text` wired into `log_feedback.py:250` + `mark_outcome.py:197` + `log_feedback.py:_save_map` (sidecar map also atomic since this branch).
+> - C3 VETO threshold drift: `render_feedback_html._cons_panel` now derives `vetoed_ids` from `agg_result.get("vetoed")` instead of hardcoded `>= 0.7` (lines 212-224).
+> - C4 Pass-2 verdict schema: `dialectic_merge._merge_pass2_control_verdict` inherits `valid`/`issues`/`tests_to_write`/`notes` from Pass-1 (line 101-119) + `control_pass2.md` documents the override pattern for `valid: false → true` flips.
+> - H1 dedup: fingerprint+sidecar-map keyed by `run_id` (`log_feedback.py:60-73`); cross-process lock skipped (single-user CLI).
+> - H4 null risk_score: `_safe_risk_score` (line 122-129) treats explicit `null` as missing.
+> - H8 Pass-2 `tests_to_write` slot: documented in `control_pass2.md` § "What carries over from Pass 1".
+> - H10 Sequential mode wording: aligned with SKILL.md Sequential-first post-RUND2 (Parallel is no longer user-selectable).
+> - H11 Tools list: `Write` is present in `agents/consilium-subagent.md` frontmatter `tools:` list.
+>
+> Remaining: 39 Medium + 52 Low (lower priority). Counts below reflect original audit and are kept as historical context.
 
 ### Tally
 
