@@ -6,77 +6,38 @@ Acest repo este sursa skill-ului `consilium`. Pentru a-l **folosi**, invocă `/c
 
 `SKILL.md` e contractul public. Citește-l înainte de orice modificare — Constitution (4 principii) și workflow-ul în 8 pași guvernează skill-ul, nu doar utilizatorii lui.
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+Pentru behavioral guidelines (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution, Question Everything), vezi global `~/.claude/CLAUDE.md` — se aplică și aici.
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+## Commands
 
-## 1. Think Before Coding
+Stdlib-only, fără test runner. Smoke tests rulate manual prin CLI:
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+- `python scripts/test_rund2.py` — RUND2 architecture (skeptic_on_chosen, MODE enum, validate_report extras)
+- `python scripts/test_feedback_html.py` — `render_feedback_html` + parser round-trip
+- `python scripts/test_senate_synth.py` — Senate pipeline end-to-end pe fixture
+- `python scripts/run_evals.py` — regression scenarios din `evals/scenarios.json` (subprocess-based, deterministic; exit non-zero la primul FAIL)
+- `python scripts/validate_report.py < runs/<file>.json` — Constitution Principle #4 gate; minimul înainte de orice commit care atinge `prompts/voices/` sau `aggregator.py`
 
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+Type-check: `pyright` (config: `pyrightconfig.json`, `typeCheckingMode: basic`, Python 3.11, `scripts/` în `extraPaths`).
 
-## 2. Simplicity First
+## Pipeline
 
-**Minimum code that solves the problem. Nothing speculative.**
+Flow canonic al unei deliberări:
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+1. Voci citesc `prompts/voices/<name>.md`, emit JSON per Constitution
+2. `scripts/aggregator.py` merge voice outputs → canonical report
+3. `scripts/confidence.py` calculează scorul; `scripts/priors.py` aplică priors
+4. `scripts/validate_report.py` e ultimul gate înainte de write în `runs/<ts>_<slug>.json`
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+Scripts specifice de mod:
+- `dialectic_merge.py` — two-pass merge pentru Dialectic
+- `senate_synth.py` — sinteză peste cei 9 senatori (Senate mode pe skill)
+- `dispatch_senate_on_code.py` — Senate pe cod user (`--on-code`, EXPERIMENTAL_DRAFT)
+- `personalities.py` — Trias lens injection (Pioneer/Architect/Steward)
 
-## 3. Surgical Changes
+Sub-agent dispatch (Trias, Skeptic, Senate): vezi `agents/consilium-subagent.md`. Toți sub-agenții folosesc `model: "sonnet"` explicit — nu moșteni Opus.
 
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-## 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
-
-## 5. Question Everything
-
-**Requirements, tech choices, and generated code are starting points — not answers.**
-
-- "Everyone does it this way" is not a reason. Cargo cult patterns and trending frameworks need justification before adoption.
-- AI-generated implementations require the same scrutiny as any other code — verify the logic, don't just accept the output.
-- Unit and integration tests are the most reliable bug prevention. They catch what reviews and type checkers miss.
+Vizualizare runde Senate: `docs/architecture.html` (deschide local). Benchmark-uri pe probleme reale: `experiments/` (vezi `experiments/p3-car-wash.html`).
 
 ## Convenții Python
 
@@ -91,7 +52,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
   - Pass-2: `generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md` — folosite doar de Dialectic
   - `skeptic.md` — focal challenger, rulat în `parallel_skeptic`, `dialectic_skeptic`, `skeptic_on_chosen`
   - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended peste core voices în `trias` și `trias_split`
-  - `frontend_domain_lens.md` — draft experimental (Senate R2), fără dispatch entry încă
+  - `prompts/lenses/domain_lens.md` — draft experimental (Senate R2), fără dispatch entry încă
 - **`prompts/senators/*.md`** — cei 9 senatori folosiți doar în mod `senate` (audit pe skill, nu pe cod user). Schimbarea unui prompt modifică distribuția de verdicts pentru audit-uri viitoare.
 - **`SKILL.md` Constitution + workflow** — schimbarea pașilor 0-7 rupe formatul JSON așteptat de `aggregator.py` și `validate_report.py`. Modifică deodată ambele.
 
@@ -113,6 +74,7 @@ Modul **`senate`** are două scope-uri: (a) audit pe **modificările skill-ului 
 
 - `FEEDBACK.html` — jurnal de uz real, append-only via `scripts/log_feedback.py` (atomic writes). Vezi `scripts/deprecated/migrate_feedback_md_to_html.py` pentru istoricul migrării din format `.md` (retired one-shot tool).
 - `runs/*.json` — output-urile fiecărei deliberări (păstrate `runs/README.md` și `runs/senate/` ca singurele tracked).
+- `docs/superpowers/plans/`, `docs/superpowers/specs/` — artefacte de la `superpowers:writing-plans` / `executing-plans` (un fișier per feature non-trivial, naming `YYYY-MM-DD-<slug>.md`).
 
 ## Self-improvement loop
 
