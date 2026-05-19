@@ -80,7 +80,20 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
 
 **Veto check (auto, after Conservator output):**
 - If `irreversibility_flag: true` → stop, ask user: *"Conservator marcheaza aceasta decizie ca ireversibila. Confirmi ca vrei sa continui?"* — proceed only with explicit YES. **Headless** (`is_headless()`): NU bloca; setează `metadata.headless_overridden: true` în bundle și continuă. Orchestratorul extern care a setat `CLAUDE_HEADLESS=1` și-a asumat stake-ul.
-- If `meta_recommendation: scale_down` → skip Generator's unconventional/adversarial candidates; cap at 2 candidates; use short path.
+- If `meta_recommendation: scale_down` → **short-circuit**: skip dispatching Generator AND Control entirely. Build a minimal report directly:
+  ```json
+  {
+    "success_criterion": "<input success_criterion>",
+    "verification": "manual review (scope_gate determined trivial)",
+    "chosen_approach": "trivial-direct",
+    "alternatives": [],
+    "voice_scores": {"conservator": "<conservator net_concern>"},
+    "confidence": 0.85,
+    "deliberation_log": [{"step": "scale_down_short_circuit", "reason": "<conservator notes>"}],
+    "telemetry": {"mode": "sequential_scale_down", "dispatch_count": 1}
+  }
+  ```
+  `confidence: 0.85` este deliberat — Conservator's judgment is the signal, not a weak guess. Designed to stay above the `[0.5, 0.7]` skeptic auto-trigger band.
 - If `meta_recommendation: scale_up` → warn user, add context request before Generator. **Headless**: warning emis pe stderr, contextul nu poate fi cerut interactiv — continuă cu input-ul existent.
 
 **Opțional — autoprobe:**
@@ -127,6 +140,14 @@ Returnează `{confidence, agreement, separation}`. Dacă `chosen` e `null` (toț
 > **Calibrare (audit R2 2026-05-17):** `agreement` măsoară divergența între roluri în cadrul UNUI run — nu stabilitatea inter-run. Scorurile Conservator sunt ancorate prin formulă categorică (vezi `conservator.md`); scorurile Generator/Control sunt float-uri self-assigned neancorate. Un al doilea run cu același input poate produce scoruri diferite (pstdev estimat 0.12–0.18 pe `risk_score`). Valoarea `confidence` nu e o probabilitate calibrată — e un semnal de consistență internă.
 
 **Quoting:** Evită construirea de Python inline via `-c "..."` cu payload JSON — apostrofurile din cod pot rupe quoting-ul bash. Folosește pipe pe stdin (ca mai sus) sau flag-ul `--input <file>`.
+
+**Mode confidence floor (E1).** După ce confidence e derivat, verifică dacă modul a atins floor-ul minim:
+```python
+from scripts.confidence import check_mode_floor
+result = check_mode_floor(telemetry_mode, confidence_value)
+# result["below_floor"] == True → loghează cu --outcome WEAK în FEEDBACK.html
+```
+Floor-uri: `sequential=0.70`, `dialectic=0.75`, `trias=0.80`. Un run sub floor semnalează că modul nu a livrat valoare pentru cost. Datele se acumulează în `FEEDBACK.html` — pattern-ul devine vizibil după ≥10 runs per mod.
 
 ### 5c. Meta-critic (auto, advisory)
 ```bash
@@ -201,6 +222,12 @@ Cele două apeluri de mai jos sunt **obligatorii**. Dacă orchestratorul opreșt
 python scripts/mark_outcome.py --run-path runs/<file>.json --outcome BAD --reason "broke prod migration"
 ```
 Marker-ul `[confirmed]` apare în note; `priors.py` ponderează aceste rânduri 2x față de feedback-ul subiectiv (vezi `weighted_bad_rate`).
+
+**Scale_down regret tracking (A2).** Dacă `telemetry.mode == "sequential_scale_down"` și outcome-ul retroactiv este `BAD`:
+```bash
+python scripts/mark_outcome.py --run-path runs/<file>.json --outcome BAD --reason "scale_down regret — full deliberation needed"
+```
+Calibration signal: dacă `scale_down` regret rate > 10% peste n≥20 runs, Conservator's scale_down threshold e prea agresiv — ajustează promptul. Dacă rata rămâne < 5%, optimizarea e validată.
 
 ### 7. Auto-pipeline (post-report)
 
@@ -391,6 +418,12 @@ Audit warnings la stderr după merge — verifică-le înainte să consideri 2×
 
 **Effort guidance în headless.** În `claude -p` (`is_headless()`), Pass-1 sub-agents pot rula la `effort=medium` — Pass-2 cross-review rămâne `high`. Decizia aparține orchestratorului extern care invocă `claude -p --effort medium`; skill-ul documentează posibilitatea, nu enforce-ază flag-ul CLI.
 
+**Pass-2 conditional skip (C1).** După ce Pass-1 returnează, înainte să dispatch Pass-2, verifică convergența:
+```bash
+echo '{"pass1": {"generator": {...}, "control": {...}, "conservator": {...}}}' | python scripts/dialectic_merge.py --check-pass2
+```
+Output: `{"skip_pass2": true|false, "reasons": [...]}`. Dacă `skip_pass2: true`, sari dispatch-ul Pass-2 și apelează `dialectic_merge.py` fără `pass2` — costul e 3 dispatches (Pass-1 only) în loc de 6. Report va include `dialectic_metadata.pass2_executed: false` și `pass2_skip_reason: "pass1_converged"`. Convergence criteria: (1) toate verdictele Control valid, (2) Generator preferred = Conservator lowest-risk, (3) fără substantial disagreements.
+
 ## Trias mode (high-stakes opt-in)
 
 **Mecanica:** 3 personalități fixe (Pioneer / Architect / Steward) deliberează în paralel cu lens prompts injectate, fiecare aplicând weights diferite peste output. Vot democratic majoritar peste cele 3 chosen-uri.
@@ -406,8 +439,9 @@ Audit warnings la stderr după merge — verifică-le înainte să consideri 2×
 1. Orchestrator citește `python -X utf8 scripts/personalities.py` — emite cele 3 personalități
 2. Pentru fiecare personalitate, dispatch 3 voci (Gen/Ctrl/Cons) cu `prompts/<voice>.md` + `prompts/<personality>_lens.md` prepended
 3. Personalitatea agregă voice scores cu weights proprii → `chose`
-4. Orchestrator rulează `python -X utf8 scripts/aggregator.py --scheme team_vote` peste cele 3 chosen-uri
-5. Confidence derivat din vote_pattern — pipe output-ul aggregator direct la `confidence.py`:
+4. **Unanimous check (B1).** Dacă toate 3 personalitățile au ales același `chose`, skip `team_vote` — rezultatul e unanim. Setează `vote_pattern: "3-0"` și `vote_skipped: true`. Confidence derivat direct din `confidence_from_vote_pattern("3-0")`. Loghează în `deliberation_log` cu `reason: "unanimous_personalities"`. Dacă nu sunt unanime, rulează `team_vote` normal.
+5. Orchestrator rulează `python -X utf8 scripts/aggregator.py --scheme team_vote` peste cele 3 chosen-uri (skip dacă B1 a detectat unanimitate)
+6. Confidence derivat din vote_pattern — pipe output-ul aggregator direct la `confidence.py`:
    ```bash
    echo '{"personalities":[...],"candidates":[...]}' | python scripts/aggregator.py --scheme team_vote | python scripts/confidence.py
    ```
@@ -468,7 +502,13 @@ Restul (vote pattern, confidence, failure recovery) identic cu Trias.
 > **Legacy note.** Modurile `parallel_skeptic` și `dialectic_skeptic` au fost moduri fixe distincte (Parallel/Dialectic cu Skeptic baked-in). Au fost colapsate în acest flag composabil pe 2026-05-17 — funcționalitatea identică se obține via `parallel + skeptic_on_chosen` și `dialectic + skeptic_on_chosen`. Numele vechi rămân în `validate_report.py` MODE enum pentru backward-compat cu runs istorice.
 
 ### Când să folosești
-- Confidence-ul din modul de bază cade în banda `[0.5, 0.7]` — trigger **automat** (aggregator-ul poate semnala banda, orchestratorul aplică flagul)
+
+**Auto-trigger conditions** (oricare e suficient):
+- Confidence ∈ `[0.5, 0.7]` — trigger clasic
+- Confidence > 0.7 DAR `Conservator.net_concern` > 0.7 — discrepanță high-conf/high-concern merită probată: `trigger_reason: "high_conf_high_concern"`
+- `chosen_approach` coincide cu un outcome `BAD` din `FEEDBACK.html` (ultimele 30 zile, substring match pe label): `trigger_reason: "similar_to_recent_bad"` — Tacitus-lite pentru moduri clasice
+- `irreversibility_flag: true` — consent gate existent, Skeptic adaugă object-level check: `trigger_reason: "irreversibility_gate"`
+
 - **Opt-in manual** via `--skeptic-on-chosen` când vrei un challenger focal post-hoc indiferent de confidence (medium-stakes, probleme cu constraint-uri implicite cunoscute)
 - Probleme unde chosen_confirmation_pass a demonstrat valoare empirică — în special situații cu constraint-uri implicite nemenționate explicit în success_criterion (tip P3: precondițiile logice ale soluției nu apar în enunț)
 - Când vrei challengerul focal pe orice bază (Sequential / Parallel / Dialectic / Trias) fără cost de mod fix dedicat

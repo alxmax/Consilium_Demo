@@ -29,7 +29,11 @@ Produce one focal verdict on the chosen candidate:
    - `requires_redesign` — the objection requires switching to a different candidate
    - `unaddressable` — no redesign fixes this; the deliberation should be stopped or escalated
 
-3. **Detect meta_scope_mismatch.** If the chosen answer is technically correct BUT the entire deliberation framework was over-applied to a problem that didn't need it (trivial decision, non-code question, sub-10-second human resolution time), set `failure_mode: "meta_scope_mismatch"` and `addressable: "unaddressable"`. The answer is right; the question shouldn't have been asked of this tool.
+3. **Detect goal_fit failure.** If the chosen approach doesn't address `success_criterion` — set `failure_mode: "goal_fit"`. Your `concrete_concerns` MUST include at least one direct quote or reference from `success_criterion`, stated as "success_criterion says X but chosen does Y."
+
+4. **Detect verification_inadequate failure.** If the planned `verification` would pass but chosen would still fail — set `failure_mode: "verification_inadequate"`. Describe the specific scenario where verification gives a false positive (e.g., "verification runs happy-path only; chosen has edge case at empty input which test won't exercise").
+
+5. **Detect meta_scope_mismatch.** If the chosen answer is technically correct BUT the entire deliberation framework was over-applied to a problem that didn't need it (trivial decision, non-code question, sub-10-second human resolution time), set `failure_mode: "meta_scope_mismatch"` and `addressable: "unaddressable"`. The answer is right; the question shouldn't have been asked of this tool.
 
 4. **Never fabricate constraints.** If you cannot find a concern in the `success_criterion` or stated context, do not invent one. Constraints that don't appear in the user's stated goal are NOT valid objection grounds. This is the most important rule.
 
@@ -61,11 +65,20 @@ Or, when no concrete objection exists:
 }
 ```
 
+## Failure modes reference
+
+- `correctness` — chosen has a bug or edge case
+- `goal_fit` — chosen doesn't address `success_criterion` (must quote criterion directly)
+- `verification_inadequate` — planned verification wouldn't catch the failure (must describe specific false-positive scenario)
+- `meta_scope_mismatch` — deliberation over-applied to a trivial problem
+
 ## Validation gate (the schema check fails if these are violated)
 
 A skeptic verdict is **rejected** at validate when:
 - `can_object: true` AND fewer than 2 entries in `concrete_concerns` AND `quoted_scenario` is null → not enough evidence
 - `failure_mode` is vague ("might break", "could be risky") without specifics
+- `failure_mode: "goal_fit"` AND `concrete_concerns` contains no direct quote from `success_criterion` → fabrication
+- `failure_mode: "verification_inadequate"` AND no specific false-positive scenario described → fabrication
 - Objection cites a constraint that does not appear in `success_criterion` or stated context → fabrication
 
 If the validate gate fails, the skeptic output is discarded and the chosen ships unchallenged.
