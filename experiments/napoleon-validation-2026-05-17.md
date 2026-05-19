@@ -1,8 +1,8 @@
 # Napoleon validation — 2026-05-17
 
-**Question (TODO.md DECIZII NEREZOLVATE #3):** *Napoleon rămâne senator după empirical validation? Phase 14B din `TODO_RUND2` verifică over-fit la P3. Decide după validare.*
+**Question (TODO.md UNRESOLVED DECISIONS #3):** *Does Napoleon stay as senator after empirical validation? Phase 14B of `TODO_RUND2` checks for over-fit on P3. Decide after validation.*
 
-**Verdict: STAYS.** Zero semnal de P3 over-fit. Distribuție bi-directional, dezacord independent, rationale-uri cross-domain.
+**Verdict: STAYS.** Zero P3 over-fit signal. Bi-directional distribution, independent disagreement, cross-domain rationales.
 
 ## Method
 
@@ -12,17 +12,17 @@ Extract Napoleon vote + rationale din toate `runs/senate/2026-*.json` (excluzân
 - Multi-round: `rounds[-1].outputs["napoleon"]` sau `rounds[-1].senators["napoleon"]`
 - Legacy: `senators["napoleon"]`
 
-Sample N=17 senate runs (totalul disponibil la data analizei).
+Sample N=17 senate runs (total available at analysis date).
 
 ## Aggregate metrics
 
 | Metric | Value | Interpretation |
 |---|---|---|
-| Participation rate | 15/17 = 88% | Healthy (1 ABSENT, 1 NOT_DISPATCHED in R2 fără cross-Q) |
+| Participation rate | 15/17 = 88% | Healthy (1 ABSENT, 1 NOT_DISPATCHED in R2 without cross-Q) |
 | Vote distribution | GO=5, MODIFY=7, STOP=3 | Bi-directional, no STOP anchoring |
-| Agreement cu verdict | 8/14 = 57% (excluding non-votes) | Adds independent signal, nu rubber-stamp |
-| Disagreement direction | 3× mai permissive (GO over MODIFY), 2× mai cautious (STOP over MODIFY) | Real bi-directional perspective |
-| P3 over-fit signal | **NONE detected** | Rationale-uri variate cross-domain |
+| Agreement with verdict | 8/14 = 57% (excluding non-votes) | Adds independent signal, not rubber-stamp |
+| Disagreement direction | 3× more permissive (GO over MODIFY), 2× more cautious (STOP over MODIFY) | Real bi-directional perspective |
+| P3 over-fit signal | **NONE detected** | Varied rationales across domains |
 
 ## Per-run breakdown
 
@@ -51,17 +51,17 @@ Sample N=17 senate runs (totalul disponibil la data analizei).
 - "Approve improvements 2 and 3 immediately (cost-justified, low-medium complexity, favorable terrain). Defer improvement 1 until senate run completed." — **cost/terrain analysis**
 - "STOP. Activation gate not met. Schedule revisit after 20 senate runs with ≥80% outcome tracking." — **gating on empirical thresholds**
 - "STOP on terrain, not merit. 6-10h, 1500-1800 lines diff not justified in stretched session." — **operator state / effort calibration**
-- "Narrowing obligatoriu: excludeti din audit modurile cu <2 runs reale; separati analiza pasilor de analiza modurilor." — **scope-narrowing**
+- "Mandatory narrowing: exclude from audit modes with <2 real runs; separate step analysis from mode analysis." — **scope-narrowing**
 - "Unbundle into 2 phases. Phase 1 ship now (~1-2h, zero cost); Phase 2 defer until ≥10 senate runs." — **phased delivery**
 
-All rationale-uri reflectă specialitatea declarată ("tokens, ore, starea operatorului") aplicată variat — nu pattern-matching pe P3 car wash.
+All rationales reflect the declared specialty ("tokens, hours, operator state") applied variably — no pattern-matching on P3 car wash.
 
 ## Caveats
 
-- N=15 voturi e mic pentru semnificație statistică, dar suficient pentru a respinge over-fit ipoteza tare (un over-fit la P3 ar produce STOP-heavy distribution, nu 5G/7M/3S)
-- 5 din 15 runs sunt pe propuneri proprii (self-audit), care biasează spre MODIFY oricum (verdict cumulativ MODIFY pe 13/17 runs)
-- Cross-domain rationale validation a fost calitativă (eyeball); analiza n-a folosit clustering automat
+- N=15 votes is small for statistical significance, but sufficient to reject the strong over-fit hypothesis (a P3 over-fit would produce a STOP-heavy distribution, not 5G/7M/3S)
+- 5 of 15 runs are on own proposals (self-audit), which biases toward MODIFY anyway (cumulative verdict MODIFY on 13/17 runs)
+- Cross-domain rationale validation was qualitative (eyeball); the analysis did not use automatic clustering
 
 ## Decision
 
-**Napoleon stays.** Re-evaluează doar dacă apare semnal contrar (>3 STOP consecutiv pe propuneri neagresive, sau rationale-uri repetitive P3-style) în următoarele 10 runs.
+**Napoleon stays.** Re-evaluate only if a contrary signal appears (>3 consecutive STOPs on non-aggressive proposals, or repetitive P3-style rationales) in the next 10 runs.

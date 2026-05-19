@@ -5,58 +5,58 @@ description: Evaluate code changes through Generator/Control/Conservator deliber
 
 # Consilium — Code Deliberation Skill
 
-Pattern de deliberare multi-perspectivă pentru orice modificare de cod. Trei voci independente colaborează pentru a evalua o schimbare:
+Multi-perspective deliberation pattern for any code change. Three independent voices collaborate to evaluate a change:
 
-- **Generator** (creativ) — propune alternative, divergent thinking
-- **Control** (analitic) — verifică corectitudine tehnică
-- **Conservator** (prudent) — evaluează risc și reversibilitate
+- **Generator** (creative) — proposes alternatives, divergent thinking
+- **Control** (analytical) — verifies technical correctness
+- **Conservator** (prudent) — evaluates risk and reversibility
 
 ## Constitution
 
-Patru principii care guvernează **fiecare** deliberare. Au prioritate când o voce dă o recomandare ce intră în conflict cu ele.
+Four principles that govern **every** deliberation. They take priority when a voice gives a recommendation that conflicts with them.
 
-1. **Think before coding.** Expune tradeoff-urile explicit. Dacă requestul are 2 interpretări plauzibile, listează-le ca `candidates` separate — nu alege tăcut.
-2. **Simplicity first.** Minimum de cod. Refuză abstracții speculative și feature-uri nesolicitate. `do_nothing` e întotdeauna în lista de candidați.
-3. **Surgical changes.** Atinge doar ce cere goal-ul. Conservator-ul măsoară devierea prin `scope_drift` — respectă un scor mare.
-4. **Goal-driven execution.** Restate goal-ul ca **success criterion** testabil înainte de Generator. Output-ul final include un pas de **verification**.
+1. **Think before coding.** Expose tradeoffs explicitly. If the request has 2 plausible interpretations, list them as separate `candidates` — do not silently pick one.
+2. **Simplicity first.** Minimum code. Refuse speculative abstractions and unsolicited features. `do_nothing` is always in the candidate list.
+3. **Surgical changes.** Touch only what the goal requires. Conservator measures drift via `scope_drift` — respect a high score.
+4. **Goal-driven execution.** Restate the goal as a testable **success criterion** before Generator. The final output includes a **verification** step.
 
 ## When to use
 
-Activează acest skill când:
-- Faci **review de PR** sau diff
-- Planifici un **refactor** care atinge 2+ fișiere
-- Trebuie să alegi între **mai multe abordări**
-- Ești pe punctul de a face **commit pe cod shared/core**
-- Vrei o **assessment de risc** înainte de a accepta o sugestie
-- Ești pe punctul de a **implementa** o funcționalitate non-trivială (>1 fișier sau >30 linii)
-- Vrei să verifici că o implementare completă nu a pierdut funcționalitate existentă, edge case-uri sau teste
+Activate this skill when:
+- Doing a **PR review** or diff
+- Planning a **refactor** that touches 2+ files
+- You must choose between **multiple approaches**
+- You are about to **commit to shared/core code**
+- You want a **risk assessment** before accepting a suggestion
+- You are about to **implement** non-trivial functionality (>1 file or >30 lines)
+- You want to verify that a completed implementation has not lost existing functionality, edge cases, or tests
 
 Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment", "should I commit", "which approach", "before implementing", "implement feature", "code quality", "missing tests".
 
 ## Workflow
 
-### 0. Bootstrap (înainte de orice grep / Read pe codebase)
-Două acțiuni în ordine:
+### 0. Bootstrap (before any grep / Read on the codebase)
+Two actions in order:
 
-1. **Citește contractele celor 3 voci** — `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Definesc câmpurile exacte produse de fiecare voce. **Notă parallel/dialectic:** conținutul fiecărui prompt trebuie *inline-uit* în dispatch-ul sub-agentului — citirea la Step 0 nu e suficientă.
-2. **Rulează `python scripts/priors.py`** — întoarce priori soft din `FEEDBACK.html` + `runs/`. Trei câmpuri ne pot bloca deliberarea curentă până sunt rezolvate:
-   - `stale_pendings` non-empty (PEND mai vechi de 2 zile): întreabă *"Ai N entries PEND vechi: [date | chosen] × N. Vrei să le închid (OK/BAD/skip)?"* — actualizează cu `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferat) sau cu `Edit` direct pe `FEEDBACK.html`. **Nu** folosi `log_feedback.py` — duplichează rândul. **Headless** (`is_headless()`): loghează `[priors] stale_pendings: N entries — skipping prompt` pe stderr și continuă fără să întrebi.
-   - `missing_feedback_runs` non-empty: rulează `python scripts/audit_feedback.py --backfill` ca să creezi PEND-uri pentru runs orfane, apoi rezolvă-le ca mai sus. Dacă lista e mai mare de 3, prefer să rezolvi gap-ul *înainte* de a începe o deliberare nouă. **Headless**: rulează `audit_feedback.py --backfill` automat și continuă.
-   - `pend_pressure > 0.3` (raportul PEND în ultimele N=20 entries — pragul a scăzut de la 0.5): alertă soft *"{pend_count}/{window_size} entries recente sunt PEND — consideri să le închizi?"* — nu bloca, dar înregistrează semnalul. **Headless**: log only, no prompt.
+1. **Read the contracts of the 3 voices** — `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. They define the exact fields produced by each voice. **Parallel/dialectic note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough.
+2. **Run `python scripts/priors.py`** — returns soft priors from `FEEDBACK.html` + `runs/`. Three fields can block the current deliberation until resolved:
+   - `stale_pendings` non-empty (PEND older than 2 days): ask *"You have N old PEND entries: [date | chosen] × N. Want me to close them (OK/BAD/skip)?"* — update via `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferred) or via `Edit` directly on `FEEDBACK.html`. **Do not** use `log_feedback.py` — it duplicates the row. **Headless** (`is_headless()`): log `[priors] stale_pendings: N entries — skipping prompt` to stderr and continue without asking.
+   - `missing_feedback_runs` non-empty: run `python scripts/audit_feedback.py --backfill` to create PEND entries for orphan runs, then resolve them as above. If the list is larger than 3, prefer to resolve the gap *before* starting a new deliberation. **Headless**: run `audit_feedback.py --backfill` automatically and continue.
+   - `pend_pressure > 0.3` (PEND ratio in the last N=20 entries — threshold lowered from 0.5): soft alert *"{pend_count}/{window_size} recent entries are PEND — consider closing them?"* — do not block, but record the signal. **Headless**: log only, no prompt.
 
-   **Headless (non-interactiv — `claude -p` sau CI):** `stale_pendings` și `missing_feedback_runs` sunt suprimate automat (returnate `[]`) când `sys.stdin.isatty()` e `False`. Override explicit: flag `--headless` sau env var `CONSILIUM_HEADLESS=1`. Output include `headless_mode: true` ca marcaj pentru consumatori.
+   **Headless (non-interactive — `claude -p` or CI):** `stale_pendings` and `missing_feedback_runs` are automatically suppressed (returned `[]`) when `sys.stdin.isatty()` is `False`. Explicit override: `--headless` flag or `CONSILIUM_HEADLESS=1` env var. Output includes `headless_mode: true` as a marker for consumers.
 
 ### 1. Gather context & state the goal
-Citește schimbarea propusă. Identifică scope (fișiere, module, linii), tip (bugfix/feature/refactor/cleanup), blast radius. Formulează `success_criterion` — o propoziție testabilă.
+Read the proposed change. Identify scope (files, modules, lines), type (bugfix/feature/refactor/cleanup), blast radius. Formulate `success_criterion` — a testable sentence.
 
-**Clarity gate.** Înainte de Generator: *poți scrie 2+ interpretări plauzibile distincte?* Dacă da — Stop, listează-le, întreabă care e reală. Semnale roșii: verbe vagi fără obiect concret, referințe nedezambiguate, scope implicit, limite lipsă. Dacă toate sunt clare → continuă fără să întrebi. **Excepție non-interactivă (subagent):** nu poți întreba utilizatorul — emite fiecare interpretare ca Generator candidate cu prefix `interp_a_*`, `interp_b_*` și documentează ramificațiile în `subagent_notes.clarity_branches`.
+**Clarity gate.** Before Generator: *can you write 2+ plausible distinct interpretations?* If yes — Stop, list them, ask which is the real one. Red flags: vague verbs without a concrete object, undisambiguated references, implicit scope, missing limits. If all are clear → continue without asking. **Non-interactive exception (subagent):** you cannot ask the user — emit each interpretation as a Generator candidate with prefix `interp_a_*`, `interp_b_*` and document the branches in `subagent_notes.clarity_branches`.
 
 ### 1.5. Scope gate (auto)
 ```bash
 python scripts/scope_gate.py            # working tree vs HEAD
 python scripts/scope_gate.py --ref main # main..HEAD
 ```
-Dacă `should_skip: true`, emite raportul minimal și oprește:
+If `should_skip: true`, emit the minimal report and stop:
 ```json
 {
   "success_criterion": "...", "verification": "...",
@@ -65,12 +65,12 @@ Dacă `should_skip: true`, emite raportul minimal și oprește:
   "voice_scores": null, "confidence": null, "alternatives": [], "deliberation_log": []
 }
 ```
-Defaults: `max_files=1`, `max_lines=15`, blocklist conservativ (`auth/`, `security/`, `migrations/`, `.github/workflows/`, `**/secrets*`, `.env*`, `Dockerfile`, `*.tf`, fișiere dependențe). Override via `scope_gate.json` (`{max_files, max_lines, blocklist}`). Escape hatch: `CONSILIUM_FORCE_FULL=1` forțează `should_skip=false`. Gate **eșuează deschis** (no repo / bad ref → `should_skip: false`).
+Defaults: `max_files=1`, `max_lines=15`, conservative blocklist (`auth/`, `security/`, `migrations/`, `.github/workflows/`, `**/secrets*`, `.env*`, `Dockerfile`, `*.tf`, dependency files). Override via `scope_gate.json` (`{max_files, max_lines, blocklist}`). Escape hatch: `CONSILIUM_FORCE_FULL=1` forces `should_skip=false`. Gate **fails open** (no repo / bad ref → `should_skip: false`).
 
-**Task-uri non-diff** (audit, architecture review, planning): scope_gate e no-op — poți sări Step 1.5.
+**Non-diff tasks** (audit, architecture review, planning): scope_gate is a no-op — you can skip Step 1.5.
 
-### 2. Conservator — assess risc (runs FIRST)
-Folosește `prompts/voices/conservator.md`. Rulează **înainte** de Generator și Control. Output-ul setează `tokens_budget` pentru celelalte voci.
+### 2. Conservator — assess risk (runs FIRST)
+Use `prompts/voices/conservator.md`. Runs **before** Generator and Control. Its output sets the `tokens_budget` for the other voices.
 
 Required Questions (Q1-Q5): reversibility, magnitude, counterparty_risks, status quo bias check, meta_recommendation.
 
@@ -79,7 +79,7 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
 **Sequential-first.** Conservator runs before Generator and Control. Its `tokens_budget` output caps how deep the other voices go. Its `irreversibility_flag: true` BLOCKS the pipeline — confirm user consent before proceeding.
 
 **Veto check (auto, after Conservator output):**
-- If `irreversibility_flag: true` → stop, ask user: *"Conservator marcheaza aceasta decizie ca ireversibila. Confirmi ca vrei sa continui?"* — proceed only with explicit YES. **Headless** (`is_headless()`): NU bloca; setează `metadata.headless_overridden: true` în bundle și continuă. Orchestratorul extern care a setat `CLAUDE_HEADLESS=1` și-a asumat stake-ul.
+- If `irreversibility_flag: true` → stop, ask user: *"Conservator marks this decision as irreversible. Do you confirm you want to continue?"* — proceed only with explicit YES. **Headless** (`is_headless()`): DO NOT block; set `metadata.headless_overridden: true` in the bundle and continue. The external orchestrator that set `CLAUDE_HEADLESS=1` has assumed the stake.
 - If `meta_recommendation: scale_down` → **short-circuit**: skip dispatching Generator AND Control entirely. Build a minimal report directly:
   ```json
   {
@@ -93,31 +93,31 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
     "telemetry": {"mode": "sequential_scale_down", "dispatch_count": 1}
   }
   ```
-  `confidence: 0.85` este deliberat — Conservator's judgment is the signal, not a weak guess. Designed to stay above the `[0.5, 0.7]` skeptic auto-trigger band.
-- If `meta_recommendation: scale_up` → warn user, add context request before Generator. **Headless**: warning emis pe stderr, contextul nu poate fi cerut interactiv — continuă cu input-ul existent.
+  `confidence: 0.85` is deliberate — Conservator's judgment is the signal, not a weak guess. Designed to stay above the `[0.5, 0.7]` skeptic auto-trigger band.
+- If `meta_recommendation: scale_up` → warn user, add context request before Generator. **Headless**: warning emitted to stderr, the context cannot be requested interactively — continue with existing input.
 
-**Opțional — autoprobe:**
+**Optional — autoprobe:**
 ```bash
 python scripts/probe_change.py                       # working tree vs HEAD
 python scripts/probe_change.py --ref main --churn 30 # + commit count per file last 30 days
 ```
-Ancorează `magnitude` la `files_changed/lines_*` și `regression_risk.net_concern` la distribuția de churn când prezent.
+Anchor `magnitude` to `files_changed/lines_*` and `regression_risk.net_concern` to the churn distribution when present.
 
-### 3. Generator — produce alternative
-Folosește `prompts/voices/generator.md`. Cere **3–5 candidate**, inclusiv `do_nothing`. Stil divergent. Respectă `tokens_budget.generator` setat de Conservator.
+### 3. Generator — produce alternatives
+Use `prompts/voices/generator.md`. Request **3–5 candidates**, including `do_nothing`. Divergent style. Respect `tokens_budget.generator` set by Conservator.
 
-Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fallback_scenario, coverage_check, challenge_upward, abstain, preferred}`. Adversarial e condiționat (clarity gate a returnat 2+ interpretări SAU schimbarea atinge shared/core code) — altfel emit `"adversarial_skipped": "<reason>"`.
+Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fallback_scenario, coverage_check, challenge_upward, abstain, preferred}`. Adversarial is conditional (clarity gate returned 2+ interpretations OR the change touches shared/core code) — otherwise emit `"adversarial_skipped": "<reason>"`.
 
 **Receives from Conservator (selective):** `magnitude`, `counterparty_risks`, `tokens_budget.generator`. Does NOT receive `meta_recommendation` — that is policy, not Generator input.
 
 **Challenge upward:** If Generator sets `challenge_upward.triggered: true`, re-run Conservator with Generator's context before proceeding to Control.
 
-### 4. Control — verifică corectitudine
-Folosește `prompts/voices/control.md`. Per candidate: types, logică, tests, style.
+### 4. Control — verify correctness
+Use `prompts/voices/control.md`. Per candidate: types, logic, tests, style.
 
 Required Questions (Q1-Q4): glossary (max 5), hidden_assumptions (max 3), disagreements, fixed/negotiable_constraints.
 
-Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negotiable_constraints, glossary_fail, glossary_attempts, verdicts: [{id, valid, issues, tests_to_write, notes}]}`. `tests_to_write` obligatoriu pentru `valid: true` (excepție `do_nothing`) — 1-4 teste de acceptanță.
+Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negotiable_constraints, glossary_fail, glossary_attempts, verdicts: [{id, valid, issues, tests_to_write, notes}]}`. `tests_to_write` mandatory for `valid: true` (exception: `do_nothing`) — 1-4 acceptance tests.
 
 **Receives from both:** full Conservator output + full Generator output.
 
@@ -129,65 +129,65 @@ Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negoti
 ```bash
 python scripts/aggregator.py --scheme conservative_override
 ```
-Default: **conservative_override** — veto la `risk_score > 0.8`; ranking prin medie ponderată `(generator + control + safety)` unde `safety = 1 - conservator`. La egalitate câștigă candidatul mai sigur. Alternativă: `--scheme risk_adjusted_utility` (penalty sigmoidal, fără veto rigid).
+Default: **conservative_override** — veto at `risk_score > 0.8`; ranking by weighted average `(generator + control + safety)` where `safety = 1 - conservator`. On a tie, the safer candidate wins. Alternative: `--scheme risk_adjusted_utility` (sigmoid penalty, no rigid veto).
 
 ### 5b. Confidence
 ```bash
 echo '{"candidates": [...], "chosen": "approach_id"}' | python scripts/confidence.py
 ```
-Returnează `{confidence, agreement, separation}`. Dacă `chosen` e `null` (toți vetoiți), `confidence` e `null`.
+Returns `{confidence, agreement, separation}`. If `chosen` is `null` (all vetoed), `confidence` is `null`.
 
-> **Calibrare (audit R2 2026-05-17):** `agreement` măsoară divergența între roluri în cadrul UNUI run — nu stabilitatea inter-run. Scorurile Conservator sunt ancorate prin formulă categorică (vezi `conservator.md`); scorurile Generator/Control sunt float-uri self-assigned neancorate. Un al doilea run cu același input poate produce scoruri diferite (pstdev estimat 0.12–0.18 pe `risk_score`). Valoarea `confidence` nu e o probabilitate calibrată — e un semnal de consistență internă.
+> **Calibration (R2 audit 2026-05-17):** `agreement` measures divergence between roles within ONE run — not inter-run stability. Conservator scores are anchored by categorical formula (see `conservator.md`); Generator/Control scores are unanchored self-assigned floats. A second run with the same input may produce different scores (pstdev estimated 0.12–0.18 on `risk_score`). The `confidence` value is not a calibrated probability — it is an internal-consistency signal.
 
-**Quoting:** Evită construirea de Python inline via `-c "..."` cu payload JSON — apostrofurile din cod pot rupe quoting-ul bash. Folosește pipe pe stdin (ca mai sus) sau flag-ul `--input <file>`.
+**Quoting:** Avoid building inline Python via `-c "..."` with JSON payload — apostrophes in the code can break bash quoting. Use stdin piping (as above) or the `--input <file>` flag.
 
-**Mode confidence floor (E1).** După ce confidence e derivat, verifică dacă modul a atins floor-ul minim:
+**Mode confidence floor (E1).** After confidence is derived, check whether the mode reached the minimum floor:
 ```python
 from scripts.confidence import check_mode_floor
 result = check_mode_floor(telemetry_mode, confidence_value)
-# result["below_floor"] == True → loghează cu --outcome WEAK în FEEDBACK.html
+# result["below_floor"] == True → log with --outcome WEAK in FEEDBACK.html
 ```
-Floor-uri: `sequential=0.70`, `dialectic=0.75`, `trias=0.80`. Un run sub floor semnalează că modul nu a livrat valoare pentru cost. Datele se acumulează în `FEEDBACK.html` — pattern-ul devine vizibil după ≥10 runs per mod.
+Floors: `sequential=0.70`, `dialectic=0.75`, `trias=0.80`. A run below floor signals the mode did not deliver value for the cost. The data accumulates in `FEEDBACK.html` — the pattern becomes visible after ≥10 runs per mode.
 
 ### 5c. Meta-critic (auto, advisory)
 ```bash
 cat bundle.json | python scripts/meta_critic.py
 ```
-Scorează **calitatea deliberării** (nu corectitudinea alegerii): `generator_divergence` (paraphrasing?), `control_concreteness` (speculation?), `conservator_spread` (shrug?). Emite `deliberation_quality.flags` — atașează la bundle înainte de Step 6 (build_report îl pasează în raport). `flags` non-empty nu blochează, dar trebuie menționate în `reasoning`.
+Scores **deliberation quality** (not choice correctness): `generator_divergence` (paraphrasing?), `control_concreteness` (speculation?), `conservator_spread` (shrug?). Emits `deliberation_quality.flags` — attach to the bundle before Step 6 (build_report passes it through to the report). Non-empty `flags` do not block, but must be mentioned in `reasoning`.
 
-### 5d. Retry on low confidence (opțional, single pass)
-Dacă `confidence < 0.7`, **înainte** să întrebi utilizatorul:
+### 5d. Retry on low confidence (optional, single pass)
+If `confidence < 0.7`, **before** asking the user:
 ```bash
 cat bundle.json | python scripts/retry_context.py
 ```
-Returnează top-2 candidați cu fișiere/simboluri de citit/grepat. Folosește hint-urile → gather context (Read + Grep) → re-rulează Generator/Control/Conservator **o singură dată** cu input îmbogățit. Dacă confidence încă < 0.7, abia atunci întrebi utilizatorul (Step 6).
+Returns the top-2 candidates with files/symbols to read/grep. Use the hints → gather context (Read + Grep) → re-run Generator/Control/Conservator **once** with enriched input. If confidence is still < 0.7, only then ask the user (Step 6).
 
-**Headless** (`is_headless()`): skip Step 5d integral — merge direct la Step 6 unde `PEND_HEADLESS` e logat. Notă empirică: `retry_context.py` are zero labeled usage în corpus `runs/` (vezi audit senate `2026-05-16_220025-flow-and-modes-audit-r2`); skip-ul în headless e aliniat cu acel deletion-vote și nu pierde un mecanism activ.
+**Headless** (`is_headless()`): skip Step 5d entirely — go directly to Step 6 where `PEND_HEADLESS` is logged. Empirical note: `retry_context.py` has zero labeled usage in the `runs/` corpus (see senate audit `2026-05-16_220025-flow-and-modes-audit-r2`); skipping in headless is aligned with that deletion-vote and does not lose an active mechanism.
 
 ### 6. Report
 
-**Telemetry emission (obligatoriu — înainte de `build_report.py`).**
+**Telemetry emission (mandatory — before `build_report.py`).**
 
-La fiecare dispatch (voce sau senator), imediat după return, acumulează în bundle:
+At each dispatch (voice or senator), immediately after return, accumulate in the bundle:
 
-- `telemetry.voices.<voice_name>` sau `telemetry.senators.<senator_name>` (Senate): `{tokens_in: ceil(len(prompt)/4), tokens_out: ceil(len(response)/4), latency_ms: <wall-clock>}` — prompt = text complet trimis (persona + context + propunere, nu doar propunerea).
-- Suma tokens + latency per voce dacă există retry-uri pe același dispatch.
-- `telemetry.mode` ← label canonic (`"sequential"`, `"senate"`, `"trias"` etc. — din `## Dispatch defaults`).
-- `telemetry.dispatch_count` ← total dispatch-uri (inclusiv retry-uri).
+- `telemetry.voices.<voice_name>` or `telemetry.senators.<senator_name>` (Senate): `{tokens_in: ceil(len(prompt)/4), tokens_out: ceil(len(response)/4), latency_ms: <wall-clock>}` — prompt = full text sent (persona + context + proposal, not just the proposal).
+- Sum tokens + latency per voice if there are retries on the same dispatch.
+- `telemetry.mode` ← canonical label (`"sequential"`, `"senate"`, `"trias"` etc. — from `## Dispatch defaults`).
+- `telemetry.dispatch_count` ← total dispatches (including retries).
 
-De ce obligatoriu: `scripts/efficiency.py` returnează `null` pentru orice run fără telemetry, poluând mediile per mod — un run fără telemetry e invizibil în comparațiile de eficiență.
+Why mandatory: `scripts/efficiency.py` returns `null` for any run without telemetry, polluting per-mode averages — a run without telemetry is invisible in efficiency comparisons.
 
 ```bash
 cat bundle.json | python scripts/build_report.py | python scripts/validate_report.py
 ```
-Bundle schema: `{success_criterion, verification, generator, control, conservator, aggregate, confidence, telemetry}`. `build_report.py` derivă `voice_scores`, asamblează `alternatives` (cu `why_not`) și `deliberation_log`.
+Bundle schema: `{success_criterion, verification, generator, control, conservator, aggregate, confidence, telemetry}`. `build_report.py` derives `voice_scores`, assembles `alternatives` (with `why_not`) and `deliberation_log`.
 
-**Output JSON** (câmpuri obligatorii — validate de `validate_report.py`, cerute de Principle #4):
+**Output JSON** (required fields — validated by `validate_report.py`, required by Principle #4):
 ```json
 {
-  "success_criterion": "<string — propoziție testabilă>",
-  "chosen_approach": "<id din candidates | null>",
-  "verification": "<comandă sau check concret>",
+  "success_criterion": "<string — testable sentence>",
+  "chosen_approach": "<id from candidates | null>",
+  "verification": "<command or concrete check>",
   "alternatives": [{"id": "...", "summary": "...", "why_not": "..."}],
   "voice_scores": {"generator": 0.0, "control": 0.0, "conservator": 0.0},
   "confidence": 0.0,
@@ -195,57 +195,57 @@ Bundle schema: `{success_criterion, verification, generator, control, conservato
 }
 ```
 
-**Terminal output discipline.** Nu scrie bundle-uri intermediare JSON pe disc (`bundle_*.json`). Piped-ază output-urile direct. Singurul output vizibil în terminal la final:
+**Terminal output discipline.** Do not write intermediate JSON bundles to disk (`bundle_*.json`). Pipe outputs directly. The only output visible in the terminal at the end:
 ```
 chosen: <id> | conf: <X> | runs/<file>.json
 ```
 
-**Gate de validare** (obligatoriu înainte de a considera raportul final):
+**Validation gate** (mandatory before considering the report final):
 ```bash
 cat runs/<file>.json | python scripts/validate_report.py
 ```
-Exit 0 = OK. Exit 1 = field lipsă/gol sau telemetry malformat. Exit 2 = JSON malformat.
+Exit 0 = OK. Exit 1 = missing/empty field or malformed telemetry. Exit 2 = malformed JSON.
 
-**Acțiuni finale (obligatorii — deliberarea nu e completă fără ele):**
+**Final actions (mandatory — deliberation is not complete without them):**
 
-Cele două apeluri de mai jos sunt **obligatorii**. Dacă orchestratorul oprește înainte de a le rula, raportul există pe disc dar e invizibil pentru priors → următoarea deliberare nu va beneficia de feedback-ul ăsta. Audit periodic: `python scripts/audit_feedback.py` listează runs orfane; cu `--backfill` adaugă rânduri PEND default.
+The two calls below are **mandatory**. If the orchestrator stops before running them, the report exists on disk but is invisible to priors → the next deliberation will not benefit from this feedback. Periodic audit: `python scripts/audit_feedback.py` lists orphan runs; with `--backfill` it adds default PEND rows.
 
-1. **Persistă raportul** în `runs/YYYY-MM-DD_HHMM_<label>.json`.
-2. **Loghează în `FEEDBACK.html`** (confidence-gated, fără să sări vreun caz):
+1. **Persist the report** in `runs/YYYY-MM-DD_HHMM_<label>.json`.
+2. **Log to `FEEDBACK.html`** (confidence-gated, without skipping any case):
    - `confidence >= 0.7` → `python -X utf8 scripts/log_feedback.py --outcome OK --run-path runs/<file>.json < runs/<file>.json`
-   - `confidence < 0.7` → întreabă: *"Confidence sub prag (`<X>`). Vrei să override-ezi `<chosen>`? Alternative: `<alt_ids>`. Răspunde alt_id, 'no', sau 'skip'."* Apoi: `no` → `--outcome OK --force-override`; `<alt_id>` → `--outcome OVR --override-target <alt_id>`; `skip` → fără flag (PEND, dar **nu lăsa apelul să fie sărit**).
-   - `confidence null` (toți vetoiți) → `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json`
-   - **Cale non-interactivă (headless — `claude -p`).** Sari promptul de la `confidence < 0.7` și apelează direct: `python -X utf8 scripts/log_feedback.py --outcome PEND_HEADLESS --run-path runs/<file>.json < runs/<file>.json`. `PEND_HEADLESS` e exclus structural din `pend_pressure` și `stale_pendings` (PEND_HEADLESS ≠ „PEND" în Counter) — nu necesită rezolvare manuală.
+   - `confidence < 0.7` → ask: *"Confidence below threshold (`<X>`). Want to override `<chosen>`? Alternatives: `<alt_ids>`. Reply alt_id, 'no', or 'skip'."* Then: `no` → `--outcome OK --force-override`; `<alt_id>` → `--outcome OVR --override-target <alt_id>`; `skip` → no flag (PEND, but **do not let the call be skipped**).
+   - `confidence null` (all vetoed) → `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json`
+   - **Non-interactive path (headless — `claude -p`).** Skip the prompt at `confidence < 0.7` and call directly: `python -X utf8 scripts/log_feedback.py --outcome PEND_HEADLESS --run-path runs/<file>.json < runs/<file>.json`. `PEND_HEADLESS` is structurally excluded from `pend_pressure` and `stale_pendings` (PEND_HEADLESS ≠ "PEND" in Counter) — it requires no manual resolution.
 
-**Outcome confirmation (retroactiv).** Outcome-ul logat la pasul 2 e subiectiv — reflectă impresia imediată. Dacă mai târziu producția dezvăluie un regression sau o alegere bună, suprascrie-l cu marker confirmat:
+**Outcome confirmation (retroactive).** The outcome logged in step 2 is subjective — it reflects the immediate impression. If production later reveals a regression or a good choice, overwrite it with the confirmed marker:
 ```bash
 python scripts/mark_outcome.py --run-path runs/<file>.json --outcome BAD --reason "broke prod migration"
 ```
-Marker-ul `[confirmed]` apare în note; `priors.py` ponderează aceste rânduri 2x față de feedback-ul subiectiv (vezi `weighted_bad_rate`).
+The `[confirmed]` marker appears in the note; `priors.py` weights these rows 2x compared to subjective feedback (see `weighted_bad_rate`).
 
-**Scale_down regret tracking (A2).** Dacă `telemetry.mode == "sequential_scale_down"` și outcome-ul retroactiv este `BAD`:
+**Scale_down regret tracking (A2).** If `telemetry.mode == "sequential_scale_down"` and the retroactive outcome is `BAD`:
 ```bash
 python scripts/mark_outcome.py --run-path runs/<file>.json --outcome BAD --reason "scale_down regret — full deliberation needed"
 ```
-Calibration signal: dacă `scale_down` regret rate > 10% peste n≥20 runs, Conservator's scale_down threshold e prea agresiv — ajustează promptul. Dacă rata rămâne < 5%, optimizarea e validată.
+Calibration signal: if `scale_down` regret rate > 10% over n≥20 runs, Conservator's scale_down threshold is too aggressive — adjust the prompt. If the rate stays < 5%, the optimization is validated.
 
 ### 7. Auto-pipeline (post-report)
 
-**Mandatory dacă promptul user-ului conține un antet de forma `**Required output file(s):**` sau `**Deliverable(s):**` (cu sau fără colon, singular sau plural) — detection regex (autoritative): `\*\*\s*(?:Required\s+output\s+files?|Deliverables?)\s*\*\*\s*:?` aplicat pe linie întreagă, case-insensitive.** În acest caz Step 7 nu mai e opțional: după ce Step 6 e complet, treci direct la `infer_pipeline.py` și execută toți pașii inferați (cel puțin `implement` cu Write tool pentru fiecare cale declarată). Raportul de deliberare singur nu satisface contractul — fișierele trebuie să existe pe disc înainte ca turn-ul să se închidă.
+**Mandatory if the user's prompt contains a header of the form `**Required output file(s):**` or `**Deliverable(s):**` (with or without colon, singular or plural) — authoritative detection regex: `\*\*\s*(?:Required\s+output\s+files?|Deliverables?)\s*\*\*\s*:?` applied per whole line, case-insensitive.** In this case Step 7 is no longer optional: after Step 6 is complete, go directly to `infer_pipeline.py` and execute all inferred steps (at minimum `implement` with the Write tool for each declared path). The deliberation report alone does not satisfy the contract — files must exist on disk before the turn closes.
 
-**Opt-in altfel** — când promptul nu declară livrabile (audit, "should I commit", "which approach", "before implementing"-fără-cod-cerut), Step 7 rămâne la latitudinea userului.
+**Opt-in otherwise** — when the prompt does not declare deliverables (audit, "should I commit", "which approach", "before implementing"-without-code-required), Step 7 is at the user's discretion.
 
-După ce Step 6 e complet (raport salvat, feedback logat), inferă și confirmă pașii de implementare:
+After Step 6 is complete (report saved, feedback logged), infer and confirm the implementation steps:
 
 ```bash
-cat runs/<file>.json | python scripts/infer_pipeline.py          # interactiv
+cat runs/<file>.json | python scripts/infer_pipeline.py          # interactive
 python scripts/infer_pipeline.py --input runs/<file>.json --yes  # CI/headless
 python scripts/infer_pipeline.py --input runs/<file>.json --dry-run  # print only
 ```
 
-Scriptul citește `chosen_approach`, `magnitude` și `reversibility` din raport și caută în tabelul de mai jos:
+The script reads `chosen_approach`, `magnitude`, and `reversibility` from the report and looks up the table below:
 
-| magnitude | reversibility | pași inferați |
+| magnitude | reversibility | inferred steps |
 |---|---|---|
 | trivial | complete | implement |
 | trivial | partial | implement → compile |
@@ -253,112 +253,112 @@ Scriptul citește `chosen_approach`, `magnitude` și `reversibility` din raport 
 | moderate | complete | implement → compile |
 | moderate | partial | implement → compile → test |
 | moderate | irreversible | implement → compile → review → test |
-| high/critical | orice | implement → compile → review → test |
+| high/critical | any | implement → compile → review → test |
 
-**Definiții pași:**
-- `implement` — Scrie codul per `chosen_approach`. Dacă prompt-ul conține un antet care corespunde regexului autoritative din mandatory clause (plural sau singular, cu sau fără colon), folosește Write tool pentru fiecare fișier declarat la calea specificată — nu emite implementarea doar ca fenced block în chat. Fișierele trebuie să existe pe disc, nu doar în răspuns.
-- `compile` — rulează target-ul, verifică exit code 0 (runtime check)
-- `review` — re-rulează Control voice pe codul efectiv scris (nu propunerea)
-- `test` — rulează test suite existent (pytest/unittest autodiscovery)
+**Step definitions:**
+- `implement` — Write the code per `chosen_approach`. If the prompt contains a header matching the authoritative regex from the mandatory clause (plural or singular, with or without colon), use the Write tool for each declared file at the specified path — do not emit the implementation only as a fenced block in chat. Files must exist on disk, not only in the response.
+- `compile` — run the target, verify exit code 0 (runtime check)
+- `review` — re-run the Control voice on the actually-written code (not the proposal)
+- `test` — run the existing test suite (pytest/unittest autodiscovery)
 
 Output JSON: `{"steps": [...], "rationale": {"chosen": "...", "magnitude": "...", "reversibility": "...", "lookup_key": "..."}}`.
 
-Reject (`n` la prompt) → rejection logat în `runs/YYYY-MM-DD_HHMM_pipeline_rejected.json`. Rerun cu `--yes` pentru CI sau `--dry-run` pentru audit fără confirmare.
+Reject (`n` at prompt) → rejection logged in `runs/YYYY-MM-DD_HHMM_pipeline_rejected.json`. Rerun with `--yes` for CI or `--dry-run` for audit without confirmation.
 
-**Skip Step 7 dacă:** `chosen_approach` e `do_nothing` sau `skipped` (scriptul iese cu exit 1 și mesaj clar). În context headless (`claude -p`), rulează cu `--yes` (non-interactiv, fără prompt de confirmare).
+**Skip Step 7 if:** `chosen_approach` is `do_nothing` or `skipped` (the script exits with exit 1 and a clear message). In headless context (`claude -p`), run with `--yes` (non-interactive, no confirmation prompt).
 
-**Skip-ul NU se aplică pentru cerința mandatory de mai sus:** dacă promptul declară livrabile (conform regexului autoritative din mandatory clause de mai sus) și totuși ajungi la `chosen=do_nothing`, asta înseamnă că deliberarea a respins implementarea unei cereri explicite a userului — caz care necesită semnal vizibil (eroare hard în răspuns: *"deliberarea a ales `do_nothing` pe un prompt cu livrabile declarate — userul trebuie să decidă"*), nu skip silențios.
+**The skip does NOT apply to the mandatory requirement above:** if the prompt declares deliverables (per the authoritative regex from the mandatory clause above) and you nonetheless arrive at `chosen=do_nothing`, that means the deliberation rejected the implementation of an explicit user request — a case that requires a visible signal (hard error in the response: *"deliberation chose `do_nothing` on a prompt with declared deliverables — the user must decide"*), not silent skip.
 
 ## Skill maintenance
 
-Aplică doar când editezi skill-ul (`scripts/*.py`, `prompts/*.md`, `SKILL.md`), nu la fiecare deliberare.
+Apply only when editing the skill (`scripts/*.py`, `prompts/*.md`, `SKILL.md`), not at every deliberation.
 
-**Eval harness** — la editarea `aggregator.py`, `confidence.py`, `validate_report.py`, `strip_context.py` sau `dialectic_merge.py`:
+**Eval harness** — when editing `aggregator.py`, `confidence.py`, `validate_report.py`, `strip_context.py`, or `dialectic_merge.py`:
 ```bash
 python scripts/run_evals.py
 ```
 
-**Usage rollup** (când ai 10+ runs cu telemetry): `python scripts/usage.py [--last 50]`
+**Usage rollup** (when you have 10+ runs with telemetry): `python scripts/usage.py [--last 50]`
 
-**Audit periodic feedback**: `python scripts/feedback.py [--recent 10 --runs]` (stats), `python scripts/audit_feedback.py [--backfill]` (runs fără rând FB).
+**Periodic feedback audit**: `python scripts/feedback.py [--recent 10 --runs]` (stats), `python scripts/audit_feedback.py [--backfill]` (runs without FB row).
 
-**Benchmarking discipline** — orice claim cantitativ pe comportamentul vocilor (`fab-rate`, `accuracy`, `catch-rate`) trebuie să citeze un **oracle independent** (al doilea expert SAU citation explicită din enunț/specs care fixează ground truth), nu quick-take-ul evaluatorului. Înainte de a publica rezultatele unui benchmark: pentru fiecare opțiune plauzibilă (A/B/C/D...), documentează explicit *"există citire alternativă a problemei în care răspunsul X devine corect?"* — răspuns explicit per opțiune. Verdict "fabricație" pe un raționament rămâne blocat până la oracle review separat de intuiția evaluatorului. Aplicată retroactiv: orice claim de fab-rate existent în `experiments/` și `runs/` se revizuiește prin această grilă. Checklist operațional: `experiments/README.md`. Origin: corigendum-ul P3 (vezi `experiments/p3-car-wash.html`) — oracle-ul greșit a inversat semantic concluzia "fabrication" → "real constraint catch".
+**Benchmarking discipline** — any quantitative claim about voice behavior (`fab-rate`, `accuracy`, `catch-rate`) must cite an **independent oracle** (a second expert OR explicit citation from the statement/specs that fixes the ground truth), not the evaluator's quick take. Before publishing benchmark results: for each plausible option (A/B/C/D...), document explicitly *"is there an alternative reading of the problem in which answer X becomes correct?"* — explicit answer per option. A "fabrication" verdict on a piece of reasoning remains blocked until oracle review, separate from the evaluator's intuition. Retroactively applied: any existing fab-rate claim in `experiments/` and `runs/` is reviewed through this grid. Operational checklist: `experiments/README.md`. Origin: the P3 corrigendum (see `experiments/p3-car-wash.html`) — the wrong oracle semantically inverted the "fabrication" conclusion → "real constraint catch".
 
 ## Resources
 
-| Script | Rol |
+| Script | Role |
 |---|---|
-| `scripts/priors.py` | Priori soft din FEEDBACK.html + runs/ (Step 0). Surface `missing_feedback_runs`, `stale_pendings` (prag 2 zile), `weighted_bad_rate`. |
-| `scripts/scope_gate.py` | Auto-detect skip dacă scope e mic (Step 1.5) |
-| `scripts/probe_change.py` | Ancorare diff_size la `git diff --numstat` (Step 4) |
-| `scripts/aggregator.py` | 4 scheme de voting + auto-relax la veto total (Step 5) |
-| `scripts/confidence.py` | Derivă confidence din variance + separation (Step 5b) |
-| `scripts/meta_critic.py` | Scor calitate deliberare (divergence/concreteness/spread) — Step 5c |
-| `scripts/retry_context.py` | Hint pentru single retry când confidence < 0.7 — Step 5d |
-| `scripts/build_report.py` | Asamblează raportul canonic din bundle (Step 6) |
-| `scripts/validate_report.py` | Gate Principle #4: success_criterion + verification + chosen_approach |
-| `scripts/log_feedback.py` | Auto-append în FEEDBACK.html la finalul Step 6 |
-| `scripts/mark_outcome.py` | Suprascriere outcome retroactiv (`[confirmed]` în note → pondere 2x) |
-| `scripts/infer_pipeline.py` | Step 7: infer + confirmare pași de implementare din raport; `--dry-run` / `--yes` |
-| `scripts/audit_feedback.py` | Listează runs fără rând FB; cu `--backfill` adaugă PEND default |
-| `scripts/memory.py` | Read API uniform peste cele 3 tiers (short/medium/long) |
-| `scripts/strip_context.py` | Proiectează output voce anterioară la minim (Steps 3-4 sequential) |
-| `scripts/dialectic_merge.py` | Combină Pass-1 + Pass-2 în payload aggregator-ready |
-| `scripts/personalities.py` | Trias mode — 3 personalități fixe cu weights + lens paths |
-| `prompts/voices/skeptic.md` | Voce focală pentru flagul `skeptic_on_chosen` (composabil peste orice mod) — primește doar chosen, produce obiecție concretă sau `meta_scope_mismatch` |
-| `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite scripturi deterministe |
-| `scripts/usage.py` | Rollup telemetry din runs/ |
-| `agents/consilium-subagent.md` | Subagent pentru invocare izolată via `Agent(subagent_type="consilium-subagent", ...)` |
-| `prompts/senators/*.md` | 7 prompturi de audit pre-implementare (mod `senate`); fiecare cu specialitate distinctă (vezi tabelul din Senate mode) |
-| `scripts/vocabulary_map.py` | RUND2: traduceri user-facing (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
-| `scripts/senate_synth.py` | Synthesizer Senate: agregă 7 output-uri JSON → verdict `GO/MODIFY/STOP/DEEPLY_SPLIT/UNREACHABLE/OUT_OF_SCOPE` + modify_requests + risks → salvează în `runs/senate/`. Suportă **multi-round (Laws 2+4)** via schema `{rounds: [...]}` cu `cross_questions[]`, `position_changes[]`, și `blocaj_resolution` (5-vote tiebreaker). **Law 3** (`blocaj_pending` advisory signal) activ pe ambele moduri când `verdict ∈ {MODIFY, DEEPLY_SPLIT}`. **Law 7** (`scope_veto` consensus ≥3 → `OUT_OF_SCOPE`). **Law 8** (`law8_enforce: true` → auto-promovare MODIFY-vag). |
-| `scripts/senate_priors.py` | Law 6 helper: scanează `runs/senate/*.json` pentru runs cu label similar (substring match, stdlib-only) în ultimele 30 zile; returnează prior verdict + top 3 modify_requests pentru context injection. |
+| `scripts/priors.py` | Soft priors from FEEDBACK.html + runs/ (Step 0). Surfaces `missing_feedback_runs`, `stale_pendings` (2-day threshold), `weighted_bad_rate`. |
+| `scripts/scope_gate.py` | Auto-detect skip if scope is small (Step 1.5) |
+| `scripts/probe_change.py` | Anchor diff_size to `git diff --numstat` (Step 4) |
+| `scripts/aggregator.py` | 4 voting schemes + auto-relax on total veto (Step 5) |
+| `scripts/confidence.py` | Derives confidence from variance + separation (Step 5b) |
+| `scripts/meta_critic.py` | Deliberation quality score (divergence/concreteness/spread) — Step 5c |
+| `scripts/retry_context.py` | Hint for single retry when confidence < 0.7 — Step 5d |
+| `scripts/build_report.py` | Assemble the canonical report from the bundle (Step 6) |
+| `scripts/validate_report.py` | Principle #4 gate: success_criterion + verification + chosen_approach |
+| `scripts/log_feedback.py` | Auto-append to FEEDBACK.html at the end of Step 6 |
+| `scripts/mark_outcome.py` | Retroactive outcome overwrite (`[confirmed]` in note → 2x weight) |
+| `scripts/infer_pipeline.py` | Step 7: infer + confirm implementation steps from the report; `--dry-run` / `--yes` |
+| `scripts/audit_feedback.py` | List runs without FB row; with `--backfill` adds default PEND |
+| `scripts/memory.py` | Uniform read API over the 3 tiers (short/medium/long) |
+| `scripts/strip_context.py` | Project previous voice's output to minimum (Steps 3-4 sequential) |
+| `scripts/dialectic_merge.py` | Combine Pass-1 + Pass-2 into an aggregator-ready payload |
+| `scripts/personalities.py` | Trias mode — 3 fixed personalities with weights + lens paths |
+| `prompts/voices/skeptic.md` | Focal voice for the `skeptic_on_chosen` flag (composable over any mode) — receives only the chosen, produces a concrete objection or `meta_scope_mismatch` |
+| `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite for deterministic scripts |
+| `scripts/usage.py` | Telemetry rollup from runs/ |
+| `agents/consilium-subagent.md` | Subagent for isolated invocation via `Agent(subagent_type="consilium-subagent", ...)` |
+| `prompts/senators/*.md` | 7 pre-implementation audit prompts (`senate` mode); each with a distinct specialty (see table in Senate mode) |
+| `scripts/vocabulary_map.py` | RUND2: user-facing translations (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
+| `scripts/senate_synth.py` | Senate synthesizer: aggregates 7 JSON outputs → verdict `GO/MODIFY/STOP/DEEPLY_SPLIT/UNREACHABLE/OUT_OF_SCOPE` + modify_requests + risks → saves to `runs/senate/`. Supports **multi-round (Laws 2+4)** via schema `{rounds: [...]}` with `cross_questions[]`, `position_changes[]`, and `blocaj_resolution` (5-vote tiebreaker). **Law 3** (`blocaj_pending` advisory signal) active on both modes when `verdict ∈ {MODIFY, DEEPLY_SPLIT}`. **Law 7** (`scope_veto` consensus ≥3 → `OUT_OF_SCOPE`). **Law 8** (`law8_enforce: true` → auto-promote vague-MODIFY). |
+| `scripts/senate_priors.py` | Law 6 helper: scans `runs/senate/*.json` for runs with similar label (substring match, stdlib-only) in the last 30 days; returns prior verdict + top 3 modify_requests for context injection. |
 
 ## Feedback loop
 
-- **`runs/`** — JSON per deliberare în `runs/YYYY-MM-DD_HHMM_<label>.json` (schema în `runs/README.md`). Gitignored. Citit de `priors.py` (Step 0), `usage.py`, `feedback.py`.
-- **`FEEDBACK.html`** — o linie per folosire: `data | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR`, `PEND`. Local, gitignored. **Drill-down:** când `log_feedback.py` appendează, rows existente pierd drill-down-ul; folosește `scripts/deprecated/migrate_feedback_md_to_html.py` pentru re-populare în bulk (retired one-shot tool, see scripts/deprecated/).
-- **Confirmed outcome.** `mark_outcome.py` adaugă marker `[confirmed]` în note. `priors.py` ponderează aceste rânduri 2x în `weighted_bad_rate`. Folosește când realitatea producției contrazice outcome-ul subiectiv din Step 6.
+- **`runs/`** — JSON per deliberation in `runs/YYYY-MM-DD_HHMM_<label>.json` (schema in `runs/README.md`). Gitignored. Read by `priors.py` (Step 0), `usage.py`, `feedback.py`.
+- **`FEEDBACK.html`** — one line per use: `date | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR`, `PEND`. Local, gitignored. **Drill-down:** when `log_feedback.py` appends, existing rows lose drill-down; use `scripts/deprecated/migrate_feedback_md_to_html.py` for bulk re-population (retired one-shot tool, see scripts/deprecated/).
+- **Confirmed outcome.** `mark_outcome.py` adds the `[confirmed]` marker in note. `priors.py` weights these rows 2x in `weighted_bad_rate`. Use when production reality contradicts the subjective outcome from Step 6.
 
 ## Memory tiers
 
-Consilium are 3 layere de memorie cu lifecycle diferit. `scripts/memory.py` oferă un read API uniform peste toate trei.
+Consilium has 3 memory layers with different lifecycles. `scripts/memory.py` provides a uniform read API over all three.
 
-| Tier | Locație | Lifetime | Conținut | Citit de |
+| Tier | Location | Lifetime | Content | Read by |
 |---|---|---|---|---|
-| **Short** | conversation window | sesiune | bundle în construcție (Steps 1–5b), clarity gate, success_criterion curent | doar agent (nepersistat) |
-| **Medium** | `runs/*.json` | indefinit (gitignored) | un fișier per deliberare; episodic | `priors.py`, `usage.py`, `memory.py`, `audit_feedback.py` |
-| **Long** | `FEEDBACK.html` + signals din `priors.py` | indefinit | un rând per folosire; agregat peste timp | `priors.py`, `feedback.py`, `memory.py`, `mark_outcome.py` |
+| **Short** | conversation window | session | bundle under construction (Steps 1–5b), clarity gate, current success_criterion | agent only (not persisted) |
+| **Medium** | `runs/*.json` | indefinite (gitignored) | one file per deliberation; episodic | `priors.py`, `usage.py`, `memory.py`, `audit_feedback.py` |
+| **Long** | `FEEDBACK.html` + signals from `priors.py` | indefinite | one row per use; aggregated over time | `priors.py`, `feedback.py`, `memory.py`, `mark_outcome.py` |
 
-CLI uniform:
+Uniform CLI:
 ```bash
-python scripts/memory.py --tier medium --n 5             # ultimele 5 runs
+python scripts/memory.py --tier medium --n 5             # last 5 runs
 python scripts/memory.py --tier long --query auth        # substring filter
-python scripts/memory.py --tier all --query feedback     # union peste 3 tiers
+python scripts/memory.py --tier all --query feedback     # union across 3 tiers
 ```
 
 ## Headless invariants
 
-Când `CLAUDE_HEADLESS=1` (set de orchestratorul extern care a invocat `claude -p`), 4 puncte din workflow renunță la prompt-urile user-facing și folosesc default-uri documentate. Pattern aliniat cu `CONSILIUM_FORCE_FULL` din `scope_gate.py`. Helper: `from utils import is_headless`.
+When `CLAUDE_HEADLESS=1` (set by the external orchestrator that invoked `claude -p`), 4 points in the workflow drop user-facing prompts and use documented defaults. Pattern aligned with `CONSILIUM_FORCE_FULL` from `scope_gate.py`. Helper: `from utils import is_headless`.
 
-| Step | Default headless |
+| Step | Headless default |
 |---|---|
-| 0 (`stale_pendings`, `missing_feedback_runs`, `pend_pressure`) | log warning pe stderr + continuă; pentru `missing_feedback_runs` rulează `audit_feedback.py --backfill` automat |
-| 2 (`irreversibility_flag: true`) | setează `metadata.headless_overridden: true` în bundle + continuă (orchestratorul extern și-a asumat stake-ul) |
-| 5d (retry on low confidence) | skip integral; merge direct la Step 6 cu `PEND_HEADLESS` |
-| 7 (auto-pipeline) | rulează cu `--yes` (non-interactiv, fără prompt de confirmare); **mandatory** dacă promptul conține un antet `**Required output file(s):**` sau `**Deliverable(s):**` (regex autoritative din Step 7 mandatory clause) — implementarea efectivă (Write tool pe căile declarate) e parte din contract, nu post-step opțional |
+| 0 (`stale_pendings`, `missing_feedback_runs`, `pend_pressure`) | log warning to stderr + continue; for `missing_feedback_runs` run `audit_feedback.py --backfill` automatically |
+| 2 (`irreversibility_flag: true`) | set `metadata.headless_overridden: true` in bundle + continue (external orchestrator has assumed the stake) |
+| 5d (retry on low confidence) | skip entirely; go directly to Step 6 with `PEND_HEADLESS` |
+| 7 (auto-pipeline) | run with `--yes` (non-interactive, no confirmation prompt); **mandatory** if the prompt contains a `**Required output file(s):**` or `**Deliverable(s):**` header (authoritative regex from Step 7 mandatory clause) — actual implementation (Write tool on declared paths) is part of the contract, not an optional post-step |
 
-`is_headless() == False` (env var absent) → comportament curent neschimbat. Backward compat 100%.
+`is_headless() == False` (env var absent) → current behavior unchanged. Backward compat 100%.
 
-**Pattern adopted:** boolean strict `CLAUDE_HEADLESS=1` (alte valori → False). Aliniat cu `CONSILIUM_FORCE_FULL=1` precedent (vezi `scripts/scope_gate.py`). Orchestratorul extern (run_task.py, CI script, parent agent) setează env var înainte de invocare; skill-ul nu modifică niciodată env-ul.
+**Pattern adopted:** strict boolean `CLAUDE_HEADLESS=1` (other values → False). Aligned with `CONSILIUM_FORCE_FULL=1` precedent (see `scripts/scope_gate.py`). The external orchestrator (run_task.py, CI script, parent agent) sets the env var before invocation; the skill never modifies the env.
 
-**Nota Senate:** `runs/senate/2026-05-18_164154-mode-bugfix-performance.json` + mini-senate H2+H4 (verdict B+X 5/7 + 4/7) au validat acest contract.
+**Senate note:** `runs/senate/2026-05-18_164154-mode-bugfix-performance.json` + mini-senate H2+H4 (verdict B+X 5/7 + 4/7) validated this contract.
 
 ## Dispatch defaults (per voice / per senator)
 
-Default behavior unless overridden by project memory (`MEMORY.md`). All voices și senatori pinned la `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `haiku` verifiers în `trias_split`, `opus` Generator pentru high-stakes) — single source of truth per mod, descriptive nu enforced.
+Default behavior unless overridden by project memory (`MEMORY.md`). All voices and senators pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `haiku` verifiers in `trias_split`, `opus` Generator for high-stakes) — single source of truth per mode, descriptive not enforced.
 
-Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 6× · Trias 9× · `trias_split` 3.3× · Senate ~3× (9 senatori). Flagul `skeptic_on_chosen` adaugă +1 sub-agent peste modul de bază (ex: Parallel+flag = 1.33× Parallel, Dialectic+flag = ~2.3× Parallel).
+Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 6× · Trias 9× · `trias_split` 3.3× · Senate ~3× (9 senators). The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Parallel+flag = 1.33× Parallel, Dialectic+flag = ~2.3× Parallel).
 
 ## Parallel voices mode
 
@@ -366,87 +366,87 @@ Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 6× · T
 **Parallel mode removed (RUND2).** Parallel dispatch is no longer a user-selectable option. Auto-triggered internally only when `magnitude = critical` AND `reversibility = irreversible`, as a cross-check on the sequential result. Every 20 runs, a silent parallel audit runs automatically; if systematic divergence is detected, frequency increases to 1/5.
 <!-- === END RUND2 === -->
 
-**Legacy reference (auto cross-check only).** Dispatch cele 3 voci ca sub-agenți independenți — elimină cross-contamination complet.
+**Legacy reference (auto cross-check only).** Dispatch the 3 voices as independent sub-agents — eliminates cross-contamination completely.
 
-### Cum (2 turns)
-1. **Turn 1:** dispatch Generator (1 Agent call). Aștepți candidates.
-2. **Turn 2:** dispatch Control + Conservator în paralel (2 Agent calls în același message), ambii primind candidates din Turn 1.
-3. Rulează `dialectic_merge.py` cu `pass2` omis — normalizează control_score pentru candidates invalide. Schema input:
+### How (2 turns)
+1. **Turn 1:** dispatch Generator (1 Agent call). Wait for candidates.
+2. **Turn 2:** dispatch Control + Conservator in parallel (2 Agent calls in the same message), both receiving candidates from Turn 1.
+3. Run `dialectic_merge.py` with `pass2` omitted — normalizes control_score for invalid candidates. Input schema:
    ```json
    {"pass1": {"generator": {"candidates": [...]}, "control": {"verdicts": [...]}, "conservator": {"scores": [...]}}}
    ```
-4. Agregi cu `scripts/aggregator.py`.
+4. Aggregate with `scripts/aggregator.py`.
 
-Fiecare sub-agent primește: `success_criterion`, diff/context, **conținutul integral al prompt-ului vocii sale**, instrucția de a returna strict JSON.
+Each sub-agent receives: `success_criterion`, diff/context, **the full content of its voice's prompt**, the instruction to return strict JSON.
 
-**Override semantics (Parallel mode):** `model: "opus"` pe Generator pentru high-stakes/ambigue; `model: "haiku"` pe Control/Conservator pentru diff-uri mici. Default per `## Dispatch defaults`.
+**Override semantics (Parallel mode):** `model: "opus"` on Generator for high-stakes/ambiguous cases; `model: "haiku"` on Control/Conservator for small diffs. Default per `## Dispatch defaults`.
 
 **Prompt template:**
 ```
 Goal: <success_criterion>
-Change under review: <diff sau descriere>
-Codebase context: <fișiere atinse, limbaj, framework>
+Change under review: <diff or description>
+Codebase context: <files touched, language, framework>
 
 Your role and instructions:
-<conținutul integral al prompts/<voice>.md>
+<full content of prompts/<voice>.md>
 
 Return STRICTLY the JSON specified in the "Output format" section above. No prose before or after.
 ```
 
-**Skip parallel dacă:** schimbarea e trivială (<10 linii), nu ai tool-ul `Agent`, sau vrei să auditezi raționamentul pas-cu-pas.
+**Skip parallel if:** the change is trivial (<10 lines), you don't have the `Agent` tool, or you want to audit the reasoning step-by-step.
 
 **Failure-mode recovery:**
-- **Sub-agent crash / timeout:** retry acel Agent call o singură dată; la al doilea eșec, cade pe Sequential pentru vocea respectivă.
-- **JSON malformat din voce:** respinge output-ul vocii, tratează ca lipsă (`{}` pentru verdicts/scores, sau `{"candidates":[]}` pentru generator) și continuă cu celelalte. Loghează eroarea în `deliberation_log` cu step `"<voice>_parse_error"`.
-- **Câmpuri obligatorii lipsă (e.g. `candidates` empty):** ridică avertisment în terminal, sare aggregator-ul și emite raport skipped cu `skip_reason: "voice output incomplete after retry"`.
-- **Strip_context**: necesar doar în modul Sequential (Steps 3-4); în Parallel fiecare voce rulează izolat și nu are nevoie de `strip_context.py`.
+- **Sub-agent crash / timeout:** retry that Agent call once; on a second failure, fall back to Sequential for that voice.
+- **Malformed JSON from voice:** reject the voice's output, treat as missing (`{}` for verdicts/scores, or `{"candidates":[]}` for generator) and continue with the others. Log the error in `deliberation_log` with step `"<voice>_parse_error"`.
+- **Missing mandatory fields (e.g. `candidates` empty):** raise a warning in the terminal, skip the aggregator and emit a skipped report with `skip_reason: "voice output incomplete after retry"`.
+- **Strip_context**: necessary only in Sequential mode (Steps 3-4); in Parallel each voice runs in isolation and does not need `strip_context.py`.
 
 ## Dialectic mode (opt-in, two-pass)
 
-Two-pass: Pass 1 = parallel; Pass 2 = fiecare voce revizuiește văzând output-urile celorlalte două. Cost: 2× parallel. Implementat în `scripts/dialectic_merge.py`.
+Two-pass: Pass 1 = parallel; Pass 2 = each voice revises after seeing the other two's outputs. Cost: 2× parallel. Implemented in `scripts/dialectic_merge.py`.
 
-**Pass-2 schema (obligatorie per item).** Fiecare item Pass-2 (candidate / verdict / score) trebuie să emită fie `revision: <noul conținut>` fie `maintained: <motiv>`. Lipsa ambelor → `dialectic_merge.py` îl tratează ca dissent fallback și emite stderr warning (`[warning] dialectic pass-2 dissent fallback for <voice>: <ids>`). Candidate Pass-1 omise complet din Pass-2 generator declanșează `silently_dropped` warning și sunt recuperate din Pass-1.
+**Pass-2 schema (mandatory per item).** Each Pass-2 item (candidate / verdict / score) must emit either `revision: <new content>` or `maintained: <reason>`. Missing both → `dialectic_merge.py` treats it as dissent fallback and emits a stderr warning (`[warning] dialectic pass-2 dissent fallback for <voice>: <ids>`). Pass-1 candidates omitted entirely from Pass-2 generator trigger a `silently_dropped` warning and are recovered from Pass-1.
 
-Per-voice contract (prompt sursă: `prompts/voices/*_pass2.md`):
+Per-voice contract (prompt source: `prompts/voices/*_pass2.md`):
 
-| Voce | Cheie output | Câmpuri obligatorii per item |
+| Voice | Output key | Mandatory fields per item |
 |------|-------------|------------------------------|
-| Generator | `candidates[]` | `id` + (`revision` cu `summary/sketch/rationale` SAU `maintained` cu `reason`) |
-| Control | `verdicts[]` | `id` + (`revision` cu `valid/issues` SAU `maintained` cu `peer_claim/dissent`) |
-| Conservator | `scores[]` | `id` + (`revision` cu `what_changed/peer_evidence` SAU `maintained` cu `peer_claim/dissent`) |
+| Generator | `candidates[]` | `id` + (`revision` with `summary/sketch/rationale` OR `maintained` with `reason`) |
+| Control | `verdicts[]` | `id` + (`revision` with `valid/issues` OR `maintained` with `peer_claim/dissent`) |
+| Conservator | `scores[]` | `id` + (`revision` with `what_changed/peer_evidence` OR `maintained` with `peer_claim/dissent`) |
 
-Audit warnings la stderr după merge — verifică-le înainte să consideri 2× cost-ul justificat.
+Audit warnings on stderr after merge — check them before considering the 2× cost justified.
 
-**Effort guidance în headless.** În `claude -p` (`is_headless()`), Pass-1 sub-agents pot rula la `effort=medium` — Pass-2 cross-review rămâne `high`. Decizia aparține orchestratorului extern care invocă `claude -p --effort medium`; skill-ul documentează posibilitatea, nu enforce-ază flag-ul CLI.
+**Effort guidance in headless.** In `claude -p` (`is_headless()`), Pass-1 sub-agents can run at `effort=medium` — Pass-2 cross-review stays `high`. The decision belongs to the external orchestrator that invokes `claude -p --effort medium`; the skill documents the possibility, it does not enforce the CLI flag.
 
-**Pass-2 conditional skip (C1).** După ce Pass-1 returnează, înainte să dispatch Pass-2, verifică convergența:
+**Pass-2 conditional skip (C1).** After Pass-1 returns, before dispatching Pass-2, check convergence:
 ```bash
 echo '{"pass1": {"generator": {...}, "control": {...}, "conservator": {...}}}' | python scripts/dialectic_merge.py --check-pass2
 ```
-Output: `{"skip_pass2": true|false, "reasons": [...]}`. Dacă `skip_pass2: true`, sari dispatch-ul Pass-2 și apelează `dialectic_merge.py` fără `pass2` — costul e 3 dispatches (Pass-1 only) în loc de 6. Report va include `dialectic_metadata.pass2_executed: false` și `pass2_skip_reason: "pass1_converged"`. Convergence criteria: (1) toate verdictele Control valid, (2) Generator preferred = Conservator lowest-risk, (3) fără substantial disagreements.
+Output: `{"skip_pass2": true|false, "reasons": [...]}`. If `skip_pass2: true`, skip the Pass-2 dispatch and call `dialectic_merge.py` without `pass2` — cost is 3 dispatches (Pass-1 only) instead of 6. The report will include `dialectic_metadata.pass2_executed: false` and `pass2_skip_reason: "pass1_converged"`. Convergence criteria: (1) all Control verdicts valid, (2) Generator preferred = Conservator lowest-risk, (3) no substantial disagreements.
 
 ## Trias mode (high-stakes opt-in)
 
-**Mecanica:** 3 personalități fixe (Pioneer / Architect / Steward) deliberează în paralel cu lens prompts injectate, fiecare aplicând weights diferite peste output. Vot democratic majoritar peste cele 3 chosen-uri.
+**Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward) deliberate in parallel with lens prompts injected, each applying different weights over the output. Democratic majority vote over the 3 chosen results.
 
-### Când să folosești
-- Schema/DB migration ireversibilă
+### When to use
+- Irreversible schema/DB migration
 - Security audit (auth, crypto, RCE potential)
-- Refactor > 5 fișiere
-- 2+ abordări arhitecturale plauzibile, fără clear winner
-- Costul deciziei greșite >> costul rulării (9 sub-agenți, 3× Parallel)
+- Refactor > 5 files
+- 2+ plausible architectural approaches, no clear winner
+- Cost of wrong decision >> cost of running (9 sub-agents, 3× Parallel)
 
 ### Workflow
-1. Orchestrator citește `python -X utf8 scripts/personalities.py` — emite cele 3 personalități
-2. Pentru fiecare personalitate, dispatch 3 voci (Gen/Ctrl/Cons) cu `prompts/<voice>.md` + `prompts/<personality>_lens.md` prepended
-3. Personalitatea agregă voice scores cu weights proprii → `chose`
-4. **Unanimous check (B1).** Dacă toate 3 personalitățile au ales același `chose`, skip `team_vote` — rezultatul e unanim. Setează `vote_pattern: "3-0"` și `vote_skipped: true`. Confidence derivat direct din `confidence_from_vote_pattern("3-0")`. Loghează în `deliberation_log` cu `reason: "unanimous_personalities"`. Dacă nu sunt unanime, rulează `team_vote` normal.
-5. Orchestrator rulează `python -X utf8 scripts/aggregator.py --scheme team_vote` peste cele 3 chosen-uri (skip dacă B1 a detectat unanimitate)
-6. Confidence derivat din vote_pattern — pipe output-ul aggregator direct la `confidence.py`:
+1. Orchestrator reads `python -X utf8 scripts/personalities.py` — emits the 3 personalities
+2. For each personality, dispatch 3 voices (Gen/Ctrl/Cons) with `prompts/<voice>.md` + `prompts/<personality>_lens.md` prepended
+3. The personality aggregates voice scores with its own weights → `chose`
+4. **Unanimous check (B1).** If all 3 personalities chose the same `chose`, skip `team_vote` — the result is unanimous. Set `vote_pattern: "3-0"` and `vote_skipped: true`. Confidence derived directly from `confidence_from_vote_pattern("3-0")`. Log in `deliberation_log` with `reason: "unanimous_personalities"`. If not unanimous, run `team_vote` normally.
+5. Orchestrator runs `python -X utf8 scripts/aggregator.py --scheme team_vote` over the 3 chosens (skip if B1 detected unanimity)
+6. Confidence derived from vote_pattern — pipe aggregator output directly to `confidence.py`:
    ```bash
    echo '{"personalities":[...],"candidates":[...]}' | python scripts/aggregator.py --scheme team_vote | python scripts/confidence.py
    ```
-   Nu construi manual `{"candidates":[...],"chosen":"..."}` pentru Trias — candidatele nu au `scores` per voce.
+   Do not manually build `{"candidates":[...],"chosen":"..."}` for Trias — the candidates don't have `scores` per voice.
 
 ### Vote patterns
 | Pattern | Confidence | Outcome |
@@ -458,201 +458,201 @@ Output: `{"skip_pass2": true|false, "reasons": [...]}`. Dacă `skip_pass2: true`
 | 0-0-0 | null | PEND + retry_suggested |
 
 ### Failure recovery
-- **1-1-1 fragmentation:** orchestrator întreabă user — accept one, re-run with constraints, or abort
-- **0-0-0 total veto:** emite `retry_suggested` cu relaxed threshold sau Generator constraints
+- **1-1-1 fragmentation:** orchestrator asks user — accept one, re-run with constraints, or abort
+- **0-0-0 total veto:** emit `retry_suggested` with relaxed threshold or Generator constraints
 
-### Skip Trias dacă
-- Diff < 20 lines / 1 fișier — `scope_gate.py` va skip oricum
-- Conservatism strict cerut (Trias agregat e −18% Conservator)
-- Bugfix evident — Sequential blind ajunge
+### Skip Trias if
+- Diff < 20 lines / 1 file — `scope_gate.py` will skip anyway
+- Strict conservatism required (aggregated Trias is −18% Conservator)
+- Obvious bugfix — Sequential blind is enough
 
 ## Trias split-model mode (`trias_split`)
 
-**Mecanica:** Trias standard (3 personalități × 3 voci = 9 sub-agenți) cu override de model:
-- **Generator voices** (1 per personalitate, 3 total) → Sonnet 4.6 (creativitate)
-- **Control + Conservator voices** (2 per personalitate, 6 total) → Haiku 4.5 (verificare rapidă)
+**Mechanics:** Standard Trias (3 personalities × 3 voices = 9 sub-agents) with model override:
+- **Generator voices** (1 per personality, 3 total) → Sonnet 4.6 (creativity)
+- **Control + Conservator voices** (2 per personality, 6 total) → Haiku 4.5 (fast verification)
 
-**Cost:** ~3.3× Parallel (vs 9× Parallel pentru Trias full).
+**Cost:** ~3.3× Parallel (vs 9× Parallel for full Trias).
 
-### Când să folosești
-- Decizii medium-stakes care beneficiază de diversitatea de personalități (3 perspective ortogonale) dar nu justifică costul Trias full
-- Probleme unde verificarea e relativ surface-level (factor scoring, sanity checks) — Haiku ajunge
-- Haiku verifiers: efect anti-zgomot pe probleme triviale fără constraint implicit (resping elaborări inutile), dar shallow-amplifier pe probleme cu constraint implicit — confirmă răspunsul evident fără să interogheze asumpția ascunsă (P3 corrigendum: 3/3 A pe o problemă cu răspuns corect C; vezi `experiments/p3-car-wash.html`). Nu folosi trias_split dacă problema poate conține constraints implicite — preferă Trias full sau `parallel + skeptic_on_chosen`.
+### When to use
+- Medium-stakes decisions that benefit from personality diversity (3 orthogonal perspectives) but don't justify full Trias cost
+- Problems where verification is relatively surface-level (factor scoring, sanity checks) — Haiku is enough
+- Haiku verifiers: anti-noise effect on trivial problems without implicit constraint (reject useless elaboration), but shallow-amplifier on problems with implicit constraint — confirm the obvious answer without interrogating the hidden assumption (P3 corrigendum: 3/3 A on a problem with correct answer C; see `experiments/p3-car-wash.html`). Do not use trias_split if the problem may contain implicit constraints — prefer full Trias or `parallel + skeptic_on_chosen`.
 
 ### Workflow
-Identic cu Trias standard, dar override-uri explicite la dispatch:
+Identical to standard Trias, but with explicit dispatch overrides:
 ```
-Pentru fiecare personalitate (Pioneer/Architect/Steward):
+For each personality (Pioneer/Architect/Steward):
   Dispatch Generator: model="sonnet"
   Dispatch Control:    model="haiku"
   Dispatch Conservator: model="haiku"
 ```
-Restul (vote pattern, confidence, failure recovery) identic cu Trias.
+The rest (vote pattern, confidence, failure recovery) is identical to Trias.
 
-### Skip trias_split dacă
-- Verificarea cere adâncime tehnică (security audit, schema migration complexă) — Haiku speculează, folosește Trias full
-- Diff trivial — un mod simplu (Sequential/Parallel) ajunge
-- Output schema strict required cu garanție 100% — Haiku violează ocazional instrucțiuni strict-JSON (vezi Run 1 lite_trias_A — disqualified for verbose output)
+### Skip trias_split if
+- Verification requires technical depth (security audit, complex schema migration) — Haiku speculates, use full Trias
+- Trivial diff — a simple mode (Sequential/Parallel) is enough
+- Strict-required output schema with 100% guarantee — Haiku occasionally violates strict-JSON instructions (see Run 1 lite_trias_A — disqualified for verbose output)
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
-**Mecanica:** `skeptic_on_chosen` este un **flag cross-cutting**, nu un mod fix. Se compune peste orice mod de bază (Sequential, Parallel, Dialectic, Trias): după ce modul de bază produce `chosen` și `confidence`, se dispatch-uiește 1 voce Skeptic suplimentară pe `chosen`-ul rezultat, cu prompt-ul `prompts/voices/skeptic.md`. Flagul rulează **secvențial post-hoc** pe orice mod (vs un mod fix care îl include în Pass-1). Nu există cod Python dedicat — orchestrarea se face prin dispatch standard al `prompts/voices/skeptic.md` cu chosen-ul curent.
+**Mechanics:** `skeptic_on_chosen` is a **cross-cutting flag**, not a fixed mode. It composes over any base mode (Sequential, Parallel, Dialectic, Trias): after the base mode produces `chosen` and `confidence`, 1 additional Skeptic voice is dispatched on the resulting `chosen`, with the prompt `prompts/voices/skeptic.md`. The flag runs **sequentially post-hoc** on any mode (vs a fixed mode that includes it in Pass-1). There is no dedicated Python code — orchestration is done via standard dispatch of `prompts/voices/skeptic.md` with the current chosen.
 
-**Cost:** +1 sub-agent față de modul de bază ales (indiferent care e acela). Ex: Parallel + flag = 4 sub-agenți (1.33× Parallel); Dialectic + flag = 7 sub-agenți (~2.3× Parallel).
+**Cost:** +1 sub-agent over the chosen base mode (whichever it is). E.g.: Parallel + flag = 4 sub-agents (1.33× Parallel); Dialectic + flag = 7 sub-agents (~2.3× Parallel).
 
-> **Legacy note.** Modurile `parallel_skeptic` și `dialectic_skeptic` au fost moduri fixe distincte (Parallel/Dialectic cu Skeptic baked-in). Au fost colapsate în acest flag composabil pe 2026-05-17 — funcționalitatea identică se obține via `parallel + skeptic_on_chosen` și `dialectic + skeptic_on_chosen`. Numele vechi rămân în `validate_report.py` MODE enum pentru backward-compat cu runs istorice.
+> **Legacy note.** The modes `parallel_skeptic` and `dialectic_skeptic` were distinct fixed modes (Parallel/Dialectic with Skeptic baked-in). They were collapsed into this composable flag on 2026-05-17 — the identical functionality is obtained via `parallel + skeptic_on_chosen` and `dialectic + skeptic_on_chosen`. The legacy names remain in `validate_report.py` MODE enum for backward-compat with historical runs.
 
-### Când să folosești
+### When to use
 
-**Auto-trigger conditions** (oricare e suficient):
-- Confidence ∈ `[0.5, 0.7]` — trigger clasic
-- Confidence > 0.7 DAR `Conservator.net_concern` > 0.7 — discrepanță high-conf/high-concern merită probată: `trigger_reason: "high_conf_high_concern"`
-- `chosen_approach` coincide cu un outcome `BAD` din `FEEDBACK.html` (ultimele 30 zile, substring match pe label): `trigger_reason: "similar_to_recent_bad"` — Tacitus-lite pentru moduri clasice
-- `irreversibility_flag: true` — consent gate existent, Skeptic adaugă object-level check: `trigger_reason: "irreversibility_gate"`
+**Auto-trigger conditions** (any is sufficient):
+- Confidence ∈ `[0.5, 0.7]` — classic trigger
+- Confidence > 0.7 BUT `Conservator.net_concern` > 0.7 — high-conf/high-concern discrepancy is worth probing: `trigger_reason: "high_conf_high_concern"`
+- `chosen_approach` coincides with a `BAD` outcome from `FEEDBACK.html` (last 30 days, substring match on label): `trigger_reason: "similar_to_recent_bad"` — Tacitus-lite for classic modes
+- `irreversibility_flag: true` — existing consent gate, Skeptic adds object-level check: `trigger_reason: "irreversibility_gate"`
 
-- **Opt-in manual** via `--skeptic-on-chosen` când vrei un challenger focal post-hoc indiferent de confidence (medium-stakes, probleme cu constraint-uri implicite cunoscute)
-- Probleme unde chosen_confirmation_pass a demonstrat valoare empirică — în special situații cu constraint-uri implicite nemenționate explicit în success_criterion (tip P3: precondițiile logice ale soluției nu apar în enunț)
-- Când vrei challengerul focal pe orice bază (Sequential / Parallel / Dialectic / Trias) fără cost de mod fix dedicat
-- Cazuri unde vrei să știi dacă chosen a ratat ceva, dar nu ai o bază de comparație (nu ai alternative viabile) — Skeptic-ul focal pe chosen e mai ieftin decât re-rularea întregii deliberări
+- **Manual opt-in** via `--skeptic-on-chosen` when you want a focal challenger post-hoc regardless of confidence (medium-stakes, problems with known implicit constraints)
+- Problems where chosen_confirmation_pass has empirically demonstrated value — particularly situations with implicit constraints not explicitly stated in success_criterion (P3 type: the logical preconditions of the solution don't appear in the statement)
+- When you want the focal challenger on any base (Sequential / Parallel / Dialectic / Trias) without dedicated fixed mode cost
+- Cases where you want to know whether chosen missed something, but have no basis for comparison (no viable alternatives) — the focal Skeptic on chosen is cheaper than re-running the entire deliberation
 
 ### Workflow
-1. Rulează modul de bază complet (oricare: Sequential / Parallel / Dialectic / Trias) → produce `chosen`, `confidence`, raport intermediar
-2. Dacă `confidence ∈ [0.5, 0.7]` (auto) sau flagul `--skeptic-on-chosen` e activ, dispatch 1 sub-agent Sonnet 4.6 cu `prompts/voices/skeptic.md` inline + input minimal:
+1. Run the full base mode (any: Sequential / Parallel / Dialectic / Trias) → produces `chosen`, `confidence`, intermediate report
+2. If `confidence ∈ [0.5, 0.7]` (auto) or the `--skeptic-on-chosen` flag is active, dispatch 1 Sonnet 4.6 sub-agent with `prompts/voices/skeptic.md` inline + minimal input:
    ```
    chosen: <id, summary, sketch, rationale>
-   success_criterion: <propoziția testabilă>
-   verification: <comanda>
+   success_criterion: <the testable sentence>
+   verification: <the command>
    ```
-   NU pasezi alte candidate, scoruri sau log-uri de deliberare.
-3. Validează skeptic output-ul:
-   - `can_object: true` cu `concrete_concerns` ≥ 2 SAU `quoted_scenario` non-null → accept
-   - `can_object: true` fără evidence → reject (schema fail), ship chosen original
-   - `can_object: false` → ship chosen original, loghează că nu există obiecție concretă
-4. Loghează rezultatul în `deliberation_log` cu step `"skeptic_on_chosen"` și setează flag `skeptic_caught_constraint: true|false` în raport
-5. Aplică override semantics (secțiunea de mai jos)
+   DO NOT pass other candidates, scores, or deliberation logs.
+3. Validate the skeptic output:
+   - `can_object: true` with `concrete_concerns` ≥ 2 OR `quoted_scenario` non-null → accept
+   - `can_object: true` without evidence → reject (schema fail), ship the original chosen
+   - `can_object: false` → ship the original chosen, log that there is no concrete objection
+4. Log the result in `deliberation_log` with step `"skeptic_on_chosen"` and set flag `skeptic_caught_constraint: true|false` in the report
+5. Apply override semantics (section below)
 
 ### Override semantics
-**Advisory by default.** Verdictul Skeptic-ului se loghează în `deliberation_log` ca entry cu step `"skeptic_on_chosen"` și flag `skeptic_caught_constraint: true|false`. `chosen` **nu se înlocuiește** — rămâne cel produs de modul de bază. Utilizatorul vede obiecția în raport și poate acționa sau ignora.
+**Advisory by default.** The Skeptic's verdict is logged in `deliberation_log` as an entry with step `"skeptic_on_chosen"` and flag `skeptic_caught_constraint: true|false`. `chosen` is **not replaced** — it stays as produced by the base mode. The user sees the objection in the report and can act or ignore.
 
-**Opt-in override via `--skeptic-can-override`.** Dacă flagul e activ ȘI Skeptic produce `addressable: requires_redesign`, verdictul Skeptic-ului supersedează `chosen`: orchestratorul prezintă utilizatorului alternativele din raport și întreabă dacă vrea să schimbe alegerea. Dacă Skeptic produce `addressable: in_place`, override-ul nu se aplică (advisory rămâne); dacă produce `addressable: unaddressable` cu `failure_mode: meta_scope_mismatch`, raportul e marcat `misapplied`.
+**Opt-in override via `--skeptic-can-override`.** If the flag is active AND Skeptic produces `addressable: requires_redesign`, the Skeptic's verdict supersedes `chosen`: the orchestrator presents the report's alternatives to the user and asks whether to change the choice. If Skeptic produces `addressable: in_place`, the override does not apply (advisory remains); if it produces `addressable: unaddressable` with `failure_mode: meta_scope_mismatch`, the report is marked `misapplied`.
 
-Tabel sumar:
+Summary table:
 
-| Skeptic output | Advisory (default) | Cu `--skeptic-can-override` |
+| Skeptic output | Advisory (default) | With `--skeptic-can-override` |
 |---|---|---|
-| `can_object: false` | ship chosen original | ship chosen original |
-| `in_place` | log + nota în raport | log + nota în raport (fără override) |
-| `requires_redesign` | log + advisory | orchestratorul propune alternativele |
-| `unaddressable / meta_scope_mismatch` | marchează `misapplied` | marchează `misapplied` |
+| `can_object: false` | ship original chosen | ship original chosen |
+| `in_place` | log + note in report | log + note in report (no override) |
+| `requires_redesign` | log + advisory | orchestrator proposes alternatives |
+| `unaddressable / meta_scope_mismatch` | mark `misapplied` | mark `misapplied` |
 
-### Skip dacă
-- Confidence ≥ 0.7 și flagul `--skeptic-on-chosen` nu e activ manual — Skeptic-ul n-are motivație structurală să găsească ceva
-- Confidence < 0.5 — banda e prea jos pentru o singură voce challenger; escaladare la Trias sau user direct
-- Diff e high-stakes intrinsec (auth, migrations, security) — folosește Trias full cu cost justificat
+### Skip if
+- Confidence ≥ 0.7 and the `--skeptic-on-chosen` flag is not manually active — the Skeptic has no structural motivation to find anything
+- Confidence < 0.5 — the band is too low for a single challenger voice; escalate to Trias or the user directly
+- Diff is intrinsically high-stakes (auth, migrations, security) — use full Trias with justified cost
 
-**Origine empirică.** Modul a apărut din analiza `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (echivalentul conceptual al acestui flag) a atins catch-rate 100% în simulare și 4/7 în reruns reale pe P3 car wash — performanță superioară oricărui alt mod testat. Mecanismul: o singură voce skeptic pe `chosen` post-hoc obligă re-citirea success_criterion și detectarea constraint-urilor implicite ratate de toate vocile din Pass-1.
+**Empirical origin.** The mode emerged from the analysis in `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (the conceptual equivalent of this flag) reached 100% catch-rate in simulation and 4/7 in real reruns on P3 car wash — performance superior to any other mode tested. Mechanism: a single skeptic voice on `chosen` post-hoc forces a re-reading of success_criterion and the detection of implicit constraints missed by all the voices in Pass-1.
 
 ## Senate mode (`senate`)
 
-**Scope:** `senate` are două moduri de invocare:
-1. **Default (skill audit):** auditează modificări la skill-ul însuși (prompturi, scripts, arhitectură, SKILL.md). Well-tested, gate-validated.
-2. **`--on-code` (EXPERIMENTAL_DRAFT):** auditează decizii pe cod user (PR-uri, refactor-uri, decizii arhitecturale) prin `prompts/lenses/domain_lens.md#code_domain`. Orchestratorul TREBUIE să pre-computeze `diff`, `files_touched`, `success_criterion`, `magnitude`, `reversibility`, `blast_radius` înainte de dispatch (vezi `scripts/dispatch_senate_on_code.py`). NOT wired în dispatch table până empirical gate met (vezi Drafts footnote la finalul Senate mode section).
+**Scope:** `senate` has two invocation modes:
+1. **Default (skill audit):** audits modifications to the skill itself (prompts, scripts, architecture, SKILL.md). Well-tested, gate-validated.
+2. **`--on-code` (EXPERIMENTAL_DRAFT):** audits decisions on user code (PRs, refactors, architectural decisions) via `prompts/lenses/domain_lens.md#code_domain`. The orchestrator MUST pre-compute `diff`, `files_touched`, `success_criterion`, `magnitude`, `reversibility`, `blast_radius` before dispatch (see `scripts/dispatch_senate_on_code.py`). NOT wired into the dispatch table until the empirical gate is met (see Drafts footnote at the end of the Senate mode section).
 
-**Mecanica:** 9 sub-agenți într-o primă rundă paralel + (opțional) cross-questions multi-round, fiecare cu prompt-ul lui din `prompts/senators/`:
+**Mechanics:** 9 sub-agents in a parallel first round + (optional) multi-round cross-questions, each with its prompt from `prompts/senators/`:
 
-| Senator | Specialitate | Model default |
+| Senator | Specialty | Default model |
 |---|---|---|
-| Wittgenstein | termeni vagi, definiții testabile | Sonnet |
-| Aurelius | reversibility × magnitude, proporționalitate cost/stake | Sonnet |
-| Confucius | autoritate, precedente în `runs/` + `experiments/` | Sonnet |
-| Socrate | premize load-bearing nedeclarate | Sonnet |
+| Wittgenstein | vague terms, testable definitions | Sonnet |
+| Aurelius | reversibility × magnitude, cost/stake proportionality | Sonnet |
+| Confucius | authority, precedents in `runs/` + `experiments/` | Sonnet |
+| Socrate | undeclared load-bearing premises | Sonnet |
 | Musk | aggressive deletion + 10% add-back | Sonnet |
 | Dimon | stress test, counterparty, silent failure modes | Sonnet |
-| Napoleon | tokens, ore, starea operatorului | Sonnet |
-| Deming | disciplină statistică, n/varianță/calibrare | Sonnet |
-| Tacitus | retrospective accuracy tracking pe `runs/senate/` × `FEEDBACK.html` | **Opus** (per frontmatter — multi-document evidence reconstruction) |
+| Napoleon | tokens, hours, operator state | Sonnet |
+| Deming | statistical discipline, n/variance/calibration | Sonnet |
+| Tacitus | retrospective accuracy tracking over `runs/senate/` × `FEEDBACK.html` | **Opus** (per frontmatter — multi-document evidence reconstruction) |
 
-**Cost:** 9 sub-agenți (~3× Parallel). On-demand only — niciun trigger automat.
+**Cost:** 9 sub-agents (~3× Parallel). On-demand only — no automatic trigger.
 
 ### Operational definitions
 
-Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au definiții testabile:
+To be able to verify that the Senate ran correctly, two key terms have testable definitions:
 
-- **"Senate run end-to-end"** = (a) bundle `runs/senate/<timestamp>-<label>.json` există pe disc; (b) parsabil JSON; (c) conține `verdict ∈ {GO, MODIFY, STOP, DEEPLY_SPLIT, UNREACHABLE, OUT_OF_SCOPE}` și `vote_counts`; (d) `senate_synth.py` exit 0.
-- **"Senate nu atinge voci/moduri existente"** = `git diff <base>..HEAD -- prompts/{generator,control,conservator,skeptic,generator_pass2,control_pass2,conservator_pass2,*_lens}.md scripts/{aggregator,confidence,dialectic_merge,validate_report,build_report,personalities,strip_context,priors}.py` returnează empty. Adăugiri la SKILL.md Resources table sau secțiuni noi sunt explicit permise.
+- **"Senate run end-to-end"** = (a) bundle `runs/senate/<timestamp>-<label>.json` exists on disk; (b) parseable JSON; (c) contains `verdict ∈ {GO, MODIFY, STOP, DEEPLY_SPLIT, UNREACHABLE, OUT_OF_SCOPE}` and `vote_counts`; (d) `senate_synth.py` exit 0.
+- **"Senate does not touch existing voices/modes"** = `git diff <base>..HEAD -- prompts/{generator,control,conservator,skeptic,generator_pass2,control_pass2,conservator_pass2,*_lens}.md scripts/{aggregator,confidence,dialectic_merge,validate_report,build_report,personalities,strip_context,priors}.py` returns empty. Additions to the SKILL.md Resources table or new sections are explicitly allowed.
 
-### Când să folosești
+### When to use
 
-- Modificări la `prompts/*.md` core sau la Constitution/Workflow din SKILL.md
-- Voci/moduri noi înainte să implementezi
-- Decizii arhitecturale ireversibile (schemă `runs/*.json`, semantica veto-urilor)
-- Self-improvement loop pe propriile schimbări (versiune mai puternică decât `/consilium parallel`)
+- Modifications to core `prompts/*.md` or to the Constitution/Workflow in SKILL.md
+- New voices/modes before you implement
+- Irreversible architectural decisions (`runs/*.json` schema, veto semantics)
+- Self-improvement loop on your own changes (a stronger version than `/consilium parallel`)
 
 ### Workflow
 
-1. **Formulează propunerea concret** — paragraf: ce schimbi, de ce, fișiere atinse, success criterion.
-2. **Dispatch 9 sub-agenți paralel** (model default per `## Dispatch defaults`, dar **citește YAML frontmatter** din `prompts/senators/<name>.md`: dacă există cheia `model:` o folosești în locul default-ului — ex. `tacitus` rulează pe Opus per justificare în propriul prompt). Fiecare cu prompt-ul senatorului inline. Input identic:
+1. **Formulate the proposal concretely** — paragraph: what you change, why, files touched, success criterion.
+2. **Dispatch 9 sub-agents in parallel** (default model per `## Dispatch defaults`, but **read the YAML frontmatter** in `prompts/senators/<name>.md`: if the `model:` key exists you use it instead of the default — e.g. `tacitus` runs on Opus per justification in its own prompt). Each with the senator's prompt inline. Identical input:
    ```
-   Proposal under audit: <textul>
-   Context: <fișiere atinse, success criterion>
+   Proposal under audit: <the text>
+   Context: <files touched, success criterion>
 
    Your role and instructions:
-   <conținutul prompts/senators/<senator>.md>
+   <content of prompts/senators/<senator>.md>
 
    Return STRICTLY the JSON specified in the "Output format" section. No prose.
    ```
-3. **Retry 1× pe senator absent / JSON malformat.** La eșec, marchează `absent` și continuă.
-4. **Cross-questions (Law 2 — opțional, multi-round).** Scanează output-urile Round 1 pentru `cross_questions[]`. Pentru fiecare `{to: <senator>, question: ...}`, dispatch focal pe senatorul-țintă cu input "Round 1 ai votat X. Senator Y te întreabă: <question>. Răspunde cu output complet actualizat — votul poate fi diferit." Counter per senator per rundă (max 3 — Law 2). Maximum 3 runde total. Dacă Round 2 ridică noi cross-Qs, repetă în Round 3 apoi STOP forțat.
-5. **Blocaj resolution (Law 3 — opțional).** Dacă după Round 3 încă există 2 senatori în GO×STOP opposition (synthesizer raportează `blocaj_pending`), dispatch ceilalți 5 cu argumentele ambelor părți și întreabă care e mai puternic. Strânge `votes_from_others: {<senator>: <pair_member>}` și dă orchestrator-ului blocaj_resolution în input-ul de synth.
-6. **Rulează synthesizer:** `cat senate_input.json | python -X utf8 scripts/senate_synth.py`
-   - **Input format (multi-round):** `{"proposal": "...", "label": "...", "rounds": [{"round": 1, "senators": {...}}, ...], "blocaj_resolution": {...}, "absent": [...]}` — vezi docstring.
-7. **Bundle salvat automat** în `runs/senate/<YYYY-MM-DD_HHMMSS>-<label>.json` (granularitate secunde + suffix `_v2/_v3...` pe coliziune — niciun overwrite tăcut). Bundle include `rounds`, `position_changes`, `cross_questions_used`, și (dacă aplicat) `blocaj_resolution` + `vote_counts_pre_blocaj`.
-8. **Verdictul e advisory** — user-ul decide:
-   - `GO` (≥7/9 GO **și** MODIFY==0) → procedezi
-   - `STOP` (≥7/9 STOP **și** MODIFY==0) → propunerea e blocată; revizuie sau override explicit
-   - `MODIFY` (orice vot MODIFY > 0) → propunerea trebuie revizuită înainte să poată atinge GO/STOP. Două căi: **accept** (tratează `modify_requests` ca TODO advisory) sau **R2** (re-rulează Senate cu propunere revizuită care adresează `modify_requests`-urile). Dacă R2 produce MODIFY 3 cicluri consecutive, avertisment soft: "consideră accept sau descompune propunerea."
-   - `DEEPLY_SPLIT` (nici GO nici STOP nu ating QUORUM=7, MODIFY==0) → advisory: orchestratorul escaladează la user cu vote matrix și opțiunea de override manual.
-   - `UNREACHABLE` (voturi active < `MIN_ACTIVE_VOTES=5` — senatori absenți/timeout, NU abstinență) → orchestratorul prezintă user-ului două opțiuni:
-     1. **Re-rulează Senate** cu retry pe senatorii absenți
-     2. **Rulează Consilium normal** (mod sequential/dialectic/trias) pe aceeași propunere — senatul e înlocuit cu deliberarea standard
+3. **Retry 1× on absent senator / malformed JSON.** On failure, mark `absent` and continue.
+4. **Cross-questions (Law 2 — optional, multi-round).** Scan Round 1 outputs for `cross_questions[]`. For each `{to: <senator>, question: ...}`, dispatch focally on the target senator with input "In Round 1 you voted X. Senator Y asks you: <question>. Respond with full updated output — the vote may be different." Counter per senator per round (max 3 — Law 2). Maximum 3 rounds total. If Round 2 raises new cross-Qs, repeat in Round 3 then forced STOP.
+5. **Deadlock resolution (Law 3 — optional).** If after Round 3 there are still 2 senators in GO×STOP opposition (synthesizer reports `blocaj_pending`), dispatch the other 5 with the arguments of both sides and ask which is stronger. Collect `votes_from_others: {<senator>: <pair_member>}` and give the orchestrator `blocaj_resolution` in the synth input.
+6. **Run the synthesizer:** `cat senate_input.json | python -X utf8 scripts/senate_synth.py`
+   - **Input format (multi-round):** `{"proposal": "...", "label": "...", "rounds": [{"round": 1, "senators": {...}}, ...], "blocaj_resolution": {...}, "absent": [...]}` — see docstring.
+7. **Bundle automatically saved** in `runs/senate/<YYYY-MM-DD_HHMMSS>-<label>.json` (second granularity + `_v2/_v3...` suffix on collision — no silent overwrite). Bundle includes `rounds`, `position_changes`, `cross_questions_used`, and (if applied) `blocaj_resolution` + `vote_counts_pre_blocaj`.
+8. **The verdict is advisory** — the user decides:
+   - `GO` (≥7/9 GO **and** MODIFY==0) → you proceed
+   - `STOP` (≥7/9 STOP **and** MODIFY==0) → the proposal is blocked; revise or explicit override
+   - `MODIFY` (any MODIFY vote > 0) → the proposal must be revised before reaching GO/STOP. Two paths: **accept** (treat `modify_requests` as advisory TODO) or **R2** (re-run Senate with a revised proposal that addresses the `modify_requests`). If R2 produces MODIFY 3 consecutive cycles, soft warning: "consider accepting or decomposing the proposal."
+   - `DEEPLY_SPLIT` (neither GO nor STOP reach QUORUM=7, MODIFY==0) → advisory: orchestrator escalates to the user with vote matrix and manual override option.
+   - `UNREACHABLE` (active votes < `MIN_ACTIVE_VOTES=5` — absent/timeout senators, NOT abstention) → orchestrator presents the user with two options:
+     1. **Re-run the Senate** with retry on absent senators
+     2. **Run normal Consilium** (sequential/dialectic/trias mode) on the same proposal — the senate is replaced by standard deliberation
 
-### Cele 5 Legi (Senate)
+### The 5 Laws (Senate)
 
-| # | Lege | Esență |
+| # | Law | Essence |
 |---|------|--------|
-| 1 | Output și vot obligatorii | Fiecare senator emite output structurat și vot **GO/MODIFY/STOP** pe fiecare propunere. ABSTAIN nu e vot valid. Senatorii care nu pot forma poziție directă pe propunerea ca atare (Deming pe propuneri non-cuantitative, Tacitus pe propuneri fără precedent invocat) emit GO cu câmp `reasoning` explicit de retragere — semnal că nu blochează, dar nu blanket-validează. Tally-ul rămâne 1 vot per senator (no weighted voting). |
-| 2 | Cross-questions limitate | Max 3 cross-Q/senator/rundă × max 3 runde. Round 3 = STOP forțat. |
-| 3 | Blocaj → vot majoritar de 5 | Dacă 2 senatori rămân GO×STOP după Round 3, ceilalți 5 votează care argument e mai puternic. |
-| 4 | Sinteza doar la final | `senate_synth.py` rulează DUPĂ toate rundele. Position changes logate în bundle. |
-| 5 | Auditabilitate | Toate runde + cross-Q + schimbări de poziție salvate în `runs/senate/`. |
+| 1 | Mandatory output and vote | Each senator emits structured output and a **GO/MODIFY/STOP** vote on every proposal. ABSTAIN is not a valid vote. Senators who cannot form a direct position on the proposal as stated (Deming on non-quantitative proposals, Tacitus on proposals without invoked precedent) emit GO with an explicit `reasoning` field of withdrawal — signaling that they don't block, but don't blanket-validate. The tally remains 1 vote per senator (no weighted voting). |
+| 2 | Limited cross-questions | Max 3 cross-Q/senator/round × max 3 rounds. Round 3 = forced STOP. |
+| 3 | Deadlock → 5-vote majority | If 2 senators remain in GO×STOP after Round 3, the other 5 vote on which argument is stronger. |
+| 4 | Synthesis only at the end | `senate_synth.py` runs AFTER all rounds. Position changes logged in the bundle. |
+| 5 | Auditability | All rounds + cross-Q + position changes saved in `runs/senate/`. |
 
 ### MIN_ACTIVE_VOTES
 
-`MIN_ACTIVE_VOTES=5`: dacă mai puțin de 5 senatori au votat activ (GO/MODIFY/STOP), verdictul e `UNREACHABLE`. Sub noua Lege 1 (no-ABSTAIN), `UNREACHABLE` semnalizează exclusiv absență (timeout / dispatch failure), nu retragere — toți senatorii prezenți votează una din cele trei opțiuni. Legacy compat: `runs/senate/*.json` cu `senate_schema_version<2` sau câmp absent pot conține voturi ABSTAIN; nu se mai produc în runs noi.
+`MIN_ACTIVE_VOTES=5`: if fewer than 5 senators voted actively (GO/MODIFY/STOP), the verdict is `UNREACHABLE`. Under the new Law 1 (no-ABSTAIN), `UNREACHABLE` signals exclusively absence (timeout / dispatch failure), not withdrawal — all present senators vote one of the three options. Legacy compat: `runs/senate/*.json` with `senate_schema_version<2` or missing field may contain ABSTAIN votes; they are no longer produced in new runs.
 
 ### Senate Laws (6-8)
 
-**Law 6 — Iterative Coherence.** Înainte de Round 1, orchestrator-ul scanează `runs/senate/*.json` pentru runs cu label similar (substring match) în ultimele 30 zile via `scripts/senate_priors.py`. Prior verdict + top 3 modify_requests devin context obligatoriu pentru toți senatorii în Round 1, injectate ca `prior_run_context` în input.
+**Law 6 — Iterative Coherence.** Before Round 1, the orchestrator scans `runs/senate/*.json` for runs with similar labels (substring match) in the last 30 days via `scripts/senate_priors.py`. The prior verdict + top 3 modify_requests become mandatory context for all senators in Round 1, injected as `prior_run_context` in input.
 
-Fiecare senator trebuie să adreseze explicit în output câmpul `addresses_prior_concerns: true|false|n_a` (n_a doar dacă acest senator n-a participat la run-ul anterior). Dacă `false`, votul nu poate fi GO — propunerea n-a evoluat suficient pentru un upgrade implicit al verdictului. Orchestrator-ul pasează `prior_context_injected: true` în input-ul `senate_synth.py` pentru ca avertismentele de lipsă `addresses_prior_concerns` să fie emise. Validare: `python scripts/validate_report.py --strict-senate`.
+Each senator must explicitly address in output the field `addresses_prior_concerns: true|false|n_a` (n_a only if this senator did not participate in the previous run). If `false`, the vote cannot be GO — the proposal has not evolved enough for an implicit upgrade of the verdict. The orchestrator passes `prior_context_injected: true` in the input of `senate_synth.py` so that warnings about missing `addresses_prior_concerns` are emitted. Validation: `python scripts/validate_report.py --strict-senate`.
 
-**Law 7 — Scope Veto.** Orice senator poate emite `scope_veto: true` în Round 1 când consideră că senatul e instrumentul greșit pentru propunere — propunere prea mică (e.g., rename de variabilă, fix typo), propunere deja decisă în alt context, sau propunere non-deliberabilă (e.g., întrebare factuală cu răspuns determinabil).
+**Law 7 — Scope Veto.** Any senator can emit `scope_veto: true` in Round 1 when they consider that the senate is the wrong tool for the proposal — proposal too small (e.g., variable rename, typo fix), proposal already decided in another context, or non-deliberable proposal (e.g., factual question with determinable answer).
 
-`scope_veto` trebuie însoțit de `recommended_mode` (sequential, trias, direct-implement, skip, etc.) și `veto_reason` (1-2 propoziții).
+`scope_veto` must be accompanied by `recommended_mode` (sequential, trias, direct-implement, skip, etc.) and `veto_reason` (1-2 sentences).
 
-Dacă ≥3 senatori emit `scope_veto: true` în Round 1, deliberarea se oprește cu verdict `OUT_OF_SCOPE` și raportul include `scope_veto_consensus` cu modurile recomandate (cel mai frecvent recomandat e default-ul). Rounds 2-3 nu se mai execută. Implementat în `senate_synth.py` (constant `SCOPE_VETO_THRESHOLD=3`).
+If ≥3 senators emit `scope_veto: true` in Round 1, deliberation stops with verdict `OUT_OF_SCOPE` and the report includes `scope_veto_consensus` with the recommended modes (the most frequently recommended is the default). Rounds 2-3 are not executed. Implemented in `senate_synth.py` (constant `SCOPE_VETO_THRESHOLD=3`).
 
-**Law 8 — Falsifiability Anchor.** Orice `modify_request` trebuie să includă cel puțin un predicat verificabil: un test concret, o căutare grep, o ediție file:line, sau o aserțiune cuantitativă. Vagi ('clearer', 'better documented', 'more robust') sunt insufficient.
+**Law 8 — Falsifiability Anchor.** Any `modify_request` must include at least one verifiable predicate: a concrete test, a grep search, a file:line edit, or a quantitative assertion. Vague ('clearer', 'better documented', 'more robust') are insufficient.
 
-Dacă `law8_enforce: true` e setat în input-ul `senate_synth.py`, vote-ul senatorilor cu MODIFY-vag e auto-promovat la GO cu `auto_promoted_from: "MODIFY (no anchor)"` în output-ul lor. Audit trail păstrat în `bundle.auto_promoted_senators` și `bundle.warnings`. Helper `has_falsifiability_anchor()` în `scripts/validate_report.py`; validare: `python scripts/validate_report.py --strict-senate`.
+If `law8_enforce: true` is set in the input of `senate_synth.py`, the votes of senators with vague-MODIFY are auto-promoted to GO with `auto_promoted_from: "MODIFY (no anchor)"` in their output. Audit trail kept in `bundle.auto_promoted_senators` and `bundle.warnings`. Helper `has_falsifiability_anchor()` in `scripts/validate_report.py`; validation: `python scripts/validate_report.py --strict-senate`.
 
-**Verdict OUT_OF_SCOPE** (introdus de Law 7): bundle include `scope_veto_consensus.recommended_mode_default` pentru downstream. Validat de `validate_report.py --strict-senate` și de `validate_bundle()` în `senate_synth.py`.
+**Verdict OUT_OF_SCOPE** (introduced by Law 7): bundle includes `scope_veto_consensus.recommended_mode_default` for downstream. Validated by `validate_report.py --strict-senate` and by `validate_bundle()` in `senate_synth.py`.
 
 ### Senate headless invariants
 
-Când `CLAUDE_HEADLESS=1` și Senate e invocat (via `/consilium --mode senate --on-code` sau ca benchmark mode), se aplică:
+When `CLAUDE_HEADLESS=1` and Senate is invoked (via `/consilium --mode senate --on-code` or as a benchmark mode), the following applies:
 
-| Phase | Default headless |
+| Phase | Headless default |
 |---|---|
 | Round 0 priors (`stale_pendings`, `missing_feedback_runs`) | log warnings to stderr + continue; run `audit_feedback.py --backfill` automatically |
 | Round 1 clarity gate | if proposal has 2+ plausible interpretations, fork as parallel scenarios; no user prompt |
@@ -665,7 +665,7 @@ Când `CLAUDE_HEADLESS=1` și Senate e invocat (via `/consilium --mode senate --
 | Step 7 (implementation, if `--on-code`) | runs `infer_pipeline.py --yes` on `chosen_approach` |
 | `log_feedback` | runs with `--outcome PEND_HEADLESS` |
 
-Output contract în headless: după ce `validate_report.py --strict-senate` exits 0, emite exact conținutul bundle-ului JSON ca mesaj final. Fără proză, fără markdown fences. Detalii în `agents/consilium-senate-subagent.md`.
+Output contract in headless: after `validate_report.py --strict-senate` exits 0, emit exactly the bundle JSON content as the final message. No prose, no markdown fences. Details in `agents/consilium-senate-subagent.md`.
 
 ### Routing boundary (EXPERIMENTAL — when to choose senate vs other modes)
 
@@ -674,7 +674,7 @@ Output contract în headless: după ce `validate_report.py --strict-senate` exit
 | `reversibility=irreversible` OR `magnitude=critical` AND change spans ≥2 architectural layers | `senate --on-code` (*) |
 | `confidence ∈ [0.5, 0.7]` from standard mode AND single drift concern | `dialectic + skeptic_on_chosen` |
 | 2+ plausible architectural approaches without clear winner | `trias` |
-| Bugfix evident OR diff <20 lines / 1 fișier | Sequential (scope_gate skips) |
+| Bugfix evident OR diff <20 lines / 1 file | Sequential (scope_gate skips) |
 | All other PR-level reviews | Sequential / Parallel auto cross-check |
 
 > **(*) Pre-gate caveat — EXPERIMENTAL_DRAFT phase only.** `senate --on-code` routing applies ONLY to pilot dispatches explicitly designated for gate evidence. During the empirical gate phase (≥3 pilot runs required), production critical/irreversible decisions MUST be routed to `trias` or `dialectic + skeptic_on_chosen` (gate-validated modes). Pilots intentionally target the high-stakes profile for falsification evidence but are NOT a substitute for production audits until gate criteria met (≥7/10 info-add over Trias AND `semantic_suspect` ≤20%). This caveat is removed from SKILL.md upon successful gate promotion.
@@ -683,17 +683,17 @@ Output contract în headless: după ce `validate_report.py --strict-senate` exit
 
 - **`senate --on-code`** (status: EXPERIMENTAL_DRAFT). Lens: `prompts/lenses/domain_lens.md#code_domain`. Gate criteria: ≥3 pilot runs with ≥2/3 info-add over Trias (measured via `scripts/compare_senate_vs_trias.py`) AND `semantic_suspect` ≤20% per run. If gate fails after 5 pilots → marked DEPRECATED_DRAFT, `runs/senate/` pilot bundles preserved as forensic evidence. **Do not depend on this mode for critical merge decisions until gate met.**
 
-### Skip Senate dacă
+### Skip Senate if
 
-- Schimbarea e pe deliberare standard, nu pe skill, ȘI nu satisface criteriile routing boundary pentru `--on-code` → folosește `parallel` / `dialectic` / etc.
-- Schimbarea e trivial-textuală (typo, rename intern, fix doc) — cost-prohibitive
-- User declină explicit
+- The change is on standard deliberation, not on the skill, AND does not satisfy the routing boundary criteria for `--on-code` → use `parallel` / `dialectic` / etc.
+- The change is trivial-textual (typo, internal rename, doc fix) — cost-prohibitive
+- User explicitly declines
 
 ### Senator context injection (Pilot B)
 
 **Status: pilot — zero code, orchestrator-only behavior.**
 
-La Step 2 (dispatch), înainte de a trimite input-ul fiecărui senator, orchestratorul poate prepend un bloc de context din rulările senate anterioare:
+At Step 2 (dispatch), before sending each senator's input, the orchestrator can prepend a context block from previous senate runs:
 
 ```
 Past votes for <senator_name> (inject only if N≥5 senate runs with recorded outcome):
@@ -702,34 +702,34 @@ Past votes for <senator_name> (inject only if N≥5 senate runs with recorded ou
 - <label> | <vote> | <outcome>   # oldest of 3
 ```
 
-**Reguli operaționale:**
-- Schema injectată: `{label, vote, outcome}` triples, N=3 cele mai recente, ordonate descendent după timestamp
-- Sursa: `runs/senate/*.json` — citit manual de orchestrator (nu există script automat în Pilot B)
-- **Activation gate:** nu injecta dacă `runs/senate/` are sub 5 rulări cu outcome confirmat (OK/BAD) în `FEEDBACK.html`. Sub acest prag, datele sunt prea sparse pentru a fi semnal.
-- **Filtrează PEND:** injectează doar rulări cu outcome OK sau BAD — PEND înseamnă verdict neconfirmat
-- **Falsification signal:** Pilot B produce semnal măsurabil dacă `modify_request`-ul unui senator referențiază explicit un label sau outcome din contextul injectat. Fără acest semnal după 5 rulări, Pilot B nu a adăugat valoare.
-- **Reversibilitate completă:** oprești injectarea → comportament identic cu A (do_nothing)
+**Operational rules:**
+- Injected schema: `{label, vote, outcome}` triples, N=3 most recent, sorted descending by timestamp
+- Source: `runs/senate/*.json` — read manually by the orchestrator (no automatic script in Pilot B)
+- **Activation gate:** do not inject if `runs/senate/` has fewer than 5 runs with confirmed outcome (OK/BAD) in `FEEDBACK.html`. Below this threshold, the data is too sparse to be a signal.
+- **Filter PEND:** inject only runs with OK or BAD outcome — PEND means unconfirmed verdict
+- **Falsification signal:** Pilot B produces a measurable signal if a senator's `modify_request` explicitly references a label or outcome from the injected context. Without this signal after 5 runs, Pilot B did not add value.
+- **Complete reversibility:** stop injecting → behavior identical to A (do_nothing)
 
-**Escalare la C:** dacă după 5 rulări sub Pilot B cel puțin 1 senator referențiază context injectat, implementează `priors.py --senator <name>`:
-- Flag adaugă filtrare per senator peste logica existentă (~50-60 linii)
-- Trebuie să gestioneze schema multi-round `{rounds: [...]}`
-- Injectează votul din ultima rundă (nu round 1)
-- `priors.py` fără `--senator` returnează output identic cu azi (backward compat garantat)
-- D (per_senator_json, 7 fișiere + update script) rămâne off-table până Napoleon's gate: ≥20 rulări senate, ≥80% outcome tracking
+**Escalation to C:** if after 5 runs under Pilot B at least 1 senator references injected context, implement `priors.py --senator <name>`:
+- The flag adds per-senator filtering over the existing logic (~50-60 lines)
+- Must handle the multi-round schema `{rounds: [...]}`
+- Injects the vote from the last round (not round 1)
+- `priors.py` without `--senator` returns output identical to today (backward compat guaranteed)
+- D (per_senator_json, 7 files + update script) remains off-table until Napoleon's gate: ≥20 senate runs, ≥80% outcome tracking
 
 ### Smoke test
 
-Două nivele:
+Two levels:
 ```bash
 cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py   # fixture quick check
 python -X utf8 scripts/test_senate_synth.py                                       # 9-test suite
 ```
-Suita rulează: prompt structure, fixture, verdict GO unanimous/GO supermajority (7/9), MODIFY-blocks, UNREACHABLE (sub MIN_ACTIVE=5 via senatori absenți), unrecognized-vote, **multi-round position change (Law 2+4)**, **cross-questions violation (Law 2)**, **blocaj pending + blocaj resolution (Law 3)**, DEEPLY_SPLIT (sub-QUORUM splits), ABSTAIN hard-reject pe schema v2 (legacy v1 încă citit), bundle persistence, collision-safe write. Toate trebuie PASS înainte de commit pe `senate_synth.py` sau orice `prompts/senators/*.md`. Laws 6-8 sunt testate via CLI manual (smoke tests per Section E din TODO_SENATE_LAWS_AND_HEADLESS.md).
+The suite runs: prompt structure, fixture, verdict GO unanimous/GO supermajority (7/9), MODIFY-blocks, UNREACHABLE (under MIN_ACTIVE=5 via absent senators), unrecognized-vote, **multi-round position change (Law 2+4)**, **cross-questions violation (Law 2)**, **blocaj pending + blocaj resolution (Law 3)**, DEEPLY_SPLIT (sub-QUORUM splits), ABSTAIN hard-reject on schema v2 (legacy v1 still read), bundle persistence, collision-safe write. All must PASS before committing to `senate_synth.py` or any `prompts/senators/*.md`. Laws 6-8 are tested via manual CLI (smoke tests per Section E of TODO_SENATE_LAWS_AND_HEADLESS.md).
 
-### Origine + arhitectură
+### Origin + architecture
 
-- **Arhitectură vizuală:** [`docs/architecture.html`](docs/architecture.html) — tab **Senate** (dark theme; cei 9 senatori cu specialități + flow dispatch + verdict logic + cross-questions matrix + blocaj resolution + cele 5 Legi + file map).
-- **Justification empirică:** `experiments/New phase senat/deliberations/RUND2-deliberari.md`. Post PR `feat/senate-laws-2-3-4`, Laws 2-4 sunt opt-in multi-round; format multi-round `{rounds: [...]}` este singurul suportat.
+- **Visual architecture:** [`docs/architecture.html`](docs/architecture.html) — **Senate** tab (dark theme; the 9 senators with specialties + dispatch flow + verdict logic + cross-questions matrix + blocaj resolution + the 5 Laws + file map).
+- **Empirical justification:** `experiments/New phase senat/deliberations/RUND2-deliberari.md`. Post PR `feat/senate-laws-2-3-4`, Laws 2-4 are opt-in multi-round; the multi-round format `{rounds: [...]}` is the only one supported.
 
 <!-- === RUND2 === -->
 ## Three-layer architecture (RUND2)

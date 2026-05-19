@@ -2,7 +2,9 @@
 
 **Status:** PENDING (not implemented). Captured via `/consilium` (2026-05-17). Awaiting explicit go-ahead before any code change.
 
-**Origin question (user):** *"As vrea ca senatul sa aibe si un raport cu usage-ul total folosit astfel incat pe viitor daca vreau sa compar senatul cu altceva sa stiu cat e de eficient si poate sa vin cu propuneri de eficentizare, de asemenea fiecare mod cum e paralel etc sa poate sa raporteze si cati tokeni in total a folosit, ganditi-va la un mod calculare a usage-ului astfel incat sa stiu eficienta fiecare modului de flow voce etc."*
+**Origin question (user, verbatim):** *"As vrea ca senatul sa aibe si un raport cu usage-ul total folosit astfel incat pe viitor daca vreau sa compar senatul cu altceva sa stiu cat e de eficient si poate sa vin cu propuneri de eficentizare, de asemenea fiecare mod cum e paralel etc sa poate sa raporteze si cati tokeni in total a folosit, ganditi-va la un mod calculare a usage-ului astfel incat sa stiu eficienta fiecare modului de flow voce etc."*
+
+*(Translation: "I'd like the senate to also have a report with the total usage so that in the future if I want to compare the senate with something else I know how efficient it is and maybe propose optimizations; likewise each mode like parallel etc. should be able to report how many tokens it used in total — think of a way to calculate usage so I know the efficiency of each voice flow mode etc.")*
 
 ## Goal (success criterion)
 
