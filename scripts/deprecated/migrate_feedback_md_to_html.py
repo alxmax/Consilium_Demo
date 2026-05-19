@@ -68,6 +68,8 @@ def fuzzy_match_run(entry: dict, runs_dir: Path) -> str | None:
     if not candidates:
         return None
     candidates.sort(key=lambda x: (-x[0], x[1].name))
+    if candidates[0][0] == 0:
+        return None
     best_path = candidates[0][1]
     return f"runs/{best_path.name}"
 

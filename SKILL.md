@@ -106,7 +106,7 @@ Anchor `magnitude` to `files_changed/lines_*` and `regression_risk.net_concern` 
 ### 3. Generator — produce alternatives
 Use `prompts/voices/generator.md`. Request **3–5 candidates**, including `do_nothing`. Divergent style. Respect `tokens_budget.generator` set by Conservator.
 
-Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fallback_scenario, coverage_check, challenge_upward, abstain, preferred}`. Adversarial is conditional (clarity gate returned 2+ interpretations OR the change touches shared/core code) — otherwise emit `"adversarial_skipped": "<reason>"`.
+Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fallback_scenario, coverage_check, challenge_upward, abstain, preferred}`. Adversarial is conditional (the change touches shared/core code OR a function with >3 external callers) — otherwise emit `"adversarial_skipped": "<reason>"`. Unconventional is included by default (unless adversarial already covers that role or the change is mechanically trivial) — emit `"unconventional_skipped": "<reason>"` when omitting.
 
 **Receives from Conservator (selective):** `magnitude`, `counterparty_risks`, `tokens_budget.generator`. Does NOT receive `meta_recommendation` — that is policy, not Generator input.
 

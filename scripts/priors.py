@@ -118,17 +118,29 @@ def _rates(entries: list[dict]) -> dict:
 def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap: int = 5) -> list[dict]:
     """Surface runs/*.json files with NO matching FEEDBACK row.
 
-    A run is matched if its filename date and chosen_approach match a
-    feedback row. This catches the auto-logging gap: cases where
-    log_feedback.py was never called at end of Step 6.
+    Primary match: run_path appears in the .run_path_map.json sidecar written
+    by log_feedback.py. Fallback (legacy runs not in sidecar): (date,
+    chosen[:40]) appears in a feedback row. The fallback can produce false
+    negatives when two runs on the same day share a chosen prefix, which is
+    why the sidecar is preferred.
     """
     if not runs_dir.exists():
         return []
     import re
+
+    # Load sidecar: maps fingerprint → "runs/<file>.json"
+    sidecar_path = runs_dir / ".run_path_map.json"
+    try:
+        sidecar: dict[str, str] = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        sidecar = {}
+    logged_run_paths: set[str] = set(sidecar.values())
+
     fb_keys: set[tuple[str, str]] = set()
     for e in feedback_entries:
         chosen = e.get("chosen") or ""
         fb_keys.add((e.get("date", ""), chosen[:40]))
+
     missing: list[dict] = []
     date_re = re.compile(r"^(\d{4}-\d{2}-\d{2})")
     for run_file in sorted(runs_dir.glob("*.json"), reverse=True):
@@ -136,12 +148,17 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
         if not m:
             continue
         d = m.group(1)
+        rel = f"runs/{run_file.name}"
+        # Prefer sidecar match (exact, no collision risk)
+        if rel in logged_run_paths:
+            continue
         try:
             data = json.loads(run_file.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
         chosen = data.get("chosen_approach")
         chosen_s = "null" if chosen is None else str(chosen)
+        # Fallback: legacy rows without sidecar entry
         if (d, chosen_s[:40]) in fb_keys:
             continue
         missing.append({"run": run_file.name, "date": d, "chosen": chosen_s})

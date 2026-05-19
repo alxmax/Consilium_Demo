@@ -83,6 +83,8 @@ A skeptic verdict is **rejected** at validate when:
 
 If the validate gate fails, the skeptic output is discarded and the chosen ships unchallenged.
 
+**Orchestrator enforcement.** This validation gate is not self-enforced by the skeptic — it is checked by the orchestrator after the skeptic output is returned, per SKILL.md § `skeptic_on_chosen` Step 3. A skeptic that emits invalid output is rejected silently; the orchestrator does not retry.
+
 ## Anti-patterns to avoid
 
 - **Fabricating constraints.** "The system probably needs to handle X" when X isn't mentioned anywhere. This is the #1 failure mode.
