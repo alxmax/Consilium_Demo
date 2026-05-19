@@ -102,6 +102,18 @@ Total ~9 new scenarios. Requires extending `run_evals.py` to accept filesystem f
 
 ### Open items (Tier 2)
 
+> **Status update 2026-05-19:** 8 items closed in main (#31, #32, #35, #39, #40, #41, #42, #44):
+> - #31 `VOTE_PATTERN_CONFIDENCE`: `confidence.py:102-105` — veto (`2-0`) scores 0.70 < dissent (`2-1`) 0.75 (veto = stronger risk signal → lower confidence). Already in correct order.
+> - #32 `_TRIAS_EXPECTED_NAMES` dedup: `validate_report.py:52` imports `NAMES` from `personalities`.
+> - #35 Issue severity: `build_report.py:82` + `dialectic_merge.py:88` both use `utils.issue_penalty` (severity-weighted 0.05/0.15/0.30).
+> - #39 scope_gate `secrets` glob: pattern is `**/*secrets*` (matches `with-secrets/foo`).
+> - #40 `telemetry.voices` empty: `validate_report._validate_telemetry_required:289-296` returns a problem (error) for multi-voice modes when voices empty.
+> - #41 `team_vote` deterministic tie-break: `aggregator.py:258` raises `ValueError` on tie.
+> - #42 `signals.files_changed=None` type-safe: `scope_gate.py:213` emits `-1` instead of `None` under `CONSILIUM_FORCE_FULL=1`.
+> - #44 Chinese-wall illusion in Sequential: documented in `SKILL.md:755` AND `docs/architecture.html:744` (the `<div class="use-when">` caveat block) — both explicit that "role separation, not Chinese wall."
+>
+> Remaining Open items (Medium effort or INVESTIGATE-class): #9, #18, #27, #28, #43, #45, #46.
+
 #### 9. Goal-fit check moved to step 1 in Control · Prompt · Medium · Small-Medium · INVESTIGATE
 Currently Control runs types → logic → tests → style → goal-fit. If the candidate doesn't address success_criterion, the first 4 checks are wasted. Fix: move goal-fit to **step 0** in Task, before types. Fail fast.
 
