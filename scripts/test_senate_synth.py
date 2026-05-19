@@ -31,7 +31,7 @@ SENATORS = (
     "wittgenstein", "aurelius", "confucius", "socrate",
     "musk", "dimon", "napoleon", "deming", "tacitus",
 )
-REQUIRED_PROMPT_SECTIONS = ("## Rol", "## Specialitate", "## Output format", "## Limite")
+REQUIRED_PROMPT_SECTIONS = ("## Role", "## Specialty", "## Output format", "## Limits")
 
 
 # ───────────────────────── helpers ─────────────────────────
