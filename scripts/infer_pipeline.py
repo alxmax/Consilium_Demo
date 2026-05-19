@@ -13,6 +13,7 @@ Usage:
 Flags:
     --dry-run   Print inferred steps and exit without confirmation or execution.
     --yes       Skip confirmation prompt (CI/headless mode).
+    --debug     Emit decision rationale to stderr (source, lookup key, fallback path).
 
 Steps (in order when applicable):
     implement   Write code per chosen_approach (reminder — not automated).
@@ -145,6 +146,8 @@ def main() -> None:
                         help="Print steps and exit without confirmation")
     parser.add_argument("--yes", action="store_true",
                         help="Skip confirmation prompt (CI/headless mode)")
+    parser.add_argument("--debug", action="store_true",
+                        help="Emit decision rationale to stderr")
     args = parser.parse_args()
 
     try:
@@ -162,6 +165,12 @@ def main() -> None:
         sys.exit(2)
 
     steps, rationale = infer_steps(report)
+
+    if args.debug:
+        print(f"[debug] chosen={rationale.get('chosen')!r}", file=sys.stderr)
+        print(f"[debug] source={rationale.get('source')!r}", file=sys.stderr)
+        print(f"[debug] lookup_key={rationale.get('lookup_key')!r}", file=sys.stderr)
+        print(f"[debug] steps={steps!r}", file=sys.stderr)
 
     if not steps:
         reason = rationale.get("reason", "unknown")

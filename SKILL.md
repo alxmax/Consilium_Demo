@@ -204,7 +204,7 @@ Marker-ul `[confirmed]` apare în note; `priors.py` ponderează aceste rânduri 
 
 ### 7. Auto-pipeline (post-report)
 
-**Mandatory dacă promptul user-ului conține o secțiune `**Required output files**` sau `**Deliverables**`** — adică declară fișiere ce trebuie să existe pe disc. În acest caz Step 7 nu mai e opțional: după ce Step 6 e complet, treci direct la `infer_pipeline.py` și execută toți pașii inferați (cel puțin `implement` cu Write tool pentru fiecare cale declarată). Raportul de deliberare singur nu satisface contractul — fișierele trebuie să existe pe disc înainte ca turn-ul să se închidă.
+**Mandatory dacă promptul user-ului conține un antet de forma `**Required output file(s):**` sau `**Deliverable(s):**` (cu sau fără colon, singular sau plural) — detection regex (autoritative): `\*\*\s*(?:Required\s+output\s+files?|Deliverables?)\s*\*\*\s*:?` aplicat pe linie întreagă, case-insensitive.** În acest caz Step 7 nu mai e opțional: după ce Step 6 e complet, treci direct la `infer_pipeline.py` și execută toți pașii inferați (cel puțin `implement` cu Write tool pentru fiecare cale declarată). Raportul de deliberare singur nu satisface contractul — fișierele trebuie să existe pe disc înainte ca turn-ul să se închidă.
 
 **Opt-in altfel** — când promptul nu declară livrabile (audit, "should I commit", "which approach", "before implementing"-fără-cod-cerut), Step 7 rămâne la latitudinea userului.
 
@@ -229,7 +229,7 @@ Scriptul citește `chosen_approach`, `magnitude` și `reversibility` din raport 
 | high/critical | orice | implement → compile → review → test |
 
 **Definiții pași:**
-- `implement` — Scrie codul per `chosen_approach`. Dacă prompt-ul conține o secțiune `**Required output files**` sau `**Deliverables**`, folosește Write tool pentru fiecare fișier declarat la calea specificată — nu emite implementarea doar ca fenced block în chat. Fișierele trebuie să existe pe disc, nu doar în răspuns.
+- `implement` — Scrie codul per `chosen_approach`. Dacă prompt-ul conține un antet care corespunde regexului autoritative din mandatory clause (plural sau singular, cu sau fără colon), folosește Write tool pentru fiecare fișier declarat la calea specificată — nu emite implementarea doar ca fenced block în chat. Fișierele trebuie să existe pe disc, nu doar în răspuns.
 - `compile` — rulează target-ul, verifică exit code 0 (runtime check)
 - `review` — re-rulează Control voice pe codul efectiv scris (nu propunerea)
 - `test` — rulează test suite existent (pytest/unittest autodiscovery)
@@ -240,7 +240,7 @@ Reject (`n` la prompt) → rejection logat în `runs/YYYY-MM-DD_HHMM_pipeline_re
 
 **Skip Step 7 dacă:** `chosen_approach` e `do_nothing` sau `skipped` (scriptul iese cu exit 1 și mesaj clar). În context headless (`claude -p`), rulează cu `--yes` (non-interactiv, fără prompt de confirmare).
 
-**Skip-ul NU se aplică pentru cerința mandatory de mai sus:** dacă promptul declară `**Required output files**` / `**Deliverables**` și totuși ajungi la `chosen=do_nothing`, asta înseamnă că deliberarea a respins implementarea unei cereri explicite a userului — caz care necesită semnal vizibil (eroare hard în răspuns: *"deliberarea a ales `do_nothing` pe un prompt cu livrabile declarate — userul trebuie să decidă"*), nu skip silențios.
+**Skip-ul NU se aplică pentru cerința mandatory de mai sus:** dacă promptul declară livrabile (conform regexului autoritative din mandatory clause de mai sus) și totuși ajungi la `chosen=do_nothing`, asta înseamnă că deliberarea a respins implementarea unei cereri explicite a userului — caz care necesită semnal vizibil (eroare hard în răspuns: *"deliberarea a ales `do_nothing` pe un prompt cu livrabile declarate — userul trebuie să decidă"*), nu skip silențios.
 
 ## Skill maintenance
 
@@ -318,7 +318,7 @@ Când `CLAUDE_HEADLESS=1` (set de orchestratorul extern care a invocat `claude -
 | 0 (`stale_pendings`, `missing_feedback_runs`, `pend_pressure`) | log warning pe stderr + continuă; pentru `missing_feedback_runs` rulează `audit_feedback.py --backfill` automat |
 | 2 (`irreversibility_flag: true`) | setează `metadata.headless_overridden: true` în bundle + continuă (orchestratorul extern și-a asumat stake-ul) |
 | 5d (retry on low confidence) | skip integral; merge direct la Step 6 cu `PEND_HEADLESS` |
-| 7 (auto-pipeline) | rulează cu `--yes` (non-interactiv, fără prompt de confirmare); **mandatory** dacă promptul declară `**Required output files**` / `**Deliverables**` — implementarea efectivă (Write tool pe căile declarate) e parte din contract, nu post-step opțional |
+| 7 (auto-pipeline) | rulează cu `--yes` (non-interactiv, fără prompt de confirmare); **mandatory** dacă promptul conține un antet `**Required output file(s):**` sau `**Deliverable(s):**` (regex autoritative din Step 7 mandatory clause) — implementarea efectivă (Write tool pe căile declarate) e parte din contract, nu post-step opțional |
 
 `is_headless() == False` (env var absent) → comportament curent neschimbat. Backward compat 100%.
 
