@@ -2,7 +2,8 @@
 
 Orchestration note: this script is NOT a dispatcher. The 7 senators are
 dispatched as sub-agents by the Claude orchestrator when
-`/consilium senate <proposal>` is invoked (see SKILL.md "Senate mode").
+`/consilium senate <proposal>` is invoked (see SKILL.md "Senate mode" for
+the routing/scope contract and docs/senate.md for the operational reference).
 This script consumes the senator JSON outputs and produces one bundle:
 
   - vote tally + verdict (GO / MODIFY / STOP / UNREACHABLE)
