@@ -1653,20 +1653,21 @@ flowchart TD
   </svg>
 
   <h2 style="margin-top:32px;">Observe → Think → Act → Learn</h2>
+  <p style="color:var(--muted);font-size:13px;max-width:900px;">Framing <b>descriptiv</b> al workflow-ului existent — nu introduce comportament nou. Pașii 0-7 din <a href="../SKILL.md">SKILL.md</a> rămân contractul autoritativ. Senate audit <code>runs/senate/2026-05-19_214850-todo-18-otal-formalization.json</code> (MODIFY 0-8-1) a închis TODO #18 la nivelul docs-only; nivelele 2/3 (iteration triggers, meta-controller) sunt deferred — vezi nota la sfârșit.</p>
   <div class="mermaid-wrap" style="max-width:1000px">
-    <h3>Agent loop + memory tiers</h3>
+    <h3>Agent loop + memory tiers (RUND2 — Conservator runs first)</h3>
     <div class="mermaid">
 %%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
 flowchart LR
-    OBS["OBSERVE\nStep 1: gather context\nscope_gate.py"]:::obs
-    THINK["THINK\nStep 2: Generator\nStep 3: Control\nStep 4: Conservator"]:::think
-    ACT["ACT\nStep 5: aggregator → chosen\nStep 7: infer_pipeline (cond)"]:::act
-    LEARN["LEARN\nStep 6: log_feedback.py\nFEEDBACK.html"]:::learn
+    OBS["OBSERVE\nStep 0: priors.py\nStep 1: gather context\nStep 1.5: scope_gate.py"]:::obs
+    THINK["THINK\nStep 2: Conservator (FIRST)\nStep 3: Generator\nStep 4: Control\nStep 5: aggregator + confidence\n↻ retry_context.py (5d, conf<0.7)"]:::think
+    ACT["ACT\nStep 6: validate + build_report\n→ runs/&lt;file&gt;.json\nStep 7: infer_pipeline.py (cond)"]:::act
+    LEARN["LEARN (partial)\nStep 6 final: log_feedback.py\n→ FEEDBACK.html (HTML rows)\nmark_outcome.py [confirmed] 2×\n⚠ no typed outcome in runs/*.json"]:::learn
     SHORT["Short-term\ncontext window\ndeliberarea curentă"]:::mem
     MED["Medium-term\nruns/*.json\nepisodic — fiecare run"]:::mem
     LONG["Long-term\nFEEDBACK.html\npriors.py soft weights"]:::mem
     OBS --> THINK --> ACT --> LEARN
-    LEARN -.->|"priors loop\nStep 0"| OBS
+    LEARN -.->|"priors.py reads\nFEEDBACK.html\nat next deliberation"| OBS
     ACT --- SHORT
     LEARN --- MED
     OBS --- LONG
@@ -1676,6 +1677,10 @@ flowchart LR
     classDef learn fill:#221830,stroke:#c084fc,color:#d8b4fe
     classDef mem   fill:#11151c,stroke:#2d3441,color:#9ca3af
     </div>
+  </div>
+
+  <div class="use-when" style="margin-top:14px;border-left:3px solid var(--bad);padding-left:10px;max-width:900px;">
+    <b>De ce nu există meta-controller dinamic.</b> Senate-ul a respins explicit Level 3 (controller agentic restart/enrich/skip) — depinde de item TODO #16 care a fost <i>dropped</i> la triage. Singura iterație formală e <code>retry_context.py</code> la Step 5d (un singur re-pass dacă <code>confidence&lt;0.7</code>). Level 2 (iteration triggers via <code>meta_critic.generator_divergence&lt;0.4</code>) e deferred până când există ≥3 PEND rows în <code>FEEDBACK.html</code> care demonstrează că retry-ul curent sub-performează — <code>generator_divergence</code> are 0 ocurențe etichetate în <code>runs/</code> la momentul auditului. Vezi <a href="../SKILL.md">SKILL.md</a> § "Observe → Think → Act → Learn (descriptive framing)" pentru contractul complet.
   </div>
 
   <div class="mem-confirmed">
