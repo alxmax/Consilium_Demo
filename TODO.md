@@ -105,8 +105,8 @@ Total ~9 new scenarios. Requires extending `run_evals.py` to accept filesystem f
 #### 9. Goal-fit check moved to step 1 in Control · Prompt · Medium · Small-Medium · INVESTIGATE
 Currently Control runs types → logic → tests → style → goal-fit. If the candidate doesn't address success_criterion, the first 4 checks are wasted. Fix: move goal-fit to **step 0** in Task, before types. Fail fast.
 
-#### 18. Observe → Think → Act → Learn formal loop · Arch · Medium · Very Large · INVESTIGATE
-The skeleton already exists implicitly (Step 1 = Observe, Steps 2-4 = Think, Step 5 = Act, Step 6 = Learn). Formalizing it would enable restart, enrichment, conditional skips. Risk: Consilium becomes agentic and non-deterministic — contradicts Principle 2 (Simplicity first). Only implement if the meta-controller (16, dropped) is already stable.
+#### ~~18. Observe → Think → Act → Learn formal loop~~ — ✅ CLOSED (2026-05-19, Senate audit `runs/senate/2026-05-19_214850-todo-18-otal-formalization.json`, MODIFY 0-8-1)
+Resolved at **Level 1 (docs-only)** per 8/9 senator convergence. Added descriptive OTAL framing + ASCII cycle diagram to `SKILL.md` § "Observe → Think → Act → Learn (descriptive framing)"; updated the Mermaid diagram in `docs/architecture.html` § "Observe → Think → Act → Learn" with correct RUND2 step order (Conservator first), `priors.py` in Observe, `retry_context.py` sub-iteration, and the partial-Learn caveat. Level 2 (`meta_critic.generator_divergence<0.4` iteration triggers) deferred until ≥3 PEND rows in `FEEDBACK.html` demonstrate the existing `confidence<0.7` retry underperforms; the metric currently has zero labeled triggering events. Level 3 (meta-controller) closed pending revival of dropped item #16 — contradicts Constitution Principle 2.
 
 ### Open items — Voice audit (Trias + parallel-skeptic, session 2026-05-16)
 
