@@ -85,8 +85,9 @@ def _load_map(runs_dir: Path) -> dict[str, str]:
 
 def _save_map(runs_dir: Path, run_map: dict[str, str]) -> None:
     runs_dir.mkdir(parents=True, exist_ok=True)
-    (runs_dir / RUN_PATH_MAP).write_text(
-        json.dumps(run_map, indent=2, ensure_ascii=False), encoding="utf-8"
+    atomic_write_text(
+        runs_dir / RUN_PATH_MAP,
+        json.dumps(run_map, indent=2, ensure_ascii=False),
     )
 
 
