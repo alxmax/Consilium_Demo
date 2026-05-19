@@ -28,8 +28,8 @@ from pathlib import Path
 
 TODO_DEFAULT = Path(__file__).parent.parent / "TODO.md"
 
-MONTHS = ["Ian", "Feb", "Mar", "Apr", "Mai", "Iun",
-          "Iul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 # Mirrors senate_transcript._SKIP_WORDS: labels containing these substrings
 # come from the test harness, not real audits, and must not pollute TODO.md.
@@ -110,14 +110,14 @@ def build_todo_block(bundle):
     votes_str = f"GO {go_c} · MODIFY {mod_c} · STOP {stop_c}"
 
     lines = []
-    lines.append(f"### Hotărârea Senate — {label} · {date_str} · {verdict} ({votes_str})")
+    lines.append(f"### Senate Resolution — {label} · {date_str} · {verdict} ({votes_str})")
     lines.append("")
 
     # short proposal summary
     prop_short = proposal[:200] + ("…" if len(proposal) > 200 else "")
-    lines.append(f"> **Propunere:** {prop_short}")
+    lines.append(f"> **Proposal:** {prop_short}")
     if absent:
-        lines.append(f"> **Absenți:** {', '.join(absent)}")
+        lines.append(f"> **Absent:** {', '.join(absent)}")
     lines.append("")
 
     # DEEPLY_SPLIT always emits a polarization marker even without mod_reqs,
@@ -125,8 +125,8 @@ def build_todo_block(bundle):
     # entry for a quiet STOP-with-no-requests.
     if verdict == "DEEPLY_SPLIT":
         lines.append(
-            f"⚠ **Senatul polarizat** ({go_c} GO × {stop_c} STOP, fără majoritate ≥5/7). "
-            "Verdictul DEEPLY_SPLIT cere escaladare la utilizator cu matricea de vot — vezi bundle."
+            f"⚠ **Senate polarized** ({go_c} GO × {stop_c} STOP, no majority ≥5/7). "
+            "DEEPLY_SPLIT verdict requires user escalation with vote matrix — see bundle."
         )
         lines.append("")
         if not mod_reqs:
@@ -134,9 +134,9 @@ def build_todo_block(bundle):
 
     elif not mod_reqs:
         if verdict == "GO":
-            lines.append("_Senatul a aprobat propunerea. Nicio modificare necesară._")
+            lines.append("_Senate approved the proposal. No modification needed._")
         else:
-            lines.append("_Nicio cerere de modificare înregistrată._")
+            lines.append("_No modify requests recorded._")
         lines.append("")
         return "\n".join(lines)
 
@@ -166,10 +166,14 @@ def session_anchor(bundle):
     """Unique string used to detect duplicate entries in TODO.md."""
     ts    = bundle.get("timestamp", "")
     label = bundle.get("label", "")
-    return f"Hotărârea Senate — {label} · {format_date(ts)}"
+    return f"Senate Resolution — {label} · {format_date(ts)}"
 
 
-SECTION_HEADER = "## 🏛 Hotărâri Senate\n"
+SECTION_HEADER = "## 🏛 Senate Resolutions\n"
+# Legacy Romanian anchors — retained for backward-compat detection only.
+# When found, treated as the same logical section as SECTION_HEADER.
+LEGACY_HEADERS = ("## 🏛 Hotărâri Senate\n",)
+LEGACY_ANCHOR_PREFIX = "Hotărârea Senate — "
 
 
 def append_bundle_to_todo(bundle: dict, todo_path: "Path | None" = None) -> bool:
@@ -181,13 +185,26 @@ def append_bundle_to_todo(bundle: dict, todo_path: "Path | None" = None) -> bool
     anchor = session_anchor(bundle)
 
     existing = todo_path.read_text(encoding="utf-8") if todo_path.exists() else ""
-    if anchor in existing:
+    # Dedup against new English anchor + legacy Romanian anchor.
+    legacy_anchor = LEGACY_ANCHOR_PREFIX + anchor.split(" — ", 1)[1] if " — " in anchor else anchor
+    if anchor in existing or legacy_anchor in existing:
         return False
 
     block = build_todo_block(bundle)
 
+    # Prefer English section header; fall back to legacy Romanian if present
+    # in an unmigrated TODO.md, so we never split a single section into two.
+    header_to_use = None
     if SECTION_HEADER in existing:
-        idx = existing.index(SECTION_HEADER) + len(SECTION_HEADER)
+        header_to_use = SECTION_HEADER
+    else:
+        for legacy in LEGACY_HEADERS:
+            if legacy in existing:
+                header_to_use = legacy
+                break
+
+    if header_to_use:
+        idx = existing.index(header_to_use) + len(header_to_use)
         new_content = existing[:idx] + "\n" + block + existing[idx:]
     else:
         sep = "\n---\n\n" if not existing.endswith("\n---\n") else "\n\n"
