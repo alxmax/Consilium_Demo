@@ -667,7 +667,9 @@ When `CLAUDE_HEADLESS=1` and Senate is invoked (via `/consilium --mode senate --
 
 Output contract in headless: after `validate_report.py --strict-senate` exits 0, emit exactly the bundle JSON content as the final message. No prose, no markdown fences. Details in `agents/consilium-senate-subagent.md`.
 
-### Routing boundary (EXPERIMENTAL — when to choose senate vs other modes)
+### Law 9 — Senate scope
+
+**§1 — When Senate is the right tool** (routing boundary)
 
 | Decision profile | Mode |
 |---|---|
@@ -683,9 +685,9 @@ Output contract in headless: after `validate_report.py --strict-senate` exits 0,
 
 - **`senate --on-code`** (status: EXPERIMENTAL_DRAFT). Lens: `prompts/lenses/domain_lens.md#code_domain`. Gate criteria: ≥3 pilot runs with ≥2/3 info-add over Trias (measured via `scripts/compare_senate_vs_trias.py`) AND `semantic_suspect` ≤20% per run. If gate fails after 5 pilots → marked DEPRECATED_DRAFT, `runs/senate/` pilot bundles preserved as forensic evidence. **Do not depend on this mode for critical merge decisions until gate met.**
 
-### Skip Senate if
+**§2 — Skip Senate if** (negative scope)
 
-- The change is on standard deliberation, not on the skill, AND does not satisfy the routing boundary criteria for `--on-code` → use `parallel` / `dialectic` / etc.
+- The change is on standard deliberation, not on the skill, AND does not satisfy §1 criteria → use `parallel` / `dialectic` / etc.
 - The change is trivial-textual (typo, internal rename, doc fix) — cost-prohibitive
 - User explicitly declines
 
