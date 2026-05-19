@@ -138,6 +138,62 @@ _PHILOSOPHICAL_VALIDATORS = {
 # === END PHILOSOPHICAL VOICES ===
 
 
+# === SENATE STRICT VALIDATION (--strict-senate) ===
+_SENATE_VALID_VERDICTS = frozenset({
+    "GO", "MODIFY", "STOP", "DEEPLY_SPLIT", "UNREACHABLE", "OUT_OF_SCOPE",
+})
+_ADDRESSES_PRIOR_CONCERNS_VALUES = frozenset({"true", "false", "n_a"})
+
+
+def _validate_senate_bundle(report: dict) -> list[str]:
+    """Validate senate-specific fields (Laws 6-8). Used with --strict-senate flag.
+
+    Expects senate bundle format (from senate_synth.py), not the standard
+    deliberation report format validated by validate().
+    """
+    problems: list[str] = []
+    verdict = report.get("verdict")
+    if verdict not in _SENATE_VALID_VERDICTS:
+        problems.append(f"senate: verdict must be one of {sorted(_SENATE_VALID_VERDICTS)}, got {verdict!r}")
+
+    # Law 7: OUT_OF_SCOPE requires scope_veto_consensus
+    if verdict == "OUT_OF_SCOPE":
+        svc = report.get("scope_veto_consensus")
+        if not isinstance(svc, dict):
+            problems.append("senate law_7: OUT_OF_SCOPE verdict requires scope_veto_consensus dict")
+        elif not isinstance(svc.get("senators"), list) or len(svc["senators"]) < 3:
+            problems.append("senate law_7: scope_veto_consensus.senators must have >= 3 entries")
+
+    # Law 6: each present senator must have addresses_prior_concerns if prior_run_context was injected
+    # Soft check: if any senator output has addresses_prior_concerns, validate its value
+    outputs = report.get("outputs", {})
+    for name, output in outputs.items():
+        if not isinstance(output, dict):
+            continue
+        apc = output.get("addresses_prior_concerns")
+        if apc is not None:
+            apc_str = str(apc).lower().strip()
+            if apc_str not in _ADDRESSES_PRIOR_CONCERNS_VALUES:
+                problems.append(
+                    f"senate law_6: senator '{name}' addresses_prior_concerns must be "
+                    f"true|false|n_a, got {apc!r}"
+                )
+
+    # Law 8: auto-promoted senators should have auto_promoted_from in their output
+    auto_promoted = report.get("auto_promoted_senators", [])
+    if isinstance(auto_promoted, list):
+        for name in auto_promoted:
+            output = outputs.get(name, {})
+            if isinstance(output, dict) and "auto_promoted_from" not in output:
+                problems.append(
+                    f"senate law_8: senator '{name}' listed in auto_promoted_senators "
+                    "but output missing auto_promoted_from field"
+                )
+
+    return problems
+# === END SENATE STRICT VALIDATION ===
+
+
 def _validate_telemetry(telemetry: object) -> list[str]:
     if not isinstance(telemetry, dict):
         return ["telemetry must be a JSON object"]
@@ -239,6 +295,27 @@ def _validate_telemetry_required(report: dict) -> list[str]:
                 "(scripts/usage.py would skip this run)"
             ]
     return []
+
+
+# === SENATE LAWS ===
+_FALSIFIABILITY_PATTERNS = (
+    r"\bgrep\b",
+    r"\btest\b",
+    r"\bassert\b",
+    r"[a-zA-Z_]+\.py:\d+",      # file:line
+    r"<\d", r">\d", r"=\d", r"[≥≤]\d",  # numeric comparisons
+    r"```",                     # explicit code block
+    r"return\s+[A-Z]",          # exit-code check (e.g. return False, return None)
+)
+
+
+def has_falsifiability_anchor(modify_request: str) -> bool:
+    """True if modify_request contains at least one verifiable predicate."""
+    return any(
+        re.search(p, modify_request, re.IGNORECASE)
+        for p in _FALSIFIABILITY_PATTERNS
+    )
+# === END SENATE LAWS ===
 
 
 VOTE_PATTERN_REGEX = re.compile(r"^[0-3]-[0-3](-[0-1])?$")
@@ -355,6 +432,14 @@ def main(argv: list[str] | None = None) -> int:
         help=f"require philosophical voice fields; one of: {', '.join(sorted(_PHILOSOPHICAL_VOICES))}",
     )
     # === END PHILOSOPHICAL VOICES ===
+    # === SENATE LAWS ===
+    ap.add_argument(
+        "--strict-senate",
+        action="store_true",
+        default=False,
+        help="validate senate bundle fields (Laws 6-8): verdict, scope_veto_consensus, addresses_prior_concerns, auto_promoted_senators",
+    )
+    # === END SENATE LAWS ===
     args = ap.parse_args(argv)
 
     try:
@@ -367,18 +452,24 @@ def main(argv: list[str] | None = None) -> int:
         print("report must be a JSON object", file=sys.stderr)
         return 2
 
-    problems = validate(report)
-    # === RUND2 ===
-    if args.strict_rund2:
-        problems.extend(_validate_rund2_fields(report))
-    # === END RUND2 ===
-    # === PHILOSOPHICAL VOICES ===
-    if args.strict_philosophical:
-        validator = _PHILOSOPHICAL_VALIDATORS.get(args.strict_philosophical)
-        if validator:
-            voice_output = report.get("voice_outputs", {}).get(args.strict_philosophical, report)
-            problems.extend(validator(voice_output))
-    # === END PHILOSOPHICAL VOICES ===
+    # === SENATE LAWS ===
+    if args.strict_senate:
+        # Senate bundles have a different schema — skip standard deliberation validation.
+        problems = _validate_senate_bundle(report)
+    else:
+        problems = validate(report)
+        # === RUND2 ===
+        if args.strict_rund2:
+            problems.extend(_validate_rund2_fields(report))
+        # === END RUND2 ===
+        # === PHILOSOPHICAL VOICES ===
+        if args.strict_philosophical:
+            validator = _PHILOSOPHICAL_VALIDATORS.get(args.strict_philosophical)
+            if validator:
+                voice_output = report.get("voice_outputs", {}).get(args.strict_philosophical, report)
+                problems.extend(validator(voice_output))
+        # === END PHILOSOPHICAL VOICES ===
+    # === END SENATE LAWS ===
     if problems:
         for p in problems:
             print(p, file=sys.stderr)

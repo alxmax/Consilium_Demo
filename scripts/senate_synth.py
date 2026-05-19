@@ -109,6 +109,8 @@ MIN_ACTIVE_VOTES = 5
 # Minimum votes required for GO or STOP verdict. 7/9 senators must agree.
 # MODIFY votes always block: if any senator votes MODIFY, verdict cannot be GO or STOP.
 QUORUM = 7
+# Law 7: if >= this many senators emit scope_veto in Round 1, verdict = OUT_OF_SCOPE.
+SCOPE_VETO_THRESHOLD = 3
 MAX_CROSS_QUESTIONS_PER_SENATOR_PER_ROUND = 3  # Law 2
 
 # Per-senator structural expectations: if a senator votes but omits its
@@ -398,6 +400,73 @@ def apply_code_audit_filter(
     return filtered, artifacts, suspects
 
 
+def check_scope_veto(round1_senators: dict) -> tuple[bool, dict | None]:
+    """Law 7: count senators with scope_veto: true in Round 1.
+
+    Returns (triggered, consensus_dict). Triggered when >= SCOPE_VETO_THRESHOLD.
+    consensus_dict includes: senators (list), recommended_modes (list),
+    recommended_mode_default (most frequent or 'skip').
+    """
+    veto_senators = []
+    recommended_modes: list[str] = []
+    for name, output in round1_senators.items():
+        if output.get("scope_veto") is True:
+            veto_senators.append(name)
+            mode = output.get("recommended_mode")
+            if isinstance(mode, str) and mode.strip():
+                recommended_modes.append(mode.strip())
+    if len(veto_senators) < SCOPE_VETO_THRESHOLD:
+        return False, None
+    # Most frequent recommended_mode wins; tie → first seen; empty → "skip"
+    if recommended_modes:
+        mode_counts: dict[str, int] = {}
+        for m in recommended_modes:
+            mode_counts[m] = mode_counts.get(m, 0) + 1
+        default_mode = max(mode_counts, key=lambda k: mode_counts[k])
+    else:
+        default_mode = "skip"
+    return True, {
+        "senators": veto_senators,
+        "recommended_modes": recommended_modes,
+        "recommended_mode_default": default_mode,
+    }
+
+
+def apply_falsifiability_law(final_outputs: dict) -> tuple[dict, list[str]]:
+    """Law 8: auto-promote MODIFY votes where modify_request has no falsifiability anchor.
+
+    Returns (updated_outputs, auto_promoted_senator_names).
+    Imports has_falsifiability_anchor from validate_report via importlib to
+    keep it as single source of truth per the TODO spec.
+    """
+    try:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location(
+            "validate_report", Path(__file__).parent / "validate_report.py"
+        )
+        _mod = _ilu.module_from_spec(_spec)  # type: ignore[arg-type]
+        _spec.loader.exec_module(_mod)  # type: ignore[union-attr]
+        _has_anchor = _mod.has_falsifiability_anchor
+    except Exception:
+        # Fallback: no anchor check if import fails — don't block synthesis
+        return final_outputs, []
+
+    promoted: list[str] = []
+    updated = dict(final_outputs)
+    for name, output in final_outputs.items():
+        if not isinstance(output, dict):
+            continue
+        if normalize_vote(output.get("vote")) != "MODIFY":
+            continue
+        req = output.get("modify_request", "")
+        if isinstance(req, str) and req.strip() and not _has_anchor(req):
+            updated[name] = dict(output)
+            updated[name]["vote"] = "GO"
+            updated[name]["auto_promoted_from"] = "MODIFY (no anchor)"
+            promoted.append(name)
+    return updated, promoted
+
+
 def slugify(label: str) -> str:
     s = re.sub(r"[^A-Za-z0-9_-]+", "-", label.strip())
     s = re.sub(r"-+", "-", s).strip("-")
@@ -414,6 +483,8 @@ def build_bundle(
     mode: str = "skill_audit",
     files_touched: list | None = None,
     is_consilium_contribution: bool = False,
+    prior_context_injected: bool = False,
+    law8_enforce: bool = False,
 ) -> dict:
     senators_appearing = {n for r in rounds for n in r["senators"].keys()}
     senators_absent = sorted({n for n in SENATORS if n not in senators_appearing} | set(absent))
@@ -429,21 +500,46 @@ def build_bundle(
     reject_abstain_votes(final_outputs)
     voters_present = len(final_outputs)
 
-    raw_counts = tally(final_outputs)
-    adjusted_outputs, blocaj_info = apply_blocaj_resolution(final_outputs, blocaj_resolution)
-    final_counts = tally(adjusted_outputs) if blocaj_info else raw_counts
+    # Law 7: check scope_veto in Round 1 before normal tally.
+    round1_senators: dict = {}
+    if rounds:
+        round1_senators = rounds[0]["senators"]
+    scope_veto_triggered, scope_veto_consensus = check_scope_veto(round1_senators)
+
+    if scope_veto_triggered:
+        # Short-circuit: skip tally and blocaj resolution.
+        verdict = "OUT_OF_SCOPE"
+        raw_counts = {v: 0 for v in VOTES}
+        final_counts = raw_counts
+        blocaj_info = None
+        auto_promoted: list[str] = []
+    else:
+        # Law 8: auto-promote vague MODIFY votes before tally (opt-in via law8_enforce).
+        if law8_enforce:
+            final_outputs, auto_promoted = apply_falsifiability_law(final_outputs)
+        else:
+            auto_promoted = []
+
+        raw_counts = tally(final_outputs)
+        adjusted_outputs, blocaj_info = apply_blocaj_resolution(final_outputs, blocaj_resolution)
+        final_counts = tally(adjusted_outputs) if blocaj_info else raw_counts
 
     cq_used, cq_violations = cross_questions_summary(rounds)
     position_changes = detect_position_changes(rounds)
 
-    # Compute verdict before blocaj_pending: emit advisory signal when verdict
-    # is MODIFY or DEEPLY_SPLIT (both indicate unresolved GO×STOP polarization
-    # the orchestrator may want to put through a 5-vote tiebreaker). Suppressed
-    # on clean GO/STOP outcomes.
-    verdict = compute_verdict(final_counts, voters_present)
-    blocaj_pending = []
-    if blocaj_info is None and verdict in ("MODIFY", "DEEPLY_SPLIT"):
-        blocaj_pending = detect_blocaj_pairs(final_outputs)
+    if not scope_veto_triggered:
+        # Compute verdict before blocaj_pending: emit advisory signal when verdict
+        # is MODIFY or DEEPLY_SPLIT (both indicate unresolved GO×STOP polarization
+        # the orchestrator may want to put through a 5-vote tiebreaker). Suppressed
+        # on clean GO/STOP outcomes.
+        verdict = compute_verdict(final_counts, voters_present)
+        blocaj_pending = []
+        if blocaj_info is None and verdict in ("MODIFY", "DEEPLY_SPLIT"):
+            blocaj_pending = detect_blocaj_pairs(final_outputs)
+        outputs_for_bundle = (adjusted_outputs if blocaj_info else final_outputs)
+    else:
+        blocaj_pending = []
+        outputs_for_bundle = final_outputs
 
     warnings = collect_warnings(final_outputs)
     warnings.extend(cq_violations)
@@ -452,11 +548,23 @@ def build_bundle(
             f"blocaj_pending: {len(blocaj_pending)} GO×STOP pair(s) without resolution; "
             "orchestrator must dispatch 5-vote tiebreaker (Law 3)"
         )
-
-    # When a blocaj resolution applied, `outputs` reflects the post-override
-    # state (so tally(outputs) == vote_counts) with `_blocaj_override` marker
-    # preserving the senator's original vote for audit.
-    outputs_for_bundle = adjusted_outputs if blocaj_info else final_outputs
+    if auto_promoted:
+        warnings.append(
+            f"law_8_auto_promoted: {len(auto_promoted)} senator(s) had MODIFY vote "
+            f"auto-promoted to GO (no falsifiability anchor): {', '.join(auto_promoted)}"
+        )
+    # Law 6: warn when prior_run_context was injected but senators omit addresses_prior_concerns
+    if prior_context_injected:
+        missing_apc = [
+            name for name, out in final_outputs.items()
+            if isinstance(out, dict) and out.get("addresses_prior_concerns") is None
+        ]
+        if missing_apc:
+            warnings.append(
+                f"law_6_missing_apc: {len(missing_apc)} senator(s) did not include "
+                f"addresses_prior_concerns (prior_run_context was injected): "
+                f"{', '.join(missing_apc)}"
+            )
     bundle: dict = {
         "timestamp": timestamp,
         "label": label,
@@ -471,6 +579,10 @@ def build_bundle(
         "modify_requests": collect_modify_requests(final_outputs),
         "warnings": warnings,
     }
+    if scope_veto_consensus is not None:
+        bundle["scope_veto_consensus"] = scope_veto_consensus
+    if auto_promoted:
+        bundle["auto_promoted_senators"] = auto_promoted
     if mode == "code_audit":
         bundle["verdict_artifacts"] = code_audit_artifacts or {}
         bundle["semantic_suspects"] = code_audit_suspects
@@ -514,7 +626,8 @@ def validate_bundle(bundle: dict) -> None:
             raise ValueError(f"senate_synth: bundle missing required key {key!r}")
     if not isinstance(bundle["vote_counts"], dict):
         raise ValueError("senate_synth: 'vote_counts' must be a dict")
-    if bundle["verdict"] not in ("GO", "MODIFY", "STOP", "DEEPLY_SPLIT", "UNREACHABLE"):
+    _VALID_VERDICTS = frozenset({"GO", "MODIFY", "STOP", "DEEPLY_SPLIT", "UNREACHABLE", "OUT_OF_SCOPE"})
+    if bundle["verdict"] not in _VALID_VERDICTS:
         raise ValueError(f"senate_synth: invalid verdict {bundle['verdict']!r}")
 
 
@@ -590,11 +703,15 @@ def main() -> int:
         files_touched = []
     is_consilium_contribution = bool(data.get("is_consilium_contribution", False))
 
+    prior_context_injected = bool(data.get("prior_context_injected", False))
+    law8_enforce = bool(data.get("law8_enforce", False))
     bundle = build_bundle(
         proposal, rounds, blocaj_resolution,
         absent, label, timestamp,
         mode=mode, files_touched=files_touched,
         is_consilium_contribution=is_consilium_contribution,
+        prior_context_injected=prior_context_injected,
+        law8_enforce=law8_enforce,
     )
 
     # Optional telemetry passthrough: orchestrator may include per-senator

@@ -284,7 +284,8 @@ python scripts/run_evals.py
 | `agents/consilium-subagent.md` | Subagent pentru invocare izolată via `Agent(subagent_type="consilium-subagent", ...)` |
 | `prompts/senators/*.md` | 7 prompturi de audit pre-implementare (mod `senate`); fiecare cu specialitate distinctă (vezi tabelul din Senate mode) |
 | `scripts/vocabulary_map.py` | RUND2: traduceri user-facing (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
-| `scripts/senate_synth.py` | Synthesizer Senate: agregă 7 output-uri JSON → verdict `GO/MODIFY/STOP/DEEPLY_SPLIT/UNREACHABLE` + modify_requests + risks → salvează în `runs/senate/`. Suportă **multi-round (Laws 2+4)** via schema `{rounds: [...]}` cu `cross_questions[]`, `position_changes[]`, și `blocaj_resolution` (5-vote tiebreaker). **Law 3** (`blocaj_pending` advisory signal) activ pe ambele moduri când `verdict ∈ {MODIFY, DEEPLY_SPLIT}`. Backward compat pe legacy `{senators: {...}}`. |
+| `scripts/senate_synth.py` | Synthesizer Senate: agregă 7 output-uri JSON → verdict `GO/MODIFY/STOP/DEEPLY_SPLIT/UNREACHABLE/OUT_OF_SCOPE` + modify_requests + risks → salvează în `runs/senate/`. Suportă **multi-round (Laws 2+4)** via schema `{rounds: [...]}` cu `cross_questions[]`, `position_changes[]`, și `blocaj_resolution` (5-vote tiebreaker). **Law 3** (`blocaj_pending` advisory signal) activ pe ambele moduri când `verdict ∈ {MODIFY, DEEPLY_SPLIT}`. **Law 7** (`scope_veto` consensus ≥3 → `OUT_OF_SCOPE`). **Law 8** (`law8_enforce: true` → auto-promovare MODIFY-vag). |
+| `scripts/senate_priors.py` | Law 6 helper: scanează `runs/senate/*.json` pentru runs cu label similar (substring match, stdlib-only) în ultimele 30 zile; returnează prior verdict + top 3 modify_requests pentru context injection. |
 
 ## Feedback loop
 
@@ -535,7 +536,7 @@ Tabel sumar:
 
 Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au definiții testabile:
 
-- **"Senate run end-to-end"** = (a) bundle `runs/senate/<timestamp>-<label>.json` există pe disc; (b) parsabil JSON; (c) conține `verdict ∈ {GO, MODIFY, STOP, DEEPLY_SPLIT, UNREACHABLE}` și `vote_counts`; (d) `senate_synth.py` exit 0.
+- **"Senate run end-to-end"** = (a) bundle `runs/senate/<timestamp>-<label>.json` există pe disc; (b) parsabil JSON; (c) conține `verdict ∈ {GO, MODIFY, STOP, DEEPLY_SPLIT, UNREACHABLE, OUT_OF_SCOPE}` și `vote_counts`; (d) `senate_synth.py` exit 0.
 - **"Senate nu atinge voci/moduri existente"** = `git diff <base>..HEAD -- prompts/{generator,control,conservator,skeptic,generator_pass2,control_pass2,conservator_pass2,*_lens}.md scripts/{aggregator,confidence,dialectic_merge,validate_report,build_report,personalities,strip_context,priors}.py` returnează empty. Adăugiri la SKILL.md Resources table sau secțiuni noi sunt explicit permise.
 
 ### Când să folosești
@@ -586,6 +587,43 @@ Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au defini�
 ### MIN_ACTIVE_VOTES
 
 `MIN_ACTIVE_VOTES=5`: dacă mai puțin de 5 senatori au votat activ (GO/MODIFY/STOP), verdictul e `UNREACHABLE`. Sub noua Lege 1 (no-ABSTAIN), `UNREACHABLE` semnalizează exclusiv absență (timeout / dispatch failure), nu retragere — toți senatorii prezenți votează una din cele trei opțiuni. Legacy compat: `runs/senate/*.json` cu `senate_schema_version<2` sau câmp absent pot conține voturi ABSTAIN; nu se mai produc în runs noi.
+
+### Senate Laws (6-8)
+
+**Law 6 — Iterative Coherence.** Înainte de Round 1, orchestrator-ul scanează `runs/senate/*.json` pentru runs cu label similar (substring match) în ultimele 30 zile via `scripts/senate_priors.py`. Prior verdict + top 3 modify_requests devin context obligatoriu pentru toți senatorii în Round 1, injectate ca `prior_run_context` în input.
+
+Fiecare senator trebuie să adreseze explicit în output câmpul `addresses_prior_concerns: true|false|n_a` (n_a doar dacă acest senator n-a participat la run-ul anterior). Dacă `false`, votul nu poate fi GO — propunerea n-a evoluat suficient pentru un upgrade implicit al verdictului. Orchestrator-ul pasează `prior_context_injected: true` în input-ul `senate_synth.py` pentru ca avertismentele de lipsă `addresses_prior_concerns` să fie emise. Validare: `python scripts/validate_report.py --strict-senate`.
+
+**Law 7 — Scope Veto.** Orice senator poate emite `scope_veto: true` în Round 1 când consideră că senatul e instrumentul greșit pentru propunere — propunere prea mică (e.g., rename de variabilă, fix typo), propunere deja decisă în alt context, sau propunere non-deliberabilă (e.g., întrebare factuală cu răspuns determinabil).
+
+`scope_veto` trebuie însoțit de `recommended_mode` (sequential, trias, direct-implement, skip, etc.) și `veto_reason` (1-2 propoziții).
+
+Dacă ≥3 senatori emit `scope_veto: true` în Round 1, deliberarea se oprește cu verdict `OUT_OF_SCOPE` și raportul include `scope_veto_consensus` cu modurile recomandate (cel mai frecvent recomandat e default-ul). Rounds 2-3 nu se mai execută. Implementat în `senate_synth.py` (constant `SCOPE_VETO_THRESHOLD=3`).
+
+**Law 8 — Falsifiability Anchor.** Orice `modify_request` trebuie să includă cel puțin un predicat verificabil: un test concret, o căutare grep, o ediție file:line, sau o aserțiune cuantitativă. Vagi ('clearer', 'better documented', 'more robust') sunt insufficient.
+
+Dacă `law8_enforce: true` e setat în input-ul `senate_synth.py`, vote-ul senatorilor cu MODIFY-vag e auto-promovat la GO cu `auto_promoted_from: "MODIFY (no anchor)"` în output-ul lor. Audit trail păstrat în `bundle.auto_promoted_senators` și `bundle.warnings`. Helper `has_falsifiability_anchor()` în `scripts/validate_report.py`; validare: `python scripts/validate_report.py --strict-senate`.
+
+**Verdict OUT_OF_SCOPE** (introdus de Law 7): bundle include `scope_veto_consensus.recommended_mode_default` pentru downstream. Validat de `validate_report.py --strict-senate` și de `validate_bundle()` în `senate_synth.py`.
+
+### Senate headless invariants
+
+Când `CLAUDE_HEADLESS=1` și Senate e invocat (via `/consilium --mode senate --on-code` sau ca benchmark mode), se aplică:
+
+| Phase | Default headless |
+|---|---|
+| Round 0 priors (`stale_pendings`, `missing_feedback_runs`) | log warnings to stderr + continue; run `audit_feedback.py --backfill` automatically |
+| Round 1 clarity gate | if proposal has 2+ plausible interpretations, fork as parallel scenarios; no user prompt |
+| Round 1 scope_veto consensus (Law 7) | proceed automatically with `verdict: OUT_OF_SCOPE` if ≥3 vetoes; orchestrator decides downstream |
+| Round 2-3 cross-questions | dispatch starred pairs first, then non-starred; budget cap 9 cross-Qs per round |
+| Iterative coherence (Law 6) | `prior_run_context` auto-injected from `runs/senate/` scan; `prior_context_injected: true` passed; no user confirmation |
+| `DEEPLY_SPLIT` verdict | `chosen_approach: null`, `confidence: null`, `subagent_notes.blocked_reason: "deeply_split"` |
+| `UNREACHABLE` quorum | same shape; `blocked_reason: "unreachable_quorum"` |
+| `OUT_OF_SCOPE` | same shape; `blocked_reason: "out_of_scope"` + `subagent_notes.recommended_mode` populated |
+| Step 7 (implementation, if `--on-code`) | runs `infer_pipeline.py --yes` on `chosen_approach` |
+| `log_feedback` | runs with `--outcome PEND_HEADLESS` |
+
+Output contract în headless: după ce `validate_report.py --strict-senate` exits 0, emite exact conținutul bundle-ului JSON ca mesaj final. Fără proză, fără markdown fences. Detalii în `agents/consilium-senate-subagent.md`.
 
 ### Routing boundary (EXPERIMENTAL — when to choose senate vs other modes)
 
@@ -644,7 +682,7 @@ Două nivele:
 cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py   # fixture quick check
 python -X utf8 scripts/test_senate_synth.py                                       # 9-test suite
 ```
-Suita rulează: prompt structure, fixture, verdict GO unanimous/GO supermajority (7/9), MODIFY-blocks, UNREACHABLE (sub MIN_ACTIVE=5 via senatori absenți), unrecognized-vote, **multi-round position change (Law 2+4)**, **cross-questions violation (Law 2)**, **blocaj pending + blocaj resolution (Law 3)**, DEEPLY_SPLIT (sub-QUORUM splits), ABSTAIN hard-reject pe schema v2 (legacy v1 încă citit), bundle persistence, collision-safe write. Toate trebuie PASS înainte de commit pe `senate_synth.py` sau orice `prompts/senators/*.md`.
+Suita rulează: prompt structure, fixture, verdict GO unanimous/GO supermajority (7/9), MODIFY-blocks, UNREACHABLE (sub MIN_ACTIVE=5 via senatori absenți), unrecognized-vote, **multi-round position change (Law 2+4)**, **cross-questions violation (Law 2)**, **blocaj pending + blocaj resolution (Law 3)**, DEEPLY_SPLIT (sub-QUORUM splits), ABSTAIN hard-reject pe schema v2 (legacy v1 încă citit), bundle persistence, collision-safe write. Toate trebuie PASS înainte de commit pe `senate_synth.py` sau orice `prompts/senators/*.md`. Laws 6-8 sunt testate via CLI manual (smoke tests per Section E din TODO_SENATE_LAWS_AND_HEADLESS.md).
 
 ### Origine + arhitectură
 
