@@ -358,7 +358,7 @@ Când `CLAUDE_HEADLESS=1` (set de orchestratorul extern care a invocat `claude -
 
 Default behavior unless overridden by project memory (`MEMORY.md`). All voices și senatori pinned la `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `haiku` verifiers în `trias_split`, `opus` Generator pentru high-stakes) — single source of truth per mod, descriptive nu enforced.
 
-Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 6× · Trias 9× · `trias_split` 3.3× · Senate ~2.3× (7 senatori). Flagul `skeptic_on_chosen` adaugă +1 sub-agent peste modul de bază (ex: Parallel+flag = 1.33× Parallel, Dialectic+flag = ~2.3× Parallel).
+Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 6× · Trias 9× · `trias_split` 3.3× · Senate ~3× (9 senatori). Flagul `skeptic_on_chosen` adaugă +1 sub-agent peste modul de bază (ex: Parallel+flag = 1.33× Parallel, Dialectic+flag = ~2.3× Parallel).
 
 ## Parallel voices mode
 
@@ -558,19 +558,21 @@ Tabel sumar:
 1. **Default (skill audit):** auditează modificări la skill-ul însuși (prompturi, scripts, arhitectură, SKILL.md). Well-tested, gate-validated.
 2. **`--on-code` (EXPERIMENTAL_DRAFT):** auditează decizii pe cod user (PR-uri, refactor-uri, decizii arhitecturale) prin `prompts/lenses/domain_lens.md#code_domain`. Orchestratorul TREBUIE să pre-computeze `diff`, `files_touched`, `success_criterion`, `magnitude`, `reversibility`, `blast_radius` înainte de dispatch (vezi `scripts/dispatch_senate_on_code.py`). NOT wired în dispatch table până empirical gate met (vezi Drafts footnote la finalul Senate mode section).
 
-**Mecanica:** 7 sub-agenți Sonnet 4.6 într-o primă rundă paralel + (opțional) cross-questions multi-round, fiecare cu prompt-ul lui din `prompts/senators/`:
+**Mecanica:** 9 sub-agenți într-o primă rundă paralel + (opțional) cross-questions multi-round, fiecare cu prompt-ul lui din `prompts/senators/`:
 
-| Senator | Specialitate |
-|---|---|
-| Wittgenstein | termeni vagi, definiții testabile |
-| Aurelius | reversibility × magnitude, proporționalitate cost/stake |
-| Confucius | autoritate, precedente în `runs/` + `experiments/` |
-| Socrate | premize load-bearing nedeclarate |
-| Musk | aggressive deletion + 10% add-back |
-| Dimon | stress test, counterparty, silent failure modes |
-| Napoleon | tokens, ore, starea operatorului |
+| Senator | Specialitate | Model default |
+|---|---|---|
+| Wittgenstein | termeni vagi, definiții testabile | Sonnet |
+| Aurelius | reversibility × magnitude, proporționalitate cost/stake | Sonnet |
+| Confucius | autoritate, precedente în `runs/` + `experiments/` | Sonnet |
+| Socrate | premize load-bearing nedeclarate | Sonnet |
+| Musk | aggressive deletion + 10% add-back | Sonnet |
+| Dimon | stress test, counterparty, silent failure modes | Sonnet |
+| Napoleon | tokens, ore, starea operatorului | Sonnet |
+| Deming | disciplină statistică, n/varianță/calibrare | Sonnet |
+| Tacitus | retrospective accuracy tracking pe `runs/senate/` × `FEEDBACK.html` | **Opus** (per frontmatter — multi-document evidence reconstruction) |
 
-**Cost:** 7 sub-agenți Sonnet (~2.3× Parallel). On-demand only — niciun trigger automat.
+**Cost:** 9 sub-agenți (~3× Parallel). On-demand only — niciun trigger automat.
 
 ### Operational definitions
 
@@ -726,7 +728,7 @@ Suita rulează: prompt structure, fixture, verdict GO unanimous/GO supermajority
 
 ### Origine + arhitectură
 
-- **Arhitectură vizuală:** [`docs/architecture.html`](docs/architecture.html) — tab **Senate** (dark theme; cei 7 senatori cu specialități + flow dispatch + verdict logic + cross-questions matrix + blocaj resolution + cele 5 Legi + file map).
+- **Arhitectură vizuală:** [`docs/architecture.html`](docs/architecture.html) — tab **Senate** (dark theme; cei 9 senatori cu specialități + flow dispatch + verdict logic + cross-questions matrix + blocaj resolution + cele 5 Legi + file map).
 - **Justification empirică:** `experiments/New phase senat/deliberations/RUND2-deliberari.md`. Post PR `feat/senate-laws-2-3-4`, Laws 2-4 sunt opt-in multi-round; format multi-round `{rounds: [...]}` este singurul suportat.
 
 <!-- === RUND2 === -->
@@ -736,7 +738,7 @@ Suita rulează: prompt structure, fixture, verdict GO unanimous/GO supermajority
 |---|---|---|
 | **Deliberation** | Conservator → Generator → Control (sequential) | Runs on every user question |
 | **Aggregation** | aggregate_rund2() with 8-component veto cascade | Synthesizes voice outputs, decides what user sees |
-| **Senate** | 7 senators (Wittgenstein, Aurelius, Confucius, Socrate, Musk, Dimon, Napoleon) | On-demand audit of proposed changes to consilium itself |
+| **Senate** | 9 senators (Wittgenstein, Aurelius, Confucius, Socrate, Musk, Dimon, Napoleon, Deming, Tacitus) | On-demand audit of proposed changes to consilium itself |
 
 ## Sequential dispatch (RUND2)
 

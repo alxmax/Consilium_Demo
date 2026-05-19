@@ -612,6 +612,75 @@ Decizie soft-pozitivă, prioritate scăzută.
 
 ## 🏛 Hotărâri Senate
 
+### Hotărârea Senate — consilium-refactor-cleanup-20pct · 19 Mai 2026 · MODIFY (GO 2 · MODIFY 6 · STOP 1)
+
+> **Propunere:** Refactor Consilium cu țintă reducere 20-30% LOC/bytes prin 5 acțiuni de cleanup pure (zero semantică modificată): (1) TODO consolidation 3 fișiere → 1 reorganizat pe categorii; (2) Junk cleanup root (…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Înainte de GO: (1) baseline numeric exact măsurat pe HEAD; (2) definiție operațională 'zero semantică modificată' (lista de teste + invariants); (3) protocol explicit pentru triaj BUGS.md (cum se decide fixed/open/obsolete per finding); (4) alegere declarată pentru senate_transcript.py (delete/wrapper/inline); (5) mitigation pentru ștergere untracked (tar/zip arhivat înainte de rm).
+- [ ] **[CONFUCIUS]** Split bundle în 2 track-uri: Track 1 (GO imediat) = acțiunile 1+2+5; Track 2 (deliberare separată) = acțiunea 3 (BUGS.md triaj) + acțiunea 4 (SKILL.md extraction). Precedent: heterogeneous bundles → MODIFY 4/4 istoric.
+- [ ] **[SOCRATE]** Declară explicit înainte de execuție: (1) status stage2/stage3 confirmat cu user; (2) inventar tmp_*/bundle_* cu verdict per-fișier; (3) numărul canonical de senatori (7 sau 9) confirmat; (4) plan concret pentru acțiunea 5 care nu atinge senate_synth.py; (5) test de prezervare semantică post-refactor end-to-end.
+- [ ] **[MUSK]** 1. Elimină Acțiunea 4 prima parte (extragere Senate în docs/senate.md) — fragmentează SKILL.md fără reducere reală de bytes totale; înlocuiește cu comprimare in-place. 2. Acțiunea 5: șterge apelul _generate_transcript() din senate_synth.py dacă nu e consumat activ, nu repara deprecated/. 3. Redefiniește SC ca 'bytes tracked scad ≥15%' pentru a preveni gaming prin redistribuire.
+- [ ] **[DIMON]** Required pre-execution: (1) backup untracked stage2/3 + tmp_* înainte de delete (git reset --hard NU recuperează untracked); (2) audit toate hardcoded paths în scripts/ — senate_synth.py:753 (importlib senate_transcript) + senate_todo.py:29 (TODO_DEFAULT) trebuie updated; (3) UTF-8 encoding discipline pentru TODO merge (emoji corruption risk pe Windows CRLF); (4) test cascade pre-flight pe read-only snapshot înainte de delete; (5) lock/mtime check pentru concurrent TODO.md edits.
+- [ ] **[DEMING]** Adaugă minimum 1 pilot măsurat: execută acțiunea cu cel mai mare LOC-impact pe ramură separată, măsoară delta real, compară cu estimarea. Dacă delta ±30% față de estimare → propunerea calibrată. Alternativ: restrânge SC la acțiunile cu outcome determinist (junk cleanup + senate_transcript.py fix) și elimină claim-urile cuantitative bazate pe judgment.
+- [ ] **[TACITUS]** Cite 2026-05-17 refactor-bundle-7items run și 2026-05-19 claude-md R1→R2→R3 chain ca governing precedent, apoi split în 5 propuneri atomic cu per-action SC. Ship cleared subset (likely acțiunile 1+2) acum; defer 3 (BUGS triaj — NOT pure cleanup), 4 (SKILL.md extraction — global-mount gate), 5 (atinge zone autoritative indirect).
+
+**B. Track decisions (user-approved 19 Mai 2026):**
+
+- [x] **Track 1 — SHIP NOW** (executat în branch `refactor/consilium-track1-cleanup`):
+  - [x] Junk cleanup root: șters 13 fișiere untracked (TEST .txt, FEEDBACK.md.bak, bundle_trias_warmup.json, runs${ts}_self_estimate_fix.json, tmp_build_bundle.py, tmp_bundle*.json (3), tmp_conf.json, tmp_deliberation_bundle.json, tmp_dialectic_bundle.py, tmp_report_out.json, tmp_senate_input.json). Pre-flight backup în `.tmp_backup/track1_untracked_<ts>.tar.gz`.
+  - [x] Mutat `bugs-agent-2.md` → `docs/archive/bugs-agent-2.md` (orphan note despre runs/ write denied).
+  - [x] Fix inconsistență 7→9 senatori în SKILL.md (4 locuri: L361, L561-573 tabela extinsă cu Deming+Tacitus, L729, L739). Cost multiplier Senate corectat de la `~2.3×` la `~3×`.
+  - [x] `senate-history.html` **rămâne la root** — output regenerabil de `scripts/senate_history.py:233` (mutarea cere code change, out-of-scope Track 1).
+
+- [ ] **Track 2 — R2 DELIBERARE SEPARATĂ:** TODO consolidation (merge `TODO.md` + `TODO.md.stage2` + `TODO.md.stage3` într-un singur fișier reorganizat). Necesită propunere R2 atomică cu:
+  - Pre-flight: diff explicit per-item între cele 3 fișiere (stage2/3 conțin secțiunea ✅ IMPLEMENTAT pe care TODO.md curent NU o are — NU sunt drafts abandonate, sunt drafts de consolidare anterioare cu lucru util)
+  - Backup explicit înainte de delete stage2/3 (Dimon: `git reset --hard` NU recuperează untracked)
+  - UTF-8 encoding discipline pe Windows (emoji-uri ❌🐞✅🤔📋🏛 risk corruption pe CRLF)
+  - File lock / mtime check pentru concurrent TODO.md edits
+  - Protocol explicit pentru reorganizare pe categorii (criteriu de clasificare per item)
+  - Rerun Senate pe propunerea revizuită R2
+
+- [ ] **Track 3 — DEFERRED (deliberări separate, fiecare proprie):**
+  - [ ] **BUGS.md triaj 107 findings** — necesită criteriu operațional pentru "fixat" (Wittgenstein D2): (a) grep keyword/path în git log pentru commit fix; (b) dacă găsit → arhivat în BUGS.archive.md cu commit hash; (c) dacă nu găsit + referențiază cod existent → rămâne open; (d) dacă referențiază cod șters → obsolete, șters cu notă.
+  - [ ] **SKILL.md Senate extraction → docs/senate.md** — necesită subagent dispatch update (Step 0 Bootstrap include și `docs/senate.md` în inline-paste) + cross-ref audit (README.md, CLAUDE.md, agents/). Musk a recomandat **compression in-place** ca alternativă (fără fragmentare contract public).
+  - [ ] **scripts/ dedup senate_transcript.py** — atinge `senate_synth.py:753` (importlib spec) și `senate_todo.py:29` (TODO_DEFAULT) — out-of-scope original. Trei opțiuni declarate de Wittgenstein: (1) șterg scriptul + toate apelurile (grep-verify); (2) păstrez ca wrapper cu DeprecationWarning; (3) inline-ez logica în caller. Alegerea în PR description înainte de implementation.
+
+### Hotărârea Senate — claude-md-refactor-r2-AplusC · 19 Mai 2026 · MODIFY (GO 6 · MODIFY 3 · STOP 0)
+
+> **Propunere:** R2 (revised scope): apply only A (rm duplicate '# CLAUDE.md' H1 on L9) + C (replace 'workflow-ul în 6 pași' with 'workflow-ul în 8 pași', Steps 0..7 excl. sub-step 1.5). B/D/E deferred (B1 pending emp…
+
+**A. Per-senator decisions:**
+
+- [ ] **[SOCRATE]** C creates internal inconsistency: line 98 of CLAUDE.md says 'pașilor 1-6' which remains stale after line 7 fix. Also: Step 0 may not count as a 'pas' (pre-workflow) — convention should be declared.
+- [ ] **[MUSK]** Implement A+C now. B1 gated on Dimon's empirical headless verification. E permanently rejected.
+- [ ] **[DIMON]** C must include simultaneous update to README.md L55 ('workflow în 6 pași' → same new string) to prevent cross-file divergence. Verify integer convention before merge.
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **C** (cross-ref: SOCRATE, MUSK, DIMON)
+
+### Hotărârea Senate — claude-md-refactor-and-subdir-files · 19 Mai 2026 · MODIFY (GO 1 · MODIFY 7 · STOP 0)
+
+> **Propunere:** Refactor Consilium/CLAUDE.md: (A) remove duplicate '# CLAUDE.md' H1 on L9; (B1) delete generic Sections 1-5 entirely OR (B2) keep at bottom + cross-reference; (C) fix 'în 6 pași' to actual SKILL.md st…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Define operational meaning of: 'single source of truth per topic', 'orphaned section', 'project-specific'; supply exact step count integer; specify content template for each subdirectory CLAUDE.md; treat L11 preamble as Claude Code harness loading instruction with behavioral consequences.
+- [ ] **[AURELIUS]** Quadrant complete×moderate is over-engineered for 9-senator session. Scope down to A+C only this session; B1/B2/D/E to separate explicit request.
+- [ ] **[CONFUCIUS]** Split into Track 1 (approve immediately): A + C — matches 2026-05-18 fix_count_only precedent (conf=0.95, OK). Track 2 (dedicated deliberation): B1/B2 + D + E — requires documented fallback policy and subdirectory governance model. Confirm Claude Code loads subdirectory CLAUDE.md.
+- [ ] **[SOCRATE]** Verify 3 load-bearing assumptions before implementation: (1) global CLAUDE.md mounted in headless/CI/worktree; (2) numbering convention for step count; (3) Claude Code supports subdirectory CLAUDE.md.
+- [ ] **[MUSK]** Execute A + B1 (full deletion of Sections 1-5 + preamble) + C (remove the count entirely, not replace) + D-implicit (reorder happens automatically after B1). Reject E.
+- [ ] **[DIMON]** B1 is STOP unless global-mount guarantee verified across CI/headless/Agent-dispatched subagents. Until then B2 only. E needs empirical load confirmation. D requires moving or removing closing summary to avoid orphan.
+- [ ] **[NAPOLEON]** Execute only A + C. Drop B1/B2, D, E. Total: ~10 min, zero maintenance drag. Revisit D only on empirical contributor feedback.
+- [ ] **[DEMING]** n=0 on all process claims. Only C is verifiable (n=1, zero variance). For B1/B2/D/E: provide runs/senate evidence of measured outcome impact, or a sync mechanism that reduces drift probability measurably.
+- [ ] **[TACITUS]** Ship only C first (matches fix_count_only precedent OK, conf=0.95). Each of B1/B2/D/E proposed separately. E has no precedent in corpus.
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **C** (cross-ref: AURELIUS, CONFUCIUS, MUSK, NAPOLEON, DEMING, TACITUS)
+
 ### Hotărârea Senate — deliverable-enforcement-step7-plus-deming-tacitus-integration · 18 Mai 2026 · MODIFY (GO 2 · MODIFY 7 · STOP 0)
 
 > **Propunere:** feat/deliverable-enforcement: 3 clustere — (A) SKILL.md Step 7 implement expansion 1 rand: implement devine instructiune activa cu Write tool pentru fisiere declarate in prompt; (B) senate_synth.py: D…
