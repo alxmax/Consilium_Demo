@@ -75,14 +75,14 @@
     <div class="senator-card">
       <h4 class="name">Deming</h4>
       <p class="key-q">"Câte runs? Ce zice baseline?"</p>
-      <p class="spec">Process quality — control statistic, feedback loop. Cere evidence empirică (n=?) înainte de a accepta claim-uri de proces.</p>
-      <div class="output-field">specific: <code>n_runs</code>, <code>variance</code>, <code>baseline_compare</code></div>
+      <p class="spec">Process quality — control statistic, feedback loop. Cere evidence empirică (n=?) înainte de a accepta claim-uri cuantitative. Pe propuneri non-cuantitative emite <b>GO + reasoning</b> de retragere (no-ABSTAIN, Law 1).</p>
+      <div class="output-field">specific: <code>sample_size_check</code>, <code>variance_check</code>, <code>signal_to_noise</code></div>
     </div>
     <div class="senator-card">
       <h4 class="name">Tacitus</h4>
       <p class="key-q">"S-a mai încercat? Cu ce outcome?"</p>
-      <p class="spec">Istorician — context istoric al deciziei. Caută în runs/ + FEEDBACK.html precedent + outcomes.</p>
-      <div class="output-field">specific: <code>historical_precedents[]</code>, <code>past_outcomes</code></div>
+      <p class="spec">Istorician — context istoric al deciziei. Caută în runs/ + FEEDBACK.html precedent + outcomes. Pe propuneri fără precedent invocat emite <b>GO + reasoning</b> de retragere. Pinned la Opus pentru retrospectivă multi-document.</p>
+      <div class="output-field">specific: <code>retrospective_matches[]</code>, <code>senator_hit_rates</code></div>
     </div>
   </div>
 </section>
@@ -98,7 +98,7 @@
 
     <rect x="180" y="40" width="180" height="270" rx="8" fill="#221830" stroke="#4c2a6b"/>
     <text x="270" y="62" fill="#d8b4fe" font-size="13" text-anchor="middle" font-weight="700">Round 1 — parallel</text>
-    <text x="270" y="78" fill="#9ca3af" font-size="10" text-anchor="middle">dispatch 9 × Sonnet 4.6</text>
+    <text x="270" y="78" fill="#9ca3af" font-size="10" text-anchor="middle">dispatch 9 (8 × Sonnet, Tacitus × Opus)</text>
     <g font-size="10" fill="#d8b4fe" font-family="ui-monospace,monospace">
       <text x="200" y="100">• Wittgenstein</text>
       <text x="200" y="118">• Aurelius</text>
@@ -170,7 +170,7 @@
   <table class="laws-table">
     <thead><tr><th>#</th><th>Lege</th><th>Esență</th><th>Principiu</th></tr></thead>
     <tbody>
-      <tr><td class="num">1</td><td class="law-name">Răspuns obligatoriu</td><td class="essence">Fiecare senator răspunde pe fiecare punct. Interzis "nu am opinie".</td><td class="principle">#4 Goal-driven</td></tr>
+      <tr><td class="num">1</td><td class="law-name">Output și vot obligatorii</td><td class="essence">Fiecare senator emite output structurat și vot <b>GO/MODIFY/STOP</b>. ABSTAIN nu e vot valid. Retragerea politicoasă (GO + <code>reasoning</code> de retragere) e permisă pentru Deming pe propuneri non-cuantitative și Tacitus pe propuneri fără precedent invocat. Tally rămâne 1 vot/senator.</td><td class="principle">#4 Goal-driven</td></tr>
       <tr><td class="num">2</td><td class="law-name">Cross-questions limitate</td><td class="essence">Max <b>3 cross-questions/senator/rundă</b> × max <b>3 runde</b>. Round 3 = STOP forțat.</td><td class="principle">#2 Simplicity first</td></tr>
       <tr><td class="num">3</td><td class="law-name">Blocaj → vot majoritar de 5</td><td class="essence">Dacă 2 senatori rămân în GO×STOP după Round 3, ceilalți 5 votează care argument e mai puternic.</td><td class="principle">#4 Goal-driven</td></tr>
       <tr><td class="num">4</td><td class="law-name">Sinteza doar la final</td><td class="essence"><code>senate_synth.py</code> rulează DUPĂ toate rundele. Position changes logate în bundle.</td><td class="principle">#3 Surgical changes</td></tr>

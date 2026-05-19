@@ -41,13 +41,17 @@ Verdict rule (same for both modes):
     DEEPLY_SPLIT otherwise (neither GO nor STOP reached QUORUM, MODIFY == 0).
                  Covers 4-3, 5-2, 6-0, etc. patterns below threshold.
 
-ABSTAIN = present-but-no-position. Excluded from tally, does NOT reduce
-voters_present. When >= HIGH_ABSTAIN_THRESHOLD (3/9) abstain, a
-high_abstain_rate warning is emitted.
+No-ABSTAIN policy (schema v2): senators MUST emit GO/MODIFY/STOP. ABSTAIN is
+rejected as a hard validation error before bundle write. Deming/Tacitus, the
+two senators historically prone to retreat, use a discriminated voting pattern
+(emit GO with explicit `reasoning` of retreat when their lens does not apply).
+Legacy `runs/senate/*.json` from before the patch may contain ABSTAIN — those
+files remain readable but new runs cannot produce them.
 
-DEEPLY_SPLIT: orchestrator escalates to user. User may force ABSTAIN senators
-to declare (GO or STOP) and re-run, OR switch to normal Consilium mode.
-UNREACHABLE: orchestrator presents user with the same two options.
+DEEPLY_SPLIT: orchestrator escalates to user with vote matrix and override option.
+UNREACHABLE: signals senator absence (timeout / dispatch failure), not retreat —
+orchestrator presents user with two options: re-dispatch absent senators, or
+fall back to normal Consilium modes.
 
 Multi-round semantics (Law 2: max 3 cross_questions per senator per round;
 Law 3: blocaj_resolution.winning_senator's vote replaces loser's vote in the
@@ -70,7 +74,6 @@ import argparse
 import datetime as dt
 import importlib.util
 import json
-import math
 import re
 import sys
 from pathlib import Path
@@ -98,16 +101,14 @@ SKILL_INTERNAL_ARTIFACTS = frozenset({
     "skill.md", "claude.md", "consilium internals", "consilium skill",
 })
 VOTES = ("GO", "MODIFY", "STOP")
+SENATE_SCHEMA_VERSION = 2  # No-ABSTAIN policy; v1 = legacy ABSTAIN-permitting schema
 # Minimum active votes (GO+MODIFY+STOP) for a valid deliberation.
-# Below this, verdict is UNREACHABLE — too few senators took a position.
-# For 9 senators: 5 (more than half must have an active position).
+# Below this, verdict is UNREACHABLE — senators absent (timeout / dispatch fail).
+# For 9 senators: 5 (more than half must be present and voting).
 MIN_ACTIVE_VOTES = 5
 # Minimum votes required for GO or STOP verdict. 7/9 senators must agree.
 # MODIFY votes always block: if any senator votes MODIFY, verdict cannot be GO or STOP.
 QUORUM = 7
-# Warning threshold: emit high_abstain_rate when >= ceil(N/3) senators abstain.
-# For 9 senators: threshold = 3. Shares value with MIN_ACTIVE_VOTES by design.
-HIGH_ABSTAIN_THRESHOLD = math.ceil(len(SENATORS) / 3)
 MAX_CROSS_QUESTIONS_PER_SENATOR_PER_ROUND = 3  # Law 2
 
 # Per-senator structural expectations: if a senator votes but omits its
@@ -127,19 +128,38 @@ SENATOR_REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
 
 
 def normalize_vote(raw) -> str | None:
-    """Map a senator's vote string to GO/MODIFY/STOP/ABSTAIN, or None if unrecognized.
+    """Map a senator's vote string to GO/MODIFY/STOP, or None if unrecognized.
 
     Returns None on missing/unrecognized — caller surfaces this as a warning
     AND counts it as MODIFY in the tally (most-conservative non-blocking).
-    ABSTAIN is recognized but NOT in VOTES tally — excluded from tally() but
-    does NOT reduce voters_present (present-but-no-position, not absent).
+    ABSTAIN is no longer recognized (schema v2). Legacy ABSTAIN values in old
+    runs trigger reject_abstain_votes() at bundle build time.
     """
     if not isinstance(raw, str):
         return None
     upper = raw.strip().upper()
-    if upper == "ABSTAIN":
-        return "ABSTAIN"
     return upper if upper in VOTES else None
+
+
+def reject_abstain_votes(senator_outputs: dict[str, dict]) -> None:
+    """Hard-fail if any senator emitted ABSTAIN. No-ABSTAIN is Law 1 in schema v2.
+
+    Senators who cannot form a direct position must emit GO + `reasoning` of
+    retreat (Deming/Tacitus pattern), never ABSTAIN.
+    """
+    offenders = [
+        name for name, out in senator_outputs.items()
+        if isinstance(out, dict)
+        and isinstance(out.get("vote"), str)
+        and out["vote"].strip().upper() == "ABSTAIN"
+    ]
+    if offenders:
+        joined = ", ".join(offenders)
+        raise ValueError(
+            f"Senator(s) {joined} emitted ABSTAIN — no longer a valid vote under Law 1 "
+            "(schema v2). Update senator prompt to discriminated voting "
+            "(see prompts/senators/deming.md or tacitus.md pattern)."
+        )
 
 
 
@@ -282,14 +302,13 @@ def apply_blocaj_resolution(
 
 
 def tally(senator_outputs: dict[str, dict]) -> dict[str, int]:
-    """Tally GO/MODIFY/STOP. ABSTAIN is excluded from tally (present-but-no-position).
-    Unrecognized votes fall through to MODIFY per most-conservative-non-blocking principle.
+    """Tally GO/MODIFY/STOP. All senators in output dict must have a recognized vote;
+    unrecognized votes fall through to MODIFY per most-conservative-non-blocking principle.
+    ABSTAIN is rejected earlier (reject_abstain_votes); should never reach this point.
     """
     counts = {v: 0 for v in VOTES}
     for output in senator_outputs.values():
         vote = normalize_vote(output.get("vote"))
-        if vote == "ABSTAIN":
-            continue
         counts[vote if vote is not None else "MODIFY"] += 1
     return counts
 
@@ -300,9 +319,8 @@ def compute_verdict(counts: dict[str, int], voters_present: int) -> str:
     GO requires >= QUORUM GO votes AND zero MODIFY votes.
     STOP requires >= QUORUM STOP votes AND zero MODIFY votes.
     Any MODIFY vote blocks GO/STOP — proposal must be reworked first.
-    DEEPLY_SPLIT: no supermajority reached AND MODIFY == 0 — ABSTAIN senators
-      are forced to choose a side; orchestrator/user resolves.
-    UNREACHABLE: all senators abstained or all absent (total active == 0).
+    DEEPLY_SPLIT: no supermajority reached AND MODIFY == 0 — orchestrator/user resolves.
+    UNREACHABLE: fewer than MIN_ACTIVE_VOTES senators present (timeout / dispatch fail).
     """
     total_active = counts["GO"] + counts["MODIFY"] + counts["STOP"]
     if total_active < MIN_ACTIVE_VOTES:
@@ -346,15 +364,6 @@ def collect_warnings(senator_outputs: dict[str, dict]) -> list[str]:
                 warnings.append(
                     f"senator '{name}' voted but omitted/empty '{field}' — that axis of audit is silent"
                 )
-    n_abstain = sum(
-        1 for o in senator_outputs.values()
-        if normalize_vote(o.get("vote")) == "ABSTAIN"
-    )
-    if n_abstain >= HIGH_ABSTAIN_THRESHOLD:
-        warnings.append(
-            f"high_abstain_rate: {n_abstain} of {len(SENATORS)} senators abstained "
-            "— verdict reflects a minority of active positions"
-        )
     return warnings
 
 
@@ -416,7 +425,8 @@ def build_bundle(
             final_outputs, files_touched, is_consilium_contribution,
         )
         senators_absent = sorted(set(senators_absent) | set(code_audit_suspects))
-    # voters_present = all dispatched senators (ABSTAIN = present-but-no-position, not absent).
+    # No-ABSTAIN policy (schema v2): hard-fail if any senator emitted ABSTAIN.
+    reject_abstain_votes(final_outputs)
     voters_present = len(final_outputs)
 
     raw_counts = tally(final_outputs)
@@ -452,6 +462,7 @@ def build_bundle(
         "label": label,
         "proposal": proposal,
         "mode": mode,
+        "senate_schema_version": SENATE_SCHEMA_VERSION,
         "senators_absent": senators_absent,
         "voters_present": voters_present,
         "outputs": outputs_for_bundle,

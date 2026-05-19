@@ -548,7 +548,7 @@ Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au defini�
 ### Workflow
 
 1. **Formulează propunerea concret** — paragraf: ce schimbi, de ce, fișiere atinse, success criterion.
-2. **Dispatch 7 sub-agenți paralel** (model default per `## Dispatch defaults`), fiecare cu prompt-ul senatorului inline. Input identic:
+2. **Dispatch 9 sub-agenți paralel** (model default per `## Dispatch defaults`, dar **citește YAML frontmatter** din `prompts/senators/<name>.md`: dacă există cheia `model:` o folosești în locul default-ului — ex. `tacitus` rulează pe Opus per justificare în propriul prompt). Fiecare cu prompt-ul senatorului inline. Input identic:
    ```
    Proposal under audit: <textul>
    Context: <fișiere atinse, success criterion>
@@ -568,16 +568,24 @@ Pentru a putea verifica că Senatul a rulat corect, doi termeni-cheie au defini�
    - `GO` (≥7/9 GO **și** MODIFY==0) → procedezi
    - `STOP` (≥7/9 STOP **și** MODIFY==0) → propunerea e blocată; revizuie sau override explicit
    - `MODIFY` (orice vot MODIFY > 0) → propunerea trebuie revizuită înainte să poată atinge GO/STOP. Două căi: **accept** (tratează `modify_requests` ca TODO advisory) sau **R2** (re-rulează Senate cu propunere revizuită care adresează `modify_requests`-urile). Dacă R2 produce MODIFY 3 cicluri consecutive, avertisment soft: "consideră accept sau descompune propunerea."
-   - `DEEPLY_SPLIT` (nici GO nici STOP nu ating QUORUM=7, MODIFY==0) → advisory: orchestratorul escaladează la user cu vote matrix. User poate forța senatorii cu ABSTAIN să declare o poziție (GO sau STOP) și/sau să override manual.
-   - `UNREACHABLE` (voturi active < `MIN_ACTIVE_VOTES=5` — prea puțini senatori au luat o poziție) → orchestratorul prezintă user-ului două opțiuni:
-     1. **Forțează senatorii ABSTAIN** să declare GO sau STOP și re-rulează Senate
+   - `DEEPLY_SPLIT` (nici GO nici STOP nu ating QUORUM=7, MODIFY==0) → advisory: orchestratorul escaladează la user cu vote matrix și opțiunea de override manual.
+   - `UNREACHABLE` (voturi active < `MIN_ACTIVE_VOTES=5` — senatori absenți/timeout, NU abstinență) → orchestratorul prezintă user-ului două opțiuni:
+     1. **Re-rulează Senate** cu retry pe senatorii absenți
      2. **Rulează Consilium normal** (mod sequential/dialectic/trias) pe aceeași propunere — senatul e înlocuit cu deliberarea standard
 
-### ABSTAIN și MIN_ACTIVE_VOTES
+### Cele 5 Legi (Senate)
 
-`ABSTAIN` = prezent-fără-poziție. Nu reduce `voters_present`, nu intră în tally. Dacă ≥3/9 senatori abstain, warning `high_abstain_rate`.
+| # | Lege | Esență |
+|---|------|--------|
+| 1 | Output și vot obligatorii | Fiecare senator emite output structurat și vot **GO/MODIFY/STOP** pe fiecare propunere. ABSTAIN nu e vot valid. Senatorii care nu pot forma poziție directă pe propunerea ca atare (Deming pe propuneri non-cuantitative, Tacitus pe propuneri fără precedent invocat) emit GO cu câmp `reasoning` explicit de retragere — semnal că nu blochează, dar nu blanket-validează. Tally-ul rămâne 1 vot per senator (no weighted voting). |
+| 2 | Cross-questions limitate | Max 3 cross-Q/senator/rundă × max 3 runde. Round 3 = STOP forțat. |
+| 3 | Blocaj → vot majoritar de 5 | Dacă 2 senatori rămân GO×STOP după Round 3, ceilalți 5 votează care argument e mai puternic. |
+| 4 | Sinteza doar la final | `senate_synth.py` rulează DUPĂ toate rundele. Position changes logate în bundle. |
+| 5 | Auditabilitate | Toate runde + cross-Q + schimbări de poziție salvate în `runs/senate/`. |
 
-`MIN_ACTIVE_VOTES=5`: dacă mai puțin de 5 senatori au votat activ (GO/MODIFY/STOP), verdictul e `UNREACHABLE` indiferent de distribuție — deliberarea e insuficient reprezentată. La `DEEPLY_SPLIT` (active ≥ 5 dar nici GO nici STOP nu ating QUORUM=7 și MODIFY==0), user-ul poate forța senatorii ABSTAIN să aleagă o tabără și re-rula.
+### MIN_ACTIVE_VOTES
+
+`MIN_ACTIVE_VOTES=5`: dacă mai puțin de 5 senatori au votat activ (GO/MODIFY/STOP), verdictul e `UNREACHABLE`. Sub noua Lege 1 (no-ABSTAIN), `UNREACHABLE` semnalizează exclusiv absență (timeout / dispatch failure), nu retragere — toți senatorii prezenți votează una din cele trei opțiuni. Legacy compat: `runs/senate/*.json` cu `senate_schema_version<2` sau câmp absent pot conține voturi ABSTAIN; nu se mai produc în runs noi.
 
 ### Routing boundary (EXPERIMENTAL — when to choose senate vs other modes)
 
@@ -636,7 +644,7 @@ Două nivele:
 cat scripts/senate_synth_fixture.json | python -X utf8 scripts/senate_synth.py   # fixture quick check
 python -X utf8 scripts/test_senate_synth.py                                       # 9-test suite
 ```
-Suita rulează: prompt structure, fixture, verdict GO unanimous/GO supermajority (7/9), MODIFY-blocks, UNREACHABLE (sub MIN_ACTIVE=5), unrecognized-vote, **multi-round position change (Law 2+4)**, **cross-questions violation (Law 2)**, **blocaj pending + blocaj resolution (Law 3)**, DEEPLY_SPLIT (sub-QUORUM splits), ABSTAIN voters_present + MIN_ACTIVE boundary, bundle persistence, collision-safe write. Toate 20 trebuie PASS înainte de commit pe `senate_synth.py` sau orice `prompts/senators/*.md`.
+Suita rulează: prompt structure, fixture, verdict GO unanimous/GO supermajority (7/9), MODIFY-blocks, UNREACHABLE (sub MIN_ACTIVE=5 via senatori absenți), unrecognized-vote, **multi-round position change (Law 2+4)**, **cross-questions violation (Law 2)**, **blocaj pending + blocaj resolution (Law 3)**, DEEPLY_SPLIT (sub-QUORUM splits), ABSTAIN hard-reject pe schema v2 (legacy v1 încă citit), bundle persistence, collision-safe write. Toate trebuie PASS înainte de commit pe `senate_synth.py` sau orice `prompts/senators/*.md`.
 
 ### Origine + arhitectură
 
