@@ -182,6 +182,80 @@ def conservator_spread(scores: list[dict]) -> float:
     return max(0.0, min(1.0, stdev / denom))
 
 
+_PEER_EVIDENCE_BOILERPLATE = frozenset({
+    "see above", "n/a", "none", "as noted", "no concern", "ok",
+    "looks good", "no change", "no peer evidence", "tbd",
+})
+
+
+def pass2_revision_quality(bundle: dict) -> float | None:
+    """Fraction of Pass-2 revisions that carry non-boilerplate peer_evidence
+    ≥20 chars. Returns None if no Pass-2 revisions exist (the metric does
+    not apply to single-pass modes).
+
+    Triggers on `control` voice revisions in the dialectic merge step
+    (where the schema documents `revision.peer_evidence`).
+    """
+    pass2 = bundle.get("pass2")
+    if not isinstance(pass2, dict):
+        return None
+    verdicts = (pass2.get("control") or {}).get("verdicts") or []
+    revisions = [
+        v for v in verdicts
+        if isinstance(v, dict) and isinstance(v.get("revision"), dict)
+    ]
+    if not revisions:
+        return None
+    good = 0
+    for v in revisions:
+        evidence = v["revision"].get("peer_evidence", "") or ""
+        if not isinstance(evidence, str):
+            continue
+        normalized = evidence.strip().lower()
+        if len(normalized) >= 20 and normalized not in _PEER_EVIDENCE_BOILERPLATE:
+            good += 1
+    return good / len(revisions)
+
+
+def personalities_divergence(bundle: dict) -> float | None:
+    """For Trias mode: fraction of personalities (Pioneer/Architect/Steward)
+    that picked different `chosen` candidates. Returns None outside Trias.
+
+    1.0 = full divergence (3 different chosen IDs).
+    0.0 = full convergence (all 3 picked the same candidate) — advisory
+    flag: lenses may not be biasing perception as intended.
+    """
+    team = bundle.get("team")
+    if team != "trias":
+        return None
+    members = bundle.get("members") or bundle.get("personalities") or {}
+    if not isinstance(members, dict) or not members:
+        return None
+    chosen_ids: list[str] = []
+    for entry in members.values():
+        if isinstance(entry, dict):
+            cid = entry.get("chosen") or entry.get("chosen_approach")
+            if isinstance(cid, str) and cid:
+                chosen_ids.append(cid)
+    if len(chosen_ids) < 2:
+        return None
+    return (len(set(chosen_ids)) - 1) / (len(chosen_ids) - 1)
+
+
+def control_speculation_flag(verdicts: list[dict]) -> int:
+    """Count verdicts that mark themselves `valid: true` while declaring
+    `confidence_in_verdict: low` — Control admitting it speculated rather
+    than verified. Returns 0 when the field is absent (legacy verdicts).
+    """
+    count = 0
+    for v in verdicts:
+        if not isinstance(v, dict):
+            continue
+        if v.get("valid") is True and v.get("confidence_in_verdict") == "low":
+            count += 1
+    return count
+
+
 def critique(bundle: dict) -> dict:
     generator = (bundle.get("generator") or {}).get("candidates") or []
     control = (bundle.get("control") or {}).get("verdicts") or []
@@ -190,6 +264,11 @@ def critique(bundle: dict) -> dict:
     gd = round(generator_divergence(generator), 3)
     cc = round(control_concreteness(control), 3)
     cs = round(conservator_spread(conservator), 3)
+
+    # Optional metrics — emitted only when the relevant mode is active.
+    prq_raw = pass2_revision_quality(bundle)
+    pd_raw = personalities_divergence(bundle)
+    speculation = control_speculation_flag(control)
 
     flags: list[str] = []
     if gd < WARNING["generator_divergence"]:
@@ -201,15 +280,35 @@ def critique(bundle: dict) -> dict:
     if cs < WARNING["conservator_spread"]:
         sev = "shrug" if cs < DEGENERATE["conservator_spread"] else "weak"
         flags.append(f"conservator_spread={cs} {sev} — risk scores cluster")
+    if prq_raw is not None and prq_raw < 0.5:
+        flags.append(
+            f"pass2_revision_quality={round(prq_raw, 3)} thin — "
+            "peer_evidence boilerplate or under 20 chars"
+        )
+    if pd_raw is not None and pd_raw == 0.0:
+        flags.append(
+            "personalities_divergence=0.0 advisory — Trias lenses converged on "
+            "the same chosen; verify lens injection is biasing perception"
+        )
+    if speculation > 0:
+        flags.append(
+            f"control_speculation={speculation} — verdicts marked valid:true with "
+            "confidence_in_verdict:low (Control speculated rather than verified)"
+        )
 
-    return {
-        "deliberation_quality": {
-            "generator_divergence": gd,
-            "control_concreteness": cc,
-            "conservator_spread":   cs,
-            "flags": flags,
-        }
+    quality: dict[str, object] = {
+        "generator_divergence": gd,
+        "control_concreteness": cc,
+        "conservator_spread":   cs,
+        "flags": flags,
     }
+    if prq_raw is not None:
+        quality["pass2_revision_quality"] = round(prq_raw, 3)
+    if pd_raw is not None:
+        quality["personalities_divergence"] = round(pd_raw, 3)
+    if speculation:
+        quality["control_speculation"] = speculation
+    return {"deliberation_quality": quality}
 
 
 def main(argv: list[str] | None = None) -> int:

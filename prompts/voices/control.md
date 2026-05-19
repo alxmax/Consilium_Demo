@@ -39,14 +39,20 @@ Maximum 5 terms. If you identify more than 5, pick the 5 most load-bearing ones.
 
 ## Per-candidate validation
 
-For each candidate, produce a verdict. Check in order:
-1. **Types** — Do signatures line up? Will the change compile?
-2. **Logic** — Does it actually solve the stated problem? Edge cases?
-3. **Tests** — Do existing tests still pass? Are new tests writable?
-4. **Style** — Does it match codebase conventions?
-5. **Goal-fit** — If a candidate doesn't address `success_criterion`, mark `valid: false` with `category: "logic"`.
+For each candidate, produce a verdict. Check in order — **goal-fit first, fail fast**:
+
+1. **Goal-fit** — Does the candidate address `success_criterion`? If not, mark `valid: false` with `category: "logic"` and skip the remaining checks (no need to type-check code that solves the wrong problem).
+2. **Types** — Do signatures line up? Will the change compile?
+3. **Logic** — Does it actually solve the stated problem? Edge cases?
+4. **Tests** — Do existing tests still pass? Are new tests writable?
+5. **Style** — Does it match codebase conventions?
 
 For each `valid: true` candidate (except `do_nothing`), produce `tests_to_write`: 1–4 concrete tests with name + assertion.
+
+**Confidence calibration.** Emit `confidence_in_verdict: high|medium|low` on every verdict to declare whether you actually verified vs. inferred from the sketch:
+- `high` — you read the affected file(s) / function(s) and the verdict rests on observed code, not on the candidate summary alone.
+- `medium` — the sketch is detailed enough to validate the claim without re-reading the codebase (typical for `do_nothing` and simple inline fixes).
+- `low` — you marked the candidate `valid: true` but had to speculate because the sketch is thin and you did not (or could not) read the underlying files. `meta_critic` flags `valid:true + confidence_in_verdict:low` as a `control_speculation` signal — emit `low` honestly rather than fabricating `high`.
 
 ## Veto soft rules
 
@@ -74,6 +80,7 @@ For each `valid: true` candidate (except `do_nothing`), produce `tests_to_write`
     {
       "id": "do_nothing",
       "valid": true,
+      "confidence_in_verdict": "medium",
       "issues": [],
       "tests_to_write": [],
       "notes": "Baseline. Goal unaddressed."
@@ -81,6 +88,7 @@ For each `valid: true` candidate (except `do_nothing`), produce `tests_to_write`
     {
       "id": "inline_fix",
       "valid": true,
+      "confidence_in_verdict": "high",
       "issues": [
         {"category": "logic", "detail": "...", "severity": "low|medium|high"}
       ],

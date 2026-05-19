@@ -199,21 +199,35 @@ def validate_input(payload: dict) -> None:
 
 
 def _diff_candidates(p1: list[dict], p2: list[dict]) -> list[dict]:
-    """Per-id field diff between two candidate lists."""
+    """Per-id field diff between two candidate lists.
+
+    Emits enough payload for consumers to render a real before/after diff:
+    - `added`   → `after`  carries the full new item
+    - `removed` → `before` carries the full removed item
+    - `modified`→ `fields` lists changed keys; `before`/`after` carry the
+                  per-key values so reviewers see what actually changed
+                  without re-deriving from raw bundles.
+    """
     p1_by_id = _items_by_id(p1)
     p2_by_id = _items_by_id(p2)
     diffs: list[dict] = []
     for cid in sorted(set(p1_by_id) | set(p2_by_id)):
         if cid not in p1_by_id:
-            diffs.append({"id": cid, "change": "added"})
+            diffs.append({"id": cid, "change": "added", "after": p2_by_id[cid]})
             continue
         if cid not in p2_by_id:
-            diffs.append({"id": cid, "change": "removed"})
+            diffs.append({"id": cid, "change": "removed", "before": p1_by_id[cid]})
             continue
         a, b = p1_by_id[cid], p2_by_id[cid]
         changed = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
         if changed:
-            diffs.append({"id": cid, "change": "modified", "fields": changed})
+            diffs.append({
+                "id": cid,
+                "change": "modified",
+                "fields": changed,
+                "before": {k: a.get(k) for k in changed},
+                "after": {k: b.get(k) for k in changed},
+            })
     return diffs
 
 
