@@ -179,10 +179,17 @@ def test_verdict_modify_blocks() -> tuple[bool, str]:
 
 
 def test_verdict_unreachable() -> tuple[bool, str]:
-    """All senators ABSTAIN -> UNREACHABLE (zero active votes)."""
-    senators = all_voting("ABSTAIN")
+    """4 senators present (5 absent) -> UNREACHABLE (active < MIN_ACTIVE_VOTES=5).
+    Under no-ABSTAIN policy, UNREACHABLE signals dispatch failure / timeout, not retreat.
+    """
+    senators = {
+        "wittgenstein": base_senator_output("GO"),
+        "aurelius":     base_senator_output("GO"),
+        "confucius":    base_senator_output("GO"),
+        "socrate":      base_senator_output("GO"),
+    }
     code, bundle, stderr = run_synth(make_payload(
-        proposal="all-abstain smoke",
+        proposal="too-few-present smoke",
         senators=senators,
         label="smoke-unreachable",
     ))
@@ -191,12 +198,10 @@ def test_verdict_unreachable() -> tuple[bool, str]:
         return guard
     bundle = guard
     if bundle["verdict"] != "UNREACHABLE":
-        return False, f"expected UNREACHABLE (all ABSTAIN), got {bundle['verdict']}"
-    if any("unrecognized" in w for w in bundle["warnings"]):
-        return False, f"ABSTAIN must not trigger unrecognized warning, got: {bundle['warnings']}"
-    if bundle["voters_present"] != len(SENATORS):
-        return False, f"expected voters_present={len(SENATORS)} (ABSTAIN = present), got {bundle['voters_present']}"
-    return True, f"{len(SENATORS)} ABSTAIN -> UNREACHABLE, voters_present={len(SENATORS)}"
+        return False, f"expected UNREACHABLE (4 < MIN_ACTIVE=5), got {bundle['verdict']}"
+    if bundle["voters_present"] != 4:
+        return False, f"expected voters_present=4 (only 4 dispatched), got {bundle['voters_present']}"
+    return True, "4 senators present (5 absent) -> UNREACHABLE"
 
 
 def test_unrecognized_vote_warns_and_counts_modify() -> tuple[bool, str]:
@@ -414,7 +419,7 @@ def test_blocaj_resolution_applied() -> tuple[bool, str]:
 
 
 def test_deeply_split_4_3() -> tuple[bool, str]:
-    """4 GO + 3 STOP + 2 ABSTAIN, MODIFY==0 → DEEPLY_SPLIT (neither reaches QUORUM=7)."""
+    """4 GO + 3 STOP + 2 absent, MODIFY==0 → DEEPLY_SPLIT (neither reaches QUORUM=7)."""
     senators = {
         "wittgenstein": base_senator_output("GO"),
         "aurelius":     base_senator_output("GO"),
@@ -423,8 +428,6 @@ def test_deeply_split_4_3() -> tuple[bool, str]:
         "musk":         base_senator_output("STOP", "block A"),
         "dimon":        base_senator_output("STOP", "block B"),
         "napoleon":     base_senator_output("STOP", "block C"),
-        "deming":       base_senator_output("ABSTAIN"),
-        "tacitus":      base_senator_output("ABSTAIN"),
     }
     code, bundle, stderr = run_synth(make_payload(
         proposal="4-3 polarized smoke", senators=senators, label="smoke-deeply-split-4-3"))
@@ -436,7 +439,7 @@ def test_deeply_split_4_3() -> tuple[bool, str]:
         return False, f"expected DEEPLY_SPLIT, got {bundle['verdict']} (counts {bundle['vote_counts']})"
     if not bundle.get("blocaj_pending"):
         return False, f"expected blocaj_pending populated for DEEPLY_SPLIT, got: {bundle.get('blocaj_pending')}"
-    return True, "4 GO / 3 STOP / 2 ABSTAIN -> DEEPLY_SPLIT + blocaj_pending (user can force ABSTAIN)"
+    return True, "4 GO / 3 STOP / 2 absent -> DEEPLY_SPLIT + blocaj_pending"
 
 
 def test_modify_blocks_deeply_split() -> tuple[bool, str]:
@@ -449,8 +452,6 @@ def test_modify_blocks_deeply_split() -> tuple[bool, str]:
         "musk":         base_senator_output("STOP", "block Y"),
         "dimon":        base_senator_output("STOP", "block Z"),
         "napoleon":     base_senator_output("MODIFY", "tweak Q"),
-        "deming":       base_senator_output("ABSTAIN"),
-        "tacitus":      base_senator_output("ABSTAIN"),
     }
     code, bundle, stderr = run_synth(make_payload(
         proposal="3-3-1 modify blocks smoke", senators=senators, label="smoke-modify-blocks-split"))
@@ -466,7 +467,7 @@ def test_modify_blocks_deeply_split() -> tuple[bool, str]:
 
 
 def test_deeply_split_3_4() -> tuple[bool, str]:
-    """3 GO + 4 STOP + 2 ABSTAIN, MODIFY==0 → DEEPLY_SPLIT (STOP=4 < QUORUM=7)."""
+    """3 GO + 4 STOP + 2 absent, MODIFY==0 → DEEPLY_SPLIT (STOP=4 < QUORUM=7)."""
     senators = {
         "wittgenstein": base_senator_output("GO"),
         "aurelius":     base_senator_output("GO"),
@@ -475,8 +476,6 @@ def test_deeply_split_3_4() -> tuple[bool, str]:
         "musk":         base_senator_output("STOP", "block B"),
         "dimon":        base_senator_output("STOP", "block C"),
         "napoleon":     base_senator_output("STOP", "block D"),
-        "deming":       base_senator_output("ABSTAIN"),
-        "tacitus":      base_senator_output("ABSTAIN"),
     }
     code, bundle, stderr = run_synth(make_payload(
         proposal="3-4 polarized smoke", senators=senators, label="smoke-deeply-split-3-4"))
@@ -486,11 +485,11 @@ def test_deeply_split_3_4() -> tuple[bool, str]:
     bundle = guard
     if bundle["verdict"] != "DEEPLY_SPLIT":
         return False, f"expected DEEPLY_SPLIT, got {bundle['verdict']} (counts {bundle['vote_counts']})"
-    return True, "3 GO / 4 STOP / 2 ABSTAIN -> DEEPLY_SPLIT (STOP=4 < QUORUM=7)"
+    return True, "3 GO / 4 STOP / 2 absent -> DEEPLY_SPLIT (STOP=4 < QUORUM=7)"
 
 
 def test_supermajority_required_not_simple_majority() -> tuple[bool, str]:
-    """5 GO + 2 STOP + 2 ABSTAIN → DEEPLY_SPLIT (5 < QUORUM=7, not enough for GO)."""
+    """5 GO + 2 STOP + 2 absent → DEEPLY_SPLIT (5 < QUORUM=7, not enough for GO)."""
     senators = {
         "wittgenstein": base_senator_output("GO"),
         "aurelius":     base_senator_output("GO"),
@@ -499,8 +498,6 @@ def test_supermajority_required_not_simple_majority() -> tuple[bool, str]:
         "musk":         base_senator_output("GO"),
         "dimon":        base_senator_output("STOP", "block"),
         "napoleon":     base_senator_output("STOP", "block"),
-        "deming":       base_senator_output("ABSTAIN"),
-        "tacitus":      base_senator_output("ABSTAIN"),
     }
     code, bundle, stderr = run_synth(make_payload(
         proposal="5-2 not-supermajority smoke", senators=senators, label="smoke-supermaj-required"))
@@ -510,7 +507,7 @@ def test_supermajority_required_not_simple_majority() -> tuple[bool, str]:
     bundle = guard
     if bundle["verdict"] != "DEEPLY_SPLIT":
         return False, f"expected DEEPLY_SPLIT (5 GO < QUORUM=7), got {bundle['verdict']} (counts {bundle['vote_counts']})"
-    return True, "5 GO / 2 STOP / 2 ABSTAIN -> DEEPLY_SPLIT (supermajority requires 7, not simple majority)"
+    return True, "5 GO / 2 STOP / 2 absent -> DEEPLY_SPLIT (supermajority requires 7, not simple majority)"
 
 
 def test_deeply_split_resolved_via_blocaj() -> tuple[bool, str]:
@@ -554,36 +551,37 @@ def test_deeply_split_resolved_via_blocaj() -> tuple[bool, str]:
 
 
 
-def test_abstain_doesnt_reduce_voters_present() -> tuple[bool, str]:
-    """ABSTAIN = present-but-no-position: excluded from tally, does NOT reduce voters_present.
-    5 ABSTAIN + 4 GO: active=4 < MIN_ACTIVE_VOTES=5 → UNREACHABLE.
-    voters_present stays 9. high_abstain_rate fires (5 >= 3). No unrecognized warning.
+def test_absent_reduces_voters_present() -> tuple[bool, str]:
+    """5 senators absent + 4 GO present: active=4 < MIN_ACTIVE_VOTES=5 → UNREACHABLE.
+    voters_present=4 (absent senators don't count). Under no-ABSTAIN policy (schema v2),
+    absence is the only path to UNREACHABLE.
     """
-    senators = all_voting("GO")
-    for name in ("musk", "dimon", "napoleon", "deming", "tacitus"):
-        senators[name] = base_senator_output("ABSTAIN", "insufficient sample")
+    senators = {
+        "wittgenstein": base_senator_output("GO"),
+        "aurelius":     base_senator_output("GO"),
+        "confucius":    base_senator_output("GO"),
+        "socrate":      base_senator_output("GO"),
+    }
     code, bundle, stderr = run_synth(make_payload(
-        proposal="abstain smoke", senators=senators, label="smoke-abstain"))
+        proposal="absent senators smoke", senators=senators, label="smoke-absent"))
     guard = _require_bundle(code, bundle, stderr)
     if isinstance(guard, tuple):
         return guard
     bundle = guard
     if bundle["vote_counts"]["GO"] != 4 or bundle["vote_counts"]["MODIFY"] != 0:
-        return False, f"expected GO=4 MODIFY=0 (ABSTAIN excluded from tally), got {bundle['vote_counts']}"
-    if bundle["voters_present"] != len(SENATORS):
-        return False, f"expected voters_present={len(SENATORS)} (ABSTAIN = present), got {bundle['voters_present']}"
+        return False, f"expected GO=4 MODIFY=0, got {bundle['vote_counts']}"
+    if bundle["voters_present"] != 4:
+        return False, f"expected voters_present=4 (5 absent), got {bundle['voters_present']}"
     if bundle["verdict"] != "UNREACHABLE":
         return False, f"expected UNREACHABLE (active=4 < MIN_ACTIVE=5), got {bundle['verdict']}"
-    if any("unrecognized" in w for w in bundle["warnings"]):
-        return False, f"ABSTAIN must not trigger unrecognized-vote warning, got: {bundle['warnings']}"
-    if not any("high_abstain_rate" in w for w in bundle["warnings"]):
-        return False, f"expected high_abstain_rate warning (5 >= threshold=3), got: {bundle['warnings']}"
-    return True, f"5 ABSTAIN + 4 GO: voters_present={len(SENATORS)}, UNREACHABLE (active < MIN_ACTIVE=5)"
+    if len(bundle["senators_absent"]) != 5:
+        return False, f"expected 5 senators_absent, got {bundle['senators_absent']}"
+    return True, f"4 present + 5 absent: voters_present=4, UNREACHABLE (active < MIN_ACTIVE=5)"
 
 
 def test_min_active_boundary() -> tuple[bool, str]:
     """Exactly MIN_ACTIVE_VOTES=5 active votes → DEEPLY_SPLIT (not UNREACHABLE).
-    4 GO + 1 STOP + 4 ABSTAIN: active=5 = threshold → DEEPLY_SPLIT.
+    4 GO + 1 STOP + 4 absent: active=5 = threshold → DEEPLY_SPLIT.
     """
     senators = {
         "wittgenstein": base_senator_output("GO"),
@@ -591,10 +589,6 @@ def test_min_active_boundary() -> tuple[bool, str]:
         "confucius":    base_senator_output("GO"),
         "socrate":      base_senator_output("GO"),
         "musk":         base_senator_output("STOP", "oppose"),
-        "dimon":        base_senator_output("ABSTAIN"),
-        "napoleon":     base_senator_output("ABSTAIN"),
-        "deming":       base_senator_output("ABSTAIN"),
-        "tacitus":      base_senator_output("ABSTAIN"),
     }
     code, bundle, stderr = run_synth(make_payload(
         proposal="min-active boundary smoke", senators=senators, label="smoke-min-active"))
@@ -604,9 +598,40 @@ def test_min_active_boundary() -> tuple[bool, str]:
     bundle = guard
     if bundle["verdict"] != "DEEPLY_SPLIT":
         return False, f"expected DEEPLY_SPLIT (active=5 = MIN_ACTIVE=5), got {bundle['verdict']} (counts {bundle['vote_counts']})"
-    if bundle["voters_present"] != len(SENATORS):
-        return False, f"expected voters_present={len(SENATORS)}, got {bundle['voters_present']}"
-    return True, "4 GO + 1 STOP + 4 ABSTAIN: active=5 = MIN_ACTIVE_VOTES → DEEPLY_SPLIT (threshold boundary)"
+    if bundle["voters_present"] != 5:
+        return False, f"expected voters_present=5 (4 absent), got {bundle['voters_present']}"
+    return True, "4 GO + 1 STOP + 4 absent: active=5 = MIN_ACTIVE_VOTES → DEEPLY_SPLIT (boundary)"
+
+
+def test_abstain_rejected_hard() -> tuple[bool, str]:
+    """No-ABSTAIN policy (schema v2): any ABSTAIN vote must trigger hard validation error,
+    not silent skip. Legacy ABSTAIN runs are preserved on disk but new ones rejected.
+    """
+    senators = all_voting("GO")
+    senators["deming"] = base_senator_output("ABSTAIN", "no data")
+    code, bundle, stderr = run_synth(make_payload(
+        proposal="abstain rejection smoke", senators=senators, label="smoke-abstain-reject"))
+    if code == 0:
+        return False, f"expected non-zero exit on ABSTAIN, got code=0 (bundle written: {bundle is not None})"
+    if "ABSTAIN" not in stderr and "abstain" not in stderr.lower():
+        return False, f"expected ABSTAIN error mention in stderr, got: {stderr[:200]}"
+    if "deming" not in stderr:
+        return False, f"expected offender 'deming' in stderr, got: {stderr[:200]}"
+    return True, "ABSTAIN vote -> hard validation error citing offender (no-ABSTAIN Law 1)"
+
+
+def test_schema_version_stamped() -> tuple[bool, str]:
+    """Every new bundle carries `senate_schema_version: 2` (Section D)."""
+    code, bundle, stderr = run_synth(make_payload(
+        proposal="schema version stamp smoke",
+        senators=all_voting("GO"), label="smoke-schema-v2"))
+    guard = _require_bundle(code, bundle, stderr)
+    if isinstance(guard, tuple):
+        return guard
+    bundle = guard
+    if bundle.get("senate_schema_version") != 2:
+        return False, f"expected senate_schema_version=2, got: {bundle.get('senate_schema_version')!r}"
+    return True, "bundle stamped senate_schema_version=2"
 
 
 def test_collision_safe_write() -> tuple[bool, str]:
@@ -663,9 +688,13 @@ TEST_GROUPS = [
         ("supermajority_required",      test_supermajority_required_not_simple_majority),
         ("deeply_split_blocaj_bypass",  test_deeply_split_resolved_via_blocaj),
     ]),
-    ("ABSTAIN / MIN_ACTIVE (9-senator)", [
-        ("abstain_voters_present",      test_abstain_doesnt_reduce_voters_present),
+    ("Absence / MIN_ACTIVE (9-senator)", [
+        ("absent_reduces_voters",       test_absent_reduces_voters_present),
         ("min_active_boundary",         test_min_active_boundary),
+    ]),
+    ("No-ABSTAIN policy (schema v2)", [
+        ("abstain_rejected_hard",       test_abstain_rejected_hard),
+        ("schema_version_stamped",      test_schema_version_stamped),
     ]),
     ("Compat & persistence", [
         ("bundle_persisted",            test_bundle_persisted_and_valid_json),
