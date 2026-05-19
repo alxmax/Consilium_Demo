@@ -150,6 +150,47 @@ def _is_dissent_compliant(item: dict) -> bool:
     return bool(revision) or bool(maintained)
 
 
+def should_skip_pass2(pass1: dict) -> tuple[bool, list[str]]:
+    """Return (skip, reasons) based on Pass-1 convergence criteria.
+
+    All three must hold to skip Pass 2:
+    1. All Control verdicts valid (no invalid candidates)
+    2. Generator preferred matches Conservator lowest-risk candidate
+    3. No substantial Control disagreements
+
+    Call before dispatching Pass-2 sub-agents. If skip=True, call merge()
+    with pass2 omitted — result will include dialectic_metadata.pass2_executed=False.
+    """
+    control = pass1.get("control", {})
+    generator = pass1.get("generator", {})
+    conservator = pass1.get("conservator", {})
+
+    reasons: list[str] = []
+
+    verdicts = control.get("verdicts", [])
+    if not verdicts or not all(v.get("valid") for v in verdicts):
+        reasons.append("not_all_valid")
+
+    preferred = generator.get("preferred")
+    scores: list[dict] = conservator.get("scores", [])
+    if scores:
+        lowest_risk: dict = min(scores, key=lambda s: _safe_risk_score(s))
+        if preferred != lowest_risk.get("id"):
+            reasons.append("preferred_differs_from_lowest_risk")
+    else:
+        reasons.append("no_conservator_scores")
+
+    disagreements = control.get("disagreements", [])
+    substantial = [d for d in disagreements if isinstance(d, dict) and d.get("type") == "substantial"]
+    if substantial:
+        reasons.append("substantial_disagreements")
+
+    skip = len(reasons) == 0
+    if skip:
+        reasons = ["all_valid", "preferred_matches_lowest_risk", "no_substantial_disagreement"]
+    return skip, reasons
+
+
 def validate_input(payload: dict) -> None:
     """Validate dialectic_merge input has required pass1 structure."""
     validate_keys(payload, ["pass1"], context="dialectic_merge input")
@@ -295,6 +336,26 @@ def merge(payload: dict) -> dict:
                 pass2.get(voice, {}).get(key, []),
             )
 
+    # C2: count Pass-2 position changes (revision vs maintained) per voice
+    if pass2 is not None:
+        pass2_revisions: dict[str, int] = {}
+        for voice in VOICES:
+            if fallbacks.get(voice):
+                continue
+            key = VOICE_KEY[voice]
+            items = (pass2.get(voice) or {}).get(key, [])
+            revisions = sum(1 for item in items if isinstance(item, dict) and "revision" in item)
+            pass2_revisions[voice] = revisions
+        revision_log["pass2_revisions"] = pass2_revisions
+
+    # Dialectic metadata for convergence reporting
+    _, _criteria = should_skip_pass2(pass1)
+    revision_log["dialectic_metadata"] = {
+        "pass2_executed": pass2 is not None,
+        "pass2_skip_reason": None if pass2 is not None else "pass1_converged",
+        "convergence_criteria_met": _criteria,
+    }
+
     return {
         "candidates": merged_candidates,
         "revision_log": revision_log,
@@ -310,6 +371,11 @@ def main(argv: list[str] | None = None) -> int:
         default=sys.stdin,
         help="JSON input file (default: stdin)",
     )
+    ap.add_argument(
+        "--check-pass2",
+        action="store_true",
+        help="Check Pass-1 convergence and output {skip_pass2, reasons} without merging",
+    )
     args = ap.parse_args(argv)
 
     try:
@@ -317,6 +383,13 @@ def main(argv: list[str] | None = None) -> int:
     except json.JSONDecodeError as exc:
         print(f"invalid JSON: {exc}", file=sys.stderr)
         return 2
+
+    if args.check_pass2:
+        validate_input(payload)
+        skip, reasons = should_skip_pass2(payload.get("pass1", {}))
+        json.dump({"skip_pass2": skip, "reasons": reasons}, sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return 0
 
     validate_input(payload)
 

@@ -72,6 +72,33 @@ SEPARATION_WEIGHT = 0.3
 CONFIDENCE_FLOOR = 0.05
 CONFIDENCE_CEIL = 0.99
 
+# E1: mode-specific confidence floors. When a mode's result lands below its floor,
+# log as outcome WEAK in FEEDBACK.html — signal that the mode didn't deliver value
+# for its cost. Trias (9× cost) earns the highest floor.
+MODE_CONFIDENCE_FLOOR: dict[str, float] = {
+    "sequential": 0.70,
+    "sequential_scale_down": 0.70,
+    "dialectic": 0.75,
+    "trias": 0.80,
+}
+
+
+def check_mode_floor(mode: str, confidence: float | None) -> dict:
+    """Return {below_floor: bool, floor: float|None, outcome_hint: str}.
+
+    Callers check this after confidence derivation and log WEAK in FEEDBACK.html
+    when below_floor is True. outcome_hint is 'WEAK' or 'OK' (advisory only).
+    """
+    floor = MODE_CONFIDENCE_FLOOR.get(mode)
+    if floor is None or confidence is None:
+        return {"below_floor": False, "floor": floor, "outcome_hint": "OK"}
+    below = confidence < floor
+    return {
+        "below_floor": below,
+        "floor": floor,
+        "outcome_hint": "WEAK" if below else "OK",
+    }
+
 VOTE_PATTERN_CONFIDENCE = {
     "3-0": 0.95,
     "2-1": 0.75,  # dissent: one personality chose a different candidate (recoverable)

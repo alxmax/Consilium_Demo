@@ -215,6 +215,11 @@ def build(bundle: dict) -> dict:
         report["personalities"] = bundle["personalities"]
     if "vote_pattern" in bundle:
         report["vote_pattern"] = bundle["vote_pattern"]
+    # B3: per-personality choices breakdown (orchestrator populates this after step 3)
+    if "personality_choices" in bundle:
+        report["personality_choices"] = bundle["personality_choices"]
+    if "vote_skipped" in bundle:
+        report["vote_skipped"] = bundle["vote_skipped"]
     aggregate = bundle.get("aggregate", {})
     if isinstance(aggregate, dict):
         if "dissent" in aggregate:
