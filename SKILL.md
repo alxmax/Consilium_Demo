@@ -508,6 +508,7 @@ After Sequential produces `chosen`, always dispatch `skeptic_on_chosen` (not con
    echo '{"personalities":[...],"candidates":[...]}' | python scripts/aggregator.py --scheme team_vote | python scripts/confidence.py
    ```
    Do not manually build `{"candidates":[...],"chosen":"..."}` for Trias — the candidates don't have `scores` per voice.
+7. **Deadlock cascade (B2) — only if vote_pattern is 1-1-1 or 0-0-0.** See Failure recovery below.
 
 ### Vote patterns
 | Pattern | Confidence | Outcome |
@@ -515,12 +516,28 @@ After Sequential produces `chosen`, always dispatch `skeptic_on_chosen` (not con
 | 3-0 | 0.95 | OK auto |
 | 2-1 | 0.75 | OK auto |
 | 2-0 | 0.70 | OK auto |
-| 1-1-1 / 1-1-0 / 1-0-0 | null | PEND |
-| 0-0-0 | null | PEND + retry_suggested |
+| 1-1-1 | null | → B2 cascade (Round 2 → Skeptic → PEND) |
+| 0-0-0 | null | → B2 cascade (Round 2 → PEND) |
 
 ### Failure recovery
-- **1-1-1 fragmentation:** orchestrator asks user — accept one, re-run with constraints, or abort
-- **0-0-0 total veto:** emit `retry_suggested` with relaxed threshold or Generator constraints
+
+**B2 — Deadlock cascade.** Fires when Round 1 yields 1-1-1 or 0-0-0.
+
+**Round 2 (always first):** Re-dispatch all 3 personality sub-agents. Each receives the other two personalities' `{chosen_approach, reasoning_summary}` from Round 1 as additional context. Re-vote via `team_vote`. Cost: +3 sub-agents.
+
+- Round 2 produces 2-1 or 3-0 → cascade exits, report normally. Set `trias_rounds: 2` in telemetry.
+- Round 2 still **1-1-1** → proceed to Skeptic tiebreaker (below).
+- Round 2 still **0-0-0** → **PEND** (Skeptic cannot arbitrate among nothing). Set `trias_rounds: 2, deadlock: "0-0-0"` in telemetry.
+- Round 2 converts 0-0-0 → 1-1-1 → proceed to Skeptic tiebreaker.
+
+**Skeptic tiebreaker (only after Round 2 1-1-1):** Dispatch 1 sub-agent with `prompts/voices/skeptic.md` plus modified input — all 3 competing `{chosen_approach, reasoning_summary}` pairs. Skeptic selects one id as `chosen`. Cost: +1 sub-agent. Set `trias_rounds: 2, tiebreak: "skeptic"` in telemetry.
+
+- Skeptic returns a valid id → chosen confirmed. Confidence: 0.65 (tiebreak path).
+- Skeptic abstains or errors → **PEND**.
+
+**Headless (B2):** All Round 2 and Skeptic dispatches run as non-interactive sub-agents — no prompt needed. Final PEND falls through to `PEND_HEADLESS` logging.
+
+**Max cost (worst case 1-1-1 → Round 2 → Skeptic):** 3 + 3 + 1 = 7 sub-agents.
 
 ### Skip Trias if
 - Diff < 20 lines / 1 file — `scope_gate.py` will skip anyway
