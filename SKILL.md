@@ -326,7 +326,7 @@ A small in-run sub-iteration exists: at `confidence < 0.7`, Step 5d invokes `ret
 
 Apply only when editing the skill (`scripts/*.py`, `prompts/*.md`, `SKILL.md`), not at every deliberation.
 
-**Eval harness** — when editing `aggregator.py`, `confidence.py`, `validate_report.py`, `strip_context.py`, or `dialectic_merge.py`:
+**Eval harness** — when editing `aggregator.py`, `confidence.py`, `validate_report.py`, or `strip_context.py`:
 ```bash
 python scripts/run_evals.py
 ```
@@ -356,7 +356,7 @@ python scripts/run_evals.py
 | `scripts/audit_feedback.py` | List runs without FB row; with `--backfill` adds default PEND |
 | `scripts/memory.py` | Uniform read API over the 3 tiers (short/medium/long) |
 | `scripts/strip_context.py` | Project previous voice's output to minimum (Steps 3-4 sequential) |
-| `scripts/dialectic_merge.py` | Combine Pass-1 + Pass-2 into an aggregator-ready payload |
+| `scripts/deprecated/dialectic_merge.py` | *(Deprecated — Pass-1+Pass-2 merge for old Dialectic mode)* |
 | `scripts/personalities.py` | Trias mode — 3 fixed personalities with weights + lens paths |
 | `prompts/voices/skeptic.md` | Focal voice for the `skeptic_on_chosen` flag (composable over any mode) — receives only the chosen, produces a concrete objection or `meta_scope_mismatch` |
 | `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite for deterministic scripts |
@@ -409,9 +409,9 @@ When `CLAUDE_HEADLESS=1` (set by the external orchestrator that invoked `claude 
 
 ## Dispatch defaults (per voice / per senator)
 
-Default behavior unless overridden by project memory (`MEMORY.md`). All voices and senators pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `haiku` verifiers in `trias_split`, `opus` Generator for high-stakes) — single source of truth per mode, descriptive not enforced.
+Default behavior unless overridden by project memory (`MEMORY.md`). All voices and senators pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `opus` Generator for high-stakes) — single source of truth per mode, descriptive not enforced.
 
-Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 6× · Trias 9× · `trias_split` 3.3× · Senate ~3× (9 senators). The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Parallel+flag = 1.33× Parallel, Dialectic+flag = ~2.3× Parallel).
+Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× · Trias 3× · Senate ~3× (9 senators). The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×, Parallel+flag = 1.33× Parallel).
 
 ## Parallel voices mode
 
@@ -424,11 +424,7 @@ Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 6× · T
 ### How (2 turns)
 1. **Turn 1:** dispatch Generator (1 Agent call). Wait for candidates.
 2. **Turn 2:** dispatch Control + Conservator in parallel (2 Agent calls in the same message), both receiving candidates from Turn 1.
-3. Run `dialectic_merge.py` with `pass2` omitted — normalizes control_score for invalid candidates. Input schema:
-   ```json
-   {"pass1": {"generator": {"candidates": [...]}, "control": {"verdicts": [...]}, "conservator": {"scores": [...]}}}
-   ```
-4. Aggregate with `scripts/aggregator.py`.
+3. Aggregate directly with `scripts/aggregator.py`.
 
 Each sub-agent receives: `success_criterion`, diff/context, **the full content of its voice's prompt**, the instruction to return strict JSON.
 
@@ -454,45 +450,57 @@ Return STRICTLY the JSON specified in the "Output format" section above. No pros
 - **Missing mandatory fields (e.g. `candidates` empty):** raise a warning in the terminal, skip the aggregator and emit a skipped report with `skip_reason: "voice output incomplete after retry"`.
 - **Strip_context**: necessary only in Sequential mode (Steps 3-4); in Parallel each voice runs in isolation and does not need `strip_context.py`.
 
-## Dialectic mode (opt-in, two-pass)
+## Dialectic mode — V2 (opt-in, code-specialized)
 
-Two-pass: Pass 1 = parallel; Pass 2 = each voice revises after seeing the other two's outputs. Cost: 2× parallel. Implemented in `scripts/dialectic_merge.py`.
+**Mechanics:** Standard Sequential (Conservator→Generator→Control) with code-specific context injected into the voice inputs, followed by `skeptic_on_chosen`. Cost: 1.33× Sequential (1× Sequential + 1/3 for Skeptic sub-agent). No new prompt files — context is injected via the voice input fields.
 
-**Pass-2 schema (mandatory per item).** Each Pass-2 item (candidate / verdict / score) must emit either `revision: <new content>` or `maintained: <reason>`. Missing both → `dialectic_merge.py` treats it as dissent fallback and emits a stderr warning (`[warning] dialectic pass-2 dissent fallback for <voice>: <ids>`). Pass-1 candidates omitted entirely from Pass-2 generator trigger a `silently_dropped` warning and are recovered from Pass-1.
+### Code-context injection
 
-Per-voice contract (prompt source: `prompts/voices/*_pass2.md`):
+Inject into each voice's input (not into the prompt file):
+- `language` + `framework` + `build_command` (e.g. `pytest -x`, `cargo test`)
+- `files_touched[]` — list of affected files with their roles
+- `test_files[]` — existing test files the change must not break
+- `ci_gate` — the check that must pass before merge
 
-| Voice | Output key | Mandatory fields per item |
-|------|-------------|------------------------------|
-| Generator | `candidates[]` | `id` + (`revision` with `summary/sketch/rationale` OR `maintained` with `reason`) |
-| Control | `verdicts[]` | `id` + (`revision` with `valid/issues` OR `maintained` with `peer_claim/dissent`) |
-| Conservator | `scores[]` | `id` + (`revision` with `what_changed/peer_evidence` OR `maintained` with `peer_claim/dissent`) |
+This injection activates code-specific reasoning in the existing voices without new prompt files.
 
-Audit warnings on stderr after merge — check them before considering the 2× cost justified.
+### Skeptic stage
 
-**Effort guidance in headless.** In `claude -p` (`is_headless()`), Pass-1 sub-agents can run at `effort=medium` — Pass-2 cross-review stays `high`. The decision belongs to the external orchestrator that invokes `claude -p --effort medium`; the skill documents the possibility, it does not enforce the CLI flag.
+After Sequential produces `chosen`, always dispatch `skeptic_on_chosen` (not conditional on confidence band). The Skeptic receives the chosen + `success_criterion` + the code context. The verification claim must be concrete: a named test, a build command, or a CI check.
 
-**Pass-2 conditional skip (C1).** After Pass-1 returns, before dispatching Pass-2, check convergence:
-```bash
-echo '{"pass1": {"generator": {...}, "control": {...}, "conservator": {...}}}' | python scripts/dialectic_merge.py --check-pass2
-```
-Output: `{"skip_pass2": true|false, "reasons": [...]}`. If `skip_pass2: true`, skip the Pass-2 dispatch and call `dialectic_merge.py` without `pass2` — cost is 3 dispatches (Pass-1 only) instead of 6. The report will include `dialectic_metadata.pass2_executed: false` and `pass2_skip_reason: "pass1_converged"`. Convergence criteria: (1) all Control verdicts valid, (2) Generator preferred = Conservator lowest-risk, (3) no substantial disagreements.
+### When to use
+- Code change where implementation strategy and verification strategy are both non-obvious
+- You want a focused challenge on the chosen approach post-deliberation
+- Medium-stakes refactor (2–5 files) where Sequential alone feels thin
+
+### Workflow
+1. Inject code-context into voice inputs (language, files, test suite, CI gate)
+2. Run Sequential (Conservator→Generator→Control) — standard Steps 2–4
+3. Run `skeptic_on_chosen` unconditionally (not gated on confidence band)
+4. Aggregate + confidence as normal (Steps 5–5b)
+5. If Skeptic catches constraint: `skeptic_caught_constraint: true` in report; advisory by default, `--skeptic-can-override` for opt-in override
+
+**telemetry.mode** for this mode: `"dialectic"`. Legacy runs with mode `"dialectic"` (old Pass1+Pass2) are preserved in `runs/` with no schema change — `validate_report.py` keeps `"dialectic"` in `_MULTI_VOICE_MODES`.
+
+**Old Dialectic (Pass1+Pass2) archived.** `scripts/deprecated/dialectic_merge.py` is the retired implementation. `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched.
 
 ## Trias mode (high-stakes opt-in)
 
-**Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward) deliberate in parallel with lens prompts injected, each applying different weights over the output. Democratic majority vote over the 3 chosen results.
+**Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward), each dispatched as **one Sequential sub-agent** (Conservator→Generator→Control internally) with the personality lens prepended. Democratic majority vote over the 3 chosen results. Cost: 3× Sequential (3 sub-agents vs 1).
+
+**Previous mechanics (archived):** The old Trias dispatched 9 parallel sub-agents (3 personalities × 3 voices). The new design reduces from 9 to 3 sub-agents — each personality runs its own Sequential deliberation internally. The democratic vote over 3 chosen results is preserved.
 
 ### When to use
 - Irreversible schema/DB migration
 - Security audit (auth, crypto, RCE potential)
 - Refactor > 5 files
 - 2+ plausible architectural approaches, no clear winner
-- Cost of wrong decision >> cost of running (9 sub-agents, 3× Parallel)
+- Cost of wrong decision >> cost of running (3 sub-agents, 3× Sequential)
 
 ### Workflow
 1. Orchestrator reads `python -X utf8 scripts/personalities.py` — emits the 3 personalities
-2. For each personality, dispatch 3 voices (Gen/Ctrl/Cons) with `prompts/<voice>.md` + `prompts/<personality>_lens.md` prepended
-3. The personality aggregates voice scores with its own weights → `chose`
+2. For each personality, dispatch **1 `consilium-subagent`** with `prompts/<personality>_lens.md` prepended over the Sequential voice inputs. The sub-agent runs Conservator→Generator→Control internally and returns a full report with `chosen_approach`.
+3. Collect the 3 `chosen_approach` values (one per personality) → `chose` per personality
 4. **Unanimous check (B1).** If all 3 personalities chose the same `chose`, skip `team_vote` — the result is unanimous. Set `vote_pattern: "3-0"` and `vote_skipped: true`. Confidence derived directly from `confidence_from_vote_pattern("3-0")`. Log in `deliberation_log` with `reason: "unanimous_personalities"`. If not unanimous, run `team_vote` normally.
 5. Orchestrator runs `python -X utf8 scripts/aggregator.py --scheme team_vote` over the 3 chosens (skip if B1 detected unanimity)
 6. Confidence derived from vote_pattern — pipe aggregator output directly to `confidence.py`:
@@ -519,33 +527,11 @@ Output: `{"skip_pass2": true|false, "reasons": [...]}`. If `skip_pass2: true`, s
 - Strict conservatism required (aggregated Trias is −18% Conservator)
 - Obvious bugfix — Sequential blind is enough
 
-## Trias split-model mode (`trias_split`)
+## Trias split-model mode (`trias_split`) — DEPRECATED
 
-**Mechanics:** Standard Trias (3 personalities × 3 voices = 9 sub-agents) with model override:
-- **Generator voices** (1 per personality, 3 total) → Sonnet 4.6 (creativity)
-- **Control + Conservator voices** (2 per personality, 6 total) → Haiku 4.5 (fast verification)
+**Removed.** `trias_split` is no longer a user-selectable mode. With Trias reduced from 9 to 3 sub-agents (3× Sequential), `trias_split`'s 3.3× cost advantage over the old 9× Trias no longer exists — both are now effectively the same cost tier. Use standard `trias` instead.
 
-**Cost:** ~3.3× Parallel (vs 9× Parallel for full Trias).
-
-### When to use
-- Medium-stakes decisions that benefit from personality diversity (3 orthogonal perspectives) but don't justify full Trias cost
-- Problems where verification is relatively surface-level (factor scoring, sanity checks) — Haiku is enough
-- Haiku verifiers: anti-noise effect on trivial problems without implicit constraint (reject useless elaboration), but shallow-amplifier on problems with implicit constraint — confirm the obvious answer without interrogating the hidden assumption (P3 corrigendum: 3/3 A on a problem with correct answer C; see `experiments/p3-car-wash.html`). Do not use trias_split if the problem may contain implicit constraints — prefer full Trias or `parallel + skeptic_on_chosen`.
-
-### Workflow
-Identical to standard Trias, but with explicit dispatch overrides:
-```
-For each personality (Pioneer/Architect/Steward):
-  Dispatch Generator: model="sonnet"
-  Dispatch Control:    model="haiku"
-  Dispatch Conservator: model="haiku"
-```
-The rest (vote pattern, confidence, failure recovery) is identical to Trias.
-
-### Skip trias_split if
-- Verification requires technical depth (security audit, complex schema migration) — Haiku speculates, use full Trias
-- Trivial diff — a simple mode (Sequential/Parallel) is enough
-- Strict-required output schema with 100% guarantee — Haiku occasionally violates strict-JSON instructions (see Run 1 lite_trias_A — disqualified for verbose output)
+`validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 

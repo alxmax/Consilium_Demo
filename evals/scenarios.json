@@ -226,7 +226,12 @@
     "tool": "scripts/confidence.py",
     "stdin_json": {
       "vote_pattern": "2-1",
-      "dissent": [{"personality": "steward", "chose": "B"}],
+      "dissent": [
+        {
+          "personality": "steward",
+          "chose": "B"
+        }
+      ],
       "abstained": []
     },
     "expect_exit": 0,
@@ -240,7 +245,12 @@
     "tool": "scripts/confidence.py",
     "stdin_json": {
       "vote_pattern": "2-1",
-      "dissent": [{"personality": "pioneer", "chose": "B"}],
+      "dissent": [
+        {
+          "personality": "pioneer",
+          "chose": "B"
+        }
+      ],
       "abstained": []
     },
     "expect_exit": 0,
@@ -255,7 +265,12 @@
     "stdin_json": {
       "vote_pattern": "2-0",
       "dissent": [],
-      "abstained": [{"name": "steward", "reason": "all candidates vetoed"}]
+      "abstained": [
+        {
+          "name": "steward",
+          "reason": "all candidates vetoed"
+        }
+      ]
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
@@ -501,77 +516,6 @@
           "sketch": "good"
         }
       ]
-    }
-  },
-  {
-    "name": "dialectic_merge/full pass2 marks fallback false everywhere",
-    "tool": "scripts/dialectic_merge.py",
-    "stdin_json": {
-      "pass1": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v1"
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": []
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.4
-            }
-          ]
-        }
-      },
-      "pass2": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v2"
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": []
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.3
-            }
-          ]
-        }
-      }
-    },
-    "expect_exit": 0,
-    "expect_stdout_subset": {
-      "revision_log": {
-        "pass2_received": true,
-        "fallback_to_pass1": {
-          "generator": false,
-          "control": false,
-          "conservator": false
-        }
-      }
     }
   },
   {
@@ -860,59 +804,6 @@
     ]
   },
   {
-    "name": "dialectic_merge/partial pass2 falls back per missing voice",
-    "tool": "scripts/dialectic_merge.py",
-    "stdin_json": {
-      "pass1": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v1"
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": []
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.4
-            }
-          ]
-        }
-      },
-      "pass2": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v2"
-            }
-          ]
-        }
-      }
-    },
-    "expect_exit": 0,
-    "expect_stdout_subset": {
-      "revision_log": {
-        "fallback_to_pass1": {
-          "generator": false,
-          "control": true,
-          "conservator": true
-        }
-      }
-    }
-  },
-  {
     "name": "validate_report/non-skipped missing deliberation_log fails",
     "tool": "scripts/validate_report.py",
     "stdin_json": {
@@ -1033,238 +924,6 @@
     "expect_stderr_contains": [
       "telemetry.mode required"
     ]
-  },
-  {
-    "name": "dialectic_merge/dissent_both_absent: candidate missing revision and maintained triggers dissent fallback",
-    "tool": "scripts/dialectic_merge.py",
-    "stdin_json": {
-      "pass1": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v1"
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": []
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.3
-            }
-          ]
-        }
-      },
-      "pass2": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v1"
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": []
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.3
-            }
-          ]
-        }
-      }
-    },
-    "expect_exit": 0,
-    "expect_stdout_subset": {
-      "revision_log": {
-        "dissent_fallbacks": {
-          "generator": [
-            "a"
-          ],
-          "control": [
-            "a"
-          ],
-          "conservator": [
-            "a"
-          ]
-        }
-      }
-    }
-  },
-  {
-    "name": "dialectic_merge/dissent_only_maintained: candidate with maintained field is compliant",
-    "tool": "scripts/dialectic_merge.py",
-    "stdin_json": {
-      "pass1": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v1"
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": []
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.3
-            }
-          ]
-        }
-      },
-      "pass2": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v1",
-              "maintained": {
-                "peer_claim": "Control: valid",
-                "dissent": "No change needed."
-              }
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": [],
-              "maintained": {
-                "peer_claim": "Generator confirmed sketch",
-                "dissent": "No change."
-              }
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.3,
-              "maintained": {
-                "peer_claim": "Control: valid, no issues",
-                "dissent": "Risk unchanged."
-              }
-            }
-          ]
-        }
-      }
-    },
-    "expect_exit": 0,
-    "expect_stdout_subset": {
-      "revision_log": {
-        "dissent_fallbacks": {}
-      }
-    }
-  },
-  {
-    "name": "dialectic_merge/dissent_only_revision: candidate with revision field is compliant",
-    "tool": "scripts/dialectic_merge.py",
-    "stdin_json": {
-      "pass1": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v1"
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": []
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.3
-            }
-          ]
-        }
-      },
-      "pass2": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "v2",
-              "revision": {
-                "what_changed": "Updated sketch.",
-                "peer_evidence": "Control flagged type mismatch."
-              }
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": [],
-              "revision": {
-                "what_changed": "Removed stale issue.",
-                "peer_evidence": "Generator fixed type in sketch."
-              }
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.2,
-              "revision": {
-                "what_changed": "Reduced regression_risk by 0.1.",
-                "peer_evidence": "Control added tests_to_write covering regression class."
-              }
-            }
-          ]
-        }
-      }
-    },
-    "expect_exit": 0,
-    "expect_stdout_subset": {
-      "revision_log": {
-        "dissent_fallbacks": {}
-      }
-    }
   },
   {
     "name": "log_feedback/rejects --outcome OK when confidence < 0.70 without --force-override",
@@ -1526,9 +1185,24 @@
       "chosen_approach": "approach_a",
       "team": "trias",
       "personalities": [
-        {"name": "pioneer", "weights": {}, "lens": "p", "chose": "approach_a"},
-        {"name": "architect", "weights": {}, "lens": "p", "chose": "approach_a"},
-        {"name": "steward", "weights": {}, "lens": "p", "chose": "approach_a"}
+        {
+          "name": "pioneer",
+          "weights": {},
+          "lens": "p",
+          "chose": "approach_a"
+        },
+        {
+          "name": "architect",
+          "weights": {},
+          "lens": "p",
+          "chose": "approach_a"
+        },
+        {
+          "name": "steward",
+          "weights": {},
+          "lens": "p",
+          "chose": "approach_a"
+        }
       ],
       "vote_pattern": "3-0"
     },
@@ -1543,131 +1217,48 @@
       "chosen_approach": "approach_a",
       "team": "trias",
       "personalities": [
-        {"name": "pioneer", "weights": {}, "lens": "p", "chose": "approach_a"},
-        {"name": "architect", "weights": {}, "lens": "p", "chose": "approach_a"},
-        {"name": "steward", "weights": {}, "lens": "p", "chose": "approach_a"}
+        {
+          "name": "pioneer",
+          "weights": {},
+          "lens": "p",
+          "chose": "approach_a"
+        },
+        {
+          "name": "architect",
+          "weights": {},
+          "lens": "p",
+          "chose": "approach_a"
+        },
+        {
+          "name": "steward",
+          "weights": {},
+          "lens": "p",
+          "chose": "approach_a"
+        }
       ],
       "vote_pattern": "3-0",
       "telemetry": {
         "mode": "trias",
         "voices": {
-          "pioneer": {"tokens_in": 100, "tokens_out": 50, "latency_ms": 1000},
-          "architect": {"tokens_in": 100, "tokens_out": 50, "latency_ms": 1000},
-          "steward": {"tokens_in": 100, "tokens_out": 50, "latency_ms": 1000}
+          "pioneer": {
+            "tokens_in": 100,
+            "tokens_out": 50,
+            "latency_ms": 1000
+          },
+          "architect": {
+            "tokens_in": 100,
+            "tokens_out": 50,
+            "latency_ms": 1000
+          },
+          "steward": {
+            "tokens_in": 100,
+            "tokens_out": 50,
+            "latency_ms": 1000
+          }
         }
       }
     },
     "expect_exit": 0
-  },
-  {
-    "name": "dialectic_merge/silent_drop_recovered_from_pass1: pass2 generator omits a pass1 candidate; recovery lists it in silently_dropped",
-    "tool": "scripts/dialectic_merge.py",
-    "stdin_json": {
-      "pass1": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "kept"
-            },
-            {
-              "id": "b",
-              "summary": "pass1-only"
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": []
-            },
-            {
-              "id": "b",
-              "valid": true,
-              "issues": []
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.2
-            },
-            {
-              "id": "b",
-              "risk_score": 0.4
-            }
-          ]
-        }
-      },
-      "pass2": {
-        "generator": {
-          "candidates": [
-            {
-              "id": "a",
-              "summary": "kept",
-              "maintained": {
-                "peer_claim": "Control: valid",
-                "dissent": "No change."
-              }
-            }
-          ]
-        },
-        "control": {
-          "verdicts": [
-            {
-              "id": "a",
-              "valid": true,
-              "issues": [],
-              "maintained": {
-                "peer_claim": "Generator confirmed",
-                "dissent": "No change."
-              }
-            },
-            {
-              "id": "b",
-              "valid": true,
-              "issues": [],
-              "maintained": {
-                "peer_claim": "Generator confirmed",
-                "dissent": "No change."
-              }
-            }
-          ]
-        },
-        "conservator": {
-          "scores": [
-            {
-              "id": "a",
-              "risk_score": 0.2,
-              "maintained": {
-                "peer_claim": "Control: valid",
-                "dissent": "Risk unchanged."
-              }
-            },
-            {
-              "id": "b",
-              "risk_score": 0.4,
-              "maintained": {
-                "peer_claim": "Control: valid",
-                "dissent": "Risk unchanged."
-              }
-            }
-          ]
-        }
-      }
-    },
-    "expect_exit": 0,
-    "expect_stdout_subset": {
-      "revision_log": {
-        "silently_dropped": [
-          "b"
-        ]
-      }
-    }
   },
   {
     "name": "trias_unanimous_3_0",
@@ -2229,33 +1820,54 @@
   {
     "name": "personalities/pioneer weights generator highest (progress bias)",
     "tool": "scripts/personalities.py",
-    "args": ["--name", "pioneer"],
+    "args": [
+      "--name",
+      "pioneer"
+    ],
     "expect_exit": 0,
     "expect_stdout_subset": {
       "name": "pioneer",
-      "weights": {"generator": 0.49, "control": 0.30, "conservator": 0.21},
+      "weights": {
+        "generator": 0.49,
+        "control": 0.3,
+        "conservator": 0.21
+      },
       "lens": "prompts/voices/pioneer_lens.md"
     }
   },
   {
     "name": "personalities/architect weights tilted toward control (structural bias)",
     "tool": "scripts/personalities.py",
-    "args": ["--name", "architect"],
+    "args": [
+      "--name",
+      "architect"
+    ],
     "expect_exit": 0,
     "expect_stdout_subset": {
       "name": "architect",
-      "weights": {"generator": 0.30, "control": 0.40, "conservator": 0.30},
+      "weights": {
+        "generator": 0.3,
+        "control": 0.4,
+        "conservator": 0.3
+      },
       "lens": "prompts/voices/architect_lens.md"
     }
   },
   {
     "name": "personalities/steward weights conservator highest (risk-averse bias)",
     "tool": "scripts/personalities.py",
-    "args": ["--name", "steward"],
+    "args": [
+      "--name",
+      "steward"
+    ],
     "expect_exit": 0,
     "expect_stdout_subset": {
       "name": "steward",
-      "weights": {"generator": 0.30, "control": 0.30, "conservator": 0.40},
+      "weights": {
+        "generator": 0.3,
+        "control": 0.3,
+        "conservator": 0.4
+      },
       "lens": "prompts/voices/steward_lens.md"
     }
   }

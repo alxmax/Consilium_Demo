@@ -277,13 +277,14 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     _LEGACY_MODE_ALIASES: dict[str, str] = {
         "parallel_skeptic": "skeptic_on_chosen",
         "dialectic_skeptic": "skeptic_on_chosen",
+        "trias_split": "trias",  # deprecated 2026-05-21: trias 9→3 makes split redundant
     }
     mode = _LEGACY_MODE_ALIASES.get(mode.strip(), mode.strip())
     # All modes that dispatch multiple voices require per-voice telemetry so
     # usage.py can roll up cost across runs/. parallel_skeptic/dialectic_skeptic
     # are resolved via _LEGACY_MODE_ALIASES above before this check.
     _MULTI_VOICE_MODES = frozenset({
-        "parallel", "trias", "dialectic", "trias_split",
+        "parallel", "trias", "dialectic",
         "skeptic_on_chosen",
     })
     if mode in _MULTI_VOICE_MODES:
