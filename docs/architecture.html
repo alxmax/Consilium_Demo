@@ -11,12 +11,12 @@
 
 <header>
   <h1>Consilium</h1>
-  <div class="sub">Pattern de deliberare multi-perspectivă pentru orice modificare de cod — 3 voci · 8 moduri · 9 senatori</div>
+  <div class="sub">Pattern de deliberare multi-perspectivă pentru orice modificare de cod — 3 voci · 5 moduri · 9 senatori</div>
 </header>
 
 <nav class="tabs" role="tablist">
   <button class="active" data-tab="overview"><span>Overview</span><span class="tab-sub">ce e + cum curge</span></button>
-  <button data-tab="modes"><span>Modes</span><span class="tab-sub">sequential, dialectic, trias, senate, skeptic</span></button>
+  <button data-tab="modes"><span>Modes</span><span class="tab-sub">sequential, dialectic v2, trias, senate, skeptic</span></button>
   <button data-tab="voices"><span>Voices</span><span class="tab-sub">3 voci + 3 lenses + skeptic</span></button>
   <button data-tab="internals"><span>Internals</span><span class="tab-sub">memory tiers + flow patterns</span></button>
   <button data-tab="reference"><span>Reference</span><span class="tab-sub">files · git · dialectic · senate · todo</span></button>
@@ -594,15 +594,15 @@ flowchart LR
     <text x="346" y="148" text-anchor="middle" fill="#fca5a5" font-size="10">da</text>
     <rect x="452" y="136" width="280" height="36" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
     <text x="592" y="151" text-anchor="middle" fill="#fca5a5" font-size="12" font-weight="600">Trias</text>
-    <text x="592" y="164" text-anchor="middle" fill="#9ca3af" font-size="9">9 sub-agenți · 9× · ireversibil / security</text>
+    <text x="592" y="164" text-anchor="middle" fill="#9ca3af" font-size="9">3 sub-agenți · 3× · ireversibil / security</text>
 
-    <!-- Q4 → DIALECTIC (da) -->
+    <!-- Q4 → DIALECTIC V2 (da) -->
     <line x1="240" y1="214" x2="450" y2="214" stroke="#93c5fd" stroke-width="1.5"/>
     <polygon points="445,210 452,214 445,218" fill="#93c5fd"/>
     <text x="346" y="208" text-anchor="middle" fill="#93c5fd" font-size="10">da</text>
     <rect x="452" y="196" width="280" height="36" rx="6" fill="#182338" stroke="#2a3f5f"/>
-    <text x="592" y="211" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">Dialectic</text>
-    <text x="592" y="224" text-anchor="middle" fill="#9ca3af" font-size="9">6 sub-agenți · 6× · cross-review</text>
+    <text x="592" y="211" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">Dialectic V2</text>
+    <text x="592" y="224" text-anchor="middle" fill="#9ca3af" font-size="9">1.33× · code-specialized · seq+skeptic</text>
 
     <!-- skeptic note -->
     <rect x="20" y="332" width="720" height="28" rx="4" fill="#11151c" stroke="#2d3441"/>
@@ -633,22 +633,18 @@ flowchart LR
       <circle cx="480" cy="220" r="14" fill="#2a2410" stroke="#5c4a14" opacity="0.6"/>
       <text x="480" y="224" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="700">PAR*</text>
       <text x="480" y="202" fill="#fbbf24" font-size="9" text-anchor="middle">1× (auto)</text>
-      <!-- Dialectic: cost 2x, independence + cross-review -->
-      <circle cx="430" cy="140" r="14" fill="#182338" stroke="#2a3f5f"/>
-      <text x="430" y="144" fill="#93c5fd" font-size="10" text-anchor="middle" font-weight="700">DIAL</text>
-      <text x="430" y="122" fill="#93c5fd" font-size="9" text-anchor="middle">2×</text>
+      <!-- Dialectic V2: 1.33× sequential -->
+      <circle cx="220" cy="240" r="14" fill="#182338" stroke="#2a3f5f"/>
+      <text x="220" y="244" fill="#93c5fd" font-size="10" text-anchor="middle" font-weight="700">DIAL</text>
+      <text x="220" y="222" fill="#93c5fd" font-size="9" text-anchor="middle">1.33×</text>
       <!-- Senate -->
       <circle cx="560" cy="60" r="14" fill="#2a2410" stroke="#5c4a14"/>
       <text x="560" y="64" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="700">SEN</text>
       <text x="560" y="46" fill="#fbbf24" font-size="9" text-anchor="middle">~7×</text>
-      <!-- Trias -->
-      <circle cx="620" cy="60" r="14" fill="#221830" stroke="#4c2a6b"/>
-      <text x="620" y="64" fill="#d8b4fe" font-size="10" text-anchor="middle" font-weight="700">TRI</text>
-      <text x="620" y="42" fill="#d8b4fe" font-size="9" text-anchor="middle">3×</text>
-      <!-- Trias split -->
-      <circle cx="600" cy="48" r="12" fill="#221830" stroke="#4c2a6b" opacity="0.65"/>
-      <text x="600" y="52" fill="#d8b4fe" font-size="8" text-anchor="middle">TRI-s</text>
-      <text x="540" y="38" fill="#d8b4fe" font-size="9">3.3×</text>
+      <!-- Trias: 3× sequential -->
+      <circle cx="490" cy="220" r="14" fill="#221830" stroke="#4c2a6b"/>
+      <text x="490" y="224" fill="#d8b4fe" font-size="10" text-anchor="middle" font-weight="700">TRI</text>
+      <text x="490" y="202" fill="#d8b4fe" font-size="9" text-anchor="middle">3×</text>
       <!-- Note -->
       <text x="60" y="20" fill="#9ca3af" font-size="9">* PAR = auto cross-check only la critical+irreversible — nu selectabil de user</text>
     </svg>
@@ -682,17 +678,17 @@ flowchart LR
           <td>aggregate scheme</td>
         </tr>
         <tr>
-          <td><b>Dialectic</b></td>
-          <td>context separat (Pass 1) → vede outputs (Pass 2)</td>
-          <td>da (Pass 2)</td>
-          <td>6 sub-agents (3+3)</td>
-          <td>aggregate pe revisions</td>
+          <td><b>Dialectic V2</b></td>
+          <td>același context + injecție cod (Sequential) → Skeptic pe chosen</td>
+          <td>da (Skeptic post-hoc)</td>
+          <td>1 Sequential + 1 Skeptic</td>
+          <td>aggregate + challenge focal</td>
         </tr>
         <tr>
           <td><b>Trias</b></td>
-          <td>context separat per personalitate; intra-personalitate sequential</td>
+          <td>context separat per personalitate; fiecare rulează Sequential intern</td>
           <td>nu între personalități (chinese wall)</td>
-          <td>9 sub-agents (3×3)</td>
+          <td>3 sub-agents (1/personalitate)</td>
           <td>vot democratic peste 3 chosen</td>
         </tr>
       </tbody>
@@ -726,7 +722,7 @@ flowchart LR
       <rect x="20" y="130" width="680" height="90" rx="6" fill="#11151c" stroke="#2d3441"/>
       <text x="40" y="152" fill="#e5e7eb" font-size="12" font-weight="600">Cost implication</text>
       <text x="40" y="172" fill="#9ca3af" font-size="11">Fiecare sub-agent = restart de context = input tokens duplicate (system prompt + diff + context).</text>
-      <text x="40" y="190" fill="#9ca3af" font-size="11">Trias = 9 sub-agents = ~9× Sequential baseline.</text>
+      <text x="40" y="190" fill="#9ca3af" font-size="11">Trias = 3 sub-agents = ~3× Sequential baseline.</text>
       <text x="40" y="208" fill="#9ca3af" font-size="11">Sequential evită overhead-ul → folosește același context window pentru 3 roluri (cu strip).</text>
     </svg>
   </div>
@@ -813,62 +809,54 @@ flowchart LR
       </svg>
     </div>
 
-    <!-- 2. DIALECTIC -->
+    <!-- 2. DIALECTIC V2 -->
     <div class="mode dialectic">
-      <h3>Dialectic — two-pass <span class="mode-badge advanced">OPT-IN</span></h3>
-      <div class="subtitle">Două runde paralele cu revizuire cross-context controlată. Implementat în <code>scripts/dialectic_merge.py</code>.</div>
+      <h3>Dialectic — V2 code-specialized <span class="mode-badge advanced">OPT-IN</span></h3>
+      <div class="subtitle">Sequential cu injecție de context cod + Skeptic focal post-hoc. 1.33× cost. Nu are sub-agenți suplimentari față de Sequential+Skeptic.</div>
       <div class="stage">
-        <div class="label">pass 1 — independent (ca parallel)</div>
-        <span class="actor gen">Generator</span>
-        <span class="actor ctl">Control</span>
-        <span class="actor con">Conservator</span>
-        <div class="wall" title="chinese wall"></div>
+        <div class="label">Stage 1 — Sequential cu context cod injectat</div>
+        <div class="actor main">Conservator → Generator → Control</div>
+        <div class="ok">Injecție input: <code>language</code> · <code>files_touched[]</code> · <code>test_files[]</code> · <code>ci_gate</code></div>
       </div>
       <div class="stage">
-        <div class="label">pass 2 — revision round (3 paraleli, fiecare vede output-urile celorlalți)</div>
-        <div class="parallel-row">
-          <div class="parallel-col"><span class="actor gen">Gen revised</span></div>
-          <div class="parallel-col"><span class="actor ctl">Ctrl revised</span></div>
-          <div class="parallel-col"><span class="actor con">Cons revised</span></div>
-        </div>
-        <div class="ok">✓ Independență în pass 1 + șansă de update în pass 2. Fiecare voce emite <code>revision:</code> sau <code>maintained:</code>. <code>revision_log</code> auditează ce s-a schimbat.</div>
+        <div class="label">Stage 2 — Skeptic focal pe chosen</div>
+        <span class="actor gen">Skeptic</span>
+        <div class="ok">✓ Challenger focal pe chosen + context cod. Verificare concretă: test named, build command, CI check.</div>
       </div>
       <dl class="mode-meta">
-        <div class="cell"><dt>Sub-agenți</dt><dd><b>6</b></dd></div>
-        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">6×</span></dd></div>
-        <div class="cell"><dt>Voci</dt><dd>Gen · Ctrl · Cons × 2 pass-uri</dd></div>
-        <div class="cell"><dt>When</dt><dd>O voce ar putea schimba opinia după ce vede celelalte</dd></div>
+        <div class="cell"><dt>Sub-agenți</dt><dd><b>1</b> Skeptic (+ Sequential in-process)</dd></div>
+        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">1.33×</span></dd></div>
+        <div class="cell"><dt>Voci</dt><dd>Cons · Gen · Ctrl + Skeptic</dd></div>
+        <div class="cell"><dt>When</dt><dd>Schimbare cod cu strategie de impl + verificare non-obvioasă</dd></div>
       </dl>
-      <div class="use-when"><b>Limitare cunoscută:</b> Dialectic Pass 2 poate introduce fabricații (constraint drift Pass 1 → Pass 2). Dacă bănuiești drift, adaugă flag-ul <code>skeptic_on_chosen</code> peste Dialectic.</div>
+      <div class="use-when">Skeptic rulează <b>necondiționat</b> (nu e gated pe banda de confidence). Dacă Skeptic găsește constraint: <code>skeptic_caught_constraint: true</code> în raport. <b>telemetry.mode</b>: <code>"dialectic"</code> (backward-compat cu runs vechi).</div>
 
       <div class="mode-workflow">
-        <h4>Workflow — 5 pași</h4>
+        <h4>Workflow — 3 pași</h4>
         <ol class="workflow-steps">
-          <li><b>Step 1 — Pass 1 parallel</b>: dispatch 3 sub-agenți izolați (Gen/Ctrl/Cons). Fiecare primește doar <code>diff + context</code>, nu vede ce produc ceilalți.</li>
-          <li><b>Step 2 — merge intermediar</b>: <code>dialectic_merge.py</code> colectează cele 3 output-uri Pass 1 + le distribuie per voce pentru Pass 2.</li>
-          <li><b>Step 3 — Pass 2 cross-review</b>: 3 sub-agenți noi (Gen<sub>p2</sub>/Ctrl<sub>p2</sub>/Cons<sub>p2</sub>) primesc fiecare <code>Pass 1 al celorlalți 2</code>. Emit <code>revision:</code> sau <code>maintained:</code> per item.</li>
-          <li><b>Step 4 — convergence check</b>: <code>dialectic_merge.py</code> agregă revision_log. Dacă toate vocile <code>maintained</code> → convergence=true. Detectează <code>silently_dropped</code> warnings.</li>
-          <li><b>Step 5 — Aggregator</b>: aceleași reguli ca Sequential, dar pe candidați merge-uiți + revision_log auditabil.</li>
+          <li><b>Step 1 — Injecție context cod</b>: adaugă în input-ul vocilor: <code>language</code>, <code>framework</code>, <code>files_touched[]</code>, <code>test_files[]</code>, <code>ci_gate</code>.</li>
+          <li><b>Step 2 — Sequential standard</b>: Conservator → Generator → Control în același context (cu <code>strip_context.py</code>). Produce <code>chosen_approach</code> + <code>confidence</code>.</li>
+          <li><b>Step 3 — Skeptic focal</b>: dispatch 1 sub-agent Skeptic cu <code>prompts/voices/skeptic.md</code> + chosen + context cod. Output: <code>can_object</code>, <code>concrete_concerns[]</code>, <code>failure_mode</code>.</li>
         </ol>
         <div class="io-grid">
           <div class="io-block">
-            <h5 class="in">Input (per voce, Pass 2)</h5>
+            <h5 class="in">Input (injectat în voci)</h5>
             <pre>{
-  <span class="k">"my_pass1"</span>: {<span class="c">…</span>},
-  <span class="k">"peers_pass1"</span>: {
-    <span class="k">"control"</span>: {<span class="c">…</span>},
-    <span class="k">"conservator"</span>: {<span class="c">…</span>}
-  }
+  <span class="k">"language"</span>: <span class="s">"python"</span>,
+  <span class="k">"files_touched"</span>: [<span class="s">"src/auth.py"</span>],
+  <span class="k">"test_files"</span>: [<span class="s">"tests/test_auth.py"</span>],
+  <span class="k">"ci_gate"</span>: <span class="s">"pytest -x"</span>
 }</pre>
           </div>
           <div class="io-block">
-            <h5 class="out">Output (per voce, Pass 2)</h5>
+            <h5 class="out">Output Skeptic</h5>
             <pre>{
-  <span class="k">"items"</span>: [{
-    <span class="k">"id"</span>: <span class="s">"A"</span>,
-    <span class="k">"revision"</span>: {<span class="c">/* sau */</span>},
-    <span class="k">"maintained"</span>: {<span class="c">…</span>}
-  }]
+  <span class="k">"can_object"</span>: <span class="s">true</span>,
+  <span class="k">"objection"</span>: {
+    <span class="k">"concrete_concerns"</span>: [<span class="c">…</span>],
+    <span class="k">"failure_mode"</span>: <span class="s">"correctness"</span>,
+    <span class="k">"addressable"</span>: <span class="s">"in_place"</span>
+  }
 }</pre>
           </div>
         </div>
@@ -878,9 +866,9 @@ flowchart LR
     <!-- 3. TRIAS -->
     <div class="mode trias">
       <h3>Trias <span class="mode-badge advanced">OPT-IN</span></h3>
-      <div class="subtitle">3 personalități × 3 voci = 9 sub-agenți, vot democratic majoritar (3-0 / 2-1 / 2-0).</div>
+      <div class="subtitle">3 sub-agenți secvențiali (1/personalitate), fiecare rulează Sequential intern. Vot democratic majoritar (3-0 / 2-1 / 2-0). Cost: 3×.</div>
       <div class="stage">
-        <div class="label">turn 1 — 3 personalități în paralel, fiecare cu propriul parallel mode</div>
+        <div class="label">turn 1 — 3 sub-agenți independenți (1 per personalitate), secvențiali</div>
         <div class="parallel-row">
           <div class="parallel-col">
             <div class="trias-personality-block">
@@ -931,17 +919,17 @@ flowchart LR
         </table>
       </div>
       <dl class="mode-meta">
-        <div class="cell"><dt>Sub-agenți</dt><dd><b>9</b></dd></div>
-        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">9×</span></dd></div>
-        <div class="cell"><dt>Voci</dt><dd>Pioneer · Architect · Steward × Gen/Ctrl/Cons</dd></div>
+        <div class="cell"><dt>Sub-agenți</dt><dd><b>3</b> (1/personalitate)</dd></div>
+        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">3×</span></dd></div>
+        <div class="cell"><dt>Voci</dt><dd>Pioneer · Architect · Steward (fiecare Sequential intern)</dd></div>
         <div class="cell"><dt>When</dt><dd>DB migration, security, refactor mare ≥5 fișiere, ireversibil</dd></div>
       </dl>
 
       <div class="mode-workflow">
         <h4>Workflow — 4 pași</h4>
         <ol class="workflow-steps">
-          <li><b>Step 1 — Dispatch 9 sub-agenți</b>: 3 personalități (Pioneer/Architect/Steward) × 3 voci (Gen/Ctrl/Cons). Fiecare personalitate prepend-ează propriul lens peste prompt-ul vocii core; <code>personalities.py</code> emite weights.</li>
-          <li><b>Step 2 — Pipeline intern per personalitate</b>: în fiecare sub-tree (3 voci), aggregatorul rulează cu weights specifice (ex. Pioneer: G=0.49, C=0.30, K=0.21). Output: 1 <code>chosen</code> per personalitate.</li>
+          <li><b>Step 1 — Dispatch 3 sub-agenți</b>: câte unul per personalitate (Pioneer/Architect/Steward). Fiecare primește <code>personality_lens.md</code> prepend-at peste input-ul Sequential; <code>personalities.py</code> emite weights. Sub-agenții rulează <code>consilium-subagent</code> — Cons→Gen→Ctrl intern.</li>
+          <li><b>Step 2 — Chosen per personalitate</b>: fiecare sub-agent returnează un raport complet cu <code>chosen_approach</code>. Output: 1 <code>chosen</code> per personalitate.</li>
           <li><b>Step 3 — Democratic tally</b>: cei 3 chosen sunt comparați. 3-0 → confidence 0.95; 2-1 → 0.70; 2-0 (cu 1 abținere) → 0.75; 1-1-1 sau 0-0-0 → <code>PEND</code> + escalare.</li>
           <li><b>Step 4 — Output</b>: chosen final = vot democratic. Toate cele 3 chosen-uri intermediate logate în <code>deliberation_log</code> pentru audit.</li>
         </ol>
@@ -1068,7 +1056,7 @@ flowchart LR
             <li>Diff &lt; 20 lines / 1 fișier — <code>scope_gate.py</code> va skip oricum</li>
             <li>Iterare rapidă — Trias ~7× cost vs Sequential</li>
             <li>Bugfix evident, single approach — Sequential blind ajunge</li>
-            <li>Problema conține constraints implicite — folosește Trias full, nu <code>trias_split</code></li>
+            <li>Problema conține constraints implicite — folosește Trias full sau <code>sequential + skeptic_on_chosen</code></li>
           </ul>
         </div>
       </div>
@@ -1086,17 +1074,11 @@ flowchart LR
       </div>
     </div><!-- /.trias-deepdive -->
 
-    <!-- 4. TRIAS SPLIT -->
-    <div class="mode trias" style="border-top-color:var(--ctl);">
-      <h3>Trias split-model <code>(trias_split)</code> <span class="mode-badge advanced">ADVANCED</span></h3>
-      <div class="subtitle">Trias normal cu <b>split de model pe voci</b>: Generator pe <code>sonnet</code>, Control + Conservator pe <code>haiku 4.5</code>. Reduce costul fără să sacrifice calitatea creativă.</div>
-      <dl class="mode-meta">
-        <div class="cell"><dt>Sub-agenți</dt><dd><b>9</b> <span style="color:var(--muted);font-size:11px;">(mixed model)</span></dd></div>
-        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">~3.3×</span></dd></div>
-        <div class="cell"><dt>Voci</dt><dd>Gen (sonnet) · Ctrl+Cons (haiku) × 3 personalități</dd></div>
-        <div class="cell"><dt>When</dt><dd>Diversitate Trias la cost redus; nu dacă există constraint-uri implicite</dd></div>
-      </dl>
-      <div class="use-when"><b>Atenție:</b> Haiku verifiers sunt shallow-amplifiers pe probleme cu constraint implicit — confirmă răspunsul evident fără să interogheze asumpția ascunsă (P3 corrigendum, <code>experiments/p3-car-wash.html</code>). Nu folosi <code>trias_split</code> dacă problema poate conține constraints implicite — preferă Trias full sau <code>parallel + skeptic_on_chosen</code>.</div>
+    <!-- 4. TRIAS SPLIT — DEPRECATED -->
+    <div class="mode trias" style="border-top-color:var(--ctl);opacity:0.55;">
+      <h3>Trias split-model <code>(trias_split)</code> <span class="mode-badge" style="background:#374151;color:#9ca3af;">DEPRECATED</span></h3>
+      <div class="subtitle">Eliminat. Cu Trias redus la 3 sub-agenți (3×), avantajul de cost al <code>trias_split</code> față de Trias full nu mai există. Folosește <b>Trias</b> standard.</div>
+      <div class="use-when" style="color:var(--muted);">Runs istorice cu <code>telemetry.mode: "trias_split"</code> sunt mapate automat la <code>"trias"</code> prin <code>_LEGACY_MODE_ALIASES</code> în <code>validate_report.py</code>.</div>
     </div>
 
     <!-- 5. SKEPTIC-ON-CHOSEN -->
@@ -1460,11 +1442,11 @@ flowchart LR
         <td>Orice deliberare standard</td>
       </tr>
       <tr>
-        <td><b>Dialectic</b></td>
-        <td>6</td>
-        <td class="cost">6×</td>
+        <td><b>Dialectic V2</b></td>
+        <td>1 Skeptic (+ Sequential in-process)</td>
+        <td class="cost">1.33×</td>
         <td>da</td>
-        <td>O voce ar schimba opinia după cross-review</td>
+        <td>Schimbare cod cu impl + verificare non-obvioasă</td>
       </tr>
       <tr>
         <td><b>Senate</b></td>
@@ -1474,16 +1456,9 @@ flowchart LR
         <td>Modificări la skill însuși</td>
       </tr>
       <tr>
-        <td><b>trias_split</b></td>
-        <td>9</td>
-        <td class="cost">~3.3×</td>
-        <td>da</td>
-        <td>Diversitate Trias la cost redus</td>
-      </tr>
-      <tr>
         <td><b>Trias</b></td>
-        <td>9</td>
-        <td class="cost">9×</td>
+        <td>3</td>
+        <td class="cost">3×</td>
         <td>da</td>
         <td>Ireversibil, security, refactor mare</td>
       </tr>
@@ -1694,7 +1669,7 @@ flowchart LR
       <rect x="218" y="58" width="64" height="22" rx="3" fill="#2a2410"/><text x="250" y="73" fill="#fbbf24" font-size="9" text-anchor="middle">Gen</text>
       <rect x="218" y="84" width="64" height="22" rx="3" fill="#182338"/><text x="250" y="99" fill="#93c5fd" font-size="9" text-anchor="middle">Ctrl</text>
       <rect x="218" y="110" width="64" height="22" rx="3" fill="#2a1818"/><text x="250" y="125" fill="#fca5a5" font-size="9" text-anchor="middle">Cons</text>
-      <text x="155" y="178" fill="#9ca3af" font-size="9" text-anchor="middle">cost: 9× Sequential</text>
+      <text x="155" y="178" fill="#9ca3af" font-size="9" text-anchor="middle">cost: 3× Sequential</text>
     </svg>
   </div>
 </div>
@@ -1702,7 +1677,7 @@ flowchart LR
   <!-- ── Personality lenses ─────────────────────────────────────────── -->
   <h2 style="margin-top:36px;">3 personality lenses — Pioneer / Architect / Steward</h2>
   <p style="color:var(--muted);font-size:13.5px;margin:-8px 0 14px;">
-    Folosite exclusiv în modul <b>Trias</b> (și <code>trias_split</code>). Fiecare lens este prepended vocilor core ale personalității respective — biasează percepția, nu schimbă rolul vocii. Orchestratorul dispatch-uiește 3 × 3 = 9 sub-agenți; fiecare personalitate produce un <code>chosen</code> via weighted aggregation, apoi se votează democratic.
+    Folosite exclusiv în modul <b>Trias</b>. Fiecare lens este prepended la input-ul sub-agentului Sequential al personalității respective — biasează percepția, nu schimbă rolul vocii. Orchestratorul dispatch-uiește 3 sub-agenți (1/personalitate); fiecare produce un <code>chosen</code> via weighted aggregation internă, apoi se votează democratic.
   </p>
   <div class="lens-grid">
 
@@ -2607,9 +2582,8 @@ flowchart TD
     Q4{"3 personalități\nnecesare?"}:::q
     SQ["Sequential\n1×"]:::mode_sq
     SK["+ skeptic_on_chosen\n+1 sub-agent"]:::mode_sk
-    TS["trias_split\n3.3×"]:::mode_ts
-    TR["trias\n9×"]:::mode_tr
-    DI["dialectic\n6×"]:::mode_di
+    TR["trias\n3×"]:::mode_tr
+    DI["dialectic V2\n1.33×"]:::mode_di
     SE["senate\n~7×"]:::mode_se
     SKIP["scope_gate skip\n(trivial diff)"]:::skip
     Q1 -->|"irreversible\n+ critical"| SE
@@ -2619,13 +2593,11 @@ flowchart TD
     Q2 -->|"moderate"| SQ
     Q3 -->|"da → challenger"| SK
     Q3 -->|"nu"| Q4
-    Q4 -->|"da, medium"| TS
     Q4 -->|"da, high-stakes"| TR
     Q4 -->|"nu"| DI
     classDef q     fill:#11151c,stroke:#2d3441,color:#e5e7eb
     classDef mode_sq fill:#0a2e23,stroke:#145c45,color:#6ee7b7
     classDef mode_sk fill:#0a2e23,stroke:#145c45,color:#6ee7b7
-    classDef mode_ts fill:#2a1a00,stroke:#7c3a00,color:#f97316
     classDef mode_tr fill:#3a1212,stroke:#7c2020,color:#f87171
     classDef mode_di fill:#2a2410,stroke:#5c4a14,color:#fbbf24
     classDef mode_se fill:#221830,stroke:#4c2a6b,color:#d8b4fe
@@ -2667,23 +2639,17 @@ flowchart TD
       <rect x="115" y="108" width="110" height="28" rx="3" fill="#1a3050" stroke="#2a3f5f" stroke-dasharray="5,3"/>
       <text x="229" y="125" fill="#6b7280" font-size="10">3× (auto-only)</text>
 
-      <!-- trias_split 3.3× → 121px -->
-      <text x="111" y="170" text-anchor="end" fill="#e5e7eb" font-size="11">trias_split</text>
-      <rect x="115" y="152" width="121" height="28" rx="3" fill="#f97316"/>
-      <text x="240" y="169" fill="#f97316" font-size="10" font-weight="600">3.3×</text>
-      <text x="240" y="179" fill="#4b5563" font-size="9">9 sub-agenți</text>
+      <!-- dialectic V2 1.33× → 49px -->
+      <text x="111" y="170" text-anchor="end" fill="#e5e7eb" font-size="11">dialectic V2</text>
+      <rect x="115" y="152" width="49"  height="28" rx="3" fill="#fbbf24"/>
+      <text x="168" y="169" fill="#fbbf24" font-size="10" font-weight="600">1.33×</text>
+      <text x="168" y="179" fill="#4b5563" font-size="9">seq+skeptic</text>
 
-      <!-- dialectic 6× → 220px -->
-      <text x="111" y="214" text-anchor="end" fill="#e5e7eb" font-size="11">dialectic</text>
-      <rect x="115" y="196" width="220" height="28" rx="3" fill="#fbbf24"/>
-      <text x="339" y="213" fill="#fbbf24" font-size="10" font-weight="600">6×</text>
-      <text x="339" y="223" fill="#4b5563" font-size="9">two-pass</text>
-
-      <!-- trias 9× → 330px -->
-      <text x="111" y="258" text-anchor="end" fill="#e5e7eb" font-size="11">trias</text>
-      <rect x="115" y="240" width="330" height="28" rx="3" fill="#f87171"/>
-      <text x="449" y="257" fill="#f87171" font-size="10" font-weight="600">9×</text>
-      <text x="449" y="267" fill="#4b5563" font-size="9">3 pers.</text>
+      <!-- trias 3× → 110px -->
+      <text x="111" y="214" text-anchor="end" fill="#e5e7eb" font-size="11">trias</text>
+      <rect x="115" y="196" width="110" height="28" rx="3" fill="#f87171"/>
+      <text x="229" y="213" fill="#f87171" font-size="10" font-weight="600">3×</text>
+      <text x="229" y="223" fill="#4b5563" font-size="9">3 sub-agenți</text>
 
       <!-- skeptic note -->
       <text x="115" y="292" fill="#6b7280" font-size="9">skeptic_on_chosen = +1 sub-agent peste modul de bază · * Senate: 9+2 dispatches (Dimon × 3 Haiku paralel)</text>
@@ -2719,21 +2685,15 @@ flowchart TD
           <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
         </tr>
         <tr style="border-bottom:1px solid #1e2733;">
-          <td style="padding:7px 10px;color:#f97316;font-weight:600;">trias_split</td>
-          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">9</td>
-          <td style="text-align:center;padding:7px 6px;color:#f97316;font-weight:600;">3.3×</td>
-          <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
-        </tr>
-        <tr style="border-bottom:1px solid #1e2733;">
-          <td style="padding:7px 10px;color:#fbbf24;font-weight:600;">dialectic</td>
-          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">6</td>
-          <td style="text-align:center;padding:7px 6px;color:#fbbf24;font-weight:600;">6×</td>
+          <td style="padding:7px 10px;color:#fbbf24;font-weight:600;">dialectic V2</td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">1</td>
+          <td style="text-align:center;padding:7px 6px;color:#fbbf24;font-weight:600;">1.33×</td>
           <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
         </tr>
         <tr>
           <td style="padding:7px 10px;color:#f87171;font-weight:600;">trias</td>
-          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">9</td>
-          <td style="text-align:center;padding:7px 6px;color:#f87171;font-weight:600;">9×</td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">3</td>
+          <td style="text-align:center;padding:7px 6px;color:#f87171;font-weight:600;">3×</td>
           <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
         </tr>
       </tbody>
@@ -2873,7 +2833,7 @@ flowchart LR
     <dl>
       <dt>tokens/OK</dt><dd>Total tokens consumați împărțit la numărul de outcomes OK confirmate în același set de runs. Metrică-cheie de cost-efficiency.</dd>
       <dt>baseline</dt><dd>Sequential = 1×. Toate celelalte cost-uri se raportează la asta.</dd>
-      <dt>multiplier vs Sequential</dt><dd>Raportul cost al modului față de Sequential — ex. Senate ≈ 7× (3 Opus + 5 Sonnet + 3 Haiku), Trias = 9×.</dd>
+      <dt>multiplier vs Sequential</dt><dd>Raportul cost al modului față de Sequential — ex. Senate ≈ 7× (3 Opus + 5 Sonnet + 3 Haiku), Trias = 3×, Dialectic V2 = 1.33×.</dd>
       <dt>effort flag</dt><dd><code>--effort low|medium|high</code> în CLI — controlează intensitatea efortului per sub-agent (max tokens, retry tolerance). Uniform în benchmark.</dd>
       <dt>OK / PEND / BAD / OVR</dt><dd>Cele 4 outcomes posibile pentru un run: OK (success), PEND (pending review), BAD (failed in prod), OVR (user override). <code>[confirmed]</code> în notă = ponderează 2× în <code>weighted_bad_rate</code>.</dd>
       <dt>cost-of-mistake</dt><dd>Costul presupus al unei decizii greșite — ireversibilitate, blast radius, downtime, lost trust. Folosit în decision-making pentru cost-justification (vezi quadrant).</dd>
