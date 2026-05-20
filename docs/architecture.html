@@ -530,38 +530,85 @@ flowchart LR
 
   <h2>Care mod folosesc?</h2>
   <p style="color:var(--muted);font-size:13px;margin:-8px 0 16px;">Decision tree — pornind de la profilul deciziei, către modul recomandat. Skeptic e flag composabil, nu mod separat.</p>
-  <div class="mermaid-wrap" style="max-width:980px;margin-bottom:24px;">
-    <div class="mermaid">
-%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#21262d','primaryTextColor':'#e5e7eb','primaryBorderColor':'#2d3441','lineColor':'#9ca3af','edgeLabelBackground':'#11151c'}}}%%
-flowchart TD
-    Q1{"Diff trivial?\n≤1 file, ≤15 linii"}
-    Q1 -->|"da"| SKIP["scope_gate skip\n(no mode needed)"]:::skip
-    Q1 -->|"nu"| Q2{"Reversibility?"}
-    Q2 -->|"reversible"| Q3{"≥2 abordări\nplauzibile?"}
-    Q2 -->|"irreversible\n+ critical"| TRIAS["trias\n(9 sub-agents)"]:::trias
-    Q3 -->|"nu"| SEQ["sequential\n(default)"]:::seq
-    Q3 -->|"da"| Q4{"O voce ar putea\nflip după cross-review?"}
-    Q4 -->|"nu"| TRIAS2["trias"]:::trias
-    Q4 -->|"da"| DIAL["dialectic\n(6 sub-agents)"]:::dial
-    Q5{"Modificare la\nskill însuși?"}
-    SKIP -.->|"sau"| Q5
-    SEQ -.->|"plus"| Q5
-    Q5 -->|"da"| SEN["senate\n(9 senatori, advisory)"]:::sen
-    Q6{"confidence ∈ [0.5, 0.7]?"}
-    SEQ --> Q6
-    DIAL --> Q6
-    TRIAS --> Q6
-    Q6 -->|"da"| SKEP["+ skeptic_on_chosen\n(auto-trigger)"]:::skep
-    Q6 -->|"nu"| OUT["ship chosen"]:::ok
-    classDef skip fill:#11151c,stroke:#2d3441,color:#9ca3af
-    classDef seq fill:#0a2e23,stroke:#145c45,color:#6ee7b7
-    classDef dial fill:#182338,stroke:#2a3f5f,color:#93c5fd
-    classDef trias fill:#221830,stroke:#4c2a6b,color:#d8b4fe
-    classDef sen fill:#2a2410,stroke:#5c4a14,color:#fbbf24
-    classDef skep fill:#2a1818,stroke:#5c2a2a,color:#fca5a5
-    classDef ok fill:#0a2e23,stroke:#145c45,color:#6ee7b7
-    </div>
-  </div>
+  <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mode selector decision tree" style="max-width:760px;width:100%;margin-bottom:24px;">
+
+    <!-- Q1 -->
+    <rect x="20" y="16" width="220" height="36" rx="6" fill="#181d27" stroke="#2d3441"/>
+    <text x="130" y="38" text-anchor="middle" fill="#e5e7eb" font-size="11">Diff trivial? (≤1 file, ≤15 linii)</text>
+    <!-- Q1 → Q2 (nu) -->
+    <line x1="130" y1="52" x2="130" y2="74" stroke="#9ca3af" stroke-width="1.5"/>
+    <polygon points="126,69 130,76 134,69" fill="#9ca3af"/>
+    <text x="139" y="67" fill="#9ca3af" font-size="10">nu</text>
+
+    <!-- Q2 -->
+    <rect x="20" y="76" width="220" height="36" rx="6" fill="#181d27" stroke="#2d3441"/>
+    <text x="130" y="98" text-anchor="middle" fill="#e5e7eb" font-size="11">Schimbare la skill însuși?</text>
+    <!-- Q2 → Q3 (nu) -->
+    <line x1="130" y1="112" x2="130" y2="134" stroke="#9ca3af" stroke-width="1.5"/>
+    <polygon points="126,129 130,136 134,129" fill="#9ca3af"/>
+    <text x="139" y="127" fill="#9ca3af" font-size="10">nu</text>
+
+    <!-- Q3 -->
+    <rect x="20" y="136" width="220" height="36" rx="6" fill="#181d27" stroke="#2d3441"/>
+    <text x="130" y="158" text-anchor="middle" fill="#e5e7eb" font-size="11">Ireversibil + critical?</text>
+    <!-- Q3 → Q4 (nu) -->
+    <line x1="130" y1="172" x2="130" y2="194" stroke="#9ca3af" stroke-width="1.5"/>
+    <polygon points="126,189 130,196 134,189" fill="#9ca3af"/>
+    <text x="139" y="187" fill="#9ca3af" font-size="10">nu</text>
+
+    <!-- Q4 -->
+    <rect x="20" y="196" width="220" height="36" rx="6" fill="#181d27" stroke="#2d3441"/>
+    <text x="130" y="213" text-anchor="middle" fill="#e5e7eb" font-size="10">≥2 abordări plauzibile</text>
+    <text x="130" y="225" text-anchor="middle" fill="#e5e7eb" font-size="10">+ voce flip posibilă?</text>
+    <!-- Q4 → SEQUENTIAL (nu) -->
+    <line x1="130" y1="232" x2="130" y2="270" stroke="#9ca3af" stroke-width="1.5"/>
+    <polygon points="126,265 130,272 134,265" fill="#9ca3af"/>
+    <text x="139" y="255" fill="#9ca3af" font-size="10">nu</text>
+
+    <!-- SEQUENTIAL -->
+    <rect x="20" y="272" width="220" height="44" rx="6" fill="#0a2e23" stroke="#145c45"/>
+    <text x="130" y="292" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="700">Sequential</text>
+    <text x="130" y="307" text-anchor="middle" fill="#6ee7b7" font-size="10">default · 1× · 0 sub-agenți</text>
+
+    <!-- RIGHT OUTCOMES -->
+
+    <!-- Q1 → SKIP (da) -->
+    <line x1="240" y1="34" x2="450" y2="34" stroke="#9ca3af" stroke-width="1.5"/>
+    <polygon points="445,30 452,34 445,38" fill="#9ca3af"/>
+    <text x="346" y="28" text-anchor="middle" fill="#9ca3af" font-size="10">da — trivial</text>
+    <rect x="452" y="16" width="280" height="36" rx="6" fill="#11151c" stroke="#2d3441"/>
+    <text x="592" y="33" text-anchor="middle" fill="#9ca3af" font-size="12" font-weight="600">scope_gate SKIP</text>
+    <text x="592" y="46" text-anchor="middle" fill="#6b7280" font-size="9">→ step 6 direct, fără deliberare</text>
+
+    <!-- Q2 → SENATE (da) -->
+    <line x1="240" y1="94" x2="450" y2="94" stroke="#c084fc" stroke-width="1.5"/>
+    <polygon points="445,90 452,94 445,98" fill="#c084fc"/>
+    <text x="346" y="88" text-anchor="middle" fill="#d8b4fe" font-size="10">da</text>
+    <rect x="452" y="76" width="280" height="36" rx="6" fill="#221830" stroke="#4c2a6b"/>
+    <text x="592" y="91" text-anchor="middle" fill="#d8b4fe" font-size="12" font-weight="600">Senate</text>
+    <text x="592" y="104" text-anchor="middle" fill="#9ca3af" font-size="9">9 senatori · ~7× · on-demand advisory</text>
+
+    <!-- Q3 → TRIAS (da) -->
+    <line x1="240" y1="154" x2="450" y2="154" stroke="#f87171" stroke-width="1.5"/>
+    <polygon points="445,150 452,154 445,158" fill="#f87171"/>
+    <text x="346" y="148" text-anchor="middle" fill="#fca5a5" font-size="10">da</text>
+    <rect x="452" y="136" width="280" height="36" rx="6" fill="#2a1818" stroke="#5c2a2a"/>
+    <text x="592" y="151" text-anchor="middle" fill="#fca5a5" font-size="12" font-weight="600">Trias</text>
+    <text x="592" y="164" text-anchor="middle" fill="#9ca3af" font-size="9">9 sub-agenți · 9× · ireversibil / security</text>
+
+    <!-- Q4 → DIALECTIC (da) -->
+    <line x1="240" y1="214" x2="450" y2="214" stroke="#93c5fd" stroke-width="1.5"/>
+    <polygon points="445,210 452,214 445,218" fill="#93c5fd"/>
+    <text x="346" y="208" text-anchor="middle" fill="#93c5fd" font-size="10">da</text>
+    <rect x="452" y="196" width="280" height="36" rx="6" fill="#182338" stroke="#2a3f5f"/>
+    <text x="592" y="211" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">Dialectic</text>
+    <text x="592" y="224" text-anchor="middle" fill="#9ca3af" font-size="9">6 sub-agenți · 6× · cross-review</text>
+
+    <!-- skeptic note -->
+    <rect x="20" y="332" width="720" height="28" rx="4" fill="#11151c" stroke="#2d3441"/>
+    <text x="380" y="350" text-anchor="middle" fill="#9ca3af" font-size="10">+ skeptic_on_chosen se adaugă automat la orice mod dacă confidence ∈ [0.5, 0.7]  (+1 sub-agent, advisory)</text>
+
+  </svg>
 
   <div class="cost-map" style="margin:20px 0;">
     <h3>Cost vs. independență — la o privire</h3>
@@ -591,9 +638,9 @@ flowchart TD
       <text x="430" y="144" fill="#93c5fd" font-size="10" text-anchor="middle" font-weight="700">DIAL</text>
       <text x="430" y="122" fill="#93c5fd" font-size="9" text-anchor="middle">2×</text>
       <!-- Senate -->
-      <circle cx="560" cy="116" r="14" fill="#2a2410" stroke="#5c4a14"/>
-      <text x="560" y="120" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="700">SEN</text>
-      <text x="560" y="98" fill="#fbbf24" font-size="9" text-anchor="middle">2.3×</text>
+      <circle cx="560" cy="60" r="14" fill="#2a2410" stroke="#5c4a14"/>
+      <text x="560" y="64" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="700">SEN</text>
+      <text x="560" y="46" fill="#fbbf24" font-size="9" text-anchor="middle">~7×</text>
       <!-- Trias -->
       <circle cx="620" cy="60" r="14" fill="#221830" stroke="#4c2a6b"/>
       <text x="620" y="64" fill="#d8b4fe" font-size="10" text-anchor="middle" font-weight="700">TRI</text>
@@ -1082,11 +1129,310 @@ flowchart TD
       <h3>Senate <span class="mode-badge advanced">ON-DEMAND</span></h3>
       <div class="subtitle"><b>Scope distinct:</b> auditează modificări la <i>skill-ul însuși</i> (prompturi, scripts, SKILL.md) — nu pe cod user. 9 senatori independenți, vot advisory.</div>
       <dl class="mode-meta">
-        <div class="cell"><dt>Sub-agenți</dt><dd><b>9</b> senatori Sonnet</dd></div>
-        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">~2.3×</span></dd></div>
-        <div class="cell"><dt>Voci</dt><dd>Aurelius · Confucius · Deming · Dimon · Musk · Napoleon · Socrate · Tacitus · Wittgenstein</dd></div>
+        <div class="cell"><dt>Sub-agenți</dt><dd><b>9+2*</b> <span style="color:var(--muted);font-size:11px;">(mixed model)</span></dd></div>
+        <div class="cell"><dt>Cost ×</dt><dd><span class="cost">~7×</span></dd></div>
+        <div class="cell"><dt>Voci</dt><dd>Aurelius · Confucius · Deming · Dimon×3 · Musk · Napoleon · Socrate · Tacitus · Wittgenstein</dd></div>
         <div class="cell"><dt>When</dt><dd>Self-improvement pe skill: prompturi core, Constitution/Workflow, arhitectură</dd></div>
       </dl>
+
+      <!-- Senate flow diagram -->
+      <svg viewBox="0 0 740 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Senate round flow" style="max-width:740px;width:100%;margin:14px 0;">
+
+        <!-- Claude main top -->
+        <rect x="260" y="8" width="220" height="34" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="370" y="30" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="700">Claude main — orchestrator</text>
+
+        <!-- dispatch arrows down to senators -->
+        <line x1="370" y1="42" x2="370" y2="56" stroke="#c084fc" stroke-width="1.5"/>
+        <line x1="60"  y1="56" x2="680" y2="56" stroke="#c084fc" stroke-width="1.5"/>
+        <line x1="60"  y1="56" x2="60"  y2="72" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-s)"/>
+        <line x1="160" y1="56" x2="160" y2="72" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-s)"/>
+        <line x1="260" y1="56" x2="260" y2="72" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-s)"/>
+        <line x1="370" y1="56" x2="370" y2="72" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-s)"/>
+        <line x1="480" y1="56" x2="480" y2="72" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-s)"/>
+        <line x1="580" y1="56" x2="580" y2="72" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-s)"/>
+        <line x1="680" y1="56" x2="680" y2="72" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-s)"/>
+        <text x="370" y="52" text-anchor="middle" fill="#d8b4fe" font-size="9">Round 1 — toți în paralel</text>
+        <defs>
+          <marker id="arr-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#c084fc"/>
+          </marker>
+          <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+          </marker>
+        </defs>
+
+        <!-- Senator boxes Row 1 (7 senators) -->
+        <!-- Wittgenstein - Opus -->
+        <rect x="20" y="74" width="80" height="30" rx="4" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="60" y="88" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">Wittgenstein</text>
+        <text x="60" y="98" text-anchor="middle" fill="#fca5a5" font-size="8">Opus</text>
+
+        <!-- Socrate - Opus -->
+        <rect x="120" y="74" width="80" height="30" rx="4" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="160" y="88" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">Socrate</text>
+        <text x="160" y="98" text-anchor="middle" fill="#fca5a5" font-size="8">Opus</text>
+
+        <!-- Tacitus - Opus -->
+        <rect x="220" y="74" width="80" height="30" rx="4" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="260" y="88" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">Tacitus</text>
+        <text x="260" y="98" text-anchor="middle" fill="#fca5a5" font-size="8">Opus</text>
+
+        <!-- Aurelius - Sonnet -->
+        <rect x="330" y="74" width="80" height="30" rx="4" fill="#0a2e23" stroke="#145c45"/>
+        <text x="370" y="88" text-anchor="middle" fill="#6ee7b7" font-size="9" font-weight="600">Aurelius</text>
+        <text x="370" y="98" text-anchor="middle" fill="#6ee7b7" font-size="8">Sonnet</text>
+
+        <!-- Musk - Sonnet -->
+        <rect x="440" y="74" width="80" height="30" rx="4" fill="#0a2e23" stroke="#145c45"/>
+        <text x="480" y="88" text-anchor="middle" fill="#6ee7b7" font-size="9" font-weight="600">Musk</text>
+        <text x="480" y="98" text-anchor="middle" fill="#6ee7b7" font-size="8">Sonnet</text>
+
+        <!-- Napoleon - Sonnet -->
+        <rect x="540" y="74" width="80" height="30" rx="4" fill="#0a2e23" stroke="#145c45"/>
+        <text x="580" y="88" text-anchor="middle" fill="#6ee7b7" font-size="9" font-weight="600">Napoleon</text>
+        <text x="580" y="98" text-anchor="middle" fill="#6ee7b7" font-size="8">Sonnet</text>
+
+        <!-- Dimon x3 - Haiku -->
+        <rect x="640" y="74" width="90" height="30" rx="4" fill="#2a2410" stroke="#5c4a14"/>
+        <text x="685" y="88" text-anchor="middle" fill="#fbbf24" font-size="9" font-weight="600">Dimon ×3</text>
+        <text x="685" y="98" text-anchor="middle" fill="#fbbf24" font-size="8">Haiku paralel</text>
+
+        <!-- Row 2: Confucius + Deming (centered below) -->
+        <rect x="220" y="120" width="80" height="30" rx="4" fill="#182338" stroke="#2a3f5f"/>
+        <text x="260" y="134" text-anchor="middle" fill="#93c5fd" font-size="9" font-weight="600">Confucius</text>
+        <text x="260" y="144" text-anchor="middle" fill="#93c5fd" font-size="8">Sonnet+data</text>
+
+        <rect x="440" y="120" width="80" height="30" rx="4" fill="#182338" stroke="#2a3f5f"/>
+        <text x="480" y="134" text-anchor="middle" fill="#93c5fd" font-size="9" font-weight="600">Deming</text>
+        <text x="480" y="144" text-anchor="middle" fill="#93c5fd" font-size="8">Sonnet+data</text>
+
+        <!-- cross-question arrows (dashed, between some senators) -->
+        <line x1="200" y1="89" x2="220" y2="89" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="300" y1="89" x2="330" y2="89" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="520" y1="89" x2="540" y2="89" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="370" y="116" text-anchor="middle" fill="#9ca3af" font-size="9" font-style="italic">cross-questions opționale între senatori (max 3 per rund, max 3 runde)</text>
+
+        <!-- Dimon aggregation note -->
+        <text x="685" y="112" text-anchor="middle" fill="#fbbf24" font-size="8">→ majority vote</text>
+
+        <!-- All arrows down to senate_synth -->
+        <line x1="370" y1="156" x2="370" y2="178" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="370" y="170" text-anchor="middle" fill="#6ee7b7" font-size="9">senate_synth.py — după toate rundele</text>
+
+        <!-- senate_synth box -->
+        <rect x="180" y="180" width="380" height="34" rx="6" fill="#11151c" stroke="#2d3441"/>
+        <text x="370" y="198" text-anchor="middle" fill="#e5e7eb" font-size="11" font-weight="600">senate_synth.py — tally voturi</text>
+        <text x="370" y="210" text-anchor="middle" fill="#9ca3af" font-size="9">GO ≥ 7/9 · STOP ≥ 7/9 · MODIFY (oricine) · DEEPLY_SPLIT</text>
+
+        <!-- verdict arrow -->
+        <line x1="370" y1="214" x2="370" y2="234" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-green)"/>
+
+        <!-- verdict box -->
+        <rect x="240" y="236" width="260" height="34" rx="6" fill="#0a2e23" stroke="#145c45"/>
+        <text x="370" y="254" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="700">Verdict — advisory</text>
+        <text x="370" y="266" text-anchor="middle" fill="#9ca3af" font-size="9">GO / MODIFY / STOP / DEEPLY_SPLIT / UNREACHABLE</text>
+
+      </svg>
+
+      <!-- Cross-question mechanism -->
+      <h4 style="margin:18px 0 6px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Cum funcționează cross-questions</h4>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Fiecare senator poate adresa întrebări altor senatori la finalul rundei 1. Doar senatorii care <em>primesc</em> cross-questions sunt re-dispatchuiți în runda 2. Votul se poate schimba în orice direcție.</p>
+
+      <svg viewBox="0 0 720 210" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;width:100%;margin-bottom:16px;" role="img" aria-label="Cross-question mechanism">
+        <defs>
+          <marker id="arr-cq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/></marker>
+          <marker id="arr-cq2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/></marker>
+          <marker id="arr-r2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34d399"/></marker>
+        </defs>
+
+        <!-- ROUND 1 label -->
+        <text x="10" y="14" fill="#9ca3af" font-size="10" font-weight="600" text-transform="uppercase">ROUND 1 — toți în paralel</text>
+
+        <!-- Senator A: MODIFY, sends CQ to B -->
+        <rect x="10" y="22" width="150" height="42" rx="5" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="85" y="38" text-anchor="middle" fill="#fca5a5" font-size="10" font-weight="600">Senator A</text>
+        <text x="85" y="53" text-anchor="middle" fill="#fca5a5" font-size="12">MODIFY</text>
+        <!-- CQ A→B -->
+        <line x1="160" y1="38" x2="278" y2="38" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#arr-cq)"/>
+        <text x="219" y="32" text-anchor="middle" fill="#fbbf24" font-size="8">cross-Q</text>
+
+        <!-- Senator B: GO, receives CQ from A, sends CQ to C -->
+        <rect x="282" y="22" width="150" height="42" rx="5" fill="#0a2e23" stroke="#145c45"/>
+        <text x="357" y="38" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="600">Senator B</text>
+        <text x="357" y="53" text-anchor="middle" fill="#6ee7b7" font-size="12">GO</text>
+        <!-- CQ B→C -->
+        <line x1="432" y1="38" x2="548" y2="38" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#arr-cq2)"/>
+        <text x="490" y="32" text-anchor="middle" fill="#fbbf24" font-size="8">cross-Q</text>
+
+        <!-- Senator C: MODIFY, sends nothing -->
+        <rect x="552" y="22" width="150" height="42" rx="5" fill="#2a1818" stroke="#5c2a2a"/>
+        <text x="627" y="38" text-anchor="middle" fill="#fca5a5" font-size="10" font-weight="600">Senator C</text>
+        <text x="627" y="53" text-anchor="middle" fill="#fca5a5" font-size="12">MODIFY</text>
+
+        <!-- Separator -->
+        <line x1="10" y1="84" x2="710" y2="84" stroke="#2d3441" stroke-width="1" stroke-dasharray="4,3"/>
+        <rect x="170" y="76" width="380" height="18" rx="4" fill="#11151c"/>
+        <text x="360" y="89" text-anchor="middle" fill="#6b7280" font-size="9">orchestrator colectează CQs + le trimite la targeturi (B primește de la A; C primește de la B)</text>
+
+        <!-- ROUND 2 label -->
+        <text x="10" y="114" fill="#9ca3af" font-size="10" font-weight="600">ROUND 2 — DOAR senatorii care au primit CQ re-deliberează</text>
+
+        <!-- A: didn't receive CQ, unchanged -->
+        <rect x="10" y="122" width="150" height="42" rx="5" fill="#11151c" stroke="#2d3441"/>
+        <text x="85" y="138" text-anchor="middle" fill="#6b7280" font-size="10">Senator A</text>
+        <text x="85" y="153" text-anchor="middle" fill="#6b7280" font-size="10">nu a primit CQ</text>
+        <text x="85" y="163" text-anchor="middle" fill="#6b7280" font-size="9">(nu e re-dispatchuit)</text>
+
+        <!-- B: received CQ from A → changes GO→MODIFY -->
+        <rect x="282" y="122" width="150" height="42" rx="5" fill="#2a1818" stroke="#fca5a5" stroke-width="2"/>
+        <text x="357" y="136" text-anchor="middle" fill="#fca5a5" font-size="10" font-weight="600">Senator B</text>
+        <text x="357" y="151" text-anchor="middle" fill="#fca5a5" font-size="11">GO → <tspan font-weight="700">MODIFY</tspan></text>
+        <text x="357" y="162" text-anchor="middle" fill="#fbbf24" font-size="8">← CQ de la A i-a schimbat opinia</text>
+
+        <!-- C: received CQ from B → may change or stay -->
+        <rect x="552" y="122" width="150" height="42" rx="5" fill="#2a1818" stroke="#5c2a2a" stroke-width="2"/>
+        <text x="627" y="136" text-anchor="middle" fill="#fca5a5" font-size="10" font-weight="600">Senator C</text>
+        <text x="627" y="151" text-anchor="middle" fill="#fca5a5" font-size="11">MODIFY → <tspan font-weight="700">MODIFY</tspan></text>
+        <text x="627" y="162" text-anchor="middle" fill="#9ca3af" font-size="8">← CQ de la B, dar opinie neschimbată</text>
+
+        <!-- Down arrows to synth -->
+        <line x1="357" y1="164" x2="357" y2="184" stroke="#34d399" stroke-width="1.2" marker-end="url(#arr-r2)"/>
+        <line x1="627" y1="164" x2="627" y2="184" stroke="#34d399" stroke-width="1.2" marker-end="url(#arr-r2)"/>
+        <text x="360" y="200" text-anchor="middle" fill="#6ee7b7" font-size="9">senate_synth.py ia voturile cele mai recente per senator → verdict final</text>
+      </svg>
+
+      <!-- Real 2-round example -->
+      <h4 style="margin:18px 0 6px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Exemplu real — refactor-bundle-7items · 2 runde · verdict: MODIFY</h4>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Propunere: refactor consilium intern în 7 itemi bundled. 7 senatori activi.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+
+        <!-- ROUND 1 -->
+        <svg viewBox="0 0 360 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;" role="img" aria-label="Round 1 votes and CQs">
+          <defs>
+            <marker id="arr-go2"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34d399"/></marker>
+            <marker id="arr-mod2"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f87171"/></marker>
+            <marker id="arr-gray2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/></marker>
+          </defs>
+          <text x="180" y="14" text-anchor="middle" fill="#e5e7eb" font-size="11" font-weight="700">Runda 1</text>
+          <text x="180" y="26" text-anchor="middle" fill="#9ca3af" font-size="9">Vot inițial + cross-questions emise</text>
+
+          <!-- ARROWS -->
+          <line x1="198" y1="64" x2="231" y2="79" stroke="#34d399" stroke-width="1.3" marker-end="url(#arr-go2)"/>
+          <line x1="168" y1="71" x2="106" y2="148" stroke="#4b5563" stroke-width="1.3" marker-end="url(#arr-gray2)"/>
+          <line x1="176" y1="74" x2="146" y2="205" stroke="#f87171" stroke-width="1.3" marker-end="url(#arr-mod2)"/>
+          <line x1="238" y1="105" x2="155" y2="209" stroke="#f87171" stroke-width="1.3" marker-end="url(#arr-mod2)"/>
+          <line x1="246" y1="108" x2="224" y2="205" stroke="#4b5563" stroke-width="1.3" marker-end="url(#arr-gray2)"/>
+          <line x1="223" y1="207" x2="245" y2="110" stroke="#34d399" stroke-width="1.3" marker-end="url(#arr-go2)"/>
+          <line x1="201" y1="217" x2="112" y2="175" stroke="#4b5563" stroke-width="1.3" marker-end="url(#arr-gray2)"/>
+          <line x1="153" y1="210" x2="237" y2="106" stroke="#34d399" stroke-width="1.3" marker-end="url(#arr-go2)"/>
+          <line x1="128" y1="210" x2="106" y2="182" stroke="#4b5563" stroke-width="1.3" marker-end="url(#arr-gray2)"/>
+          <line x1="145" y1="207" x2="175" y2="76" stroke="#4b5563" stroke-width="1.3" marker-end="url(#arr-gray2)"/>
+          <line x1="110" y1="174" x2="199" y2="217" stroke="#4b5563" stroke-width="1.3" marker-end="url(#arr-gray2)"/>
+          <line x1="105" y1="181" x2="127" y2="209" stroke="#f87171" stroke-width="1.3" marker-end="url(#arr-mod2)"/>
+          <line x1="97"  y1="146" x2="105" y2="110" stroke="#4b5563" stroke-width="1.3" marker-end="url(#arr-gray2)"/>
+          <line x1="130" y1="89"  x2="228" y2="89"  stroke="#34d399" stroke-width="1.3" marker-end="url(#arr-go2)"/>
+          <line x1="114" y1="108" x2="136" y2="205" stroke="#f87171" stroke-width="1.3" marker-end="url(#arr-mod2)"/>
+
+          <!-- NODES — R1 votes only -->
+          <circle cx="180" cy="55" r="18" fill="#2a2410" stroke="#5c4a14" stroke-width="1.5"/>
+          <text x="180" y="52" text-anchor="middle" fill="#fbbf24" font-size="7.5" font-weight="600">Witt</text>
+          <text x="180" y="62" text-anchor="middle" fill="#fbbf24" font-size="8.5">MODIFY</text>
+
+          <circle cx="250" cy="89" r="18" fill="#2a2410" stroke="#5c4a14" stroke-width="1.5"/>
+          <text x="250" y="86" text-anchor="middle" fill="#fbbf24" font-size="7.5" font-weight="600">Aurelius</text>
+          <text x="250" y="96" text-anchor="middle" fill="#fbbf24" font-size="8.5">MODIFY</text>
+
+          <circle cx="268" cy="165" r="18" fill="#2a2410" stroke="#5c4a14" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x="268" y="162" text-anchor="middle" fill="#9ca3af" font-size="7.5">Conf.</text>
+          <text x="268" y="172" text-anchor="middle" fill="#9ca3af" font-size="8.5">MODIFY</text>
+
+          <circle cx="219" cy="226" r="18" fill="#2a2410" stroke="#5c4a14" stroke-width="1.5"/>
+          <text x="219" y="223" text-anchor="middle" fill="#fbbf24" font-size="7.5" font-weight="600">Socrate</text>
+          <text x="219" y="233" text-anchor="middle" fill="#fbbf24" font-size="8.5">MODIFY</text>
+
+          <circle cx="141" cy="226" r="18" fill="#0a2e23" stroke="#145c45" stroke-width="1.5"/>
+          <text x="141" y="223" text-anchor="middle" fill="#6ee7b7" font-size="7.5" font-weight="600">Musk</text>
+          <text x="141" y="233" text-anchor="middle" fill="#6ee7b7" font-size="8.5">GO</text>
+
+          <circle cx="92" cy="165" r="18" fill="#2a2410" stroke="#5c4a14" stroke-width="1.5"/>
+          <text x="92" y="162" text-anchor="middle" fill="#fbbf24" font-size="7.5" font-weight="600">Dimon</text>
+          <text x="92" y="172" text-anchor="middle" fill="#fbbf24" font-size="8.5">MODIFY</text>
+
+          <circle cx="110" cy="89" r="18" fill="#2a2410" stroke="#5c4a14" stroke-width="1.5"/>
+          <text x="110" y="86" text-anchor="middle" fill="#fbbf24" font-size="7.5" font-weight="600">Napoleon</text>
+          <text x="110" y="96" text-anchor="middle" fill="#fbbf24" font-size="8.5">MODIFY</text>
+
+          <!-- Legend R1 -->
+          <line x1="10" y1="278" x2="32" y2="278" stroke="#34d399" stroke-width="1.2" marker-end="url(#arr-go2)"/>
+          <text x="36" y="282" fill="#6ee7b7" font-size="8.5">CQ → Aurelius</text>
+          <line x1="10" y1="292" x2="32" y2="292" stroke="#f87171" stroke-width="1.2" marker-end="url(#arr-mod2)"/>
+          <text x="36" y="296" fill="#fca5a5" font-size="8.5">CQ → Musk</text>
+          <line x1="160" y1="278" x2="182" y2="278" stroke="#4b5563" stroke-width="1.2" marker-end="url(#arr-gray2)"/>
+          <text x="186" y="282" fill="#6b7280" font-size="8.5">CQ → alt senator</text>
+          <text x="186" y="296" fill="#9ca3af" font-size="8" font-style="italic">Conf. = niciun CQ trimis</text>
+        </svg>
+
+        <!-- ROUND 2 -->
+        <svg viewBox="0 0 360 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;" role="img" aria-label="Round 2 updated votes">
+          <text x="180" y="14" text-anchor="middle" fill="#e5e7eb" font-size="11" font-weight="700">Runda 2</text>
+          <text x="180" y="26" text-anchor="middle" fill="#9ca3af" font-size="9">Doar senatorii care au primit CQ sunt re-dispatchuiți</text>
+
+          <!-- NODES — R2: only Aurelius, Musk, Dimon re-dispatched -->
+          <!-- Witt: unchanged, muted -->
+          <circle cx="180" cy="55" r="18" fill="#11151c" stroke="#2d3441" stroke-width="1"/>
+          <text x="180" y="52" text-anchor="middle" fill="#4b5563" font-size="7.5">Witt</text>
+          <text x="180" y="62" text-anchor="middle" fill="#4b5563" font-size="8.5">MODIFY</text>
+
+          <!-- Aurelius: MODIFY→GO, highlighted -->
+          <circle cx="250" cy="89" r="20" fill="#0a2e23" stroke="#34d399" stroke-width="2.5"/>
+          <text x="250" y="83" text-anchor="middle" fill="#6ee7b7" font-size="7.5" font-weight="700">Aurelius</text>
+          <text x="250" y="93" text-anchor="middle" fill="#9ca3af" font-size="7.5">MODIFY→</text>
+          <text x="250" y="104" text-anchor="middle" fill="#34d399" font-size="10" font-weight="700">GO ↑</text>
+
+          <!-- Confucius: unchanged, muted -->
+          <circle cx="268" cy="165" r="18" fill="#11151c" stroke="#2d3441" stroke-width="1"/>
+          <text x="268" y="162" text-anchor="middle" fill="#4b5563" font-size="7.5">Conf.</text>
+          <text x="268" y="172" text-anchor="middle" fill="#4b5563" font-size="8.5">MODIFY</text>
+
+          <!-- Socrate: unchanged, muted -->
+          <circle cx="219" cy="226" r="18" fill="#11151c" stroke="#2d3441" stroke-width="1"/>
+          <text x="219" y="223" text-anchor="middle" fill="#4b5563" font-size="7.5">Socrate</text>
+          <text x="219" y="233" text-anchor="middle" fill="#4b5563" font-size="8.5">MODIFY</text>
+
+          <!-- Musk: GO→MODIFY, highlighted -->
+          <circle cx="141" cy="226" r="20" fill="#2a1818" stroke="#f87171" stroke-width="2.5"/>
+          <text x="141" y="220" text-anchor="middle" fill="#fca5a5" font-size="7.5" font-weight="700">Musk</text>
+          <text x="141" y="230" text-anchor="middle" fill="#9ca3af" font-size="7.5">GO→</text>
+          <text x="141" y="241" text-anchor="middle" fill="#f87171" font-size="10" font-weight="700">MODIFY ↓</text>
+
+          <!-- Dimon: re-dispatched, stays MODIFY -->
+          <circle cx="92" cy="165" r="20" fill="#2a2410" stroke="#fbbf24" stroke-width="2"/>
+          <text x="92" y="159" text-anchor="middle" fill="#fbbf24" font-size="7.5" font-weight="700">Dimon</text>
+          <text x="92" y="169" text-anchor="middle" fill="#9ca3af" font-size="7.5">MODIFY→</text>
+          <text x="92" y="179" text-anchor="middle" fill="#fbbf24" font-size="9" font-weight="600">MODIFY</text>
+
+          <!-- Napoleon: unchanged, muted -->
+          <circle cx="110" cy="89" r="18" fill="#11151c" stroke="#2d3441" stroke-width="1"/>
+          <text x="110" y="86" text-anchor="middle" fill="#4b5563" font-size="7.5">Napoleon</text>
+          <text x="110" y="96" text-anchor="middle" fill="#4b5563" font-size="8.5">MODIFY</text>
+
+          <!-- Legend R2 -->
+          <circle cx="18" cy="278" r="7" fill="#0a2e23" stroke="#34d399" stroke-width="2"/>
+          <text x="30" y="282" fill="#6ee7b7" font-size="8.5">re-dispatchuit, vot schimbat</text>
+          <circle cx="18" cy="294" r="7" fill="#2a2410" stroke="#fbbf24" stroke-width="1.5"/>
+          <text x="30" y="298" fill="#fbbf24" font-size="8.5">re-dispatchuit, vot neschimbat</text>
+          <circle cx="200" cy="278" r="7" fill="#11151c" stroke="#2d3441" stroke-width="1"/>
+          <text x="212" y="282" fill="#4b5563" font-size="8.5">nu a primit CQ, unchanged</text>
+
+          <!-- Final tally -->
+          <rect x="30" y="306" width="300" height="14" rx="3" fill="#11151c" stroke="#2d3441"/>
+          <text x="180" y="317" text-anchor="middle" fill="#e5e7eb" font-size="9">GO=1 · MODIFY=6 · STOP=0 → verdict <tspan fill="#fbbf24" font-weight="700">MODIFY</tspan></text>
+        </svg>
+
+      </div>
+
       <div class="use-when">Detalii complete: <a href="architecture_senate.html" style="color:#d8b4fe;">architecture_senate.html</a> (round-by-round flow, cele 5 legi, cross-Q matrix).</div>
     </div>
 
@@ -1122,8 +1468,8 @@ flowchart TD
       </tr>
       <tr>
         <td><b>Senate</b></td>
-        <td>9</td>
-        <td class="cost">~2.3×</td>
+        <td>9+2*</td>
+        <td class="cost">~7×</td>
         <td>da (on-demand)</td>
         <td>Modificări la skill însuși</td>
       </tr>
@@ -2264,7 +2610,7 @@ flowchart TD
     TS["trias_split\n3.3×"]:::mode_ts
     TR["trias\n9×"]:::mode_tr
     DI["dialectic\n6×"]:::mode_di
-    SE["senate\n2.3×"]:::mode_se
+    SE["senate\n~7×"]:::mode_se
     SKIP["scope_gate skip\n(trivial diff)"]:::skip
     Q1 -->|"irreversible\n+ critical"| SE
     Q1 -->|"partial"| Q2
@@ -2310,11 +2656,11 @@ flowchart TD
       <text x="156" y="37"  fill="#6ee7b7" font-size="10" font-weight="600">1×</text>
       <text x="156" y="47"  fill="#4b5563" font-size="9">default</text>
 
-      <!-- senate ~2.3× → 84px -->
+      <!-- senate ~7× → 257px -->
       <text x="111" y="82"  text-anchor="end" fill="#e5e7eb" font-size="11">senate</text>
-      <rect x="115" y="64"  width="84"  height="28" rx="3" fill="#a78bfa"/>
-      <text x="203" y="81"  fill="#a78bfa" font-size="10" font-weight="600">2.3×</text>
-      <text x="203" y="91"  fill="#4b5563" font-size="9">9 senatori</text>
+      <rect x="115" y="64"  width="257" height="28" rx="3" fill="#a78bfa"/>
+      <text x="376" y="81"  fill="#a78bfa" font-size="10" font-weight="600">~7×</text>
+      <text x="376" y="91"  fill="#4b5563" font-size="9">3 Opus · 5 Sonnet · 3 Haiku</text>
 
       <!-- parallel 3× → 110px (auto-only, muted) -->
       <text x="111" y="126" text-anchor="end" fill="#6b7280" font-size="11">parallel</text>
@@ -2340,7 +2686,7 @@ flowchart TD
       <text x="449" y="267" fill="#4b5563" font-size="9">3 pers.</text>
 
       <!-- skeptic note -->
-      <text x="115" y="292" fill="#6b7280" font-size="9">skeptic_on_chosen = +1 sub-agent pest modul de bază</text>
+      <text x="115" y="292" fill="#6b7280" font-size="9">skeptic_on_chosen = +1 sub-agent peste modul de bază · * Senate: 9+2 dispatches (Dimon × 3 Haiku paralel)</text>
     </svg>
 
     <!-- TABLE -->
@@ -2362,8 +2708,8 @@ flowchart TD
         </tr>
         <tr style="border-bottom:1px solid #1e2733;">
           <td style="padding:7px 10px;color:#a78bfa;font-weight:600;">senate</td>
-          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">9</td>
-          <td style="text-align:center;padding:7px 6px;color:#a78bfa;font-weight:600;">~2.3×</td>
+          <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">9+2*</td>
+          <td style="text-align:center;padding:7px 6px;color:#a78bfa;font-weight:600;">~7×</td>
           <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
         </tr>
         <tr style="border-bottom:1px solid #1e2733;opacity:0.45;">
@@ -2389,6 +2735,78 @@ flowchart TD
           <td style="text-align:center;padding:7px 6px;color:#e5e7eb;">9</td>
           <td style="text-align:center;padding:7px 6px;color:#f87171;font-weight:600;">9×</td>
           <td style="text-align:center;padding:7px 6px;color:#9ca3af;font-size:12px;">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── 3b. SENATE MODEL BREAKDOWN ───────────────────────────── -->
+  <h2>Senate — model per senator <span style="color:var(--muted);font-weight:400;font-size:14px;">· cost justificat de rol</span></h2>
+  <p style="color:var(--muted);font-size:12.5px;margin:-8px 0 14px;">* 9+2 dispatches: Dimon rulează Haiku×3 paralel (diversitate scenarii adverse) → majority vote înainte de injecție în senate_synth.py</p>
+  <div style="overflow-x:auto;margin-bottom:28px;">
+    <table style="border-collapse:collapse;font-size:12.5px;width:100%;max-width:860px;">
+      <thead>
+        <tr style="border-bottom:1px solid #2d3441;">
+          <th style="text-align:left;padding:7px 10px;color:#9ca3af;font-weight:500;">Senator</th>
+          <th style="text-align:left;padding:7px 10px;color:#9ca3af;font-weight:500;">Specialitate</th>
+          <th style="text-align:center;padding:7px 10px;color:#9ca3af;font-weight:500;">Model</th>
+          <th style="text-align:left;padding:7px 10px;color:#9ca3af;font-weight:500;">De ce</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:6px 10px;color:#e5e7eb;font-weight:600;">Wittgenstein</td>
+          <td style="padding:6px 10px;color:#9ca3af;">Termeni vagi, definiții testabile</td>
+          <td style="text-align:center;padding:6px 10px;"><span style="color:#fca5a5;font-weight:700;font-size:11px;">Opus</span></td>
+          <td style="padding:6px 10px;color:#6b7280;font-size:11px;">Raționament semantic profund</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:6px 10px;color:#e5e7eb;font-weight:600;">Socrate</td>
+          <td style="padding:6px 10px;color:#9ca3af;">Premise implicite, asumpții ascunse</td>
+          <td style="text-align:center;padding:6px 10px;"><span style="color:#fca5a5;font-weight:700;font-size:11px;">Opus</span></td>
+          <td style="padding:6px 10px;color:#6b7280;font-size:11px;">Detectare premise implicite</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:6px 10px;color:#e5e7eb;font-weight:600;">Tacitus</td>
+          <td style="padding:6px 10px;color:#9ca3af;">Evidență retrospectivă din runs/ × FEEDBACK</td>
+          <td style="text-align:center;padding:6px 10px;"><span style="color:#fca5a5;font-weight:700;font-size:11px;">Opus</span></td>
+          <td style="padding:6px 10px;color:#6b7280;font-size:11px;">Reconstrucție cross-document</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:6px 10px;color:#e5e7eb;font-weight:600;">Aurelius</td>
+          <td style="padding:6px 10px;color:#9ca3af;">Reversibilitate × magnitudine</td>
+          <td style="text-align:center;padding:6px 10px;"><span style="color:#6ee7b7;font-weight:600;font-size:11px;">Sonnet</span></td>
+          <td style="padding:6px 10px;color:#6b7280;font-size:11px;">Judgment direct</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:6px 10px;color:#e5e7eb;font-weight:600;">Musk</td>
+          <td style="padding:6px 10px;color:#9ca3af;">Ștergere agresivă, simplitate</td>
+          <td style="text-align:center;padding:6px 10px;"><span style="color:#6ee7b7;font-weight:600;font-size:11px;">Sonnet</span></td>
+          <td style="padding:6px 10px;color:#6b7280;font-size:11px;">Judgment direct</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:6px 10px;color:#e5e7eb;font-weight:600;">Napoleon</td>
+          <td style="padding:6px 10px;color:#9ca3af;">Cost, tokeni, stare operator</td>
+          <td style="text-align:center;padding:6px 10px;"><span style="color:#6ee7b7;font-weight:600;font-size:11px;">Sonnet</span></td>
+          <td style="padding:6px 10px;color:#6b7280;font-size:11px;">Calcul cantitativ</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:6px 10px;color:#e5e7eb;font-weight:600;">Confucius</td>
+          <td style="padding:6px 10px;color:#9ca3af;">Ierarhie, precedente în runs/</td>
+          <td style="text-align:center;padding:6px 10px;"><span style="color:#6ee7b7;font-weight:600;font-size:11px;">Sonnet + data</span></td>
+          <td style="padding:6px 10px;color:#6b7280;font-size:11px;">Citește corpus runs/ + FEEDBACK</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e2733;">
+          <td style="padding:6px 10px;color:#e5e7eb;font-weight:600;">Deming</td>
+          <td style="padding:6px 10px;color:#9ca3af;">Disciplină statistică, n/varianță</td>
+          <td style="text-align:center;padding:6px 10px;"><span style="color:#6ee7b7;font-weight:600;font-size:11px;">Sonnet + data</span></td>
+          <td style="padding:6px 10px;color:#6b7280;font-size:11px;">Citește corpus runs/ + FEEDBACK</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 10px;color:#e5e7eb;font-weight:600;">Dimon ×3</td>
+          <td style="padding:6px 10px;color:#9ca3af;">Stress test, scenarii adverse</td>
+          <td style="text-align:center;padding:6px 10px;"><span style="color:#fbbf24;font-weight:600;font-size:11px;">Haiku ×3 paralel</span></td>
+          <td style="padding:6px 10px;color:#6b7280;font-size:11px;">Diversitate > adâncime; majority vote</td>
         </tr>
       </tbody>
     </table>
@@ -2433,7 +2851,7 @@ flowchart LR
     <text x="80" y="65" fill="#34d399" font-size="13" font-weight="700">SWEET SPOT</text>
     <text x="80" y="82" fill="#6ee7b7" font-size="11">cost-of-mistake high,</text>
     <text x="80" y="96" fill="#6ee7b7" font-size="11">cost-of-running low</text>
-    <text x="80" y="116" fill="#6ee7b7" font-size="10" font-style="italic">→ Trias / Senate justified</text>
+    <text x="80" y="116" fill="#6ee7b7" font-size="10" font-style="italic">→ Trias (9×) / Senate (~7×) justified</text>
     <text x="380" y="65" fill="#fbbf24" font-size="13" font-weight="700">JUSTIFIED</text>
     <text x="380" y="82" fill="#fbbf24" font-size="11">high mistake + high running</text>
     <text x="380" y="116" fill="#fbbf24" font-size="10" font-style="italic">→ Trias, dar verifică decision speed</text>
@@ -2455,7 +2873,7 @@ flowchart LR
     <dl>
       <dt>tokens/OK</dt><dd>Total tokens consumați împărțit la numărul de outcomes OK confirmate în același set de runs. Metrică-cheie de cost-efficiency.</dd>
       <dt>baseline</dt><dd>Sequential = 1×. Toate celelalte cost-uri se raportează la asta.</dd>
-      <dt>multiplier vs Sequential</dt><dd>Raportul cost al modului față de Sequential — ex. Senate ≈ 2.3×, Trias = 9×.</dd>
+      <dt>multiplier vs Sequential</dt><dd>Raportul cost al modului față de Sequential — ex. Senate ≈ 7× (3 Opus + 5 Sonnet + 3 Haiku), Trias = 9×.</dd>
       <dt>effort flag</dt><dd><code>--effort low|medium|high</code> în CLI — controlează intensitatea efortului per sub-agent (max tokens, retry tolerance). Uniform în benchmark.</dd>
       <dt>OK / PEND / BAD / OVR</dt><dd>Cele 4 outcomes posibile pentru un run: OK (success), PEND (pending review), BAD (failed in prod), OVR (user override). <code>[confirmed]</code> în notă = ponderează 2× în <code>weighted_bad_rate</code>.</dd>
       <dt>cost-of-mistake</dt><dd>Costul presupus al unei decizii greșite — ireversibilitate, blast radius, downtime, lost trust. Folosit în decision-making pentru cost-justification (vezi quadrant).</dd>
