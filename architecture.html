@@ -2833,14 +2833,6 @@ day-2 workforce, and the arithmetic that produces your answer.</pre>
         if (banner) { banner.classList.add('hidden'); sessionStorage.setItem('consiliumBannerDone','1'); }
       });
     });
-    var heroBtn = document.getElementById('heroCtaBtn');
-    if (heroBtn) {
-      heroBtn.addEventListener('click', function() {
-        var archBtn = document.querySelector('nav.tabs button[data-tab="architecture"]');
-        if (archBtn) { archBtn.click(); }
-        document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
-      });
-    }
     // Initial state: hide Play tour unless Patterns is the active tab on load
     var initialActive = document.querySelector('nav.tabs button.active');
     syncPlayBtn(initialActive ? initialActive.getAttribute('data-tab') : null);
