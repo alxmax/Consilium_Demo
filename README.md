@@ -2,7 +2,25 @@
 
 **v1.01** · [Changelog](./CHANGELOG.md)
 
-> **Upcoming release — 2026-06-01.** Consilium skill **v1.1** is planned for public release on **June 1, 2026**. Scope: stabilised Sequential — Blind / Dialectic / Trias modes, calibration loop wired to `FEEDBACK.html`, scope gate auto-skip for trivial diffs, and the canonical JSON report schema frozen. Final benchmark numbers (Interactive Demo tab) will be published with the release.
+---
+
+<div align="center">
+
+# Public release: **v1.1 — June 1, 2026**
+
+### Consilium skill goes public on **2026-06-01**
+
+</div>
+
+**Scope locked for v1.1:**
+
+- Sequential — Blind / Dialectic / Trias modes stabilised
+- Calibration loop wired to `FEEDBACK.html`
+- Scope gate auto-skip for trivial diffs
+- Canonical JSON report schema frozen
+- Final benchmark numbers (Interactive Demo tab) published with the release
+
+---
 
 Three specialized sub-agents (Generator / Control / Conservator) are orchestrated by a Claude Code skill that aggregates their outputs via configurable voting schemes into a canonical JSON decision.
 
