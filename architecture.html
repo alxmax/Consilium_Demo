@@ -898,6 +898,37 @@
   .footer-links a:hover { color: var(--ink); }
   @media (max-width: 600px) { .page-footer { padding: 16px 20px; flex-direction: column; align-items: flex-start; } }
 
+  /* ============== BENCHMARK ============== */
+  .bench-intro { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px; margin-bottom: 28px; }
+  .bench-intro h3 { margin: 0 0 8px; font-size: 15px; }
+  .bench-intro p { margin: 0 0 10px; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+  .bench-intro p:last-child { margin: 0; }
+  .bench-modes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .bench-mode { font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 4px;
+    border: 1px solid var(--line); color: var(--muted); background: var(--inset); }
+  .bench-mode.baseline { border-color: var(--gold-border); color: var(--gold); background: var(--gold-soft); }
+  .bench-tasks { display: flex; flex-direction: column; gap: 20px; margin-bottom: 28px; }
+  .bench-task { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px; }
+  .bench-task-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .bench-task-header h3 { margin: 0; font-size: 16px; }
+  .bench-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.06em; }
+  .bench-tag.code { background: var(--trias-soft); color: var(--trias-text); border: 1px solid var(--trias-border); }
+  .bench-tag.reasoning { background: var(--ctl-soft); color: var(--ctl-text); border: 1px solid var(--ctl-border); }
+  .bench-tag.hard { background: var(--con-soft); color: var(--con-text); border: 1px solid var(--con-border); }
+  .bench-tag.easy { background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--accent-border); }
+  .bench-task pre { background: var(--inset); border: 1px solid var(--line); border-radius: 6px;
+    padding: 14px 16px; font-size: 12.5px; overflow-x: auto; white-space: pre-wrap;
+    word-break: break-word; margin: 0 0 14px; line-height: 1.6; color: var(--ink); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .bench-task pre code { background: none; padding: 0; }
+  .bench-withhold { display: flex; gap: 12px; padding: 14px 16px; background: var(--inset);
+    border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 6px;
+    font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-top: 4px; }
+  .bench-withhold .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  @media (max-width: 600px) { .bench-task pre { font-size: 11.5px; padding: 10px 12px; } }
+
 </style>
 </head>
 <body>
@@ -956,6 +987,7 @@
   <button data-tab="flow"><span>Flow</span><span class="tab-sub">deliberation step by step</span></button>
   <button data-tab="modes"><span>Modes</span><span class="tab-sub">parallel, dialectic, trias</span></button>
   <button data-tab="patterns"><span>Interactive Demo</span><span class="tab-sub">click flows · play tour</span></button>
+  <button data-tab="benchmark"><span>Benchmark</span><span class="tab-sub">3 tasks · 5 modes</span></button>
 </nav>
 
 <main>
@@ -2642,6 +2674,114 @@
           <span>Tuned prompts and thresholds apply to the <b>next deliberation</b> — the loop closes without code changes.</span>
         </div>
       </div>
+    </div>
+
+  </section>
+
+  <!-- ============== TAB: BENCHMARK ============== -->
+  <section class="tab" id="benchmark">
+
+    <div class="bench-intro">
+      <h3>Benchmark — modes × tasks</h3>
+      <p>A local harness that runs each Consilium mode against three tasks and produces a scored HTML report. Each run is spawned in an isolated workspace; a scoring-tree stash mechanism prevents the model from reading expected answers during the run. Post-run, a behavior audit scans the session transcript and voids any cell where the model accessed scoring files.</p>
+      <p>Modes tested:</p>
+      <div class="bench-modes">
+        <span class="bench-mode baseline">opus_bare (baseline)</span>
+        <span class="bench-mode">superpowers</span>
+        <span class="bench-mode">consilium_sequential</span>
+        <span class="bench-mode">consilium_trias</span>
+        <span class="bench-mode">consilium_dialectic</span>
+      </div>
+    </div>
+
+    <div class="bench-tasks">
+
+      <!-- Task 1 -->
+      <div class="bench-task">
+        <div class="bench-task-header">
+          <h3>Task 1 — Circuit Breaker</h3>
+          <span class="bench-tag code">Code · C++17</span>
+          <span class="bench-tag hard">Hard</span>
+        </div>
+        <pre>Implement a circuit-breaker state machine in C++17.
+Three states: CLOSED → OPEN → HALF_OPEN → (CLOSED | OPEN).
+
+Required interface (header-only, solution.hpp):
+
+  CircuitBreaker(int failure_threshold,
+                 int recovery_timeout_sec,
+                 int success_threshold);
+
+  void record_success();
+  void record_failure();
+  bool is_open() const;   // true ONLY in OPEN state
+  State state() const;    // CLOSED / OPEN / HALF_OPEN (lazy evaluation)
+
+Key rules:
+- CLOSED: consecutive failures trip OPEN; any success resets the streak.
+- OPEN: transitions to HALF_OPEN lazily on query after recovery_timeout_sec.
+        record_success/failure are ignored while inside the open window.
+- HALF_OPEN: is_open() returns false (probe calls allowed).
+             record_success() re-closes after success_threshold hits.
+             record_failure() immediately re-opens (full timeout resets).
+
+Deliverables: solution.hpp + tests_self.cpp (exit 0 = pass).</pre>
+        <div class="bench-withhold">
+          <span class="icon">🔒</span>
+          <span>Expected outputs are intentionally withheld. Publishing answer keys here would risk contaminating future evaluations once this page is indexed — the benchmark is designed to measure first-principles reasoning, not recall.</span>
+        </div>
+      </div>
+
+      <!-- Task 2 -->
+      <div class="bench-task">
+        <div class="bench-task-header">
+          <h3>Task 2 — Transport Choice</h3>
+          <span class="bench-tag reasoning">Reasoning</span>
+          <span class="bench-tag easy">Easy</span>
+        </div>
+        <pre>I want to wash my car. The car wash is 50 meters away.
+
+Should I:
+  A) Walk there
+  B) Something else
+  C) Go by train
+  D) Fly there
+
+Pick exactly ONE option and justify it. Cover why each other option is worse,
+and state the key assumption your pick relies on.</pre>
+        <div class="bench-withhold">
+          <span class="icon">🔒</span>
+          <span>Expected outputs are intentionally withheld. Publishing answer keys here would risk contaminating future evaluations once this page is indexed — the benchmark is designed to measure first-principles reasoning, not recall.</span>
+        </div>
+      </div>
+
+      <!-- Task 3 -->
+      <div class="bench-task">
+        <div class="bench-task-header">
+          <h3>Task 3 — Rule of Three</h3>
+          <span class="bench-tag reasoning">Reasoning</span>
+          <span class="bench-tag hard">Hard</span>
+        </div>
+        <pre>Day 1: 57 workers produce 100 pieces in 3 hours.
+
+Day 2: 100 workers scheduled. 4 call in sick.
+       Of those who show up, 2 slip before their shift and are hospitalized.
+
+How long does it take the day-2 crew to produce 20 pieces?
+
+  A) 0.3 hours
+  B) 18 min 45 s
+  C) Something else
+  D) 0.5 hours
+
+Pick exactly ONE option. Show the per-worker rate from day 1, the effective
+day-2 workforce, and the arithmetic that produces your answer.</pre>
+        <div class="bench-withhold">
+          <span class="icon">🔒</span>
+          <span>Expected outputs are intentionally withheld. Publishing answer keys here would risk contaminating future evaluations once this page is indexed — the benchmark is designed to measure first-principles reasoning, not recall.</span>
+        </div>
+      </div>
+
     </div>
 
   </section>
