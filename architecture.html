@@ -918,6 +918,7 @@
   .bench-tag.code { background: var(--trias-soft); color: var(--trias-text); border: 1px solid var(--trias-border); }
   .bench-tag.reasoning { background: var(--ctl-soft); color: var(--ctl-text); border: 1px solid var(--ctl-border); }
   .bench-tag.hard { background: var(--con-soft); color: var(--con-text); border: 1px solid var(--con-border); }
+  .bench-tag.medium { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border); }
   .bench-tag.easy { background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--accent-border); }
   .bench-task pre { background: var(--inset); border: 1px solid var(--line); border-radius: 6px;
     padding: 14px 16px; font-size: 12.5px; overflow-x: auto; white-space: pre-wrap;
@@ -1860,7 +1861,7 @@
         </defs>
 
         <!-- Row 1: Sequential-naive (legacy) -->
-        <text x="20" y="40" fill="#9ca3af" font-size="12" font-weight="700" letter-spacing="0.08em">SEQUENTIAL — NAIVE</text>
+        <text x="20" y="40" fill="#9ca3af" font-size="12" font-weight="700" letter-spacing="0.08em">SEQUENTIAL — NAIVE — LEGACY</text>
         <rect x="180" y="20" width="100" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
         <text x="230" y="45" fill="#fbbf24" font-size="13" text-anchor="middle">Generator</text>
         <rect x="380" y="20" width="100" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
@@ -1891,8 +1892,9 @@
         <text x="529" y="158" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="700">STRIP</text>
         <text x="529" y="169" fill="#fbbf24" font-size="8" text-anchor="middle">no issues</text>
 
-        <!-- Row 3: Parallel -->
-        <text x="20" y="280" fill="#6ee7b7" font-size="12" font-weight="700" letter-spacing="0.08em">PARALLEL</text>
+        <!-- Row 3: Parallel (auto) -->
+        <text x="20" y="274" fill="#6ee7b7" font-size="12" font-weight="700" letter-spacing="0.08em">PARALLEL</text>
+        <text x="20" y="288" fill="#6ee7b7" font-size="10" opacity="0.75">(auto cross-check)</text>
         <rect x="180" y="260" width="100" height="40" rx="6" fill="#2a2410" stroke="#5c4a14"/>
         <text x="230" y="285" fill="#fbbf24" font-size="13" text-anchor="middle">Generator</text>
         <rect x="380" y="240" width="100" height="40" rx="6" fill="#182338" stroke="#2a3f5f"/>
@@ -2740,7 +2742,7 @@ Deliverables: solution.hpp + tests_self.cpp (exit 0 = pass).</pre>
         <div class="bench-task-header">
           <h3>Task 2 — Transport Choice</h3>
           <span class="bench-tag reasoning">Reasoning</span>
-          <span class="bench-tag easy">Easy</span>
+          <span class="bench-tag medium">Medium</span>
         </div>
         <pre>I want to wash my car. The car wash is 50 meters away.
 
@@ -2763,7 +2765,7 @@ and state the key assumption your pick relies on.</pre>
         <div class="bench-task-header">
           <h3>Task 3 — Rule of Three</h3>
           <span class="bench-tag reasoning">Reasoning</span>
-          <span class="bench-tag hard">Hard</span>
+          <span class="bench-tag medium">Medium</span>
         </div>
         <pre>Day 1: 57 workers produce 100 pieces in 3 hours.
 
