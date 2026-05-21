@@ -497,11 +497,11 @@ After Sequential produces `chosen`, always dispatch `skeptic_on_chosen` (not con
 - 2+ plausible architectural approaches, no clear winner
 - Cost of wrong decision >> cost of running (3 sub-agents, 3× Sequential)
 
-### Lazy routing (`--lazy` opt-in)
+### Lazy routing (default: enabled)
 
-**Purpose:** Avoid the 3× Sequential cost when the change does not warrant it. When `--lazy` is passed, Trias checks magnitude via `scope_gate.py` and downgrades to Dialectic for low/medium changes.
+**Purpose:** Avoid the 3× Sequential cost when the change does not warrant it. Trias checks magnitude via `scope_gate.py` and auto-downgrades to Dialectic for low/medium changes.
 
-**Default:** `lazy=false` — Trias always runs. Pass `--lazy` to enable.
+**Default:** `lazy=true` — Trias auto-downgrades low/medium magnitude to Dialectic. To force full Trias, the user must explicitly state "use full Trias" or "no lazy routing" in their request.
 
 **Sequencing contract (mandatory):** Magnitude classification MUST run on the **original unstripped context** BEFORE Phase 1 context stripping is applied. Strip happens after the routing decision.
 
@@ -511,7 +511,7 @@ gate=$(python -X utf8 scripts/scope_gate.py)          # on original context
 magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin)['magnitude'])")
 ```
 - If `magnitude == "high"` → proceed to full Trias (then apply Phase 1 strip below)
-- If `magnitude != "high"` AND `--lazy` → downgrade to Dialectic and emit structured notification:
+- If `magnitude != "high"` → downgrade to Dialectic and emit structured notification:
   ```json
   {
     "trias_lazy_routed": true,
@@ -520,12 +520,12 @@ magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin
     "magnitude_score": {"files": <n>, "lines": <n>, "blocklist_hits": <n>},
     "threshold": "high",
     "context_tokens_available": <approx>,
-    "override_instruction": "Re-invoke with --lazy=false to force full Trias."
+    "override_instruction": "Re-invoke with explicit 'use full Trias' to force 3-sub-agent mode."
   }
   ```
 
 ### Workflow
-0. **(Phase 2 — lazy routing, if `--lazy`)** Run scope_gate on original context and check magnitude. If `magnitude != "high"`, downgrade to Dialectic (emit notification above) and stop Trias workflow here.
+0. **(Phase 2 — lazy routing)** Run scope_gate on original context and check magnitude. If `magnitude != "high"` AND user has not explicitly requested full Trias, downgrade to Dialectic (emit notification above) and stop Trias workflow here.
 1. Orchestrator reads `python -X utf8 scripts/personalities.py` — emits the 3 personalities
 2. **(Phase 1 — context strip)** Before building each sub-agent prompt, truncate the raw conversation context to ≈15 000 tokens:
    ```bash
