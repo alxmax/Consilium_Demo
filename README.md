@@ -2,6 +2,8 @@
 
 **v1.01** · [Changelog](./CHANGELOG.md)
 
+> **Upcoming release — 2026-06-01.** Consilium skill **v1.1** is planned for public release on **June 1, 2026**. Scope: stabilised Sequential — Blind / Dialectic / Trias modes, calibration loop wired to `FEEDBACK.html`, scope gate auto-skip for trivial diffs, and the canonical JSON report schema frozen. Final benchmark numbers (Interactive Demo tab) will be published with the release.
+
 Three specialized sub-agents (Generator / Control / Conservator) are orchestrated by a Claude Code skill that aggregates their outputs via configurable voting schemes into a canonical JSON decision.
 
 - **Generator** (creative) — proposes alternatives, divergent thinking
@@ -94,3 +96,29 @@ For the feedback loop and post-deliberation calibration, see the **Feedback loop
 ## Visual architecture
 
 Open [`architecture.html`](./architecture.html) in a browser. Five tabs: **Architecture / Flow / Modes / Interactive Demo / Benchmark**. The Interactive Demo tab includes a click-through of every flow (PR review, Refactor planning, Risk assessment, Veto trigger, Multi-file refactor, Trias deliberation) with the Voices bias profile, Trias team weights, the 3-sub-agent deep-dive, and the calibration loop.
+
+## Project size (live skill, as of 2026-05-21)
+
+These numbers describe the **private skill repository** that powers Consilium, not this public showcase. Counts are derived from tracked files only (`git ls-files`), excluding `runs/` artefacts and worktrees.
+
+| Metric | Value |
+|---|---|
+| Local branches | 164 |
+| Remote-tracking branches | 155 |
+| Commits (total) | 414 |
+| Tracked files | 108 |
+
+**Lines of code by language** (tracked files):
+
+| Language | Files | Lines |
+|---|---:|---:|
+| Python (`scripts/`, `evals/`) | 40 | 10,411 |
+| Markdown (docs, prompts, SKILL.md) | — | 17,273 |
+| HTML (architecture poster, FEEDBACK.html) | — | 3,849 |
+| JSON (schemas, eval fixtures, runs examples) | — | 2,145 |
+
+Python carries the orchestration logic: `aggregator.py`, `confidence.py`, `scope_gate.py`, `strip_context.py`, `dialectic_merge.py`, `personalities.py`, `priors.py`, `feedback.py`, `validate_report.py`, and the evaluation harness.
+
+## License
+
+This showcase repository is released under the **Business Source License 1.1** — see [`LICENSE`](./LICENSE). Non-production use (evaluation, education, research, personal study) is permitted under the Additional Use Grant. Any production or commercial use requires a separate agreement with the Licensor. The license converts to **MIT** on **2030-05-21**.
