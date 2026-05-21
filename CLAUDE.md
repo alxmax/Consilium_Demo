@@ -4,7 +4,7 @@ Persistent context for Claude Code when working in this repository.
 
 ## What this repo is
 
-**Consilium** — a multi-agent deliberation pattern, packaged as a Claude Code skill (identifier: `consilium`). Three voices (Generator / Control / Conservator) evaluate code changes in parallel, with explicit voting and veto. This repo is the public showcase / demo. The live skill source is in a private repository.
+**Consilium** — a multi-agent deliberation pattern, packaged as a Claude Code skill (identifier: `consilium`). Three voices (Generator / Control / Conservator) evaluate code changes sequentially (Sequential — Blind, default) or via opt-in modes (Dialectic, Trias), with explicit voting and veto. This repo is the public showcase / demo. The live skill source is in a private repository.
 
 ## The four Constitution principles
 
@@ -28,7 +28,7 @@ These are operationalised by the Consilium skill itself — see `SKILL.md` in th
 ## Working in this repo
 
 - The repo is meant to be readable end-to-end in one sitting. Keep additions focused; don't bloat the architecture poster with content that belongs in the live skill repo.
-- The `architecture.html` file has a **Patterns** tab with an interactive flow diagram and a Play tour. Treat it as the centrepiece — if you touch flow definitions, the SVG line routing, or the Trias / Calibration sub-diagrams, make sure the Play tour still renders cleanly end-to-end.
+- The `architecture.html` file has an **Interactive Demo** tab (formerly Patterns) with an interactive flow diagram and a Play tour. Treat it as the centrepiece — if you touch flow definitions, the SVG line routing, or the Trias / Calibration sub-diagrams, make sure the Play tour still renders cleanly end-to-end.
 - `example_output.json` is the canonical schema example. Its shape is what `scripts/build_report.py` produces. Don't drift from it without updating the skill's `validate_report.py` schema check upstream first.
 - `README.md` describes the live skill at a high level — keep it in sync with the private skill repo's README if the install procedure or layout changes.
 
@@ -44,7 +44,7 @@ These are operationalised by the Consilium skill itself — see `SKILL.md` in th
 Match the Constitution's fourth principle. After any change to `architecture.html`:
 
 1. Open the file in a modern browser (Chrome / Firefox / Safari).
-2. Click through all four tabs — **Architecture / Flow / Modes / Patterns**.
-3. On Patterns, click each flow in the sidebar — verify highlighted path + arrows render correctly, and the gate node flips PASS / FAIL for Veto trigger.
+2. Click through all five tabs — **Architecture / Flow / Modes / Interactive Demo / Benchmark**.
+3. On Interactive Demo, click each flow in the sidebar — verify highlighted path + arrows render correctly, and the gate node flips PASS / FAIL for Veto trigger.
 4. Click **Play tour** — confirm the auto-tour completes the full ~28s cycle without errors and stops at the bottom.
 5. Resize the window to verify the diagram reflows responsively (≥1100px, 820px, 600px breakpoints).
