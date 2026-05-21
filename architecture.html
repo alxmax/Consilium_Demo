@@ -2686,7 +2686,9 @@
 
     <div class="bench-intro">
       <h3>Benchmark — modes × tasks</h3>
-      <p>A local harness that runs each Consilium mode against three tasks and produces a scored HTML report. Each run is spawned in an isolated workspace; a scoring-tree stash mechanism prevents the model from reading expected answers during the run. Post-run, a behavior audit scans the session transcript and voids any cell where the model accessed scoring files.</p>
+      <p>A local harness that runs each Consilium mode against three tasks using <code>claude -p</code> — Claude Code's headless, non-interactive subprocess mode. Each call is fire-and-forget: the runner spawns <code>claude -p "&lt;task prompt&gt;"</code>, collects output, then grades it automatically via <code>verify.py</code>. No browser, no user input, no interactive prompts — the model must solve the task in a single headless session.</p>
+      <p><b>Isolation:</b> each run is sandboxed to its own <code>workspace/&lt;mode&gt;/&lt;task&gt;/</code> directory (the model's cwd). The <code>scoring/</code> tree — rubrics, expected answers, test files — lives outside <code>prompts/</code> and is never in the model's context. A post-run behavior audit scans the session transcript and voids any cell where scoring files were accessed during the run.</p>
+      <p><b>Per-run parameters:</b> Sonnet 4.6 · <code>--effort high</code> · $1.5 budget cap ($3.0 for multi-agent modes) · 15-minute wall-clock cap.</p>
       <p>Modes tested:</p>
       <div class="bench-modes">
         <span class="bench-mode baseline">opus_bare (baseline)</span>
