@@ -93,16 +93,16 @@
 
   .voices { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
   .card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px;
-    padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+    padding: 20px 20px 20px 18px; display: flex; flex-direction: column; gap: 12px; }
   .card .top { display: flex; align-items: baseline; justify-content: space-between; }
   .card h3 { margin: 0; font-size: 17px; }
   .card .tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
     text-transform: uppercase; letter-spacing: 0.06em; }
-  .card.gen { border-top: 3px solid var(--gen); }
+  .card.gen { border-left: 4px solid var(--gen); }
   .card.gen .tag { background: var(--gen-soft); color: var(--gen-text); }
-  .card.ctl { border-top: 3px solid var(--ctl); }
+  .card.ctl { border-left: 4px solid var(--ctl); }
   .card.ctl .tag { background: var(--ctl-soft); color: var(--ctl-text); }
-  .card.con { border-top: 3px solid var(--con); }
+  .card.con { border-left: 4px solid var(--con); }
   .card.con .tag { background: var(--con-soft); color: var(--con-text); }
   .card ul { margin: 4px 0 0; padding-left: 18px; font-size: 13.5px; }
   .card ul li { margin-bottom: 4px; }
