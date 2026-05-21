@@ -6,7 +6,7 @@ write-up; Control's issue language leaks into Conservator's framing.
 This script projects the previous voice's output down to the minimum
 fields the next voice actually needs to do its job.
 
-Two projections:
+Two JSON projections:
 
 - ``--for control`` reads a Generator output and emits the candidate
   list with ONLY ``id``, ``summary``, ``sketch``. Drops ``rationale``
@@ -30,9 +30,18 @@ This is intentional: Conservator needs the original ``sketch`` text
 (which Control doesn't carry forward) to score diff_size and scope_drift,
 but should not see Control's issue descriptions.
 
+One text truncation mode (Phase 1 — Trias context budget):
+
+- ``--truncate-text MAX_TOKENS`` reads raw text from stdin and emits
+  the first MAX_TOKENS*4 characters with a truncation marker appended
+  when the text exceeds the budget. Approximation: 1 token ≈ 4 chars.
+  Used by Trias orchestration to cap the conversation context sent to
+  each personality sub-agent (default 15 000 tokens ≈ 60 000 chars).
+
 CLI:
     cat generator_out.json | python scripts/strip_context.py --for control
     cat combined.json      | python scripts/strip_context.py --for conservator
+    cat context.txt        | python scripts/strip_context.py --truncate-text 15000
 """
 
 from __future__ import annotations
@@ -78,24 +87,50 @@ PROJECTIONS = {
     "conservator": strip_for_conservator,
 }
 
+_TRUNCATION_MARKER = "\n\n[... context truncated to ~{tokens} tokens for Trias sub-agent ...]"
+
+
+def strip_for_trias(text: str, max_tokens: int = 15_000) -> str:
+    """Truncate raw context text to approximately max_tokens (≈ 4 chars/token).
+
+    Returns text unchanged when it fits within the budget.  When truncation
+    is needed, appends a marker so the sub-agent knows the context was cut.
+    """
+    max_chars = max_tokens * 4
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + _TRUNCATION_MARKER.format(tokens=max_tokens)
+
 
 def main(argv: list[str] | None = None) -> int:
     force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument(
+    mode_group = ap.add_mutually_exclusive_group(required=True)
+    mode_group.add_argument(
         "--for",
         dest="voice",
         choices=sorted(PROJECTIONS),
-        required=True,
-        help="which downstream voice should receive the stripped output",
+        help="which downstream voice should receive the stripped output (JSON mode)",
+    )
+    mode_group.add_argument(
+        "--truncate-text",
+        dest="truncate_tokens",
+        type=int,
+        metavar="MAX_TOKENS",
+        help="truncate stdin plain text to approximately MAX_TOKENS (text mode, not JSON)",
     )
     ap.add_argument(
         "--input",
         type=argparse.FileType("r", encoding="utf-8"),
         default=sys.stdin,
-        help="JSON input file (default: stdin)",
+        help="input file (default: stdin)",
     )
     args = ap.parse_args(argv)
+
+    if args.truncate_tokens is not None:
+        text = args.input.read()
+        sys.stdout.write(strip_for_trias(text, args.truncate_tokens))
+        return 0
 
     data = json.load(args.input)
     result = PROJECTIONS[args.voice](data)

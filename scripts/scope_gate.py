@@ -17,6 +17,7 @@ Escape hatch: env CONSILIUM_FORCE_FULL=1 always returns should_skip=false
 Output (always to stdout, exit 0 on success):
   {
     "should_skip": bool,
+    "magnitude": "low" | "medium" | "high",
     "reason": str,
     "signals": {
       "files_changed": int,
@@ -25,6 +26,11 @@ Output (always to stdout, exit 0 on success):
     },
     "config_used": {"max_files": int, "max_lines": int, "blocklist": [...]}
   }
+
+magnitude thresholds (used by Trias lazy routing — independent of should_skip):
+  low    — files ≤ 1, lines ≤ 15, no blocklist hits
+  medium — files ≤ 5, lines ≤ 100, no blocklist hits
+  high   — files > 5, lines > 100, or any blocklist hit
 
 Probe failure (no git, not a repo, bad ref) -> should_skip=false with the
 underlying error in `reason`. The gate fails OPEN: when in doubt, deliberate.
@@ -98,6 +104,22 @@ def _path_matches(path: str, pattern: str) -> bool:
     return fnmatch.fnmatchcase(path, pattern) or fnmatch.fnmatchcase(base, pattern)
 
 
+def classify_magnitude(files: int, lines: int, has_blocklist_hits: bool) -> str:
+    """Return low / medium / high for lazy Trias routing.
+
+    Magnitude is independent of should_skip — it answers "how complex is this
+    change?" so the caller can decide whether Dialectic is sufficient or full
+    Trias is warranted.
+    """
+    if has_blocklist_hits:
+        return "high"
+    if files > 5 or lines > 100:
+        return "high"
+    if files > 1 or lines > 15:
+        return "medium"
+    return "low"
+
+
 def find_blocklist_hits(paths: list[str], blocklist: list[str]) -> list[dict]:
     hits: list[dict] = []
     for p in paths:
@@ -144,6 +166,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
     if "error" in summary:
         return {
             "should_skip": False,
+            "magnitude": "high",
             "reason": f"probe failed: {summary['error']}",
             "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": []},
         }
@@ -151,30 +174,40 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
     lines = summary.get("lines_added", 0) + summary.get("lines_removed", 0)
     hits = find_blocklist_hits(paths, cfg["blocklist"])
     signals = {"files_changed": files, "lines_changed": lines, "blocklist_hits": hits}
+    magnitude = classify_magnitude(files, lines, bool(hits))
 
     if files == 0:
-        return {"should_skip": False, "reason": "no changes detected", "signals": signals}
+        return {
+            "should_skip": False,
+            "magnitude": "low",
+            "reason": "no changes detected",
+            "signals": signals,
+        }
     if hits:
         joined = ", ".join(sorted({h["pattern"] for h in hits}))
         return {
             "should_skip": False,
+            "magnitude": magnitude,
             "reason": f"sensitive path matched: {joined}",
             "signals": signals,
         }
     if files > cfg["max_files"]:
         return {
             "should_skip": False,
+            "magnitude": magnitude,
             "reason": f"{files} files > max_files={cfg['max_files']}",
             "signals": signals,
         }
     if lines > cfg["max_lines"]:
         return {
             "should_skip": False,
+            "magnitude": magnitude,
             "reason": f"{lines} lines > max_lines={cfg['max_lines']}",
             "signals": signals,
         }
     return {
         "should_skip": True,
+        "magnitude": magnitude,
         "reason": f"{files} file(s), {lines} lines, no sensitive paths",
         "signals": signals,
     }
@@ -195,6 +228,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(
             {
                 "should_skip": False,
+                "magnitude": "high",
                 "reason": f"config load failed: {exc}",
                 "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": []},
                 "config_used": DEFAULT_CONFIG,
@@ -209,6 +243,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(
             {
                 "should_skip": False,
+                "magnitude": "high",
                 "reason": "CONSILIUM_FORCE_FULL=1 (override)",
                 "signals": {"files_changed": -1, "lines_changed": -1, "blocklist_hits": []},
                 "config_used": cfg,

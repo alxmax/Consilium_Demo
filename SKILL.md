@@ -497,18 +497,51 @@ After Sequential produces `chosen`, always dispatch `skeptic_on_chosen` (not con
 - 2+ plausible architectural approaches, no clear winner
 - Cost of wrong decision >> cost of running (3 sub-agents, 3× Sequential)
 
+### Lazy routing (`--lazy` opt-in)
+
+**Purpose:** Avoid the 3× Sequential cost when the change does not warrant it. When `--lazy` is passed, Trias checks magnitude via `scope_gate.py` and downgrades to Dialectic for low/medium changes.
+
+**Default:** `lazy=false` — Trias always runs. Pass `--lazy` to enable.
+
+**Sequencing contract (mandatory):** Magnitude classification MUST run on the **original unstripped context** BEFORE Phase 1 context stripping is applied. Strip happens after the routing decision.
+
+**Routing logic:**
+```bash
+gate=$(python -X utf8 scripts/scope_gate.py)          # on original context
+magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin)['magnitude'])")
+```
+- If `magnitude == "high"` → proceed to full Trias (then apply Phase 1 strip below)
+- If `magnitude != "high"` AND `--lazy` → downgrade to Dialectic and emit structured notification:
+  ```json
+  {
+    "trias_lazy_routed": true,
+    "routed_to": "dialectic",
+    "magnitude": "<low|medium>",
+    "magnitude_score": {"files": <n>, "lines": <n>, "blocklist_hits": <n>},
+    "threshold": "high",
+    "context_tokens_available": <approx>,
+    "override_instruction": "Re-invoke with --lazy=false to force full Trias."
+  }
+  ```
+
 ### Workflow
+0. **(Phase 2 — lazy routing, if `--lazy`)** Run scope_gate on original context and check magnitude. If `magnitude != "high"`, downgrade to Dialectic (emit notification above) and stop Trias workflow here.
 1. Orchestrator reads `python -X utf8 scripts/personalities.py` — emits the 3 personalities
-2. For each personality, dispatch **1 `consilium-subagent`** with `prompts/<personality>_lens.md` prepended over the Sequential voice inputs. The sub-agent runs Conservator→Generator→Control internally and returns a full report with `chosen_approach`.
-3. Collect the 3 `chosen_approach` values (one per personality) → `chose` per personality
-4. **Unanimous check (B1).** If all 3 personalities chose the same `chose`, skip `team_vote` — the result is unanimous. Set `vote_pattern: "3-0"` and `vote_skipped: true`. Confidence derived directly from `confidence_from_vote_pattern("3-0")`. Log in `deliberation_log` with `reason: "unanimous_personalities"`. If not unanimous, run `team_vote` normally.
-5. Orchestrator runs `python -X utf8 scripts/aggregator.py --scheme team_vote` over the 3 chosens (skip if B1 detected unanimity)
-6. Confidence derived from vote_pattern — pipe aggregator output directly to `confidence.py`:
+2. **(Phase 1 — context strip)** Before building each sub-agent prompt, truncate the raw conversation context to ≈15 000 tokens:
+   ```bash
+   stripped=$(echo "$raw_context" | python -X utf8 scripts/strip_context.py --truncate-text 15000)
+   ```
+   Use `$stripped` (not `$raw_context`) in each personality sub-agent prompt. This runs **per sub-agent** so each gets the same budget-capped context. The truncation marker `[... context truncated ...]` signals to the sub-agent that context was cut; it should proceed normally.
+3. For each personality, dispatch **1 `consilium-subagent`** with `prompts/<personality>_lens.md` prepended over the Sequential voice inputs (using stripped context from Step 2). The sub-agent runs Conservator→Generator→Control internally and returns a full report with `chosen_approach`.
+4. Collect the 3 `chosen_approach` values (one per personality) → `chose` per personality
+5. **Unanimous check (B1).** If all 3 personalities chose the same `chose`, skip `team_vote` — the result is unanimous. Set `vote_pattern: "3-0"` and `vote_skipped: true`. Confidence derived directly from `confidence_from_vote_pattern("3-0")`. Log in `deliberation_log` with `reason: "unanimous_personalities"`. If not unanimous, run `team_vote` normally.
+6. Orchestrator runs `python -X utf8 scripts/aggregator.py --scheme team_vote` over the 3 chosens (skip if B1 detected unanimity)
+7. Confidence derived from vote_pattern — pipe aggregator output directly to `confidence.py`:
    ```bash
    echo '{"personalities":[...],"candidates":[...]}' | python scripts/aggregator.py --scheme team_vote | python scripts/confidence.py
    ```
    Do not manually build `{"candidates":[...],"chosen":"..."}` for Trias — the candidates don't have `scores` per voice.
-7. **Deadlock cascade (B2) — only if vote_pattern is 1-1-1 or 0-0-0.** See Failure recovery below.
+8. **Deadlock cascade (B2) — only if vote_pattern is 1-1-1 or 0-0-0.** See Failure recovery below.
 
 ### Vote patterns
 | Pattern | Confidence | Outcome |
