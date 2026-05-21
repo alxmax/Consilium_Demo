@@ -1812,8 +1812,8 @@
 
         <div class="use-when">
           <b>Use when:</b> the highest-stakes decisions — DB migration, security, large
-          refactors, irreversible architecture. The run cost (9 sub-agents) is justified
-          by the cost of getting it wrong. Cost: 3× parallel mode.
+          refactors, irreversible architecture. The run cost (3 sub-agents) is justified
+          by the cost of getting it wrong. Cost: 3× sequential mode.
         </div>
       </div>
 
@@ -2162,7 +2162,7 @@
             <li>Security audit — auth paths, crypto, RCE potential, secrets handling</li>
             <li>Large refactor — touches ≥5 files or modifies core interfaces</li>
             <li>2+ plausible architectural approaches, no clear winner</li>
-            <li>Cost-of-wrong-decision &gt;&gt; cost-of-running (9 sub-agents)</li>
+            <li>Cost-of-wrong-decision &gt;&gt; cost-of-running (3 sub-agents)</li>
           </ul>
         </div>
         <div class="cost-card avoid">
@@ -2557,8 +2557,8 @@
       <!-- =========== Trias deep-dive: 3 × 3 sub-agent matrix =========== -->
       <div class="pat-trias-deep">
         <div class="pat-trias-header">
-          <h3>Trias deep-dive — 9 sub-agents per deliberation</h3>
-          <p class="lede">Each personality orchestrates its own <b>parallel mode</b> over the three voices. Three personalities × three voices = <b>nine independent sub-agents</b>, plus one orchestrator coordinating the team vote.</p>
+          <h3>Trias deep-dive — 3 sub-agents per deliberation</h3>
+          <p class="lede">Each personality runs as one sub-agent, with the three voices executing sequentially inside (same strip-based isolation as Sequential — Blind). Three personalities = <b>three sub-agents</b>, plus one orchestrator coordinating the team vote.</p>
         </div>
 
         <div class="pat-tdd-frame">
@@ -2972,7 +2972,7 @@ day-2 workforce, and the arithmetic that produces your answer.</pre>
         id: 'trias',
         name: 'Trias deliberation',
         mode: 'Trias',
-        desc: 'Three personalities each run their own parallel mode, then a democratic majority vote settles the choice. See the deep-dive schema below for the full 9-sub-agent fan-out.',
+        desc: 'Three personalities each run as one sub-agent (sequential voices inside), then a democratic majority vote settles the choice. See the deep-dive schema below.',
         path: ['dev', 'cc-session', 'skill-md', 'mode', 'pioneer', 'architect', 'steward', 'agg', 'gate', 'output'],
         auxNodes: ['scope-gate'],
         edges: [
@@ -2984,7 +2984,7 @@ day-2 workforce, and the arithmetic that produces your answer.</pre>
         steps: [
           '<b>Developer</b> opts in to <b>Trias mode</b> for a high-stakes decision (e.g. architecture choice).',
           'Skill dispatches three personalities — Pioneer (G-weighted), Architect (C-weighted), Steward (K-weighted).',
-          'Each personality orchestrates its own parallel round over the three voices — see the <i>Trias deep-dive</i> schema below for the 9 sub-agents.',
+          'Each personality runs as one sub-agent, with the three voices executing sequentially inside — see the <i>Trias deep-dive</i> schema below.',
           'A democratic majority vote is taken across personalities — 3-0, 2-1, or 2-0 yields an automatic decision.',
           'A 1-1-1 split or weak minority escalates the run instead of auto-deciding.',
           'When the majority is reached, the gate <b>passes</b> and the canonical report records all three personality votes.'
@@ -3508,7 +3508,7 @@ day-2 workforce, and the arithmetic that produces your answer.</pre>
 </script>
 
 <footer class="page-footer">
-  <span>Schipor Alexandru Ionut · Consilium · 2024–2025</span>
+  <span>Schipor Alexandru Ionut · Consilium v1.01 · 2024–2025</span>
   <span class="footer-links">
     <a href="https://github.com/alxmax/Consilium_Demo" target="_blank" rel="noopener">GitHub ↗</a>
     <a href="https://alxmax.github.io/Consilium_Demo/" target="_blank" rel="noopener">Live Demo ↗</a>

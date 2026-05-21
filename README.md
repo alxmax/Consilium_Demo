@@ -1,19 +1,14 @@
 # Consilium
 
-Three specialized sub-agents (Generator / Control / Conservator) 
-are orchestrated by a Claude Code skill that aggregates their outputs 
-via configurable voting schemes into a canonical JSON decision. — 
-creative, analytical, and risk-focused — then vote on the best approach.
+**v1.01** · [Changelog](./CHANGELOG.md)
 
-Built as a Claude Code skill (identifier: `consilium`). The three voices 
-(Generator / Control / Conservator) run in parallel as separate sub-agents, 
-with explicit voting and veto logic aggregated into a canonical JSON report.
+Three specialized sub-agents (Generator / Control / Conservator) are orchestrated by a Claude Code skill that aggregates their outputs via configurable voting schemes into a canonical JSON decision.
 
 - **Generator** (creative) — proposes alternatives, divergent thinking
 - **Control** (analytical) — verifies technical correctness
 - **Conservator** (prudent) — assesses risk and reversibility
 
-The voices are prompt-constrained from doing each other's job and run as separate sub-agents (via the Claude Code `Agent` tool). Their outputs are aggregated by a voting scheme with veto (default: `conservative_override`) into a canonical JSON report plus a one-line console summary.
+The voices are prompt-constrained from doing each other's job. They run sequentially by default (Sequential — Blind), with context stripping between them to prevent cross-contamination. Outputs are aggregated by a voting scheme with veto (default: `conservative_override`) into a canonical JSON report plus a one-line console summary.
 
 > **About this repository.** Public showcase / portfolio demo, maintained by **Schipor Alexandru Ionut**. The live skill source is in a private repository — this repo contains the design, the architecture poster, and a canonical run example. For source-code access requests, see contact details on my CV.
 
@@ -21,16 +16,17 @@ The voices are prompt-constrained from doing each other's job and run as separat
 
 **[https://alxmax.github.io/Consilium_Demo/](https://alxmax.github.io/Consilium_Demo/)**
 
-Open the link in any modern browser — no install needed. Four tabs walk you through the system from overview to interactive flow demo.
+Open the link in any modern browser — no install needed. Five tabs walk you through the system from overview to interactive flow demo.
 
 ## Try the visual architecture
 
-Open [`architecture.html`](./architecture.html) in any modern browser. Four tabs:
+Open [`architecture.html`](./architecture.html) in any modern browser. Five tabs:
 
 - **Architecture** — system overview, the three voices, aggregation schemes
 - **Flow** — step-by-step deliberation
-- **Modes** — Parallel / Dialectic / Sequential — Blind / Trias
-- **Patterns** — interactive flow diagram. Click any flow in the right sidebar to highlight its path through the system. Includes the Voices bias profile, the Trias team weights, the 9-sub-agent Trias deep-dive, and the calibration loop sub-diagram. A **Play tour** button auto-plays the full deliberation cycle in fullscreen.
+- **Modes** — Sequential — Blind / Dialectic / Trias / Parallel (auto)
+- **Interactive Demo** — click any flow in the sidebar to highlight its path through the system. Includes the Voices bias profile, the Trias team weights, the 3-sub-agent Trias deep-dive, and the calibration loop sub-diagram. A **Play tour** button auto-plays the full deliberation cycle in fullscreen.
+- **Benchmark** — 3 tasks tested across 5 modes using `claude -p` headless mode. Results in progress.
 
 ## When to use
 
@@ -44,10 +40,10 @@ Open [`architecture.html`](./architecture.html) in any modern browser. Four tabs
 
 | Mode | Sub-agents | When |
 |---|---|---|
-| **Parallel** (default) | 3 voices dispatched in parallel | Most PR reviews. Eliminates cross-contamination. |
+| **Sequential — Blind** (default) | 1 context, 3 voices in sequence with context strip | Most deliberations — fast, reduced contamination via `strip_context.py`. |
 | **Dialectic** | 3 voices × 2 rounds — each round sees the others' outputs | Multi-file refactors, when positions need to evolve. |
-| **Sequential — Blind** | 3 voices in sequence, with stripped context between them | High-risk decisions where anchoring on the previous voice is a concern. |
-| **Trias** | 9 sub-agents (3 personalities × 3 voices), majority vote | High-stakes (migrations, security, large refactors) — see `architecture.html` Patterns tab for the full deep-dive. |
+| **Trias** | 3 sub-agents (one per personality), each running voices sequentially; democratic vote | High-stakes (migrations, security, large refactors) — see Interactive Demo tab for deep-dive. |
+| **Parallel** (auto) | 3 independent sub-agents | Internal auto cross-check — not user-selectable. Fires when `magnitude=critical ∧ reversibility=irreversible` or as silent audit every 20 runs. |
 
 ## Install (live skill — private)
 
@@ -93,4 +89,4 @@ For the feedback loop and post-deliberation calibration, see the **Feedback loop
 
 ## Visual architecture
 
-Open [`architecture.html`](./architecture.html) in a browser. Four tabs: **Architecture / Flow / Modes / Patterns**. The Patterns tab includes a click-through of every flow (PR review, Refactor planning, Risk assessment, Veto trigger, Multi-file refactor, Trias deliberation) with the Voices bias profile, Trias team weights, the 9-sub-agent deep-dive, and the calibration loop.
+Open [`architecture.html`](./architecture.html) in a browser. Five tabs: **Architecture / Flow / Modes / Interactive Demo / Benchmark**. The Interactive Demo tab includes a click-through of every flow (PR review, Refactor planning, Risk assessment, Veto trigger, Multi-file refactor, Trias deliberation) with the Voices bias profile, Trias team weights, the 3-sub-agent deep-dive, and the calibration loop.
