@@ -269,6 +269,19 @@ Reject (`n` at prompt) → rejection logged in `runs/YYYY-MM-DD_HHMM_pipeline_re
 
 **The skip does NOT apply to the mandatory requirement above:** if the prompt declares deliverables (per the authoritative regex from the mandatory clause above) and you nonetheless arrive at `chosen=do_nothing`, that means the deliberation rejected the implementation of an explicit user request — a case that requires a visible signal (hard error in the response: *"deliberation chose `do_nothing` on a prompt with declared deliverables — the user must decide"*), not silent skip.
 
+#### Implementation pipeline (opt-in, EXPERIMENTAL_DRAFT)
+
+The default `implement` step writes code single-shot. As an **opt-in** alternative for non-trivial implementations, a 3-role pipeline turns the report into code: **Coder → (Test Writer ∥ Reviewer)**, where the report *is* the spec (`chosen_approach` + `success_criterion` + `verification`). The Reviewer reuses the **Control voice** (`prompts/voices/control.md`) on the *written* code — no separate reviewer prompt.
+
+```bash
+python -X utf8 scripts/implement_pipeline.py --input runs/<file>.json --dry-run   # print dispatch plan
+python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "pytest -x" --target <impl_file>
+```
+
+Dispatch via `Agent(subagent_type="consilium-implement-subagent", ...)` (see `agents/consilium-implement-subagent.md`). Invariants enforced by the vehicle: **disjoint-path ownership** (Coder writes impl, Test Writer writes `test_*`, Reviewer read-only → collision-free parallel stage), **malformed-JSON hard-fail** (retry once, then abort — never a silent-empty manifest), and the **red→green gate** (a test that passes against a `raise NotImplementedError` stub is rejected).
+
+> **Status: EXPERIMENTAL_DRAFT.** Not wired as the default `implement` behavior. **Promotion gate:** a 3-task benchmark (pipeline vs plain single-shot `implement`) showing a measurable quality/cost win. **Kill-criterion:** if no win after the pilot → mark DEPRECATED_DRAFT, preserve bundles as forensic evidence. Tracked in `TODO.md` → 🤔 UNRESOLVED DECISIONS → "[SENATE] Post-deliberation implementation pipeline". Audit trail: Senate `runs/senate/2026-05-24_200959-consilium-code-writer-vs-superpowers.json` (MODIFY) + `runs/2026-05-24_2030_implement-pipeline-scaffold.json`.
+
 ### Observe → Think → Act → Learn (descriptive framing)
 
 **This section is descriptive only.** It does not create new behavioral contracts; Steps 0–7 above remain the authoritative workflow. The mapping below is a reading aid for contributors who arrive expecting an Observe–Think–Act–Learn shape — it names what is already present without prescribing anything new.
@@ -353,6 +366,9 @@ python scripts/run_evals.py
 | `scripts/log_feedback.py` | Auto-append to FEEDBACK.html at the end of Step 6 |
 | `scripts/mark_outcome.py` | Retroactive outcome overwrite (`[confirmed]` in note → 2x weight) |
 | `scripts/infer_pipeline.py` | Step 7: infer + confirm implementation steps from the report; `--dry-run` / `--yes` |
+| `scripts/implement_pipeline.py` | Step 7 (opt-in, EXPERIMENTAL_DRAFT): plan the Coder→(Test Writer∥Reviewer) dispatch + red→green gate verifier; `--dry-run` / `--verify-gate` |
+| `agents/consilium-implement-subagent.md` | Vehicle for the opt-in implementation pipeline (EXPERIMENTAL_DRAFT); returns a file manifest + Control verdict |
+| `prompts/implement/{coder,test_writer}.md` | Implementation pipeline role templates (Reviewer reuses `prompts/voices/control.md`) |
 | `scripts/audit_feedback.py` | List runs without FB row; with `--backfill` adds default PEND |
 | `scripts/memory.py` | Uniform read API over the 3 tiers (short/medium/long) |
 | `scripts/strip_context.py` | Project previous voice's output to minimum (Steps 3-4 sequential) |
