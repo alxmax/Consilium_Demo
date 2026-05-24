@@ -272,9 +272,14 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
             if run_file.exists():
                 try:
                     run_dict = json.loads(run_file.read_text(encoding="utf-8"))
-                except (json.JSONDecodeError, OSError):
-                    run_dict = None
-        drill = render_drill(run_dict, e.chosen) if run_dict else _legacy_stub()
+                except (json.JSONDecodeError, OSError) as _exc:
+                    run_dict = f"__error__:{_exc}"
+        if isinstance(run_dict, str) and run_dict.startswith("__error__:"):
+            drill = f'<div class="stub error">corrupted run JSON: {run_dict[10:]}</div>'
+        elif run_dict:
+            drill = render_drill(run_dict, e.chosen)
+        else:
+            drill = _legacy_stub()
         tokens_str = _total_tokens(run_dict)
         rows.append(_row_html(e, drill, tokens_str))
     rows_html = "".join(rows)

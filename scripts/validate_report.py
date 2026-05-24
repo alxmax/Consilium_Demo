@@ -98,17 +98,17 @@ def _validate_regression_risk(value: object) -> list[str]:
     return [f"regression_risk must be a float or an object, got {type(value).__name__}"]
 
 
-def _validate_rund2_fields(report: dict) -> list[str]:
-    """Strict RUND2 field validation — only run with --strict-rund2 flag."""
+def _validate_sequential_fields(report: dict) -> list[str]:
+    """Strict sequential-mode field validation — only run with --strict-rund2 flag."""
     problems = []
     for score in report.get("voice_scores", {}).get("conservator", {}).get("scores", []):
         rr = score.get("regression_risk")
         if rr is None:
-            problems.append(f"strict-rund2: candidate '{score.get('id')}' conservator missing regression_risk object")
+            problems.append(f"strict-sequential: candidate '{score.get('id')}' conservator missing regression_risk object")
             continue
         problems.extend(_validate_regression_risk(rr))
         if "tokens_budget" not in score:
-            problems.append(f"strict-rund2: candidate '{score.get('id')}' conservator missing tokens_budget")
+            problems.append(f"strict-sequential: candidate '{score.get('id')}' conservator missing tokens_budget")
     return problems
 # === END RUND2 ===
 
@@ -467,7 +467,7 @@ def main(argv: list[str] | None = None) -> int:
         problems = validate(report)
         # === RUND2 ===
         if args.strict_rund2:
-            problems.extend(_validate_rund2_fields(report))
+            problems.extend(_validate_sequential_fields(report))
         # === END RUND2 ===
         # === PHILOSOPHICAL VOICES ===
         if args.strict_philosophical:

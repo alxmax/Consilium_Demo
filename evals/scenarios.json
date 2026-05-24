@@ -1565,11 +1565,12 @@
     },
     "expect_exit": 0,
     "expect_stdout_contains": [
-      "generator_divergence"
-    ]
+      "conservator_spread"
+    ],
+    "_comment": "generator_divergence removed in 2026-05-24 trim; scenario updated to check spread is still present"
   },
   {
-    "name": "meta_critic/empty issues yields concreteness 1.0",
+    "name": "meta_critic/empty issues yields non-zero spread (control_concreteness removed)",
     "tool": "scripts/meta_critic.py",
     "args": [],
     "stdin_json": {
@@ -1617,12 +1618,13 @@
     "expect_exit": 0,
     "expect_stdout_subset": {
       "deliberation_quality": {
-        "control_concreteness": 1.0
+        "conservator_spread": 0.5,
+        "flags": []
       }
     }
   },
   {
-    "name": "meta_critic/single conservator score yields spread 0",
+    "name": "meta_critic/single conservator score yields spread null",
     "tool": "scripts/meta_critic.py",
     "args": [],
     "stdin_json": {
@@ -1655,7 +1657,7 @@
     "expect_exit": 0,
     "expect_stdout_subset": {
       "deliberation_quality": {
-        "conservator_spread": 0.0
+        "conservator_spread": null
       }
     }
   },

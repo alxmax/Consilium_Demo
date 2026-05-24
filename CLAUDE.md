@@ -12,7 +12,7 @@ For behavioral guidelines (Think Before Coding, Simplicity First, Surgical Chang
 
 Stdlib-only, no test runner. Smoke tests run manually via CLI:
 
-- `python scripts/test_rund2.py` — RUND2 architecture (skeptic_on_chosen, MODE enum, validate_report extras)
+- `python scripts/test_rund2.py` — sequential architecture (skeptic_on_chosen, MODE enum, validate_report extras)
 - `python scripts/test_feedback_html.py` — `render_feedback_html` + parser round-trip
 - `python scripts/test_senate_synth.py` — Senate pipeline end-to-end on fixture
 - `python scripts/run_evals.py` — regression scenarios from `evals/scenarios.json` (subprocess-based, deterministic; non-zero exit on first FAIL)
@@ -60,13 +60,13 @@ Senate round visualization: `docs/architecture.html` (open locally). Benchmarks 
 
 User-selectable modes (SKILL.md documents them in detail):
 
-- **Sequential** (default RUND2) — Conservator → Generator → Control single-context.
+- **Sequential** (default) — Conservator → Generator → Control single-context.
 - **Dialectic** — two-pass with cross-review in Pass-2 (`scripts/dialectic_merge.py`).
 - **Trias** — 3 personalities × 3 voices, democratic vote over the 3 chosen results (9 sub-agents).
 - **`trias_split`** — Trias with Sonnet Generator + Haiku verifiers (~3.3× Parallel). Shallow-amplifier on problems with implicit constraints — see `experiments/p3-car-wash.html`.
 - **`skeptic_on_chosen`** — composable flag over any base mode (+1 sub-agent overhead). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-triggers when `confidence ∈ [0.5, 0.7]`. Replaces the fixed modes `parallel_skeptic` (= `parallel + skeptic_on_chosen`) and `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — collapsed on 2026-05-17, legacy names remain in `validate_report.py` MODE enum for backward-compat.
 
-**Parallel removed (RUND2).** No longer user-selectable (only via `parallel + skeptic_on_chosen`). Remains as an internal auto cross-check when `magnitude=critical ∧ reversibility=irreversible`, plus a silent audit every 20 runs.
+**Parallel removed.** No longer user-selectable (only via `parallel + skeptic_on_chosen`). Remains as an internal auto cross-check when `magnitude=critical ∧ reversibility=irreversible`, plus a silent audit every 20 runs.
 
 The **`senate`** mode has two scopes: (a) audit on **changes to the skill itself** (default, well-tested, 9 senators); (b) audit on **user code** via the `--on-code` flag (EXPERIMENTAL_DRAFT — see empirical gate in SKILL.md). On-demand only.
 
