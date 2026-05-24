@@ -134,15 +134,38 @@ def _stub_bodies(source: str, stub_marker: str) -> str:
     Heuristic + stdlib-only: after every line ending a `def ...:` / `async def ...:`
     header, insert the stub at the header's indent+4. This forces the suite RED
     without a full AST rewrite (sufficient for the gate's falsification purpose).
+
+    Handles multi-line headers: once a `def`/`async def` opener is seen without
+    a trailing `:`, lines are accumulated until one ends with `:`, then the stub
+    is inserted at the opener's indent+4.
+
+    Known heuristic limits (acceptable for the gate — it stubs normal impl files):
+    a multi-line header whose *intermediate* line ends with `:` closes the scan
+    early, and a `def`-like token inside a string literal is treated as a real
+    header. Both are inherent to a line-scanner; use AST if these ever bite.
     """
     out: list[str] = []
-    header_re = re.compile(r"^(\s*)(async\s+def|def)\s+\w+.*:\s*$")
+    opener_re = re.compile(r"^(\s*)(async\s+def|def)\s+\w+")
+    in_header = False
+    header_indent: str = ""
     for line in source.splitlines():
         out.append(line)
-        m = header_re.match(line)
-        if m:
-            indent = m.group(1) + "    "
-            out.append(f"{indent}{stub_marker}")
+        if in_header:
+            # Keep accumulating until we see a line ending with ':'
+            if line.rstrip().endswith(":"):
+                in_header = False
+                out.append(f"{header_indent}{stub_marker}")
+        else:
+            m = opener_re.match(line)
+            if m:
+                if line.rstrip().endswith(":"):
+                    # Single-line header — insert stub immediately
+                    indent = m.group(1) + "    "
+                    out.append(f"{indent}{stub_marker}")
+                else:
+                    # Multi-line header — wait for the closing ':'
+                    in_header = True
+                    header_indent = m.group(1) + "    "
     return "\n".join(out) + ("\n" if source.endswith("\n") else "")
 
 
