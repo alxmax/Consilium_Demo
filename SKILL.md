@@ -38,7 +38,7 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 ### 0. Bootstrap (before any grep / Read on the codebase)
 Two actions in order:
 
-1. **Read the contracts of the 3 voices** — `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. They define the exact fields produced by each voice. **Parallel/dialectic note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough.
+1. **Read the contracts required by the mode** — minimum 3 core voices: `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Dialectic also reads `*_pass2.md` (`generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md`); Trias also reads `<personality>_lens.md` (`pioneer_lens.md`, `architect_lens.md`, `steward_lens.md`); skeptic modes also read `prompts/voices/skeptic.md`. They define the exact fields produced by each voice. **Parallel/dialectic note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough.
 2. **Run `python scripts/priors.py`** — returns soft priors from `FEEDBACK.html` + `runs/`. Three fields can block the current deliberation until resolved:
    - `stale_pendings` non-empty (PEND older than 2 days): ask *"You have N old PEND entries: [date | chosen] × N. Want me to close them (OK/BAD/skip)?"* — update via `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferred) or via `Edit` directly on `FEEDBACK.html`. **Do not** use `log_feedback.py` — it duplicates the row. **Headless** (`is_headless()`): log `[priors] stale_pendings: N entries — skipping prompt` to stderr and continue without asking.
    - `missing_feedback_runs` non-empty: run `python scripts/audit_feedback.py --backfill` to create PEND entries for orphan runs, then resolve them as above. If the list is larger than 3, prefer to resolve the gap *before* starting a new deliberation. **Headless**: run `audit_feedback.py --backfill` automatically and continue.
@@ -135,7 +135,7 @@ Default: **conservative_override** — veto at `risk_score > 0.8`; ranking by we
 ```bash
 echo '{"candidates": [...], "chosen": "approach_id"}' | python scripts/confidence.py
 ```
-Returns `{confidence, agreement, separation}`. If `chosen` is `null` (all vetoed), `confidence` is `null`.
+Returns `{confidence, agreement, separation}`. If `chosen` is `null` (all candidates vetoed), the `confidence` field in the response is `null`. Step 5d is skipped in this case — `retry_context.py` is not run when no candidate survived aggregation.
 
 > **Calibration (R2 audit 2026-05-17):** `agreement` measures divergence between roles within ONE run — not inter-run stability. Conservator scores are anchored by categorical formula (see `conservator.md`); Generator/Control scores are unanchored self-assigned floats. A second run with the same input may produce different scores (pstdev estimated 0.12–0.18 on `risk_score`). The `confidence` value is not a calibrated probability — it is an internal-consistency signal.
 
@@ -442,6 +442,8 @@ Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× �
 2. **Turn 2:** dispatch Control + Conservator in parallel (2 Agent calls in the same message), both receiving candidates from Turn 1.
 3. Aggregate directly with `scripts/aggregator.py`.
 
+Continue with Step 5b → 5c → 5d → 6; capture tokens/latency per sub-agent dispatch.
+
 Each sub-agent receives: `success_criterion`, diff/context, **the full content of its voice's prompt**, the instruction to return strict JSON.
 
 **Override semantics (Parallel mode):** `model: "opus"` on Generator for high-stakes/ambiguous cases; `model: "haiku"` on Control/Conservator for small diffs. Default per `## Dispatch defaults`.
@@ -567,6 +569,20 @@ magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin
 | 2-0 | 0.70 | OK auto |
 | 1-1-1 | null | → B2 cascade (Round 2 → Skeptic → PEND) |
 | 0-0-0 | null | → B2 cascade (Round 2 → PEND) |
+
+### Output JSON (Trias-specific fields)
+
+```json
+{
+  "success_criterion": "<testable sentence>",
+  "chosen_approach": "<id>",
+  "team": ["pioneer", "architect", "steward"],
+  "vote_pattern": "2-1",
+  "vote_counts": {"pioneer": "approach_a", "architect": "approach_a", "steward": "approach_b"},
+  "confidence": 0.75,
+  "deliberation_log": [{"step": "trias_vote", "vote_pattern": "2-1", "trias_rounds": 1}]
+}
+```
 
 ### Failure recovery
 

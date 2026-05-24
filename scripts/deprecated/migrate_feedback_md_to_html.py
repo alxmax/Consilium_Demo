@@ -27,7 +27,7 @@ LEGACY_ENTRY_RE = re.compile(
     r"(?P<outcome>OK|BAD|OVR|PEND)\s*\|\s*"
     r"(?P<note>.*)$"
 )
-TOKEN_RE = re.compile(r"[a-zA-Z0-9]{4,}")
+TOKEN_RE = re.compile(r"[^\W\d_]{4,}", re.UNICODE)
 
 
 def _load_render():

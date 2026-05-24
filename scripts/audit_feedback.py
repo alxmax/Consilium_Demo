@@ -37,7 +37,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-from utils import force_utf8_streams
+from utils import atomic_write_text, force_utf8_streams
 
 
 def _load_modules():
@@ -59,7 +59,14 @@ def _load_modules():
     log_mod = importlib.util.module_from_spec(log_spec)
     sys.modules["consilium_logfb"] = log_mod
     log_spec.loader.exec_module(log_mod)
-    return priors_mod, fb_mod, log_mod
+
+    render_spec = importlib.util.spec_from_file_location("consilium_render", here / "render_feedback_html.py")
+    assert render_spec and render_spec.loader
+    render_mod = importlib.util.module_from_spec(render_spec)
+    sys.modules["consilium_render"] = render_mod
+    render_spec.loader.exec_module(render_mod)
+
+    return priors_mod, fb_mod, log_mod, render_mod
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -71,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="with --backfill: print plan but don't write")
     args = ap.parse_args(argv)
 
-    priors_mod, fb_mod, log_mod = _load_modules()
+    priors_mod, fb_mod, log_mod, render_mod = _load_modules()
 
     runs_dir = Path(args.runs_dir) if args.runs_dir else Path.cwd() / "runs"
     feedback_path = Path(args.feedback) if args.feedback else Path.cwd() / "FEEDBACK.html"
@@ -91,11 +98,51 @@ def main(argv: list[str] | None = None) -> int:
         print("\nrun with --backfill to append default PEND rows for these runs.")
         return 0
 
+    if args.dry_run:
+        for m in missing:
+            run_path_abs = runs_dir / m["run"]
+            try:
+                report = json.loads(run_path_abs.read_text(encoding="utf-8"))
+                entry = log_mod.build_entry(report, outcome="PEND")
+            except (json.JSONDecodeError, OSError, ValueError) as exc:
+                print(f"  skip {m['run']}: {exc}", file=sys.stderr)
+                continue
+            if m.get("date"):
+                entry["date"] = m["date"]
+            print(f"  [dry-run] would append: {entry['date']} | {entry['context']} | {entry['chosen']} | PEND | {entry['note']}")
+        print(f"\ndry-run: {len(missing)} rows would be appended.")
+        return 0
+
+    # Batch backfill: read FEEDBACK.html once, accumulate all new Entry objects,
+    # write once.  This avoids O(N²) read-render-write cycles.
+    existing_rows = fb_mod.parse_feedback(feedback_path)
+    run_map = log_mod._load_map(runs_dir)
+
+    # Build a set of already-present run_paths for fast dedup.
+    known_run_paths: set[str] = set(run_map.values())
+
+    # Restore run_path for existing rows (same logic as log_feedback.append_entry).
+    def _row_run_path(row: dict) -> str | None:
+        for fp, rp in run_map.items():
+            run_id_candidate = Path(rp).name if rp else None
+            fp_candidate = log_mod._fingerprint(
+                row["date"], row["chosen"], row["context"], run_id=run_id_candidate
+            )
+            if fp_candidate == fp:
+                return rp
+        return None
+
+    accumulated: list = [
+        render_mod.Entry(**row, run_path=_row_run_path(row))
+        for row in existing_rows
+    ]
+
     appended = 0
     for m in missing:
-        run_path = runs_dir / m["run"]
+        run_path_abs = runs_dir / m["run"]
+        rel = f"runs/{m['run']}"
         try:
-            report = json.loads(run_path.read_text(encoding="utf-8"))
+            report = json.loads(run_path_abs.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as exc:
             print(f"  skip {m['run']}: {exc}", file=sys.stderr)
             continue
@@ -104,26 +151,35 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             print(f"  skip {m['run']}: build_entry failed ({exc})", file=sys.stderr)
             continue
-        # Force the entry's date to the run's date (which sits in the filename)
-        # so the backfilled row reflects WHEN the deliberation actually happened,
-        # not when the audit ran.
         if m.get("date"):
             entry["date"] = m["date"]
-        rel = f"runs/{m['run']}"
-        if args.dry_run:
-            print(f"  [dry-run] would append: {entry['date']} | {entry['context']} | {entry['chosen']} | PEND | {entry['note']}")
-        else:
-            rc = log_mod.append_entry(feedback_path, entry, rel)
-            if rc == 0:
-                appended += 1
-            else:
-                print(f"  skip {m['run']}: duplicate fingerprint, already in FEEDBACK.html", file=sys.stderr)
+        # Dedup: skip if this run_path is already in the sidecar map.
+        if rel in known_run_paths:
+            print(f"  skip {m['run']}: duplicate fingerprint, already in FEEDBACK.html", file=sys.stderr)
+            continue
+        # Accumulate the new Entry and update the sidecar map in-memory.
+        run_id = Path(rel).name
+        new_fp = log_mod._fingerprint(entry["date"], entry["chosen"], entry["context"], run_id=run_id)
+        run_map[new_fp] = rel
+        known_run_paths.add(rel)
+        accumulated.append(render_mod.Entry(
+            date=entry["date"],
+            context=entry["context"],
+            chosen=entry["chosen"],
+            outcome=entry["outcome"],
+            note=entry["note"],
+            run_path=rel,
+            vote_pattern=entry.get("vote_pattern", ""),
+        ))
+        appended += 1
 
-    if args.dry_run:
-        print(f"\ndry-run: {len(missing)} rows would be appended.")
-    else:
-        print(f"\nbackfilled {appended} PEND row(s) into {feedback_path.name}.")
-        print("close them retroactively with: python scripts/mark_outcome.py --run-path runs/<file>.json --outcome OK|BAD")
+    if appended > 0:
+        # Single write for all new entries.
+        atomic_write_text(feedback_path, render_mod.render(accumulated, runs_dir))
+        log_mod._save_map(runs_dir, run_map)
+
+    print(f"\nbackfilled {appended} PEND row(s) into {feedback_path.name}.")
+    print("close them retroactively with: python scripts/mark_outcome.py --run-path runs/<file>.json --outcome OK|BAD")
     return 0
 
 

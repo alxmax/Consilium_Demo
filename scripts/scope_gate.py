@@ -214,6 +214,10 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Check env override first — before any config load attempt so a config
+    # failure cannot shadow the escape hatch.
+    force_full = os.environ.get("CONSILIUM_FORCE_FULL") == "1"
+
     ap = argparse.ArgumentParser(description=__doc__)
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--ref", help="diff <ref>..HEAD")
@@ -221,6 +225,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--files", nargs="+", help="restrict to specific paths")
     ap.add_argument("--config", help="path to scope_gate.json (default: ./scope_gate.json if exists)")
     args = ap.parse_args(argv)
+
+    if force_full:
+        json.dump(
+            {
+                "should_skip": False,
+                "magnitude": "high",
+                "reason": "CONSILIUM_FORCE_FULL=1 (override)",
+                "signals": {"files_changed": -1, "lines_changed": -1, "blocklist_hits": []},
+                "config_used": DEFAULT_CONFIG,
+            },
+            sys.stdout,
+            indent=2,
+        )
+        sys.stdout.write("\n")
+        return 0
 
     try:
         cfg = load_config(args.config)
@@ -232,21 +251,6 @@ def main(argv: list[str] | None = None) -> int:
                 "reason": f"config load failed: {exc}",
                 "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": []},
                 "config_used": DEFAULT_CONFIG,
-            },
-            sys.stdout,
-            indent=2,
-        )
-        sys.stdout.write("\n")
-        return 0
-
-    if os.environ.get("CONSILIUM_FORCE_FULL") == "1":
-        json.dump(
-            {
-                "should_skip": False,
-                "magnitude": "high",
-                "reason": "CONSILIUM_FORCE_FULL=1 (override)",
-                "signals": {"files_changed": -1, "lines_changed": -1, "blocklist_hits": []},
-                "config_used": cfg,
             },
             sys.stdout,
             indent=2,

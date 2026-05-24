@@ -94,9 +94,9 @@ Use the MAX of the two columns when they diverge.
 | 3–5 | 0.6 |
 | > 5 | 0.9 |
 
-Regression_risk reduction: apply up to two mitigations (e.g. test coverage, feature flag, rollback < 3 steps); cap total at −0.20, regardless of how many mitigations are present. Document each reduction applied in `notes`.
+Regression_risk reduction: apply up to two mitigations (e.g. test coverage, feature flag, rollback < 3 steps); cap total mitigation at −0.20. After applying mitigation 1 (−0.15), the remaining budget for mitigation 2 is at most −0.05. Document each reduction applied in `notes`.
 
-There is no automated enforcement of this formula — apply it disciplined manually.
+There is no automated check that this rule was applied — keep it disciplined manually.
 
 ## Veto rule
 

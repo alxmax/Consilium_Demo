@@ -201,17 +201,30 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> int:
     runs_dir = feedback_path.parent / "runs"
     run_map = _load_map(runs_dir)
 
-    # Idempotent on re-run: same fingerprint (now incorporating run_id so
-    # same-day same-chosen entries from *different* runs are never silently
-    # merged) means the row is already logged.
+    # Idempotent on re-run: if run_path is provided, check whether it is already
+    # a value in the sidecar map — that is the most reliable duplicate signal
+    # because the fingerprint key is stable only when the same run_id is used.
+    # For entries logged without a run_path, fall back to a content hash over
+    # the full context string (no truncation, no timestamp component).
     run_id = Path(run_path).name if run_path else None
     new_fp = _fingerprint(entry["date"], entry["chosen"], entry["context"], run_id=run_id)
-    # Existing rows were stored without run_id; reconstruct their fingerprints
-    # the same way they were originally written (run_id=None).
-    existing_fps = {
-        _fingerprint(row["date"], row["chosen"], row["context"]) for row in existing
-    }
-    if new_fp in existing_fps:
+    is_duplicate = False
+    if run_path and run_path in run_map.values():
+        is_duplicate = True
+    elif not run_path:
+        # Stable content-only hash: same date+chosen+full-context means same entry.
+        stable_fp = hashlib.sha256(
+            f"{entry['date']}|{entry['chosen']}|{entry['context']}".encode()
+        ).hexdigest()[:16]
+        stable_existing = {
+            hashlib.sha256(
+                f"{row['date']}|{row['chosen']}|{row['context']}".encode()
+            ).hexdigest()[:16]
+            for row in existing
+        }
+        if stable_fp in stable_existing:
+            is_duplicate = True
+    if is_duplicate:
         print(
             f"log_feedback: duplicate entry (fp {new_fp[:8]}) — already in FEEDBACK.html, skipping append.",
             file=sys.stderr,
@@ -224,11 +237,24 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> int:
             _save_map(runs_dir, run_map)
         return 3
 
-    # Restore run_path for existing rows from sidecar map so drill-down survives re-renders.
+    # Restore run_path for existing rows from sidecar map so drill-down survives
+    # re-renders. For each existing row, try to reconstruct its fingerprint using
+    # the run_id extracted from each known run_path in the sidecar — when a match
+    # is found the row's run_path is recovered.  Rows originally logged without a
+    # run_id used an unstable timestamp and cannot be matched; they fall back to
+    # run_path=None (same as legacy behaviour).
+    def _row_run_path(row: dict) -> str | None:
+        for fp, rp in run_map.items():
+            run_id_candidate = Path(rp).name if rp else None
+            fp_candidate = _fingerprint(row["date"], row["chosen"], row["context"], run_id=run_id_candidate)
+            if fp_candidate == fp:
+                return rp
+        return None
+
     entries = [
         render_mod.Entry(
             **row,
-            run_path=run_map.get(_fingerprint(row["date"], row["chosen"], row["context"])),
+            run_path=_row_run_path(row),
         )
         for row in existing
     ]
@@ -269,6 +295,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--force-override", action="store_true",
         help="allow --outcome OK even when confidence < 0.70 (use when user has confirmed the pick despite low confidence)")
     args = ap.parse_args(argv)
+
+    if args.outcome == "OVR" and not args.override_target:
+        print("log_feedback: --outcome OVR requires --override-target <alt_id>", file=sys.stderr)
+        sys.exit(2)
 
     report = load_json_stdin("log_feedback.py")
     if not isinstance(report, dict):

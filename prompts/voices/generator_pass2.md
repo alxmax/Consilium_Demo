@@ -30,6 +30,7 @@ For **each candidate** you produced in Pass 1, review what Control and Conservat
 
 ## Rules
 
+- **Full candidate fields required on revision.** Each revised candidate must include all standard fields: `id`, `summary`, `sketch`, `rationale`, `downside_estimate`. If a field is unchanged from Pass-1, copy the field value verbatim.
 - Every candidate must have exactly one of `revision` or `maintained` — **never both, never neither**.
 - `peer_evidence` and `peer_claim` must reference something specific from the peer outputs — not a generic acknowledgement.
 - If you genuinely agree with a peer and want to revise, use `revision`. If you agree but the candidate stays the same (e.g., Control validated it and Conservator scored it low-risk), use `maintained` with `peer_claim: "Control: valid, no issues. Conservator: risk=X."` and `dissent: "No change needed — peer outputs confirm this candidate."`.

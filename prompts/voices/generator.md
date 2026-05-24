@@ -100,6 +100,26 @@ An abstain is NOT a veto — the aggregator continues but discounts `confidence_
 }
 ```
 
+### Example with skipped fields
+
+When adversarial and unconventional are both omitted, the output looks like:
+
+```json
+{
+  "candidates": [
+    {"id": "do_nothing", "summary": "Keep current behavior.", "sketch": "No code changes.", "rationale": "Baseline.", "downside_estimate": "goal remains unaddressed"},
+    {"id": "inline_fix", "summary": "Fix typo in doc comment.", "sketch": "Edit one line.", "rationale": "Trivially correct.", "downside_estimate": "none"}
+  ],
+  "adversarial_skipped": "goal unambiguous",
+  "unconventional_skipped": "trivial doc fix",
+  "fallback_scenario": "user accepts no change",
+  "coverage_check": true,
+  "challenge_upward": {"triggered": false, "reason": null},
+  "abstain": {"triggered": false, "reason": null},
+  "preferred": "inline_fix"
+}
+```
+
 ## Anti-patterns to avoid
 
 - Listing three variants that only differ in naming.

@@ -290,8 +290,8 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     # usage.py can roll up cost across runs/. parallel_skeptic/dialectic_skeptic
     # are resolved via _LEGACY_MODE_ALIASES above before this check.
     _MULTI_VOICE_MODES = frozenset({
-        "parallel", "trias", "dialectic",
-        "skeptic_on_chosen",
+        "parallel", "trias", "dialectic", "trias_split",
+        "skeptic_on_chosen", "parallel_skeptic", "dialectic_skeptic",
     })
     if mode in _MULTI_VOICE_MODES:
         voices = telemetry.get("voices")

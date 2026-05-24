@@ -77,6 +77,8 @@ def _voice_scores_for(chosen: str | None, control: dict, conservator: dict) -> d
     if chosen is None:
         return None
     verdict = _candidate_by_id(control.get("verdicts") or [], chosen) or {}
+    if not verdict:
+        print(f"build_report: no control verdict found for chosen={chosen!r}", file=sys.stderr)
     score = _candidate_by_id(conservator.get("scores") or [], chosen) or {}
     issues = verdict.get("issues") or []
     control_score = 0.0 if not verdict.get("valid") else max(0.3, 1.0 - sum(issue_penalty(i) for i in issues))
@@ -233,6 +235,9 @@ def _default_reasoning(aggregate: dict, confidence_block: dict) -> str:
     chosen = aggregate.get("chosen")
     scheme = aggregate.get("scheme", "?")
     if chosen is None:
+        if scheme == "team_vote":
+            vote_pattern = aggregate.get("vote_pattern", "unknown")
+            return f"deliberation fragmented (vote_pattern={vote_pattern}); orchestrator must intervene"
         return f"all candidates vetoed under {scheme}; see retry_suggested"
     conf = confidence_block.get("confidence")
     conf_s = f"{conf:.2f}" if isinstance(conf, (int, float)) else "?"
