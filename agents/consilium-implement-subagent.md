@@ -63,11 +63,29 @@ report (GO) ──▶ Coder (alone first — can't test code that doesn't exist)
 4. **Gate.** `python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "<verification>" --target <impl_file>`
    — tests must be RED against a stubbed impl and GREEN against the real one. Reject tests that are green under the stub.
 
+## Optional fan-out (task-split)
+
+By default a single Coder writes all files. **Optionally**, the orchestrator may split the *coding*
+step across 3–5 parallel Coders — one per file from `chosen_approach.files_touched[]` — but only when
+the merge is trivial by construction:
+
+- **Precondition (independence):** fan out only if the target files are mutually independent — no file
+  defines a symbol another relies on. If unsure, **use a single Coder** (a tangled task does not split).
+- **Merge anchor (pin first):** the interface contract — the signatures/types each file exposes or
+  consumes — must be fixed in the spec *before* dispatch. With independent files + a pinned contract,
+  **merge = collect the files** (no reconciliation step). This is the only reason fan-out stays simple;
+  skip it the moment reconciliation would be required.
+- After collect, Test Writer ∥ Reviewer run on the **merged whole**, exactly as in the single-Coder path.
+
+Decomposability is a property of the task, not the pipeline. When in doubt, one Coder is the simple,
+correct default — fan-out is a speed optimization for genuinely independent work, never a requirement.
+
 ## Hard rules
 
 1. **Disjoint-path ownership.** Coder writes implementation files; Test Writer writes `test_*`
    files; Reviewer writes nothing. This is what makes the parallel stage collision-free — do not
-   let any role write outside its lane.
+   let any role write outside its lane. (Under fan-out, each Coder additionally owns a disjoint
+   subset of implementation files — same collision-free guarantee.)
 2. **Malformed-JSON hard-fail.** If the Coder or Test Writer returns non-JSON or schema-invalid
    output, retry that one dispatch **once**. On a second failure, abort the pipeline and return
    `{"error": "subagent_json_invalid", "role": "<coder|test_writer>"}`. Never proceed on an empty
