@@ -59,15 +59,75 @@ def test_render_escapes_html_in_user_text():
 
 
 def test_render_drill_from_real_run_file():
-    e = rfh.Entry(
-        date="2026-05-11",
-        context="Click pe sageata Rerun din topbar",
-        chosen="disable_when_unreachable",
-        outcome="PEND",
-        note="5 cand, 1 vetoed, conf=0.62",
-        run_path="runs/2026-05-11_2030_live-rerun-resilience.json",
-    )
-    html_out = rfh.render([e], runs_dir=ROOT / "runs")
+    # Use a synthetic run JSON in a temp directory so the test has no dependency
+    # on any tracked file in runs/.
+    synthetic_run = {
+        "success_criterion": "Click pe sageata Rerun din topbar",
+        "chosen_approach": "disable_when_unreachable",
+        "confidence": 0.62,
+        "deliberation_log": [
+            {
+                "step": "generator",
+                "candidates": [
+                    {"id": "do_nothing", "summary": "Accept current state.", "sketch": "Baseline."},
+                    {"id": "disable_when_unreachable", "summary": "Probe disables Rerun.", "sketch": "~20 lines."},
+                    {"id": "adversarial_url_protocol_handler", "summary": "Register protocol.", "sketch": "Stress test."},
+                ],
+            },
+            {
+                "step": "control",
+                "verdicts": [
+                    {"id": "do_nothing", "valid": True, "issues": [], "tests_to_write": []},
+                    {
+                        "id": "disable_when_unreachable",
+                        "valid": True,
+                        "issues": [],
+                        "tests_to_write": [
+                            {"name": "probe_success_enables", "assert": "200 -> opacity=1"},
+                        ],
+                    },
+                    {
+                        "id": "adversarial_url_protocol_handler",
+                        "valid": False,
+                        "issues": [{"category": "logic", "detail": "Registry irreversible."}],
+                        "tests_to_write": [],
+                    },
+                ],
+            },
+            {
+                "step": "conservator",
+                "scores": [
+                    {
+                        "id": "disable_when_unreachable",
+                        "risk_score": 0.14,
+                        "factors": {"diff_size": 0.1, "scope_drift": 0.05, "regression_risk": 0.1, "reversibility": 0.2},
+                    },
+                ],
+            },
+            {
+                "step": "aggregate",
+                "result": {"vetoed": []},
+            },
+        ],
+    }
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        td_path = Path(td)
+        runs_subdir = td_path / "runs"
+        runs_subdir.mkdir()
+        run_file = runs_subdir / "synthetic_run.json"
+        run_file.write_text(json.dumps(synthetic_run), encoding="utf-8")
+
+        e = rfh.Entry(
+            date="2026-05-11",
+            context="Click pe sageata Rerun din topbar",
+            chosen="disable_when_unreachable",
+            outcome="PEND",
+            note="3 cand, 0 vetoed, conf=0.62",
+            run_path="runs/synthetic_run.json",
+        )
+        html_out = rfh.render([e], runs_dir=runs_subdir)
+
     # Generator section
     assert "Generator" in html_out
     assert "do_nothing" in html_out

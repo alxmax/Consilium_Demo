@@ -57,7 +57,7 @@ import json
 import sys
 from typing import Any
 
-from utils import force_utf8_streams, issue_penalty, validate_keys
+from utils import force_utf8_streams, issue_penalty
 
 VOICES = ("generator", "control", "conservator")
 VOICE_KEY = {
@@ -193,9 +193,17 @@ def should_skip_pass2(pass1: dict) -> tuple[bool, list[str]]:
 
 def validate_input(payload: dict) -> None:
     """Validate dialectic_merge input has required pass1 structure."""
-    validate_keys(payload, ["pass1"], context="dialectic_merge input")
-    validate_keys(payload["pass1"], ["generator", "control", "conservator"],
-                  context="dialectic_merge input.pass1")
+    if "pass1" not in payload:
+        raise ValueError("dialectic_merge input: missing required field 'pass1'")
+    for voice in ("generator", "control", "conservator"):
+        if voice not in payload["pass1"]:
+            raise ValueError(
+                f"dialectic_merge input.pass1: missing required field '{voice}'"
+            )
+    if "pass2" in payload and not isinstance(payload["pass2"], dict):
+        raise ValueError(
+            f"dialectic_merge: pass2 must be a dict, got {type(payload['pass2']).__name__}"
+        )
 
 
 def _diff_candidates(p1: list[dict], p2: list[dict]) -> list[dict]:
@@ -281,9 +289,9 @@ def merge(payload: dict) -> dict:
         # candidate. Always use Pass-2 voice data for genuinely new candidates.
         is_new_in_pass2 = cid not in p1_gen_by_id
 
-        gen_cand = (
+        gen_cand: dict = (
             cand if is_new_in_pass2
-            else (p1_gen_by_id.get(cid, cand) if cid in dissent_fallbacks.get("generator", []) else cand)
+            else (p1_gen_by_id.get(cid) or cand if cid in dissent_fallbacks.get("generator", []) else cand)
         )
         # Control: Pass-2 carries only revision/maintained metadata per
         # control_pass2.md — valid/issues stay in Pass-1. Merge so a compliant
@@ -399,13 +407,21 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if args.check_pass2:
-        validate_input(payload)
+        try:
+            validate_input(payload)
+        except ValueError as exc:
+            print(f"invalid input: {exc}", file=sys.stderr)
+            return 2
         skip, reasons = should_skip_pass2(payload.get("pass1", {}))
         json.dump({"skip_pass2": skip, "reasons": reasons}, sys.stdout, indent=2)
         sys.stdout.write("\n")
         return 0
 
-    validate_input(payload)
+    try:
+        validate_input(payload)
+    except ValueError as exc:
+        print(f"invalid input: {exc}", file=sys.stderr)
+        return 2
 
     try:
         result = merge(payload)

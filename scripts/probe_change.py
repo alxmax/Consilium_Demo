@@ -44,7 +44,7 @@ import sys
 def _run_numstat(args: list[str]) -> str:
     try:
         result = subprocess.run(
-            ["git", "diff", "--numstat", *args],
+            ["git", "diff", "--numstat", "--no-renames", *args],
             check=True,
             capture_output=True,
             text=True,

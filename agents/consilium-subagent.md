@@ -43,6 +43,8 @@ Follow `$CONSILIUM_PATH/SKILL.md` steps 0 through 6 exactly. The deviations belo
    - **Step 6 confidence override.** When `confidence < 0.7`, *do not* prompt. Run `log_feedback.py` with no `--outcome` flag (defaults to PEND). The orchestrator can later upgrade via `log_feedback.py --outcome OK|OVR` on the same run file.
    - **Blocking gates from aggregator/voices.** Any time a gate that SKILL.md routes to "ask user" fires (`irreversibility_flag: true` from Conservator, `glossary_fail: true` from Control, ESCALATE on 3+ simultaneous triggers, or any `result: BLOCK*` from `aggregate_rund2`), *do not* prompt and *do not* silently proceed. Force `chosen_approach: null`, `confidence: null`, and set `subagent_notes.blocked_reason` to the trigger name (e.g. `"irreversibility_no_consent"`, `"glossary_fail"`, `"escalate_multi_trigger"`). The orchestrator must see a populated `blocked_reason` to distinguish a safety-blocked deliberation from a low-confidence one — both produce null chosen, only the reason field disambiguates.
 
+   `subagent_notes` is an optional top-level key for subagent-specific metadata (e.g., `clarity_branches`, `blocked_reason`) and is preserved through `validate_report.py`. It is the designated container for any non-schema fields the subagent needs to surface to the orchestrator.
+
 3. **Final message contract.** After `validate_report.py` exits 0 on the persisted `runs/<ts>.json`, emit *exactly that file's contents* as your final assistant message. No prose, no markdown fences, no preamble. The orchestrator parses your output as JSON.
 
 4. **Skipped reports.** When `scope_gate.py` returns `should_skip: true`, build the short skipped-shape report (SKILL.md Step 1.5), validate, persist to `runs/`, and emit per the same contract.

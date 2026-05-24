@@ -52,6 +52,10 @@ You only need to emit `{id, revision|maintained}`. The merger (`dialectic_merge.
 
 A `maintained` item never needs to re-emit Pass-1 fields — they pass through unchanged.
 
+## No-viable-candidate fallback
+
+If after Pass-2 review no candidate is viable, you MAY emit a synthetic verdict with id `_no_viable_candidate` and `valid: false` with `notes` explaining why no candidate survived cross-review.
+
 ## Output format
 
 Return STRICTLY the JSON below. No prose before or after.

@@ -110,7 +110,7 @@ def collect(reports: list[dict], mode_filter: str | None = None) -> dict:
             if vname not in by_voice or not isinstance(vdata, dict):
                 continue
             for f in COUNT_FIELDS:
-                if f in vdata and isinstance(vdata[f], int) and not isinstance(vdata[f], bool):
+                if f in vdata and isinstance(vdata[f], (int, float)) and not isinstance(vdata[f], bool):
                     by_voice[vname][f].append(vdata[f])
                     if f in mode_bucket:
                         mode_bucket[f] += vdata[f]
@@ -134,7 +134,7 @@ def _latency_warnings(files: list[Path], reports: list[dict]) -> list[dict]:
         latencies = {
             v: d["latency_ms"]
             for v, d in voices.items()
-            if isinstance(d, dict) and isinstance(d.get("latency_ms"), int) and not isinstance(d.get("latency_ms"), bool)
+            if isinstance(d, dict) and isinstance(d.get("latency_ms"), (int, float)) and not isinstance(d.get("latency_ms"), bool)
         }
         if len(latencies) < 2:
             continue

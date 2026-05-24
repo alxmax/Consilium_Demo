@@ -59,11 +59,11 @@ WARNING = {
 }
 
 
-def conservator_spread(scores: list[dict]) -> float:
+def conservator_spread(scores: list[dict]) -> float | None:
     """Risk score stdev / max possible stdev, clamped to [0,1].
 
     Filters to valid candidates only (risk_score present + numeric). A single
-    candidate returns 0.0 (no spread possible).
+    candidate returns None (no spread possible).
     """
     risks: list[float] = []
     for s in scores:
@@ -73,7 +73,7 @@ def conservator_spread(scores: list[dict]) -> float:
         if isinstance(r, (int, float)):
             risks.append(float(r))
     if len(risks) < 2:
-        return 0.0
+        return None
     stdev = statistics.pstdev(risks)
     actual_range = max(risks) - min(risks)
     denom = max(actual_range, 0.5)
@@ -158,7 +158,8 @@ def critique(bundle: dict) -> dict:
     control = (bundle.get("control") or {}).get("verdicts") or []
     conservator = (bundle.get("conservator") or {}).get("scores") or []
 
-    cs = round(conservator_spread(conservator), 3)
+    cs = conservator_spread(conservator)
+    cs_rounded = round(cs, 3) if cs is not None else None
 
     # Optional metrics — emitted only when the relevant mode is active.
     prq_raw = pass2_revision_quality(bundle)
@@ -166,9 +167,9 @@ def critique(bundle: dict) -> dict:
     speculation = control_speculation_flag(control)
 
     flags: list[str] = []
-    if cs < WARNING["conservator_spread"]:
-        sev = "shrug" if cs < DEGENERATE["conservator_spread"] else "weak"
-        flags.append(f"conservator_spread={cs} {sev} — risk scores cluster")
+    if cs_rounded is not None and cs_rounded < WARNING["conservator_spread"]:
+        sev = "shrug" if cs_rounded < DEGENERATE["conservator_spread"] else "weak"
+        flags.append(f"conservator_spread={cs_rounded} {sev} — risk scores cluster")
     if prq_raw is not None and prq_raw < 0.5:
         flags.append(
             f"pass2_revision_quality={round(prq_raw, 3)} thin — "
@@ -186,7 +187,7 @@ def critique(bundle: dict) -> dict:
         )
 
     quality: dict[str, object] = {
-        "conservator_spread": cs,
+        "conservator_spread": cs_rounded,
         "flags": flags,
     }
     if prq_raw is not None:
