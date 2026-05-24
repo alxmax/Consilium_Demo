@@ -1,6 +1,6 @@
-"""Summarize feedback from FEEDBACK.md and runs/*.json.
+"""Summarize feedback from FEEDBACK.html and runs/*.json.
 
-Reads the journal at FEEDBACK.md, parses entries, and prints a short stats
+Reads the journal at FEEDBACK.html, parses entries, and prints a short stats
 report so you can see whether each voice (Generator, Control, Conservator)
 is actually pulling its weight in your real-world uses.
 

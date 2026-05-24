@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -51,6 +52,8 @@ def run_one(scenario: dict, repo_root: Path) -> list[str]:
         input=stdin_text,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
         cwd=str(repo_root),
     )
 

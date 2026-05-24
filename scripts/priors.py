@@ -1,4 +1,4 @@
-"""Load priors for a deliberation from FEEDBACK.md and runs/*.json.
+"""Load priors for a deliberation from FEEDBACK.html and runs/*.json.
 
 Emits a small JSON block to stdout that the deliberation can paste as
 soft priors at step 1. Reuses parse_feedback / parse_runs from feedback.py
@@ -217,7 +217,7 @@ def find_stale_pendings(entries: list[dict], days_old: int = STALE_PEND_DAYS) ->
     return [
         {"date": e["date"], "context": e["context"], "chosen": e["chosen"]}
         for e in entries
-        if e.get("outcome") == "PEND" and e.get("date", "") < cutoff
+        if e.get("outcome") == "PEND" and e.get("date", "") and e["date"] < cutoff
     ][:STALE_PEND_CAP]
 
 

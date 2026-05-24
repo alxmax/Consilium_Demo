@@ -96,7 +96,7 @@ class TestAggregateRund2(unittest.TestCase):
         }
 
     def test_glossary_fail_blocks(self):
-        result = aggregator.aggregate_rund2(
+        result = aggregator.aggregate_sequential(
             self._base_generator(),
             self._base_control(glossary_fail=True),
             self._base_conservator(),
@@ -105,7 +105,7 @@ class TestAggregateRund2(unittest.TestCase):
         self.assertEqual(result["reason"], "glossary_fail")
 
     def test_irreversibility_flag_blocks(self):
-        result = aggregator.aggregate_rund2(
+        result = aggregator.aggregate_sequential(
             self._base_generator(),
             self._base_control(),
             self._base_conservator(flag=True),
@@ -114,7 +114,7 @@ class TestAggregateRund2(unittest.TestCase):
         self.assertEqual(result["reason"], "irreversibility_no_consent")
 
     def test_substantial_disagreement_reworks(self):
-        result = aggregator.aggregate_rund2(
+        result = aggregator.aggregate_sequential(
             self._base_generator(),
             self._base_control(disagreements=[{"between": ["g", "c"], "type": "substantial", "detail": "x"}]),
             self._base_conservator(),
@@ -122,7 +122,7 @@ class TestAggregateRund2(unittest.TestCase):
         self.assertEqual(result["result"], "REWORK")
 
     def test_scale_down_adapts_short(self):
-        result = aggregator.aggregate_rund2(
+        result = aggregator.aggregate_sequential(
             self._base_generator(),
             self._base_control(),
             self._base_conservator(meta="scale_down"),
@@ -130,7 +130,7 @@ class TestAggregateRund2(unittest.TestCase):
         self.assertEqual(result["result"], "ADAPT_SHORT")
 
     def test_scale_up_adapts_extended(self):
-        result = aggregator.aggregate_rund2(
+        result = aggregator.aggregate_sequential(
             self._base_generator(),
             self._base_control(),
             self._base_conservator(meta="scale_up"),
@@ -138,7 +138,7 @@ class TestAggregateRund2(unittest.TestCase):
         self.assertEqual(result["result"], "ADAPT_EXTENDED")
 
     def test_three_triggers_escalate(self):
-        result = aggregator.aggregate_rund2(
+        result = aggregator.aggregate_sequential(
             self._base_generator(abstain=True),
             self._base_control(
                 disagreements=[{"between": ["g", "c"], "type": "substantial", "detail": "x"}]
@@ -149,7 +149,7 @@ class TestAggregateRund2(unittest.TestCase):
         self.assertEqual(len(result["triggers"]), 3)
 
     def test_normal_aggregate_returns_chosen(self):
-        result = aggregator.aggregate_rund2(
+        result = aggregator.aggregate_sequential(
             self._base_generator(preferred="A"),
             self._base_control(),
             self._base_conservator(),
@@ -158,7 +158,7 @@ class TestAggregateRund2(unittest.TestCase):
         self.assertEqual(result["chosen"], "A")
 
     def test_low_methodology_confidence_warns(self):
-        result = aggregator.aggregate_rund2(
+        result = aggregator.aggregate_sequential(
             self._base_generator(abstain=True),
             self._base_control(disagreements=[
                 {"type": "substantial", "detail": "x"},

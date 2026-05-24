@@ -282,8 +282,8 @@ def aggregate_team_vote(personalities: list[dict], candidates: list[dict]) -> di
     return result
 
 
-# === RUND2 ===
-def _rund2_methodology_notes(g: dict, c: dict) -> str:
+# === SEQUENTIAL ===
+def _sequential_methodology_notes(g: dict, c: dict) -> str:
     notes = []
     if g.get("abstain", {}).get("triggered"):
         notes.append(f"Generator abstain: {g['abstain'].get('reason', '?')}")
@@ -295,12 +295,12 @@ def _rund2_methodology_notes(g: dict, c: dict) -> str:
     return " | ".join(notes) if notes else "Deliberare completă fără anomalii"
 
 
-def aggregate_rund2(
+def aggregate_sequential(
     generator_out: dict,
     control_out: dict,
     conservator_out: dict,
 ) -> dict:
-    """RUND2 priority-based aggregation with veto cascade.
+    """Sequential priority-based aggregation with veto cascade.
 
     Input: voice output dicts (not candidate scores).
 
@@ -318,7 +318,7 @@ def aggregate_rund2(
     # Priority 1: Glossary fail
     if control_out.get("glossary_fail"):
         return {
-            "scheme": "rund2",
+            "scheme": "sequential",
             "result": "BLOCK",
             "reason": "glossary_fail",
             "attempts": control_out.get("glossary_attempts", []),
@@ -329,7 +329,7 @@ def aggregate_rund2(
     if conservator_out.get("irreversibility_flag"):
         rr = conservator_out.get("regression_risk", {})
         return {
-            "scheme": "rund2",
+            "scheme": "sequential",
             "result": "BLOCK",
             "reason": "irreversibility_no_consent",
             "magnitude": rr.get("magnitude") if isinstance(rr, dict) else None,
@@ -354,7 +354,7 @@ def aggregate_rund2(
     # Priority 5 (escalate before individual handling)
     if len(triggers) >= 3:
         return {
-            "scheme": "rund2",
+            "scheme": "sequential",
             "result": "ESCALATE",
             "triggers": triggers,
             "action": (
@@ -367,7 +367,7 @@ def aggregate_rund2(
     # Priority 3: Substantial disagreement
     if "substantial_disagreement" in triggers:
         return {
-            "scheme": "rund2",
+            "scheme": "sequential",
             "result": "REWORK",
             "reason": "substantial_disagreement",
             "disagreements": substantial,
@@ -378,7 +378,7 @@ def aggregate_rund2(
     if "scale_down" in triggers:
         preferred = generator_out.get("preferred")
         return {
-            "scheme": "rund2",
+            "scheme": "sequential",
             "result": "ADAPT_SHORT",
             "meta_recommendation": "scale_down",
             "chosen": preferred,
@@ -388,7 +388,7 @@ def aggregate_rund2(
     # Priority 4b: scale_up
     if "scale_up" in triggers:
         return {
-            "scheme": "rund2",
+            "scheme": "sequential",
             "result": "ADAPT_EXTENDED",
             "meta_recommendation": "scale_up",
             "action": "Deliberare extinsă necesară — cere clarificare user înainte de a continua",
@@ -419,17 +419,17 @@ def aggregate_rund2(
     methodology_confidence = max(0.0, round(methodology_confidence, 2))
 
     result = {
-        "scheme": "rund2",
+        "scheme": "sequential",
         "result": "AGGREGATE",
         "chosen": preferred,
         "confidence_per_option": confidence_per_option,
         "confidence_methodology": methodology_confidence,
-        "methodology_notes": _rund2_methodology_notes(generator_out, control_out),
+        "methodology_notes": _sequential_methodology_notes(generator_out, control_out),
     }
     if methodology_confidence < 0.5:
         result["warning"] = "Deliberare incompletă — consideră rezultatul ca preliminar"
     return result
-# === END RUND2 ===
+# === END SEQUENTIAL ===
 
 
 SCHEMES = {
@@ -445,13 +445,16 @@ SCHEMES = {
     "team_vote": lambda data: aggregate_team_vote(
         data["personalities"], data["candidates"]
     ),
-    # === RUND2 ===
-    "rund2": lambda data: aggregate_rund2(
+    "sequential": lambda data: aggregate_sequential(
         data["generator"],
         data["control"],
         data["conservator"],
     ),
-    # === END RUND2 ===
+    "rund2": lambda data: aggregate_sequential(  # backward-compat alias
+        data["generator"],
+        data["control"],
+        data["conservator"],
+    ),
 }
 
 
