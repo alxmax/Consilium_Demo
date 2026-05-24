@@ -275,276 +275,99 @@ Soft-positive decision, low priority.
 
 Detail removed (fixed; see status block above + git history: `feat/fix-high-bugs` commit 542c0d1, atomic-write/VETO/Pass-2 fixes). Counts retained for context.
 
+
 ### Medium (39)
-
-#### [scripts/aggregator.py:54-67] `aggregate_majority` sort crashes with TypeError on (mean, -stdev) tie
-- **Lenses:** architect, pioneer, steward · **Fix:** Insert stable tiebreaker before `c` (enumerate index). Same exposure in `aggregate_weighted` (line 97).
-
-#### [scripts/build_report.py:64-75] `_voice_scores_for` silently zeros control_score when chosen has no verdict
-- **Fix:** Raise/warn when `verdict == {}` after lookup, or surface missing-verdict as a distinct null/sentinel.
-
-#### [scripts/build_report.py:215-222] `_default_reasoning` mislabels Trias fragmentation as "all candidates vetoed"
-- **Fix:** Branch on `scheme == "team_vote"` + `vote_pattern`. Fragmentation: "deliberation fragmented (vote_pattern=…); orchestrator must intervene".
-
-#### [scripts/validate_report.py:170-174] `_validate_trias` iterates fields on personality entry without verifying dict
-- **Fix:** `if not isinstance(p, dict): errors.append(...); continue`.
-
-#### [scripts/validate_report.py:138-155] `_validate_telemetry_required` only enforces voices for "parallel" mode, not Trias
-- **Fix:** `mode in ("parallel", "trias", "dialectic", "trias_split", "parallel_skeptic", "dialectic_skeptic")`.
-
-#### [scripts/log_feedback.py:188,205-206] Fingerprint truncates context to 30 chars — distinct deliberations share drill-down run_path
-- **Fix:** Include full context (or `run_path`) in fingerprint, or key sidecar map by `run_path` directly.
-
-#### [scripts/log_feedback.py:146] OVR outcome with missing --override-target produces silent no-op
-- **Fix:** Raise `ValueError("--outcome OVR requires --override-target <alt_id>")`.
-
-#### [scripts/mark_outcome.py:83-91] `_annotate_note` not idempotent — duplicates `outcome_reason=` entries
-- **Fix:** Filter existing `outcome_reason=` parts before appending.
-
-#### [scripts/audit_feedback.py:116] Backfill performs N full read-render-write cycles — O(N²) work
-- **Fix:** Batch backfill — accumulate Entry objects, render and write ONCE atomically.
-
-#### [scripts/render_feedback_html.py:258-261] JSONDecodeError silently downgraded to "no detailed run data"
-- **Fix:** Render dedicated `<div class="stub error">corrupted run JSON: <name></div>`.
-
-#### [scripts/migrate_feedback_md_to_html.py:30] TOKEN_RE is ASCII-only — Romanian diacritics never tokenize
-- **Fix:** `re.compile(r"[^\W\d_]{4,}", re.UNICODE)`.
-
-#### [scripts/test_feedback_html.py:61-87] Test depends on tracked run file — couples tests to mutable session data
-- **Fix:** Create temp directory with synthetic run JSON.
-
-#### [scripts/test_feedback_html.py:1-225] Coverage gaps — no tests for log_feedback dedup, mark_outcome, audit_feedback, sidecar map
-- **Fix:** Add dedup test, sidecar map round-trip, mark_outcome and audit_feedback happy-path.
-
-#### [scripts/scope_gate.py:192-220] CONSILIUM_FORCE_FULL overridden by config load failure
-- **Fix:** Move env override check to top of `main()`, before `load_config`.
-
-#### [scripts/priors.py:197-203] `find_stale_pendings` surfaces entries with empty/missing dates
-- **Fix:** Positive guard: `... and e.get("date", "") and e["date"] < cutoff`.
-
-#### [scripts/dialectic_merge.py:124-126] `validate_input` strictly requires all 3 voices in pass1 (uses `sys.exit`)
-- **Fix:** Tolerate missing voices as `{}` in `merge()`, or raise instead of `sys.exit`.
-
-#### [scripts/run_evals.py:49-55] `subprocess.run(text=True)` uses platform encoding for stdin/stdout
-- **Fix:** Pass `encoding="utf-8"` and `PYTHONIOENCODING=utf-8` in `env=`.
-
-#### [scripts/utils.py:50-65] `validate_keys` calls `sys.exit(1)` — fatal for in-process callers
-- **Fix:** Raise `ValidationError`; convert to exit code only in `main()` wrappers.
-
-#### [scripts/probe_change.py:60-84] `parse_numstat` mis-handles rename syntax `{old => new}`
-- **Fix:** Pass `--no-renames` to `git diff --numstat`, or parse and expand.
-
-#### [scripts/dialectic_merge.py:122-126] `validate_input` accepts `pass2: [...]` (list) but `merge()` crashes
-- **Fix:** `if "pass2" in payload and not isinstance(payload["pass2"], dict): exit/raise`.
-
-#### [scripts/usage.py:96,120] Strict `isinstance(int)` silently drops `tokens_in: 5.0` (float JSON values)
-- **Fix:** `isinstance(vdata[f], (int, float)) and not isinstance(vdata[f], bool)`.
-
-#### [SKILL.md:108-110] Confidence input contract for null chosen says wrong thing
-- **Fix:** Reword to "the `confidence` field in the response is `null`" + add "Step 5d is skipped in this case".
-
-#### [SKILL.md:240 + Step 5 (parallel)] Parallel mode never mentions Step 5b/5c/5d before Step 6
-- **Fix:** Add to Parallel section: "Continue with Step 5b → 6; capture tokens/latency per sub-agent dispatch".
-
-#### [SKILL.md:286-294 (Trias workflow)] Workflow doesn't show JSON schema for Trias report
-- **Fix:** Add an "Output JSON" mini-schema example in the Trias section.
-
-#### [prompts/generator.md:47-74 Output format] Example JSON missing `adversarial_skipped` / `unconventional_skipped` siblings
-- **Fix:** Add a second example: `{"candidates": [...], "adversarial_skipped": "goal unambiguous", "unconventional_skipped": "trivial doc fix"}`.
-
-#### [prompts/conservator.md:39] Cumulative cap -0.20 vs quality-progress math doesn't add up
-- **Fix:** "Apply up to two mitigations; cap total at -0.20. After mitigation 1 (-0.15), budget for mitigation 2 is -0.05 max." Mirror in pass2.
-
-#### [prompts/generator_pass2.md] Pass-2 generator content shape ambiguous — missing summary/sketch/rationale
-- **Fix:** Update generator_pass2.md to require full candidate fields (`summary`, `sketch`, `rationale`).
-
-#### [prompts/control_pass2.md (entire)] Pass-2 schema has no escape hatch for `_no_viable_candidate` fallback
-- **Fix:** Allow emission of new synthetic verdicts in Pass-2, OR drop the synthetic mechanism entirely.
-
-#### [prompts/pioneer_lens.md/architect_lens.md/steward_lens.md vs SKILL.md] Lens prompts: no link from `voice_bias: prepended` to score-weighting
-- **Fix:** Footer in each lens: "Your voice output will be re-weighted by the personality's aggregator weights — focus on perception-shift in your role."
-
-#### [prompts/architect_lens.md:13 vs conservator.md L11] Architect lens "Weight test coverage heavily" overlaps with Control role
-- **Fix:** Carve-out: "When applied to Conservator, 'test coverage' bias affects only the `regression_risk` quality-progress adjustment — do NOT inflate risk_score for absent tests."
-
-#### [prompts/steward_lens.md:13 vs generator.md:9] Steward lens "Favor minimal-scope" suppresses Generator divergence
-- **Fix:** Per-voice guidance: "When applied to Generator: still produce full 3-5 candidate spread, but order candidates with smaller-blast-radius first; do NOT suppress big-blast-radius candidates."
-
-#### [agents/consilium-subagent.md:40 + 38] Final-message contract: "exactly that file's contents" but description adds extra top-level keys
-- **Fix:** Define `subagent_notes` as an optional documented field in validate_report.py and SKILL.md.
-
-#### [agents/consilium-subagent.md:38 vs SKILL.md:163-165] Step 6 confidence override delegated to "no --outcome flag" — different from SKILL.md null branch
-- **Fix:** "Use `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json` with no `--outcome` for both confidence < 0.7 and null cases."
-
-#### [agents/consilium-subagent.md:14-23] Working directory setup uses bash export — Windows PowerShell can't execute verbatim
-- **Fix:** Add PowerShell alternative, or wrap in launcher.
-
-#### [prompts/conservator.md:49 vs scripts/aggregator.py] "Matches aggregator.py's expectation" claim is false
-- **Fix:** Reword: "There is no automated check that this rule was applied — keep it disciplined manually."
-
-#### [SKILL.md:39 Bootstrap step] "Read the contracts of the 3 voices" enumerates only 3 — skeptic.md and lens prompts not bootstrapped
-- **Fix:** Update Step 0: "Read the contracts required by the mode: minimum 3 core; Dialectic adds `*_pass2.md`; Trias adds `<personality>_lens.md`; skeptic modes add `skeptic.md`."
-
-#### [prompts/generator.md:31 + 40] adversarial/unconventional rationale overlap silently disables anti-stagnation
-- **Fix:** Tighten (a): "Skip unconventional ONLY when adversarial ALSO varies on a non-scope axis."
+- **[scripts/aggregator.py:54-67] `aggregate_majority` sort crashes with TypeError on (mean, -stdev) tie** — Insert stable tiebreaker before `c` (enumerate index). Same exposure in `aggregate_weighted` (line 97).
+- **[scripts/build_report.py:64-75] `_voice_scores_for` silently zeros control_score when chosen has no verdict** — Raise/warn when `verdict == {}` after lookup, or surface missing-verdict as a distinct null/sentinel.
+- **[scripts/build_report.py:215-222] `_default_reasoning` mislabels Trias fragmentation as "all candidates vetoed"** — Branch on `scheme == "team_vote"` + `vote_pattern`. Fragmentation: "deliberation fragmented (vote_pattern=…); orchestrator must intervene".
+- **[scripts/validate_report.py:170-174] `_validate_trias` iterates fields on personality entry without verifying dict** — `if not isinstance(p, dict): errors.append(...); continue`.
+- **[scripts/validate_report.py:138-155] `_validate_telemetry_required` only enforces voices for "parallel" mode, not Trias** — `mode in ("parallel", "trias", "dialectic", "trias_split", "parallel_skeptic", "dialectic_skeptic")`.
+- **[scripts/log_feedback.py:188,205-206] Fingerprint truncates context to 30 chars — distinct deliberations share drill-down run_path** — Include full context (or `run_path`) in fingerprint, or key sidecar map by `run_path` directly.
+- **[scripts/log_feedback.py:146] OVR outcome with missing --override-target produces silent no-op** — Raise `ValueError("--outcome OVR requires --override-target <alt_id>")`.
+- **[scripts/mark_outcome.py:83-91] `_annotate_note` not idempotent — duplicates `outcome_reason=` entries** — Filter existing `outcome_reason=` parts before appending.
+- **[scripts/audit_feedback.py:116] Backfill performs N full read-render-write cycles — O(N²) work** — Batch backfill — accumulate Entry objects, render and write ONCE atomically.
+- **[scripts/render_feedback_html.py:258-261] JSONDecodeError silently downgraded to "no detailed run data"** — Render dedicated `<div class="stub error">corrupted run JSON: <name></div>`.
+- **[scripts/migrate_feedback_md_to_html.py:30] TOKEN_RE is ASCII-only — Romanian diacritics never tokenize** — `re.compile(r"[^\W\d_]{4,}", re.UNICODE)`.
+- **[scripts/test_feedback_html.py:61-87] Test depends on tracked run file — couples tests to mutable session data** — Create temp directory with synthetic run JSON.
+- **[scripts/test_feedback_html.py:1-225] Coverage gaps — no tests for log_feedback dedup, mark_outcome, audit_feedback, sidecar map** — Add dedup test, sidecar map round-trip, mark_outcome and audit_feedback happy-path.
+- **[scripts/scope_gate.py:192-220] CONSILIUM_FORCE_FULL overridden by config load failure** — Move env override check to top of `main()`, before `load_config`.
+- **[scripts/priors.py:197-203] `find_stale_pendings` surfaces entries with empty/missing dates** — Positive guard: `... and e.get("date", "") and e["date"] < cutoff`.
+- **[scripts/dialectic_merge.py:124-126] `validate_input` strictly requires all 3 voices in pass1 (uses `sys.exit`)** — Tolerate missing voices as `{}` in `merge()`, or raise instead of `sys.exit`.
+- **[scripts/run_evals.py:49-55] `subprocess.run(text=True)` uses platform encoding for stdin/stdout** — Pass `encoding="utf-8"` and `PYTHONIOENCODING=utf-8` in `env=`.
+- **[scripts/utils.py:50-65] `validate_keys` calls `sys.exit(1)` — fatal for in-process callers** — Raise `ValidationError`; convert to exit code only in `main()` wrappers.
+- **[scripts/probe_change.py:60-84] `parse_numstat` mis-handles rename syntax `{old => new}`** — Pass `--no-renames` to `git diff --numstat`, or parse and expand.
+- **[scripts/dialectic_merge.py:122-126] `validate_input` accepts `pass2: [...]` (list) but `merge()` crashes** — `if "pass2" in payload and not isinstance(payload["pass2"], dict): exit/raise`.
+- **[scripts/usage.py:96,120] Strict `isinstance(int)` silently drops `tokens_in: 5.0` (float JSON values)** — `isinstance(vdata[f], (int, float)) and not isinstance(vdata[f], bool)`.
+- **[SKILL.md:108-110] Confidence input contract for null chosen says wrong thing** — Reword to "the `confidence` field in the response is `null`" + add "Step 5d is skipped in this case".
+- **[SKILL.md:240 + Step 5 (parallel)] Parallel mode never mentions Step 5b/5c/5d before Step 6** — Add to Parallel section: "Continue with Step 5b → 6; capture tokens/latency per sub-agent dispatch".
+- **[SKILL.md:286-294 (Trias workflow)] Workflow doesn't show JSON schema for Trias report** — Add an "Output JSON" mini-schema example in the Trias section.
+- **[prompts/generator.md:47-74 Output format] Example JSON missing `adversarial_skipped` / `unconventional_skipped` siblings** — Add a second example: `{"candidates": [...], "adversarial_skipped": "goal unambiguous", "unconventional_skipped": "trivial doc fix"}`.
+- **[prompts/conservator.md:39] Cumulative cap -0.20 vs quality-progress math doesn't add up** — "Apply up to two mitigations; cap total at -0.20. After mitigation 1 (-0.15), budget for mitigation 2 is -0.05 max." Mirror in pass2.
+- **[prompts/generator_pass2.md] Pass-2 generator content shape ambiguous — missing summary/sketch/rationale** — Update generator_pass2.md to require full candidate fields (`summary`, `sketch`, `rationale`).
+- **[prompts/control_pass2.md (entire)] Pass-2 schema has no escape hatch for `_no_viable_candidate` fallback** — Allow emission of new synthetic verdicts in Pass-2, OR drop the synthetic mechanism entirely.
+- **[prompts/pioneer_lens.md/architect_lens.md/steward_lens.md vs SKILL.md] Lens prompts: no link from `voice_bias: prepended` to score-weighting** — Footer in each lens: "Your voice output will be re-weighted by the personality's aggregator weights — focus on perception-shift in your role."
+- **[prompts/architect_lens.md:13 vs conservator.md L11] Architect lens "Weight test coverage heavily" overlaps with Control role** — Carve-out: "When applied to Conservator, 'test coverage' bias affects only the `regression_risk` quality-progress adjustment — do NOT inflate risk_score for absent tests."
+- **[prompts/steward_lens.md:13 vs generator.md:9] Steward lens "Favor minimal-scope" suppresses Generator divergence** — Per-voice guidance: "When applied to Generator: still produce full 3-5 candidate spread, but order candidates with smaller-blast-radius first; do NOT suppress big-blast-radius candidates."
+- **[agents/consilium-subagent.md:40 + 38] Final-message contract: "exactly that file's contents" but description adds extra top-level keys** — Define `subagent_notes` as an optional documented field in validate_report.py and SKILL.md.
+- **[agents/consilium-subagent.md:38 vs SKILL.md:163-165] Step 6 confidence override delegated to "no --outcome flag" — different from SKILL.md null branch** — "Use `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json` with no `--outcome` for both confidence < 0.7 and null cases."
+- **[agents/consilium-subagent.md:14-23] Working directory setup uses bash export — Windows PowerShell can't execute verbatim** — Add PowerShell alternative, or wrap in launcher.
+- **[prompts/conservator.md:49 vs scripts/aggregator.py] "Matches aggregator.py's expectation" claim is false** — Reword: "There is no automated check that this rule was applied — keep it disciplined manually."
+- **[SKILL.md:39 Bootstrap step] "Read the contracts of the 3 voices" enumerates only 3 — skeptic.md and lens prompts not bootstrapped** — Update Step 0: "Read the contracts required by the mode: minimum 3 core; Dialectic adds `*_pass2.md`; Trias adds `<personality>_lens.md`; skeptic modes add `skeptic.md`."
+- **[prompts/generator.md:31 + 40] adversarial/unconventional rationale overlap silently disables anti-stagnation** — Tighten (a): "Skip unconventional ONLY when adversarial ALSO varies on a non-scope axis."
 
 ### Low (52)
-
-#### [scripts/aggregator.py:148-156] `auto_relax` retry_suggested emits non-actionable suggestion when lowest_risk exceeds RELAXED_VETO_CAP
-- **Fix:** Omit `retry_suggested` or replace with `escalation_required` when `lowest_risk > RELAXED_VETO_CAP`.
-
-#### [scripts/aggregator.py:239-309] `aggregate_team_vote` hardcodes abstain reason, losing per-personality context
-- **Fix:** `abstained.append({"name": p["name"], "reason": p.get("abstain_reason") or "all candidates vetoed"})`.
-
-#### [scripts/build_report.py:114-131] `_alternatives` emits misleading why_not when chosen=None
-- **Fix:** When chosen=None, set why_not based on the candidate's actual veto/risk record.
-
-#### [scripts/build_report.py:174] `int(bundle.get("alternatives_limit", 3))` raises on explicit None
-- **Fix:** `alt_limit = int(bundle.get("alternatives_limit") or 3)`.
-
-#### [scripts/build_report.py:78-91] `_why_not` slices `first.get("detail")` with `[:80]` without verifying string
-- **Fix:** Add `isinstance(first.get("detail"), str)` guard.
-
-#### [scripts/build_report.py:128-130] `_alternatives` off-by-one: `alternatives_limit=0` emits 1 alt
-- **Fix:** Check `if len(out) >= limit: break` BEFORE append, or `if limit <= 0: return []`.
-
-#### [scripts/build_report.py:206] aggregate variable reassigned with subtly different semantics
-- **Fix:** Remove reassignment on line 206, reuse existing local.
-
-#### [scripts/validate_report.py:158] VOTE_PATTERN_REGEX accepts impossible 3-voter patterns
-- **Fix:** Tighten regex or add post-match sum check.
-
-#### [scripts/validate_report.py:164-201] `_validate_trias` early-returns on personalities shape failure
-- **Fix:** Replace `return` with flag; checks should run anyway.
-
-#### [scripts/validate_report.py:164-201] `_validate_trias` doesn't verify weights sum to 1.0 or lens is a string
-- **Fix:** Add weights-sum check + `isinstance(lens, str)` check.
-
-#### [scripts/meta_critic.py:162-178] `conservator_spread` returns 0.0 for single candidate, falsely triggering "shrug" flag
-- **Fix:** Return None for single-candidate; skip flag when spread is None.
-
-#### [scripts/meta_critic.py:137-139] `_issue_is_concrete` raises TypeError on non-string detail
-- **Fix:** `if not isinstance(detail, str): return False`.
-
-#### [scripts/meta_critic.py:82] MAX_RISK_STDEV=0.5 under-normalizes for N≥3
-- **Fix:** Compute as a function of N: `max_stdev = sqrt((n//2) * (n - n//2)) / n`.
-
-#### [scripts/retry_context.py:103-119] `_grep_patterns` appends `\(` suffix to dotted symbols that aren't callable
-- **Fix:** Only append `\(` for symbols matched by SYMBOL_CALL_RE.
-
-#### [scripts/retry_context.py:65,99,103-110] `extract_targets` accepts multi-word backtick "symbols" yielding non-grep-able patterns
-- **Fix:** Tighten `BACKTICK_RE` to `[\w.]{2,40}` or filter quoted entries with whitespace.
-
-#### [scripts/log_feedback.py:108-109,116] `bool` slips past `isinstance(x, (int, float))` and prints as `1.00`/`0.00`
-- **Fix:** Exclude bools: `isinstance(x, (int, float)) and not isinstance(x, bool)`.
-
-#### [scripts/mark_outcome.py:144-147] Run-path match falls back to filename-only — can mis-match rows
-- **Fix:** Match by `name` only when `wanted` is bare filename; otherwise require exact `as_posix()` equality.
-
-#### [scripts/audit_feedback.py:111] Backfilled row inherits today's note tense
-- **Fix:** Append `; backfilled` marker to note text.
-
-#### [scripts/feedback.py:1-9,106] Docstring still describes FEEDBACK.md while code reads FEEDBACK.html
-- **Fix:** s/FEEDBACK.md/FEEDBACK.html/.
-
-#### [scripts/feedback.py:27] ROW_RE assumes `class="entry"` is first attribute of `<tr>` — implicit renderer coupling
-- **Fix:** Order-agnostic regex `<tr[^>]*class="entry"[^>]*>`, or regression test.
-
-#### [scripts/migrate_feedback_md_to_html.py:117-120] `md_path.rename(bak)` raises on Windows if .bak exists
-- **Fix:** Use `os.replace(md_path, bak)`, or check `bak.exists()` before writing HTML.
-
-#### [scripts/test_feedback_html.py:176] `import json` placed mid-file with `# noqa: E402` — fragile order
-- **Fix:** Move import to top of file.
-
-#### [scripts/scope_gate.py:213] CONSILIUM_FORCE_FULL emits sentinel `-1` signals not in documented schema
-- **Fix:** Use `0` with `"reason": "...override..."`, or add documented `"forced": true` flag.
-
-#### [scripts/priors.py:1] Docstring references `FEEDBACK.md` but code uses `FEEDBACK.html`
-- **Fix:** s/FEEDBACK.md/FEEDBACK.html/.
-
-#### [scripts/priors.py:117-149] `find_missing_feedback_runs` truncates `chosen` to 40 chars enabling collisions
-- **Fix:** Use full chosen string, or document truncation with longer cap (≥80).
-
-#### [scripts/feedback.py:90-99] `parse_runs` swallows JSON errors silently with no diagnostic
-- **Fix:** Emit stderr warning for skipped files.
-
-#### [scripts/dialectic_merge.py:142] Diff includes `revision`/`maintained` fields, producing noisy "modified" entries
-- **Fix:** Filter `BOOKKEEPING = {"revision", "maintained"}` from diff keys.
-
-#### [scripts/memory.py:125] Long tier `"total"` reports filtered count, not source total
-- **Fix:** Compute `parse_feedback(FEEDBACK)` length, return as `"total"`.
-
-#### [scripts/run_evals.py:97-103] No type-check on loaded scenarios; dict input crashes downstream
-- **Fix:** `if not isinstance(scenarios, list): print(..., file=sys.stderr); return 2`.
-
-#### [scripts/utils.py:50] `validate_keys` doesn't verify `data` is a dict
-- **Fix:** `if not isinstance(data, dict): raise/exit with clear message`.
-
-#### [scripts/probe_change.py:87-97] `_commit_count` silently returns 0 on git failure
-- **Fix:** Distinguish via sentinel (`-1` or None) and log error to stderr.
-
-#### [scripts/usage.py:91-99] Mode-level latency_ms summed across voices is misleading for parallel mode
-- **Fix:** Track latency_ms as `max` for parallel mode, or document the field.
-
-#### [scripts/strip_context.py:61,67] `c["id"]` / `v["id"]` raises KeyError on malformed inputs
-- **Fix:** Use `c.get("id")` and skip entries with falsy id.
-
-#### [scripts/probe_change.py:65-67] Tab-separated numstat parser silently drops paths containing tabs
-- **Fix:** `parts = line.split("\t", 2)` or pass `-z` to git and split by null bytes.
-
-#### [scripts/scope_gate.py:83-98] Case-sensitive `fnmatchcase` lets lowercase `dockerfile` bypass blocklist — "fails open"
-- **Fix:** Case-insensitive variant for known-case-insensitive patterns.
-
-#### [scripts/scope_gate.py:91-98] Blocklist patterns with backslashes never match anything
-- **Fix:** `pattern = pattern.replace("\\", "/")` mirroring path normalization.
-
-#### [scripts/personalities.py:21-37,84] PERSONALITIES is mutable module-level list; bulk-emit path doesn't deep-copy
-- **Fix:** `MappingProxyType` for immutability, or `[copy.deepcopy(p) for p in PERSONALITIES]`.
-
-#### [SKILL.md:144] voice_scores schema example shows 0.0 floats — Generator score never produced by Generator voice
-- **Fix:** Add parenthetical: "voice_scores is derived by `build_report.py`, not emitted by voices directly."
-
-#### [SKILL.md:206 + Resources table] dialectic_merge.py description omits silently_dropped recovery
-- **Fix:** Skip (cosmetic), or augment Resources table description.
-
-#### [SKILL.md:177-180] Eval harness skill_maintenance lists dialectic_merge.py but personalities.py omitted
-- **Fix:** Add `personalities.py` to trigger list at SKILL.md L178.
-
-#### [prompts/generator.md:45 vs dialectic_merge.py:101-112] adversarial_* gets generator_score=0.5; unconventional_* gets 1.0
-- **Fix:** Add note in generator.md: "unconventional_* compete on equal footing in voice scoring; adversarial_* and do_nothing get 0.5 generator-score handicap."
-
-#### [prompts/control.md:9] "category: 'types', detail: 'unverifiable — file not accessible'" — no way to emit unverifiable for valid:true candidate
-- **Fix:** Add: "When emitting unverifiable issue, prefer `valid: true` and put note in `notes` rather than `issues`."
-
-#### [prompts/conservator.md:51 + SKILL.md:87] rollback_recipe threshold 0.3 — Pass-2 conservator doesn't restate
-- **Fix:** Add explicit instruction in conservator_pass2.md: if Pass-1 risk < 0.3 and Pass-2 ≥ 0.3, include new rollback_recipe in `what_changed` prose.
-
-#### [prompts/skeptic.md:48 Output format] `failure_mode` required but no enumerated vocabulary beyond meta_scope_mismatch
-- **Fix:** Document expected vocabulary: `regression_risk_uncovered | edge_case_drop | scope_creep | meta_scope_mismatch | ...`.
-
-#### [prompts/generator_pass2.md vs SKILL.md:271] Pass-2 generator schema mismatch
-- **Fix:** Reword SKILL.md L271 to clarify revision is a metadata wrapper, not new content.
-
-#### [prompts/control_pass2.md:35] Rule misnamed — Conservator risk *can* surface a correctness concern
-- **Fix:** Reword: "Don't revise valid:true because Conservator's aggregate score is high. DO revise if Conservator's factors.regression_risk notes name a concrete failure path."
-
-#### [prompts/pioneer_lens.md/architect_lens.md/steward_lens.md] `voice_bias: prepended` front-matter declared but no code reads it
-- **Fix:** Remove front-matter (no consumer), or wire it into the orchestrator template.
-
-#### [agents/consilium-subagent.md:60] Subagent says "appends to runs/ and FEEDBACK.md" — project uses FEEDBACK.html
-- **Fix:** s/FEEDBACK.md/FEEDBACK.html/.
-
-#### [agents/consilium-subagent.md:5 model:sonnet vs SKILL.md:251 Sonnet 4.6 default] Model declared as "sonnet" — alias resolves to latest
-- **Fix:** Either pin to `claude-sonnet-4-6-...` for reproducibility, or document that subagent tracks the alias.
-
-#### [prompts/skeptic.md:46 + 67] `quoted_scenario` typed inconsistently
-- **Fix:** Replace `"Optional: '...' OR null"` literal with comment-style marker.
-
-#### [SKILL.md:69 "3-5 candidate"] Generator candidate budget tension with mandatory roles
-- **Fix:** Bump upper bound to 6, or clarify mandatory roles count toward 3-5 budget.
-
-#### [SKILL.md:104 vs SKILL.md:89] Aggregator description omits `risk_score > veto_threshold` veto semantics
-- **Fix:** Reword: "veto at `risk_score > 0.8` (strict; 0.80 exact is NOT vetoed, 0.81+ IS)".
+- **[scripts/aggregator.py:148-156] `auto_relax` retry_suggested emits non-actionable suggestion when lowest_risk exceeds RELAXED_VETO_CAP** — Omit `retry_suggested` or replace with `escalation_required` when `lowest_risk > RELAXED_VETO_CAP`.
+- **[scripts/aggregator.py:239-309] `aggregate_team_vote` hardcodes abstain reason, losing per-personality context** — `abstained.append({"name": p["name"], "reason": p.get("abstain_reason") or "all candidates vetoed"})`.
+- **[scripts/build_report.py:114-131] `_alternatives` emits misleading why_not when chosen=None** — When chosen=None, set why_not based on the candidate's actual veto/risk record.
+- **[scripts/build_report.py:174] `int(bundle.get("alternatives_limit", 3))` raises on explicit None** — `alt_limit = int(bundle.get("alternatives_limit") or 3)`.
+- **[scripts/build_report.py:78-91] `_why_not` slices `first.get("detail")` with `[:80]` without verifying string** — Add `isinstance(first.get("detail"), str)` guard.
+- **[scripts/build_report.py:128-130] `_alternatives` off-by-one: `alternatives_limit=0` emits 1 alt** — Check `if len(out) >= limit: break` BEFORE append, or `if limit <= 0: return []`.
+- **[scripts/build_report.py:206] aggregate variable reassigned with subtly different semantics** — Remove reassignment on line 206, reuse existing local.
+- **[scripts/validate_report.py:158] VOTE_PATTERN_REGEX accepts impossible 3-voter patterns** — Tighten regex or add post-match sum check.
+- **[scripts/validate_report.py:164-201] `_validate_trias` early-returns on personalities shape failure** — Replace `return` with flag; checks should run anyway.
+- **[scripts/validate_report.py:164-201] `_validate_trias` doesn't verify weights sum to 1.0 or lens is a string** — Add weights-sum check + `isinstance(lens, str)` check.
+- **[scripts/meta_critic.py:162-178] `conservator_spread` returns 0.0 for single candidate, falsely triggering "shrug" flag** — Return None for single-candidate; skip flag when spread is None.
+- **[scripts/meta_critic.py:137-139] `_issue_is_concrete` raises TypeError on non-string detail** — `if not isinstance(detail, str): return False`.
+- **[scripts/meta_critic.py:82] MAX_RISK_STDEV=0.5 under-normalizes for N≥3** — Compute as a function of N: `max_stdev = sqrt((n//2) * (n - n//2)) / n`.
+- **[scripts/retry_context.py:103-119] `_grep_patterns` appends `\(` suffix to dotted symbols that aren't callable** — Only append `\(` for symbols matched by SYMBOL_CALL_RE.
+- **[scripts/retry_context.py:65,99,103-110] `extract_targets` accepts multi-word backtick "symbols" yielding non-grep-able patterns** — Tighten `BACKTICK_RE` to `[\w.]{2,40}` or filter quoted entries with whitespace.
+- **[scripts/log_feedback.py:108-109,116] `bool` slips past `isinstance(x, (int, float))` and prints as `1.00`/`0.00`** — Exclude bools: `isinstance(x, (int, float)) and not isinstance(x, bool)`.
+- **[scripts/mark_outcome.py:144-147] Run-path match falls back to filename-only — can mis-match rows** — Match by `name` only when `wanted` is bare filename; otherwise require exact `as_posix()` equality.
+- **[scripts/audit_feedback.py:111] Backfilled row inherits today's note tense** — Append `; backfilled` marker to note text.
+- **[scripts/feedback.py:1-9,106] Docstring still describes FEEDBACK.md while code reads FEEDBACK.html** — s/FEEDBACK.md/FEEDBACK.html/.
+- **[scripts/feedback.py:27] ROW_RE assumes `class="entry"` is first attribute of `<tr>` — implicit renderer coupling** — Order-agnostic regex `<tr[^>]*class="entry"[^>]*>`, or regression test.
+- **[scripts/migrate_feedback_md_to_html.py:117-120] `md_path.rename(bak)` raises on Windows if .bak exists** — Use `os.replace(md_path, bak)`, or check `bak.exists()` before writing HTML.
+- **[scripts/test_feedback_html.py:176] `import json` placed mid-file with `# noqa: E402` — fragile order** — Move import to top of file.
+- **[scripts/scope_gate.py:213] CONSILIUM_FORCE_FULL emits sentinel `-1` signals not in documented schema** — Use `0` with `"reason": "...override..."`, or add documented `"forced": true` flag.
+- **[scripts/priors.py:1] Docstring references `FEEDBACK.md` but code uses `FEEDBACK.html`** — s/FEEDBACK.md/FEEDBACK.html/.
+- **[scripts/priors.py:117-149] `find_missing_feedback_runs` truncates `chosen` to 40 chars enabling collisions** — Use full chosen string, or document truncation with longer cap (≥80).
+- **[scripts/feedback.py:90-99] `parse_runs` swallows JSON errors silently with no diagnostic** — Emit stderr warning for skipped files.
+- **[scripts/dialectic_merge.py:142] Diff includes `revision`/`maintained` fields, producing noisy "modified" entries** — Filter `BOOKKEEPING = {"revision", "maintained"}` from diff keys.
+- **[scripts/memory.py:125] Long tier `"total"` reports filtered count, not source total** — Compute `parse_feedback(FEEDBACK)` length, return as `"total"`.
+- **[scripts/run_evals.py:97-103] No type-check on loaded scenarios; dict input crashes downstream** — `if not isinstance(scenarios, list): print(..., file=sys.stderr); return 2`.
+- **[scripts/utils.py:50] `validate_keys` doesn't verify `data` is a dict** — `if not isinstance(data, dict): raise/exit with clear message`.
+- **[scripts/probe_change.py:87-97] `_commit_count` silently returns 0 on git failure** — Distinguish via sentinel (`-1` or None) and log error to stderr.
+- **[scripts/usage.py:91-99] Mode-level latency_ms summed across voices is misleading for parallel mode** — Track latency_ms as `max` for parallel mode, or document the field.
+- **[scripts/strip_context.py:61,67] `c["id"]` / `v["id"]` raises KeyError on malformed inputs** — Use `c.get("id")` and skip entries with falsy id.
+- **[scripts/probe_change.py:65-67] Tab-separated numstat parser silently drops paths containing tabs** — `parts = line.split("\t", 2)` or pass `-z` to git and split by null bytes.
+- **[scripts/scope_gate.py:83-98] Case-sensitive `fnmatchcase` lets lowercase `dockerfile` bypass blocklist — "fails open"** — Case-insensitive variant for known-case-insensitive patterns.
+- **[scripts/scope_gate.py:91-98] Blocklist patterns with backslashes never match anything** — `pattern = pattern.replace("\\", "/")` mirroring path normalization.
+- **[scripts/personalities.py:21-37,84] PERSONALITIES is mutable module-level list; bulk-emit path doesn't deep-copy** — `MappingProxyType` for immutability, or `[copy.deepcopy(p) for p in PERSONALITIES]`.
+- **[SKILL.md:144] voice_scores schema example shows 0.0 floats — Generator score never produced by Generator voice** — Add parenthetical: "voice_scores is derived by `build_report.py`, not emitted by voices directly."
+- **[SKILL.md:206 + Resources table] dialectic_merge.py description omits silently_dropped recovery** — Skip (cosmetic), or augment Resources table description.
+- **[SKILL.md:177-180] Eval harness skill_maintenance lists dialectic_merge.py but personalities.py omitted** — Add `personalities.py` to trigger list at SKILL.md L178.
+- **[prompts/generator.md:45 vs dialectic_merge.py:101-112] adversarial_* gets generator_score=0.5; unconventional_* gets 1.0** — Add note in generator.md: "unconventional_* compete on equal footing in voice scoring; adversarial_* and do_nothing get 0.5 generator-score handicap."
+- **[prompts/control.md:9] "category: 'types', detail: 'unverifiable — file not accessible'" — no way to emit unverifiable for valid:true candidate** — Add: "When emitting unverifiable issue, prefer `valid: true` and put note in `notes` rather than `issues`."
+- **[prompts/conservator.md:51 + SKILL.md:87] rollback_recipe threshold 0.3 — Pass-2 conservator doesn't restate** — Add explicit instruction in conservator_pass2.md: if Pass-1 risk < 0.3 and Pass-2 ≥ 0.3, include new rollback_recipe in `what_changed` prose.
+- **[prompts/skeptic.md:48 Output format] `failure_mode` required but no enumerated vocabulary beyond meta_scope_mismatch** — Document expected vocabulary: `regression_risk_uncovered | edge_case_drop | scope_creep | meta_scope_mismatch | ...`.
+- **[prompts/generator_pass2.md vs SKILL.md:271] Pass-2 generator schema mismatch** — Reword SKILL.md L271 to clarify revision is a metadata wrapper, not new content.
+- **[prompts/control_pass2.md:35] Rule misnamed — Conservator risk *can* surface a correctness concern** — Reword: "Don't revise valid:true because Conservator's aggregate score is high. DO revise if Conservator's factors.regression_risk notes name a concrete failure path."
+- **[prompts/pioneer_lens.md/architect_lens.md/steward_lens.md] `voice_bias: prepended` front-matter declared but no code reads it** — Remove front-matter (no consumer), or wire it into the orchestrator template.
+- **[agents/consilium-subagent.md:60] Subagent says "appends to runs/ and FEEDBACK.md" — project uses FEEDBACK.html** — s/FEEDBACK.md/FEEDBACK.html/.
+- **[agents/consilium-subagent.md:5 model:sonnet vs SKILL.md:251 Sonnet 4.6 default] Model declared as "sonnet" — alias resolves to latest** — Either pin to `claude-sonnet-4-6-...` for reproducibility, or document that subagent tracks the alias.
+- **[prompts/skeptic.md:46 + 67] `quoted_scenario` typed inconsistently** — Replace `"Optional: '...' OR null"` literal with comment-style marker.
+- **[SKILL.md:69 "3-5 candidate"] Generator candidate budget tension with mandatory roles** — Bump upper bound to 6, or clarify mandatory roles count toward 3-5 budget.
+- **[SKILL.md:104 vs SKILL.md:89] Aggregator description omits `risk_score > veto_threshold` veto semantics** — Reword: "veto at `risk_score > 0.8` (strict; 0.80 exact is NOT vetoed, 0.81+ IS)".
 
 ### Wave tracker
 
