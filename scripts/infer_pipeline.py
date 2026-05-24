@@ -116,6 +116,23 @@ def infer_steps(report: dict) -> tuple[list[str], dict]:
     return list(steps), rationale
 
 
+def recommend_implement_mode(report: dict) -> str:
+    """Route the Step 7 `implement` action: ``"pipeline"`` vs ``"single_shot"``.
+
+    Gate keyed on **regression risk, not size** (benchmark `experiments/pipeline-bench/`:
+    the pipeline's only win was a 3-line edit to existing code — a size threshold would
+    have mis-routed it). The signal reused here is the `review` step from ``infer_steps``:
+    it appears exactly in the regression-prone quadrants (moderate×irreversible,
+    high×{partial,irreversible}, critical×any). When `review` is warranted, the change is
+    worth the pipeline (Coder → Test Writer ∥ Reviewer); otherwise plain single-shot.
+
+    Advisory only — the orchestrator/user may override. Returns ``"single_shot"`` for
+    ``do_nothing``/``skipped`` (no implementation to route).
+    """
+    steps, _ = infer_steps(report)
+    return "pipeline" if "review" in steps else "single_shot"
+
+
 def _log_rejection(report: dict, steps: list[str], rationale: dict) -> None:
     runs_dir = pathlib.Path(__file__).parent.parent / "runs"
     if not runs_dir.exists():

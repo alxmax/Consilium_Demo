@@ -273,6 +273,8 @@ Reject (`n` at prompt) → rejection logged in `runs/YYYY-MM-DD_HHMM_pipeline_re
 
 The default `implement` step writes code single-shot. As an **opt-in** alternative for non-trivial implementations, a 3-role pipeline turns the report into code: **Coder → (Test Writer ∥ Reviewer)**, where the report *is* the spec (`chosen_approach` + `success_criterion` + `verification`). The Reviewer reuses the **Control voice** (`prompts/voices/control.md`) on the *written* code — no separate reviewer prompt.
 
+**Routing gate (single-shot vs pipeline).** `recommend_implement_mode(report)` in `infer_pipeline.py` picks the mode, keyed on **regression risk, not size**: it returns `"pipeline"` when the change warrants a `review` step (the regression-prone quadrants — `moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), else `"single_shot"`. Rationale: the benchmark's only pipeline win (`experiments/pipeline-bench/`) was a 3-line edit to existing code, so a files/lines threshold would mis-route it; reversibility/magnitude is the right axis. Advisory — the user may override. Greenfield (even large, fully reversible) stays single-shot.
+
 ```bash
 python -X utf8 scripts/implement_pipeline.py --input runs/<file>.json --dry-run   # print dispatch plan
 python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "pytest -x" --target <impl_file>
