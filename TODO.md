@@ -122,17 +122,14 @@ Resolved at **Level 1 (docs-only)** per 8/9 senator convergence. Added descripti
 
 > Source: `runs/2026-05-16_0148_voice_audit_meta.json` (synthesis of 2 sub-agents, Trias 3-0 unanimous + parallel-skeptic confirms).
 
-#### 27. `confidence_in_verdict` field in Control + meta_critic flag · Prompt+Skill · Low · Medium
-`control.md:9` requires "verify, don't speculate" but Control receives only sketches. Speculation passes silently. Fix: add `confidence_in_verdict: high|medium|low` in the verdict schema; meta_critic flags any `valid:true + confidence_in_verdict:low` as a warning.
+#### ~~27. `confidence_in_verdict` field in Control + meta_critic flag~~ — ✅ CLOSED
+Implemented: `control.md` carries `confidence_in_verdict: high|medium|low`; `meta_critic.control_speculation_flag` flags `valid:true + confidence_in_verdict:low`. Retained through the 2026-05-24 meta_critic trim.
 
-#### 28. New meta_critic metrics — `pass2_revision_quality` + `personalities_divergence` · Skill · Low · Medium
-Two gaps in meta_critic.py:
-- Does not audit dialectic Pass-2 — `peer_evidence` may be boilerplate.
-- Does not measure whether Trias lenses actually produce divergence.
+#### ~~28. New meta_critic metrics — `pass2_revision_quality` + `personalities_divergence`~~ — ✅ CLOSED
+Implemented in `meta_critic.py` (`pass2_revision_quality`, `personalities_divergence`) and retained through the 2026-05-24 trim. The 2026-05-16 "keep + fix + gate-to-Trias" verdict is now substantially executed: `meta_critic.main()` runs `--strict` on Trias, and the two never-firing core checks (`generator_divergence`, `control_concreteness` — 0/163 runs) were removed per the 2-round Senate (`runs/senate/2026-05-24_220059-kill-meta-critic-r2.json`, MODIFY → trim), leaving `conservator_spread` + the optional metrics.
 
-Fix:
-- `pass2_revision_quality`: require `peer_evidence` >20 chars and no match with a boilerplate list.
-- `personalities_divergence` (Trias-only): advisory flag when all 3 personalities converge.
+#### Substance-validation gap (accepted) · Arch · INVESTIGATE
+`validate_report.py` checks report SHAPE only — no enforced gate that the voices did substantive (non-vacuous) work. `meta_critic.py` is advisory and now trimmed to a single `conservator_spread` heuristic. Accepted as a known gap (Senate 2026-05-24 MODIFY; Socrate). Revisit only if empty-but-schema-valid deliberations are observed in practice; minimal fix would be a ~20-line minimum-reasoning heuristic inside `validate_report.py` (Musk). Noted in `validate_report.py` docstring.
 
 ### Open items — Flow models audit
 
@@ -383,6 +380,36 @@ Detail removed (fixed; see status block above + git history: `feat/fix-high-bugs
 ---
 
 ## 🏛 Senate Resolutions
+
+### Senate Resolution — kill-meta-critic-r2 · 24 May 2026 · MODIFY (GO 5 · MODIFY 3 · STOP 1)
+
+> **Proposal:** Remove scripts/meta_critic.py — the Step 5c deliberation-quality scorer (advisory, 345 lines, not enforced).
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Remove generator_divergence + control_concreteness (0/163 fires = dead weight); retain conservator_spread; confirm build_report degrades gracefully on absent key.
+- [ ] **[CONFUCIUS]** Move to scripts/deprecated/; mark Step 5c retired noting the 2026-05-16 keep+fix verdict was never executed; passthrough no-op one cycle; log a closing record.
+- [ ] **[SOCRATE]** Document the substance-vs-shape validation gap (in validate_report.py + a tracked TODO) so removal doesn't become invisible debt.
+- [ ] **[DIMON]** Safe-removal checklist: patch build_report refs; update docs incl. 2 superpowers; note validate_report shape-only; log FEEDBACK entry.
+- [ ] **[DEMING]** PATH A: accumulate n>=10 then recheck. PATH B (no n>=10 needed): remove generator_divergence + control_concreteness (0/163 = strong dead-code evidence), redesign/annotate conservator_spread rather than silent-delete. Either path accepted; wholesale delete as-is: STOP.
+- [ ] **[TACITUS]** correct historical record; close #27/#28; drop passthrough + legacy readers
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **B** (cross-ref: DEMING)
+
+### Senate Resolution — kill-meta-critic · 24 May 2026 · MODIFY (GO 4 · MODIFY 4 · STOP 1)
+
+> **Proposal:** Remove scripts/meta_critic.py — the Step 5c deliberation-quality scorer (advisory, 345 lines, not enforced). Delete the script, remove Step 5c from SKILL.md, drop the build_report.py passthrough, upda…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Before GO: (1) operationally define the numeric thresholds inside meta_critic that would be lost on deletion (document them or declare they have no empirical basis); (2) turn 'rarely non-empty' into a verifiable count with a false-negative estimate; (3) confirm build_report consumers handle a permanently absent deliberation_quality key with no silent behavior change.
+- [ ] **[CONFUCIUS]** (1) Document why the prior decision stalled; (2) move to scripts/deprecated/ rather than hard-delete (project precedent: migrate_feedback_md_to_html.py); (3) mark SKILL.md Step 5c 'retired' with rationale, don't silently drop it; (4) keep build_report passthrough as a no-op stub with a deprecation comment for one cycle.
+- [ ] **[SOCRATE]** Before deletion: (1) audit runs/ to quantify flag frequency and any correlation with human-identified low-quality runs; (2) resolve whether the prior non-execution was backlog or intentional hold; (3) specify what replaces the substantive-quality check before the passthrough is dropped.
+- [ ] **[DIMON]** Before removal: (1) enumerate+patch all build_report.py reference sites (no KeyError path); (2) list+update every doc referencing Step 5c/meta_critic (incl. 2 superpowers docs); (3) add a note in validate_report.py that it is shape-only not substance, preserving the distinction in tooling; (4) define a post-removal observable signal substituting for the lost quality signal.
+- [ ] **[DEMING]** Produce a count over runs/: (1) total runs with deliberation_quality, (2) subset where meta_critic was actually invoked, (3) subset with non-empty flags given invocation, (4) subset where flags appear downstream. If (3)/(2)<5% AND (4)=0 across n>=10 invoked runs, removal is supported; else instrument and collect first.
+- [ ] **[TACITUS]** Not blocking: correct the historical record in the report (cite runs/2026-05-16_0148_voice_audit_meta.json accurately); close TODO #27/#28 as moot; drop the build_report.py passthrough AND any optional readers of deliberation_quality so the ~21 legacy runs with the field don't break validate_report.
 
 > Per-senator detail lives in `runs/senate/*.json` (source of truth). This is a de-duplicated index; blocks with live action items are kept in full.
 

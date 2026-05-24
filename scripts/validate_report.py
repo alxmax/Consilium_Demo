@@ -10,6 +10,12 @@ Reads a deliberation report (JSON) from stdin. Exits 0 iff:
   step whose result is a dict (not a string narrative)
 - for non-skipped reports, telemetry is a dict with a non-empty string mode field
 
+SCOPE: this validator checks report *shape*, not deliberation *substance* —
+it confirms the fields exist and are well-formed, not that the voices did
+rigorous, non-vacuous work. Substance-level checking has no enforced gate
+(meta_critic.py is advisory and, as of 2026-05-24, trimmed to a single
+conservator_spread heuristic). This is a known, accepted gap — see TODO.md.
+
 The null chosen_approach case is legitimate: conservative_override with
 veto_threshold can produce chosen: null when every candidate is vetoed
 (see aggregator.py).
