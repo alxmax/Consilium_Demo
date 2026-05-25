@@ -207,7 +207,11 @@
       "chosen": "x"
     },
     "expect_exit": 0,
-    "expect_stdout_subset": {}
+    "expect_stdout_subset": {
+      "confidence": 0.81,
+      "agreement": 0.95,
+      "separation": 0.483
+    }
   },
   {
     "name": "confidence/null chosen returns null confidence with reason",
@@ -1905,6 +1909,30 @@
       },
       "bad_rate": 0.5,
       "weighted_bad_rate": 0.6666666666666666
+    }
+  },
+  {
+    "name": "priors/stale_pendings surfaces old PEND entries",
+    "tool": "scripts/priors.py",
+    "args": [
+      "--feedback-file",
+      "evals/fixtures/priors_stale_pendings.html",
+      "--no-runs"
+    ],
+    "env": {"CONSILIUM_HEADLESS": "0"},
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "source": {
+        "feedback_total": 2
+      },
+      "stale_pendings": [
+        {
+          "date": "2020-01-01",
+          "context": "fixture-stale-test",
+          "chosen": "approach_a"
+        }
+      ]
     }
   }
 ]

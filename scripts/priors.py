@@ -277,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.runs_dir:
         RUNS = Path(args.runs_dir).resolve()
 
-    _headless = args.headless or (not sys.stdin.isatty()) or (os.environ.get("CONSILIUM_HEADLESS") == "1")
+    _headless = (args.headless or (not sys.stdin.isatty()) or (os.environ.get("CONSILIUM_HEADLESS") == "1")) and os.environ.get("CONSILIUM_HEADLESS") != "0"
     priors = build_priors(n=args.n, include_runs=args.runs, headless=_headless)
     json.dump(priors, sys.stdout, indent=2)
     sys.stdout.write("\n")
