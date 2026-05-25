@@ -16,6 +16,8 @@ const SECTIONS = [
   { id: 'trias',        num: '08', name: 'Trias' },
   { id: 'benchmark',    num: '09', name: 'Benchmark' },
   { id: 'loop',         num: '10', name: 'Calibration' },
+  { id: 'implement',    num: '11', name: 'Integration' },
+  { id: 'efficiency',   num: '12', name: 'Efficiency' },
 ];
 
 function App() {
@@ -43,6 +45,8 @@ function App() {
       <TriasSection />
       <BenchmarkSection />
       <LoopSection />
+      <ImplementSection />
+      <EfficiencySection />
       <Footer />
       <Tweaks t={t} setTweak={setTweak} />
     </div>
