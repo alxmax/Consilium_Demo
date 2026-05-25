@@ -10,11 +10,10 @@ const MODES_DATA = [
 function BarChart({ data }) {
   const max = Math.max(...data.map(d => d.value));
   const colors = {
-    sonnet_bare: 'var(--ink-3)',
-    opus_bare:   'var(--con)',
-    sequential:  'var(--gen)',
-    dialectic:   'var(--ctl)',
-    trias:       'oklch(0.55 0.18 260)',
+    sequential: 'var(--gen)',
+    dialectic:  'var(--ctl)',
+    trias:      'oklch(0.55 0.18 260)',
+    parallel:   'var(--con)',
   };
   return (
     <svg viewBox={`0 0 640 ${data.length * 64 + 20}`} className="diagram" style={{ maxHeight: 360 }}>
@@ -34,7 +33,7 @@ function BarChart({ data }) {
         );
       })}
       <text x="0" y={data.length * 64 + 16} style={{ fontSize: 11, fill: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>
-        lower tokens/OK = better efficiency · bare = no orchestration baseline
+        measured tokens / voice dispatch · lower = cheaper per voice call
       </text>
     </svg>
   );
@@ -52,12 +51,14 @@ function ModeRow({ mode, costMultiplier, dispatches, note }) {
 }
 
 function EfficiencySection() {
-  const placeholder = [
-    { mode: 'sonnet_bare', value: 2100,  label: '~2 100 tok/OK', model: 'Sonnet 4.6' },
-    { mode: 'opus_bare',   value: 2400,  label: '~2 400 tok/OK', model: 'Opus 4.7' },
-    { mode: 'sequential',  value: 3700,  label: '~3 700 tok/OK', model: 'Sonnet 4.6' },
-    { mode: 'dialectic',   value: 5200,  label: '~5 200 tok/OK', model: 'Sonnet 4.6' },
-    { mode: 'trias',       value: 11000, label: '~11 000 tok/OK', model: 'Sonnet 4.6' },
+  // Measured by scripts/efficiency.py over runs/*.json telemetry (2026-05-26).
+  // tokens_per_dispatch is outcome-independent (no labelling needed), unlike
+  // tokens_per_OK which is still gated on more confirmed-OK labels.
+  const measured = [
+    { mode: 'sequential', value: 1403, label: '1 403 tok · n=85', model: 'Sonnet 4.6' },
+    { mode: 'dialectic',  value: 2918, label: '2 918 tok · n=11', model: 'Sonnet 4.6' },
+    { mode: 'trias',      value: 4447, label: '4 447 tok · n=19', model: 'Sonnet 4.6' },
+    { mode: 'parallel',   value: 5367, label: '5 367 tok · n=26', model: 'Sonnet 4.6' },
   ];
 
   return (
@@ -66,8 +67,8 @@ function EfficiencySection() {
         <SectionHead
           num="12"
           eyebrow="Usage & Efficiency"
-          title="How much does each mode cost per good outcome?"
-          lede="efficiency.py computes tokens_per_OK — total tokens divided by confirmed OK outcomes — so you can compare modes on real usage data, not just dispatch count."
+          title="How much does each mode actually cost?"
+          lede="scripts/efficiency.py rolls up per-dispatch telemetry from every run. The chart shows measured tokens-per-dispatch (outcome-independent). The stricter tokens_per_OK metric also exists but is held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 32, alignItems: 'start' }}>
@@ -90,8 +91,9 @@ function EfficiencySection() {
           </div>
 
           <div>
-            <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 16 }}>tokens_per_OK (illustrative)</h3>
-            <BarChart data={placeholder} />
+            <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>tokens / dispatch (measured)</h3>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>efficiency.py over runs/*.json telemetry · 2026-05-26</p>
+            <BarChart data={measured} />
           </div>
         </div>
 
@@ -122,8 +124,8 @@ function EfficiencySection() {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--con)', marginBottom: 8 }}>Caveats</div>
           <ul style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.7, paddingLeft: 20 }}>
             <li>Token estimates use chars/4 (±10–20% error band), consistent across modes.</li>
-            <li>Cross-mode OK is not qualitatively comparable — a Trias OK represents deeper deliberation than a Sequential OK.</li>
-            <li>Outcomes are subjective at log time; mark BAD retroactively via <code style={{ fontFamily: 'var(--font-mono)' }}>mark_outcome.py</code> if a choice later regressed.</li>
+            <li>This is cost <em>per dispatch</em>, not per run — total run cost ≈ dispatches × this, which the cost-multiplier column on the left captures (Sequential 1×, Trias 3×).</li>
+            <li>`tokens_per_OK` (cost per confirmed-good outcome) is the stricter metric but is withheld until enough runs carry an OK/BAD label — most current runs are unlabeled, which would inflate it.</li>
             <li>Modes with fewer than 3 runs with telemetry show <code style={{ fontFamily: 'var(--font-mono)' }}>insufficient_data</code>.</li>
           </ul>
         </div>
