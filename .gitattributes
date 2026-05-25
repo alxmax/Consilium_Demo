@@ -1,0 +1,6 @@
+# Architecture explainer — source + generated export.
+# build.py writes the export with LF; pin these to LF so a Windows checkout
+# (core.autocrlf=true) doesn't convert them to CRLF and show phantom local
+# changes / block pulls. Keeps the committed blob and working tree consistent.
+docs/architecture.html      text eol=lf
+docs/architecture/**        text eol=lf
