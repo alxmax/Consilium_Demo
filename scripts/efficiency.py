@@ -133,9 +133,14 @@ def extract_tokens(telemetry: dict) -> tuple[int, int, int]:
     # Merge voices and personalities keys.
     # - voices: sequential/dialectic (generator, control, conservator)
     # - personalities: trias mode (pioneer, architect, steward) — Q3 decision 2026-05-25
+    # Guard: only merge dict-shaped blocks. Some legacy runs stored
+    # `personalities` as a list (e.g. ["pioneer","architect","steward"]) which
+    # would crash dict.update; skip those rather than fail the whole rollup.
     all_voices: dict = {}
-    all_voices.update(telemetry.get("voices") or {})
-    all_voices.update(telemetry.get("personalities") or {})
+    for key in ("voices", "personalities"):
+        block = telemetry.get(key)
+        if isinstance(block, dict):
+            all_voices.update(block)
 
     total_tokens = 0
     dispatches = 0
