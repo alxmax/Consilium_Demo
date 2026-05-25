@@ -163,11 +163,11 @@ result = check_mode_floor(telemetry_mode, confidence_value)
 ```
 Floors: `sequential=0.70`, `dialectic=0.75`, `trias=0.80`. A run below floor signals the mode did not deliver value for the cost. The data accumulates in `FEEDBACK.html` — the pattern becomes visible after ≥10 runs per mode.
 
-### 5c. Meta-critic (auto, advisory)
+### 5c. Meta-critic (auto, advisory) — *retired 2026-05-25*
 ```bash
-cat bundle.json | python scripts/meta_critic.py
+cat bundle.json | python scripts/deprecated/meta_critic.py
 ```
-Scores **deliberation quality** (not choice correctness): `generator_divergence` (paraphrasing?), `control_concreteness` (speculation?), `conservator_spread` (shrug?). Emits `deliberation_quality.flags` — attach to the bundle before Step 6 (build_report passes it through to the report). Non-empty `flags` do not block, but must be mentioned in `reasoning`.
+Scores **deliberation quality** (not choice correctness). Retained metric: `conservator_spread` (shrug?). Dead metrics `generator_divergence` and `control_concreteness` removed (0/163 fires). Emits `deliberation_quality.flags` — attach to the bundle before Step 6 (build_report passes it through to the report). Non-empty `flags` do not block. Senate verdict: MODIFY (GO 5 · MODIFY 3 · STOP 1, 2026-05-24 `kill-meta-critic-r2`) — trimmed to conservator_spread only, moved to deprecated/. Substance-validation gap accepted as a known limitation (see TODO.md).
 
 ### 5d. Retry on low confidence (optional, single pass)
 If `confidence < 0.7`, **before** asking the user:
@@ -375,7 +375,7 @@ python scripts/run_evals.py
 | `scripts/probe_change.py` | Anchor diff_size to `git diff --numstat` (Step 4) |
 | `scripts/aggregator.py` | 4 voting schemes + auto-relax on total veto (Step 5) |
 | `scripts/confidence.py` | Derives confidence from variance + separation (Step 5b) |
-| `scripts/meta_critic.py` | Deliberation quality score (divergence/concreteness/spread) — Step 5c |
+| `scripts/deprecated/meta_critic.py` | Deliberation quality score (conservator_spread only) — Step 5c retired 2026-05-25 |
 | `scripts/retry_context.py` | Hint for single retry when confidence < 0.7 — Step 5d |
 | `scripts/build_report.py` | Assemble the canonical report from the bundle (Step 6) |
 | `scripts/validate_report.py` | Principle #4 gate: success_criterion + verification + chosen_approach |

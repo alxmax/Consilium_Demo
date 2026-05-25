@@ -755,7 +755,7 @@ def main() -> int:
 def _generate_transcript(bundle_path: Path) -> None:
     try:
         import importlib.util as _ilu
-        _spec = _ilu.spec_from_file_location("senate_transcript", Path(__file__).parent / "deprecated" / "senate_transcript.py")
+        _spec = _ilu.spec_from_file_location("senate_transcript", Path(__file__).parent / "senate_transcript.py")
         _mod = _ilu.module_from_spec(_spec)  # type: ignore[arg-type]
         _spec.loader.exec_module(_mod)  # type: ignore[union-attr]
         out_file = _mod.generate(bundle_path)

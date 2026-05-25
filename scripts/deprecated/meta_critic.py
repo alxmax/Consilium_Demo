@@ -45,6 +45,10 @@ import json
 import statistics
 import sys
 from math import sqrt
+from pathlib import Path
+
+# Ensure scripts/ is on the path when running from scripts/deprecated/
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from utils import force_utf8_streams, load_json_stdin
 

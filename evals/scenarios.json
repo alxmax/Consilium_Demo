@@ -183,6 +183,26 @@
     }
   },
   {
+    "_comment": "HM1 regression: meta_recommendation lives inside conservator.scores[], not at top level",
+    "name": "aggregator/sequential scale_down triggers ADAPT_SHORT via nested scores meta_recommendation",
+    "tool": "scripts/aggregator.py",
+    "args": ["--scheme", "sequential"],
+    "stdin_json": {
+      "generator": {
+        "candidates": [{"id": "opt_a", "summary": "simple fix", "sketch": "one liner", "rationale": "fast", "downside_estimate": "none"}],
+        "preferred": "opt_a"
+      },
+      "control": {"verdicts": [], "disagreements": [], "glossary_fail": false},
+      "conservator": {
+        "scores": [{"id": "opt_a", "regression_risk": {"reversibility": "complete", "magnitude": "trivial", "net_concern": 0.1}, "meta_recommendation": "scale_down", "irreversibility_flag": false}]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "result": "ADAPT_SHORT"
+    }
+  },
+  {
     "name": "confidence/well-aligned chosen returns numeric confidence",
     "tool": "scripts/confidence.py",
     "stdin_json": {
@@ -1471,7 +1491,7 @@
   },
   {
     "name": "meta_critic/healthy bundle emits no flags",
-    "tool": "scripts/meta_critic.py",
+    "tool": "scripts/deprecated/meta_critic.py",
     "args": [],
     "stdin_json": {
       "generator": {
@@ -1541,7 +1561,7 @@
   },
   {
     "name": "meta_critic/paraphrasing generator triggers divergence flag",
-    "tool": "scripts/meta_critic.py",
+    "tool": "scripts/deprecated/meta_critic.py",
     "args": [],
     "stdin_json": {
       "generator": {
@@ -1587,7 +1607,7 @@
   },
   {
     "name": "meta_critic/empty issues yields non-zero spread (control_concreteness removed)",
-    "tool": "scripts/meta_critic.py",
+    "tool": "scripts/deprecated/meta_critic.py",
     "args": [],
     "stdin_json": {
       "generator": {
@@ -1641,7 +1661,7 @@
   },
   {
     "name": "meta_critic/single conservator score yields spread null",
-    "tool": "scripts/meta_critic.py",
+    "tool": "scripts/deprecated/meta_critic.py",
     "args": [],
     "stdin_json": {
       "generator": {

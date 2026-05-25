@@ -349,7 +349,10 @@ def aggregate_sequential(
     if substantial:
         triggers.append("substantial_disagreement")
 
-    meta = conservator_out.get("meta_recommendation")
+    # meta_recommendation lives inside conservator_out["scores"][i], not at top level
+    _scores = conservator_out.get("scores") or []
+    _metas = [s.get("meta_recommendation") for s in _scores if isinstance(s, dict) and s.get("meta_recommendation")]
+    meta = "scale_up" if "scale_up" in _metas else ("scale_down" if "scale_down" in _metas else None)
     if meta == "scale_down":
         triggers.append("scale_down")
     elif meta == "scale_up":
