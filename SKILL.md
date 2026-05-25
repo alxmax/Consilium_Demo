@@ -202,11 +202,11 @@ Returns the top-2 candidates with files/symbols to read/grep. Use the hints → 
 
 **Telemetry emission (mandatory — before `build_report.py`).**
 
-At each dispatch (voice or senator), immediately after return, accumulate in the bundle:
+At each dispatch (voice), immediately after return, accumulate in the bundle:
 
-- `telemetry.voices.<voice_name>` or `telemetry.senators.<senator_name>` (Senate): `{tokens_in: ceil(len(prompt)/4), tokens_out: ceil(len(response)/4), latency_ms: <wall-clock>}` — prompt = full text sent (persona + context + proposal, not just the proposal).
+- `telemetry.voices.<voice_name>`: `{tokens_in: ceil(len(prompt)/4), tokens_out: ceil(len(response)/4), latency_ms: <wall-clock>}` — prompt = full text sent (persona + context + proposal, not just the proposal).
 - Sum tokens + latency per voice if there are retries on the same dispatch.
-- `telemetry.mode` ← canonical label (`"sequential"`, `"senate"`, `"trias"` etc. — from `## Dispatch defaults`).
+- `telemetry.mode` ← canonical label (`"sequential"`, `"trias"` etc. — from `## Dispatch defaults`).
 - `telemetry.dispatch_count` ← total dispatches (including retries).
 
 Why mandatory: `scripts/efficiency.py` returns `null` for any run without telemetry, polluting per-mode averages — a run without telemetry is invisible in efficiency comparisons.
@@ -414,10 +414,7 @@ python scripts/run_evals.py
 | `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite for deterministic scripts |
 | `scripts/usage.py` | Telemetry rollup from runs/ |
 | `agents/consilium-subagent.md` | Subagent for isolated invocation via `Agent(subagent_type="consilium-subagent", ...)` |
-| `prompts/senators/*.md` | 7 pre-implementation audit prompts (`senate` mode); each with a distinct specialty (see table in Senate mode) |
 | `scripts/vocabulary_map.py` | User-facing translations (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
-| `scripts/senate_synth.py` | Senate synthesizer: aggregates 7 JSON outputs → verdict `GO/MODIFY/STOP/DEEPLY_SPLIT/UNREACHABLE/OUT_OF_SCOPE` + modify_requests + risks → saves to `runs/senate/`. Supports **multi-round (Laws 2+4)** via schema `{rounds: [...]}` with `cross_questions[]`, `position_changes[]`, and `blocaj_resolution` (5-vote tiebreaker). **Law 3** (`blocaj_pending` advisory signal) active on both modes when `verdict ∈ {MODIFY, DEEPLY_SPLIT}`. **Law 7** (`scope_veto` consensus ≥3 → `OUT_OF_SCOPE`). **Law 8** (`law8_enforce: true` → auto-promote vague-MODIFY). |
-| `scripts/senate_priors.py` | Law 6 helper: scans `runs/senate/*.json` for runs with similar label (substring match, stdlib-only) in the last 30 days; returns prior verdict + top 3 modify_requests for context injection. |
 
 ## Feedback loop
 
@@ -459,11 +456,11 @@ When `CLAUDE_HEADLESS=1` (set by the external orchestrator that invoked `claude 
 
 **Senate note:** `runs/senate/2026-05-18_164154-mode-bugfix-performance.json` + mini-senate H2+H4 (verdict B+X 5/7 + 4/7) validated this contract.
 
-## Dispatch defaults (per voice / per senator)
+## Dispatch defaults (per voice)
 
-Default behavior unless overridden by project memory (`MEMORY.md`). All voices and senators pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `opus` Generator for high-stakes) — single source of truth per mode, descriptive not enforced.
+Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `opus` Generator for high-stakes) — single source of truth per mode, descriptive not enforced.
 
-Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× · Trias 3× · Senate ~3× (9 senators). The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×, Parallel+flag = 1.33× Parallel).
+Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× · Trias 3×. The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×, Parallel+flag = 1.33× Parallel).
 
 ## Parallel voices mode
 
@@ -721,51 +718,24 @@ Summary table:
 
 **Empirical origin.** The mode emerged from the analysis in `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (the conceptual equivalent of this flag) reached 100% catch-rate in simulation and 4/7 in real reruns on P3 car wash — performance superior to any other mode tested. Mechanism: a single skeptic voice on `chosen` post-hoc forces a re-reading of success_criterion and the detection of implicit constraints missed by all the voices in Pass-1.
 
-## Senate mode (`senate`)
+## Senate mode — moved to its own skill
 
-**Scope:** `senate` has two invocation modes:
-1. **Default (skill audit):** audits modifications to the skill itself (prompts, scripts, architecture, SKILL.md). Well-tested, gate-validated.
-2. **`--on-code` (EXPERIMENTAL_DRAFT):** audits decisions on user code (PRs, refactors, architectural decisions) via `prompts/lenses/domain_lens.md#code_domain`. The orchestrator MUST pre-compute `diff`, `files_touched`, `success_criterion`, `magnitude`, `reversibility`, `blast_radius` before dispatch (see `scripts/dispatch_senate_on_code.py`). NOT wired into the dispatch table until the empirical gate is met (see Drafts footnote at the end of the Senate mode section).
+The 9-senator deliberative audit (`senate`) was **split out of Consilium into a
+standalone skill** on 2026-05-25 (repo: `../Senate`). For a high-stakes,
+irreversible, or architecture-level audit, invoke `/senate` separately. Consilium
+no longer ships the senator prompts, `senate_synth.py`, or the `--strict-senate`
+validator. When a Senate audit warrants a full per-change deliberation, run
+`/consilium` on the chosen approach.
 
-**Mechanics:** 9 sub-agents in a parallel first round + (optional) multi-round cross-questions, each with its prompt from `prompts/senators/`:
-
-| Senator | Specialty | Default model |
-|---|---|---|
-| Wittgenstein | vague terms, testable definitions | Sonnet |
-| Aurelius | reversibility × magnitude, cost/stake proportionality | Sonnet |
-| Confucius | authority, precedents in `runs/` + `experiments/` | Sonnet |
-| Socrate | undeclared load-bearing premises | Sonnet |
-| Musk | aggressive deletion + 10% add-back | Sonnet |
-| Dimon | stress test, counterparty, silent failure modes | Sonnet |
-| Napoleon | tokens, hours, operator state | Sonnet |
-| Deming | statistical discipline, n/variance/calibration | Sonnet |
-| Tacitus | retrospective accuracy tracking over `runs/senate/` × `FEEDBACK.html` | **Opus** (per frontmatter — multi-document evidence reconstruction) |
-
-**Cost:** 9 sub-agents (~3× Parallel). On-demand only — no automatic trigger.
-
-**Deep reference:** the workflow steps 1-8, Laws 1-8, MIN_ACTIVE_VOTES, headless invariants, Pilot B context injection, smoke test, and origin notes have been extracted to [`docs/senate.md`](docs/senate.md) to keep SKILL.md focused on the cross-mode contract. Read that file before invoking Senate the first time, or before editing any senator prompt.
-
-### Law 9 — Senate scope
-
-**§1 — When Senate is the right tool** (routing boundary)
+Routing boundary (when to escalate beyond a standard Consilium mode):
 
 | Decision profile | Mode |
 |---|---|
-| `reversibility=irreversible` OR `magnitude=critical` AND change spans ≥2 architectural layers | `senate --on-code` (*) |
 | `confidence ∈ [0.5, 0.7]` from standard mode AND single drift concern | `dialectic + skeptic_on_chosen` |
 | 2+ plausible architectural approaches without clear winner | `trias` |
+| Irreversible / critical-magnitude AND spans ≥2 architectural layers | `/senate` (separate skill) |
 | Bugfix evident OR diff <20 lines / 1 file | Sequential (scope_gate skips) |
 | All other PR-level reviews | Sequential / Parallel auto cross-check |
-
-> **(*) Pre-gate caveat — EXPERIMENTAL_DRAFT phase only.** `senate --on-code` routing applies ONLY to pilot dispatches explicitly designated for gate evidence. During the empirical gate phase (≥3 pilot runs required), production critical/irreversible decisions MUST be routed to `trias` or `dialectic + skeptic_on_chosen` (gate-validated modes). Pilots intentionally target the high-stakes profile for falsification evidence but are NOT a substitute for production audits until gate criteria met (≥7/10 info-add over Trias AND `semantic_suspect` ≤20%). This caveat is removed from SKILL.md upon successful gate promotion.
-
-**§2 — Skip Senate if** (negative scope)
-
-- The change is on standard deliberation, not on the skill, AND does not satisfy §1 criteria → use `parallel` / `dialectic` / etc.
-- The change is trivial-textual (typo, internal rename, doc fix) — cost-prohibitive
-- User explicitly declines
-
-> EXPERIMENTAL_DRAFT footnote, senator context injection (Pilot B), smoke test, and origin notes live in [`docs/senate.md`](docs/senate.md).
 
 <!-- === SEQUENTIAL === -->
 ## Three-layer architecture
@@ -774,7 +744,6 @@ Summary table:
 |---|---|---|
 | **Deliberation** | Conservator → Generator → Control (sequential) | Runs on every user question |
 | **Aggregation** | aggregate_sequential() with 8-component veto cascade | Synthesizes voice outputs, decides what user sees |
-| **Senate** | 9 senators (Wittgenstein, Aurelius, Confucius, Socrate, Musk, Dimon, Napoleon, Deming, Tacitus) | On-demand audit of proposed changes to consilium itself |
 
 ## Sequential dispatch
 

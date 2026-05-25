@@ -1,8 +1,8 @@
 """Compute per-mode efficiency score: total_tokens / OK_outcomes.
 
-Reads runs/*.json + runs/senate/*.json (telemetry) and FEEDBACK.html
-(outcomes via .run_path_map.json sidecar), joins by run-path, emits
-tokens_per_OK per mode — lower = better.
+Reads runs/*.json (telemetry) and FEEDBACK.html (outcomes via
+.run_path_map.json sidecar), joins by run-path, emits tokens_per_OK per
+mode — lower = better.
 
 Design decisions (Senate 2026-05-17, efficiency-py-design-decisions):
   Q1: Binary gate — FEEDBACK outcome=OK -> OK, anything else -> not counted.
@@ -19,7 +19,7 @@ at equal quality label — not absolute decision quality.
 CLI:
     python scripts/efficiency.py --by-mode
     python scripts/efficiency.py --by-mode --since 2026-05-01
-    python scripts/efficiency.py --compare senate sequential parallel
+    python scripts/efficiency.py --compare trias sequential parallel
     python scripts/efficiency.py --json
     python scripts/efficiency.py --self-test
     python scripts/efficiency.py --feedback path/to/FEEDBACK.html
@@ -97,9 +97,9 @@ def load_outcome_map(feedback_path: Path, runs_dir: Path) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 def walk_runs(runs_dir: Path, since: str | None) -> list[tuple[Path, dict]]:
-    """Yield (path, data) for all runs/*.json and runs/senate/*.json."""
+    """Yield (path, data) for all runs/*.json."""
     results: list[tuple[Path, dict]] = []
-    patterns = ["*.json", "senate/*.json"]
+    patterns = ["*.json"]
     for pattern in patterns:
         for f in sorted(runs_dir.glob(pattern)):
             if f.name.startswith("_"):
@@ -125,18 +125,16 @@ def walk_runs(runs_dir: Path, since: str | None) -> list[tuple[Path, dict]]:
 def extract_tokens(telemetry: dict) -> tuple[int, int, int]:
     """Return (total_tokens, dispatches, total_latency_ms) from a telemetry block.
 
-    total_tokens = sum(tokens_in + tokens_out) across all voices/senators.
+    total_tokens = sum(tokens_in + tokens_out) across all voices.
     Flat schema: works for sequential (generator/control/conservator),
-    parallel, senate (wittgenstein/aurelius/...), and trias
-    (pioneer_generator/pioneer_control/... — flat, Q3 decision).
+    parallel, and trias (pioneer_generator/pioneer_control/... — flat,
+    Q3 decision).
     """
-    # Merge voices, senators, and personalities keys.
+    # Merge voices and personalities keys.
     # - voices: sequential/dialectic (generator, control, conservator)
-    # - senators: senate mode (wittgenstein, aurelius, ...)
     # - personalities: trias mode (pioneer, architect, steward) — Q3 decision 2026-05-25
     all_voices: dict = {}
     all_voices.update(telemetry.get("voices") or {})
-    all_voices.update(telemetry.get("senators") or {})
     all_voices.update(telemetry.get("personalities") or {})
 
     total_tokens = 0
@@ -184,7 +182,6 @@ def collect_efficiency(
             str(path.relative_to(ROOT)) if path.is_absolute() else str(path),
             str(path),
             "runs/" + path.name,
-            "runs/senate/" + path.name,
         ):
             outcome = outcome_map.get(candidate)
             if outcome is not None:
@@ -292,42 +289,6 @@ _SELF_TEST_RUNS: list[tuple[str, dict]] = [
             "conservator": {"tokens_in":  800, "tokens_out": 200},
         }},
     }),
-    ("runs/senate/2000-01-04_000000-senate-a.json", {
-        "mode": "skill_audit",
-        "telemetry": {"mode": "senate", "senators": {
-            "wittgenstein": {"tokens_in": 2000, "tokens_out": 500},
-            "aurelius":     {"tokens_in": 2000, "tokens_out": 500},
-            "confucius":    {"tokens_in": 2000, "tokens_out": 500},
-            "socrate":      {"tokens_in": 2000, "tokens_out": 500},
-            "musk":         {"tokens_in": 2000, "tokens_out": 500},
-            "dimon":        {"tokens_in": 2000, "tokens_out": 500},
-            "napoleon":     {"tokens_in": 2000, "tokens_out": 500},
-        }},
-    }),
-    ("runs/senate/2000-01-05_000000-senate-b.json", {
-        "mode": "skill_audit",
-        "telemetry": {"mode": "senate", "senators": {
-            "wittgenstein": {"tokens_in": 1800, "tokens_out": 450},
-            "aurelius":     {"tokens_in": 1800, "tokens_out": 450},
-            "confucius":    {"tokens_in": 1800, "tokens_out": 450},
-            "socrate":      {"tokens_in": 1800, "tokens_out": 450},
-            "musk":         {"tokens_in": 1800, "tokens_out": 450},
-            "dimon":        {"tokens_in": 1800, "tokens_out": 450},
-            "napoleon":     {"tokens_in": 1800, "tokens_out": 450},
-        }},
-    }),
-    ("runs/senate/2000-01-06_000000-senate-c.json", {
-        "mode": "skill_audit",
-        "telemetry": {"mode": "senate", "senators": {
-            "wittgenstein": {"tokens_in": 1900, "tokens_out": 480},
-            "aurelius":     {"tokens_in": 1900, "tokens_out": 480},
-            "confucius":    {"tokens_in": 1900, "tokens_out": 480},
-            "socrate":      {"tokens_in": 1900, "tokens_out": 480},
-            "musk":         {"tokens_in": 1900, "tokens_out": 480},
-            "dimon":        {"tokens_in": 1900, "tokens_out": 480},
-            "napoleon":     {"tokens_in": 1900, "tokens_out": 480},
-        }},
-    }),
 ]
 
 # Precomputed outcome map for fixture: all runs have outcome=OK
@@ -364,31 +325,14 @@ def run_self_test() -> int:
             f"sequential total_tokens={seq.get('total_tokens')}, expected {expected_seq_tokens}"
         )
 
-    # Senate: 3 runs, all OK
-    sen = modes.get("senate", {})
-    if sen.get("tokens_per_ok") is None:
-        errors.append("senate tokens_per_ok is null")
-    if sen.get("ok_count") != 3:
-        errors.append(f"senate ok_count={sen.get('ok_count')}, expected 3")
-
-    # tokens_per_ok for senate must be much larger than sequential (7 senators)
-    if seq.get("tokens_per_ok") and sen.get("tokens_per_ok"):
-        ratio = sen["tokens_per_ok"] / seq["tokens_per_ok"]
-        if not (3 < ratio < 15):
-            errors.append(
-                f"senate/sequential cost ratio={ratio:.1f}x, expected 3x-15x"
-            )
-
-    # Ranking: sequential should rank #1 (cheaper per OK)
+    # Ranking: sequential should rank #1 (only mode in the fixture)
     ranking = result.get("ranking", [])
     if not ranking or ranking[0]["mode"] != "sequential":
         errors.append(f"expected sequential to rank #1, got {ranking}")
 
-    # tokens_per_dispatch must be non-null for both modes
+    # tokens_per_dispatch must be non-null
     if seq.get("tokens_per_dispatch") is None:
         errors.append("sequential tokens_per_dispatch is null")
-    if sen.get("tokens_per_dispatch") is None:
-        errors.append("senate tokens_per_dispatch is null")
 
     if errors:
         for e in errors:
@@ -409,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--by-mode", action="store_true", help="emit per-mode breakdown (default)")
     ap.add_argument("--compare", nargs="+", metavar="MODE",
-                    help="filter to specific modes, e.g. --compare senate sequential")
+                    help="filter to specific modes, e.g. --compare trias sequential")
     ap.add_argument("--since", default=None, metavar="YYYY-MM-DD",
                     help="restrict to runs with timestamp >= this date")
     ap.add_argument("--json", action="store_true", help="emit raw JSON (default when piped)")
@@ -418,7 +362,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--feedback", default=None,
                     help="path to FEEDBACK.html (default: ./FEEDBACK.html)")
     ap.add_argument("--runs", default=None,
-                    help="path to runs/ dir (default: ./runs); senate/ subdir auto-included")
+                    help="path to runs/ dir (default: ./runs)")
     args = ap.parse_args(argv)
 
     if args.self_test:

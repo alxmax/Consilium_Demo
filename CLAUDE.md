@@ -14,7 +14,6 @@ Stdlib-only, no test runner. Smoke tests run manually via CLI:
 
 - `python scripts/test_rund2.py` — sequential architecture (skeptic_on_chosen, MODE enum, validate_report extras)
 - `python scripts/test_feedback_html.py` — `render_feedback_html` + parser round-trip
-- `python scripts/test_senate_synth.py` — Senate pipeline end-to-end on fixture
 - `python scripts/run_evals.py` — regression scenarios from `evals/scenarios.json` (subprocess-based, deterministic; non-zero exit on first FAIL)
 - `python scripts/validate_report.py < runs/<file>.json` — Constitution Principle #4 gate; minimum required before any commit touching `prompts/voices/` or `aggregator.py`
 
@@ -31,13 +30,13 @@ Canonical flow of a deliberation:
 
 Mode-specific scripts:
 - `dialectic_merge.py` — two-pass merge for Dialectic
-- `senate_synth.py` — synthesis over the 9 senators (Senate mode on skill)
-- `dispatch_senate_on_code.py` — Senate on user code (`--on-code`, EXPERIMENTAL_DRAFT)
 - `personalities.py` — Trias lens injection (Pioneer/Architect/Steward)
 
-Sub-agent dispatch (Trias, Skeptic, Senate): see `agents/consilium-subagent.md`. All sub-agents use `model: "sonnet"` explicitly — do not inherit Opus.
+Sub-agent dispatch (Trias, Skeptic): see `agents/consilium-subagent.md`. All sub-agents use `model: "sonnet"` explicitly — do not inherit Opus.
 
-Senate round visualization: `docs/architecture.html` (open locally). Benchmarks on real problems: `experiments/` (see `experiments/p3-car-wash.html`).
+> **Senate moved out (2026-05-25).** The 9-senator audit is now a standalone skill in the `Senate` repo (`https://github.com/alxmax/Senate`). It is no longer part of Consilium.
+
+Architecture visualization: `docs/architecture.html` (open locally). Benchmarks on real problems: `experiments/` (see `experiments/p3-car-wash.html`).
 
 ## Python conventions
 
@@ -52,8 +51,6 @@ Senate round visualization: `docs/architecture.html` (open locally). Benchmarks 
   - Pass-2: `generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md` — used only by Dialectic
   - `skeptic.md` — focal challenger, run in `parallel_skeptic`, `dialectic_skeptic`, `skeptic_on_chosen`
   - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended over core voices in `trias` and `trias_split`
-  - `prompts/lenses/domain_lens.md` — experimental draft (Senate R2), no dispatch entry yet
-- **`prompts/senators/*.md`** — the 9 senators used only in `senate` mode (audit on the skill, not on user code). Changing a prompt modifies the verdict distribution for future audits.
 - **`SKILL.md` Constitution + workflow** — changing steps 0–7 breaks the JSON format expected by `aggregator.py` and `validate_report.py`. Modify both at the same time.
 
 ## Available modes
@@ -68,17 +65,17 @@ User-selectable modes (SKILL.md documents them in detail):
 
 **Parallel removed.** No longer user-selectable (only via `parallel + skeptic_on_chosen`). Remains as an internal auto cross-check when `magnitude=critical ∧ reversibility=irreversible`, plus a silent audit every 20 runs.
 
-The **`senate`** mode has two scopes: (a) audit on **changes to the skill itself** (default, well-tested, 9 senators); (b) audit on **user code** via the `--on-code` flag (EXPERIMENTAL_DRAFT — see empirical gate in SKILL.md). On-demand only.
+The **`senate`** mode was split into its own skill (`Senate` repo) on 2026-05-25 — it is no longer part of Consilium. For a high-stakes / architecture-level audit, invoke `/senate` separately.
 
 ## Local files (gitignored)
 
 - `FEEDBACK.html` — real-usage journal, append-only via `scripts/log_feedback.py` (atomic writes). See `scripts/deprecated/migrate_feedback_md_to_html.py` for the migration history from `.md` format (retired one-shot tool).
-- `runs/*.json` — output of each deliberation (only `runs/README.md` and `runs/senate/` are tracked).
+- `runs/*.json` — output of each deliberation (only `runs/README.md` is tracked).
 - `docs/superpowers/plans/`, `docs/superpowers/specs/` — artifacts from `superpowers:writing-plans` / `executing-plans` (one file per non-trivial feature, naming `YYYY-MM-DD-<slug>.md`).
 
 ## Self-improvement loop
 
-When editing the skill itself: run `/consilium` on your own change. For changes to core prompts / architecture, `senate` mode (9 senators) is the stronger self-improvement option over single-context deliberation. Save the run to `runs/` and log it to `FEEDBACK.html` via `log_feedback.py`.
+When editing the skill itself: run `/consilium` on your own change. For changes to core prompts / architecture, consider `trias` (or the standalone `/senate` skill) over single-context deliberation. Save the run to `runs/` and log it to `FEEDBACK.html` via `log_feedback.py`.
 
 ## Git workflow
 

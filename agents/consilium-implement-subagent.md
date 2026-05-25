@@ -15,8 +15,7 @@ deliberation that produced the report; this file specifies the *implementation* 
 > **Status: EXPERIMENTAL_DRAFT.** Opt-in only. Promotion to default Step 7 is gated on a 3-task
 > benchmark (pipeline vs plain Step 7). If no measurable win after the pilot → DEPRECATED_DRAFT.
 > This vehicle is separate from `consilium-subagent` because its output contract is a **file
-> manifest + Control verdict**, not a `runs/<file>.json` report (same reasoning that gave Senate
-> its own `consilium-senate-subagent`).
+> manifest + Control verdict**, not a `runs/<file>.json` report.
 
 ## Working directory
 

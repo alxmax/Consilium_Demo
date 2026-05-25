@@ -398,7 +398,7 @@ _The Senate approved the proposal. No modifications required._
 
 - [ ] **Requirements in YAML** — single source of truth for the skill's requirements/contract.
 - [ ] **Enterprise GenAI Roadmap** — evaluate techniques from `Enterprise_GenAI_Roadmap_Alex.pdf` for Consilium (CV/portfolio angle).
-- [ ] **Split Consilium / Senate** — move Senate into its own repo, remove from Consilium.
+- [x] **Split Consilium / Senate** — Senate split into its own standalone skill repo (`Senate`, https://github.com/alxmax/Senate) on 2026-05-25; all senator prompts, `senate_*.py`, `docs/senate*`, and the `--strict-senate` validator removed from Consilium.
 - [ ] **Public-release prep** — make the repo public; plan how to land it in a clean single commit.
 - [ ] **Efficiency / model-count audit** — how many sub-agents are actually needed (1/2/3)? vary by complexity? define the target end-state.
 - [ ] **EXPLORE → PLAN → CODE → COMMIT workflow** — formalize; relates to the post-deliberation implementation pipeline above.
