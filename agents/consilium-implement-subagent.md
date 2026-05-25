@@ -1,21 +1,23 @@
 ---
 name: consilium-implement-subagent
-description: EXPERIMENTAL_DRAFT. Post-deliberation implementation pipeline — given a Consilium report (the spec), dispatches Coder then Test Writer ∥ Reviewer and returns a file manifest + Control verdict (NOT a runs/<file>.json deliberation report). Opt-in only; not wired into default Step 7. Use when an orchestrator has a GO verdict and wants the chosen approach written + tested + reviewed.
+description: Post-deliberation implementation pipeline — given a Consilium report (the spec), dispatches Coder then Test Writer ∥ Reviewer and returns a file manifest + Control verdict (NOT a runs/<file>.json deliberation report). Default for regression-risk changes (Step 7); single-shot for greenfield. Use when an orchestrator has a GO verdict and wants the chosen approach written + tested + reviewed.
 tools: Read, Write, Bash, Grep, Glob
 model: sonnet
 ---
 
-# Consilium Implement Subagent (EXPERIMENTAL_DRAFT)
+# Consilium Implement Subagent
 
 Isolated-context wrapper that turns a completed Consilium deliberation into written code.
 The **report is the spec** — `chosen_approach` + `success_criterion` + `verification` are the
 only inputs the pipeline needs. The skill (`SKILL.md`) remains the source of truth for the
 deliberation that produced the report; this file specifies the *implementation* deviations.
 
-> **Status: EXPERIMENTAL_DRAFT.** Opt-in only. Promotion to default Step 7 is gated on a 3-task
-> benchmark (pipeline vs plain Step 7). If no measurable win after the pilot → DEPRECATED_DRAFT.
-> This vehicle is separate from `consilium-subagent` because its output contract is a **file
-> manifest + Control verdict**, not a `runs/<file>.json` report.
+> **Status: default for regression-risk changes (promoted 2026-05-25).** Routing via
+> `recommend_implement_mode()` in `infer_pipeline.py` — pipeline for regression-risk quadrants
+> (`moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), single-shot for
+> greenfield. Override: decline at the Step 7 prompt. This vehicle is separate from
+> `consilium-subagent` because its output contract is a **file manifest + Control verdict**,
+> not a `runs/<file>.json` report.
 
 ## Working directory
 

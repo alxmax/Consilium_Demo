@@ -303,11 +303,11 @@ Reject (`n` at prompt) → rejection logged in `runs/YYYY-MM-DD_HHMM_pipeline_re
 
 **The skip does NOT apply to the mandatory requirement above:** if the prompt declares deliverables (per the authoritative regex from the mandatory clause above) and you nonetheless arrive at `chosen=do_nothing`, that means the deliberation rejected the implementation of an explicit user request — a case that requires a visible signal (hard error in the response: *"deliberation chose `do_nothing` on a prompt with declared deliverables — the user must decide"*), not silent skip.
 
-#### Implementation pipeline (opt-in, EXPERIMENTAL_DRAFT)
+#### Implementation pipeline (default for regression-risk changes)
 
-The default `implement` step writes code single-shot. As an **opt-in** alternative for non-trivial implementations, a 3-role pipeline turns the report into code: **Coder → (Test Writer ∥ Reviewer)**, where the report *is* the spec (`chosen_approach` + `success_criterion` + `verification`). The Reviewer reuses the **Control voice** (`prompts/voices/control.md`) on the *written* code — no separate reviewer prompt.
+The default `implement` step writes code single-shot for greenfield. For **regression-risk changes** (refactor, bugfix, multi-path behavior change on existing code), a 3-role pipeline is the default: **Coder → (Test Writer ∥ Reviewer)**, where the report *is* the spec (`chosen_approach` + `success_criterion` + `verification`). The Reviewer reuses the **Control voice** (`prompts/voices/control.md`) on the *written* code — no separate reviewer prompt.
 
-**Routing gate (single-shot vs pipeline).** `recommend_implement_mode(report)` in `infer_pipeline.py` picks the mode, keyed on **regression risk, not size**: it returns `"pipeline"` when the change warrants a `review` step (the regression-prone quadrants — `moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), else `"single_shot"`. Rationale: the benchmark's only pipeline win (`experiments/pipeline-bench/`) was a 3-line edit to existing code, so a files/lines threshold would mis-route it; reversibility/magnitude is the right axis. Advisory — the user may override. Greenfield (even large, fully reversible) stays single-shot.
+**Routing gate (single-shot vs pipeline).** `recommend_implement_mode(report)` in `infer_pipeline.py` picks the mode, keyed on **regression risk, not size**: it returns `"pipeline"` when the change warrants a `review` step (the regression-prone quadrants — `moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), else `"single_shot"`. Greenfield (even large, fully reversible) stays single-shot. **Opt-out:** the routing decision is advisory — the user may override at the Step 7 prompt (press `n`) or by passing `--dry-run` to inspect before committing.
 
 ```bash
 python -X utf8 scripts/implement_pipeline.py --input runs/<file>.json --dry-run   # print dispatch plan
@@ -316,7 +316,7 @@ python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "pytest -x
 
 Dispatch via `Agent(subagent_type="consilium-implement-subagent", ...)` (see `agents/consilium-implement-subagent.md`). Invariants enforced by the vehicle: **disjoint-path ownership** (Coder writes impl, Test Writer writes `test_*`, Reviewer read-only → collision-free parallel stage), **malformed-JSON hard-fail** (retry once, then abort — never a silent-empty manifest), and the **red→green gate** (a test that passes against a `raise NotImplementedError` stub is rejected).
 
-> **Status: EXPERIMENTAL_DRAFT — scoped.** Benchmark run 2026-05-24 (3 tasks, hidden oracle; see `experiments/pipeline-bench/RESULTS.md`): pipeline **1 win / 2 ties / 0 losses** vs plain single-shot `implement`, at ~1.1× tokens / 3–7× wall-clock. The single win was a **refactor with a regression trap** (the review caught a second-code-path defect the single-shot shipped); on greenfield tasks the base model already nailed the edges, so the pipeline only added cost. **Decision (pre-registered rule, wins < 2/3): do NOT make it the default `implement`.** Keep it **opt-in, scoped to changes on existing code with regression risk** (refactor / bugfix / multi-path behavior change) — the one regime where review+tests earn the cost. Re-test with ≥3 more refactor-regime tasks before any stronger claim (n=3 is a pilot signal, not proof). Audit trail: Senate `runs/senate/2026-05-24_200959-consilium-code-writer-vs-superpowers.json` (MODIFY) + `runs/2026-05-24_2030_implement-pipeline-scaffold.json` + `experiments/pipeline-bench/`.
+> **Status: promoted to default for regression-risk changes (2026-05-25).** Combined benchmark R1+R2 (n=6, hidden oracle; see `experiments/pipeline-bench/RESULTS.md`): pipeline **1 win / 5 ties / 0 losses** vs plain single-shot `implement`, at ~1.1× tokens / 3–7× wall-clock. The win was a **refactor with a semantically-isolated secondary branch** (review caught a second-code-path defect the single-shot shipped); on greenfield and algebraically-obvious tasks the base model already nailed the edges (ties). Graduation criterion (≥2/3 wins) not met — promoted on user decision. Audit trail: `runs/2026-05-25_2140_pipeline-step7-default.json` + `experiments/pipeline-bench/`.
 
 ### Observe → Think → Act → Learn (descriptive framing)
 
@@ -402,8 +402,8 @@ python scripts/run_evals.py
 | `scripts/log_feedback.py` | Auto-append to FEEDBACK.html at the end of Step 6 |
 | `scripts/mark_outcome.py` | Retroactive outcome overwrite (`[confirmed]` in note → 2x weight) |
 | `scripts/infer_pipeline.py` | Step 7: infer + confirm implementation steps from the report; `--dry-run` / `--yes` |
-| `scripts/implement_pipeline.py` | Step 7 (opt-in, EXPERIMENTAL_DRAFT): plan the Coder→(Test Writer∥Reviewer) dispatch + red→green gate verifier; `--dry-run` / `--verify-gate` |
-| `agents/consilium-implement-subagent.md` | Vehicle for the opt-in implementation pipeline (EXPERIMENTAL_DRAFT); returns a file manifest + Control verdict |
+| `scripts/implement_pipeline.py` | Step 7: plan the Coder→(Test Writer∥Reviewer) dispatch + red→green gate verifier; default for regression-risk changes; `--dry-run` / `--verify-gate` |
+| `agents/consilium-implement-subagent.md` | Vehicle for the implementation pipeline; default for regression-risk changes (Step 7); returns a file manifest + Control verdict |
 | `prompts/implement/{coder,test_writer}.md` | Implementation pipeline role templates (Reviewer reuses `prompts/voices/control.md`) |
 | `scripts/audit_feedback.py` | List runs without FB row; with `--backfill` adds default PEND |
 | `scripts/memory.py` | Uniform read API over the 3 tiers (short/medium/long) |

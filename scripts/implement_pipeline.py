@@ -1,4 +1,4 @@
-"""Plan + gate-verify the post-deliberation implementation pipeline (EXPERIMENTAL_DRAFT).
+"""Plan + gate-verify the post-deliberation implementation pipeline.
 
 Companion to ``infer_pipeline.py``. Where that script infers *which* steps apply,
 this one turns a completed Consilium report into an implementation *dispatch plan*
@@ -9,8 +9,8 @@ agent (``agents/consilium-implement-subagent.md``) performs the actual sub-agent
 dispatch. This script only (a) extracts the spec + role->prompt mapping, and (b)
 empirically verifies the red->green gate when asked.
 
-> Status: EXPERIMENTAL_DRAFT. Opt-in only; not wired into default Step 7. Promotion is
-> gated on a 3-task benchmark (pipeline vs plain Step 7). See SKILL.md Step 7.
+> Status: default for regression-risk changes (promoted 2026-05-25). Routing via
+> recommend_implement_mode() in infer_pipeline.py. See SKILL.md Step 7.
 
 Usage:
     python scripts/implement_pipeline.py --input runs/<file>.json --dry-run
