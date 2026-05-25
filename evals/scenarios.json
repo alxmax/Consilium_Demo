@@ -186,15 +186,41 @@
     "_comment": "HM1 regression: meta_recommendation lives inside conservator.scores[], not at top level",
     "name": "aggregator/sequential scale_down triggers ADAPT_SHORT via nested scores meta_recommendation",
     "tool": "scripts/aggregator.py",
-    "args": ["--scheme", "sequential"],
+    "args": [
+      "--scheme",
+      "sequential"
+    ],
     "stdin_json": {
       "generator": {
-        "candidates": [{"id": "opt_a", "summary": "simple fix", "sketch": "one liner", "rationale": "fast", "downside_estimate": "none"}],
+        "candidates": [
+          {
+            "id": "opt_a",
+            "summary": "simple fix",
+            "sketch": "one liner",
+            "rationale": "fast",
+            "downside_estimate": "none"
+          }
+        ],
         "preferred": "opt_a"
       },
-      "control": {"verdicts": [], "disagreements": [], "glossary_fail": false},
+      "control": {
+        "verdicts": [],
+        "disagreements": [],
+        "glossary_fail": false
+      },
       "conservator": {
-        "scores": [{"id": "opt_a", "regression_risk": {"reversibility": "complete", "magnitude": "trivial", "net_concern": 0.1}, "meta_recommendation": "scale_down", "irreversibility_flag": false}]
+        "scores": [
+          {
+            "id": "opt_a",
+            "regression_risk": {
+              "reversibility": "complete",
+              "magnitude": "trivial",
+              "net_concern": 0.1
+            },
+            "meta_recommendation": "scale_down",
+            "irreversibility_flag": false
+          }
+        ]
       }
     },
     "expect_exit": 0,
@@ -1939,7 +1965,9 @@
       "evals/fixtures/priors_stale_pendings.html",
       "--no-runs"
     ],
-    "env": {"CONSILIUM_HEADLESS": "0"},
+    "env": {
+      "CONSILIUM_HEADLESS": "0"
+    },
     "stdin_json": null,
     "expect_exit": 0,
     "expect_stdout_subset": {
@@ -1953,6 +1981,35 @@
           "chosen": "approach_a"
         }
       ]
+    }
+  },
+  {
+    "name": "scope_gate/low magnitude emits sequential mode_ceiling",
+    "tool": "scripts/scope_gate.py",
+    "args": [
+      "--files",
+      "scripts/aggregator.py"
+    ],
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "magnitude": "low",
+      "mode_ceiling": "sequential"
+    }
+  },
+  {
+    "name": "scope_gate/high magnitude emits trias mode_ceiling",
+    "tool": "scripts/scope_gate.py",
+    "args": [
+      "--range",
+      "HEAD~1..HEAD"
+    ],
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "magnitude": "high",
+      "mode_ceiling": "trias",
+      "should_skip": false
     }
   }
 ]
