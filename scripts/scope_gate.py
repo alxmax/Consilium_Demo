@@ -18,6 +18,7 @@ Output (always to stdout, exit 0 on success):
   {
     "should_skip": bool,
     "magnitude": "low" | "medium" | "high",
+    "mode_ceiling": "sequential" | "dialectic" | "trias",
     "reason": str,
     "signals": {
       "files_changed": int,
@@ -31,6 +32,13 @@ magnitude thresholds (used by Trias lazy routing — independent of should_skip)
   low    — files ≤ 1, lines ≤ 15, no blocklist hits
   medium — files ≤ 5, lines ≤ 100, no blocklist hits
   high   — files > 5, lines > 100, or any blocklist hit
+
+mode_ceiling — mechanical upper bound on mode cost derived from magnitude:
+  low    → sequential  (single-context deliberation is sufficient)
+  medium → dialectic   (two-pass warranted; Trias would be over-spec)
+  high   → trias       (full 3-personality deliberation warranted)
+  Blocklist hits force magnitude=high and therefore mode_ceiling=trias.
+  This makes advisory prose in SKILL.md enforceable via script output.
 
 Probe failure (no git, not a repo, bad ref) -> should_skip=false with the
 underlying error in `reason`. The gate fails OPEN: when in doubt, deliberate.
@@ -109,6 +117,13 @@ def _path_matches(path: str, pattern: str) -> bool:
     return fnmatch.fnmatchcase(path, pattern) or fnmatch.fnmatchcase(base, pattern)
 
 
+_MODE_CEILING: dict[str, str] = {
+    "low": "sequential",
+    "medium": "dialectic",
+    "high": "trias",
+}
+
+
 def classify_magnitude(files: int, lines: int, has_blocklist_hits: bool) -> str:
     """Return low / medium / high for lazy Trias routing.
 
@@ -172,6 +187,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
         return {
             "should_skip": False,
             "magnitude": "high",
+            "mode_ceiling": "trias",
             "reason": f"probe failed: {summary['error']}",
             "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": []},
         }
@@ -185,6 +201,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
         return {
             "should_skip": False,
             "magnitude": "low",
+            "mode_ceiling": "sequential",
             "reason": "no changes detected",
             "signals": signals,
         }
@@ -193,6 +210,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
         return {
             "should_skip": False,
             "magnitude": magnitude,
+            "mode_ceiling": _MODE_CEILING[magnitude],
             "reason": f"sensitive path matched: {joined}",
             "signals": signals,
         }
@@ -200,6 +218,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
         return {
             "should_skip": False,
             "magnitude": magnitude,
+            "mode_ceiling": _MODE_CEILING[magnitude],
             "reason": f"{files} files > max_files={cfg['max_files']}",
             "signals": signals,
         }
@@ -207,12 +226,14 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
         return {
             "should_skip": False,
             "magnitude": magnitude,
+            "mode_ceiling": _MODE_CEILING[magnitude],
             "reason": f"{lines} lines > max_lines={cfg['max_lines']}",
             "signals": signals,
         }
     return {
         "should_skip": True,
         "magnitude": magnitude,
+        "mode_ceiling": _MODE_CEILING[magnitude],
         "reason": f"{files} file(s), {lines} lines, no sensitive paths",
         "signals": signals,
     }
@@ -236,6 +257,7 @@ def main(argv: list[str] | None = None) -> int:
             {
                 "should_skip": False,
                 "magnitude": "high",
+                "mode_ceiling": "trias",
                 "reason": "CONSILIUM_FORCE_FULL=1 (override)",
                 "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": [], "forced": True},
                 "config_used": DEFAULT_CONFIG,
