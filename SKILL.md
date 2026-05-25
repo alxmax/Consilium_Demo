@@ -47,7 +47,19 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 
 Steps **5b, 5c, 5d** are sub-steps within Stage 4: **5b** (confidence) is mandatory; **5c** (meta-critic) is advisory and never blocks; **5d** (retry) runs only when confidence < 0.7 and `chosen` is non-null — skipped in headless mode.
 
+**Pipeline Invariants:**
+
+| Step(s) | Status |
+|---------|--------|
+| 0 · 1 · 2 · 5 · 5b · 6 | mandatory |
+| 1.5 | auto — scope gate, fails open; skippable for non-diff tasks |
+| 5c | advisory, never blocks |
+| 5d | conditional — only when `confidence < 0.7` and `chosen` non-null, non-headless |
+| 7 | opt-in (mandatory when prompt declares deliverables via the authoritative regex) |
+
 ---
+
+## Stage 1 — Setup
 
 ### 0. Bootstrap (before any grep / Read on the codebase)
 Two actions in order:
@@ -83,6 +95,8 @@ Defaults: `max_files=1`, `max_lines=15`, conservative blocklist (`auth/`, `secur
 
 **Non-diff tasks** (audit, architecture review, planning): scope_gate is a no-op — you can skip Step 1.5.
 
+## Stage 2 — Conservator
+
 ### 2. Conservator — assess risk (runs FIRST)
 Use `prompts/voices/conservator.md`. Runs **before** Generator and Control. Its output sets the `tokens_budget` for the other voices.
 
@@ -117,6 +131,8 @@ python scripts/probe_change.py --ref main --churn 30 # + commit count per file l
 ```
 Anchor `magnitude` to `files_changed/lines_*` and `regression_risk.net_concern` to the churn distribution when present.
 
+## Stage 3 — Voices
+
 ### 3. Generator — produce alternatives
 Use `prompts/voices/generator.md`. Request **3–5 candidates** (including `do_nothing` and any `adversarial_*` — they count toward the budget), including `do_nothing`. Divergent style. Respect `tokens_budget.generator` set by Conservator.
 
@@ -138,6 +154,8 @@ Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negoti
 **Post-Control veto check:**
 - If `glossary_fail: true` → BLOCK, request reformulation from user.
 - If `disagreements` contains any `type: substantial` → REWORK: re-run Generator with clarification before aggregating.
+
+## Stage 4 — Aggregate
 
 ### 5. Aggregate
 ```bash
@@ -177,6 +195,8 @@ cat bundle.json | python scripts/retry_context.py
 Returns the top-2 candidates with files/symbols to read/grep. Use the hints → gather context (Read + Grep) → re-run Generator/Control/Conservator **once** with enriched input. If confidence is still < 0.7, only then ask the user (Step 6).
 
 **Headless** (`is_headless()`): skip Step 5d entirely — go directly to Step 6 where `PEND_HEADLESS` is logged. Empirical note: `retry_context.py` has zero labeled usage in the `runs/` corpus (see senate audit `2026-05-16_220025-flow-and-modes-audit-r2`); skipping in headless is aligned with that deletion-vote and does not lose an active mechanism.
+
+## Stage 5 — Output
 
 ### 6. Report
 
