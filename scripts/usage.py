@@ -46,7 +46,7 @@ from pathlib import Path
 CORE_VOICES = ("generator", "control", "conservator")
 SENATORS = (
     "wittgenstein", "aurelius", "confucius", "socrate",
-    "musk", "dimon", "napoleon",
+    "musk", "dimon", "napoleon", "deming", "tacitus",
 )
 VOICES = CORE_VOICES + SENATORS
 COUNT_FIELDS = ("tokens_in", "tokens_out", "latency_ms")

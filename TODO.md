@@ -18,29 +18,25 @@
 
 ## ❌ NOT IMPLEMENTED
 
-### Investigate: senate_transcript.py — deprecated but still called — INVESTIGATE
+### Investigate: senate_transcript.py — RESOLVED (2026-05-25)
 
-> **Status:** INVESTIGATE (2026-05-17, discovered while generating transcripts for the Senate top-5 diagnostic audit).
-
-- [ ] `scripts/deprecated/senate_transcript.py` is marked as deprecated but **actively called** by `scripts/senate_synth.py:595` (`_generate_transcript()` via `importlib.util.spec_from_file_location`).
-- [ ] The bundle schema it renders is the legacy single-round one `{senators: {...}, vote_counts: ...}`. On non-standard bundles (e.g. diagnostic audit with schema `{top_5: [...], honorable_mentions: [...]}`) it works only partially — produces shorter HTML without votes.
-- [ ] **To decide:** (a) re-promote `senate_transcript.py` from `scripts/deprecated/` to `scripts/` (clarifies the real status); OR (b) inline the generation into `senate_synth.py` and delete the file; OR (c) extend it to support the diagnostic schema (top_5 + honorable_mentions) as a first-class option.
-- [ ] Falls out naturally from the Musk HM5 audit (dual-schema path in senate_synth.py) — same theme: shims retained after migrations, with no explicit cleanup.
-- [ ] Found: 2026-05-17, post Senate top-5 diagnostic audit (the session that manually generated `runs/senate/transcripts/2026-05-17/top5-diagnostic-audit.html` via `python -c "import senate_transcript; ..."`).
-
-### Usage & Efficiency reporting — IN PROGRESS
-
-> **Status:** Senate deliberation 2026-05-17 (`efficiency-py-design-decisions`) resolved all 4 open questions. Design in `experiments/usage-efficiency-proposal-pending.md`.
+> **Status:** RESOLVED. Git pull 2026-05-25 added `scripts/senate_transcript.py` directly (option a). `senate_synth.py:758` loads from `scripts/senate_transcript.py` — no longer from `scripts/deprecated/`. The `deprecated/` copy is an archived duplicate.
 >
-> **Senate-confirmed decisions (bundle `runs/senate/2026-05-17_194232-efficiency-py-design-decisions.json`):**
-> - Q1: Binary gate — FEEDBACK outcome=OK → OK, anything else → excluded from OK_count
-> - Q2: Raw sum (tokens_in + tokens_out); output also includes `tokens_per_dispatch` (normalized, per Socrate)
-> - Q3: Flat Trias schema: `{pioneer_generator, architect_control, ...}`
-> - Q4: `--self-test` flag in efficiency.py + `--feedback`/`--runs` CLI overrides (not a run_evals.py scenario)
+> Option (c) — support for diagnostic schema (`top_5 + honorable_mentions`) remains a nice-to-have, tracked separately below.
 
-- [ ] **Token capture (orchestrator):** emit `telemetry` at every run (chars/4 over the full prompt — proposal + persona + context, not just proposal). Affects cross-mode accuracy.
-- [ ] **SKILL.md Step 6c:** mandatory telemetry emission discipline after each run.
-- [ ] **UI tab:** "Usage & Efficiency" tab in `docs/architecture.html` with per-mode bar chart.
+- [x] Re-promoted from `scripts/deprecated/` to `scripts/` — done via git pull (2026-05-25).
+- [ ] **(nice-to-have, separate)** Extend `senate_transcript.py` to support diagnostic schema (`top_5 + honorable_mentions`) as a first-class option.
+
+### Usage & Efficiency reporting — IMPLEMENTED (2026-05-25)
+
+> **Design:** `experiments/usage-efficiency-proposal-pending.md` (all 4 design questions resolved).
+> **Consilium deliberation:** `runs/2026-05-25_1054_efficiency-design-q1q4.json` — Q1 user-confirmed: MODIFY → OK.
+
+- [x] **`scripts/efficiency.py`:** `personalities` key support added (Q3 — flat trias schema: pioneer/architect/steward). `--self-test` passes.
+- [x] **`scripts/usage.py`:** SENATORS tuple extended to include `deming` + `tacitus` (9 senators).
+- [x] **`runs/README.md`:** telemetry schema documented for `senators`, `personalities`, `dispatch_count`, and totals.
+- [x] **SKILL.md Step 6 telemetry:** mandatory emission discipline already present in SKILL.md (chars/4 per dispatch, voices/senators/personalities keys).
+- [x] **UI tab:** "Usage & Efficiency" section (§12) added to `docs/architecture.html` — mode cost table, tokens_per_OK bar chart, CLI commands, caveats.
 
 ---
 
@@ -83,6 +79,25 @@
 ---
 
 ## 🏛 Senate Resolutions
+
+### Senate Resolution — pipeline-simplification-5phases · 25 May 2026 · MODIFY (GO 1 · MODIFY 8 · STOP 0)
+
+> **Proposal:** Simplify the Consilium pipeline presentation from 12 granular steps (0, 1, 1.5, 2, 3, 4, 5, 5b, 5c, 5d, 6, 7) to 4-5 grouped phases in SKILL.md (and optionally docs/architecture.html). User request: '…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Commit to Variant A explicitly with invariant 'no file under scripts/ is edited'. Replace subjective success criterion with structural reverse-lookup test: each of the 12 legacy step identifiers appears under exactly one phase heading. Drop the UI term 'collapsible' — specify 'nested bullet under phase heading'. Gate on run_evals.py exit 0 and validate_report.py exit 0 against an existing run. Variant B is out of scope and needs its own audit.
+- [ ] **[AURELIUS]** Proceed only with Variant A. Preserve all 12 sub-step labels (0, 1, 1.5, 2, 3, 4, 5, 5b, 5c, 5d, 6, 7) as-is in SKILL.md. Instead, prepend a 5-phase overview section (table or short prose) that maps the phases to the steps. Exclude docs/architecture.html unless user explicitly requests it as a follow-up.
+- [ ] **[CONFUCIUS]** Split the proposal into two separate motions: (1) Variant A only — approve presentation grouping with no behavioral change, no sub-step deletion, no renumbering. (2) Variant B — defer to a separate deliberation with explicit corpus analysis of 5c/5d usage frequency, schema migration plan for deliberation_log labels, and a deprecation notice before deletion.
+- [ ] **[SOCRATE]** 1) Disambiguate Variant A vs B — cannot proceed on silent guess of intent. 2) Drop 'Phase' as grouping label — it already means Trias context-strip stages in SKILL.md (lines 524-548); use 'Stage' instead. 3) Correct Constraint #1: deliberation_log and validate_report.py do NOT reference 5b/5c/5d (they use semantic step names). 4) Make success criterion falsifiable: new reader must still be able to state when Step 5d is skipped. 5) Decide architecture.html's fate explicitly.
+- [ ] **[MUSK]** Implement Variant A only. In SKILL.md, add a phase-grouped summary table at the top (5 phases, one line each) mapping to the 12 steps below. Do not renumber or remove any sub-steps. Do not touch aggregator.py, validate_report.py, or architecture.html.
+- [ ] **[DIMON]** Choose Variant A (lower risk). Use explicit structural markers ('Phase 4: Aggregate & Synthesize: [4a confidence, 4b meta-critic, 4c retry]') instead of visual grouping. Add 'Pipeline Invariants' section stating which steps are mandatory. Update architecture.html to reflect 5-phase grouping (keep 12 internal steps visible but grouped). Add lint rule checking deliberation_log step names exist in current SKILL.md.
+- [ ] **[NAPOLEON]** Approve Variant A only, deferred to a fresh session. Reject Variant B as currently scoped. If Variant A proceeds, require validate_report.py pass and at least one full Senate run after the edit to confirm no behavioral change.
+- [ ] **[TACITUS]** Present phases as NON-AUTHORITATIVE reading aid layered over the existing 12 step-IDs (which stay as sub-headings and remain the contract anchors), exactly as the 'Observe→Think→Act→Learn' mapping already does. Verify zero stale references break in aggregator.py, validate_report.py, infer_pipeline.py.
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **B** (cross-ref: WITTGENSTEIN, CONFUCIUS, SOCRATE, NAPOLEON)
 
 ### Senate Resolution — eval-parity-script-flags · 25 May 2026 · MODIFY (GO 4 · MODIFY 5 · STOP 0)
 

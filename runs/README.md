@@ -31,13 +31,33 @@ fields are marked **REQUIRED**; the rest are recommended but not blocking.
   },
   "confidence": 0.85,
   "telemetry": {
-    "mode": "sequential | parallel | dialectic | ensemble",
+    "mode": "sequential | parallel | dialectic | trias | senate",
+    "dispatch_count": 3,
     "passes": 1,
     "voices": {
       "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
       "control":     {"tokens_in":  800, "tokens_out": 200, "latency_ms": 2100},
       "conservator": {"tokens_in":  900, "tokens_out": 180, "latency_ms": 1800}
-    }
+    },
+    "senators": {
+      "wittgenstein": {"tokens_in": 2000, "tokens_out": 500, "latency_ms": 3100},
+      "aurelius":     {"tokens_in": 2000, "tokens_out": 510, "latency_ms": 3400},
+      "confucius":    {"tokens_in": 2000, "tokens_out": 490, "latency_ms": 3200},
+      "socrate":      {"tokens_in": 2000, "tokens_out": 520, "latency_ms": 3300},
+      "musk":         {"tokens_in": 2000, "tokens_out": 480, "latency_ms": 2900},
+      "dimon":        {"tokens_in": 2000, "tokens_out": 510, "latency_ms": 3100},
+      "napoleon":     {"tokens_in": 2000, "tokens_out": 500, "latency_ms": 3000},
+      "deming":       {"tokens_in": 2000, "tokens_out": 505, "latency_ms": 3050},
+      "tacitus":      {"tokens_in": 2000, "tokens_out": 515, "latency_ms": 3150}
+    },
+    "personalities": {
+      "pioneer":   {"tokens_in": 5200, "tokens_out": 1400, "latency_ms": 8000},
+      "architect": {"tokens_in": 5200, "tokens_out": 1400, "latency_ms": 8200},
+      "steward":   {"tokens_in": 5200, "tokens_out": 1400, "latency_ms": 7900}
+    },
+    "total_tokens_in": 12950,
+    "total_tokens_out": 3300,
+    "total_latency_ms": 23400
   },
   "deliberation_log": [
     {"step": "generator",   "candidates": [...]},

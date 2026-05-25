@@ -157,16 +157,19 @@ Content (static at first; later: live read of `efficiency.py --json` baked at bu
 | `runs/README.md` | telemetry.senators schema | ~10 |
 | **Total** | | **~425 LOC** |
 
-## Open questions (resolve before promoting from pending)
+## Open questions — RESOLVED (2026-05-25, runs/2026-05-25_1054_efficiency-design-q1q4.json)
 
-1. **OK_count attribution to Senate.** Senate verdicts (`GO`/`MODIFY`/`STOP`/`DEEPLY_SPLIT`/`UNREACHABLE`) don't map 1:1 to `OK`/`BAD`/`OVR`/`PEND` in FEEDBACK. Need a mapping table — proposed: GO+user-proceeds→OK; STOP+user-accepts→OK; MODIFY→OK only if user logs follow-up; DEEPLY_SPLIT/UNREACHABLE→PEND. Confirm before impl.
-2. **Tokens_in inflation on Senate.** Each senator gets ~same prompt; total_tokens_in = 7 × prompt_chars. Want to count "deliberation tokens" or "user-charged tokens"? Both valid. Proposed: total = raw sum (closer to real cost). Confirm.
-3. **Trias mode reporting.** 9 sub-agents = 3 personalities × 3 voices. Persist as `telemetry.personalities.{pioneer,architect,steward}.voices.{...}` or flatten to 9 entries under `voices`? Recommend nested (preserves personality dimension for future "per-personality cost" analysis).
-4. **Eval harness.** Add an `evals/` scenario covering "efficiency.py returns deterministic result on fixture telemetry" to `run_evals.py`. Recommend yes.
+1. **OK_count attribution to Senate.** ✅ **RESOLVED: MODIFY → OK by default.** All Senate verdicts (GO/MODIFY/STOP/DEEPLY_SPLIT/UNREACHABLE) map as: GO→OK, MODIFY→OK (least friction; user marks BAD retroactively via mark_outcome.py if follow-up ignored), STOP→OK (if user accepted verdict), DEEPLY_SPLIT/UNREACHABLE→PEND. Caveat: Senate efficiency score may be slightly inflated if MODIFY requests are systematically ignored — document in efficiency.py caveats section.
+2. **Tokens_in inflation on Senate.** ✅ **RESOLVED: raw sum confirmed.** total_tokens_in = 9 × prompt_chars per run. This is accurate billing cost, not inflation.
+3. **Trias mode reporting.** ✅ **RESOLVED: flat `telemetry.personalities.{pioneer|architect|steward}` — 3 entries.** Note: this proposal was written when Trias had 9 sub-agents (3 personalities × 3 voices). Current Trias = 3 sub-agents (one per personality); internal G/C/C are opaque sub-agent internals. The nested `telemetry.personalities.{p}.voices.{g,c,c}` schema is NOT implementable without exposing internal voice outputs. Use flat schema:
+   ```json
+   {"telemetry": {"mode": "trias", "dispatch_count": 3, "personalities": {"pioneer": {"tokens_in": 0, "tokens_out": 0, "latency_ms": 0}, "architect": {...}, "steward": {...}}, "total_tokens_in": 0, "total_tokens_out": 0, "total_latency_ms": 0}}
+   ```
+4. **Eval harness.** ✅ **RESOLVED: --self-test only.** No run_evals.py scenario — Senate 2026-05-17 decision stands. efficiency.py --self-test covers determinism without fixture maintenance overhead.
 
-## Promotion criteria (pending → implementation)
+## Promotion criteria
 
-User explicit go-ahead OR /consilium re-run on this proposal with chosen=`implement_efficiency_proposal` and confidence ≥ 0.7.
+**All design questions resolved.** Feature is ready for implementation. Proceed with explicit go-ahead.
 
 ## References
 
