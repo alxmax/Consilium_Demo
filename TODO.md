@@ -22,10 +22,9 @@
 
 > **Status:** RESOLVED. Git pull 2026-05-25 added `scripts/senate_transcript.py` directly (option a). `senate_synth.py:758` loads from `scripts/senate_transcript.py` — no longer from `scripts/deprecated/`. The `deprecated/` copy is an archived duplicate.
 >
-> Option (c) — support for diagnostic schema (`top_5 + honorable_mentions`) remains a nice-to-have, tracked separately below.
+> Option (c) — diagnostic schema support — **dropped 2026-05-26** (moot: Senate is its own repo now).
 
 - [x] Re-promoted from `scripts/deprecated/` to `scripts/` — done via git pull (2026-05-25).
-- [ ] **(nice-to-have, separate)** Extend `senate_transcript.py` to support diagnostic schema (`top_5 + honorable_mentions`) as a first-class option.
 
 ### Usage & Efficiency reporting — IMPLEMENTED (2026-05-25)
 
@@ -267,9 +266,7 @@ _The Senate approved the proposal. No modifications required._
 
 ### Senate Resolution — phase1-deeply-split-plus-laws-mapping · 17 May 2026 · GO (GO 5 · MODIFY 2 · STOP 0)
 
-> **Status (2026-05-17):** Shipped. One unaddressed item remains.
-
-- [ ] **[SOCRATE — unaddressed]** Coverage table formally disjoint between DEEPLY_SPLIT and the other verdicts (GO/MODIFY/STOP/UNREACHABLE) across all tuples (GO, STOP, MODIFY, ABSENT) summing to 7 — the 5 existing unit tests do not constitute exhaustive boundary coverage.
+> **Status (2026-05-17):** Shipped. (The one unaddressed SOCRATE coverage-table item was **dropped 2026-05-26** — low-value test completeness.)
 
 ### Senate Resolution — bundle-2-senators-plus-5-improvements · 17 May 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
 > **Proposal:** Bundle of 6 modifications to consilium Senate mode: A) add 2 new senators (Deming statistical-discipline, Tacitus retrospective-historian); B.1) codify Laws 1-4 in SKILL.md mapped to 4 Constitution Pr…
@@ -283,22 +280,9 @@ _The Senate approved the proposal. No modifications required._
 ### Senate Resolution — flow-and-modes-audit · 16 May 2026 · MODIFY (GO 1 · MODIFY 5 · STOP 0)
 > **Proposal:** Evaluate all workflow steps (0,1,1.5,2,3,4,5,5b,5c,5d,6) and all modes (Sequential, Dialectic, Trias, parallel_skeptic, dialectic_skeptic, trias_split, skeptic_on_chosen, senate) to determ…
 
-## Benchmark — two-pass runner (to investigate)
+## Benchmark — two-pass runner — **DROPPED 2026-05-26**
 
-**Context:** consilium_sequential benchmark runs produce 0/4 verify:OK with the current fix (CLAUDE_HEADLESS + CONSILIUM_SUFFIX). The suffix doesn't reach the internal sub-agents from trias/dialectic — post-deliberation implementation depends on each mode's orchestrator.
-
-**Proposal:** redesign `run_task.py` for the `consilium_trias` and `consilium_dialectic` modes (and optionally sequential) with two separate steps:
-- **Pass 1:** `claude -p "/consilium [--mode X] <task>"` → deliberation, report in `runs/<file>.json`
-- **Pass 2:** `claude -p "chosen_approach: <extracted from runs/...json>. Task: <task>. Implement now: write output files."` → fresh context, 0 prior turns, direct implementation
-
-**To investigate:**
-- [ ] How to robustly extract `chosen_approach` from the Pass 1 response / `runs/<file>.json`
-- [ ] What happens if `runs/<file>.json` is not written (consilium failure) — fallback to generic Pass 2?
-- [ ] Cost impact: ~2× per consilium run ($3 vs $1.5); acceptable?
-- [ ] Do Trias sub-agents write intermediate files to the workspace in Pass 1? If so, Pass 2 must see them
-- [ ] Measurement: run consilium_trias + consilium_dialectic with two-pass and compare verify rate with current fix
-
-**Priority:** after it's confirmed that the CONSILIUM_SUFFIX fix raises sequential to >2/4 verify. If sequential stays at 0/4, two-pass becomes priority.
+Investigation cluster dropped per CV-triage (`runs/2026-05-26_0030_todo-triage-cv.json`). Revisit only if it feeds the §6 showcase or a real measured `tokens_per_OK`.
 
 ---
 
