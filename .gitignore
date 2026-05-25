@@ -39,7 +39,8 @@ FEEDBACK.html
 *.md.bak
 
 # Claude Code session metadata (permissions, local settings)
-.claude/
+.claude/*
+!.claude/settings.json
 
 # Local bug tracking / agent reports
 BUGS.md

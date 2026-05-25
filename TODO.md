@@ -79,6 +79,27 @@
 
 ## 🏛 Senate Resolutions
 
+### Senate Resolution — efficiency-explore-commit-audit · 25 May 2026 · MODIFY (GO 2 · MODIFY 6 · STOP 1)
+
+> **Proposal:** Two architecture proposals for Consilium skill.
+
+Proposal 1 — Efficiency/model-count audit: How many sub-agents does Consilium actually need? Should the count vary with task complexity? Define the tar…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Both proposals lack rejection criteria. P1: replace 'actually need' with a floor-based test; bind 'task complexity' to the existing measured `magnitude` axis or name the new signal explicitly; express 'target end-state' as a diff-checkable artifact — the post-audit mode set plus a deterministic count→signal routing table. P2: declare whether 'formalize' means ENFORCED (numbered Steps with validate_report-checkable field) or DESCRIPTIVE (OTAL-style reading-aid with 'no new behavioral contracts' disclaimer); define EXPLORE's done-condition against Step 0/1 and COMMIT's relationship to CLAUDE.md git workflow.
+- [ ] **[CONFUCIUS]** Proposal 1: MODIFY — the audit is institutionally sound, but must follow the precedent: (a) pre-register a kill-criterion and decision rule before any sub-agent count changes reach SKILL.md, (b) account for the Trias 9→3 budget-kill precedent by pairing any count reduction with a budget backstop. The audit question is GO; implementation without pre-registered criteria is MODIFY. Proposal 2: MODIFY — do not formalize EXPLORE or COMMIT into SKILL.md Steps 0–7. The OTAL framing already captures the descriptive shape and was explicitly blessed as docs-only. If formalization is desired, limit to updating the existing descriptive section with EXPLORE/COMMIT labels, not adding new behavioral steps. COMMIT belongs in CLAUDE.md, not SKILL.md.
+- [ ] **[SOCRATE]** Both proposals carry undeclared load-bearing premises that must be declared before GO. P1: (a) declare whether the target is count-reduction or escalation-correctness; (b) declare a falsifiable kill-criterion per mode using an independent-oracle correctness measure. P2: (a) declare that COMMIT rules are already owned by CLAUDE.md and resolve the dual-source-of-truth risk; (b) declare the invariant 'formalization must be purely additive and touch no Step 0–7 numbering, or it is a breaking schema change.'
+- [ ] **[MUSK]** Proposal 1: delete the audit work item; if warranted, add a single routing sentence to SKILL.md citing the existing benchmark cost/correctness finding. Proposal 2: delete entirely — EXPLORE duplicates Step 1, COMMIT duplicates CLAUDE.md, and the macro-framework adds no behavior, only renaming. Both proposals fail the deletion test.
+- [ ] **[DIMON]** P1 must define the routing heuristic with an explicit fallback: when uncertain, MUST default to higher sub-agent count, not lower. n=6 is insufficient to support a mode-removal decision — minimum oracle-validated n≥20 with architectural ambiguity tasks required before removal. P2 must specify whether EXPLORE and COMMIT are mandatory or advisory for headless invocations, and must include a migration path for existing CI integrations.
+- [ ] **[NAPOLEON]** Split the two proposals into separate verdicts: P2 (EXPLORE→PLAN→CODE→COMMIT) is GO — low cost, favorable terrain, actionable now. P1 (sub-agent efficiency audit) is STOP until benchmark n≥20 across diverse task types — current data is thin and terrain is stretched from the Senate split. Acting on P1 today risks compounding architectural churn without sufficient empirical grounding.
+- [ ] **[DEMING]** For P1: (a) produce the Trias-vs-Sequential paired corpus (n≥5 tasks, same spec both arms, oracle-validated correctness, token+wall-clock variance per task) before invoking the cost-ratio in any architectural decision; (b) reconcile the n=6 pipeline benchmark figure — either surface the 6th result file or correct to n=5.
+
+**B. Actionable items (extracted from requests above):**
+
+- [ ] **P1** (cross-ref: WITTGENSTEIN, SOCRATE, DIMON, NAPOLEON, DEMING)
+- [ ] **P2** (cross-ref: WITTGENSTEIN, SOCRATE, DIMON, NAPOLEON)
+
 ### Senate Resolution — pipeline-simplification-5phases · 25 May 2026 · MODIFY (GO 1 · MODIFY 8 · STOP 0) — **RESOLVED**
 
 > Tabelul "Pipeline at a glance" (5 Stage-uri → 12 pași) + "Pipeline Invariants" adăugate în SKILL.md liniile 38-58. Variant A livrată, scripts/ neatinse, 58/58 evals PASS.
