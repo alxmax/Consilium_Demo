@@ -59,6 +59,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import pathlib
 import statistics
 import sys
 
@@ -72,15 +73,61 @@ SEPARATION_WEIGHT = 0.3
 CONFIDENCE_FLOOR = 0.05
 CONFIDENCE_CEIL = 0.99
 
-# E1: mode-specific confidence floors. When a mode's result lands below its floor,
-# log as outcome WEAK in FEEDBACK.html — signal that the mode didn't deliver value
-# for its cost. Trias (9× cost) earns the highest floor.
-MODE_CONFIDENCE_FLOOR: dict[str, float] = {
+_MODES_DIR = pathlib.Path(__file__).parent.parent / "modes"
+
+# Hardcoded fallback used when modes/*.md files are absent (e.g. older installs).
+_FLOOR_FALLBACK: dict[str, float] = {
     "sequential": 0.70,
     "sequential_scale_down": 0.70,
     "dialectic": 0.75,
     "trias": 0.80,
 }
+
+
+def _parse_frontmatter(text: str) -> dict[str, str]:
+    """Parse flat YAML frontmatter between --- delimiters. Stdlib-only."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}
+    end = next((i for i, l in enumerate(lines[1:], 1) if l.strip() == "---"), None)
+    if end is None:
+        return {}
+    result: dict[str, str] = {}
+    for line in lines[1:end]:
+        if ":" in line:
+            k, _, v = line.partition(":")
+            result[k.strip()] = v.strip()
+    return result
+
+
+def _load_mode_floors() -> dict[str, float]:
+    """Read confidence_floor from modes/*.md frontmatter. Falls back to hardcoded dict."""
+    if not _MODES_DIR.is_dir():
+        return dict(_FLOOR_FALLBACK)
+    floors: dict[str, float] = {}
+    for f in sorted(_MODES_DIR.glob("*.md")):
+        try:
+            fm = _parse_frontmatter(f.read_text(encoding="utf-8"))
+        except OSError:
+            continue
+        name = fm.get("name", "").strip()
+        raw = fm.get("confidence_floor", "").strip()
+        if name and raw and raw != "N/A":
+            try:
+                floors[name] = float(raw)
+            except ValueError:
+                pass
+    if not floors:
+        return dict(_FLOOR_FALLBACK)
+    # sequential_scale_down inherits sequential floor when not explicitly defined
+    if "sequential" in floors and "sequential_scale_down" not in floors:
+        floors["sequential_scale_down"] = floors["sequential"]
+    return floors
+
+
+# E1: mode-specific confidence floors. Loaded from modes/*.md frontmatter;
+# falls back to hardcoded dict when modes/ is absent (e.g. older installs).
+MODE_CONFIDENCE_FLOOR: dict[str, float] = _load_mode_floors()
 
 
 def check_mode_floor(mode: str, confidence: float | None) -> dict:
