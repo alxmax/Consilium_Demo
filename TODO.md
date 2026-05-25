@@ -42,7 +42,7 @@
 
 ## 🤔 UNRESOLVED DECISIONS
 
-- [ ] **Re-test implementation pipeline before promoting:** add ≥3 more refactor-regime tasks; confirm the win rate holds (n=3 / 1 win is a pilot signal, not proof — Deming). Context: pipeline shipped as opt-in EXPERIMENTAL_DRAFT (`feat/implement-pipeline-scaffold`), kill-criterion not met (wins < 2/3), scoped to refactor/bugfix/regression-risk only.
+- [x] **Re-test implementation pipeline — DONE (2026-05-25):** Added 3 refactor-regime tasks (T4/T5/T6). R2 result: 0 wins / 3 ties (all arms tied at full oracle score). Combined R1+R2: 1 win / 5 ties / 0 losses (n=6). Graduation criterion NOT met (need ≥2/3 wins). Pipeline stays EXPERIMENTAL_DRAFT, opt-in only. Key finding: pipeline value is specific to *semantically-isolated* secondary branches (T3 pattern) — algebraically-obvious paths (T4/T5) and trivial substitutions don't need it. T6 has valid T3-pattern structure but arm A prompt was compromised; marked invalid. See `experiments/pipeline-bench/RESULTS.md`.
 
 - [ ] **Veto budget for `meta_recommendation`: is 5/month acceptable?** Aurelius+Napoleon proposed it, but the number is arbitrary. You might prefer 10 or 3.
 - [ ] **Outcome tracking — manual or automatic?** For trading it can be automatic from MT4. For other domains it requires manual completion. If not, `principle_extraction` never activates.
