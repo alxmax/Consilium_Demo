@@ -11,7 +11,7 @@
 2. [🤔 UNRESOLVED DECISIONS](#-unresolved-decisions)
 3. [📋 POST-MERGE VALIDATION](#-post-merge-validation)
 4. [🔧 Prompts & skill audit (items #9, #43, #45-#50)](#-prompts--skill-audit)
-5. [🐞 Bugs (39 medium + 52 low remaining)](#-bugs)
+5. [🐞 Bugs (all fixed — see status updates)](#-bugs)
 6. [🏛 Senate Resolutions](#-senate-resolutions)
 7. [Rollback hooks](#rollback-hooks)
 8. [🎯 User directions (open)](#-user-directions-open)
@@ -180,7 +180,9 @@ Soft-positive decision, low priority.
 >
 > **Status update 2026-05-24:** 33 Medium bugs fixed across `feat/fix-medium-low-bugs` + `fix/medium-bugs-round2`. Remaining: 6 Medium + 47 Low.
 >
-> Remaining: 6 Medium + 47 Low (lower priority). Counts below reflect original audit and are kept as historical context.
+> **Status update 2026-05-25:** All 35 Medium bugs and all 47 Low bugs fixed in `fix/low-bugs` (pending PR merge). 0 pyright errors, 55/55 evals pass.
+>
+> Counts below reflect the original audit and are kept as historical context. All items are now addressed.
 
 ### Tally
 
