@@ -56,22 +56,22 @@ consilium/
 ├── README.md
 ├── FEEDBACK.html            # real-usage journal (gitignored)
 ├── prompts/
-│   ├── voices/              # generator, control, conservator, skeptic,
-│   │                        #   *_pass2, pioneer/architect/steward_lens,
-│   │                        #   frontend_domain_lens
-│   └── senators/            # wittgenstein, aurelius, confucius, socrate,
-│                            #   musk, dimon, napoleon (Senate mode)
-├── scripts/                 # ~30 stdlib-only scripts (aggregator, confidence,
+│   └── voices/              # generator, control, conservator, skeptic,
+│                            #   *_pass2, pioneer/architect/steward_lens,
+│                            #   frontend_domain_lens
+├── scripts/                 # ~25 stdlib-only scripts (aggregator, confidence,
 │                            #   priors, scope_gate, dialectic_merge,
-│                            #   senate_synth, log_feedback, …)
+│                            #   log_feedback, …)
 ├── agents/
 │   └── consilium-subagent.md  # isolated dispatch via Agent tool
 ├── runs/                    # one JSON per deliberation (gitignored)
-│   └── senate/              # Senate bundles
-├── docs/senate/             # architecture.html (round + deadlock visualizations)
+├── docs/                    # architecture.html (visualizations)
 ├── experiments/             # benchmarks on real problems
 └── evals/                   # regression scenarios for scripts
 ```
+
+> The 9-senator **Senate** audit was split into its own skill on 2026-05-25
+> (repo: [`Senate`](https://github.com/alxmax/Senate)). Invoke `/senate` separately.
 
 ## Usage
 
@@ -84,7 +84,6 @@ The skill activates automatically when keywords such as "review PR", "evaluate c
 - **Trias** — 3 personalities × 3 voices (Pioneer/Architect/Steward); 9 sub-agents
 - **`trias_split`** — Trias with Sonnet Generator + Haiku verifiers
 - **`skeptic_on_chosen`** — composable flag over any mode (+1 sub-agent overhead). Replaces the fixed modes `parallel_skeptic` / `dialectic_skeptic` (collapsed 2026-05-17; legacy names remain in `validate_report.py` MODE enum for backward-compat)
-- **Senate** — audit of skill changes themselves (9 senators, on-demand)
 
 Parallel as a selectable option was removed in RUND2; it remains as an automatic cross-check when `magnitude=critical ∧ reversibility=irreversible`.
 

@@ -30,8 +30,6 @@ Thumbs.db
 
 # Personal deliberation logs (schema in runs/README.md)
 runs/*.json
-runs/senate/*.json
-runs/senate/transcripts/
 # Drill-down sidecar (auto-managed by log_feedback.py)
 runs/.run_path_map.json
 
@@ -39,9 +37,6 @@ runs/.run_path_map.json
 FEEDBACK.md
 FEEDBACK.html
 *.md.bak
-
-# Generated HTML dashboards (regenerable from runs/senate/)
-senate-history.html
 
 # Claude Code session metadata (permissions, local settings)
 .claude/

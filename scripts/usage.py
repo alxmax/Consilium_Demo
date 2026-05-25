@@ -1,20 +1,16 @@
 """Aggregate telemetry across runs/*.json into usage statistics.
 
-Walks runs/*.json AND runs/senate/*.json (when default runs dir is used),
-reads each report's optional `telemetry` block, and emits totals +
-per-voice/per-mode breakdowns. Reports without telemetry are counted but
-excluded from cost stats.
+Walks runs/*.json, reads each report's optional `telemetry` block, and emits
+totals + per-voice/per-mode breakdowns. Reports without telemetry are counted
+but excluded from cost stats.
 
 Useful for proving scope_gate ROI (skipped runs cost ~0 voice tokens) or
 checking whether dialectic mode justifies its 2x cost on real changes.
-Senate bundles emit telemetry per-senator when orchestrator captured
-`<usage>total_tokens: N</usage>` from Agent dispatch and included it in
-the synth input.
 
 Telemetry shape expected on each report:
     {
       "telemetry": {
-        "mode": "sequential" | "parallel" | "dialectic" | "trias" | "senate",
+        "mode": "sequential" | "parallel" | "dialectic" | "trias",
         "passes": 1,
         "voices": {
           "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
@@ -29,9 +25,9 @@ Any field inside `voices` may be omitted. Source field is informational
 
 CLI:
     python scripts/usage.py
-    python scripts/usage.py --runs path/to/dir   # custom dir, no senate walk
+    python scripts/usage.py --runs path/to/dir   # custom dir
     python scripts/usage.py --last 50            # most-recent N runs only
-    python scripts/usage.py --mode senate        # filter by telemetry.mode
+    python scripts/usage.py --mode trias         # filter by telemetry.mode
 """
 
 from __future__ import annotations
@@ -44,11 +40,7 @@ from pathlib import Path
 
 
 CORE_VOICES = ("generator", "control", "conservator")
-SENATORS = (
-    "wittgenstein", "aurelius", "confucius", "socrate",
-    "musk", "dimon", "napoleon", "deming", "tacitus",
-)
-VOICES = CORE_VOICES + SENATORS
+VOICES = CORE_VOICES
 COUNT_FIELDS = ("tokens_in", "tokens_out", "latency_ms")
 
 
@@ -90,9 +82,7 @@ def collect(reports: list[dict], mode_filter: str | None = None) -> dict:
         if not isinstance(telemetry, dict):
             continue
 
-        # Senate bundles have top-level `mode` (skill_audit|code_audit) but
-        # telemetry.mode may carry the dispatch mode ("senate"). Prefer telemetry.mode,
-        # fall back to top-level if absent.
+        # Prefer telemetry.mode, fall back to a top-level mode field if absent.
         mode = telemetry.get("mode") or report.get("mode") or "unspecified"
 
         if mode_filter is not None and mode != mode_filter:
@@ -163,12 +153,8 @@ def _latency_warnings(files: list[Path], reports: list[dict]) -> list[dict]:
     return warnings
 
 
-def load_reports(runs_dir: Path, last: int | None, include_senate: bool = True) -> tuple[list[Path], list[dict]]:
+def load_reports(runs_dir: Path, last: int | None) -> tuple[list[Path], list[dict]]:
     files = sorted(runs_dir.glob("*.json"))
-    if include_senate:
-        senate_dir = runs_dir / "senate"
-        if senate_dir.is_dir():
-            files.extend(sorted(senate_dir.glob("*.json")))
     if last is not None:
         files = files[-last:]
     paths: list[Path] = []
@@ -190,13 +176,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--runs", default=None, help="path to runs/ dir (default: ./runs)")
     ap.add_argument("--last", type=int, default=None, help="restrict to most-recent N runs")
-    ap.add_argument("--mode", default=None, help="filter by telemetry.mode (e.g. senate, trias, sequential)")
-    ap.add_argument("--no-senate", action="store_true", help="exclude runs/senate/ from walk")
+    ap.add_argument("--mode", default=None, help="filter by telemetry.mode (e.g. trias, sequential)")
     args = ap.parse_args(argv)
 
-    # When user passes a custom --runs path, they likely want that exact dir
-    # only; auto-include senate subdir only on the default ./runs root.
-    use_default_root = args.runs is None
     runs_dir = Path(args.runs) if args.runs else Path.cwd() / "runs"
     if not runs_dir.is_dir():
         json.dump(
@@ -207,8 +189,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write("\n")
         return 1
 
-    include_senate = use_default_root and not args.no_senate
-    files, reports = load_reports(runs_dir, args.last, include_senate=include_senate)
+    files, reports = load_reports(runs_dir, args.last)
     result = collect(reports, mode_filter=args.mode)
     result["warnings"] = _latency_warnings(files, reports)
     json.dump(result, sys.stdout, indent=2)
