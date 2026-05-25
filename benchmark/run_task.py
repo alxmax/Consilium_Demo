@@ -1,0 +1,922 @@
+#!/usr/bin/env python3
+"""
+Benchmark runner.
+
+Spawns `claude -p` headless with the configured model + effort, parses the
+JSON output (cost / duration / tokens), writes RESULT.md. Reports budget /
+time-limit / max-turn / timeout exhaustion explicitly. Hard wall-clock cap:
+15 min per run.
+
+Examples
+--------
+  python run_task.py --mode opus_bare --task code/01_circuit_breaker
+  python run_task.py --mode consilium_sequential --task code/01_circuit_breaker --budget 5
+  python run_task.py --mode superpowers --task code/01_circuit_breaker
+  python run_task.py --mode opus_bare --task code/01_circuit_breaker --clean   # wipes that workspace first
+"""
+
+import argparse
+import json
+import os
+import re
+import secrets
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from contextlib import contextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+
+import verify as verify_engine
+
+# scripts/extract_deliverables.py — harness-level deliverable extraction.
+# When the model emits implementation as a fenced code block in chat but
+# doesn't call Write, this extracts each declared deliverable from
+# claude_raw.json and writes it to the workspace (idempotent — skips if file
+# already exists). See scripts/extract_deliverables.py docstring + Consilium
+# senate audit runs/senate/2026-05-18_203925-deliverable-enforcement-r2.json.
+sys.path.insert(0, str(Path(__file__).parent / "scripts"))
+import extract_deliverables  # noqa: E402
+import audit_behavior  # noqa: E402
+from _common import MODES  # noqa: E402  — single source of truth
+
+BASE           = Path(__file__).parent
+PROMPTS        = BASE / "prompts"
+WORKSPACE      = BASE / "workspace"
+# benchmark/ lives inside the Consilium repo, so its parent IS the Consilium root.
+CONSILIUM_ROOT = BASE.parent
+
+# Hard wall-clock cap for any single run (10 minutes).
+RUN_TIMEOUT_SEC = 10 * 60
+
+# Toolchains we want available to every run (fair to all modes).
+# Override with BENCHMARK_GXX_PATH (os.pathsep-separated); the msys64 paths
+# below stay as the fallback when the env var is unset.
+EXTRA_PATH_ENTRIES = [
+    *[p for p in os.environ.get("BENCHMARK_GXX_PATH", "").split(os.pathsep) if p],
+    r"C:\msys64\ucrt64\bin",   # g++ 14.2 (UCRT)
+    r"C:\msys64\mingw64\bin",  # fallback
+]
+
+MODE_PREFIXES = {
+    "consilium_sequential":  "/consilium ",
+    "consilium_trias":       "/consilium --mode trias ",
+    "consilium_dialectic":   "/consilium --mode dialectic ",
+    "superpowers":           "",
+    "opus_bare":             "",
+    "sonnet_bare":           "",
+}
+
+# CONSILIUM_SUFFIX removed (2026-05-18) — Step 6.5 in Consilium SKILL.md now
+# enforces deliverable writes for any prompt that declares files (benchmark or
+# not), with verify-then-emit gate. Keeping the suffix here would duplicate the
+# contract across two sources of truth.
+
+# Per-mode model pin. Modes whose name implies a specific model lock to it,
+# regardless of the --model flag default. Pass --model explicitly to override.
+MODE_MODELS = {
+    "opus_bare":   "claude-opus-4-7",
+    "sonnet_bare": "claude-sonnet-4-6",
+}
+
+# Per-mode budget overrides (USD). Default budget ($3) is uniform across modes
+# now; leave this dict empty unless a specific mode genuinely needs more.
+MODE_BUDGETS = {}
+
+# ── Helpers ────────────────────────────────────────────
+
+def parse_num(s):
+    s = str(s).replace(",", "").strip()
+    if s.endswith("k"): return float(s[:-1]) * 1_000
+    if s.endswith("m"): return float(s[:-1]) * 1_000_000
+    return float(s)
+
+def delta(est, actual):
+    try:
+        e, a = parse_num(est), parse_num(actual)
+        return f"{((a - e) / e * 100):+.0f}%" if e else "N/A"
+    except Exception:
+        return "N/A"
+
+def cal_score(d):
+    try:
+        pct = abs(float(d.replace("%", "").replace("+", "")))
+        if pct <= 20:  return 10
+        if pct <= 50:  return 7
+        if pct <= 200: return 3
+        return 0
+    except Exception:
+        return 0
+
+def api_mins(s):
+    if not s: return 0
+    m   = re.search(r"(\d+)m", s)
+    sec = re.search(r"([\d.]+)s", s)
+    return (int(m.group(1)) if m else 0) + (float(sec.group(1)) / 60 if sec else 0)
+
+def pass_fail(dur, limit):
+    if not dur: return "?"
+    return "PASS" if api_mins(dur) <= limit else f"FAIL  (>{limit} min)"
+
+def time_bonus(dur, threshold):
+    if not dur: return "?"
+    return f"+5  (under {threshold} min)" if api_mins(dur) <= threshold else "+0"
+
+def autonomy_penalty(q):
+    return "0" if q == 0 else "-5" if q <= 3 else "-15" if q <= 10 else "-25"
+
+def fmt_duration_ms(ms):
+    if not ms: return "—"
+    s = ms / 1000
+    m, sec = divmod(s, 60)
+    return f"{int(m)}m {sec:.1f}s" if m else f"{sec:.1f}s"
+
+def parse_self_estimate(text):
+    """Extract the model's self-estimate from its response.
+
+    Looks for a `## Self-estimate` (or legacy `## Token Usage`) trailer and
+    pulls:
+      - lines:      estimated deliverable line count (the calibration metric)
+      - input:      legacy input-tokens estimate (kept for back-compat display)
+      - output:     legacy output-tokens estimate (kept for back-compat display)
+      - reasoning:  YES / NO + optional percentage
+    """
+    est = {"lines": "N/A", "input": "N/A", "output": "N/A", "reasoning": "N/A"}
+    for line in text.splitlines():
+        ll = line.lower()
+        # Primary calibration metric: lines in deliverables.
+        # Match only explicit phrasings so casual mentions of "first line",
+        # "command line" etc. don't capture stray numbers.
+        m = re.search(
+            r"(?:estimated\s+(?:deliverable\s+)?lines?"
+            r"|deliverable\s+lines?"
+            r"|lines?\s+in\s+deliverables?)"
+            r"[^:]*:?\s*~?([\d,]+k?)",
+            ll,
+        )
+        if m and est["lines"] == "N/A":
+            est["lines"] = m.group(1)
+        m = re.search(r"input tokens?[^:]*:?\s*~?([\d,]+k?)", ll)
+        if m and est["input"] == "N/A":
+            est["input"] = m.group(1)
+        m = re.search(r"output tokens?[^:]*:?\s*~?([\d,]+k?)", ll)
+        if m and est["output"] == "N/A":
+            est["output"] = m.group(1)
+        m = re.search(r"reasoning used?[^:]*:?\s*(yes|no)[^\n]*?([\d]+\s*%)?", ll)
+        if m and est["reasoning"] == "N/A":
+            est["reasoning"] = m.group(1).upper()
+            if m.group(2):
+                est["reasoning"] += f" ({m.group(2).strip()})"
+    return est
+
+def count_questions(text):
+    in_code = False
+    count = 0
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            in_code = not in_code
+        elif not in_code and line.strip().endswith("?"):
+            count += 1
+    return count
+
+def fix_pend_headless(response: str) -> None:
+    """Convert PEND entries created by this benchmark run to PEND_HEADLESS."""
+    fix_script = CONSILIUM_ROOT / "scripts" / "fix_benchmark_pendings.py"
+    if not fix_script.exists():
+        return
+    run_paths = re.findall(r"\bruns/[\w\-.]+\.json\b", response)
+    if not run_paths:
+        return
+    abs_paths = [str(CONSILIUM_ROOT / p) for p in run_paths]
+    result = subprocess.run(
+        [sys.executable, "-X", "utf8", str(fix_script), "--run-paths"] + abs_paths,
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    if result.stdout.strip():
+        print(f"  PEND -> PEND_HEADLESS: {result.stdout.strip()}")
+    if result.returncode != 0 and result.stderr.strip():
+        print(f"  ! fix_benchmark_pendings: {result.stderr.strip()}")
+
+
+# ── claude -p invocation ───────────────────────────────
+
+EXHAUSTION_MSG = {
+    "error_max_budget_usd": "BUDGET EXHAUSTED",
+    "error_max_turns":      "MAX TURNS reached",
+    "error_max_duration":   "MAX DURATION reached",
+    "timeout":              f"TIMEOUT reached ({RUN_TIMEOUT_SEC // 60} min wall-clock)",
+}
+
+# Scoring stash mechanism — see SCORING_STASH_NOTES below for the why.
+#
+# The harness needs `bypassPermissions` to keep all task types working
+# (Read on workspace, Bash for compile/test, etc.). Under bypassPermissions,
+# --disallowedTools is silently ignored (probed 2026-05-19, sonnet 4.6),
+# so deny patterns are not a viable sandbox.
+#
+# Instead: before spawning the subprocess, we physically move the sibling
+# Benchmark-scoring/ directory to a temp path with a random name that
+# contains neither "scoring" nor "Benchmark". After the subprocess exits,
+# we move it back. During the run, no file path the model can derive
+# leads to the scoring tree.
+SCORING_DIR = Path(
+    os.environ.get("BENCHMARK_SCORING_DIR")
+    or BASE.parent.parent / "Benchmark-scoring"
+)
+WORKSPACE_DIR = Path(__file__).parent / "workspace"
+# Two prefixes — opaque on purpose, no "scoring" / "workspace" substring.
+SCORING_STASH_PREFIX = ".bms_scoring_"
+WORKSPACE_STASH_PREFIX = ".bms_ws_"
+STASH_ROOT = Path(tempfile.gettempdir())
+
+
+def _recover_orphan_stashes():
+    """Restore stashes left behind by a crashed previous run.
+
+    Two flavours, restored independently:
+      - `.bms_scoring_<hex>`  -> ../Benchmark-scoring/
+      - `.bms_ws_<hex>`       -> workspace/ subdirs (multi-file restore
+                                  via manifest.json inside the stash)
+    Idempotent — safe to call at every invocation.
+    """
+    # Scoring stash: at most one expected at a time.
+    if not SCORING_DIR.exists():
+        candidates = sorted(STASH_ROOT.glob(f"{SCORING_STASH_PREFIX}*"))
+        if len(candidates) == 1:
+            orphan = candidates[0]
+            print(f"  Recovering orphan scoring stash: {orphan.name} -> Benchmark-scoring/")
+            shutil.move(str(orphan), str(SCORING_DIR))
+        elif len(candidates) > 1:
+            print(f"  ! Multiple orphan scoring stashes found in {STASH_ROOT}:")
+            for c in candidates:
+                print(f"      {c}")
+            print(f"  ! Manual review needed — move one to {SCORING_DIR} and delete the rest.")
+
+    # Workspace stash: each `.bms_ws_<hex>/manifest.json` lists the moves
+    # made by a crashed run. Apply each in reverse, then delete the stash.
+    for ws_stash in sorted(STASH_ROOT.glob(f"{WORKSPACE_STASH_PREFIX}*")):
+        manifest = ws_stash / "manifest.json"
+        if not manifest.exists():
+            continue
+        try:
+            moves = json.loads(manifest.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        print(f"  Recovering orphan workspace stash: {ws_stash.name} ({len(moves)} dirs)")
+        for entry in reversed(moves):
+            orig = Path(entry["orig"])
+            stashed = Path(entry["stashed"])
+            if stashed.exists() and not orig.exists():
+                orig.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(stashed), str(orig))
+        try:
+            shutil.rmtree(str(ws_stash), ignore_errors=True)
+        except OSError:
+            pass
+
+
+@contextmanager
+def stash_scoring_for_run():
+    """Move Benchmark-scoring/ to a random temp path for the duration of
+    the subprocess. Restored in `finally` to survive crashes inside the
+    context. A hard kill (e.g. OS reboot) leaves an orphan that
+    `_recover_orphan_stashes()` will restore at next startup."""
+    if not SCORING_DIR.exists():
+        # Already missing — likely a fresh checkout without the sibling
+        # repo cloned yet. Verify.py will report missing scoring later.
+        yield
+        return
+    stash_name = SCORING_STASH_PREFIX + secrets.token_hex(16)
+    stash_path = STASH_ROOT / stash_name
+    shutil.move(str(SCORING_DIR), str(stash_path))
+    try:
+        yield
+    finally:
+        if stash_path.exists() and not SCORING_DIR.exists():
+            shutil.move(str(stash_path), str(SCORING_DIR))
+
+
+def _windows_safe_move(src: Path, dst: Path, retries: int = 5, base_delay: float = 0.4):
+    """`shutil.move` with retry — Windows holds onto file/dir handles for a
+    moment after a process closes (browser caching report.html, search
+    indexer, the `claude` subprocess flushing logs). One retry is usually
+    enough; we try up to `retries` with exponential backoff before raising
+    with a clear hint to the user."""
+    last_err = None
+    for attempt in range(retries):
+        try:
+            shutil.move(str(src), str(dst))
+            return
+        except PermissionError as e:
+            last_err = e
+            # shutil.move falls back to copytree when os.rename is denied,
+            # which can partially create dst before hitting a locked file.
+            # Clean up the partial destination so the next retry starts fresh.
+            if dst.is_dir():
+                shutil.rmtree(str(dst), ignore_errors=True)
+            time.sleep(base_delay * (2 ** attempt))
+        except OSError as e:
+            # WinError 32 (sharing violation) also surfaces as OSError
+            if getattr(e, "winerror", None) == 32:
+                last_err = e
+                if dst.is_dir():
+                    shutil.rmtree(str(dst), ignore_errors=True)
+                time.sleep(base_delay * (2 ** attempt))
+            else:
+                raise
+    raise PermissionError(
+        f"Could not move {src} after {retries} retries — a process is holding "
+        f"a handle inside this directory. Close any browser tab on report.html, "
+        f"any editor on files in this workspace, and re-run.\n"
+        f"Underlying error: {last_err}"
+    )
+
+
+@contextmanager
+def stash_sibling_workspaces(current_workspace: Path):
+    """Hide every workspace/ subdirectory NOT on the path to `current_workspace`.
+
+    Cross-mode contamination is a real leak vector even after the scoring
+    stash: when run-all runs every mode sequentially, the LATER modes can
+    Glob `workspace/<earlier-mode>/<this-task>/answer.md` and copy the
+    answer rather than computing. This context moves every sibling
+    `workspace/<mode>/<task>/` (and every alternate task under the
+    current mode) to a stash dir for the duration of the subprocess.
+
+    Restoration writes a manifest.json BEFORE moving so that
+    `_recover_orphan_stashes()` can roll back a crashed run on next startup.
+    """
+    if not WORKSPACE_DIR.is_dir() or not current_workspace.is_dir():
+        yield
+        return
+
+    ws_root_res = WORKSPACE_DIR.resolve()
+    cwd_res = current_workspace.resolve()
+    if ws_root_res not in cwd_res.parents:
+        # current_workspace not under workspace/; nothing to do.
+        yield
+        return
+
+    # Build the chain of directories from workspace/ down to cwd. These
+    # must remain in place; everything else (siblings at every level)
+    # gets stashed.
+    keep = set()
+    p = cwd_res
+    while True:
+        keep.add(p)
+        if p == ws_root_res:
+            break
+        p = p.parent
+
+    stash = STASH_ROOT / (WORKSPACE_STASH_PREFIX + secrets.token_hex(16))
+    stash.mkdir(parents=True)
+    moves = []  # list of {orig, stashed} dicts for manifest + restore
+
+    def _restore():
+        for entry in reversed(moves):
+            orig = Path(entry["orig"])
+            target = Path(entry["stashed"])
+            if target.exists() and not orig.exists():
+                orig.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    shutil.move(str(target), str(orig))
+                except OSError as e:
+                    print(f"  ! restore failed for {orig}: {e}")
+        try:
+            shutil.rmtree(str(stash), ignore_errors=True)
+        except OSError:
+            pass
+
+    # Wrap the moves loop in try/except so that a failure mid-loop still
+    # restores everything that was already moved. Without this, a crash
+    # leaves workspaces orphaned in %TEMP%/.bms_ws_<hex>.
+    # rep_N siblings of cwd are replicates of THE SAME (mode, task) cell —
+    # they contain no scoring secrets and need not be stashed. Excluding
+    # them avoids cross-rep filesystem moves (and the shutil.Error path
+    # collisions that have crashed dialectic batches in the past).
+    cwd_parent_res = cwd_res.parent.resolve() if cwd_res != ws_root_res else None
+    try:
+        for k in keep:
+            if not k.is_dir():
+                continue
+            for child in list(k.iterdir()):
+                if not child.is_dir():
+                    continue
+                if child.resolve() in keep:
+                    continue
+                # Skip sibling replicates of the current rep (workspace/<mode>/
+                # <task>/rep_<other>/). These are NOT a cross-contamination risk
+                # because they belong to the same cell as cwd.
+                if (cwd_parent_res is not None
+                        and child.parent.resolve() == cwd_parent_res
+                        and child.name.startswith("rep_")):
+                    continue
+                rel = child.resolve().relative_to(ws_root_res)
+                target = stash / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                _windows_safe_move(child, target)
+                moves.append({
+                    "orig": str(child.resolve()),
+                    "stashed": str(target.resolve()),
+                })
+    except Exception:
+        _restore()
+        raise
+
+    # Manifest enables orphan recovery if Python crashes hard.
+    (stash / "manifest.json").write_text(
+        json.dumps(moves, indent=2), encoding="utf-8"
+    )
+
+    try:
+        yield
+    finally:
+        _restore()
+
+
+def auto_run(workspace, full_prompt, model, effort, budget):
+    """Invoke claude -p; return (response_text, usage_dict, error_info, raw_json).
+
+    The subprocess runs with cwd=workspace and --permission-mode bypassPermissions.
+    cwd is NOT a sandbox — the model can read any absolute path. Real
+    isolation comes from `stash_scoring_for_run()`, which physically moves
+    `Benchmark-scoring/` to a random temp path during the subprocess and
+    restores it afterward. The model's own glob patterns (`**/expected_answer*`,
+    `**/Benchmark-scoring/**`) match nothing during the run because the
+    directory doesn't exist at any predictable path.
+    """
+    claude_bin = shutil.which("claude") or "claude"
+    # Prompt is fed via stdin, not as a positional argument. On Windows,
+    # multi-line arguments to subprocess.run are truncated at the first
+    # newline (CreateProcess + shell argument parsing), so passing
+    # full_prompt as an arg only delivered the cache-buster line to the
+    # model. Verified empirically 2026-05-20 via ~/.claude/projects/
+    # session transcripts: user-message was only the [run_id=...] line;
+    # the task content never reached the model. Tool-using modes (sonnet,
+    # superpowers) auto-discovered the prompt via Glob+Read; haiku 1-turn
+    # answered with a generic "what do you need help with?" because it
+    # had no task body to act on. Stdin sidesteps argv parsing entirely.
+    cmd = [
+        claude_bin, "-p",
+        "--model", model,
+        "--effort", effort,
+        "--output-format", "json",
+        "--permission-mode", "bypassPermissions",
+        "--max-budget-usd", str(budget),
+    ]
+    print(f"\n  Spawning: claude -p --model {model} --effort {effort} --max-budget-usd {budget}")
+    print(f"  Workspace:    {workspace}  (subprocess cwd — model is sandboxed here)")
+    print(f"  Budget cap:   ${budget}")
+    print(f"  Timeout cap:  {RUN_TIMEOUT_SEC // 60} min (wall-clock)")
+    print(f"  Prompt:       {len(full_prompt)} chars via stdin")
+    print(f"  This may take several minutes...\n")
+
+    # Augment PATH so the spawned claude (and any tools it shells out to,
+    # like g++ for the C++ task) can find the toolchain.
+    env = os.environ.copy()
+    extra = [p for p in EXTRA_PATH_ENTRIES if Path(p).is_dir()]
+    if extra:
+        env["PATH"] = os.pathsep.join(extra + [env.get("PATH", "")])
+
+    run_started_at = time.time()
+    try:
+        with stash_scoring_for_run(), stash_sibling_workspaces(workspace):
+            proc = subprocess.run(
+                cmd, cwd=workspace, capture_output=True, text=True, encoding="utf-8",
+                env=env, timeout=RUN_TIMEOUT_SEC,
+                input=full_prompt,
+            )
+    except FileNotFoundError:
+        print("  ERROR: `claude` binary not found on PATH.")
+        sys.exit(2)
+    except subprocess.TimeoutExpired as e:
+        mins = RUN_TIMEOUT_SEC // 60
+        print(f"\n  ! TIMEOUT -- run exceeded {mins} min wall-clock; subprocess killed.")
+        partial_out = (e.stdout or "") if isinstance(e.stdout, str) else ""
+        return (
+            partial_out,
+            {"model": model, "api_duration": f"{mins}m 0.0s", "wall": f"{mins}m 0.0s"},
+            {"error": "timeout", "message": EXHAUSTION_MSG["timeout"]},
+            None,
+        )
+
+    stdout, stderr = proc.stdout or "", proc.stderr or ""
+
+    if not stdout.strip():
+        print(f"  ERROR: empty stdout from claude (returncode={proc.returncode})")
+        if stderr:
+            print(f"  stderr (first 1000 chars):\n{stderr[:1000]}")
+        return "", {"model": model}, {"error": "empty_stdout"}, None
+
+    try:
+        data = json.loads(stdout)
+    except json.JSONDecodeError as e:
+        print(f"  ERROR: could not parse JSON ({e})")
+        print(f"  Raw stdout (first 1500 chars):\n{stdout[:1500]}")
+        return stdout, {"model": model}, {"error": "json_parse"}, None
+
+    # ── Error / exhaustion detection ──
+    error_info = {}
+    subtype    = data.get("subtype", "")
+    if data.get("is_error") or subtype not in ("success", ""):
+        friendly = EXHAUSTION_MSG.get(subtype, subtype or "unknown")
+        error_info = {"error": subtype or "is_error", "message": friendly}
+        print(f"\n  ! RUN HALTED -- {friendly}")
+        if stderr:
+            print(f"  stderr (first 400): {stderr[:400]}")
+
+    # ── Usage extraction ──
+    u   = data.get("usage", {}) or {}
+    in_tok    = u.get("input_tokens")
+    out_tok   = u.get("output_tokens")
+    cache_r   = u.get("cache_read_input_tokens")
+    cache_w   = u.get("cache_creation_input_tokens")
+
+    # Behavior audit — scan the session transcript for scoring-key access.
+    # `run_started_at` filters out historical sessions in the same projects/
+    # dir (manual probes, prior runs) so we only inspect this run.
+    audit = audit_behavior.audit_workspace_run(workspace, run_started_at)
+    (workspace / "behavior_audit.json").write_text(
+        json.dumps(audit, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print(f"  Behavior:     {audit['summary']}")
+
+    usage = {
+        "cost":         f"{data.get('total_cost_usd', 0):.4f}",
+        "api_duration": fmt_duration_ms(data.get("duration_api_ms")),
+        "wall":         fmt_duration_ms(data.get("duration_ms")),
+        "input":        str(in_tok)  if in_tok  is not None else "—",
+        "output":       str(out_tok) if out_tok is not None else "—",
+        "cache_read":   str(cache_r) if cache_r is not None else "—",
+        "cache_write":  str(cache_w) if cache_w is not None else "—",
+        "model":        model,
+        "num_turns":    str(data.get("num_turns", "—")),
+        "lines_added":  str(count_workspace_lines(workspace)),
+        "behavior":     audit["verdict"],
+        "behavior_summary": audit["summary"],
+    }
+
+    response = data.get("result", "") or ""
+    return response, usage, error_info, data
+
+def count_workspace_lines(workspace):
+    """Crude additive line count of code/text files in workspace."""
+    exts = {".cpp", ".hpp", ".h", ".c", ".cc", ".py", ".js", ".ts",
+            ".go", ".rs", ".java", ".md", ".txt", ".sh", ".ps1"}
+    total = 0
+    if not workspace.exists():
+        return 0
+    for f in workspace.rglob("*"):
+        if f.is_file() and f.suffix.lower() in exts:
+            try:
+                total += sum(1 for _ in f.open("r", encoding="utf-8", errors="ignore"))
+            except Exception:
+                pass
+    return total
+
+def count_deliverable_lines(workspace, declared_files):
+    """Sum lines across just the declared deliverable files.
+
+    Used as the actual measurement for the model's self-estimated deliverable
+    size — independent of mode-specific overhead like PROCESS.md.
+    """
+    total = 0
+    for fname in declared_files:
+        target = workspace / fname
+        if not target.exists():
+            continue
+        try:
+            total += sum(1 for _ in target.open("r", encoding="utf-8", errors="ignore"))
+        except Exception:
+            pass
+    return total
+
+# ── Result writer ──────────────────────────────────────
+
+def write_result(workspace, mode, task, usage, self_est, response, questions,
+                 error_info=None, raw_json=None, verify_report=None):
+    d_out     = delta(self_est["output"], usage.get("output", ""))
+    d_lines   = delta(self_est["lines"],  usage.get("deliverable_lines", ""))
+    cal       = cal_score(d_lines)
+    is_reason = "reasoning" in task
+    limit     = 15
+    threshold = 5 if is_reason else 10
+    err_line  = ""
+    if error_info and error_info.get("error"):
+        err_line = f"\n> ⚠ **Run halted:** {error_info.get('message', error_info['error'])}\n"
+
+    verify_md = verify_engine.format_report_md(verify_report) if verify_report else ""
+    if verify_md:
+        verify_md = "\n" + verify_md + "\n---\n"
+
+    md = f"""# RESULT — {task} | {mode}
+_Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}_
+{err_line}{verify_md}
+---
+
+## Timing
+| Metric                | Value |
+|-----------------------|-------|
+| API Duration          | {usage.get("api_duration", "—")} |
+| Wall Duration         | {usage.get("wall", "—")} |
+| Time limit ({limit}m) | {pass_fail(usage.get("api_duration"), limit)} |
+| Model                 | {usage.get("model", "—")} |
+| Num turns             | {usage.get("num_turns", "—")} |
+| Lines (workspace)     | {usage.get("lines_added", "—")} |
+| Behavior audit        | {usage.get("behavior_summary", "—")} |
+
+---
+
+## Self-estimate vs actual
+_Calibration metric (Self-Awareness rubric) is **deliverable lines** — concrete and measurable post-run. Token columns are diagnostic only._
+
+| Metric                    | Self-estimated | Actual | Delta |
+|---------------------------|----------------|--------|-------|
+| Deliverable lines         | {self_est["lines"]} | {usage.get("deliverable_lines", "—")} | {d_lines} |
+| Cache read tokens         | — | {usage.get("cache_read", "—")} | — |
+| Input tokens (final turn) | {self_est["input"]} | {usage.get("input", "—")} | — |
+| Output tokens (session)   | {self_est["output"]} | {usage.get("output", "—")} | {d_out} |
+| Cache write               | — | {usage.get("cache_write", "—")} | — |
+| Cost                      | — | ${usage.get("cost", "—")} | — |
+| Reasoning                 | {self_est["reasoning"]} | — | — |
+
+---
+
+## Autonomy
+| Clarifying questions (detected) | {questions} |
+|---------------------------------|-------------|
+| Autonomy penalty                | {autonomy_penalty(questions)} |
+
+---
+
+## Scoring
+"""
+    if not is_reason:
+        md += f"""
+### Code Implementation — 60 pts
+| Criterion    | Score | Notes |
+|--------------|-------|-------|
+| Correctness  |  /20  |       |
+| Code Quality |  /15  |       |
+| Completeness |  /15  |       |
+| Edge Cases   |  /10  |       |
+| **Subtotal** |  /60  |       |
+
+### Reasoning — 40 pts
+| Criterion                          | Score | Notes |
+|------------------------------------|-------|-------|
+| Problem Analysis Depth             |  /15  |       |
+| Decision Justification             |  /15  |       |
+| Self-Awareness (cal: {cal}/10)     |  /10  | delta lines: {d_lines} |
+| **Subtotal**                       |  /40  |       |
+"""
+    else:
+        md += f"""
+### Reasoning — 100 pts
+| Criterion                          | Score | Notes |
+|------------------------------------|-------|-------|
+| Paradox / problem identified       |  /25  |       |
+| Hypothesis quality                 |  /25  |       |
+| Reasoning depth                    |  /25  |       |
+| Self-awareness (cal: {cal}/10)     |  /25  | delta lines: {d_lines} |
+| **Subtotal**                       | /100  |       |
+"""
+
+    md += f"""
+### Adjustments
+| Time bonus       | {time_bonus(usage.get("api_duration"), threshold)} |
+|------------------|---|
+| Autonomy penalty | {autonomy_penalty(questions)} |
+
+### FINAL SCORE: /100
+
+---
+
+## Files delivered
+- [ ]
+
+---
+
+## Self-assessment (from model)
+_(see RESULT_response.md)_
+"""
+    (workspace / "RESULT.md").write_text(md, encoding="utf-8")
+    (workspace / "RESULT_response.md").write_text(
+        f"# Response — {task} | {mode}\n\n{response}", encoding="utf-8")
+
+    if raw_json is not None:
+        (workspace / "claude_raw.json").write_text(
+            json.dumps(raw_json, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    print(f"  Written: {workspace / 'RESULT.md'}")
+    print(f"  Written: {workspace / 'RESULT_response.md'}")
+    if raw_json is not None:
+        print(f"  Written: {workspace / 'claude_raw.json'}")
+
+# ── Main ───────────────────────────────────────────────
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--mode",   required=True, choices=MODES)
+    ap.add_argument("--task",   required=True,
+                    help="e.g. code/01_circuit_breaker, reasoning/01_transport_choice, reasoning/02_rule_of_three")
+    ap.add_argument("--clean",  action="store_true",
+                    help="Wipe this task's workspace before running")
+    ap.add_argument("--model",  default="claude-sonnet-4-6",
+                    help="Model id or alias (default: claude-sonnet-4-6)")
+    ap.add_argument("--effort", default="high",
+                    choices=["low", "medium", "high", "xhigh", "max"],
+                    help="Effort level (default: high)")
+    ap.add_argument("--budget", type=float, default=3.0,
+                    help="--max-budget-usd cap in USD (default: 3.0)")
+    ap.add_argument("--no-verify", action="store_true",
+                    help="Skip automatic verification step after the run")
+    ap.add_argument("--rep", type=int, default=None, metavar="N",
+                    help="Replicate index. Writes to workspace/<mode>/<task>/rep_<N>/ "
+                         "instead of workspace/<mode>/<task>/. Use 2,3,... to collect "
+                         "multiple samples per cell on Hard tasks for within-cell variance.")
+    args = ap.parse_args()
+
+    # If a previous run crashed mid-stash, the scoring tree is orphaned in
+    # %TEMP%\.bms_<hex>. Restore it before doing anything else so verify.py
+    # can read meta.yaml later in this run.
+    _recover_orphan_stashes()
+
+    # Modes whose name pins a specific model override the --model flag default,
+    # but only when the user did not pass --model explicitly.
+    if args.model == ap.get_default("model") and args.mode in MODE_MODELS:
+        args.model = MODE_MODELS[args.mode]
+
+    # Same convention for budget: per-mode default kicks in only when the user
+    # did not pass --budget explicitly.
+    if args.budget == ap.get_default("budget") and args.mode in MODE_BUDGETS:
+        args.budget = MODE_BUDGETS[args.mode]
+
+    task      = args.task.replace("\\", "/")
+    workspace = WORKSPACE / args.mode / task
+    if args.rep is not None:
+        if args.rep < 1:
+            print(f"ERROR: --rep must be >= 1 (got {args.rep})")
+            sys.exit(1)
+        workspace = workspace / f"rep_{args.rep}"
+
+    prompt_f = PROMPTS / f"{task}.md"
+    if not prompt_f.exists():
+        print(f"ERROR: prompt not found: {prompt_f}")
+        sys.exit(1)
+
+    if args.clean and workspace.exists():
+        shutil.rmtree(workspace)
+        print(f"  Cleaned: {workspace}")
+    workspace.mkdir(parents=True, exist_ok=True)
+
+    print(f"\nBenchmark Runner  |  {args.mode}  |  {task}")
+    print("=" * 55)
+
+    prefix = MODE_PREFIXES.get(args.mode, "")
+    prompt = prompt_f.read_text(encoding="utf-8")
+
+    # ── Template + workspace-path injection ───────────────
+    # Prompts now contain only the task-unique description + declared
+    # deliverables. Common boilerplate (constraints, workspace folder,
+    # self-estimate trailer) lives in `prompts/templates/<category>.md` and
+    # is appended at runtime. {WORKSPACE_PATH} is replaced with the actual
+    # per-mode workspace so the model sees only its own folder, not a list of
+    # six possibilities.
+    category = task.split("/", 1)[0]   # "code" or "reasoning"
+    template_f = PROMPTS / "templates" / f"{category}.md"
+    template = template_f.read_text(encoding="utf-8") if template_f.exists() else ""
+    workspace_rel = workspace.relative_to(BASE).as_posix() + "/"
+    template = template.replace("{WORKSPACE_PATH}", workspace_rel)
+
+    full_prompt = prefix + prompt + "\n" + template
+
+    # Universal cache-buster: prepend a per-task, per-invocation token so
+    # Anthropic's prompt-cache misses between runs. Without this, back-to-back
+    # runs of the same task can replay a stale cached prefix (observed on
+    # superpowers in 2026-05-18: input_tokens=3-7 vs 800+ expected). The
+    # superpowers branch below still adds its own copy inside its framing
+    # text — harmless, and keeps that prefix self-contained.
+    cache_buster_top = (
+        f"[run_id={task}@"
+        f"{datetime.now(timezone.utc).isoformat(timespec='seconds')}]"
+    )
+    full_prompt = cache_buster_top + "\n" + full_prompt
+
+    # For consilium modes: set CLAUDE_HEADLESS=1 so the skill skips user-facing
+    # prompts (Step 0 stale_pendings, Step 2 irreversibility block, Step 5d retry,
+    # Step 7 auto-pipeline). Deliverable enforcement is handled by Step 6.5 in
+    # the Consilium SKILL.md itself — no harness-level prompt suffix needed.
+    if args.mode.startswith("consilium_"):
+        os.environ["CLAUDE_HEADLESS"] = "1"
+
+    # superpowers skills tend to brainstorm / ask clarifying questions; in
+    # auto mode we want a single non-interactive run for fair benchmarking.
+    # IMPORTANT: avoid "dispatched as a subagent" framing — it triggers the
+    # <SUBAGENT-STOP> guard in using-superpowers and silently disables all skills.
+    if args.mode == "superpowers":
+        # Cache-buster token. Without it, Anthropic prompt-cache served a
+        # stale prefix on consecutive superpowers runs (2026-05-18 benchmark
+        # symptom: input_tokens=3-7 on T01/T03/T04 vs 814 on T00 — task
+        # content dropped from prompt). Per-task + per-invocation timestamp
+        # guarantees a unique prefix hash.
+        cache_buster = f"[run_id={task}@{datetime.now(timezone.utc).isoformat(timespec='seconds')}]"
+        full_prompt = (
+            f"BENCHMARK NON-INTERACTIVE RUN {cache_buster} — Skills are active "
+            "and MUST be used. "
+            "This is a headless single-shot run: do NOT invoke skills that require "
+            "user input (superpowers:brainstorming, superpowers:writing-plans, "
+            "superpowers:receiving-code-review). "
+            "All other skills (TDD, consilium, verification-before-completion, "
+            "systematic-debugging) SHOULD be invoked when relevant. "
+            "Do NOT ask clarifying questions — state assumptions explicitly.\n\n"
+            + full_prompt
+        )
+
+    # ── claude -p run ───────────────────────────────────
+    response, usage, error_info, raw_json = auto_run(
+        workspace, full_prompt, args.model, args.effort, args.budget,
+    )
+
+    self_est  = parse_self_estimate(response)
+    questions = count_questions(response)
+
+    print(f"\n  Model:        {usage.get('model', '?')}")
+    print(f"  Cost:        ${usage.get('cost', '?')}")
+    print(f"  API duration: {usage.get('api_duration', '?')}")
+    print(f"  Wall:         {usage.get('wall', '?')}")
+    print(f"  Input:        {usage.get('input', '?')} tokens")
+    print(f"  Output:       {usage.get('output', '?')} tokens")
+    print(f"  Cache read:   {usage.get('cache_read', '?')}")
+    print(f"  Cache write:  {usage.get('cache_write', '?')}")
+    print(f"  Num turns:    {usage.get('num_turns', '?')}")
+    print(f"  Workspace lines: {usage.get('lines_added', '?')}")
+    print(f"  Questions:    {questions}")
+    if error_info and error_info.get("error"):
+        print(f"  ! Halted:     {error_info.get('message', error_info['error'])}")
+
+    # ── Deliverable extraction (harness-level fallback) ──
+    # If the prompt declared output files and the model emitted them as
+    # fenced code blocks in chat instead of calling Write, materialize
+    # them now. Idempotent — skips files the model already wrote.
+    # See scripts/extract_deliverables.py + senate audit
+    # runs/senate/2026-05-18_203925-deliverable-enforcement-r2.json.
+    if not (error_info and error_info.get("error")):
+        try:
+            deliv_statuses = extract_deliverables.extract_and_write_from_response(
+                prompt, response, workspace,
+            )
+        except Exception as exc:
+            print(f"  ! extract_deliverables crashed: {exc}")
+            deliv_statuses = {}
+        if deliv_statuses:
+            print(f"\n  Deliverable extraction:")
+            for fname, status in deliv_statuses.items():
+                marker = "+" if status in ("written", "already_exists") else "!"
+                print(f"    {marker} {fname}: {status}")
+
+    # ── Deliverable line count (calibration metric) ──
+    # Sum lines in the declared deliverable files (post-extraction). This
+    # is the actual value compared against the model's self-estimated
+    # `Estimated deliverable lines: ~X` from its response trailer.
+    try:
+        declared = extract_deliverables.extract_declared_files(prompt)
+    except Exception:
+        declared = []
+    usage["deliverable_lines"] = str(count_deliverable_lines(workspace, declared))
+    if declared:
+        print(f"  Deliverable lines: {usage['deliverable_lines']} "
+              f"({', '.join(declared)})")
+
+    verify_report = None
+    if not args.no_verify and not (error_info and error_info.get("error")):
+        print(f"\n  Running verification...")
+        try:
+            verify_report = verify_engine.run_verification(workspace, task)
+        except Exception as e:
+            print(f"  ! verification crashed: {e}")
+            verify_report = {"ok": False, "reason": f"verifier exception: {e}",
+                             "score": 0, "max_score": "?"}
+        if verify_report is None:
+            print(f"  (no verify/ folder for this task -- skipping)")
+        else:
+            print(f"  Verification: {verify_report.get('kind', '?')} -> "
+                  f"score {verify_report.get('score', '?')} / "
+                  f"{verify_report.get('max_score', '?')}")
+            if not verify_report.get("ok"):
+                print(f"  ! Reason: {verify_report.get('reason', '?')}")
+
+    write_result(workspace, args.mode, task, usage, self_est, response,
+                 questions, error_info=error_info, raw_json=raw_json,
+                 verify_report=verify_report)
+
+    if args.mode.startswith("consilium_") and response:
+        fix_pend_headless(response)
+
+    print(f"\nDone. Open RESULT.md to fill in the scoring.")
+    print(f"  {workspace / 'RESULT.md'}")
+
+if __name__ == "__main__":
+    main()
