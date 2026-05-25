@@ -4579,7 +4579,175 @@ function StatCell({ label, value, sub }) {
   );
 }
 
-Object.assign(window, { Collapsible, WhyThreeVoices, CostScatter, CostBars, BenchmarkSection });
+function ImplementSection() {
+  const ROLES = [
+    {
+      id: 'coder',
+      name: 'Coder',
+      color: 'var(--gen)',
+      lane: 'implementation files',
+      desc: 'Reads chosen_approach + success_criterion. Writes all implementation files. Returns a strict JSON manifest. Skipped if chosen_approach is do_nothing or skipped.',
+    },
+    {
+      id: 'test_writer',
+      name: 'Test Writer',
+      color: 'var(--ctl)',
+      lane: 'test_* files only',
+      desc: 'Runs in parallel with Reviewer. Reads spec + files_written. Writes test_* files only. Tests must be RED against a stub and GREEN against the implementation (red→green gate).',
+    },
+    {
+      id: 'reviewer',
+      name: 'Reviewer',
+      color: 'var(--con)',
+      lane: 'read-only',
+      desc: 'Runs in parallel with Test Writer. Inlines prompts/voices/control.md against the actual written code as a single synthetic candidate. Goal-fit → types → logic → tests → style. Writes nothing.',
+    },
+  ];
+
+  const GATE_ITEMS = [
+    { label: 'Status', value: 'default for regression-risk', note: 'promoted 2026-05-25 (user decision)' },
+    { label: 'Routing', value: 'pipeline vs single-shot', note: 'regression-risk → pipeline; greenfield → single-shot' },
+    { label: 'Promotion gate', value: '≥2/3 wins', note: 'criterion not met — promoted anyway' },
+    { label: 'Kill criterion', value: 'net regressions in practice', note: '→ revert to single-shot' },
+    { label: 'Signal (R1+R2)', value: 'n=6: 1 win / 5 ties / 0 losses', note: 'see experiments/pipeline-bench/RESULTS.md' },
+  ];
+
+  return (
+    <section className="section section--tinted" id="implement">
+      <div className="container">
+        <SectionHead
+          num="11"
+          eyebrow="Post-deliberation"
+          title="Code integration pipeline."
+          lede="After a GO verdict, a sub-agent pipeline (default for regression-risk changes) writes, tests, and reviews the chosen approach without re-deliberating. The report is the spec."
+        />
+
+        <div className="tldr">
+          <span className="tldr__label">DEFAULT · REGRESSION-RISK</span>
+          <div>
+            <p>Default for regression-risk changes (refactor / bugfix); single-shot for greenfield. Dispatches <strong>Coder</strong> first (code must exist before tests), then <strong>Test Writer</strong> and <strong>Reviewer</strong> in parallel. A red→green gate rejects tests that pass against a stub. Returns a file manifest + Control verdict.</p>
+          </div>
+        </div>
+
+        {/* Pipeline flow diagram */}
+        <div style={{ margin: '28px 0', overflowX: 'auto' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0,
+            minWidth: 680,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+          }}>
+            <div style={{ padding: '14px 18px', border: '1px solid var(--rule)', borderRadius: 2, background: 'var(--paper)', textAlign: 'center', minWidth: 100 }}>
+              <div style={{ fontSize: 10, color: 'var(--ink-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Input</div>
+              <div style={{ fontWeight: 600, color: 'var(--ink)' }}>report.json</div>
+              <div style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>GO verdict</div>
+            </div>
+            <div style={{ flex: '0 0 28px', height: 1, background: 'var(--ink-3)', position: 'relative' }}>
+              <span style={{ position: 'absolute', right: -2, top: -6, color: 'var(--ink-3)', fontSize: 10 }}>▶</span>
+            </div>
+            <div style={{ padding: '14px 18px', border: '1px solid var(--gen)', borderRadius: 2, background: 'color-mix(in oklch, var(--gen) 10%, var(--paper))', textAlign: 'center', minWidth: 90 }}>
+              <div style={{ fontSize: 10, color: 'var(--gen)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Step 1</div>
+              <div style={{ fontWeight: 600, color: 'var(--gen)' }}>Coder</div>
+              <div style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>alone first</div>
+            </div>
+            <div style={{ flex: '0 0 28px', height: 1, background: 'var(--ink-3)', position: 'relative' }}>
+              <span style={{ position: 'absolute', right: -2, top: -6, color: 'var(--ink-3)', fontSize: 10 }}>▶</span>
+            </div>
+            <div style={{ border: '1px dashed var(--rule-2)', borderRadius: 2, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--paper)' }}>
+              <div style={{ fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Step 2 — parallel</div>
+              <div style={{ padding: '10px 14px', border: '1px solid var(--ctl)', borderRadius: 2, background: 'color-mix(in oklch, var(--ctl) 10%, var(--paper))', textAlign: 'center' }}>
+                <div style={{ fontWeight: 600, color: 'var(--ctl)', fontSize: 12 }}>Test Writer</div>
+                <div style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>test_* only</div>
+              </div>
+              <div style={{ padding: '10px 14px', border: '1px solid var(--con)', borderRadius: 2, background: 'color-mix(in oklch, var(--con) 10%, var(--paper))', textAlign: 'center' }}>
+                <div style={{ fontWeight: 600, color: 'var(--con)', fontSize: 12 }}>Reviewer</div>
+                <div style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>read-only</div>
+              </div>
+            </div>
+            <div style={{ flex: '0 0 28px', height: 1, background: 'var(--ink-3)', position: 'relative' }}>
+              <span style={{ position: 'absolute', right: -2, top: -6, color: 'var(--ink-3)', fontSize: 10 }}>▶</span>
+            </div>
+            <div style={{ padding: '14px 18px', border: '1px solid oklch(0.55 0.16 320)', borderRadius: 2, background: 'color-mix(in oklch, oklch(0.55 0.16 320) 10%, var(--paper))', textAlign: 'center', minWidth: 90 }}>
+              <div style={{ fontSize: 10, color: 'oklch(0.55 0.16 320)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Step 3</div>
+              <div style={{ fontWeight: 600, color: 'oklch(0.55 0.16 320)' }}>Gate</div>
+              <div style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>red→green</div>
+            </div>
+            <div style={{ flex: '0 0 28px', height: 1, background: 'var(--ink-3)', position: 'relative' }}>
+              <span style={{ position: 'absolute', right: -2, top: -6, color: 'var(--ink-3)', fontSize: 10 }}>▶</span>
+            </div>
+            <div style={{ padding: '14px 18px', border: '1px solid var(--rule)', borderRadius: 2, background: 'var(--paper)', textAlign: 'center', minWidth: 100 }}>
+              <div style={{ fontSize: 10, color: 'var(--ink-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Output</div>
+              <div style={{ fontWeight: 600, color: 'var(--ink)' }}>manifest</div>
+              <div style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}>+ Control verdict</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Roles */}
+        <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 12, marginTop: 8 }}>Roles and lane rules</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 28 }}>
+          {ROLES.map((r) => (
+            <div key={r.id} style={{
+              padding: '16px 18px',
+              border: '1px solid var(--rule)',
+              borderTop: `3px solid ${r.color}`,
+              background: 'var(--paper)',
+              borderRadius: 4,
+            }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: r.color, marginBottom: 6 }}>{r.name}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>lane: {r.lane}</div>
+              <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.55, margin: 0 }}>{r.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Empirical gate */}
+        <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 12 }}>Empirical gate</h3>
+        <div style={{ border: '1px solid var(--rule)', borderRadius: 2, background: 'var(--paper)', overflow: 'hidden', marginBottom: 24 }}>
+          {GATE_ITEMS.map((item, i) => (
+            <div key={item.label} style={{
+              display: 'grid',
+              gridTemplateColumns: '160px 1fr 1fr',
+              gap: 16,
+              padding: '12px 18px',
+              borderBottom: i === GATE_ITEMS.length - 1 ? 0 : '1px solid var(--rule)',
+              alignItems: 'baseline',
+            }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{item.label}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ink)', fontWeight: 500 }}>{item.value}</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>{item.note}</span>
+            </div>
+          ))}
+        </div>
+
+        <Collapsible label="Show optional fan-out (parallel Coders)">
+          <div style={{ padding: '16px 18px', border: '1px solid var(--rule)', borderRadius: 2, background: 'var(--paper)' }}>
+            <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, margin: '0 0 12px' }}>
+              By default one Coder writes all files. For genuinely independent files from <code>chosen_approach.files_touched[]</code>, the orchestrator may dispatch 3–5 Coders in parallel — one per file.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+              {[
+                { tag: 'PRECONDITION', body: 'Target files must be mutually independent — no file defines a symbol another relies on. If unsure, use a single Coder.' },
+                { tag: 'MERGE ANCHOR', body: 'Interface contract (signatures + types) must be fixed in the spec before dispatch. With independent files + pinned contract, merge = collect the files.' },
+                { tag: 'AFTER COLLECT', body: 'Test Writer ∥ Reviewer run on the merged whole, exactly as in the single-Coder path.' },
+                { tag: 'DEFAULT', body: 'Fan-out is a speed optimization for genuinely independent work. One Coder is always the correct default — never required.' },
+              ].map((r) => (
+                <div key={r.tag} style={{ padding: '12px 14px', border: '1px solid var(--rule)', borderRadius: 2, display: 'grid', gridTemplateColumns: '106px 1fr', gap: 12, alignItems: 'start' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.08em', color: 'var(--signal)', fontWeight: 500 }}>{r.tag}</span>
+                  <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>{r.body}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Collapsible>
+      </div>
+    </section>
+  );
+}
+
+Object.assign(window, { Collapsible, WhyThreeVoices, CostScatter, CostBars, BenchmarkSection, ImplementSection });
 
 </script>
 <script type="text/babel" data-source="src/voices.jsx">
@@ -6435,6 +6603,124 @@ function LoopDiagram() {
 window.LoopSection = LoopSection;
 
 </script>
+<script type="text/babel" data-source="src/efficiency-section.jsx">
+/* efficiency-section.jsx — Usage & Efficiency section */
+
+const MODES_DATA = [
+  { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  note: 'in-context baseline' },
+  { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
+  { mode: 'trias',       costMultiplier: '3×',    dispatches: 3,  note: '3 personality sub-agents (9 voice runs)' },
+  { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, note: 'composable flag over any base' },
+];
+
+function BarChart({ data }) {
+  const max = Math.max(...data.map(d => d.value));
+  const colors = {
+    sequential: 'var(--gen)',
+    dialectic:  'var(--ctl)',
+    trias:      'oklch(0.55 0.18 260)',
+  };
+  return (
+    <svg viewBox={`0 0 600 ${data.length * 60 + 20}`} className="diagram" style={{ maxHeight: 280 }}>
+      {data.map((d, i) => {
+        const barW = max > 0 ? (d.value / max) * 440 : 0;
+        const y = i * 60 + 10;
+        const col = colors[d.mode] || 'var(--ink-2)';
+        return (
+          <g key={d.mode}>
+            <text x="0" y={y + 20} style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fill: 'var(--ink)' }}>{d.mode}</text>
+            <rect x="140" y={y + 6} width={barW} height={28} rx="3" fill={col} opacity="0.8" />
+            <text x={140 + barW + 8} y={y + 24} style={{ fontSize: 12, fill: 'var(--ink-2)', fontFamily: 'var(--font-mono)' }}>
+              {d.label}
+            </text>
+          </g>
+        );
+      })}
+      <text x="0" y={data.length * 60 + 18} style={{ fontSize: 11, fill: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>
+        lower tokens/OK = better efficiency
+      </text>
+    </svg>
+  );
+}
+
+function ModeRow({ mode, costMultiplier, dispatches, note }) {
+  return (
+    <tr>
+      <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)' }}>{mode}</td>
+      <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{costMultiplier}</td>
+      <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{dispatches}</td>
+      <td style={{ padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)', fontSize: 12, color: 'var(--ink-2)' }}>{note}</td>
+    </tr>
+  );
+}
+
+function EfficiencySection() {
+  const placeholder = [
+    { mode: 'sequential', value: 3700,  label: '~3 700 tok/OK' },
+    { mode: 'dialectic',  value: 5200,  label: '~5 200 tok/OK' },
+    { mode: 'trias',      value: 11000, label: '~11 000 tok/OK' },
+  ];
+
+  return (
+    <section className="section" id="efficiency">
+      <div className="container">
+        <SectionHead
+          num="12"
+          eyebrow="Usage & Efficiency"
+          title="How much does each mode cost per good outcome?"
+          lede="efficiency.py computes tokens_per_OK — total tokens divided by confirmed OK outcomes — so you can compare modes on real usage data, not just dispatch count."
+        />
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 32, alignItems: 'start' }}>
+          <div>
+            <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 16 }}>Mode cost multipliers</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '6px 16px 6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Mode</th>
+                  <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Cost</th>
+                  <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Sub-agents</th>
+                  <th style={{ textAlign: 'left', padding: '6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MODES_DATA.map(m => <ModeRow key={m.mode} {...m} />)}
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 16 }}>tokens_per_OK (illustrative)</h3>
+            <BarChart data={placeholder} />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 32, padding: '20px 24px', background: 'var(--paper-2)', border: '1px solid var(--rule)', borderRadius: 4 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 12 }}>Live data</div>
+          <code style={{ display: 'block', fontSize: 12, fontFamily: 'var(--font-mono)', lineHeight: 1.8, color: 'var(--ink)' }}>
+            python scripts/efficiency.py --by-mode<br />
+            python scripts/efficiency.py --self-test<br />
+            python scripts/efficiency.py --compare trias sequential --since 2026-05-01
+          </code>
+        </div>
+
+        <div style={{ marginTop: 20, padding: '16px 24px', background: 'color-mix(in oklch, var(--con) 6%, var(--paper))', border: '1px solid color-mix(in oklch, var(--con) 20%, var(--rule))', borderRadius: 4 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--con)', marginBottom: 8 }}>Caveats</div>
+          <ul style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.7, paddingLeft: 20 }}>
+            <li>Token estimates use chars/4 (±10–20% error band), consistent across modes.</li>
+            <li>Cross-mode OK is not qualitatively comparable — a Trias OK represents deeper deliberation than a Sequential OK.</li>
+            <li>Outcomes are subjective at log time; mark BAD retroactively via <code style={{ fontFamily: 'var(--font-mono)' }}>mark_outcome.py</code> if a choice later regressed.</li>
+            <li>Modes with fewer than 3 runs with telemetry show <code style={{ fontFamily: 'var(--font-mono)' }}>insufficient_data</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+window.EfficiencySection = EfficiencySection;
+
+</script>
 <script type="text/babel" data-source="src/app.jsx">
 /* app.jsx — top-level layout (v2, with side nav + progress) */
 
@@ -6454,6 +6740,8 @@ const SECTIONS = [
   { id: 'trias',        num: '08', name: 'Trias' },
   { id: 'benchmark',    num: '09', name: 'Benchmark' },
   { id: 'loop',         num: '10', name: 'Calibration' },
+  { id: 'implement',    num: '11', name: 'Integration' },
+  { id: 'efficiency',   num: '12', name: 'Efficiency' },
 ];
 
 function App() {
@@ -6481,6 +6769,8 @@ function App() {
       <TriasSection />
       <BenchmarkSection />
       <LoopSection />
+      <ImplementSection />
+      <EfficiencySection />
       <Footer />
       <Tweaks t={t} setTweak={setTweak} />
     </div>
