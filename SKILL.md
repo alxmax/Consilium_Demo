@@ -305,6 +305,8 @@ Reject (`n` at prompt) → rejection logged in `runs/YYYY-MM-DD_HHMM_pipeline_re
 
 #### Implementation pipeline (default for regression-risk changes)
 
+**Full spec: [modes/implement_pipeline.md](modes/implement_pipeline.md).**
+
 The default `implement` step writes code single-shot for greenfield. For **regression-risk changes** (refactor, bugfix, multi-path behavior change on existing code), a 3-role pipeline is the default: **Coder → (Test Writer ∥ Reviewer)**, where the report *is* the spec (`chosen_approach` + `success_criterion` + `verification`). The Reviewer reuses the **Control voice** (`prompts/voices/control.md`) on the *written* code — no separate reviewer prompt.
 
 **Routing gate (single-shot vs pipeline).** `recommend_implement_mode(report)` in `infer_pipeline.py` picks the mode, keyed on **regression risk, not size**: it returns `"pipeline"` when the change warrants a `review` step (the regression-prone quadrants — `moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), else `"single_shot"`. Greenfield (even large, fully reversible) stays single-shot. **Opt-out:** the routing decision is advisory — the user may override at the Step 7 prompt (press `n`) or by passing `--dry-run` to inspect before committing.
@@ -405,6 +407,7 @@ python scripts/run_evals.py
 | `scripts/implement_pipeline.py` | Step 7: plan the Coder→(Test Writer∥Reviewer) dispatch + red→green gate verifier; default for regression-risk changes; `--dry-run` / `--verify-gate` |
 | `agents/consilium-implement-subagent.md` | Vehicle for the implementation pipeline; default for regression-risk changes (Step 7); returns a file manifest + Control verdict |
 | `prompts/implement/{coder,test_writer}.md` | Implementation pipeline role templates (Reviewer reuses `prompts/voices/control.md`) |
+| `modes/implement_pipeline.md` | Machine-readable config + full spec for the implementation pipeline (roles, routing, invariants, red→green gate, benchmark) |
 | `scripts/audit_feedback.py` | List runs without FB row; with `--backfill` adds default PEND |
 | `scripts/memory.py` | Uniform read API over the 3 tiers (short/medium/long) |
 | `scripts/strip_context.py` | Project previous voice's output to minimum (Steps 3-4 sequential) |
