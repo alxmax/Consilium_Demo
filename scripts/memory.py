@@ -29,6 +29,8 @@ CLI:
     python scripts/memory.py --tier medium --query auth
     python scripts/memory.py --tier long --query rollback
     python scripts/memory.py --tier all --query feedback  # union across tiers
+    python scripts/memory.py --tier long --feedback-file path/to/FEEDBACK.html
+    python scripts/memory.py --tier medium --runs-dir path/to/runs/
 """
 
 from __future__ import annotations
@@ -141,7 +143,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--tier", choices=("short", "medium", "long", "all"), default="all")
     ap.add_argument("--n", type=int, default=10, help="cap on entries returned per tier")
     ap.add_argument("--query", default=None, help="substring filter (medium/long only)")
+    ap.add_argument("--feedback-file", metavar="PATH", help="override FEEDBACK.html path (default: <repo>/FEEDBACK.html)")
+    ap.add_argument("--runs-dir", metavar="PATH", help="override runs/ directory path (default: <repo>/runs)")
     args = ap.parse_args(argv)
+
+    global RUNS, FEEDBACK
+    if args.feedback_file:
+        FEEDBACK = Path(args.feedback_file).resolve()
+    if args.runs_dir:
+        RUNS = Path(args.runs_dir).resolve()
 
     if args.tier == "short":
         result = read_short()

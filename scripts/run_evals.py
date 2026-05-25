@@ -53,7 +53,7 @@ def run_one(scenario: dict, repo_root: Path) -> list[str]:
         capture_output=True,
         text=True,
         encoding="utf-8",
-        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        env={**os.environ, "PYTHONIOENCODING": "utf-8", **scenario.get("env", {})},
         cwd=str(repo_root),
     )
 
