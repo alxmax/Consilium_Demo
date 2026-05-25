@@ -3421,30 +3421,153 @@ body.is-presenting .sideinfo { display: none; }
 
 </style>
 
+<style>
+@page { size: A4 portrait; margin: 14mm 12mm; }
+
+@media print {
+  html, body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: #f4ecd8 !important;
+  }
+
+  /* Hide UI chrome that doesn't belong on paper */
+  .topbar,
+  .side-nav,
+  .mobile-nav,
+  .scroll-progress,
+  .twk-panel,
+  .topbar__repo,
+  .tldr,
+  .page::before,
+  .page::after,
+  #modes::before,
+  #modes::after,
+  .modes-bg-extra {
+    display: none !important;
+  }
+
+  body, .page {
+    background: #f4ecd8 !important;
+    overflow: visible !important;
+    padding-top: 0 !important;
+  }
+
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Each numbered section on its own page */
+  .section {
+    padding: 0 0 16mm !important;
+    border-top: 0 !important;
+    background: transparent !important;
+  }
+  .section:not(:first-of-type) {
+    break-before: page;
+    page-break-before: always;
+  }
+  .section--inked {
+    background: #1a1612 !important;
+    color: #f3eee2 !important;
+    padding: 12mm !important;
+  }
+  .section--tinted {
+    background: #ebe2c8 !important;
+    padding: 8mm 6mm !important;
+  }
+
+  .hero { padding: 4mm 0 12mm !important; overflow: visible !important; }
+  .hero::before { display: none !important; }
+  .hero .container::before,
+  .hero .container::after { display: none !important; }
+
+  body { font-size: 11pt !important; line-height: 1.45 !important; }
+  .h-display { font-size: 32pt !important; line-height: 1.05 !important; }
+  .h-section { font-size: 22pt !important; line-height: 1.1 !important; }
+  .h-sub { font-size: 14pt !important; }
+  .lede, .hero__lede { font-size: 12pt !important; line-height: 1.45 !important; }
+
+  .voice-card,
+  .skeptic-card,
+  .constitution__item,
+  .two-layer__cell,
+  .mode-panel,
+  .persona,
+  .note,
+  .scheme-row,
+  .cascade-row,
+  .step-track,
+  .lens-heatmap__row,
+  .walkthrough,
+  .loop-cell,
+  .step-detail,
+  pre,
+  svg.diagram {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  h1, h2, h3, h4 {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Open all collapsibles so nothing is hidden in the PDF */
+  .collapsible-btn { display: none !important; }
+  .collapsible-btn + div {
+    max-height: none !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    margin-top: 18px !important;
+  }
+
+  /* Freeze playback controls; show diagram */
+  .walkthrough__controls .btn,
+  .mode-panel__controls .btn,
+  .pipeline__playhead .btn {
+    display: none !important;
+  }
+  .walkthrough__caption,
+  .mode-panel__caption {
+    color: #1a1612 !important;
+    font-size: 10pt !important;
+  }
+  .walkthrough__timeline {
+    overflow: visible !important;
+  }
+  .timeline-step {
+    background: #f4ecd8 !important;
+    color: #1a1612 !important;
+    border-color: #d8d0b8 !important;
+  }
+  .timeline-step[data-state="active"],
+  .step-pill[data-active="true"] {
+    background: #1a1612 !important;
+    color: #f4ecd8 !important;
+  }
+
+  .diagram, svg.diagram {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .footer { padding: 6mm 0 !important; border-top: 1px solid #d8d0b8 !important; }
+}
+</style>
+
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 </head>
 <body>
-<template id="__bundler_thumbnail" data-bg-color="#f4ecd8">
-  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
-    <!-- Centered three-voice mark with terracotta diamond -->
-    <g transform="translate(600 400)">
-      <!-- Diamond frame -->
-      <rect x="-180" y="-180" width="360" height="360" fill="none" stroke="#1a1612" stroke-width="3" transform="rotate(45)" />
-      <!-- Three voice dots: amber (gen), blue (ctl), red (con) -->
-      <circle cx="-70" cy="-40" r="48" fill="#c08a3e" />
-      <circle cx="70"  cy="-40" r="48" fill="#5a8ec8" />
-      <circle cx="0"   cy="65"  r="48" fill="#c75148" />
-      <!-- Center diamond accent -->
-      <rect x="-12" y="-12" width="24" height="24" fill="#a4543b" transform="rotate(45)" />
-    </g>
-    <!-- Wordmark below -->
-    <text x="600" y="680" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="42" font-weight="600" fill="#1a1612" letter-spacing="-1">consilium</text>
-    <text x="600" y="720" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" fill="#7a715f" letter-spacing="2">ARCHITECTURE EXPLAINER</text>
-  </svg>
-</template>
-
 <div id="root"></div>
 
 <script type="text/babel" data-source="src/tweaks-panel.jsx">
@@ -6685,6 +6808,32 @@ function Tweaks({ t, setTweak }) {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 
+</script>
+
+<!-- Wait for app + fonts, open all collapsibles, then print -->
+<script type="text/babel">
+(async () => {
+  const waitForApp = () => new Promise((resolve) => {
+    const tick = () => {
+      const root = document.getElementById('root');
+      if (root && root.querySelector('.page')) return resolve();
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+  await waitForApp();
+
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch (e) {}
+  }
+
+  document.querySelectorAll('.collapsible-btn').forEach((b) => {
+    if (b.getAttribute('data-open') !== 'true') b.click();
+  });
+
+  await new Promise((r) => setTimeout(r, 500));
+  window.print();
+})();
 </script>
 </body>
 </html>
