@@ -9,12 +9,11 @@
 
 1. [❌ NOT IMPLEMENTED](#-not-implemented)
 2. [🤔 UNRESOLVED DECISIONS](#-unresolved-decisions)
-3. [📋 POST-MERGE VALIDATION](#-post-merge-validation)
-4. [🔧 Prompts & skill audit (items #9, #43, #45-#50)](#-prompts--skill-audit)
-5. [🐞 Bugs (all fixed — see status updates)](#-bugs)
-6. [🏛 Senate Resolutions](#-senate-resolutions)
-7. [Rollback hooks](#rollback-hooks)
-8. [🎯 User directions (open)](#-user-directions-open)
+3. [🔧 Prompts & skill audit (items #9, #43, #45-#50)](#-prompts--skill-audit)
+4. [🐞 Bugs (all fixed — see status updates)](#-bugs)
+5. [🏛 Senate Resolutions](#-senate-resolutions)
+6. [Rollback hooks](#rollback-hooks)
+7. [🎯 User directions (open)](#-user-directions-open)
 
 ---
 
@@ -60,18 +59,6 @@ From `TODO_SENAT.md` Appendix D:
 
 ---
 
-## 📋 POST-MERGE VALIDATION
-
-Empirical pendings after the RUND2 merge (PR #59 — `2026-05-16`):
-
-> **Status 2026-05-25:** Toate 4 itemi completate prin analiză retrospectivă pe N=164 runs + 78 senate runs. Raport: `experiments/run4-rund2-empirical-validation.html`.
-
-- [x] **14A — Napoleon validation** — N=73: GO=58%, MODIFY=30%, STOP=12%. Fără P3 over-fit; GO-bias monitorizat (trigger: >3 STOP consecutive). **STAYS.**
-- [x] **14B — Sequential dispatch validation** — Sequential 57% OK rate vs Parallel 12% OK rate (+45pp). Post-RUND2: 62% OK. **CONFIRMAT.**
-- [x] **14C — Aggregator decisions validation** — 17/164 runs cu veto (10.4%), 22 candidați vetoed: 50% adversarial, 23% do_nothing pe cod-tasks. 0 auto-relax. Threshold 0.80 funcționează. **CONFIRMAT.**
-- [x] **14D — Generate `experiments/run4-rund2-empirical-validation.html`** — **DONE.**
-
----
 
 ## 🔧 Prompts & skill audit
 
