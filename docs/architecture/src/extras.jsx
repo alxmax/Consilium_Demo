@@ -489,6 +489,7 @@ function ImplementSection() {
       name: 'Coder',
       color: 'var(--gen)',
       lane: 'implementation files',
+      model: 'Sonnet 4.6',
       desc: 'Reads chosen_approach + success_criterion. Writes all implementation files. Returns a strict JSON manifest. Skipped if chosen_approach is do_nothing or skipped.',
     },
     {
@@ -496,6 +497,7 @@ function ImplementSection() {
       name: 'Test Writer',
       color: 'var(--ctl)',
       lane: 'test_* files only',
+      model: 'Sonnet 4.6',
       desc: 'Runs in parallel with Reviewer. Reads spec + files_written. Writes test_* files only. Tests must be RED against a stub and GREEN against the implementation (red→green gate).',
     },
     {
@@ -503,16 +505,17 @@ function ImplementSection() {
       name: 'Reviewer',
       color: 'var(--con)',
       lane: 'read-only',
+      model: 'Sonnet 4.6',
       desc: 'Runs in parallel with Test Writer. Inlines prompts/voices/control.md against the actual written code as a single synthetic candidate. Goal-fit → types → logic → tests → style. Writes nothing.',
     },
   ];
 
   const GATE_ITEMS = [
     { label: 'Status', value: 'default for regression-risk', note: 'promoted 2026-05-25 (user decision)' },
+    { label: 'Model', value: 'Sonnet 4.6 sub-agents', note: 'Coder · Test Writer · Reviewer all on Sonnet 4.6' },
     { label: 'Routing', value: 'pipeline vs single-shot', note: 'regression-risk → pipeline; greenfield → single-shot' },
     { label: 'Promotion gate', value: '≥2/3 wins', note: 'criterion not met — promoted anyway' },
-    { label: 'Kill criterion', value: 'net regressions in practice', note: '→ revert to single-shot' },
-    { label: 'Signal (R1+R2)', value: 'n=6: 1 win / 5 ties / 0 losses', note: 'see experiments/pipeline-bench/RESULTS.md' },
+    { label: 'Signal (R1+R2)', value: 'n=6: 1 win / 5 ties / 0 losses', note: 'pipeline vs single-shot — both Sonnet 4.6 (see experiments/pipeline-bench/)' },
   ];
 
   return (
@@ -600,7 +603,8 @@ function ImplementSection() {
               borderRadius: 4,
             }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: r.color, marginBottom: 6 }}>{r.name}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>lane: {r.lane}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>lane: {r.lane}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ctl-ink)', marginBottom: 10 }}>{r.model}</div>
               <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.55, margin: 0 }}>{r.desc}</p>
             </div>
           ))}
