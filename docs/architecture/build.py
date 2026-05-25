@@ -13,8 +13,8 @@ CRITICAL: every inlined `</script>` is escaped to `<\\/script>` so it does not
 prematurely close the host <script> element (and stays valid once parsed).
 
 Usage:
-    python docs/architecture/build.py            # build both entries
-    python docs/architecture/build.py --check     # verify outputs are up to date (exit 1 if stale)
+    python docs/architecture/build.py            # build docs/architecture.html
+    python docs/architecture/build.py --check     # verify output is up to date (exit 1 if stale)
 """
 
 from __future__ import annotations
@@ -30,7 +30,6 @@ DOCS = HERE.parent                              # docs/
 # (source entry in HERE) -> (output file in DOCS)
 ENTRIES = [
     ("index.html", "architecture.html"),
-    ("index-print.html", "architecture-print.html"),
 ]
 
 _LINK_CSS = re.compile(r'<link[^>]*rel="stylesheet"[^>]*href="([^"]+\.css)"[^>]*>')
