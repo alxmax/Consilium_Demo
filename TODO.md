@@ -84,6 +84,32 @@
 
 ## 🏛 Senate Resolutions
 
+### Senate Resolution — eval-parity-script-flags · 25 May 2026 · MODIFY (GO 4 · MODIFY 5 · STOP 0)
+
+> **Proposal:** Add --feedback-file and --runs-dir CLI flags to memory.py and priors.py. These are the only 2 of the 4 eval-relevant scripts that still hardcode ROOT-anchored paths (ROOT = Path(__file__).resolve().pa…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Pin the override mechanism to ONE approach and write it into the proposal. Recommended: explicit Path parameters threaded into build_priors() defaulting to current constants. Guard priors.py lines 231 and 244 (str(FEEDBACK.relative_to(ROOT)) raises ValueError for out-of-ROOT fixtures). Add a falsification check: scenario with fixture yields source.feedback_total == fixture row count AND default FEEDBACK.html content is absent. State explicitly what happens to existing flagless memory.py/priors.py scenarios.
+- [ ] **[CONFUCIUS]** Resolve the flag-name inconsistency before merging: either rename '--feedback-file' to '--feedback' in memory.py and priors.py to match audit_feedback.py, or explicitly document why the names differ. Additionally, clarify whether mark_outcome.py intentionally omits '--runs-dir'.
+- [ ] **[SOCRATE]** Two load-bearing gaps before GO: (1) Guard priors.py lines 231 and 244 — an override path outside the repo raises ValueError; fall back to str(path) when not relative to ROOT. (2) Add a falsification test with a sentinel-bearing fixture asserting BOTH that the sentinel appears AND default content is absent. Prefer global reassignment in main() over parameter-threading to avoid missing the 4 RUNS/FEEDBACK call sites in build_priors.
+- [ ] **[MUSK]** Ship only the priors.py flags (--feedback-file + --runs-dir). Put memory.py flags on hold pending a code-level proof that memory.py performs independent I/O that priors.py flags cannot cover. Scope drops to ~15 lines across 1 file. Write 1 scenario per new flag before merging.
+- [ ] **[DIMON]** (1) Audit parse_feedback() and parse_runs() to confirm they read reassigned module globals, not closures. If closures detected, refactor to pass FEEDBACK/RUNS as function arguments. (2) Convert --feedback-file and --runs-dir to absolute paths in main() before use. (3) Add validation in parse_runs(): log and skip malformed .json. (4) Add integration test: call priors.py with --feedback-file <fixture>, verify output differs from production.
+
+### Senate Resolution — eval-parity-scenario-design · 25 May 2026 · MODIFY (GO 3 · MODIFY 6 · STOP 0)
+
+> **Proposal:** Scenario design protocol for eval-parity-rest implementation. After adding --feedback-file/--runs-dir to memory.py + priors.py (separate proposal), write the first 2 scenarios for priors.py (highest-r…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** (1) Fix scenario (a) fixture: 1 confirmed BAD + 1 unconfirmed BAD yields weighted_bad_rate == bad_rate == 1.0 — inequality is FALSE. Change fixture to have mixed outcomes (e.g. 1 confirmed BAD + 1 unconfirmed OK) and pin both values. (2) Fix scenario (b): --headless zeroes stale_pendings unconditionally BEFORE date logic — run non-headless and assert 2020-01-01 entry IS present. (3) priors.py has no --feedback-file/--runs-dir flags — add them or define done-criterion of prerequisite. (4) Specify fixture mechanism (committed evals/fixtures/*.html or harness change). (5) Make doc_note a checkable property or downgrade to non-asserted comment.
+- [ ] **[AURELIUS]** Prefer static fixture files in evals/fixtures/ over dynamic tempfile generation in run_evals.py. If run_evals.py needs fixture-injection support, scope that change minimally and keep it separate from the scenario JSON entries.
+- [ ] **[CONFUCIUS]** (1) PREREQUISITE — add --feedback-file flag to priors.py in the same change as the scenarios; without it both scenarios fail with exit 2. (2) DETERMINISM — scenario (a) must also pass --no-runs to prevent priors.py from scanning production runs/ from ROOT. (3) DOC — add a fixture note to evals/README.md clarifying evals/fixtures/ contains synthetic HTML, coverage-only.
+- [ ] **[SOCRATE]** (1) priors.py has no --feedback-file/--runs-dir — either add them or the scenarios exit 2. (2) Scenario (b) is a tautology: --headless blanks stale_pendings unconditionally — redesign as NON-headless asserting the 2020-01-01 row IS surfaced. (3) Scenario (a) fixture arithmetically yields bad_rate==weighted_bad_rate==1.0 — change to mixed outcomes. (4) Mutation-verification is a manual author-time check only — run_evals.py carries no expect-fail hook.
+- [ ] **[MUSK]** Reduce to minimum viable: (1) one scenario only — scenario (a) for weighted_bad_rate; (2) no fixtures directory — inline the input or use a single flat file under evals/; (3) no doc_note field; (4) mutation check is a dev-time manual step, not a documented implementation artifact. If scenario (a) ships and catches a real regression within 2 weeks, scenario (b) and fixtures dir earn re-evaluation.
+- [ ] **[DIMON]** (1) Add isolation verification: run scenario (a) with --runs-dir /tmp/empty and confirm priors.py does NOT read production ROOT/runs/. (2) Add fixture schema validation before subprocess. (3) Document fixture maintenance: when STALE_PEND_DAYS changes, which fixtures must be regenerated? (4) Automate mutation-verification rollback. (5) Verify --headless end-to-end in CI simulation.
+- [ ] **[NAPOLEON]** Vote GO for the proposal content, but defer execution to next session. If the operator is willing to timebox to 20 minutes right now (fixtures only, JSON entries, no documentation), GO immediately — otherwise log as next-session opener and close this Senate thread cleanly.
+
 ### Senate Resolution — eval-parity-rest · 25 May 2026 · MODIFY (GO 3 · MODIFY 5 · STOP 1)
 
 > **Proposal:** Follow-up eval parity — add ~9 new scenarios to evals/scenarios.json covering memory.py (medium/long tiers), audit_feedback.py (orphan detection + backfill idempotency), mark_outcome.py ([confirmed] m…
