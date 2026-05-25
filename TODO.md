@@ -214,7 +214,9 @@
 **Honorable mentions (medium severity):**
 
 - [x] **HM1 [MED] meta_recommendation_per_candidate_vs_pipeline** — **RESOLVED** — `aggregator.py:352-355` citește `meta_recommendation` din `conservator_out["scores"][i]`, nu top-level. `scale_up`/`scale_down` se activează corect.
-- [ ] **HM2 [MED] trias_cost_gate_soft_not_enforced** *(Aurelius)* — `scope_gate.py` emite `magnitude` din LOC/fișiere dar NU din `irreversibility × magnitude` Conservator. Routing-ul Trias (Phase 2 lazy) folosește proxy, nu semnale reale. AC: extend `scope_gate.py` cu `mode_ceiling` derivat din output-ul Conservator.
+- [x] **HM2 [MED] trias_cost_gate_soft_not_enforced** *(Aurelius)* — **RESOLVED (deviation noted)**
+  - `mode_ceiling` field shipped in `64835c7`: `low→sequential`, `medium→dialectic`, `high→trias`; blocklist hits force `high→trias` (`scope_gate.py` `_MODE_CEILING`).
+  - **Deviation from original AC:** ceiling derives from the LOC/files `magnitude` proxy, NOT from Conservator `irreversibility × magnitude`. By design — `scope_gate.py` runs *pre-deliberation*, so Conservator output does not exist at gate time; deriving from it would be circular. The proxy is the only signal available before voices run, and the gate fails OPEN.
 - [x] **HM3 [MED] pilot_b_unenforced_activation_gate** — **MOOT** — Pilot B era despre Senate mode, acum split în repo separat.
 - [x] **HM4 [HIGH] skeptic_catchrate_overgeneralized_from_P3** — **RESOLVED** — SKILL.md linia 719 adăugat scope caveat explicit: "(n=1 problem — P3 car wash only; generalizability unconfirmed until ≥3 distinct problems tested)".
 
