@@ -161,13 +161,13 @@ Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negoti
 ```bash
 python scripts/aggregator.py --scheme conservative_override
 ```
-Default: **conservative_override** — veto at `risk_score > 0.8` (strictly greater — `risk_score = 0.80` is NOT vetoed; `0.81` IS); ranking by weighted average `(generator + control + safety)` where `safety = 1 - conservator`. On a tie, the safer candidate wins. Alternative: `--scheme risk_adjusted_utility` (sigmoid penalty, no rigid veto). **Veto threshold caveat:** the 0.8 boundary has not been empirically validated in the [0.7, 0.9] region — boundary cases may fire non-deterministically until a follow-up stability experiment closes that gap (see `experiments/voice-score-stability-2026-05-17.md` F4).
+Default: **conservative_override** — veto at `risk_score > 0.8` (strictly greater — `risk_score = 0.80` is NOT vetoed; `0.81` IS); ranking by weighted average `(generator + control + safety)` where `safety = 1 - conservator`. On a tie, the safer candidate wins. Alternative: `--scheme risk_adjusted_utility` (sigmoid penalty, no rigid veto). **Veto threshold caveat:** the 0.8 boundary has not been empirically validated in the [0.7, 0.9] region — boundary cases may fire non-deterministically until a follow-up stability experiment closes that gap (see `experiments/voice-score-stability-2026-05-17.md` F4). **All schemes + input shapes: [modes/aggregator_schemes.md](modes/aggregator_schemes.md).**
 
 ### 5b. Confidence
 ```bash
 echo '{"candidates": [...], "chosen": "approach_id"}' | python scripts/confidence.py
 ```
-Returns `{confidence, agreement, separation}`. If `chosen` is `null` (all candidates vetoed), the `confidence` field in the response is `null`. Step 5d is skipped in this case — `retry_context.py` is not run when no candidate survived aggregation.
+Returns `{confidence, agreement, separation}`. If `chosen` is `null` (all candidates vetoed), the `confidence` field in the response is `null`. Step 5d is skipped in this case — `retry_context.py` is not run when no candidate survived aggregation. **Formula, vote-pattern path, mode floors, calibration caveat: [modes/confidence.md](modes/confidence.md).**
 
 > **Calibration (R2 audit 2026-05-17):** `agreement` measures divergence between roles within ONE run — not inter-run stability. Conservator scores are anchored by categorical formula (see `conservator.md`); Generator/Control scores are unanchored self-assigned floats. A second run with the same input may produce different scores (pstdev estimated 0.12–0.18 on `risk_score`). The `confidence` value is not a calibrated probability — it is an internal-consistency signal.
 
@@ -395,8 +395,8 @@ python scripts/run_evals.py
 | `scripts/priors.py` | Soft priors from FEEDBACK.html + runs/ (Step 0). Surfaces `missing_feedback_runs`, `stale_pendings` (2-day threshold), `weighted_bad_rate`. |
 | `scripts/scope_gate.py` | Auto-detect skip if scope is small (Step 1.5) |
 | `scripts/probe_change.py` | Anchor diff_size to `git diff --numstat` (Step 4) |
-| `scripts/aggregator.py` | 4 voting schemes + auto-relax on total veto (Step 5) |
-| `scripts/confidence.py` | Derives confidence from variance + separation (Step 5b) |
+| `scripts/aggregator.py` | 5 aggregation schemes + auto-relax on total veto (Step 5); reference: `modes/aggregator_schemes.md` |
+| `scripts/confidence.py` | Derives confidence from variance + separation (Step 5b); reference: `modes/confidence.md` |
 | `scripts/deprecated/meta_critic.py` | Deliberation quality score (conservator_spread only) — Step 5c retired 2026-05-25 |
 | `scripts/retry_context.py` | Hint for single retry when confidence < 0.7 — Step 5d |
 | `scripts/build_report.py` | Assemble the canonical report from the bundle (Step 6) |
@@ -520,6 +520,8 @@ Each mode has its own `.md` file in `modes/` with YAML frontmatter (`name`, `sub
 | Dialectic | [modes/dialectic.md](modes/dialectic.md) | 1 | 1.33× | 0.75 |
 | Trias | [modes/trias.md](modes/trias.md) | 3 (worst: 7) | 3× | 0.80 |
 | skeptic_on_chosen (flag) | [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md) | +1 over base | base+1 | N/A |
+
+`modes/` also holds reference docs for sub-components (not selectable modes): [implement_pipeline.md](modes/implement_pipeline.md) (Step 7), [aggregator_schemes.md](modes/aggregator_schemes.md) (Step 5), [confidence.md](modes/confidence.md) (Step 5b).
 
 ## Dialectic mode — V2 (opt-in, code-specialized)
 
