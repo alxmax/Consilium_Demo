@@ -1937,6 +1937,7 @@
   },
   {
     "name": "priors/weighted_bad_rate exceeds bad_rate when confirmed BAD present",
+    "note": "Synthetic fixture: validates code-path coverage only, not semantic correctness. The static HTML in evals/fixtures/ exercises priors.py parsing/arithmetic; it does not assert that the weighting heuristic is the right one.",
     "tool": "scripts/priors.py",
     "args": [
       "--feedback-file",
@@ -1959,6 +1960,7 @@
   },
   {
     "name": "priors/stale_pendings surfaces old PEND entries",
+    "note": "Synthetic fixture: validates code-path coverage only, not semantic correctness. The 2020-01-01 PEND entry is anchored to stay stale; the scenario confirms detection fires, not that the staleness window is well-calibrated.",
     "tool": "scripts/priors.py",
     "args": [
       "--feedback-file",

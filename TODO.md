@@ -68,7 +68,7 @@
 - [x] Clarify headless suppression — documentat în `priors.py` docstring + SKILL.md Step 0
 - [x] Start with 1-2 scenarios on highest-risk script first — 2 scenarii priors + 1 memory PASS
 - [x] Each scenario must assert a concrete output field — scenariile 56/57 verifică câmpuri specifice
-- [ ] Note in scenarios.json: synthetic fixtures validate code-path coverage only, not semantic correctness
+- [x] Note in scenarios.json: synthetic fixtures validate code-path coverage only, not semantic correctness — added `note` field to scenarios 56/57 (`priors/weighted_bad_rate`, `priors/stale_pendings`); runner ignores the key, both still PASS
 
 ### Open items (Tier 2)
 
