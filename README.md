@@ -70,9 +70,6 @@ consilium/
 └── evals/                   # regression scenarios for scripts
 ```
 
-> The 9-senator **Senate** audit was split into its own skill on 2026-05-25
-> (repo: [`Senate`](https://github.com/alxmax/Senate)). Invoke `/senate` separately.
-
 ## Usage
 
 The skill activates automatically when keywords such as "review PR", "evaluate change", "refactor planning", "risk assessment", "should I commit", "which approach" appear in the prompt.
