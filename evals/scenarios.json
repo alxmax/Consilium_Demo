@@ -1220,19 +1220,31 @@
       "personalities": [
         {
           "name": "pioneer",
-          "weights": {"generator": 0.49, "control": 0.3, "conservator": 0.21},
+          "weights": {
+            "generator": 0.49,
+            "control": 0.3,
+            "conservator": 0.21
+          },
           "lens": "pioneer_lens",
           "chose": "approach_a"
         },
         {
           "name": "architect",
-          "weights": {"generator": 0.3, "control": 0.4, "conservator": 0.3},
+          "weights": {
+            "generator": 0.3,
+            "control": 0.4,
+            "conservator": 0.3
+          },
           "lens": "architect_lens",
           "chose": "approach_a"
         },
         {
           "name": "steward",
-          "weights": {"generator": 0.3, "control": 0.3, "conservator": 0.4},
+          "weights": {
+            "generator": 0.3,
+            "control": 0.3,
+            "conservator": 0.4
+          },
           "lens": "steward_lens",
           "chose": "approach_a"
         }
@@ -1871,6 +1883,28 @@
         "conservator": 0.4
       },
       "lens": "prompts/voices/steward_lens.md"
+    }
+  },
+  {
+    "name": "priors/weighted_bad_rate exceeds bad_rate when confirmed BAD present",
+    "tool": "scripts/priors.py",
+    "args": [
+      "--feedback-file",
+      "evals/fixtures/priors_weighted_bad.html",
+      "--no-runs"
+    ],
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "source": {
+        "feedback_total": 2
+      },
+      "counts": {
+        "BAD": 1,
+        "OK": 1
+      },
+      "bad_rate": 0.5,
+      "weighted_bad_rate": 0.6666666666666666
     }
   }
 ]

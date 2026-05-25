@@ -61,3 +61,14 @@ Two rules:
 When adding a new deterministic script, add 2-4 scenarios covering its
 contract. When changing existing behavior intentionally, update the
 matching scenario in the same commit.
+
+## Fixtures (`evals/fixtures/`)
+
+Static HTML files used as synthetic `FEEDBACK.html` inputs for scripts that
+read the feedback store (e.g. `priors.py --feedback-file`). These are
+coverage-only: they verify that code paths execute and produce the expected
+arithmetic, not that the script behaves correctly on real production data.
+
+When `STALE_PEND_DAYS`, `CONFIRMED_WEIGHT`, or other constants in `priors.py`
+change, review which fixture scenarios assert those derived values and update
+them in the same commit.
