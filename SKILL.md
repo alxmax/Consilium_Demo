@@ -535,22 +535,14 @@ Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI 
 
 Cross-cutting flag — +1 Skeptic sub-agent over any base mode post-hoc. Auto-triggers when `confidence ∈ [0.5, 0.7]`. Advisory by default; `--skeptic-can-override` for opt-in. **Full workflow: [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md).**
 
-## Senate mode — moved to its own skill
+## Routing boundary
 
-The 9-senator deliberative audit (`senate`) was **split out of Consilium into a
-standalone skill** on 2026-05-25 (repo: `../Senate`). For a high-stakes,
-irreversible, or architecture-level audit, invoke `/senate` separately. Consilium
-no longer ships the senator prompts, `senate_synth.py`, or the `--strict-senate`
-validator. When a Senate audit warrants a full per-change deliberation, run
-`/consilium` on the chosen approach.
-
-Routing boundary (when to escalate beyond a standard Consilium mode):
+When to escalate beyond a standard Consilium mode:
 
 | Decision profile | Mode |
 |---|---|
 | `confidence ∈ [0.5, 0.7]` from standard mode AND single drift concern | `dialectic + skeptic_on_chosen` |
 | 2+ plausible architectural approaches without clear winner | `trias` |
-| Irreversible / critical-magnitude AND spans ≥2 architectural layers | `/senate` (separate skill) |
 | Bugfix evident OR diff <20 lines / 1 file | Sequential (scope_gate skips) |
 | All other PR-level reviews | Sequential / Parallel auto cross-check |
 

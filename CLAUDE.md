@@ -34,8 +34,6 @@ Mode-specific scripts:
 
 Sub-agent dispatch (Trias, Skeptic): see `agents/consilium-subagent.md`. All sub-agents use `model: "sonnet"` explicitly — do not inherit Opus.
 
-> **Senate moved out (2026-05-25).** The 9-senator audit is now a standalone skill in the `Senate` repo (`https://github.com/alxmax/Senate`). It is no longer part of Consilium.
-
 Architecture visualization: `docs/architecture.html` (open locally). Benchmarks on real problems: `experiments/` (see `experiments/p3-car-wash.html`).
 
 ## Python conventions
@@ -65,8 +63,6 @@ User-selectable modes (SKILL.md documents them in detail):
 
 **Parallel removed.** No longer user-selectable (only via `parallel + skeptic_on_chosen`). Remains as an internal auto cross-check when `magnitude=critical ∧ reversibility=irreversible`, plus a silent audit every 20 runs.
 
-The **`senate`** mode was split into its own skill (`Senate` repo) on 2026-05-25 — it is no longer part of Consilium. For a high-stakes / architecture-level audit, invoke `/senate` separately.
-
 ## Local files (gitignored)
 
 - `FEEDBACK.html` — real-usage journal, append-only via `scripts/log_feedback.py` (atomic writes). See `scripts/deprecated/migrate_feedback_md_to_html.py` for the migration history from `.md` format (retired one-shot tool).
@@ -75,7 +71,7 @@ The **`senate`** mode was split into its own skill (`Senate` repo) on 2026-05-25
 
 ## Self-improvement loop
 
-When editing the skill itself: run `/consilium` on your own change. For changes to core prompts / architecture, consider `trias` (or the standalone `/senate` skill) over single-context deliberation. Save the run to `runs/` and log it to `FEEDBACK.html` via `log_feedback.py`.
+When editing the skill itself: run `/consilium` on your own change. For changes to core prompts / architecture, consider `trias` over single-context deliberation. Save the run to `runs/` and log it to `FEEDBACK.html` via `log_feedback.py`.
 
 ## Git workflow
 
