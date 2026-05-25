@@ -64,7 +64,7 @@ Steps **5b, 5c, 5d** are sub-steps within Stage 4: **5b** (confidence) is mandat
 ### 0. Bootstrap (before any grep / Read on the codebase)
 Two actions in order:
 
-1. **Read the contracts required by the mode** — minimum 3 core voices: `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Dialectic also reads `*_pass2.md` (`generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md`); Trias also reads `<personality>_lens.md` (`pioneer_lens.md`, `architect_lens.md`, `steward_lens.md`); skeptic modes also read `prompts/voices/skeptic.md`. They define the exact fields produced by each voice. **Parallel/dialectic note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough.
+1. **Read the contracts required by the mode** — minimum 3 core voices: `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Dialectic also reads `*_pass2.md` (`generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md`); Trias also reads `<personality>_lens.md` (`pioneer_lens.md`, `architect_lens.md`, `steward_lens.md`); skeptic modes also read `prompts/voices/skeptic.md`. They define the exact fields produced by each voice. **Parallel/dialectic note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough. **Also:** if running a non-default mode, read `modes/<mode>.md` for the full mode workflow and machine-readable config (subagents, cost_multiplier, confidence_floor).
 2. **Run `python scripts/priors.py`** — returns soft priors from `FEEDBACK.html` + `runs/`. Three fields can block the current deliberation until resolved:
    - `stale_pendings` non-empty (PEND older than 2 days): ask *"You have N old PEND entries: [date | chosen] × N. Want me to close them (OK/BAD/skip)?"* — update via `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferred) or via `Edit` directly on `FEEDBACK.html`. **Do not** use `log_feedback.py` — it duplicates the row. **Headless** (`is_headless()`): log `[priors] stale_pendings: N entries — skipping prompt` to stderr and continue without asking.
    - `missing_feedback_runs` non-empty: run `python scripts/audit_feedback.py --backfill` to create PEND entries for orphan runs, then resolve them as above. If the list is larger than 3, prefer to resolve the gap *before* starting a new deliberation. **Headless**: run `audit_feedback.py --backfill` automatically and continue.
@@ -507,224 +507,28 @@ Return STRICTLY the JSON specified in the "Output format" section above. No pros
 - **Missing mandatory fields (e.g. `candidates` empty):** raise a warning in the terminal, skip the aggregator and emit a skipped report with `skip_reason: "voice output incomplete after retry"`.
 - **Strip_context**: necessary only in Sequential mode (Steps 3-4); in Parallel each voice runs in isolation and does not need `strip_context.py`.
 
+## Mode files (machine-readable config)
+
+Each mode has its own `.md` file in `modes/` with YAML frontmatter (`name`, `subagents`, `cost_multiplier`, `confidence_floor`, `models`). Scripts read mode parameters from these files — they are the single source of truth for mode config. Read the mode file at Bootstrap (Step 0) before running a non-default mode.
+
+| Mode | File | Subagents | Cost | Conf. floor |
+|---|---|---|---|---|
+| Sequential (default) | [modes/sequential.md](modes/sequential.md) | 0 | 1× | 0.70 |
+| Dialectic | [modes/dialectic.md](modes/dialectic.md) | 1 | 1.33× | 0.75 |
+| Trias | [modes/trias.md](modes/trias.md) | 3 (worst: 7) | 3× | 0.80 |
+| skeptic_on_chosen (flag) | [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md) | +1 over base | base+1 | N/A |
+
 ## Dialectic mode — V2 (opt-in, code-specialized)
 
-**Mechanics:** Standard Sequential (Conservator→Generator→Control) with code-specific context injected into the voice inputs, followed by `skeptic_on_chosen`. Cost: 1.33× Sequential (1× Sequential + 1/3 for Skeptic sub-agent). No new prompt files — context is injected via the voice input fields.
-
-### Code-context injection
-
-Inject into each voice's input (not into the prompt file):
-- `language` + `framework` + `build_command` (e.g. `pytest -x`, `cargo test`)
-- `files_touched[]` — list of affected files with their roles
-- `test_files[]` — existing test files the change must not break
-- `ci_gate` — the check that must pass before merge
-
-This injection activates code-specific reasoning in the existing voices without new prompt files.
-
-### Skeptic stage
-
-After Sequential produces `chosen`, always dispatch `skeptic_on_chosen` (not conditional on confidence band). The Skeptic receives the chosen + `success_criterion` + the code context. The verification claim must be concrete: a named test, a build command, or a CI check.
-
-### When to use
-- Code change where implementation strategy and verification strategy are both non-obvious
-- You want a focused challenge on the chosen approach post-deliberation
-- Medium-stakes refactor (2–5 files) where Sequential alone feels thin
-
-### Workflow
-1. Inject code-context into voice inputs (language, files, test suite, CI gate)
-2. Run Sequential (Conservator→Generator→Control) — standard Steps 2–4
-3. Run `skeptic_on_chosen` unconditionally (not gated on confidence band)
-4. Aggregate + confidence as normal (Steps 5–5b)
-5. If Skeptic catches constraint: `skeptic_caught_constraint: true` in report; advisory by default, `--skeptic-can-override` for opt-in override
-
-**telemetry.mode** for this mode: `"dialectic"`. Legacy runs with mode `"dialectic"` (old Pass1+Pass2) are preserved in `runs/` with no schema change — `validate_report.py` keeps `"dialectic"` in `_MULTI_VOICE_MODES`.
-
-**Old Dialectic (Pass1+Pass2) archived.** `scripts/deprecated/dialectic_merge.py` is the retired implementation. `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched.
+Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI gate) injected into voice inputs. `telemetry.mode: "dialectic"`. **Full workflow: [modes/dialectic.md](modes/dialectic.md).**
 
 ## Trias mode (high-stakes opt-in)
 
-**Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward), each dispatched as **one Sequential sub-agent** (Conservator→Generator→Control internally) with the personality lens prepended. Democratic majority vote over the 3 chosen results. Cost: 3× Sequential (3 sub-agents vs 1).
-
-**Previous mechanics (archived):** The old Trias dispatched 9 parallel sub-agents (3 personalities × 3 voices). The new design reduces from 9 to 3 sub-agents — each personality runs its own Sequential deliberation internally. The democratic vote over 3 chosen results is preserved.
-
-### When to use
-- Irreversible schema/DB migration
-- Security audit (auth, crypto, RCE potential)
-- Refactor > 5 files
-- 2+ plausible architectural approaches, no clear winner
-- Cost of wrong decision >> cost of running (3 sub-agents, 3× Sequential)
-
-### Lazy routing (default: enabled)
-
-**Purpose:** Avoid the 3× Sequential cost when the change does not warrant it. Trias checks magnitude via `scope_gate.py` and auto-downgrades to Dialectic for low/medium changes.
-
-**Default:** `lazy=true` — Trias auto-downgrades low/medium magnitude to Dialectic. To force full Trias, the user must explicitly state "use full Trias" or "no lazy routing" in their request.
-
-**Sequencing contract (mandatory):** Magnitude classification MUST run on the **original unstripped context** BEFORE Phase 1 context stripping is applied. Strip happens after the routing decision.
-
-**Routing logic:**
-```bash
-gate=$(python -X utf8 scripts/scope_gate.py)          # on original context
-magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin)['magnitude'])")
-```
-- If `magnitude == "high"` → proceed to full Trias (then apply Phase 1 strip below)
-- If `magnitude != "high"` → downgrade to Dialectic and emit structured notification:
-  ```json
-  {
-    "trias_lazy_routed": true,
-    "routed_to": "dialectic",
-    "magnitude": "<low|medium>",
-    "magnitude_score": {"files": <n>, "lines": <n>, "blocklist_hits": <n>},
-    "threshold": "high",
-    "context_tokens_available": <approx>,
-    "override_instruction": "Re-invoke with explicit 'use full Trias' to force 3-sub-agent mode."
-  }
-  ```
-
-### Workflow
-0. **(Phase 2 — lazy routing)** Run scope_gate on original context and check magnitude. If `magnitude != "high"` AND user has not explicitly requested full Trias, downgrade to Dialectic (emit notification above) and stop Trias workflow here.
-1. Orchestrator reads `python -X utf8 scripts/personalities.py` — emits the 3 personalities
-2. **(Phase 1 — context strip)** Before building each sub-agent prompt, truncate the raw conversation context to ≈15 000 tokens:
-   ```bash
-   stripped=$(echo "$raw_context" | python -X utf8 scripts/strip_context.py --truncate-text 15000)
-   ```
-   Use `$stripped` (not `$raw_context`) in each personality sub-agent prompt. This runs **per sub-agent** so each gets the same budget-capped context. The truncation marker `[... context truncated ...]` signals to the sub-agent that context was cut; it should proceed normally.
-3. For each personality, dispatch **1 `consilium-subagent`** with `prompts/<personality>_lens.md` prepended over the task context (using stripped context from Step 2). Each sub-agent runs a full Sequential deliberation (Conservator→Generator→Control) internally with the personality lens applied, and returns `{chosen_approach, rationale, confidence}`.
-4. Collect the 3 `chosen_approach` values (one per personality) → `chose` per personality
-5. **Unanimous check (B1).** If all 3 personalities chose the same `chose`, skip `team_vote` — the result is unanimous. Set `vote_pattern: "3-0"` and `vote_skipped: true`. Confidence derived directly from `confidence_from_vote_pattern("3-0")`. Log in `deliberation_log` with `reason: "unanimous_personalities"`. If not unanimous, run `team_vote` normally.
-6. Orchestrator runs `python -X utf8 scripts/aggregator.py --scheme team_vote` over the 3 chosens (skip if B1 detected unanimity)
-7. Confidence derived from vote_pattern — pipe aggregator output directly to `confidence.py`:
-   ```bash
-   echo '{"personalities":[...],"candidates":[...]}' | python scripts/aggregator.py --scheme team_vote | python scripts/confidence.py
-   ```
-   Do not manually build `{"candidates":[...],"chosen":"..."}` for Trias — the candidates don't have `scores` per voice.
-8. **Deadlock cascade (B2) — only if vote_pattern is 1-1-1 or 0-0-0.** See Failure recovery below.
-
-### Output schema (Trias-specific fields)
-```json
-{
-  "chosen_approach": "candidate_id or null",
-  "confidence": 0.82,
-  "vote_pattern": "3-0-0",
-  "personalities": [
-    {"name": "Pioneer", "lens": "pioneer_lens.md", "chose": "candidate_id", "weights": {}},
-    {"name": "Architect", "lens": "architect_lens.md", "chose": "candidate_id", "weights": {}},
-    {"name": "Steward", "lens": "steward_lens.md", "chose": "candidate_id", "weights": {}}
-  ]
-}
-```
-
-### Vote patterns
-| Pattern | Confidence | Outcome |
-|---|---|---|
-| 3-0 | 0.95 | OK auto |
-| 2-1 | 0.75 | OK auto |
-| 2-0 | 0.70 | OK auto |
-| 1-1-1 | null | → B2 cascade (Round 2 → Skeptic → PEND) |
-| 0-0-0 | null | → B2 cascade (Round 2 → PEND) |
-
-### Output JSON (Trias-specific fields)
-
-```json
-{
-  "success_criterion": "<testable sentence>",
-  "chosen_approach": "<id>",
-  "team": ["pioneer", "architect", "steward"],
-  "vote_pattern": "2-1",
-  "vote_counts": {"pioneer": "approach_a", "architect": "approach_a", "steward": "approach_b"},
-  "confidence": 0.75,
-  "deliberation_log": [{"step": "trias_vote", "vote_pattern": "2-1", "trias_rounds": 1}]
-}
-```
-
-### Failure recovery
-
-**B2 — Deadlock cascade.** Fires when Round 1 yields 1-1-1 or 0-0-0.
-
-**Round 2 (always first):** Re-dispatch all 3 personality sub-agents. Each receives the other two personalities' `{chosen_approach, reasoning_summary}` from Round 1 as additional context. Re-vote via `team_vote`. Cost: +3 sub-agents.
-
-- Round 2 produces 2-1 or 3-0 → cascade exits, report normally. Set `trias_rounds: 2` in telemetry.
-- Round 2 still **1-1-1** → proceed to Skeptic tiebreaker (below).
-- Round 2 still **0-0-0** → **PEND** (Skeptic cannot arbitrate among nothing). Set `trias_rounds: 2, deadlock: "0-0-0"` in telemetry.
-- Round 2 converts 0-0-0 → 1-1-1 → proceed to Skeptic tiebreaker.
-
-**Skeptic tiebreaker (only after Round 2 1-1-1):** Dispatch 1 sub-agent with `prompts/voices/skeptic.md` plus modified input — all 3 competing `{chosen_approach, reasoning_summary}` pairs. Skeptic selects one id as `chosen`. Cost: +1 sub-agent. Set `trias_rounds: 2, tiebreak: "skeptic"` in telemetry.
-
-- Skeptic returns a valid id → chosen confirmed. Confidence: 0.65 (tiebreak path).
-- Skeptic abstains or errors → **PEND**.
-
-**Headless (B2):** All Round 2 and Skeptic dispatches run as non-interactive sub-agents — no prompt needed. Final PEND falls through to `PEND_HEADLESS` logging.
-
-**Max cost (worst case 1-1-1 → Round 2 → Skeptic):** 3 + 3 + 1 = 7 sub-agents.
-
-### Skip Trias if
-- Diff < 20 lines / 1 file — `scope_gate.py` will skip anyway
-- Strict conservatism required (aggregated Trias is −18% Conservator)
-- Obvious bugfix — Sequential blind is enough
-
-## Trias split-model mode (`trias_split`) — DEPRECATED
-
-**Removed.** `trias_split` is no longer a user-selectable mode. With Trias reduced from 9 to 3 sub-agents (3× Sequential), `trias_split`'s 3.3× cost advantage over the old 9× Trias no longer exists — both are now effectively the same cost tier. Use standard `trias` instead.
-
-`validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.
+3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally. Lazy routing auto-downgrades to Dialectic for low/medium magnitude. Max cost: 7 sub-agents (1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
-**Mechanics:** `skeptic_on_chosen` is a **cross-cutting flag**, not a fixed mode. It composes over any base mode (Sequential, Parallel, Dialectic, Trias): after the base mode produces `chosen` and `confidence`, 1 additional Skeptic voice is dispatched on the resulting `chosen`, with the prompt `prompts/voices/skeptic.md`. The flag runs **sequentially post-hoc** on any mode (vs a fixed mode that includes it in Pass-1). There is no dedicated Python code — orchestration is done via standard dispatch of `prompts/voices/skeptic.md` with the current chosen.
-
-**Cost:** +1 sub-agent over the chosen base mode (whichever it is). E.g.: Parallel + flag = 4 sub-agents (1.33× Parallel); Dialectic + flag = 7 sub-agents (~2.3× Parallel).
-
-> **Legacy note.** The modes `parallel_skeptic` and `dialectic_skeptic` were distinct fixed modes (Parallel/Dialectic with Skeptic baked-in). They were collapsed into this composable flag on 2026-05-17 — the identical functionality is obtained via `parallel + skeptic_on_chosen` and `dialectic + skeptic_on_chosen`. The legacy names remain in `validate_report.py` MODE enum for backward-compat with historical runs.
-
-### When to use
-
-**Auto-trigger conditions** (any is sufficient):
-- Confidence ∈ `[0.5, 0.7]` — classic trigger
-- Confidence > 0.7 BUT `Conservator.net_concern` > 0.7 — high-conf/high-concern discrepancy is worth probing: `trigger_reason: "high_conf_high_concern"`
-- `chosen_approach` coincides with a `BAD` outcome from `FEEDBACK.html` (last 30 days, substring match on label): `trigger_reason: "similar_to_recent_bad"` — Tacitus-lite for classic modes
-- `irreversibility_flag: true` — existing consent gate, Skeptic adds object-level check: `trigger_reason: "irreversibility_gate"`
-
-- **Manual opt-in** via `--skeptic-on-chosen` when you want a focal challenger post-hoc regardless of confidence (medium-stakes, problems with known implicit constraints)
-- Problems where chosen_confirmation_pass has empirically demonstrated value — particularly situations with implicit constraints not explicitly stated in success_criterion (P3 type: the logical preconditions of the solution don't appear in the statement)
-- When you want the focal challenger on any base (Sequential / Parallel / Dialectic / Trias) without dedicated fixed mode cost
-- Cases where you want to know whether chosen missed something, but have no basis for comparison (no viable alternatives) — the focal Skeptic on chosen is cheaper than re-running the entire deliberation
-
-### Workflow
-1. Run the full base mode (any: Sequential / Parallel / Dialectic / Trias) → produces `chosen`, `confidence`, intermediate report
-2. If `confidence ∈ [0.5, 0.7]` (auto) or the `--skeptic-on-chosen` flag is active, dispatch 1 Sonnet 4.6 sub-agent with `prompts/voices/skeptic.md` inline + minimal input:
-   ```
-   chosen: <id, summary, sketch, rationale>
-   success_criterion: <the testable sentence>
-   verification: <the command>
-   ```
-   DO NOT pass other candidates, scores, or deliberation logs.
-3. Validate the skeptic output:
-   - `can_object: true` with `concrete_concerns` ≥ 2 OR `quoted_scenario` non-null → accept
-   - `can_object: true` without evidence → reject (schema fail), ship the original chosen
-   - `can_object: false` → ship the original chosen, log that there is no concrete objection
-4. Log the result in `deliberation_log` with step `"skeptic_on_chosen"` and set flag `skeptic_caught_constraint: true|false` in the report
-5. Apply override semantics (section below)
-
-### Override semantics
-**Advisory by default.** The Skeptic's verdict is logged in `deliberation_log` as an entry with step `"skeptic_on_chosen"` and flag `skeptic_caught_constraint: true|false`. `chosen` is **not replaced** — it stays as produced by the base mode. The user sees the objection in the report and can act or ignore.
-
-**Opt-in override via `--skeptic-can-override`.** If the flag is active AND Skeptic produces `addressable: requires_redesign`, the Skeptic's verdict supersedes `chosen`: the orchestrator presents the report's alternatives to the user and asks whether to change the choice. If Skeptic produces `addressable: in_place`, the override does not apply (advisory remains); if it produces `addressable: unaddressable` with `failure_mode: meta_scope_mismatch`, the report is marked `misapplied`.
-
-Summary table:
-
-| Skeptic output | Advisory (default) | With `--skeptic-can-override` |
-|---|---|---|
-| `can_object: false` | ship original chosen | ship original chosen |
-| `in_place` | log + note in report | log + note in report (no override) |
-| `requires_redesign` | log + advisory | orchestrator proposes alternatives |
-| `unaddressable / meta_scope_mismatch` | mark `misapplied` | mark `misapplied` |
-
-### Skip if
-- Confidence ≥ 0.7 and the `--skeptic-on-chosen` flag is not manually active — the Skeptic has no structural motivation to find anything
-- Confidence < 0.5 — the band is too low for a single challenger voice; escalate to Trias or the user directly
-- Diff is intrinsically high-stakes (auth, migrations, security) — use full Trias with justified cost
-
-**Empirical origin.** The mode emerged from the analysis in `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (the conceptual equivalent of this flag) reached 100% catch-rate in simulation and 4/7 in real reruns on P3 car wash — performance superior to any other mode tested on that problem. **Scope caveat (n=1):** these figures derive from a single problem instance; generalizability to other problems is unconfirmed until ≥3 distinct problems are tested. Mechanism: a single skeptic voice on `chosen` post-hoc forces a re-reading of success_criterion and the detection of implicit constraints missed by all the voices in Pass-1.
+Cross-cutting flag — +1 Skeptic sub-agent over any base mode post-hoc. Auto-triggers when `confidence ∈ [0.5, 0.7]`. Advisory by default; `--skeptic-can-override` for opt-in. **Full workflow: [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md).**
 
 ## Senate mode — moved to its own skill
 
@@ -745,33 +549,11 @@ Routing boundary (when to escalate beyond a standard Consilium mode):
 | Bugfix evident OR diff <20 lines / 1 file | Sequential (scope_gate skips) |
 | All other PR-level reviews | Sequential / Parallel auto cross-check |
 
-<!-- === SEQUENTIAL === -->
-## Three-layer architecture
+## Sequential mode (default)
 
-| Layer | Components | Role |
-|---|---|---|
-| **Deliberation** | Conservator → Generator → Control (sequential) | Runs on every user question |
-| **Aggregation** | aggregate_sequential() with 8-component veto cascade | Synthesizes voice outputs, decides what user sees |
+Default mode. Conservator → Generator → Control run in-context. 0 sub-agent dispatches, 1× cost. **Full reference: [modes/sequential.md](modes/sequential.md).**
 
-## Sequential dispatch
-
-Default order: **Conservator → Generator → Control**
-
-`strip_context.py` applies ONLY in Sequential mode (Steps 3-4) — Parallel dispatches sub-agents in isolation and does not use it.
-
-1. Conservator sets `tokens_budget` and `irreversibility_flag`
-2. Generator receives `magnitude`, `counterparty_risks`, `tokens_budget.generator` (NOT `meta_recommendation`)
-3. Control receives full outputs from both Conservator and Generator
-
-**Role separation, not Chinese wall.** Sequential runs the same LLM playing three roles in the same context window; `strip_context.py` strips the prior voice's prompt, but does not clear the model's in-context memory. This is a known, deliberate limitation — role prompts provide separation, not true isolation. True isolation requires Parallel sub-agents.
-
-Auto-parallel cross-check: triggered only when Conservator outputs `magnitude: critical` AND `reversibility: irreversible`. Not user-selectable.
-
-Silent audit: every 20 runs, parallel mode runs silently alongside sequential. If systematic divergence detected → audit frequency increases to 1/5.
-
-## Veto powers
-
-The 8 design components (per spec): vocabulary_map, length_targets, priority_veto_order, tension_expose, metadata, user_profile, multi_confidence, escalation_rule. The `aggregate_sequential()` function produces 7 distinct routing outcomes derived from these components: `BLOCK` (glossary_fail), `BLOCK` (irreversibility), `REWORK`, `ADAPT_SHORT`, `ADAPT_EXTENDED`, `ESCALATE` (3+ triggers), `AGGREGATE` (default).
+Key veto triggers (inline for quick reference during Steps 2–5):
 
 | Trigger | Source | Effect | Action |
 |---|---|---|---|
@@ -783,5 +565,3 @@ The 8 design components (per spec): vocabulary_map, length_targets, priority_vet
 | 3+ of above simultaneously | Aggregator | ESCALATE | Present trigger table to user, request decision |
 
 Veto budget for `meta_recommendation`: 5 activations of `scale_up` or `scale_down` per month. On exhaustion → soft warning only, not blocking.
-
-<!-- === END SEQUENTIAL === -->
