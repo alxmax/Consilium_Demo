@@ -416,6 +416,14 @@ python scripts/run_evals.py
 | `agents/consilium-subagent.md` | Subagent for isolated invocation via `Agent(subagent_type="consilium-subagent", ...)` |
 | `scripts/vocabulary_map.py` | User-facing translations (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
 
+## COMMIT workflow (post-implementation, descriptive)
+
+**Descriptive only** — no new behavioral contract in Steps 0–7. The authoritative git rules are in `CLAUDE.md` (branch naming, one-commit-per-branch, auto-push, Conventional Commits format).
+
+Standard 5-step sequence: `git checkout main && git pull` → `git checkout -b feat/<slug>` → implement → `git add` → `git commit -m "feat(scope): description"` → `git push -u origin <branch>`.
+
+Automation: `.claude/settings.json` `Stop` hook detects uncommitted changes on `feat/*`/`fix/*` branches after each turn and prompts Claude to complete the workflow. `scripts/commit.ps1 -Message "..."` handles Steps 3–5 (stage → commit → push); `-Amend` flag for subsequent changes on the same branch.
+
 ## Feedback loop
 
 - **`runs/`** — JSON per deliberation in `runs/YYYY-MM-DD_HHMM_<label>.json` (schema in `runs/README.md`). Gitignored. Read by `priors.py` (Step 0), `usage.py`, `feedback.py`.
@@ -581,7 +589,7 @@ magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin
    stripped=$(echo "$raw_context" | python -X utf8 scripts/strip_context.py --truncate-text 15000)
    ```
    Use `$stripped` (not `$raw_context`) in each personality sub-agent prompt. This runs **per sub-agent** so each gets the same budget-capped context. The truncation marker `[... context truncated ...]` signals to the sub-agent that context was cut; it should proceed normally.
-3. For each personality, dispatch **1 `consilium-subagent`** with `prompts/<personality>_lens.md` prepended over the task context (using stripped context from Step 2). The sub-agent produces a **one-shot response** — a single message with `{chosen_approach, rationale, confidence}`. It does NOT run an internal Conservator→Generator→Control cycle. The personality lens is the only deliberation filter applied.
+3. For each personality, dispatch **1 `consilium-subagent`** with `prompts/<personality>_lens.md` prepended over the task context (using stripped context from Step 2). Each sub-agent runs a full Sequential deliberation (Conservator→Generator→Control) internally with the personality lens applied, and returns `{chosen_approach, rationale, confidence}`.
 4. Collect the 3 `chosen_approach` values (one per personality) → `chose` per personality
 5. **Unanimous check (B1).** If all 3 personalities chose the same `chose`, skip `team_vote` — the result is unanimous. Set `vote_pattern: "3-0"` and `vote_skipped: true`. Confidence derived directly from `confidence_from_vote_pattern("3-0")`. Log in `deliberation_log` with `reason: "unanimous_personalities"`. If not unanimous, run `team_vote` normally.
 6. Orchestrator runs `python -X utf8 scripts/aggregator.py --scheme team_vote` over the 3 chosens (skip if B1 detected unanimity)
