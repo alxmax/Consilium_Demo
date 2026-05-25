@@ -10,10 +10,9 @@
 1. [❌ NOT IMPLEMENTED](#-not-implemented)
 2. [🤔 UNRESOLVED DECISIONS](#-unresolved-decisions)
 3. [🔧 Prompts & skill audit (items #9, #43, #45-#50)](#-prompts--skill-audit)
-4. [🐞 Bugs (all fixed — see status updates)](#-bugs)
-5. [🏛 Senate Resolutions](#-senate-resolutions)
-6. [Rollback hooks](#rollback-hooks)
-7. [🎯 User directions (open)](#-user-directions-open)
+4. [🏛 Senate Resolutions](#-senate-resolutions)
+5. [Rollback hooks](#rollback-hooks)
+6. [🎯 User directions (open)](#-user-directions-open)
 
 ---
 
@@ -147,123 +146,6 @@ Soft-positive decision, low priority.
 | 48 | Per-step checkpoint between voices INVESTIGATE | Arch | Medium | Medium |
 | 49 | Streaming / HITL Generator↔Control INVESTIGATE | Arch | Medium | Large |
 | 50 | Time-travel over runs/ INVESTIGATE | Skill | Small | Small-Medium |
-
----
-
-## 🐞 Bugs
-
-> Source: `BUGS.md` (audit 2026-05-16, 4 parallel sub-agents × 2 waves). Previously gitignored — promoted into TODO.md as single source.
-> **Method:** Per file, 3-lens reasoning (Pioneer / Architect / Steward) inline. ≥2 lenses agreeing required.
-> **Total:** 107 bugs · 4 critical · 12 high · 39 medium · 52 low.
->
-> **Status update 2026-05-19:** All 4 Critical and 12 High audit-flagged bugs are now closed.
-> - 6 High fixed in `feat/fix-high-bugs` (commit 542c0d1): H2 priors.py backfill sidecar, H3 fuzzy-match zero-overlap guard, H5 SKILL.md unconventional documentation, H7 skeptic.md orchestrator-side validation, H9 pioneer_lens conservator carve-out, H12 clarity-gate 3-way reconciliation. H6 already-fixed.
-> - C1+C2 atomic FEEDBACK.html writes: `utils.atomic_write_text` wired into `log_feedback.py:250` + `mark_outcome.py:197` + `log_feedback.py:_save_map` (sidecar map also atomic since this branch).
-> - C3 VETO threshold drift: `render_feedback_html._cons_panel` now derives `vetoed_ids` from `agg_result.get("vetoed")` instead of hardcoded `>= 0.7` (lines 212-224).
-> - C4 Pass-2 verdict schema: `dialectic_merge._merge_pass2_control_verdict` inherits `valid`/`issues`/`tests_to_write`/`notes` from Pass-1 (line 101-119) + `control_pass2.md` documents the override pattern for `valid: false → true` flips.
-> - H1 dedup: fingerprint+sidecar-map keyed by `run_id` (`log_feedback.py:60-73`); cross-process lock skipped (single-user CLI).
-> - H4 null risk_score: `_safe_risk_score` (line 122-129) treats explicit `null` as missing.
-> - H8 Pass-2 `tests_to_write` slot: documented in `control_pass2.md` § "What carries over from Pass 1".
-> - H10 Sequential mode wording: aligned with SKILL.md Sequential-first post-RUND2 (Parallel is no longer user-selectable).
-> - H11 Tools list: `Write` is present in `agents/consilium-subagent.md` frontmatter `tools:` list.
->
-> **Status update 2026-05-24:** 33 Medium bugs fixed across `feat/fix-medium-low-bugs` + `fix/medium-bugs-round2`. Remaining: 6 Medium + 47 Low.
->
-> **Status update 2026-05-25:** All 35 Medium bugs and all 47 Low bugs fixed in `fix/low-bugs` (pending PR merge). 0 pyright errors, 55/55 evals pass.
->
-> Counts below reflect the original audit and are kept as historical context. All items are now addressed.
-
-### Tally
-
-| Agent | Bucket | Wave 1 | Wave 2 | Total |
-|---|---|---|---|---|
-| 1 | Voting/decision (6 files) | 9 (0C/0H/2M/7L) | 11 (0C/0H/3M/8L) | **20** |
-| 2 | Feedback/persistence (7 files) | FAILED (usage limit) | 21 (3C/3H/7M/8L) | **21** |
-| 3 | Context/utility (10 files) | 17 (0C/1H/7M/9L) | 9 (0C/0H/3M/6L) | **26** |
-| 4 | Prompts + docs (12 files) | 17 (0C/3H/6M/8L) | 23 (1C/5H/10M/7L) | **40** |
-| **Total** | **35 files** | — | — | **107** |
-
-### Highest-impact recommendations (fix-first)
-
-1. **Atomic writes to FEEDBACK.html** — fixes 2 critical (`log_feedback.py:209`, `mark_outcome.py:173`) + medium-severity O(N²) backfill race window with a shared helper.
-2. **VETO threshold alignment** (`render_feedback_html.py:211,217`) — fixes 1 critical; any historical drill-down lies about vetoes.
-3. **Pass-2 verdict schema** (`control_pass2.md` + `dialectic_merge.py`) — fixes 1 critical; without this, Dialectic mode collapses to control_score=0.0.
-4. **`dialectic_merge.py` null risk_score guard** (lines 217, 239) — 1 high; one-line defensive fix prevents whole-merge crash.
-5. **Clarity gate prescription reconciliation** (SKILL.md / generator.md / consilium-subagent.md) — 1 high; three documents prescribe three different actions for the same trigger.
-6. **Subagent doc audit** (`agents/consilium-subagent.md`) — 3 high concentrated here.
-
-### Critical (4) + High (12) — ✅ ALL CLOSED
-
-Detail removed (fixed; see status block above + git history: `feat/fix-high-bugs` commit 542c0d1, atomic-write/VETO/Pass-2 fixes). Counts retained for context.
-
-
-### Medium (6)
-- **[scripts/test_feedback_html.py:1-225] Coverage gaps — no tests for log_feedback dedup, mark_outcome, audit_feedback, sidecar map** — Add dedup test, sidecar map round-trip, mark_outcome and audit_feedback happy-path.
-- **[prompts/pioneer_lens.md/architect_lens.md/steward_lens.md vs SKILL.md] Lens prompts: no link from `voice_bias: prepended` to score-weighting** — Footer in each lens: "Your voice output will be re-weighted by the personality's aggregator weights — focus on perception-shift in your role."
-- **[prompts/architect_lens.md:13 vs conservator.md L11] Architect lens "Weight test coverage heavily" overlaps with Control role** — Carve-out: "When applied to Conservator, 'test coverage' bias affects only the `regression_risk` quality-progress adjustment — do NOT inflate risk_score for absent tests."
-- **[prompts/steward_lens.md:13 vs generator.md:9] Steward lens "Favor minimal-scope" suppresses Generator divergence** — Per-voice guidance: "When applied to Generator: still produce full 3-5 candidate spread, but order candidates with smaller-blast-radius first; do NOT suppress big-blast-radius candidates."
-- **[agents/consilium-subagent.md:38 vs SKILL.md:163-165] Step 6 confidence override delegated to "no --outcome flag" — different from SKILL.md null branch** — "Use `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json` with no `--outcome` for both confidence < 0.7 and null cases."
-- **[prompts/generator.md:31 + 40] adversarial/unconventional rationale overlap silently disables anti-stagnation** — Tighten (a): "Skip unconventional ONLY when adversarial ALSO varies on a non-scope axis."
-
-### Low (47)
-- **[scripts/aggregator.py:148-156] `auto_relax` retry_suggested emits non-actionable suggestion when lowest_risk exceeds RELAXED_VETO_CAP** — Omit `retry_suggested` or replace with `escalation_required` when `lowest_risk > RELAXED_VETO_CAP`.
-- **[scripts/aggregator.py:239-309] `aggregate_team_vote` hardcodes abstain reason, losing per-personality context** — `abstained.append({"name": p["name"], "reason": p.get("abstain_reason") or "all candidates vetoed"})`.
-- **[scripts/build_report.py:114-131] `_alternatives` emits misleading why_not when chosen=None** — When chosen=None, set why_not based on the candidate's actual veto/risk record.
-- **[scripts/build_report.py:174] `int(bundle.get("alternatives_limit", 3))` raises on explicit None** — `alt_limit = int(bundle.get("alternatives_limit") or 3)`.
-- **[scripts/build_report.py:78-91] `_why_not` slices `first.get("detail")` with `[:80]` without verifying string** — Add `isinstance(first.get("detail"), str)` guard.
-- **[scripts/build_report.py:128-130] `_alternatives` off-by-one: `alternatives_limit=0` emits 1 alt** — Check `if len(out) >= limit: break` BEFORE append, or `if limit <= 0: return []`.
-- **[scripts/build_report.py:206] aggregate variable reassigned with subtly different semantics** — Remove reassignment on line 206, reuse existing local.
-- **[scripts/validate_report.py:158] VOTE_PATTERN_REGEX accepts impossible 3-voter patterns** — Tighten regex or add post-match sum check.
-- **[scripts/validate_report.py:164-201] `_validate_trias` early-returns on personalities shape failure** — Replace `return` with flag; checks should run anyway.
-- **[scripts/validate_report.py:164-201] `_validate_trias` doesn't verify weights sum to 1.0 or lens is a string** — Add weights-sum check + `isinstance(lens, str)` check.
-- **[scripts/meta_critic.py:82] MAX_RISK_STDEV=0.5 under-normalizes for N≥3** — Compute as a function of N: `max_stdev = sqrt((n//2) * (n - n//2)) / n`.
-- **[scripts/retry_context.py:103-119] `_grep_patterns` appends `\(` suffix to dotted symbols that aren't callable** — Only append `\(` for symbols matched by SYMBOL_CALL_RE.
-- **[scripts/retry_context.py:65,99,103-110] `extract_targets` accepts multi-word backtick "symbols" yielding non-grep-able patterns** — Tighten `BACKTICK_RE` to `[\w.]{2,40}` or filter quoted entries with whitespace.
-- **[scripts/log_feedback.py:108-109,116] `bool` slips past `isinstance(x, (int, float))` and prints as `1.00`/`0.00`** — Exclude bools: `isinstance(x, (int, float)) and not isinstance(x, bool)`.
-- **[scripts/mark_outcome.py:144-147] Run-path match falls back to filename-only — can mis-match rows** — Match by `name` only when `wanted` is bare filename; otherwise require exact `as_posix()` equality.
-- **[scripts/audit_feedback.py:111] Backfilled row inherits today's note tense** — Append `; backfilled` marker to note text.
-- **[scripts/feedback.py:27] ROW_RE assumes `class="entry"` is first attribute of `<tr>` — implicit renderer coupling** — Order-agnostic regex `<tr[^>]*class="entry"[^>]*>`, or regression test.
-- **[scripts/migrate_feedback_md_to_html.py:117-120] `md_path.rename(bak)` raises on Windows if .bak exists** — Use `os.replace(md_path, bak)`, or check `bak.exists()` before writing HTML.
-- **[scripts/test_feedback_html.py:176] `import json` placed mid-file with `# noqa: E402` — fragile order** — Move import to top of file.
-- **[scripts/scope_gate.py:213] CONSILIUM_FORCE_FULL emits sentinel `-1` signals not in documented schema** — Use `0` with `"reason": "...override..."`, or add documented `"forced": true` flag.
-- **[scripts/priors.py:117-149] `find_missing_feedback_runs` truncates `chosen` to 40 chars enabling collisions** — Use full chosen string, or document truncation with longer cap (≥80).
-- **[scripts/feedback.py:90-99] `parse_runs` swallows JSON errors silently with no diagnostic** — Emit stderr warning for skipped files.
-- **[scripts/dialectic_merge.py:142] Diff includes `revision`/`maintained` fields, producing noisy "modified" entries** — Filter `BOOKKEEPING = {"revision", "maintained"}` from diff keys.
-- **[scripts/memory.py:125] Long tier `"total"` reports filtered count, not source total** — Compute `parse_feedback(FEEDBACK)` length, return as `"total"`.
-- **[scripts/run_evals.py:97-103] No type-check on loaded scenarios; dict input crashes downstream** — `if not isinstance(scenarios, list): print(..., file=sys.stderr); return 2`.
-- **[scripts/probe_change.py:87-97] `_commit_count` silently returns 0 on git failure** — Distinguish via sentinel (`-1` or None) and log error to stderr.
-- **[scripts/usage.py:91-99] Mode-level latency_ms summed across voices is misleading for parallel mode** — Track latency_ms as `max` for parallel mode, or document the field.
-- **[scripts/strip_context.py:61,67] `c["id"]` / `v["id"]` raises KeyError on malformed inputs** — Use `c.get("id")` and skip entries with falsy id.
-- **[scripts/probe_change.py:65-67] Tab-separated numstat parser silently drops paths containing tabs** — `parts = line.split("\t", 2)` or pass `-z` to git and split by null bytes.
-- **[scripts/scope_gate.py:83-98] Case-sensitive `fnmatchcase` lets lowercase `dockerfile` bypass blocklist — "fails open"** — Case-insensitive variant for known-case-insensitive patterns.
-- **[scripts/scope_gate.py:91-98] Blocklist patterns with backslashes never match anything** — `pattern = pattern.replace("\\", "/")` mirroring path normalization.
-- **[scripts/personalities.py:21-37,84] PERSONALITIES is mutable module-level list; bulk-emit path doesn't deep-copy** — `MappingProxyType` for immutability, or `[copy.deepcopy(p) for p in PERSONALITIES]`.
-- **[SKILL.md:144] voice_scores schema example shows 0.0 floats — Generator score never produced by Generator voice** — Add parenthetical: "voice_scores is derived by `build_report.py`, not emitted by voices directly."
-- **[SKILL.md:206 + Resources table] dialectic_merge.py description omits silently_dropped recovery** — Skip (cosmetic), or augment Resources table description.
-- **[SKILL.md:177-180] Eval harness skill_maintenance lists dialectic_merge.py but personalities.py omitted** — Add `personalities.py` to trigger list at SKILL.md L178.
-- **[prompts/generator.md:45 vs dialectic_merge.py:101-112] adversarial_* gets generator_score=0.5; unconventional_* gets 1.0** — Add note in generator.md: "unconventional_* compete on equal footing in voice scoring; adversarial_* and do_nothing get 0.5 generator-score handicap."
-- **[prompts/control.md:9] "category: 'types', detail: 'unverifiable — file not accessible'" — no way to emit unverifiable for valid:true candidate** — Add: "When emitting unverifiable issue, prefer `valid: true` and put note in `notes` rather than `issues`."
-- **[prompts/conservator.md:51 + SKILL.md:87] rollback_recipe threshold 0.3 — Pass-2 conservator doesn't restate** — Add explicit instruction in conservator_pass2.md: if Pass-1 risk < 0.3 and Pass-2 ≥ 0.3, include new rollback_recipe in `what_changed` prose.
-- **[prompts/skeptic.md:48 Output format] `failure_mode` required but no enumerated vocabulary beyond meta_scope_mismatch** — Document expected vocabulary: `regression_risk_uncovered | edge_case_drop | scope_creep | meta_scope_mismatch | ...`.
-- **[prompts/generator_pass2.md vs SKILL.md:271] Pass-2 generator schema mismatch** — Reword SKILL.md L271 to clarify revision is a metadata wrapper, not new content.
-- **[prompts/control_pass2.md:35] Rule misnamed — Conservator risk *can* surface a correctness concern** — Reword: "Don't revise valid:true because Conservator's aggregate score is high. DO revise if Conservator's factors.regression_risk notes name a concrete failure path."
-- **[prompts/pioneer_lens.md/architect_lens.md/steward_lens.md] `voice_bias: prepended` front-matter declared but no code reads it** — Remove front-matter (no consumer), or wire it into the orchestrator template.
-- **[agents/consilium-subagent.md:60] Subagent says "appends to runs/ and FEEDBACK.md" — project uses FEEDBACK.html** — s/FEEDBACK.md/FEEDBACK.html/.
-- **[agents/consilium-subagent.md:5 model:sonnet vs SKILL.md:251 Sonnet 4.6 default] Model declared as "sonnet" — alias resolves to latest** — Either pin to `claude-sonnet-4-6-...` for reproducibility, or document that subagent tracks the alias.
-- **[prompts/skeptic.md:46 + 67] `quoted_scenario` typed inconsistently** — Replace `"Optional: '...' OR null"` literal with comment-style marker.
-- **[SKILL.md:69 "3-5 candidate"] Generator candidate budget tension with mandatory roles** — Bump upper bound to 6, or clarify mandatory roles count toward 3-5 budget.
-- **[SKILL.md:104 vs SKILL.md:89] Aggregator description omits `risk_score > veto_threshold` veto semantics** — Reword: "veto at `risk_score > 0.8` (strict; 0.80 exact is NOT vetoed, 0.81+ IS)".
-
-### Wave tracker
-
-| Agent | Bucket | Wave 1 | Wave 2 |
-|-------|--------|--------|--------|
-| 1 | Voting/decision (6 files) | done (9: 0H/2M/7L) | done (+11: 0H/3M/8L) |
-| 2 | Feedback/persistence (7 files) | FAILED (0 bugs, usage limit) | done (+21: 3C/3H/7M/8L) |
-| 3 | Context/utility (10 files) | done (17: 1H/7M/9L) | done (+9: 0H/3M/6L) |
-| 4 | Prompts + docs (12 files) | partial (17: 3H/6M/8L, ~7/12 files) | done (+23: 1C/5H/10M/7L) |
-
-**Total runs:** 8 (4 agents × 2 waves), with 1 wave-1 failure (Agent 2). Cap reached per user instruction.
 
 ---
 
