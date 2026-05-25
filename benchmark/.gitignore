@@ -1,0 +1,10 @@
+.claude/
+__pycache__/
+*.pyc
+FEEDBACK.html
+runs/
+files/
+# Answer keys must NEVER be tracked in this repo — they live in the sibling
+# Benchmark-scoring/ repo. If this directory reappears here, move it back
+# to ../Benchmark-scoring/ before committing.
+scoring/

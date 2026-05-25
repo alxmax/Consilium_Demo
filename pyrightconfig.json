@@ -3,6 +3,7 @@
   "typeCheckingMode": "basic",
   "extraPaths": ["scripts"],
   "exclude": [
-    ".claude/worktrees/**"
+    ".claude/worktrees/**",
+    "benchmark/**"
   ]
 }
