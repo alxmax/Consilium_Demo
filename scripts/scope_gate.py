@@ -43,12 +43,18 @@ mode_ceiling — mechanical upper bound on mode cost derived from magnitude:
 Probe failure (no git, not a repo, bad ref) -> should_skip=false with the
 underlying error in `reason`. The gate fails OPEN: when in doubt, deliberate.
 
+--signals-stdin bypasses the git probe and reads pre-computed signals as JSON
+from stdin: {"files_changed": int, "lines_added": int, "lines_removed": int,
+"paths": [str, ...]}. Used for deterministic, git-independent testing of the
+classify/decide/mode_ceiling logic (e.g. eval scenarios).
+
 CLI:
     python scripts/scope_gate.py
     python scripts/scope_gate.py --ref main
     python scripts/scope_gate.py --range origin/main..HEAD
     python scripts/scope_gate.py --files src/foo.py
     python scripts/scope_gate.py --config my_gate.json
+    echo '{"files_changed":1,"paths":[".github/workflows/ci.yml"]}' | python scripts/scope_gate.py --signals-stdin
 """
 
 from __future__ import annotations
@@ -250,6 +256,11 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--range", dest="range_", help="diff <A>..<B>")
     ap.add_argument("--files", nargs="+", help="restrict to specific paths")
     ap.add_argument("--config", help="path to scope_gate.json (default: ./scope_gate.json if exists)")
+    ap.add_argument(
+        "--signals-stdin",
+        action="store_true",
+        help="read pre-computed signals as JSON from stdin instead of probing git",
+    )
     args = ap.parse_args(argv)
 
     if force_full:
@@ -285,12 +296,25 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write("\n")
         return 0
 
-    try:
-        probe_mod = _load_probe_module()
-        summary, paths = _gather_signals(probe_mod, args.ref, args.range_, args.files)
-    except RuntimeError as exc:
-        summary = {"error": str(exc)}
-        paths = []
+    if args.signals_stdin:
+        try:
+            payload = json.load(sys.stdin)
+            summary = {
+                "files_changed": int(payload.get("files_changed", 0)),
+                "lines_added": int(payload.get("lines_added", 0)),
+                "lines_removed": int(payload.get("lines_removed", 0)),
+            }
+            paths = list(payload.get("paths", []))
+        except (json.JSONDecodeError, ValueError, TypeError, AttributeError) as exc:
+            summary = {"error": f"bad --signals-stdin payload: {exc}"}
+            paths = []
+    else:
+        try:
+            probe_mod = _load_probe_module()
+            summary, paths = _gather_signals(probe_mod, args.ref, args.range_, args.files)
+        except RuntimeError as exc:
+            summary = {"error": str(exc)}
+            paths = []
 
     result = decide(summary, paths, cfg)
     result["config_used"] = cfg
