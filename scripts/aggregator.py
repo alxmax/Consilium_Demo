@@ -115,13 +115,20 @@ def aggregate_conservative_override(
         if auto_relax and candidates:
             lowest = min(candidates, key=lambda c: float(c["scores"]["conservator"]))
             lowest_risk = float(lowest["scores"]["conservator"])
-            relaxed_threshold = min(RELAXED_VETO_CAP, lowest_risk)
-            result["retry_suggested"] = {
-                "reason": "every candidate vetoed; consider relaxing or re-running Generator with a 'stay under risk X' constraint",
-                "relaxed_threshold": relaxed_threshold,
-                "lowest_risk_candidate": {"id": lowest["id"], "risk": lowest_risk},
-                "would_survive_relaxed": lowest_risk <= relaxed_threshold,
-            }
+            if lowest_risk > RELAXED_VETO_CAP:
+                result["escalation_required"] = True
+                result["escalation_reason"] = (
+                    f"lowest candidate risk {lowest_risk:.2f} exceeds RELAXED_VETO_CAP "
+                    f"{RELAXED_VETO_CAP}; relaxing threshold would not help"
+                )
+            else:
+                relaxed_threshold = lowest_risk
+                result["retry_suggested"] = {
+                    "reason": "every candidate vetoed; consider relaxing or re-running Generator with a 'stay under risk X' constraint",
+                    "relaxed_threshold": relaxed_threshold,
+                    "lowest_risk_candidate": {"id": lowest["id"], "risk": lowest_risk},
+                    "would_survive_relaxed": True,
+                }
         return result
 
     # Rank survivors by weighted average of (generator, control, safety)
@@ -235,7 +242,7 @@ def aggregate_team_vote(personalities: list[dict], candidates: list[dict]) -> di
         if chose not in valid_ids:
             raise ValueError(f"personality {p.get('name')!r} chose unknown candidate {chose!r}")
         if chose is None:
-            abstained.append({"name": p["name"], "reason": "all candidates vetoed"})
+            abstained.append({"name": p["name"], "reason": p.get("abstain_reason") or "all candidates vetoed"})
         else:
             tally[chose] = tally.get(chose, 0) + 1
 

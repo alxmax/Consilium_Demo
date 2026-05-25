@@ -162,12 +162,13 @@ def main(argv: list[str] | None = None) -> int:
         new_fp = log_mod._fingerprint(entry["date"], entry["chosen"], entry["context"], run_id=run_id)
         run_map[new_fp] = rel
         known_run_paths.add(rel)
+        backfill_note = entry["note"] + "; backfilled"
         accumulated.append(render_mod.Entry(
             date=entry["date"],
             context=entry["context"],
             chosen=entry["chosen"],
             outcome=entry["outcome"],
-            note=entry["note"],
+            note=backfill_note,
             run_path=rel,
             vote_pattern=entry.get("vote_pattern", ""),
         ))

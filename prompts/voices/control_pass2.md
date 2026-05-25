@@ -32,7 +32,7 @@ For **each candidate** you produced a verdict on in Pass 1, review what Generato
 
 - Every candidate must have exactly one of `revision` or `maintained` — **never both, never neither**.
 - `peer_evidence` and `peer_claim` must reference something specific from the peer outputs.
-- Conservator's risk score is NOT a correctness concern — don't revise a `valid: true` verdict just because Conservator scored it risky. Only revise if the peer output surfaces a **correctness** issue you missed.
+- Don't revise `valid: true` solely because Conservator's aggregate score is high. DO revise if Conservator's `factors.regression_risk` explicitly names a concrete failure path — that IS a correctness concern.
 - If both peers confirmed your verdict (Generator's sketch is as you read it, Conservator found no new correctness issues), use `maintained`.
 - Re-emitting your original verdict without either field is invalid. The orchestrator will fall back to your Pass-1 verdict for that candidate.
 

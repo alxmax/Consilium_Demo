@@ -62,7 +62,7 @@ TOP_K = 2
 FILE_RE = re.compile(r"[\w][\w./\-]*\.(?:py|md|js|ts|tsx|html|css|json|yml|yaml|sh|toml)\b")
 SYMBOL_CALL_RE = re.compile(r"\b([a-zA-Z_][a-zA-Z0-9_]{2,})\s*\(")
 DOTTED_RE = re.compile(r"\b([a-zA-Z_][\w]*\.[a-zA-Z_][\w]+(?:\.[a-zA-Z_][\w]+)*)\b")
-BACKTICK_RE = re.compile(r"`([^`\n]{2,40})`")
+BACKTICK_RE = re.compile(r"`([\w.]{2,40})`")
 
 
 def _utility(scores: dict) -> float:
@@ -105,8 +105,9 @@ def _grep_patterns(symbols: list[str], cap: int = 4) -> list[str]:
     for s in symbols[:cap]:
         # Escape regex metachars for grep
         escaped = re.escape(s)
-        # If symbol looks like a function call, suffix \(
-        if "(" not in s and not s.endswith("."):
+        # Only suffix \( for plain function names (no dot); dotted attribute
+        # paths (foo.bar) are not necessarily callable.
+        if "(" not in s and "." not in s:
             out.append(escaped + r"\(")
         out.append(escaped)
     # De-dupe preserving order

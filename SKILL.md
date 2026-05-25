@@ -104,7 +104,7 @@ python scripts/probe_change.py --ref main --churn 30 # + commit count per file l
 Anchor `magnitude` to `files_changed/lines_*` and `regression_risk.net_concern` to the churn distribution when present.
 
 ### 3. Generator — produce alternatives
-Use `prompts/voices/generator.md`. Request **3–5 candidates**, including `do_nothing`. Divergent style. Respect `tokens_budget.generator` set by Conservator.
+Use `prompts/voices/generator.md`. Request **3–5 candidates** (including `do_nothing` and any `adversarial_*` — they count toward the budget), including `do_nothing`. Divergent style. Respect `tokens_budget.generator` set by Conservator.
 
 Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fallback_scenario, coverage_check, challenge_upward, abstain, preferred}`. Adversarial is conditional (the change touches shared/core code OR a function with >3 external callers) — otherwise emit `"adversarial_skipped": "<reason>"`. Unconventional is included by default (unless adversarial already covers that role or the change is mechanically trivial) — emit `"unconventional_skipped": "<reason>"` when omitting.
 
@@ -129,7 +129,7 @@ Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negoti
 ```bash
 python scripts/aggregator.py --scheme conservative_override
 ```
-Default: **conservative_override** — veto at `risk_score > 0.8`; ranking by weighted average `(generator + control + safety)` where `safety = 1 - conservator`. On a tie, the safer candidate wins. Alternative: `--scheme risk_adjusted_utility` (sigmoid penalty, no rigid veto).
+Default: **conservative_override** — veto at `risk_score > 0.8` (strictly greater — `risk_score = 0.80` is NOT vetoed; `0.81` IS); ranking by weighted average `(generator + control + safety)` where `safety = 1 - conservator`. On a tie, the safer candidate wins. Alternative: `--scheme risk_adjusted_utility` (sigmoid penalty, no rigid veto).
 
 ### 5b. Confidence
 ```bash
@@ -180,7 +180,7 @@ Why mandatory: `scripts/efficiency.py` returns `null` for any run without teleme
 ```bash
 cat bundle.json | python scripts/build_report.py | python scripts/validate_report.py
 ```
-Bundle schema: `{success_criterion, verification, generator, control, conservator, aggregate, confidence, telemetry}`. `build_report.py` derives `voice_scores`, assembles `alternatives` (with `why_not`) and `deliberation_log`.
+Bundle schema: `{success_criterion, verification, generator, control, conservator, aggregate, confidence, telemetry}`. `build_report.py` derives `voice_scores`, assembles `alternatives` (with `why_not`) and `deliberation_log`. (`voice_scores` is derived by `build_report.py` from voice outputs — it is not emitted by the voices directly.)
 
 **Output JSON** (required fields — validated by `validate_report.py`, required by Principle #4):
 ```json
@@ -341,7 +341,7 @@ A small in-run sub-iteration exists: at `confidence < 0.7`, Step 5d invokes `ret
 
 Apply only when editing the skill (`scripts/*.py`, `prompts/*.md`, `SKILL.md`), not at every deliberation.
 
-**Eval harness** — when editing `aggregator.py`, `confidence.py`, `validate_report.py`, or `strip_context.py`:
+**Eval harness** — when editing `aggregator.py`, `confidence.py`, `validate_report.py`, `strip_context.py`, or `personalities.py`:
 ```bash
 python scripts/run_evals.py
 ```
@@ -374,7 +374,7 @@ python scripts/run_evals.py
 | `scripts/audit_feedback.py` | List runs without FB row; with `--backfill` adds default PEND |
 | `scripts/memory.py` | Uniform read API over the 3 tiers (short/medium/long) |
 | `scripts/strip_context.py` | Project previous voice's output to minimum (Steps 3-4 sequential) |
-| `scripts/deprecated/dialectic_merge.py` | *(Deprecated — Pass-1+Pass-2 merge for old Dialectic mode)* |
+| `scripts/deprecated/dialectic_merge.py` | *(Deprecated — Pass-1+Pass-2 merge for old Dialectic mode; also handled `silently_dropped` candidate recovery for candidates the Pass-2 generator omitted without explicit rejection)* |
 | `scripts/personalities.py` | Trias mode — 3 fixed personalities with weights + lens paths |
 | `prompts/voices/skeptic.md` | Focal voice for the `skeptic_on_chosen` flag (composable over any mode) — receives only the chosen, produces a concrete objection or `meta_scope_mismatch` |
 | `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite for deterministic scripts |

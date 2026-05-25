@@ -108,6 +108,7 @@ def read_medium(n: int = 10, query: str | None = None) -> dict:
 
 def read_long(query: str | None = None, n: int = 20) -> dict:
     rows = parse_feedback(FEEDBACK)
+    total = len(rows)
     if query:
         rows = [r for r in rows if _matches(f"{r['context']} {r['chosen']} {r.get('note', '')}", query)]
         rows = rows[-n:]
@@ -123,7 +124,7 @@ def read_long(query: str | None = None, n: int = 20) -> dict:
             "confirmed": CONFIRMED_MARKER in (r.get("note") or ""),
             "note": r.get("note", ""),
         })
-    return {"tier": "long", "entries": out, "total": len(out)}
+    return {"tier": "long", "entries": out, "total": total}
 
 
 def read_all(query: str | None, n: int) -> dict:

@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from collections import Counter
 from pathlib import Path
 
@@ -25,8 +26,8 @@ RUNS = ROOT / "runs"
 OUTCOMES = ("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS")
 
 ROW_RE = re.compile(
-    r'<tr class="entry"[^>]*>(?P<body>.*?)</tr>',
-    re.DOTALL,
+    r'<tr[^>]*class="entry"[^>]*>(?P<body>.*?)</tr>',
+    re.DOTALL | re.IGNORECASE,
 )
 CELL_RE = re.compile(r'<td(?P<attrs>[^>]*)>(?P<text>.*?)</td>', re.DOTALL)
 FIELD_ATTR_RE = re.compile(r'data-field="([^"]+)"')
@@ -117,7 +118,8 @@ def parse_runs(path: Path) -> list[dict]:
     for f in sorted(path.glob("*.json")):
         try:
             runs.append(json.loads(f.read_text(encoding="utf-8")))
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            print(f"[feedback] warning: skipping {f.name}: {e}", file=sys.stderr)
             continue
     return runs
 

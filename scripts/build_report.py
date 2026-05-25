@@ -94,19 +94,22 @@ def _voice_scores_for(chosen: str | None, control: dict, conservator: dict) -> d
     }
 
 
-def _why_not(verdict: dict | None, score: dict | None) -> str:
+def _why_not(verdict: dict | None, score: dict | None, no_chosen: bool = False) -> str:
     bits: list[str] = []
     if verdict and not verdict.get("valid"):
         details = ", ".join(i.get("category", "?") for i in (verdict.get("issues") or []) if isinstance(i, dict))
         bits.append(f"control: invalid ({details})" if details else "control: invalid")
     elif verdict and verdict.get("issues"):
         first = verdict["issues"][0] if verdict["issues"] else {}
-        if isinstance(first, dict) and first.get("detail"):
-            bits.append(f"control: {first['detail'][:80]}")
+        if isinstance(first, dict):
+            detail = first.get("detail")
+            if isinstance(detail, str):
+                bits.append(f"control: {detail[:80]}")
     risk = _conservator_risk(score) if score else None
     if risk is not None and risk >= 0.5:
         bits.append(f"risk={risk:.2f}")
-    return "; ".join(bits) or "ranked below chosen"
+    fallback = "all candidates vetoed" if no_chosen else "ranked below chosen"
+    return "; ".join(bits) or fallback
 
 
 def validate_input(bundle: dict) -> None:
@@ -130,7 +133,10 @@ def validate_input(bundle: dict) -> None:
 
 
 def _alternatives(generator: dict, control: dict, conservator: dict, aggregate: dict, limit: int) -> list[dict]:
+    if limit <= 0:
+        return []
     chosen = aggregate.get("chosen")
+    no_chosen = chosen is None
     candidates = generator.get("candidates") or []
     verdicts = control.get("verdicts") or []
     scores = conservator.get("scores") or []
@@ -139,13 +145,13 @@ def _alternatives(generator: dict, control: dict, conservator: dict, aggregate: 
         cid = cand.get("id")
         if not cid or cid == chosen:
             continue
+        if len(out) >= limit:
+            break
         out.append({
             "id": cid,
             "summary": cand.get("summary", ""),
-            "why_not": _why_not(_candidate_by_id(verdicts, cid), _candidate_by_id(scores, cid)),
+            "why_not": _why_not(_candidate_by_id(verdicts, cid), _candidate_by_id(scores, cid), no_chosen=no_chosen),
         })
-        if len(out) >= limit:
-            break
     return out
 
 
@@ -189,7 +195,7 @@ def build(bundle: dict) -> dict:
     if chosen is not None and not isinstance(chosen, str):
         raise ValueError("bundle.aggregate.chosen must be string or null")
 
-    alt_limit = int(bundle.get("alternatives_limit", 3))
+    alt_limit = int(bundle.get("alternatives_limit") or 3)
 
     report: dict[str, Any] = {
         "success_criterion": bundle["success_criterion"],
@@ -226,7 +232,6 @@ def build(bundle: dict) -> dict:
         report["personality_choices"] = bundle["personality_choices"]
     if "vote_skipped" in bundle:
         report["vote_skipped"] = bundle["vote_skipped"]
-    aggregate = bundle.get("aggregate", {})
     if isinstance(aggregate, dict):
         if "dissent" in aggregate:
             report["dissent"] = aggregate["dissent"]

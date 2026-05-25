@@ -325,7 +325,16 @@ def has_falsifiability_anchor(modify_request: str) -> bool:
 # === END SENATE LAWS ===
 
 
-VOTE_PATTERN_REGEX = re.compile(r"^[0-3]-[0-3](-[0-1])?$")
+VOTE_PATTERN_REGEX = re.compile(r"^([0-3])-([0-3])(-([0-1]))?$")
+
+
+def _vote_pattern_valid(pattern: str) -> bool:
+    """Return True if pattern matches regex AND vote counts sum to exactly 3."""
+    m = VOTE_PATTERN_REGEX.match(pattern)
+    if not m:
+        return False
+    parts = [int(x) for x in pattern.split("-")]
+    return sum(parts) == 3
 
 _TRIAS_NULL_PATTERNS = {"1-1-1", "1-1-0", "1-0-0", "0-0-0"}
 
@@ -333,21 +342,40 @@ _TRIAS_NULL_PATTERNS = {"1-1-1", "1-1-0", "1-0-0", "0-0-0"}
 def _validate_trias(report: dict, errors: list) -> None:
     """Trias-specific validation. Only runs when report has team == 'trias'."""
     personalities = report.get("personalities")
-    if not isinstance(personalities, list) or len(personalities) != 3:
+    shape_ok = isinstance(personalities, list) and len(personalities) == 3
+    if not shape_ok:
         errors.append("trias: personalities must be a list of exactly 3 entries")
-        return
     names_seen: set[str] = set()
-    for i, p in enumerate(personalities):
-        if not isinstance(p, dict):
-            errors.append(f"trias: personalities[{i}] must be a JSON object, got {type(p).__name__}")
-            continue
-        for f in ("name", "weights", "lens", "chose"):
-            if f not in p:
-                errors.append(f"trias: personalities[{i}] missing field {f!r}")
-        if "name" in p:
-            if p["name"] in names_seen:
-                errors.append(f"trias: duplicate personality name {p['name']!r}")
-            names_seen.add(p["name"])
+    if shape_ok:
+        for i, p in enumerate(personalities):  # type: ignore[union-attr]
+            if not isinstance(p, dict):
+                errors.append(f"trias: personalities[{i}] must be a JSON object, got {type(p).__name__}")
+                continue
+            for f in ("name", "weights", "lens", "chose"):
+                if f not in p:
+                    errors.append(f"trias: personalities[{i}] missing field {f!r}")
+            if "name" in p:
+                if p["name"] in names_seen:
+                    errors.append(f"trias: duplicate personality name {p['name']!r}")
+                names_seen.add(p["name"])
+            # Bug 10: weights must be a dict whose values sum to ~1.0
+            weights = p.get("weights")
+            if weights is not None:
+                if not isinstance(weights, dict):
+                    errors.append(f"trias: personalities[{i}].weights must be a JSON object")
+                else:
+                    try:
+                        w_sum = sum(float(v) for v in weights.values())
+                        if abs(w_sum - 1.0) > 0.01:
+                            errors.append(
+                                f"trias: personalities[{i}].weights values must sum to ~1.0, got {w_sum:.4f}"
+                            )
+                    except (TypeError, ValueError):
+                        errors.append(f"trias: personalities[{i}].weights values must be numeric")
+            # Bug 10: lens must be a string
+            lens = p.get("lens")
+            if lens is not None and not isinstance(lens, str):
+                errors.append(f"trias: personalities[{i}].lens must be a string, got {type(lens).__name__}")
     if names_seen and names_seen != frozenset(NAMES):
         errors.append(
             f"trias: personality names must be exactly {sorted(NAMES)},"
@@ -355,7 +383,7 @@ def _validate_trias(report: dict, errors: list) -> None:
         )
 
     pattern = report.get("vote_pattern")
-    if not pattern or not VOTE_PATTERN_REGEX.match(pattern):
+    if not pattern or not _vote_pattern_valid(pattern):
         errors.append(f"trias: vote_pattern missing or malformed (got {pattern!r})")
 
     chosen = report.get("chosen_approach")

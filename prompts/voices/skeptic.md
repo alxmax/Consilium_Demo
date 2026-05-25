@@ -47,7 +47,7 @@ Produce one focal verdict on the chosen candidate:
       "Concern 1: specific named file or behavior",
       "Concern 2: specific named file or behavior"
     ],
-    "quoted_scenario": "Optional: '<scenario quote in user's terms>' OR null",
+    "quoted_scenario": null,  // Optional string or null
     "failure_mode": "<one-line label of the failure>",
     "addressable": "in_place" | "requires_redesign" | "unaddressable"
   },
@@ -71,6 +71,8 @@ Or, when no concrete objection exists:
 - `goal_fit` — chosen doesn't address `success_criterion` (must quote criterion directly)
 - `verification_inadequate` — planned verification wouldn't catch the failure (must describe specific false-positive scenario)
 - `meta_scope_mismatch` — deliberation over-applied to a trivial problem
+
+**`failure_mode` expected vocabulary:** `regression_risk_uncovered | edge_case_drop | scope_creep | meta_scope_mismatch | false_confidence | unchecked_assumption`
 
 ## Validation gate (the schema check fails if these are violated)
 

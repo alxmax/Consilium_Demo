@@ -37,6 +37,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -151,12 +152,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.run_path:
         # Normalize: caller may pass absolute or repo-relative path
         wanted = Path(args.run_path).as_posix()
-        wanted_name = Path(args.run_path).name
         for i, e in enumerate(entries):
             if not e.run_path:
                 continue
-            if Path(e.run_path).as_posix() == wanted or Path(e.run_path).name == wanted_name:
-                matched_idx.append(i)
+            if os.path.dirname(wanted):
+                # full path — require exact match
+                if Path(e.run_path).as_posix() == wanted:
+                    matched_idx.append(i)
+            else:
+                # bare filename — match by name only
+                if Path(e.run_path).name == wanted:
+                    matched_idx.append(i)
     else:
         for i, e in enumerate(entries):
             if e.date == args.date and e.chosen == args.chosen:

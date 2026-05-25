@@ -206,6 +206,9 @@ def validate_input(payload: dict) -> None:
         )
 
 
+_BOOKKEEPING = {"revision", "maintained"}
+
+
 def _diff_candidates(p1: list[dict], p2: list[dict]) -> list[dict]:
     """Per-id field diff between two candidate lists.
 
@@ -215,6 +218,9 @@ def _diff_candidates(p1: list[dict], p2: list[dict]) -> list[dict]:
     - `modified`→ `fields` lists changed keys; `before`/`after` carry the
                   per-key values so reviewers see what actually changed
                   without re-deriving from raw bundles.
+
+    Bookkeeping fields (revision, maintained) are excluded from the modified
+    diff — they are pass-2 audit metadata, not substantive content changes.
     """
     p1_by_id = _items_by_id(p1)
     p2_by_id = _items_by_id(p2)
@@ -227,7 +233,10 @@ def _diff_candidates(p1: list[dict], p2: list[dict]) -> list[dict]:
             diffs.append({"id": cid, "change": "removed", "before": p1_by_id[cid]})
             continue
         a, b = p1_by_id[cid], p2_by_id[cid]
-        changed = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+        changed = sorted(
+            k for k in set(a) | set(b)
+            if k not in _BOOKKEEPING and a.get(k) != b.get(k)
+        )
         if changed:
             diffs.append({
                 "id": cid,

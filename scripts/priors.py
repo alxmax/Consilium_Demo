@@ -120,7 +120,7 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
 
     Primary match: run_path appears in the .run_path_map.json sidecar written
     by log_feedback.py. Fallback (legacy runs not in sidecar): (date,
-    chosen[:40]) appears in a feedback row. The fallback can produce false
+    chosen[:80]) appears in a feedback row. The fallback can produce false
     negatives when two runs on the same day share a chosen prefix, which is
     why the sidecar is preferred.
     """
@@ -139,7 +139,7 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
     fb_keys: set[tuple[str, str]] = set()
     for e in feedback_entries:
         chosen = e.get("chosen") or ""
-        fb_keys.add((e.get("date", ""), chosen[:40]))
+        fb_keys.add((e.get("date", ""), chosen[:80]))
 
     missing: list[dict] = []
     date_re = re.compile(r"^(\d{4}-\d{2}-\d{2})")
@@ -159,7 +159,7 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
         chosen = data.get("chosen_approach")
         chosen_s = "null" if chosen is None else str(chosen)
         # Fallback: legacy rows without sidecar entry
-        if (d, chosen_s[:40]) in fb_keys:
+        if (d, chosen_s[:80]) in fb_keys:
             continue
         missing.append({"run": run_file.name, "date": d, "chosen": chosen_s})
         if len(missing) >= cap:

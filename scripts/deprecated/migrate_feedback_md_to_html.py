@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -118,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.no_backup:
         bak = md_path.with_suffix(".md.bak")
-        md_path.rename(bak)
+        os.replace(str(md_path), str(bak))
         print(f"backed up {md_path.name} -> {bak.name}")
     return 0
 

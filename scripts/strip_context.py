@@ -68,14 +68,21 @@ def strip_for_control(data: dict) -> dict:
 
 
 def strip_for_conservator(data: dict) -> dict:
-    candidates = {c["id"]: c for c in (data.get("candidates") or []) if isinstance(c, dict)}
+    candidates = {}
+    for c in (data.get("candidates") or []):
+        if not isinstance(c, dict):
+            continue
+        cid = c.get("id")
+        if not cid:
+            continue
+        candidates[cid] = c
     verdicts = data.get("verdicts") or []
     out = []
     for v in verdicts:
         if not isinstance(v, dict) or not v.get("valid"):
             continue
-        cid = v["id"]
-        if cid not in candidates:
+        cid = v.get("id")
+        if not cid or cid not in candidates:
             continue
         c = candidates[cid]
         out.append({k: c[k] for k in CANDIDATE_KEEP if k in c})
