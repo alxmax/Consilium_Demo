@@ -80,8 +80,12 @@ def _voice_scores_for(chosen: str | None, control: dict, conservator: dict) -> d
     if not verdict:
         print(f"build_report: no control verdict found for chosen={chosen!r}", file=sys.stderr)
     score = _candidate_by_id(conservator.get("scores") or [], chosen) or {}
-    issues = verdict.get("issues") or []
-    control_score = 0.0 if not verdict.get("valid") else max(0.3, 1.0 - sum(issue_penalty(i) for i in issues))
+    if verdict is None:
+        print(f"[build_report] warning: no verdict found for {chosen!r}", file=sys.stderr)
+        control_score = 0.0
+    else:
+        issues = verdict.get("issues") or []
+        control_score = 0.0 if not verdict.get("valid") else max(0.3, 1.0 - sum(issue_penalty(i) for i in issues))
     risk = _conservator_risk(score)
     return {
         "generator": 0.5 if chosen == "do_nothing" or chosen.startswith("adversarial_") else 1.0,
@@ -264,7 +268,11 @@ def main(argv: list[str] | None = None) -> int:
         _err("bundle must be a JSON object")
         return 2
 
-    validate_input(bundle)
+    try:
+        validate_input(bundle)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
 
     try:
         report = build(bundle)

@@ -17,6 +17,8 @@ For **each candidate** you produced in Pass 1, review what Control and Conservat
 }
 ```
 
+When emitting a `revision`, include the full updated candidate content: `summary`, `sketch`, and `rationale`. The merger uses these to reconstruct the candidate for Pass-2 Control/Conservator.
+
 **Option B — Maintained:** You hold your original position and explain why.
 ```json
 {

@@ -561,6 +561,20 @@ magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin
    Do not manually build `{"candidates":[...],"chosen":"..."}` for Trias — the candidates don't have `scores` per voice.
 8. **Deadlock cascade (B2) — only if vote_pattern is 1-1-1 or 0-0-0.** See Failure recovery below.
 
+### Output schema (Trias-specific fields)
+```json
+{
+  "chosen_approach": "candidate_id or null",
+  "confidence": 0.82,
+  "vote_pattern": "3-0-0",
+  "personalities": [
+    {"name": "Pioneer", "lens": "pioneer_lens.md", "chose": "candidate_id", "weights": {}},
+    {"name": "Architect", "lens": "architect_lens.md", "chose": "candidate_id", "weights": {}},
+    {"name": "Steward", "lens": "steward_lens.md", "chose": "candidate_id", "weights": {}}
+  ]
+}
+```
+
 ### Vote patterns
 | Pattern | Confidence | Outcome |
 |---|---|---|

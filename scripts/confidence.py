@@ -272,7 +272,11 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write("\n")
         return 0
 
-    validate_input(data)
+    try:
+        validate_input(data)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
     result = derive(data.get("candidates", []), data.get("chosen"))
     json.dump(result, sys.stdout, indent=2)
     sys.stdout.write("\n")

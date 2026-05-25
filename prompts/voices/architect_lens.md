@@ -17,3 +17,7 @@ When applying your voice's role:
 This lens biases your perception; it does not change your role. You still
 perform your voice's standard job (Generator generates, Control verifies,
 Conservator assesses risk) — but through Architect's perspective.
+
+**Conservator carve-out.** "Weight test coverage heavily" affects the quality-progress adjustment on `regression_risk` only — do NOT inflate `risk_score` solely for absent tests.
+
+Your voice output will be re-weighted by the personality's aggregator weights — focus on shifting perception through your role's lens, not on inflating or deflating numerical scores directly.
