@@ -161,7 +161,7 @@ Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negoti
 ```bash
 python scripts/aggregator.py --scheme conservative_override
 ```
-Default: **conservative_override** — veto at `risk_score > 0.8` (strictly greater — `risk_score = 0.80` is NOT vetoed; `0.81` IS); ranking by weighted average `(generator + control + safety)` where `safety = 1 - conservator`. On a tie, the safer candidate wins. Alternative: `--scheme risk_adjusted_utility` (sigmoid penalty, no rigid veto).
+Default: **conservative_override** — veto at `risk_score > 0.8` (strictly greater — `risk_score = 0.80` is NOT vetoed; `0.81` IS); ranking by weighted average `(generator + control + safety)` where `safety = 1 - conservator`. On a tie, the safer candidate wins. Alternative: `--scheme risk_adjusted_utility` (sigmoid penalty, no rigid veto). **Veto threshold caveat:** the 0.8 boundary has not been empirically validated in the [0.7, 0.9] region — boundary cases may fire non-deterministically until a follow-up stability experiment closes that gap (see `experiments/voice-score-stability-2026-05-17.md` F4).
 
 ### 5b. Confidence
 ```bash
@@ -716,7 +716,7 @@ Summary table:
 - Confidence < 0.5 — the band is too low for a single challenger voice; escalate to Trias or the user directly
 - Diff is intrinsically high-stakes (auth, migrations, security) — use full Trias with justified cost
 
-**Empirical origin.** The mode emerged from the analysis in `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (the conceptual equivalent of this flag) reached 100% catch-rate in simulation and 4/7 in real reruns on P3 car wash — performance superior to any other mode tested. Mechanism: a single skeptic voice on `chosen` post-hoc forces a re-reading of success_criterion and the detection of implicit constraints missed by all the voices in Pass-1.
+**Empirical origin.** The mode emerged from the analysis in `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (the conceptual equivalent of this flag) reached 100% catch-rate in simulation and 4/7 in real reruns on P3 car wash — performance superior to any other mode tested on that problem. **Scope caveat (n=1):** these figures derive from a single problem instance; generalizability to other problems is unconfirmed until ≥3 distinct problems are tested. Mechanism: a single skeptic voice on `chosen` post-hoc forces a re-reading of success_criterion and the detection of implicit constraints missed by all the voices in Pass-1.
 
 ## Senate mode — moved to its own skill
 
