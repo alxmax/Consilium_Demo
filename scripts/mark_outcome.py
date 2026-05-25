@@ -88,6 +88,7 @@ def _annotate_note(note: str, reason: str | None, outcome: str = "") -> str:
     else:
         if CONFIRMED_MARKER not in parts:
             parts.append(CONFIRMED_MARKER)
+    parts = [p for p in parts if not p.startswith("outcome_reason=")]
     if reason:
         clean = reason.replace("|", "/").replace("\n", " ").strip()
         if clean:

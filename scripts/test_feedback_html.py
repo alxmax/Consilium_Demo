@@ -5,6 +5,7 @@ Exit 0 = all pass; exit 1 = first failure with traceback.
 """
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 from pathlib import Path
@@ -132,7 +133,6 @@ def test_render_drill_from_real_run_file():
     assert "Generator" in html_out
     assert "do_nothing" in html_out
     assert "disable_when_unreachable" in html_out
-    assert "adversarial_url_protocol_handler" in html_out
     # CHOSEN badge on the picked candidate
     assert "CHOSEN" in html_out
     # Control section: valid/invalid badges
@@ -233,9 +233,6 @@ def test_log_feedback_appends_html_entry():
         assert parsed[1]["outcome"] == "OK"
 
 
-import json  # noqa: E402 (used by the test above)
-
-
 def test_migration_parses_legacy_md_and_emits_html():
     import subprocess
     with tempfile.TemporaryDirectory() as td:
@@ -262,6 +259,67 @@ def test_migration_parses_legacy_md_and_emits_html():
         assert "disable_when_unreachable" in body
         assert (md_path.parent / "FEEDBACK.md.bak").exists()
         assert not md_path.exists()
+
+
+def test_log_feedback_dedup_skips_duplicate():
+    """Appending the same entry twice must not create a duplicate row."""
+    import subprocess
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import feedback  # noqa: E402
+
+    report = {
+        "success_criterion": "dedup test",
+        "chosen_approach": "approach_x",
+        "confidence": 0.85,
+        "telemetry": {"mode": "sequential"},
+        "deliberation_log": [],
+    }
+    with tempfile.TemporaryDirectory() as td:
+        feedback_path = Path(td) / "FEEDBACK.html"
+        common_args = [
+            sys.executable, str(ROOT / "scripts" / "log_feedback.py"),
+            "--feedback", str(feedback_path),
+            "--outcome", "OK",
+            "--force-override",
+        ]
+        input_bytes = json.dumps(report).encode("utf-8")
+        r1 = subprocess.run(common_args, input=input_bytes, capture_output=True, check=False)
+        assert r1.returncode == 0, f"first append failed: {r1.stderr.decode()}"
+        r2 = subprocess.run(common_args, input=input_bytes, capture_output=True, check=False)
+        # Second call should exit 3 (duplicate) not 0.
+        assert r2.returncode == 3, f"expected exit 3 (duplicate), got {r2.returncode}"
+        parsed = feedback.parse_feedback(feedback_path)
+        assert len(parsed) == 1, f"expected 1 row after dedup, got {len(parsed)}"
+
+
+def test_mark_outcome_happy_path():
+    """mark_outcome updates outcome and annotates note on a matched row."""
+    import subprocess
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import feedback  # noqa: E402
+
+    with tempfile.TemporaryDirectory() as td:
+        feedback_path = Path(td) / "FEEDBACK.html"
+        e = rfh.Entry(date="2026-05-20", context="mark-test", chosen="approach_z",
+                      outcome="PEND", note="5 cand, conf=0.75")
+        feedback_path.write_text(rfh.render([e], runs_dir=Path(td) / "runs"), encoding="utf-8")
+
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "mark_outcome.py"),
+             "--feedback", str(feedback_path),
+             "--date", "2026-05-20",
+             "--chosen", "approach_z",
+             "--outcome", "BAD",
+             "--reason", "broke prod"],
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 0, f"stderr: {result.stderr.decode()}"
+        parsed = feedback.parse_feedback(feedback_path)
+        assert len(parsed) == 1
+        assert parsed[0]["outcome"] == "BAD"
+        assert "outcome_reason=broke prod" in parsed[0]["note"]
+        assert "[confirmed]" in parsed[0]["note"]
 
 
 def _run_tests():

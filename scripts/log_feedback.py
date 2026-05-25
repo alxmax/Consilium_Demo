@@ -152,6 +152,9 @@ def build_entry(
     else:
         raise ValueError("chosen_approach must be null or a non-empty string")
 
+    if outcome == "OVR" and not override_target:
+        raise ValueError("--outcome OVR requires --override-target <alt_id>")
+
     auto_note = derive_note(report)
     extras: list[str] = []
     if outcome == "OVR" and override_target:

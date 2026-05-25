@@ -1,6 +1,6 @@
-# TODO — single source Consilium (consolidated 2026-05-17)
+# TODO — single source Consilium (consolidated 2026-05-17, cleaned 2026-05-25)
 
-> All TODOs + repo bugs in a single file.
+> All open TODOs + repo bugs in a single file.
 > Consolidated from: `TODO.md` (old), `TO_DO_Consilium.md` (prompts/skill audit), `BUGS.md` (audit 2026-05-16, 107 findings, previously gitignored).
 >
 > The reference document `experiments/New phase senat/todos/SENAT-todo-rol-legi-functii.md` remains as conceptual specification (not an actionable TODO).
@@ -10,8 +10,8 @@
 1. [❌ NOT IMPLEMENTED](#-not-implemented)
 2. [🤔 UNRESOLVED DECISIONS](#-unresolved-decisions)
 3. [📋 POST-MERGE VALIDATION](#-post-merge-validation)
-4. [🔧 Prompts & skill audit (TO_DO_Consilium #2-#53)](#-prompts--skill-audit)
-5. [🐞 Bugs (107 from audit 2026-05-16)](#-bugs)
+4. [🔧 Prompts & skill audit (items #9, #43, #45-#50)](#-prompts--skill-audit)
+5. [🐞 Bugs (39 medium + 52 low remaining)](#-bugs)
 6. [🏛 Senate Resolutions](#-senate-resolutions)
 7. [Rollback hooks](#rollback-hooks)
 8. [🎯 User directions (open)](#-user-directions-open)
@@ -48,16 +48,11 @@
 
 ## 🤔 UNRESOLVED DECISIONS
 
-From `TODO_RUND2.md` Appendix D — personal decisions that do not block current implementation:
-
-- [ ] **[SENATE] Consilium as a deliberation + implementation tool** — In the benchmark context, Consilium deliberates but does not implement. Temporary fix: Step 7 `implement` extended (2026-05-18) to write files when the prompt declares `**Required output files**`. Unresolved architecture decision: do we want Consilium to be a *pure deliberation* tool (verdict + report → implementer decides) or a *deliberation + implementation* tool (verdict → Consilium writes the code)? Implications: (1) if implementation is in-scope, who decides where files get written in non-benchmark contexts? (2) the `implement` step becomes a blocking operation (Write tool), not an advisory reminder. To be discussed in Senate before extending scope beyond the current benchmark fix.
-
-- [x] **[SHIPPED] Post-deliberation implementation pipeline** — supersedes parent item ↑. Senate verdict MODIFY (GO 0·MODIFY 2·STOP 7, `runs/senate/2026-05-24_200959-consilium-code-writer-vs-superpowers.json`); built per the sequential follow-up (`runs/2026-05-24_2030_implement-pipeline-scaffold.json`). Opt-in EXPERIMENTAL_DRAFT scaffold on branch `feat/implement-pipeline-scaffold`: `agents/consilium-implement-subagent.md` + `prompts/implement/{coder,test_writer}.md` + `scripts/implement_pipeline.py` (Coder → Test Writer ∥ Reviewer; reviewer reuses `control.md`; disjoint-path ownership, malformed-JSON hard-fail, red→green gate). Optional fan-out (task-split) documented on `feat/implement-pipeline-fanout`.
-  - [x] **Kill-criterion gate — RUN 2026-05-24** (`experiments/pipeline-bench/RESULTS.md`): pipeline 1 win / 2 ties / 0 losses vs single-shot, ~1.1× tokens / 3–7× wall-clock. Win was the refactor/regression task (review caught a defect the single-shot shipped); greenfield was a wash. Pre-registered rule (wins < 2/3) → **not default**. **Decision: keep opt-in, scoped to refactor/bugfix/regression-risk changes only.**
-  - [ ] **Re-test before promoting the narrow use:** add ≥3 more refactor-regime tasks; confirm the win rate holds (n=3 / 1 win is a pilot signal, not proof — Deming).
+- [ ] **Re-test implementation pipeline before promoting:** add ≥3 more refactor-regime tasks; confirm the win rate holds (n=3 / 1 win is a pilot signal, not proof — Deming). Context: pipeline shipped as opt-in EXPERIMENTAL_DRAFT (`feat/implement-pipeline-scaffold`), kill-criterion not met (wins < 2/3), scoped to refactor/bugfix/regression-risk only.
 
 - [ ] **Veto budget for `meta_recommendation`: is 5/month acceptable?** Aurelius+Napoleon proposed it, but the number is arbitrary. You might prefer 10 or 3.
 - [ ] **Outcome tracking — manual or automatic?** For trading it can be automatic from MT4. For other domains it requires manual completion. If not, `principle_extraction` never activates.
+
 From `TODO_SENAT.md` Appendix D:
 
 - [ ] **Future senators (slot 8 and 9)** — decide when candidates appear. Rules: the P3 test, non-overlapping specialty >50%, audit by the existing Senate before adding.
@@ -78,18 +73,9 @@ Empirical pendings after the RUND2 merge (PR #59 — `2026-05-16`):
 
 ## 🔧 Prompts & skill audit
 
-> Source: `TO_DO_Consilium.md` (now consolidated). Items numbered #2-#53. Ranked by impact/effort. Categories: **Prompt** (prompts/*.md), **Skill** (SKILL.md + scripts), **Arch**.
+> Source: `TO_DO_Consilium.md` (now consolidated). Ranked by impact/effort. Categories: **Prompt** (prompts/*.md), **Skill** (SKILL.md + scripts), **Arch**.
 
-### Batch status
-
-- **#1, #16, #17, #20 dropped** after Consilium triage (`runs/2026-05-15_2236_todo-triage.json`).
-- **#9, #18 INVESTIGATE** (user, kept for later decision).
-- **#2-#8 ✅ DONE** (discovered implemented during the Branches 1-5 audit).
-- **#13-#15, #19 ✅ DONE** (branch `feat/feedback-and-quality-loop`).
-- **#36-#38 ✅ DONE** (branch `fix/audit-flow-modes-top3`).
-- **#51-#53 ✅ DONE** (P3 corrigendum lessons).
-
-### Follow-up eval parity (planned after parallel-review 0.57 conf)
+### Follow-up eval parity (planned)
 
 Branch `feat/eval-parity-rest` with scenarios for:
 - `memory.py` tier medium/long/unknown (3 scenarios — require `runs/` fixtures)
@@ -101,65 +87,16 @@ Total ~9 new scenarios. Requires extending `run_evals.py` to accept filesystem f
 
 ### Open items (Tier 2)
 
-> **Status update 2026-05-19:** 8 items closed in main (#31, #32, #35, #39, #40, #41, #42, #44):
-> - #31 `VOTE_PATTERN_CONFIDENCE`: `confidence.py:102-105` — veto (`2-0`) scores 0.70 < dissent (`2-1`) 0.75 (veto = stronger risk signal → lower confidence). Already in correct order.
-> - #32 `_TRIAS_EXPECTED_NAMES` dedup: `validate_report.py:52` imports `NAMES` from `personalities`.
-> - #35 Issue severity: `build_report.py:82` + `dialectic_merge.py:88` both use `utils.issue_penalty` (severity-weighted 0.05/0.15/0.30).
-> - #39 scope_gate `secrets` glob: pattern is `**/*secrets*` (matches `with-secrets/foo`).
-> - #40 `telemetry.voices` empty: `validate_report._validate_telemetry_required:289-296` returns a problem (error) for multi-voice modes when voices empty.
-> - #41 `team_vote` deterministic tie-break: `aggregator.py:258` raises `ValueError` on tie.
-> - #42 `signals.files_changed=None` type-safe: `scope_gate.py:213` emits `-1` instead of `None` under `CONSILIUM_FORCE_FULL=1`.
-> - #44 Chinese-wall illusion in Sequential: documented in `SKILL.md:755` AND `docs/architecture.html:744` (the `<div class="use-when">` caveat block) — both explicit that "role separation, not Chinese wall."
->
-> Remaining Open items (Medium effort or INVESTIGATE-class): #9, #18, #27, #28, #43, #45, #46.
-
 #### 9. Goal-fit check moved to step 1 in Control · Prompt · Medium · Small-Medium · INVESTIGATE
 Currently Control runs types → logic → tests → style → goal-fit. If the candidate doesn't address success_criterion, the first 4 checks are wasted. Fix: move goal-fit to **step 0** in Task, before types. Fail fast.
-
-#### ~~18. Observe → Think → Act → Learn formal loop~~ — ✅ CLOSED (2026-05-19, Senate audit `runs/senate/2026-05-19_214850-todo-18-otal-formalization.json`, MODIFY 0-8-1)
-Resolved at **Level 1 (docs-only)** per 8/9 senator convergence. Added descriptive OTAL framing + ASCII cycle diagram to `SKILL.md` § "Observe → Think → Act → Learn (descriptive framing)"; updated the Mermaid diagram in `docs/architecture.html` § "Observe → Think → Act → Learn" with correct RUND2 step order (Conservator first), `priors.py` in Observe, `retry_context.py` sub-iteration, and the partial-Learn caveat. Level 2 (`meta_critic.generator_divergence<0.4` iteration triggers) deferred until ≥3 PEND rows in `FEEDBACK.html` demonstrate the existing `confidence<0.7` retry underperforms; the metric currently has zero labeled triggering events. Level 3 (meta-controller) closed pending revival of dropped item #16 — contradicts Constitution Principle 2.
-
-### Open items — Voice audit (Trias + parallel-skeptic, session 2026-05-16)
-
-> Source: `runs/2026-05-16_0148_voice_audit_meta.json` (synthesis of 2 sub-agents, Trias 3-0 unanimous + parallel-skeptic confirms).
-
-#### ~~27. `confidence_in_verdict` field in Control + meta_critic flag~~ — ✅ CLOSED
-Implemented: `control.md` carries `confidence_in_verdict: high|medium|low`; `meta_critic.control_speculation_flag` flags `valid:true + confidence_in_verdict:low`. Retained through the 2026-05-24 meta_critic trim.
-
-#### ~~28. New meta_critic metrics — `pass2_revision_quality` + `personalities_divergence`~~ — ✅ CLOSED
-Implemented in `meta_critic.py` (`pass2_revision_quality`, `personalities_divergence`) and retained through the 2026-05-24 trim. The 2026-05-16 "keep + fix + gate-to-Trias" verdict is now substantially executed: `meta_critic.main()` runs `--strict` on Trias, and the two never-firing core checks (`generator_divergence`, `control_concreteness` — 0/163 runs) were removed per the 2-round Senate (`runs/senate/2026-05-24_220059-kill-meta-critic-r2.json`, MODIFY → trim), leaving `conservator_spread` + the optional metrics.
 
 #### Substance-validation gap (accepted) · Arch · INVESTIGATE
 `validate_report.py` checks report SHAPE only — no enforced gate that the voices did substantive (non-vacuous) work. `meta_critic.py` is advisory and now trimmed to a single `conservator_spread` heuristic. Accepted as a known gap (Senate 2026-05-24 MODIFY; Socrate). Revisit only if empty-but-schema-valid deliberations are observed in practice; minimal fix would be a ~20-line minimum-reasoning heuristic inside `validate_report.py` (Musk). Noted in `validate_report.py` docstring.
 
 ### Open items — Flow models audit
 
-#### 31. VOTE_PATTERN_CONFIDENCE counterintuitive ordering · Skill · Small · Small
-`2-0` (total veto from one personality) gets 0.75 confidence, `2-1` (active dissent) gets 0.70. Veto is a more serious signal.
-
-#### 32. Deduplicate _TRIAS_EXPECTED_NAMES · Skill · Small · Small
-`validate_report.py:161` and `personalities.py:21-37` duplicate the list. Fix: import from `personalities.NAMES`.
-
-#### 35. Use issue severity in `_voice_score_from_verdict` · Skill · Medium · Small
-`dialectic_merge.py:88` and `build_report.py:70` subtract 0.15 per issue regardless of severity. Fix: weight `0.05 / 0.15 / 0.30` for `severity: low/medium/high`.
-
-#### 39. scope_gate blocklist extends for `*secrets*` folder · Skill · Small · Trivial
-`**/secrets*` matches `secrets.json` but not `with-secrets/foo`. Add `**/*secrets*`.
-
-#### 40. telemetry.voices empty in Parallel → error (not warning) · Skill · Medium · Trivial
-`validate_report.py:146-154` only emits a warning. A parallel orchestrator that forgets to capture telemetry passes the gate → `usage.py` skips the run.
-
-#### 41. Deterministic tie-break on `team_vote` duplicate top · Skill · Small · Trivial
-`aggregator.py:277-280` uses `for ... break` on a dict — non-deterministic. Add explicit `raise ValueError`.
-
-#### 42. `signals.files_changed = None` on `CONSILIUM_FORCE_FULL=1` type-safe · Skill · Small · Trivial
-`scope_gate.py:212-213` emits `None` for numerics. Fix: emit `-1` or omit the fields.
-
 #### 43. Iterative Dialectic — SPEC without implementation · Arch · Medium · Large
 `docs/architecture.html` describes the iterative mode with N=1..3 rounds + convergence stop, marked `SPEC`. `dialectic_merge.py` strictly accepts `{pass1, pass2}`. Fix: either implement the schema `{rounds: [...]}` with convergence detection, or delete the mode from the HTML.
-
-#### 44. Illusory Sequential "Chinese wall" — clarify in HTML docs · Arch · Medium · Small
-Sequential runs the same LLM playing 3 roles in the same context. `strip_context.py` only cleans the prompt. Not a real Chinese wall. Fix: explicit note in `docs/architecture.html` (SKILL.md already updated).
 
 #### 45. End-to-end lens injection validation · Skill · Medium · Medium
 `prompts/<personality>_lens.md` are arbitrary files. No test that Pioneer is progress-leaning vs Steward risk-averse. Fix: eval scenario that runs a diff with a conservator-vs-progress trade-off.
@@ -214,14 +151,7 @@ Soft-positive decision, low priority.
 | # | Title | Category | Impact | Effort |
 |---|-------|-----------|--------|-------|
 | 9 | Goal-fit → step 0 in Control (INVESTIGATE) | Prompt | Medium | Small-Medium |
-| 18 | Observe→Think→Act→Learn formal (INVESTIGATE) | Arch | Medium | Very Large |
-| 27 | confidence_in_verdict in Control | Prompt+Skill | Low | Medium |
-| 28 | pass2_revision + personalities_divergence metrics | Skill | Low | Medium |
-| 31 | VOTE_PATTERN_CONFIDENCE reorder | Skill | Small | Small |
-| 32 | Deduplicate _TRIAS_EXPECTED_NAMES | Skill | Small | Small |
-| 35 | Severity-aware control score | Skill | Medium | Small |
 | 43 | Iterative Dialectic — SPEC without implementation | Arch | Medium | Large |
-| 44 | Sequential Chinese wall — clarify HTML docs | Arch | Medium | Small |
 | 45 | End-to-end lens injection validation | Skill | Medium | Medium |
 | 46 | Pass-2 semantic diff in revision_log | Skill | Small | Medium |
 | 47 | `optional_sidecar_visualizer` PROPOSED | Arch | Medium | Medium |
@@ -526,6 +456,7 @@ Bundle implemented after Senate R3 GO 7-0-0 (`runs/senate/2026-05-18_211621-2-se
 - [ ] **HM2 [MED] trias_cost_gate_soft_not_enforced** *(Aurelius)* — Trias `Skip if` rules are advisory prose; no mechanical check maps `magnitude × reversibility` to mode cost ceiling. AC: extend `scope_gate.py` with `mode_ceiling` derived from Conservator signals.
 - [ ] **HM3 [MED] pilot_b_unenforced_activation_gate** *(Confucius)* — SKILL.md documents Pilot B with `N≥5 senate runs` gate; no script enforces or surfaces it. AC: either add `priors.py --senator-gate` check, or demote Pilot B to "design sketch / NOT YET ACTIVE" banner.
 - [ ] **HM4 [HIGH] skeptic_catchrate_overgeneralized_from_P3** *(Socrate)* — SKILL.md claims `skeptic_on_chosen` catch-rate "100% simulation, 4/7 real" but all reruns on n=1 problem (P3). Cross-mode comparison claim built on n=1. AC: replace with explicit scope bound + falsification criterion on ≥3 distinct problems.
+
 **Meta-pattern:** Three convergent root causes — (a) rhetorical deprecation without operational enforcement, (b) schema drift between prompts and scripts with no validation layer, (c) load-bearing quantitative claims built on n=1 problem.
 
 ---

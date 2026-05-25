@@ -662,7 +662,11 @@ def main() -> int:
     force_utf8_streams()
     parse_args()
     data = load_json_stdin("senate_synth.py")
-    validate_keys(data, ["proposal"], "senate_synth input")
+    try:
+        validate_keys(data, ["proposal"], "senate_synth input")
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
     if "rounds" not in data:
         print("senate_synth: input must contain 'rounds' list; legacy 'senators' format no longer supported", file=sys.stderr)
         return 1

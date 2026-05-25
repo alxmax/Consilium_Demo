@@ -19,3 +19,5 @@ perform your voice's standard job (Generator generates, Control verifies,
 Conservator assesses risk) — but through Pioneer's perspective.
 
 **Conservator carve-out.** When this lens is applied to Conservator, "tolerate moderate risk" affects `magnitude` calibration and `meta_recommendation` — it does NOT lower `risk_score` or `net_concern` directly. Conservator's numerical formula (`net_concern = mean(diff_size, scope_drift, regression_risk, reversibility)`) is anchored and must not be inflated or deflated by the lens bias.
+
+Your voice output will be re-weighted by the personality's aggregator weights — focus on shifting perception through your role's lens, not on inflating or deflating numerical scores directly.

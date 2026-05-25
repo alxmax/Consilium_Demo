@@ -75,6 +75,7 @@ tr.drill td{border-bottom:1px solid var(--border);padding:14px 18px}
 .factors{display:grid;grid-template-columns:repeat(2,1fr);gap:1px 10px;font-size:10px;color:var(--fg-dim);margin-top:3px;font-family:Consolas,Menlo,monospace}
 .factors b{color:var(--fg-soft);font-weight:400}
 .stub{color:var(--fg-dim);font-style:italic;font-size:12px;text-align:center;padding:8px}
+.stub.error{color:var(--bad)}
 """
 
 JS = """
@@ -272,11 +273,13 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
             if run_file.exists():
                 try:
                     run_dict = json.loads(run_file.read_text(encoding="utf-8"))
-                except (json.JSONDecodeError, OSError) as _exc:
-                    run_dict = f"__error__:{_exc}"
-        if isinstance(run_dict, str) and run_dict.startswith("__error__:"):
-            drill = f'<div class="stub error">corrupted run JSON: {run_dict[10:]}</div>'
-        elif run_dict:
+                except json.JSONDecodeError as _exc:
+                    drill = f'<div class="stub error">corrupted run JSON: {_exc}</div>'
+                    rows.append(_row_html(e, drill, "—"))
+                    continue
+                except OSError:
+                    run_dict = None
+        if run_dict:
             drill = render_drill(run_dict, e.chosen)
         else:
             drill = _legacy_stub()
