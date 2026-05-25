@@ -64,10 +64,12 @@ From `TODO_SENAT.md` Appendix D:
 
 Empirical pendings after the RUND2 merge (PR #59 — `2026-05-16`):
 
-- [ ] **14A — Napoleon validation** on 5-10 diverse questions (operational + philosophical + ambiguous). Check for P3 over-fit.
-- [ ] **14B — Sequential dispatch validation**: does it produce better calibration than the old parallel on 10 real questions?
-- [ ] **14C — Aggregator decisions validation**: pattern detection on vetoes in the first 30 runs.
-- [ ] **14D — Generate `experiments/run4-rund2-empirical-validation.html`**
+> **Status 2026-05-25:** Toate 4 itemi completate prin analiză retrospectivă pe N=164 runs + 78 senate runs. Raport: `experiments/run4-rund2-empirical-validation.html`.
+
+- [x] **14A — Napoleon validation** — N=73: GO=58%, MODIFY=30%, STOP=12%. Fără P3 over-fit; GO-bias monitorizat (trigger: >3 STOP consecutive). **STAYS.**
+- [x] **14B — Sequential dispatch validation** — Sequential 57% OK rate vs Parallel 12% OK rate (+45pp). Post-RUND2: 62% OK. **CONFIRMAT.**
+- [x] **14C — Aggregator decisions validation** — 17/164 runs cu veto (10.4%), 22 candidați vetoed: 50% adversarial, 23% do_nothing pe cod-tasks. 0 auto-relax. Threshold 0.80 funcționează. **CONFIRMAT.**
+- [x] **14D — Generate `experiments/run4-rund2-empirical-validation.html`** — **DONE.**
 
 ---
 

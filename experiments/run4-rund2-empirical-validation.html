@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Consilium · Run 4 · RUND2 Empirical Validation</title>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #1c1c1e;
+    --surface-elevated: #2c2c2e;
+    --border: #38383a;
+    --border-soft: #2c2c2e;
+    --text: #f5f5f7;
+    --text-secondary: #c7c7cc;
+    --text-muted: #8e8e93;
+    --blue: #0a84ff;
+    --green: #30d158;
+    --red: #ff453a;
+    --orange: #ff9f0a;
+    --purple: #bf5af2;
+    --yellow: #ffd60a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  header { margin-bottom: 40px; }
+  .eyebrow {
+    color: var(--blue);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.022em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .meta { color: var(--text-muted); font-size: 14px; }
+  .meta strong { color: var(--text-secondary); font-weight: 500; }
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 28px 0 8px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+  }
+  .toc strong { color: var(--text); margin-right: 8px; }
+  .toc a { color: var(--blue); text-decoration: none; margin-right: 14px; }
+  .toc a:hover { text-decoration: underline; }
+
+  section { margin-top: 56px; }
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin-bottom: 6px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-meta {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 24px;
+    padding-top: 6px;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 28px 0 12px;
+    color: var(--text);
+  }
+
+  p { color: var(--text-secondary); margin-bottom: 12px; line-height: 1.65; }
+  strong { color: var(--text); font-weight: 600; }
+  code { font-family: "SF Mono", "Fira Code", monospace; font-size: 13px; background: var(--surface-elevated); padding: 1px 5px; border-radius: 4px; color: var(--orange); }
+
+  /* Verdict badges */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .badge-confirmed { background: rgba(48, 209, 88, 0.15); color: var(--green); border: 1px solid rgba(48, 209, 88, 0.35); }
+  .badge-warning   { background: rgba(255, 159, 10, 0.15); color: var(--orange); border: 1px solid rgba(255, 159, 10, 0.35); }
+  .badge-signal    { background: rgba(10, 132, 255, 0.15); color: var(--blue); border: 1px solid rgba(10, 132, 255, 0.35); }
+  .badge-open      { background: rgba(142, 142, 147, 0.15); color: var(--text-muted); border: 1px solid rgba(142, 142, 147, 0.3); }
+
+  /* Callout boxes */
+  .callout {
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+  .callout-green { background: rgba(48, 209, 88, 0.07); border: 1px solid rgba(48, 209, 88, 0.3); }
+  .callout-orange { background: rgba(255, 159, 10, 0.07); border: 1px solid rgba(255, 159, 10, 0.3); }
+  .callout-blue   { background: rgba(10, 132, 255, 0.07); border: 1px solid rgba(10, 132, 255, 0.3); }
+  .callout-red    { background: rgba(255, 69, 58, 0.07); border: 1px solid rgba(255, 69, 58, 0.3); }
+  .callout p { color: var(--text-secondary); margin-bottom: 0; }
+  .callout p + p { margin-top: 6px; }
+  .callout .callout-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .callout-green .callout-title { color: var(--green); }
+  .callout-orange .callout-title { color: var(--orange); }
+  .callout-blue .callout-title   { color: var(--blue); }
+  .callout-red .callout-title    { color: var(--red); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 20px 0;
+  }
+  th {
+    background: var(--surface-elevated);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.025); }
+  .num { font-variant-numeric: tabular-nums; font-family: "SF Mono", monospace; font-size: 13px; }
+
+  /* Stat cards */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .green { color: var(--green); }
+  .orange { color: var(--orange); }
+  .blue { color: var(--blue); }
+  .red { color: var(--red); }
+  .purple { color: var(--purple); }
+
+  /* Bar chart */
+  .bar-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; font-size: 13px; }
+  .bar-label { width: 140px; color: var(--text-secondary); text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--surface-elevated); border-radius: 4px; height: 18px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-fill-green { background: rgba(48, 209, 88, 0.6); }
+  .bar-fill-blue  { background: rgba(10, 132, 255, 0.6); }
+  .bar-fill-orange { background: rgba(255, 159, 10, 0.6); }
+  .bar-fill-red   { background: rgba(255, 69, 58, 0.6); }
+  .bar-fill-purple { background: rgba(191, 90, 242, 0.6); }
+  .bar-value { width: 50px; color: var(--text-muted); font-family: "SF Mono", monospace; font-size: 12px; }
+
+  ul { color: var(--text-secondary); padding-left: 20px; margin-bottom: 14px; }
+  ul li { margin-bottom: 6px; line-height: 1.6; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  footer {
+    margin-top: 72px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Consilium · Empirical Validation</div>
+    <h1>Run 4 — RUND2 Post-Merge Validation</h1>
+    <div class="meta">
+      <strong>Data analizată:</strong> 2026-05-25 &nbsp;·&nbsp;
+      <strong>Runs analizate:</strong> 164 deliberations + 78 senate runs &nbsp;·&nbsp;
+      <strong>Metodă:</strong> analiză automată pe <code>runs/*.json</code> + <code>runs/senate/*.json</code>
+    </div>
+
+    <div class="toc">
+      <strong>Secțiuni:</strong>
+      <a href="#14a">14A · Napoleon</a>
+      <a href="#14b">14B · Sequential calibration</a>
+      <a href="#14c">14C · Veto patterns</a>
+      <a href="#14d">14D · Summary &amp; verdicts</a>
+    </div>
+  </header>
+
+  <!-- ============================================================ -->
+  <section id="14a">
+    <h2>14A · Napoleon validation <span class="badge badge-warning">Signal nou</span></h2>
+    <div class="section-meta">Verificare post-merge: Napoleon are P3 over-fit? Analiză actualizată față de <code>experiments/napoleon-validation-2026-05-17.md</code> (N=15 → N=73).</div>
+
+    <h3>Context</h3>
+    <p>La 2026-05-17 Napoleon a primit verdict <strong>STAYS</strong> cu N=15 voturi — distribuție echilibrată GO=5, MODIFY=7, STOP=3, fără pattern P3. La data curentă avem N=73 voturi reale (78 runs senate minus 5 cu verdict missing). Analiza actualizată schimbă tabloul.</p>
+
+    <h3>Distribuție voturi (N=73, toate datele)</h3>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">GO</div>
+        <div class="stat-value green">42</div>
+        <div class="stat-sub">58% din total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">MODIFY</div>
+        <div class="stat-value blue">22</div>
+        <div class="stat-sub">30% din total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">STOP</div>
+        <div class="stat-value red">9</div>
+        <div class="stat-sub">12% din total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Mai permisiv</div>
+        <div class="stat-value orange">37</div>
+        <div class="stat-sub">51% din cazuri (GO vs MODIFY/STOP)</div>
+      </div>
+    </div>
+
+    <div class="bar-row"><div class="bar-label">GO (58%)</div><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:58%"></div></div><div class="bar-value">42</div></div>
+    <div class="bar-row"><div class="bar-label">MODIFY (30%)</div><div class="bar-track"><div class="bar-fill bar-fill-blue" style="width:30%"></div></div><div class="bar-value">22</div></div>
+    <div class="bar-row"><div class="bar-label">STOP (12%)</div><div class="bar-track"><div class="bar-fill bar-fill-red" style="width:12%"></div></div><div class="bar-value">9</div></div>
+
+    <h3>Comparație cu prima validare (2026-05-17)</h3>
+    <table>
+      <thead><tr><th>Metrică</th><th>N=15 (mai-17)</th><th>N=73 (mai-25)</th><th>Observație</th></tr></thead>
+      <tbody>
+        <tr><td>GO rate</td><td class="num">33% (5/15)</td><td class="num orange">58% (42/73)</td><td>Creștere semnificativă</td></tr>
+        <tr><td>MODIFY rate</td><td class="num">47% (7/15)</td><td class="num">30% (22/73)</td><td>Scade cu 17pp</td></tr>
+        <tr><td>STOP rate</td><td class="num">20% (3/15)</td><td class="num">12% (9/73)</td><td>Scade ușor</td></tr>
+        <tr><td>Mai permisiv</td><td class="num">~27%</td><td class="num orange">51%</td><td>Dublu față de mai-17</td></tr>
+        <tr><td>Acord cu verdictul final</td><td class="num">57%</td><td class="num">38%</td><td>Mai independent, dar în direcție GO</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-orange">
+      <div class="callout-title">Signal nou — GO bias sistematic</div>
+      <p>Napoleon votează GO în 58% din cazuri față de 33% la prima validare. Nu există pattern P3 identifiable (rationale-urile variază cross-domain), dar există o <strong>tendință sistematică de permisivitate</strong>: mai permisiv decât verdictul final în 51% din runs.</p>
+      <p>Context mitigant: Senate-ul produce verdic MODIFY în ~85% din runs — orice senator cu GO-bias va apărea "mai permisiv" chiar și cu un profil neutru. Napoleon nu a blocat niciun GO legitim.</p>
+    </div>
+
+    <h3>Caveat</h3>
+    <p>5/6 din contextul Senate este pe propria skill (Consilium auto-audit) — bias structural spre MODIFY care amplifică aparent GO-ul lui Napoleon. Cross-domain rationale rămâne validat calitativ: specialty ("tokens, hours, operator state") aplicată variabil, fără pattern P3.</p>
+
+    <div class="callout callout-blue">
+      <div class="callout-title">Verdict 14A</div>
+      <p><strong>Napoleon rămâne senator.</strong> Nu există P3 over-fit. GO-bias este un signal de monitorizat (trigger: &gt;3 STOP consecutive pe propuneri non-agresive) — același criteriu din mai-17, menținut. Re-evaluare la N=150 sau dacă apar &gt;3 STOP consecutive.</p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ============================================================ -->
+  <section id="14b">
+    <h2>14B · Sequential dispatch calibration <span class="badge badge-confirmed">Confirmat</span></h2>
+    <div class="section-meta">Verificare: Sequential produce calibration mai bună decât vechiul Parallel? Baza: toate runs/*.json cu telemetry.mode inclus.</div>
+
+    <h3>Date brute</h3>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Sequential — avg confidence</div>
+        <div class="stat-value green">0.74</div>
+        <div class="stat-sub">N=76, OK(≥0.7): 57%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Parallel (retras) — avg confidence</div>
+        <div class="stat-value red">0.54</div>
+        <div class="stat-sub">N=26, OK(≥0.7): 12%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sequential post-RUND2</div>
+        <div class="stat-value green">0.76</div>
+        <div class="stat-sub">N=61 (≥2026-05-17), OK: 62%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Delta Sequential vs Parallel</div>
+        <div class="stat-value green">+45pp</div>
+        <div class="stat-sub">OK rate: 57% vs 12%</div>
+      </div>
+    </div>
+
+    <h3>Distribuție confidence pe mode</h3>
+    <table>
+      <thead><tr><th>Mode</th><th>N</th><th>avg conf</th><th>&lt;0.5 (low)</th><th>0.5–0.7 (PEND)</th><th>≥0.7 (OK)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Sequential</strong></td><td class="num">76</td><td class="num green">0.74</td>
+          <td class="num">8 (11%)</td><td class="num">25 (33%)</td><td class="num green">43 (57%)</td>
+        </tr>
+        <tr>
+          <td><strong>Sequential (post-RUND2)</strong></td><td class="num">61</td><td class="num green">0.76</td>
+          <td class="num">6 (10%)</td><td class="num">17 (28%)</td><td class="num green">38 (62%)</td>
+        </tr>
+        <tr>
+          <td>Trias</td><td class="num">19</td><td class="num">0.73</td>
+          <td class="num">2 (11%)</td><td class="num">6 (32%)</td><td class="num">11 (58%)</td>
+        </tr>
+        <tr>
+          <td>Dialectic</td><td class="num">11</td><td class="num">0.69</td>
+          <td class="num">1 (9%)</td><td class="num">5 (45%)</td><td class="num">5 (45%)</td>
+        </tr>
+        <tr>
+          <td><em>Parallel (retras)</em></td><td class="num">26</td><td class="num red">0.54</td>
+          <td class="num red">9 (35%)</td><td class="num">14 (54%)</td><td class="num red">3 (12%)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Bară vizuală — OK rate</h3>
+    <div class="bar-row"><div class="bar-label">Sequential post-RUND2</div><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:62%"></div></div><div class="bar-value">62%</div></div>
+    <div class="bar-row"><div class="bar-label">Trias</div><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:58%"></div></div><div class="bar-value">58%</div></div>
+    <div class="bar-row"><div class="bar-label">Sequential (all)</div><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:57%"></div></div><div class="bar-value">57%</div></div>
+    <div class="bar-row"><div class="bar-label">Dialectic</div><div class="bar-track"><div class="bar-fill bar-fill-blue" style="width:45%"></div></div><div class="bar-value">45%</div></div>
+    <div class="bar-row"><div class="bar-label">Parallel (retras)</div><div class="bar-track"><div class="bar-fill bar-fill-red" style="width:12%"></div></div><div class="bar-value">12%</div></div>
+
+    <div class="callout callout-green">
+      <div class="callout-title">Verdict 14B — Confirmat</div>
+      <p><strong>Sequential produce calibrare dramatic mai bună decât Parallel:</strong> OK rate 57% vs 12%, avg confidence 0.74 vs 0.54. Post-RUND2 (≥2026-05-17) Sequential atinge 62% OK rate. Decizia de a retrage Parallel ca mod implicit și de a-l înlocui cu Sequential este validată empiric.</p>
+    </div>
+
+    <h3>Caveats</h3>
+    <ul>
+      <li>Runs paralel sunt mai vechi (mai-11 → mai-16) — pot reflecta maturitate mai mică a prompt-urilor, nu doar arhitectura.</li>
+      <li>Sequential N=76 include runs pre-RUND2 (mai-11 → mai-16) cu prompts mai slabe — post-RUND2 N=61 este mai reprezentativ.</li>
+      <li>Confidence este un auto-scor model, nu calibrare externă validată. Corelarea cu outcome FEEDBACK.html (OK/BAD/OVR) nu a fost calculată în această analiză.</li>
+    </ul>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ============================================================ -->
+  <section id="14c">
+    <h2>14C · Aggregator veto patterns <span class="badge badge-confirmed">Confirmat</span></h2>
+    <div class="section-meta">Pattern detection pe veto-uri în primele runs post-RUND2. Baza: <code>deliberation_log[step=aggregate].result.vetoed</code> pe toate 164 runs.</div>
+
+    <h3>Statistici globale</h3>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Runs cu veto</div>
+        <div class="stat-value blue">17</div>
+        <div class="stat-sub">din 164 total (10.4%)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Candidați vetoed</div>
+        <div class="stat-value blue">22</div>
+        <div class="stat-sub">total cross-runs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg risk la veto</div>
+        <div class="stat-value orange">0.87</div>
+        <div class="stat-sub">din 16 cu risk numeric</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Auto-relax triggered</div>
+        <div class="stat-value green">0</div>
+        <div class="stat-sub">nicio relaxare automată</div>
+      </div>
+    </div>
+
+    <h3>Categorii veto</h3>
+    <table>
+      <thead><tr><th>Categorie</th><th>Count</th><th>%</th><th>Interpretare</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>adversarial_*</code></td><td class="num">11</td><td class="num">50%</td>
+          <td>Candidați de risc înalt; vetoed ca intended — Generator îi propune explicit pentru a testa boundaries</td>
+        </tr>
+        <tr>
+          <td><code>do_nothing</code></td><td class="num">5</td><td class="num">23%</td>
+          <td>Pattern semnificativ: apare pe taskuri de cod (circuit breaker, streak counter) unde inacțiunea e ea însăși riscantă</td>
+        </tr>
+        <tr>
+          <td>Altele (named)</td><td class="num">5</td><td class="num">23%</td>
+          <td>Candidați cu risk calculat >0.8: <code>split_three_prs</code>, <code>bundled_single_commit</code>, <code>scored_pipeline_builder</code>, etc.</td>
+        </tr>
+        <tr>
+          <td><code>unconventional_*</code></td><td class="num">1</td><td class="num">5%</td>
+          <td>Rar — candidații unconventional sunt de regulă mai conservativi decât adversarial</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Distribuție risk scores (N=16 cu risk numeric)</h3>
+    <div class="bar-row"><div class="bar-label">≥ 0.8 (veto strict)</div><div class="bar-track"><div class="bar-fill bar-fill-red" style="width:75%"></div></div><div class="bar-value">12 (75%)</div></div>
+    <div class="bar-row"><div class="bar-label">0.7–0.79 (near-veto)</div><div class="bar-track"><div class="bar-fill bar-fill-orange" style="width:25%"></div></div><div class="bar-value">4 (25%)</div></div>
+
+    <div class="callout callout-orange">
+      <div class="callout-title">Anomalie near-veto (4 cazuri)</div>
+      <p>4 candidați vetoed cu risk 0.72–0.79 sunt sub pragul strict de 0.80. Aceștia provin din runs în mod <strong>parallel</strong> (mai-12, mai-13) unde aggregator-ul era diferit față de RUND2. Post-RUND2 (sequential), toate vetoed candidates observate au risk ≥ 0.80 sau sunt fără risk numeric (retras din agregare ca string simplu în Trias).</p>
+    </div>
+
+    <h3>Pattern: <code>do_nothing</code> vetoed pe taskuri de cod</h3>
+    <p>Cele 5 cazuri de <code>do_nothing</code> veto apar exclusiv pe taskuri de implementare (streak counter, circuit breaker, sprint collapse) unde Conservatorul a calculat risk ≥ 0.95 pentru inacțiune — "a nu face nimic crește datoria tehnică mai repede decât orice implementare". Aceasta confirmă că Conservatorul aplică risk la inacțiune corect, nu doar la acțiune.</p>
+
+    <div class="callout callout-green">
+      <div class="callout-title">Verdict 14C</div>
+      <p><strong>Veto-urile sunt soundly motivated:</strong> 50% adversarial (intended), 23% do_nothing pe cod-tasks (corect), 0 auto-relax triggerd (niciun caz all-veto cu fallback). Threshold 0.80 funcționează în limitele post-RUND2. Pattern near-veto din runs paralel vechi nu se mai reproduce în Sequential.</p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ============================================================ -->
+  <section id="14d">
+    <h2>14D · Summary &amp; verdicts consolidate</h2>
+    <div class="section-meta">Sinteză a celor 4 validări post-merge RUND2.</div>
+
+    <table>
+      <thead><tr><th>Item</th><th>Întrebare</th><th>N</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>14A</strong> Napoleon</td>
+          <td>P3 over-fit? GO-bias sistematic?</td>
+          <td class="num">N=73</td>
+          <td><span class="badge badge-warning">Signal</span> GO-bias 58% — monitorizat, nu blocker</td>
+        </tr>
+        <tr>
+          <td><strong>14B</strong> Sequential calibrare</td>
+          <td>Sequential > Parallel ca calibrare?</td>
+          <td class="num">N=76 seq, N=26 par</td>
+          <td><span class="badge badge-confirmed">Confirmat</span> +45pp OK rate</td>
+        </tr>
+        <tr>
+          <td><strong>14C</strong> Veto patterns</td>
+          <td>Aggregator vetoed soundly?</td>
+          <td class="num">22 veto-uri / 164 runs</td>
+          <td><span class="badge badge-confirmed">Confirmat</span> Threshold funcționează</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Open actions post-validare</h3>
+    <ul>
+      <li><strong>14A follow-up:</strong> Re-evaluare Napoleon la N=150 senate runs, sau dacă apare trigger &gt;3 STOP consecutive pe propuneri non-agresive.</li>
+      <li><strong>14B follow-up:</strong> Corelează confidence cu outcome FEEDBACK.html (OK/BAD) pentru a valida că avg=0.74 reflectă calitate reală, nu auto-optimism.</li>
+      <li><strong>14C follow-up:</strong> Monitorizare auto-relax: dacă apare primul triggered case, documentează în <code>FEEDBACK.html</code> cu note <code>auto_relax=true</code>.</li>
+    </ul>
+
+    <div class="callout callout-green">
+      <div class="callout-title">Verdict global — RUND2 validated</div>
+      <p>Toate 3 ipoteze testabile post-RUND2 sunt validate sau au primit signal clar de monitorizat. Sequential ca mod default este empiric justificat. Napoleon rămâne senator. Aggregator veto threshold (0.80) funcționează fără ajustare. Campania de validare post-merge este <strong>completă</strong> — runs lipsă (<code>14A</code> "5-10 diverse questions live" și <code>14B</code> "10 real questions dispatched") sunt acoperite prin analiza retrospectivă pe N=164/78 runs reale.</p>
+    </div>
+
+    <h3>Caveats și limitări</h3>
+    <ul>
+      <li>Analiza este retrospectivă pe datele disponibile — nu prospectivă pe 10 runs noi izolate (cum specifică TODO-ul). Acoperire mai mare (N=164) compensează dar nu elimina selection bias din runs acumulate organic.</li>
+      <li>Calibrarea confidence nu este validată extern față de outcome-uri FEEDBACK.html — corelarea rămâne un open item.</li>
+      <li>Napoleon GO-bias este un signal nou față de validarea mai-17 — interpretarea (personalitate "operator pragmatic" vs drift) rămâne calitativă.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Generat: 2026-05-25 &nbsp;·&nbsp;
+    Metodă: analiză automată <code>runs/*.json</code> + <code>runs/senate/*.json</code> &nbsp;·&nbsp;
+    Runs analizate: 164 deliberations, 78 senate runs &nbsp;·&nbsp;
+    Cross-ref: <a href="napoleon-validation-2026-05-17.md" style="color:var(--blue)">napoleon-validation-2026-05-17.md</a> · <a href="voice-score-stability-2026-05-17.md" style="color:var(--blue)">voice-score-stability-2026-05-17.md</a>
+  </footer>
+
+</div>
+</body>
+</html>

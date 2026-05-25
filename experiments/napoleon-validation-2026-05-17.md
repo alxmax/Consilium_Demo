@@ -4,6 +4,8 @@
 
 **Verdict: STAYS.** Zero P3 over-fit signal. Bi-directional distribution, independent disagreement, cross-domain rationales.
 
+> **Update 2026-05-25 (N=73, run4):** Distribuția s-a schimbat față de N=15: GO=42 (58%), MODIFY=22 (30%), STOP=9 (12%). Napoleon mai permisiv decât verdictul final în 51% din cazuri. Nu există pattern P3; GO-bias este monitorizat cu trigger >3 STOP consecutive pe propuneri non-agresive. Detalii: `experiments/run4-rund2-empirical-validation.html#14a`.
+
 ## Method
 
 Extract Napoleon vote + rationale din toate `runs/senate/2026-*.json` (excluzând `_input_*` artifacts). Schema:
