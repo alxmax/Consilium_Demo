@@ -43,22 +43,22 @@
       {
         id: 'pr-review',
         name: 'Review PR',
-        mode: 'Parallel',
-        desc: 'Flux default: trei voci evaluează același diff independent, voturile agregate sub conservative_override.',
-        path: BASE_PATH,
+        mode: 'Sequential',
+        desc: 'Flux default: cele trei voci rulează secvențial în același context — Conservator scorează riscul și setează token budget, Generator propune, Control verifică.',
+        path: ['dev', 'cc-session', 'skill-md', 'mode', 'generator', 'control', 'conservator', 'agg', 'gate', 'output'],
         auxNodes: ['scope-gate'],
         edges: [
           ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
-          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
-          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['mode', 'generator'], ['generator', 'control'], ['control', 'conservator'],
+          ['conservator', 'agg'],
           ['agg', 'gate'], ['gate', 'output']
         ],
         steps: [
           '<b>Developer-ul</b> deschide o sesiune Claude Code cu un diff sau o descriere de schimbare.',
-          'Skill-ul se activează prin keyword trigger (ex. <i>review PR</i>) și orchestratorul alege <b>Parallel mode</b>.',
-          'Trei voci (<b>Generator</b>, <b>Control</b>, <b>Conservator</b>) sunt dispatch-uite ca sub-agenți independenți, fiecare cu propriul prompt.',
-          'Fiecare voce întoarce un vot și un rationale (fără cross-talk).',
-          'Aggregator combină voturile sub <code>conservative_override</code>; riscul rămâne sub pragul de veto, deci gate-ul <b>trece</b>.',
+          'Skill-ul se activează prin keyword trigger (ex. <i>review PR</i>) și orchestratorul folosește <b>Sequential mode</b> (default).',
+          '<b>Conservator-ul</b> scorează riscul și setează token budget; <b>Generator</b> propune alternative; <b>Control</b> le verifică — toate în același context.',
+          'Separarea e prin rol-prompt, nu izolare totală (același model, același context). Parallel rămâne doar ca cross-check intern automat.',
+          'Aggregator combină sub <code>conservative_override</code>; riscul rămâne sub pragul de veto, deci gate-ul <b>trece</b>.',
           'Se scrie un <code>runs/&lt;id&gt;.json</code> canonic și un sumar cu opțiunea aleasă în consolă.'
         ]
       },
@@ -159,7 +159,7 @@
         id: 'trias',
         name: 'Deliberare Trias',
         mode: 'Trias',
-        desc: 'Trei personalități rulează fiecare propriul parallel mode, apoi un vot democratic majoritar tranșează alegerea. Vezi schema deep-dive de mai jos pentru fan-out-ul de 9 sub-agenți.',
+        desc: 'Trei personalități (Pioneer/Architect/Steward), fiecare rulează o deliberare Sequential proprie ca un singur sub-agent, apoi un vot democratic majoritar tranșează alegerea. Cost: 3× Sequential (3 sub-agenți).',
         path: ['dev', 'cc-session', 'skill-md', 'mode', 'pioneer', 'architect', 'steward', 'agg', 'gate', 'output'],
         auxNodes: ['scope-gate'],
         edges: [
@@ -171,7 +171,7 @@
         steps: [
           '<b>Developer-ul</b> opt-in la <b>Trias mode</b> pentru o decizie high-stakes (ex. alegere de arhitectură).',
           'Skill-ul dispatch trei personalități — Pioneer (G-weighted), Architect (C-weighted), Steward (K-weighted).',
-          'Fiecare personalitate orchestrează propria rundă paralelă peste cele trei voci — vezi schema <i>Trias deep-dive</i> de mai jos pentru cei 9 sub-agenți.',
+          'Fiecare personalitate rulează propria deliberare Sequential (Conservator→Generator→Control) ca un singur sub-agent — 3 sub-agenți în total (nu 9, ca în designul vechi arhivat).',
           'Un vot democratic majoritar e luat peste personalități — 3-0, 2-1, sau 2-0 dă o decizie automată.',
           'Un split 1-1-1 sau o minoritate slabă escaladează run-ul în loc să decidă automat.',
           'Când majoritatea e atinsă, gate-ul <b>trece</b> și raportul canonic înregistrează toate cele trei voturi de personalitate.'
@@ -180,23 +180,23 @@
       {
         id: 'skeptic-challenge',
         name: 'Provocare Skeptic',
-        mode: 'Parallel + skeptic_on_chosen',
-        desc: 'Când confidence ∈ [0.5, 0.7], un Skeptic focal provoacă <code>chosen</code> — primește doar chosen, nu și ceilalți candidați.',
+        mode: 'Sequential + skeptic_on_chosen',
+        desc: 'Flag compozabil peste orice mod de bază. Când confidence ∈ [0.5, 0.7], un Skeptic focal provoacă <code>chosen</code> — primește doar chosen, nu și ceilalți candidați.',
         path: ['dev', 'cc-session', 'skill-md', 'mode', 'generator', 'control', 'conservator', 'agg', 'skeptic', 'gate', 'output'],
         auxNodes: ['scope-gate'],
         edges: [
           ['dev', 'cc-session'], ['cc-session', 'skill-md'], ['skill-md', 'mode'],
-          ['mode', 'generator'], ['mode', 'control'], ['mode', 'conservator'],
-          ['generator', 'agg'], ['control', 'agg'], ['conservator', 'agg'],
+          ['mode', 'generator'], ['generator', 'control'], ['control', 'conservator'],
+          ['conservator', 'agg'],
           ['agg', 'skeptic'], ['skeptic', 'gate'], ['gate', 'output']
         ],
         steps: [
-          '<b>Developer-ul</b> rulează un Parallel review obișnuit.',
-          'Trei voci dispatch-uite ca sub-agenți independenți; aggregator-ul produce <code>chosen</code> + confidence.',
-          'Confidence cade în zona marginală <code>[0.5, 0.7]</code> — orchestratorul activează automat flag-ul <b><code>skeptic_on_chosen</code></b> peste Parallel.',
+          '<b>Developer-ul</b> rulează un review obișnuit (<b>Sequential</b>, modul default).',
+          'Cele trei voci rulează secvențial; aggregator-ul produce <code>chosen</code> + confidence.',
+          'Confidence cade în zona marginală <code>[0.5, 0.7]</code> — orchestratorul activează automat flag-ul <b><code>skeptic_on_chosen</code></b> peste modul de bază.',
           'Un sub-agent focal <b>Skeptic</b> (<code>prompts/voices/skeptic.md</code>) primește <i>doar</i> <code>chosen</code> și <code>success_criterion</code> — fără ceilalți candidați, fără voturile vocilor de bază.',
-          'Skeptic-ul produce un challenge focal: dacă întărește alegerea, gate-ul <b>trece</b>; dacă găsește un risc serios, deliberarea escaladează.',
-          'Cost total: 1.33× Parallel (4 sub-agenți). Skeptic-ul nu se activează dacă confidence ≥ 0.7 sau confidence < 0.5.'
+          'Skeptic-ul produce un challenge focal: advisory by default (logat în <code>deliberation_log</code>); cu <code>--skeptic-can-override</code> poate propune schimbarea alegerii.',
+          'Cost: +1 sub-agent Skeptic peste modul de bază (Sequential + flag ≈ 1.33×). Nu se activează dacă confidence ≥ 0.7 sau < 0.5.'
         ]
       }
     ];
