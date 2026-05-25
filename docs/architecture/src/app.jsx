@@ -186,7 +186,7 @@ function Hero() {
           <span className="chip"><span className="chip__swatch" style={{ background: 'oklch(0.55 0.16 320)' }} />Skeptic</span>
           <span className="chip">5 modes</span>
           <span className="chip">3 voting schemes</span>
-          <span className="chip">8-trigger cascade</span>
+          <span className="chip">8-component cascade</span>
           <span className="chip">self-calibrating</span>
         </div>
       </div>

@@ -66,7 +66,7 @@ function CascadeSection() {
         <SectionHead
           num="05"
           eyebrow="Aggregation routing"
-          title="Before voting: an eight-trigger cascade."
+          title="Before voting: an eight-component cascade."
           lede="The aggregator first checks for triggers that should short-circuit the vote — irreversibility, fundamental disagreement, scope mismatches. Only when nothing fires does the actual aggregation run."
         />
 
@@ -184,7 +184,7 @@ function TwoLayerSection() {
               Synthesizes the three outputs into a single user-facing decision via the 8-component veto cascade. Routes to BLOCK / REWORK / ADAPT_SHORT / ADAPT_EXTENDED / ESCALATE — or runs normal aggregation when no trigger fires.
             </p>
             <div className="two-layer__bits">
-              <div className="two-layer__bit">aggregate_v2() with 8-trigger cascade</div>
+              <div className="two-layer__bit">aggregate_sequential() with 8-component cascade</div>
               <div className="two-layer__bit">7 routing outcomes</div>
               <div className="two-layer__bit">veto budget: 5 activations / month</div>
               <div className="two-layer__bit">default scheme: conservative_override</div>

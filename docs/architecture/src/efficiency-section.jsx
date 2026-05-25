@@ -1,49 +1,51 @@
 /* efficiency-section.jsx — Usage & Efficiency section */
 
 const MODES_DATA = [
-  { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  model: 'Sonnet 4.6', note: 'in-context baseline' },
-  { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  model: 'Sonnet 4.6', note: '+ 1 skeptic sub-agent' },
-  { mode: 'trias',       costMultiplier: '3×',    dispatches: 3,  model: 'Sonnet 4.6', note: '3 personality sub-agents (9 voice runs)' },
-  { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, model: 'Sonnet 4.6', note: 'composable flag over any base' },
+  { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  note: 'in-context baseline' },
+  { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
+  { mode: 'trias',       costMultiplier: '3×',    dispatches: 3,  note: '3 personality sub-agents (9 voice runs)' },
+  { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, note: 'composable flag over any base' },
 ];
 
 function BarChart({ data }) {
   const max = Math.max(...data.map(d => d.value));
   const colors = {
-    sequential: 'var(--gen)',
-    dialectic:  'var(--ctl)',
-    trias:      'oklch(0.55 0.18 260)',
+    sonnet_bare: 'var(--ink-3)',
+    opus_bare:   'var(--con)',
+    sequential:  'var(--gen)',
+    dialectic:   'var(--ctl)',
+    trias:       'oklch(0.55 0.18 260)',
   };
   return (
-    <svg viewBox={`0 0 600 ${data.length * 60 + 20}`} className="diagram" style={{ maxHeight: 280 }}>
+    <svg viewBox={`0 0 640 ${data.length * 64 + 20}`} className="diagram" style={{ maxHeight: 360 }}>
       {data.map((d, i) => {
-        const barW = max > 0 ? (d.value / max) * 440 : 0;
-        const y = i * 60 + 10;
+        const barW = max > 0 ? (d.value / max) * 420 : 0;
+        const y = i * 64 + 10;
         const col = colors[d.mode] || 'var(--ink-2)';
         return (
           <g key={d.mode}>
-            <text x="0" y={y + 20} style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fill: 'var(--ink)' }}>{d.mode}</text>
-            <rect x="140" y={y + 6} width={barW} height={28} rx="3" fill={col} opacity="0.8" />
-            <text x={140 + barW + 8} y={y + 24} style={{ fontSize: 12, fill: 'var(--ink-2)', fontFamily: 'var(--font-mono)' }}>
+            <text x="0" y={y + 16} style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fill: 'var(--ink)' }}>{d.mode}</text>
+            <text x="0" y={y + 32} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ctl-ink)' }}>{d.model}</text>
+            <rect x="160" y={y + 6} width={barW} height={28} rx="3" fill={col} opacity="0.8" />
+            <text x={160 + barW + 8} y={y + 24} style={{ fontSize: 12, fill: 'var(--ink-2)', fontFamily: 'var(--font-mono)' }}>
               {d.label}
             </text>
           </g>
         );
       })}
-      <text x="0" y={data.length * 60 + 18} style={{ fontSize: 11, fill: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>
-        lower tokens/OK = better efficiency
+      <text x="0" y={data.length * 64 + 16} style={{ fontSize: 11, fill: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>
+        lower tokens/OK = better efficiency · bare = no orchestration baseline
       </text>
     </svg>
   );
 }
 
-function ModeRow({ mode, costMultiplier, dispatches, model, note }) {
+function ModeRow({ mode, costMultiplier, dispatches, note }) {
   return (
     <tr>
       <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)' }}>{mode}</td>
       <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{costMultiplier}</td>
       <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{dispatches}</td>
-      <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ctl-ink)' }}>{model}</td>
       <td style={{ padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)', fontSize: 12, color: 'var(--ink-2)' }}>{note}</td>
     </tr>
   );
@@ -51,9 +53,11 @@ function ModeRow({ mode, costMultiplier, dispatches, model, note }) {
 
 function EfficiencySection() {
   const placeholder = [
-    { mode: 'sequential', value: 3700,  label: '~3 700 tok/OK' },
-    { mode: 'dialectic',  value: 5200,  label: '~5 200 tok/OK' },
-    { mode: 'trias',      value: 11000, label: '~11 000 tok/OK' },
+    { mode: 'sonnet_bare', value: 2100,  label: '~2 100 tok/OK', model: 'Sonnet 4.6' },
+    { mode: 'opus_bare',   value: 2400,  label: '~2 400 tok/OK', model: 'Opus 4.7' },
+    { mode: 'sequential',  value: 3700,  label: '~3 700 tok/OK', model: 'Sonnet 4.6' },
+    { mode: 'dialectic',   value: 5200,  label: '~5 200 tok/OK', model: 'Sonnet 4.6' },
+    { mode: 'trias',       value: 11000, label: '~11 000 tok/OK', model: 'Sonnet 4.6' },
   ];
 
   return (
@@ -68,14 +72,14 @@ function EfficiencySection() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 32, alignItems: 'start' }}>
           <div>
-            <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 16 }}>Mode cost multipliers</h3>
+            <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>Mode cost multipliers</h3>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>1× baseline = Sequential on Sonnet 4.6</p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', padding: '6px 16px 6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Mode</th>
                   <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Cost</th>
                   <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Sub-agents</th>
-                  <th style={{ textAlign: 'left', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Model</th>
                   <th style={{ textAlign: 'left', padding: '6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Note</th>
                 </tr>
               </thead>
