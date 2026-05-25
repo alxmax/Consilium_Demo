@@ -81,6 +81,28 @@ Parallel dispatch is no longer user-selectable; it remains an automatic cross-ch
 
 **Canonical output** (validated by `scripts/validate_report.py`): JSON with `success_criterion`, `chosen_approach`, `verification`, `alternatives`, `voice_scores`, `confidence`, and a `deliberation_log`.
 
+## Competencies demonstrated
+
+What this project concretely shows, in Agentic-AI / LLMOps terms. Rated **Full** (named feature, runs via a documented command, artifact in-repo), **Partial** (present but not the textbook form — caveat noted), or **n/a** (deliberately out of scope).
+
+| Capability | Status | Where / honest caveat |
+|---|---|---|
+| Multi-agent orchestration | Full | 3 voices + 3 Trias personalities + Skeptic, dispatched as isolated sub-agents (`agents/`, `scripts/personalities.py`) |
+| Planner / executor split | Full | orchestrator selects the mode and scope-gates, then dispatches voice executors |
+| Deterministic orchestration | Full | `scope_gate → voices → aggregator → validate_report → implementation pipeline`, all stdlib scripts |
+| Retry / reflection / self-healing | Full | `retry_context.py` (low-confidence re-deliberation), sub-agent-crash fallback, malformed-JSON retry, red→green test gate |
+| Agent execution visualization | Full | the interactive architecture explainer (`docs/architecture/`) |
+| Agent memory | **Partial** | 3 tiers via `memory.py` — session context, `runs/*.json` episodic logs, `FEEDBACK.html` outcome journal. This is **journaling + run logs, not vector / retrieval-augmented memory** |
+| Token-cost telemetry | Full (instrumentation) | per-dispatch telemetry → `efficiency.py` / `usage.py` (`tokens_per_OK`). Aggregate efficiency figures in the explainer are currently **illustrative**, pending a larger measured run |
+| Regression testing | Full | `evals/scenarios.json` + `run_evals.py` — deterministic subprocess tests of the scripts (not LLM-output evals) |
+| Benchmarking vs baselines | Full | `benchmark/` compares each mode against bare-model baselines with a hidden oracle kept out-of-tree |
+| Fabrication / hallucination discipline | **Partial** | a documented independent-oracle rule for any quantitative claim (`experiments/README.md`) — a review process, not an automated metric |
+| Prompt versioning | **Partial** | prompts live in `prompts/voices/*.md` under git; no formal version registry |
+| Framework orchestration (LangGraph / CrewAI) | n/a | evaluated and deliberately rejected — see below |
+| RAG / embeddings / vector search · web backend · cloud deploy | n/a | out of scope by design; targeted by a separate showcase project |
+
+> **Why not LangGraph / CrewAI?** Evaluated and rejected on documented architectural grounds, not avoided. A 2026-05-16 deliberation chose `do_nothing`; two follow-up Senate audits (2026-05-19) reaffirmed it — `STOP 6` on integration and `STOP 6` even on an isolated, deletable sidecar. The recorded reasons: keep the **stdlib-only, zero-dependency** constraint; preserve the **file-based memory contract** (`runs/*.json`, globbed by `priors.py` / `usage.py` / `memory.py`); keep the **self-improvement loop** coupled to Claude Code; and avoid **regression risk** in the authoritative `prompts/voices/*.md`. The deliberations are recorded in `runs/` and `TODO.md`.
+
 ## License
 
 [Business Source License 1.1](LICENSE) © 2026 Schipor Alexandru.
