@@ -5901,6 +5901,44 @@ function ModesSection() {
           </div>
         </div>
 
+        {/* === Parallel — auto: when, why, what next === */}
+        <div className="note" style={{ marginTop: 36 }}>
+          <span className="note__label">Parallel — auto, in depth</span>
+          <span>
+            <strong>When</strong> — the orchestrator never picks this by hand. It fires automatically in two cases: (1) the Conservator scores a change as <code>magnitude = critical</code> <em>and</em> <code>reversibility = irreversible</code>; (2) as a silent audit on every 20th run (rising to 1-in-5 if it keeps diverging from Sequential).{' '}
+            <strong>Why</strong> — true isolation (three voices in three separate context windows, no shared memory) costs 3×, so it is held back for the calls where a wrong answer is most expensive, and for keeping the cheap default honest.{' '}
+            <strong>After</strong> — the parallel result cross-checks the Sequential chosen answer; any divergence is surfaced in the report rather than silently resolved, then the run continues to confidence → canonical report → (if files were requested) the implementation pipeline.
+          </span>
+        </div>
+
+        {/* === End-to-end lifecycle: request → deliberation → code → learn === */}
+        <h3 className="h-sub" style={{ fontSize: 20, margin: '44px 0 4px' }}>From request to written code</h3>
+        <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 18, maxWidth: 760 }}>
+          A mode is only the middle act. Here is the whole path a change travels — and how it loops back to make the next run smarter.
+        </p>
+        <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, overflowX: 'auto', fontFamily: 'var(--font-mono)' }}>
+          {[
+            { tag: 'USER', title: '/consilium', sub: 'invokes the skill on a diff, a question, or a change to plan', color: 'var(--ink)' },
+            { tag: 'DELIBERATION', title: 'a mode runs', sub: 'Conservator → Generator → Control under the 8-component veto cascade → a chosen approach + confidence, saved as canonical JSON in runs/', color: 'var(--ctl)' },
+            { tag: 'IMPLEMENTATION', title: 'Step 7 pipeline', sub: 'if the prompt declares deliverables: Coder → (Test Writer ∥ Reviewer) → red→green gate → files written to disk', color: 'var(--gen)' },
+            { tag: 'LEARN', title: 'feedback loop', sub: 'the outcome is logged to FEEDBACK.html; priors.py feeds it into the next deliberation', color: 'var(--con)' },
+          ].map((s, i, arr) => (
+            <React.Fragment key={s.tag}>
+              <div style={{ flex: '1 1 0', minWidth: 150, padding: '14px 16px', border: '1px solid var(--rule)', borderTop: `3px solid ${s.color}`, borderRadius: 4, background: 'var(--paper)' }}>
+                <div style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 4 }}>{s.tag}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: s.color, marginBottom: 6 }}>{s.title}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-2)', lineHeight: 1.5, fontFamily: 'var(--font-sans)' }}>{s.sub}</div>
+              </div>
+              {i < arr.length - 1 && (
+                <div style={{ alignSelf: 'center', padding: '0 8px', color: 'var(--ink-3)', fontSize: 14, flexShrink: 0 }}>▶</div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginTop: 8 }}>
+          ↻ LEARN feeds back into the next DELIBERATION — the loop closes on disk. The last two stages have their own tabs: <strong>Integration</strong> (pipeline) and <strong>Calibration</strong> (feedback).
+        </p>
+
         <CostScatter />
         <CostBars />
       </div>
