@@ -130,10 +130,14 @@ def extract_tokens(telemetry: dict) -> tuple[int, int, int]:
     parallel, senate (wittgenstein/aurelius/...), and trias
     (pioneer_generator/pioneer_control/... — flat, Q3 decision).
     """
-    # Merge voices and senators keys (senate bundles may use either)
+    # Merge voices, senators, and personalities keys.
+    # - voices: sequential/dialectic (generator, control, conservator)
+    # - senators: senate mode (wittgenstein, aurelius, ...)
+    # - personalities: trias mode (pioneer, architect, steward) — Q3 decision 2026-05-25
     all_voices: dict = {}
     all_voices.update(telemetry.get("voices") or {})
     all_voices.update(telemetry.get("senators") or {})
+    all_voices.update(telemetry.get("personalities") or {})
 
     total_tokens = 0
     dispatches = 0
