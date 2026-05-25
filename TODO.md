@@ -63,15 +63,22 @@ From `TODO_SENAT.md` Appendix D:
 
 > Source: `TO_DO_Consilium.md` (now consolidated). Ranked by impact/effort. Categories: **Prompt** (prompts/*.md), **Skill** (SKILL.md + scripts), **Arch**.
 
-### Follow-up eval parity (planned)
+### Follow-up eval parity · Senate MODIFY 2026-05-25
 
-Branch `feat/eval-parity-rest` with scenarios for:
-- `memory.py` tier medium/long/unknown (3 scenarios — require `runs/` fixtures)
-- `audit_feedback.py` orphan detection + `--backfill` idempotency (2 scenarios — require FEEDBACK.html + runs/*.json fixtures)
-- `mark_outcome.py` `[confirmed]` marker preservation (1 scenario — requires FEEDBACK.html fixture)
-- `priors.py` `weighted_bad_rate` + `missing_feedback_runs` + `stale_pendings` cutoff (3 scenarios)
+> **Senate verdict:** MODIFY (GO 3 · MODIFY 5 · STOP 1) — `runs/senate/2026-05-25_081222-eval-parity-rest.json`
+>
+> **Key finding:** `audit_feedback.py` + `mark_outcome.py` already have `--feedback`/`--runs-dir` flags. Only `memory.py` + `priors.py` hardcode `ROOT` — immune to cwd-switch. Approach A (fixture_files + cwd) doesn't work for them.
 
-Total ~9 new scenarios. Requires extending `run_evals.py` to accept filesystem fixtures.
+**Mandatory before implementation:**
+- [ ] Add `--feedback-file` / `--runs-dir` to `memory.py` + `priors.py` only (not all 4)
+- [ ] No `fixture_files` extension to `run_evals.py` — preserve stdin_json pattern
+- [ ] Anchor `stale_pendings` dates relative to `date.today()` in fixtures — prevents daily drift
+- [ ] Clarify headless suppression (priors.py zeroes `stale_pendings`/`missing_feedback_runs` under non-TTY)
+- [ ] Start with 1-2 scenarios on highest-risk script first, not all 9 at once
+- [ ] Each scenario must assert a concrete output field that flips on regression (no exit==0-only)
+- [ ] Note in scenarios.json: synthetic fixtures validate code-path coverage only, not semantic correctness
+
+**Scope:** ~9 scenarios via stdin_json+args, implement in dedicated session.
 
 ### Open items (Tier 2)
 
@@ -150,6 +157,21 @@ Soft-positive decision, low priority.
 ---
 
 ## 🏛 Senate Resolutions
+
+### Senate Resolution — eval-parity-rest · 25 May 2026 · MODIFY (GO 3 · MODIFY 5 · STOP 1)
+
+> **Proposal:** Follow-up eval parity — add ~9 new scenarios to evals/scenarios.json covering memory.py (medium/long tiers), audit_feedback.py (orphan detection + backfill idempotency), mark_outcome.py ([confirmed] m…
+
+**A. Per-senator decisions:**
+
+- [ ] **[WITTGENSTEIN]** Before implementation, the proposal must make three things operational: (1) Per-scenario assertion spec — name the exact output field/exit-code asserted per scenario that would flip on regression. (2) Resolve the path-resolution split: memory.py and priors.py resolve FEEDBACK/RUNS from __file__-relative ROOT — cwd change does NOT redirect them; mark_outcome.py and audit_feedback.py already have --feedback/--runs-dir flags. (3) Pin determinism: anchor stale_pendings fixture dates relative to date.today() so assertions don't drift daily; clarify headless suppression of stale_pendings/missing_feedback_runs.
+- [ ] **[AURELIUS]** One guard required before merge: run_evals.py fixture_files handling must raise an explicit error on temp-dir setup failure — must not silently skip the scenario and mark it PASS.
+- [ ] **[CONFUCIUS]** Pursue the alternative: add --feedback-file and --runs-dir CLI flags to the 4 scripts instead of extending run_evals.py. This keeps all 9 new scenarios as pure stdin_json, preserves the established deterministic contract, and improves production script testability as a side effect. The fixture_files extension breaks the stdin_json pattern that has been stable for 50+ scenarios.
+- [ ] **[SOCRATE]** Correct the factual premise first: audit_feedback.py and mark_outcome.py ALREADY expose --feedback/--runs-dir and resolve from cwd. Only memory.py and priors.py hardcode ROOT-anchored paths and are immune to Approach A. Minimal path: add flags to memory.py and priors.py only, write all 9 scenarios as stdin/args — no harness change. Also: make priors date-deterministic for eval and add mutation-verification step per scenario.
+- [ ] **[MUSK]** Reject fixture_files harness extension and evals/fixtures/ directory entirely. Start minimal: add --feedback-file flag to the highest-risk script (audit_feedback.py or priors.py), write 1 scenario, verify it catches a real regression. Defer the other 3 scripts until a regression proves the need. The gravitational pull of fixture_files on future tests is the real cost — once the paradigm exists, every author reaches for it.
+- [ ] **[DIMON]** The fixture approach is architecturally unsound. Scripts use Path(__file__).resolve().parent.parent — cwd changes are ignored. Fixtures written to temp dir are never read. This is a silent failure: tests pass while asserting nothing real. Must resolve the ROOT path problem before ANY fixture scenarios: add explicit --root-dir/--feedback-file flags to scripts OR pass ROOT as env var. Test ONE scenario end-to-end first to verify fixtures are actually read by the subprocess.
+- [ ] **[NAPOLEON]** Scope down to 3-4 scenarios covering only critical-path scripts (priors.py stale detection, audit_feedback.py orphan detection). Implement in a dedicated future session, not appended to current cleanup context. Defer full 9-scenario parity until AUDIT_TODO.md harness fixes are addressed so both land in one coherent branch.
+- [ ] **[DEMING]** Document in scenarios.json that priors.py tests use synthetic fixtures and validate code-path coverage only, not semantic correctness on real FEEDBACK.html/runs/*.json data.
 
 ### Senate Resolution — kill-meta-critic-r2 · 24 May 2026 · MODIFY (GO 5 · MODIFY 3 · STOP 1)
 
