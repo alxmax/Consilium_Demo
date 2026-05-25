@@ -26,6 +26,8 @@ CLI:
     python scripts/priors.py
     python scripts/priors.py --n 5
     python scripts/priors.py --no-runs
+    python scripts/priors.py --feedback-file path/to/FEEDBACK.html
+    python scripts/priors.py --runs-dir path/to/runs/
 """
 
 from __future__ import annotations
@@ -73,6 +75,14 @@ CONFIRMED_MARKER = "[confirmed]"
 # right after deliberation. weighted_bad_rate gives them this much more weight
 # than subjective rows in the same window.
 CONFIRMED_WEIGHT = 2.0
+
+
+def _rel_or_str(path: Path) -> str:
+    """Return path relative to ROOT, or absolute str if outside ROOT."""
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
 
 
 def _outcome_counts(entries: list[dict]) -> Counter:
@@ -228,7 +238,7 @@ def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False)
     pend_pressure = counts.get("PEND", 0) / len(recent) if recent else 0.0
     out: dict = {
         "source": {
-            "feedback_path": str(FEEDBACK.relative_to(ROOT)),
+            "feedback_path": _rel_or_str(FEEDBACK),
             "feedback_total": len(entries),
             "feedback_window": len(recent),
         },
@@ -241,7 +251,7 @@ def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False)
     }
     if include_runs:
         runs = parse_runs(RUNS)
-        out["source"]["runs_path"] = str(RUNS.relative_to(ROOT))
+        out["source"]["runs_path"] = _rel_or_str(RUNS)
         out["source"]["runs_total"] = len(runs)
         out.update(_veto_rate(runs))
         out["missing_feedback_runs"] = find_missing_feedback_runs(RUNS, entries)
@@ -257,7 +267,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--n", type=int, default=10, help="number of recent FEEDBACK entries to summarize")
     ap.add_argument("--no-runs", dest="runs", action="store_false", help="skip scanning runs/*.json")
     ap.add_argument("--headless", action="store_true", help="suppress stale_pendings and missing_feedback_runs for non-interactive/CI runs")
+    ap.add_argument("--feedback-file", metavar="PATH", help="override FEEDBACK.html path (default: <repo>/FEEDBACK.html). Note: audit_feedback.py uses --feedback for the same concept.")
+    ap.add_argument("--runs-dir", metavar="PATH", help="override runs/ directory path (default: <repo>/runs)")
     args = ap.parse_args(argv)
+
+    global FEEDBACK, RUNS
+    if args.feedback_file:
+        FEEDBACK = Path(args.feedback_file).resolve()
+    if args.runs_dir:
+        RUNS = Path(args.runs_dir).resolve()
 
     _headless = args.headless or (not sys.stdin.isatty()) or (os.environ.get("CONSILIUM_HEADLESS") == "1")
     priors = build_priors(n=args.n, include_runs=args.runs, headless=_headless)
