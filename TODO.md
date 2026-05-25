@@ -60,16 +60,15 @@
 >
 > **Key finding:** `audit_feedback.py` + `mark_outcome.py` already have `--feedback`/`--runs-dir` flags. Only `memory.py` + `priors.py` hardcode `ROOT` — immune to cwd-switch. Approach A (fixture_files + cwd) doesn't work for them.
 
-**Mandatory before implementation:**
-- [ ] Add `--feedback-file` / `--runs-dir` to `memory.py` + `priors.py` only (not all 4)
-- [ ] No `fixture_files` extension to `run_evals.py` — preserve stdin_json pattern
-- [ ] Anchor `stale_pendings` dates relative to `date.today()` in fixtures — prevents daily drift
-- [ ] Clarify headless suppression (priors.py zeroes `stale_pendings`/`missing_feedback_runs` under non-TTY)
-- [ ] Start with 1-2 scenarios on highest-risk script first, not all 9 at once
-- [ ] Each scenario must assert a concrete output field that flips on regression (no exit==0-only)
-- [ ] Note in scenarios.json: synthetic fixtures validate code-path coverage only, not semantic correctness
+**Status: flaguri implementate, 3 scenarii de bază trec — rămâne nota de documentare în scenarios.json.**
 
-**Scope:** ~9 scenarios via stdin_json+args, implement in dedicated session.
+- [x] Add `--feedback-file` / `--runs-dir` to `memory.py` + `priors.py` only — implementat
+- [x] No `fixture_files` extension to `run_evals.py` — constrângere respectată (stdin_json pattern intact)
+- [x] Anchor `stale_pendings` dates — `evals/fixtures/priors_stale_pendings.html` folosește 2020-01-01 (nu driftează)
+- [x] Clarify headless suppression — documentat în `priors.py` docstring + SKILL.md Step 0
+- [x] Start with 1-2 scenarios on highest-risk script first — 2 scenarii priors + 1 memory PASS
+- [x] Each scenario must assert a concrete output field — scenariile 56/57 verifică câmpuri specifice
+- [ ] Note in scenarios.json: synthetic fixtures validate code-path coverage only, not semantic correctness
 
 ### Open items (Tier 2)
 
@@ -80,95 +79,27 @@
 
 ## 🏛 Senate Resolutions
 
-### Senate Resolution — pipeline-simplification-5phases · 25 May 2026 · MODIFY (GO 1 · MODIFY 8 · STOP 0)
+### Senate Resolution — pipeline-simplification-5phases · 25 May 2026 · MODIFY (GO 1 · MODIFY 8 · STOP 0) — **RESOLVED**
 
-> **Proposal:** Simplify the Consilium pipeline presentation from 12 granular steps (0, 1, 1.5, 2, 3, 4, 5, 5b, 5c, 5d, 6, 7) to 4-5 grouped phases in SKILL.md (and optionally docs/architecture.html). User request: '…
+> Tabelul "Pipeline at a glance" (5 Stage-uri → 12 pași) + "Pipeline Invariants" adăugate în SKILL.md liniile 38-58. Variant A livrată, scripts/ neatinse, 58/58 evals PASS.
 
-**A. Per-senator decisions:**
+### Senate Resolution — eval-parity-script-flags · 25 May 2026 · MODIFY (GO 4 · MODIFY 5 · STOP 0) — **RESOLVED**
 
-- [ ] **[WITTGENSTEIN]** Commit to Variant A explicitly with invariant 'no file under scripts/ is edited'. Replace subjective success criterion with structural reverse-lookup test: each of the 12 legacy step identifiers appears under exactly one phase heading. Drop the UI term 'collapsible' — specify 'nested bullet under phase heading'. Gate on run_evals.py exit 0 and validate_report.py exit 0 against an existing run. Variant B is out of scope and needs its own audit.
-- [ ] **[AURELIUS]** Proceed only with Variant A. Preserve all 12 sub-step labels (0, 1, 1.5, 2, 3, 4, 5, 5b, 5c, 5d, 6, 7) as-is in SKILL.md. Instead, prepend a 5-phase overview section (table or short prose) that maps the phases to the steps. Exclude docs/architecture.html unless user explicitly requests it as a follow-up.
-- [ ] **[CONFUCIUS]** Split the proposal into two separate motions: (1) Variant A only — approve presentation grouping with no behavioral change, no sub-step deletion, no renumbering. (2) Variant B — defer to a separate deliberation with explicit corpus analysis of 5c/5d usage frequency, schema migration plan for deliberation_log labels, and a deprecation notice before deletion.
-- [ ] **[SOCRATE]** 1) Disambiguate Variant A vs B — cannot proceed on silent guess of intent. 2) Drop 'Phase' as grouping label — it already means Trias context-strip stages in SKILL.md (lines 524-548); use 'Stage' instead. 3) Correct Constraint #1: deliberation_log and validate_report.py do NOT reference 5b/5c/5d (they use semantic step names). 4) Make success criterion falsifiable: new reader must still be able to state when Step 5d is skipped. 5) Decide architecture.html's fate explicitly.
-- [ ] **[MUSK]** Implement Variant A only. In SKILL.md, add a phase-grouped summary table at the top (5 phases, one line each) mapping to the 12 steps below. Do not renumber or remove any sub-steps. Do not touch aggregator.py, validate_report.py, or architecture.html.
-- [ ] **[DIMON]** Choose Variant A (lower risk). Use explicit structural markers ('Phase 4: Aggregate & Synthesize: [4a confidence, 4b meta-critic, 4c retry]') instead of visual grouping. Add 'Pipeline Invariants' section stating which steps are mandatory. Update architecture.html to reflect 5-phase grouping (keep 12 internal steps visible but grouped). Add lint rule checking deliberation_log step names exist in current SKILL.md.
-- [ ] **[NAPOLEON]** Approve Variant A only, deferred to a fresh session. Reject Variant B as currently scoped. If Variant A proceeds, require validate_report.py pass and at least one full Senate run after the edit to confirm no behavioral change.
-- [ ] **[TACITUS]** Present phases as NON-AUTHORITATIVE reading aid layered over the existing 12 step-IDs (which stay as sub-headings and remain the contract anchors), exactly as the 'Observe→Think→Act→Learn' mapping already does. Verify zero stale references break in aggregator.py, validate_report.py, infer_pipeline.py.
+> Flaguri `--feedback-file` / `--runs-dir` implementate în `memory.py` + `priors.py`. Guard `_rel_or_str` prezent în `priors.py` (ValueError pentru căi în afara ROOT). Global reassignment în `main()`. Scenariile 56/57 din `evals/scenarios.json` validează flagurile cu fixture-uri reale.
 
-**B. Actionable items (extracted from requests above):**
+### Senate Resolution — eval-parity-scenario-design · 25 May 2026 · MODIFY (GO 3 · MODIFY 6 · STOP 0) — **RESOLVED**
 
-- [ ] **B** (cross-ref: WITTGENSTEIN, CONFUCIUS, SOCRATE, NAPOLEON)
+> Scenariile de design au fost implementate: fixture-uri statice în `evals/fixtures/`, pattern stdin_json+args, câmpuri concrete verificate. Scenariile 56 (weighted_bad_rate) și 57 (stale_pendings) PASS. Rămâne nota de documentare în `scenarios.json` (vezi "Follow-up eval parity" mai sus).
 
-### Senate Resolution — eval-parity-script-flags · 25 May 2026 · MODIFY (GO 4 · MODIFY 5 · STOP 0)
+### Senate Resolution — eval-parity-rest · 25 May 2026 · MODIFY (GO 3 · MODIFY 5 · STOP 1) — **PARȚIAL RESOLVED**
 
-> **Proposal:** Add --feedback-file and --runs-dir CLI flags to memory.py and priors.py. These are the only 2 of the 4 eval-relevant scripts that still hardcode ROOT-anchored paths (ROOT = Path(__file__).resolve().pa…
+> Blocajul principal (path-resolution) rezolvat via `--feedback-file`/`--runs-dir`. Scenariile de bază există și trec. Rămâne: nota de documentare în `scenarios.json` (Deming) + scenariile suplimentare pentru `memory.py` medium/long tiers dacă se dovedesc necesare empiric.
 
-**A. Per-senator decisions:**
+### Senate Resolution — kill-meta-critic-r2 · 24 May 2026 · MODIFY (GO 5 · MODIFY 3 · STOP 1) — **RESOLVED**
 
-- [ ] **[WITTGENSTEIN]** Pin the override mechanism to ONE approach and write it into the proposal. Recommended: explicit Path parameters threaded into build_priors() defaulting to current constants. Guard priors.py lines 231 and 244 (str(FEEDBACK.relative_to(ROOT)) raises ValueError for out-of-ROOT fixtures). Add a falsification check: scenario with fixture yields source.feedback_total == fixture row count AND default FEEDBACK.html content is absent. State explicitly what happens to existing flagless memory.py/priors.py scenarios.
-- [ ] **[CONFUCIUS]** Resolve the flag-name inconsistency before merging: either rename '--feedback-file' to '--feedback' in memory.py and priors.py to match audit_feedback.py, or explicitly document why the names differ. Additionally, clarify whether mark_outcome.py intentionally omits '--runs-dir'.
-- [ ] **[SOCRATE]** Two load-bearing gaps before GO: (1) Guard priors.py lines 231 and 244 — an override path outside the repo raises ValueError; fall back to str(path) when not relative to ROOT. (2) Add a falsification test with a sentinel-bearing fixture asserting BOTH that the sentinel appears AND default content is absent. Prefer global reassignment in main() over parameter-threading to avoid missing the 4 RUNS/FEEDBACK call sites in build_priors.
-- [ ] **[MUSK]** Ship only the priors.py flags (--feedback-file + --runs-dir). Put memory.py flags on hold pending a code-level proof that memory.py performs independent I/O that priors.py flags cannot cover. Scope drops to ~15 lines across 1 file. Write 1 scenario per new flag before merging.
-- [ ] **[DIMON]** (1) Audit parse_feedback() and parse_runs() to confirm they read reassigned module globals, not closures. If closures detected, refactor to pass FEEDBACK/RUNS as function arguments. (2) Convert --feedback-file and --runs-dir to absolute paths in main() before use. (3) Add validation in parse_runs(): log and skip malformed .json. (4) Add integration test: call priors.py with --feedback-file <fixture>, verify output differs from production.
+> `scripts/meta_critic.py` mutat în `scripts/deprecated/`. Step 5c marcat "retired 2026-05-25" în SKILL.md. `generator_divergence` + `control_concreteness` eliminate (0/163 fires); `conservator_spread` reținut. Substance-validation gap documentat în `validate_report.py` docstring + TODO.md Tier 2.
 
-### Senate Resolution — eval-parity-scenario-design · 25 May 2026 · MODIFY (GO 3 · MODIFY 6 · STOP 0)
-
-> **Proposal:** Scenario design protocol for eval-parity-rest implementation. After adding --feedback-file/--runs-dir to memory.py + priors.py (separate proposal), write the first 2 scenarios for priors.py (highest-r…
-
-**A. Per-senator decisions:**
-
-- [ ] **[WITTGENSTEIN]** (1) Fix scenario (a) fixture: 1 confirmed BAD + 1 unconfirmed BAD yields weighted_bad_rate == bad_rate == 1.0 — inequality is FALSE. Change fixture to have mixed outcomes (e.g. 1 confirmed BAD + 1 unconfirmed OK) and pin both values. (2) Fix scenario (b): --headless zeroes stale_pendings unconditionally BEFORE date logic — run non-headless and assert 2020-01-01 entry IS present. (3) priors.py has no --feedback-file/--runs-dir flags — add them or define done-criterion of prerequisite. (4) Specify fixture mechanism (committed evals/fixtures/*.html or harness change). (5) Make doc_note a checkable property or downgrade to non-asserted comment.
-- [ ] **[AURELIUS]** Prefer static fixture files in evals/fixtures/ over dynamic tempfile generation in run_evals.py. If run_evals.py needs fixture-injection support, scope that change minimally and keep it separate from the scenario JSON entries.
-- [ ] **[CONFUCIUS]** (1) PREREQUISITE — add --feedback-file flag to priors.py in the same change as the scenarios; without it both scenarios fail with exit 2. (2) DETERMINISM — scenario (a) must also pass --no-runs to prevent priors.py from scanning production runs/ from ROOT. (3) DOC — add a fixture note to evals/README.md clarifying evals/fixtures/ contains synthetic HTML, coverage-only.
-- [ ] **[SOCRATE]** (1) priors.py has no --feedback-file/--runs-dir — either add them or the scenarios exit 2. (2) Scenario (b) is a tautology: --headless blanks stale_pendings unconditionally — redesign as NON-headless asserting the 2020-01-01 row IS surfaced. (3) Scenario (a) fixture arithmetically yields bad_rate==weighted_bad_rate==1.0 — change to mixed outcomes. (4) Mutation-verification is a manual author-time check only — run_evals.py carries no expect-fail hook.
-- [ ] **[MUSK]** Reduce to minimum viable: (1) one scenario only — scenario (a) for weighted_bad_rate; (2) no fixtures directory — inline the input or use a single flat file under evals/; (3) no doc_note field; (4) mutation check is a dev-time manual step, not a documented implementation artifact. If scenario (a) ships and catches a real regression within 2 weeks, scenario (b) and fixtures dir earn re-evaluation.
-- [ ] **[DIMON]** (1) Add isolation verification: run scenario (a) with --runs-dir /tmp/empty and confirm priors.py does NOT read production ROOT/runs/. (2) Add fixture schema validation before subprocess. (3) Document fixture maintenance: when STALE_PEND_DAYS changes, which fixtures must be regenerated? (4) Automate mutation-verification rollback. (5) Verify --headless end-to-end in CI simulation.
-- [ ] **[NAPOLEON]** Vote GO for the proposal content, but defer execution to next session. If the operator is willing to timebox to 20 minutes right now (fixtures only, JSON entries, no documentation), GO immediately — otherwise log as next-session opener and close this Senate thread cleanly.
-
-### Senate Resolution — eval-parity-rest · 25 May 2026 · MODIFY (GO 3 · MODIFY 5 · STOP 1)
-
-> **Proposal:** Follow-up eval parity — add ~9 new scenarios to evals/scenarios.json covering memory.py (medium/long tiers), audit_feedback.py (orphan detection + backfill idempotency), mark_outcome.py ([confirmed] m…
-
-**A. Per-senator decisions:**
-
-- [ ] **[WITTGENSTEIN]** Before implementation, the proposal must make three things operational: (1) Per-scenario assertion spec — name the exact output field/exit-code asserted per scenario that would flip on regression. (2) Resolve the path-resolution split: memory.py and priors.py resolve FEEDBACK/RUNS from __file__-relative ROOT — cwd change does NOT redirect them; mark_outcome.py and audit_feedback.py already have --feedback/--runs-dir flags. (3) Pin determinism: anchor stale_pendings fixture dates relative to date.today() so assertions don't drift daily; clarify headless suppression of stale_pendings/missing_feedback_runs.
-- [ ] **[AURELIUS]** One guard required before merge: run_evals.py fixture_files handling must raise an explicit error on temp-dir setup failure — must not silently skip the scenario and mark it PASS.
-- [ ] **[CONFUCIUS]** Pursue the alternative: add --feedback-file and --runs-dir CLI flags to the 4 scripts instead of extending run_evals.py. This keeps all 9 new scenarios as pure stdin_json, preserves the established deterministic contract, and improves production script testability as a side effect. The fixture_files extension breaks the stdin_json pattern that has been stable for 50+ scenarios.
-- [ ] **[SOCRATE]** Correct the factual premise first: audit_feedback.py and mark_outcome.py ALREADY expose --feedback/--runs-dir and resolve from cwd. Only memory.py and priors.py hardcode ROOT-anchored paths and are immune to Approach A. Minimal path: add flags to memory.py and priors.py only, write all 9 scenarios as stdin/args — no harness change. Also: make priors date-deterministic for eval and add mutation-verification step per scenario.
-- [ ] **[MUSK]** Reject fixture_files harness extension and evals/fixtures/ directory entirely. Start minimal: add --feedback-file flag to the highest-risk script (audit_feedback.py or priors.py), write 1 scenario, verify it catches a real regression. Defer the other 3 scripts until a regression proves the need. The gravitational pull of fixture_files on future tests is the real cost — once the paradigm exists, every author reaches for it.
-- [ ] **[DIMON]** The fixture approach is architecturally unsound. Scripts use Path(__file__).resolve().parent.parent — cwd changes are ignored. Fixtures written to temp dir are never read. This is a silent failure: tests pass while asserting nothing real. Must resolve the ROOT path problem before ANY fixture scenarios: add explicit --root-dir/--feedback-file flags to scripts OR pass ROOT as env var. Test ONE scenario end-to-end first to verify fixtures are actually read by the subprocess.
-- [ ] **[NAPOLEON]** Scope down to 3-4 scenarios covering only critical-path scripts (priors.py stale detection, audit_feedback.py orphan detection). Implement in a dedicated future session, not appended to current cleanup context. Defer full 9-scenario parity until AUDIT_TODO.md harness fixes are addressed so both land in one coherent branch.
-- [ ] **[DEMING]** Document in scenarios.json that priors.py tests use synthetic fixtures and validate code-path coverage only, not semantic correctness on real FEEDBACK.html/runs/*.json data.
-
-### Senate Resolution — kill-meta-critic-r2 · 24 May 2026 · MODIFY (GO 5 · MODIFY 3 · STOP 1)
-
-> **Proposal:** Remove scripts/meta_critic.py — the Step 5c deliberation-quality scorer (advisory, 345 lines, not enforced).
-
-**A. Per-senator decisions:**
-
-- [ ] **[WITTGENSTEIN]** Remove generator_divergence + control_concreteness (0/163 fires = dead weight); retain conservator_spread; confirm build_report degrades gracefully on absent key.
-- [ ] **[CONFUCIUS]** Move to scripts/deprecated/; mark Step 5c retired noting the 2026-05-16 keep+fix verdict was never executed; passthrough no-op one cycle; log a closing record.
-- [ ] **[SOCRATE]** Document the substance-vs-shape validation gap (in validate_report.py + a tracked TODO) so removal doesn't become invisible debt.
-- [ ] **[DIMON]** Safe-removal checklist: patch build_report refs; update docs incl. 2 superpowers; note validate_report shape-only; log FEEDBACK entry.
-- [ ] **[DEMING]** PATH A: accumulate n>=10 then recheck. PATH B (no n>=10 needed): remove generator_divergence + control_concreteness (0/163 = strong dead-code evidence), redesign/annotate conservator_spread rather than silent-delete. Either path accepted; wholesale delete as-is: STOP.
-- [ ] **[TACITUS]** correct historical record; close #27/#28; drop passthrough + legacy readers
-
-**B. Actionable items (extracted from requests above):**
-
-- [ ] **B** (cross-ref: DEMING)
-
-### Senate Resolution — kill-meta-critic · 24 May 2026 · MODIFY (GO 4 · MODIFY 4 · STOP 1)
-
-> **Proposal:** Remove scripts/meta_critic.py — the Step 5c deliberation-quality scorer (advisory, 345 lines, not enforced). Delete the script, remove Step 5c from SKILL.md, drop the build_report.py passthrough, upda…
-
-**A. Per-senator decisions:**
-
-- [ ] **[WITTGENSTEIN]** Before GO: (1) operationally define the numeric thresholds inside meta_critic that would be lost on deletion (document them or declare they have no empirical basis); (2) turn 'rarely non-empty' into a verifiable count with a false-negative estimate; (3) confirm build_report consumers handle a permanently absent deliberation_quality key with no silent behavior change.
-- [ ] **[CONFUCIUS]** (1) Document why the prior decision stalled; (2) move to scripts/deprecated/ rather than hard-delete (project precedent: migrate_feedback_md_to_html.py); (3) mark SKILL.md Step 5c 'retired' with rationale, don't silently drop it; (4) keep build_report passthrough as a no-op stub with a deprecation comment for one cycle.
-- [ ] **[SOCRATE]** Before deletion: (1) audit runs/ to quantify flag frequency and any correlation with human-identified low-quality runs; (2) resolve whether the prior non-execution was backlog or intentional hold; (3) specify what replaces the substantive-quality check before the passthrough is dropped.
-- [ ] **[DIMON]** Before removal: (1) enumerate+patch all build_report.py reference sites (no KeyError path); (2) list+update every doc referencing Step 5c/meta_critic (incl. 2 superpowers docs); (3) add a note in validate_report.py that it is shape-only not substance, preserving the distinction in tooling; (4) define a post-removal observable signal substituting for the lost quality signal.
-- [ ] **[DEMING]** Produce a count over runs/: (1) total runs with deliberation_quality, (2) subset where meta_critic was actually invoked, (3) subset with non-empty flags given invocation, (4) subset where flags appear downstream. If (3)/(2)<5% AND (4)=0 across n>=10 invoked runs, removal is supported; else instrument and collect first.
-- [ ] **[TACITUS]** Not blocking: correct the historical record in the report (cite runs/2026-05-16_0148_voice_audit_meta.json accurately); close TODO #27/#28 as moot; drop the build_report.py passthrough AND any optional readers of deliberation_quality so the ~21 legacy runs with the field don't break validate_report.
+### Senate Resolution — kill-meta-critic · 24 May 2026 · MODIFY (GO 4 · MODIFY 4 · STOP 1) — **SUPERSEDED de kill-meta-critic-r2 (RESOLVED)**
 
 > Per-senator detail lives in `runs/senate/*.json` (source of truth). This is a de-duplicated index; blocks with live action items are kept in full.
 
@@ -224,30 +155,9 @@
 ### Senate Resolution — pend-triage-ok-outcome · 18 May 2026 · MODIFY (GO 1 · MODIFY 4 · STOP 2)
 > **Proposal:** Mark the PEND from 2026-05-15 (run runs/2026-05-15_2236_todo-triage.json, chosen minimal_next_ship, conf=0.52) as OK — the triage was executed substantially: #2-#8 delivered, #16/#17/#20 dropped, #1…
 
-### Follow-up — feat/senate-senators-deming-tacitus (Phase A shipped 2026-05-18)
+### Follow-up — feat/senate-senators-deming-tacitus — **MOOT (Senate split 2026-05-25)**
 
-Bundle implemented after Senate R3 GO 7-0-0 (`runs/senate/2026-05-18_211621-2-senators-phase-a-r3-final.json`). Delivered scope: 2 new prompts (Deming + Tacitus), SENATORS tuple 7→9 in synth.py + test, minimal ABSTAIN handling (excluded from tally, reduces voters_present), 1 new test (`abstain_excluded`).
-
-**To analyze (explicitly requested by user, 2026-05-18):**
-
-- [ ] **Demotion — why was the language removed entirely in R3?** Reconstruct the reasoning: in R2 the proposal had "5 consecutive ABSTAIN OR correlation >0.9 → demoted". Wittgenstein/Dimon/Napoleon convergent in R2 demanded either a persistence layer (`runs/senate/senator_state.json` + evaluator), or deletion. R3 chose deletion. Question: if we bring back demotion as a separate feature (Phase B?), what is the correct architecture — stateful counter in synth.py, or external script that marks `registry.yaml`? Implicit: who makes the demotion decision — the automatic orchestrator or the user after review? Implicit: what's the reverse criterion — re-promote after the senator regains accuracy? Separate Senate audit before any implementation.
-
-**Non-blocking nits R3 (TODO, not blocking):**
-
-- [ ] **WITTGENSTEIN:** one-line comment in `senate_synth.py` — `voters_present := count of non-ABSTAIN votes` (clarifies dual-use quorum vs tie-breaking)
-- [ ] **WITTGENSTEIN:** one-line comment in `tacitus.md` — pipeline `html.unescape() → str.casefold() → substring check` (instead of simple lowercase, to catch diacritics + HTML entities)
-- [ ] **SOCRATE:** optional one-liner strip+casefold normalization note in label-match operational definition
-- [ ] **CONFUCIUS:** explicit test case for tie-breaking rule (voter_present even → MODIFY default) — covers future regressions on synth.py
-- [ ] **DIMON:** substring collision on label match (`STOP_LIGHT` matches `STOP`) — add word-boundary guard OR ABSTAIN-on-ambiguity in Tacitus implementation
-- [ ] **CONFUCIUS:** tacitus.md note about cold-start period (~30 days post-deploy ABSTAIN expected) — verify if sufficiently documented in prompt
-- [ ] **AURELIUS:** empirical monitoring — after 10+ runs with Deming/Tacitus, validate that ABSTAIN is not active on the majority of audits (drag proportionally bounded vs aspirational)
-
-**Open architectural decisions (Phase B):**
-
-- [ ] **QUORUM scaling with 9 senators** — currently `QUORUM=5` (5/9 = 56%). Confucius R1 flagged: "DEEPLY_SPLIT threshold defined for N=7 patterns but N=9 has different distributions (5-4, 4-3-2)". To analyze: does scaling to QUORUM=6 (6/9 = 67%, closer to 5/7 = 71%) put historical verdicts at the right threshold? Requires senate audit first.
-- [ ] **Explicit timestamp field in JSON schema** — currently the timestamp is in the filename (`YYYY-MM-DD_HHMMSS`) + in the bundle. Tacitus reads from name + bundle field. Wittgenstein R3 requested an explicit top-level anchor. Verify whether synth emits it consistently in all code paths.
-- [ ] **`vote_counts` field validation in `validate_report.py`** — verify whether it tolerates 9-senator output without dropping new fields (Deming/Tacitus). Dry-run on 9-senator bundle before first real run.
-- [ ] **Falsification metrics infrastructure** — if demotion returns in Phase B, requires storage (`runs/senate/senator_state.json` or `priors.py --senator` extension) + evaluator script + reverse criterion (re-promote).
+> Senate a fost mutat în repo separat pe 2026-05-25. `senate_synth.py`, `tacitus.md`, SENATORS tuple, QUORUM, vote_counts, demotion Phase B — toate sunt acum în repo-ul `Senate`. Follow-up-urile de mai jos nu mai aparțin Consilium.
 
 ### Senate Resolution — mode-bugfix-performance · 18 May 2026 · MODIFY (GO 0 · MODIFY 7 · STOP 0)
 > **Proposal:** Mode bugfix + performance v2: BUG-1 (Dialectic doesn't write artifact at root), BUG-2 (_safe_risk_score default 0.5 destroys separation on unanimous deliberations), BUG-3 (Trias dispatch crash on T01). Propose…
@@ -292,32 +202,21 @@ Bundle implemented after Senate R3 GO 7-0-0 (`runs/senate/2026-05-18_211621-2-se
     - **F4** Veto threshold region (0.8) NOT probed — max observed `net_concern` was 0.42. Dimon's main claim (non-deterministic veto firing near 0.8) **remains unfalsifiable** until [0.7, 0.9] cases are sampled.
     - **F5** `meta_recommendation` disagrees in 2/5 pairs — same input could trigger different deliberation paths.
   - **Spawned follow-ups:**
-    - [ ] **#1-A** Drop the `pstdev > 0.15` check from AC — never fires for typical cases (max observed 0.10).
-    - [ ] **#1-B** Add a categorical-stability check instead: sample Conservator twice; surface `magnitude`/`reversibility` disagreement to orchestrator (don't auto-resolve). Catches the 40% flip rate at its source.
+    - [x] **#1-A** Drop the `pstdev > 0.15` check din AC — retras (max observat 0.10, niciodată nu ar fi tras).
+    - [ ] **#1-B** Add a categorical-stability check: sample Conservator twice; surface `magnitude`/`reversibility` disagreement to orchestrator (don't auto-resolve). Catches the 40% flip rate at its source.
     - [ ] **#1-C** Re-run with 2-3 cases that produce `net_concern ∈ [0.7, 0.9]` to probe the veto-threshold variance region (F4 gap).
     - [ ] **#1-D** Probe Generator + Control stability (untested here — Wittgenstein's asymmetry claim is half-supported by this experiment).
-    - [ ] **#1-E** SKILL.md edits per experiment's "Suggested SKILL.md edits" section (calibration-asymmetry note + 0.8 veto caveat) — separate PR.
+    - [x] **#1-E** SKILL.md edits — **RESOLVED** — veto caveat adăugat la Step 5 conservative_override + nota calibrare asimetrică la Step 5b (PR fix/skill-calibration-caveat, 2026-05-25).
 
-- [ ] **#4-followup [MED] subagent-output-contracts-for-6-remaining-gates** *(Confucius R2 scope expansion)*
-  - Spawned by #4 ship. The generic `blocking_gates` rule handles BLOCK-class catch-all, but the 6 non-BLOCK gates (REWORK / ADAPT / soft alerts) still have no explicit non-interactive substitute in consilium-subagent.md.
-  - AC: enumerate each SKILL.md interactive checkpoint, map to a deterministic non-interactive output contract, document under `subagent_notes.*` field naming convention. Estimated +30 lines.
-  - Where: SKILL.md Step 2 + `agents/consilium-subagent.md`
-  - Issue: Conservator's `irreversibility_flag: true` is documented to BLOCK + require explicit user consent. The subagent wrapper forbids interactive prompts and is silent on this case — the safety gate is bypassed in the execution context where human oversight is lowest.
-  - AC: add explicit subagent rule: when `irreversibility_flag=true`, surface `subagent_notes.irreversibility_blocked: true` and force `confidence: null` + `chosen_approach: null` so orchestrator cannot silently act.
-  - **R2 OUTCOME (Confucius + Musk, 2026-05-17):** VALIDATE-AND-EXPAND. R2 sharpened the claim:
-    - **Scope expanded** (Confucius): not just irreversibility. `consilium-subagent.md` rule 2 defines non-interactive substitutes for 3 SKILL.md interactive checkpoints (stale_pendings, clarity gate, confidence < 0.7) while leaving **7 OTHER gates undefined**: `irreversibility BLOCK hard`, `glossary_fail BLOCK soft`, `disagreements substantial REWORK`, `meta_recommendation: scale_up`, `challenge_upward triggered`, `retry_context single-pass`, `3+ simultaneous ESCALATE`.
-    - **Mechanism refined** (Musk): aggregator.py already returns `result=BLOCK` on `irreversibility_flag=true`. The actual gap is a missing OUTPUT CONTRACT in subagent.md for what to emit when aggregator returns BLOCK — not a missing safety check upstream.
-    - **Minimum viable fix** (Musk): 4-6 lines added to `consilium-subagent.md` only. Generic `blocking_gates` rule: pattern-match on aggregator `result=BLOCK` → set `subagent_notes.blocked_reason=<reason>` + force `confidence: null` + `chosen_approach: null`. One mechanism covers irreversibility + glossary_fail + future gates.
-    - **Precedent** (Confucius): `runs/senate/2026-05-17_094306-voices-and-senators-to-subagents.json` (STOP UNANIMOUS) already flagged "subagent dispatch mechanism unspecified empirically" — Aurelius's R2 position. The current diagnostic confirms the prior STOP was load-bearing on this exact gap.
-    - **Realness check** (Musk): subagent path is live but zero recorded runs have triggered irreversibility yet → risk is structural-imminence, not historical-occurrence.
-  - **Refined AC:** (1) ship-now minimum fix per Musk (4-6 lines, generic `blocking_gates` rule in consilium-subagent.md); (2) follow-up audit pass over all 7 missing gates to write exhaustive output contracts (next-session); (3) re-validate by running a synthetic subagent dispatch with irreversibility_flag=true and asserting `subagent_notes.blocked_reason` populated.
+- [x] **#4-followup [MED] subagent-output-contracts-for-6-remaining-gates** — **RESOLVED**
+  - `agents/consilium-subagent.md` rule 2 conține regula generică `blocking_gates` (BLOCK → `blocked_reason` + `confidence: null` + `chosen_approach: null`) + contracte explicite pentru toate 6 gate-urile non-BLOCK: REWORK, ADAPT_SHORT, ADAPT_EXTENDED, challenge_upward, retry_context, scale_up.
 
 **Honorable mentions (medium severity):**
 
-- [ ] **HM1 [MED] meta_recommendation_per_candidate_vs_pipeline** *(Wittgenstein)* — Conservator emits per-candidate inside `scores[]`; aggregator reads top-level (`aggregator.py:372`-area). Top-level `meta_recommendation` is always missing → `scale_down`/`scale_up` triggers never fire in `aggregate_rund2`.
-- [ ] **HM2 [MED] trias_cost_gate_soft_not_enforced** *(Aurelius)* — Trias `Skip if` rules are advisory prose; no mechanical check maps `magnitude × reversibility` to mode cost ceiling. AC: extend `scope_gate.py` with `mode_ceiling` derived from Conservator signals.
-- [ ] **HM3 [MED] pilot_b_unenforced_activation_gate** *(Confucius)* — SKILL.md documents Pilot B with `N≥5 senate runs` gate; no script enforces or surfaces it. AC: either add `priors.py --senator-gate` check, or demote Pilot B to "design sketch / NOT YET ACTIVE" banner.
-- [ ] **HM4 [HIGH] skeptic_catchrate_overgeneralized_from_P3** *(Socrate)* — SKILL.md claims `skeptic_on_chosen` catch-rate "100% simulation, 4/7 real" but all reruns on n=1 problem (P3). Cross-mode comparison claim built on n=1. AC: replace with explicit scope bound + falsification criterion on ≥3 distinct problems.
+- [x] **HM1 [MED] meta_recommendation_per_candidate_vs_pipeline** — **RESOLVED** — `aggregator.py:352-355` citește `meta_recommendation` din `conservator_out["scores"][i]`, nu top-level. `scale_up`/`scale_down` se activează corect.
+- [ ] **HM2 [MED] trias_cost_gate_soft_not_enforced** *(Aurelius)* — `scope_gate.py` emite `magnitude` din LOC/fișiere dar NU din `irreversibility × magnitude` Conservator. Routing-ul Trias (Phase 2 lazy) folosește proxy, nu semnale reale. AC: extend `scope_gate.py` cu `mode_ceiling` derivat din output-ul Conservator.
+- [x] **HM3 [MED] pilot_b_unenforced_activation_gate** — **MOOT** — Pilot B era despre Senate mode, acum split în repo separat.
+- [x] **HM4 [HIGH] skeptic_catchrate_overgeneralized_from_P3** — **RESOLVED** — SKILL.md linia 719 adăugat scope caveat explicit: "(n=1 problem — P3 car wash only; generalizability unconfirmed until ≥3 distinct problems tested)".
 
 **Meta-pattern:** Three convergent root causes — (a) rhetorical deprecation without operational enforcement, (b) schema drift between prompts and scripts with no validation layer, (c) load-bearing quantitative claims built on n=1 problem.
 
@@ -384,8 +283,8 @@ _The Senate approved the proposal. No modifications required._
 
 - **R.1** All new voices (philosophical variants) are **parallel**, not replacing — zero risk if not called.
 - **R.2** If `aggregator.py` breaks old runs → revert that commit, keep prompts.
-- **R.3** If Senate mode is too expensive → marked as premium, default remains standard modes.
-- **R.4** If Napoleon over-fitted (post Phase 14A) → withdrawn from Senate, the Senate of 6 remains.
+- ~~**R.3** Senate cost~~ — moot (Senate split în repo separat 2026-05-25).
+- ~~**R.4** Napoleon over-fitting~~ — moot (Senate split în repo separat 2026-05-25).
 
 ---
 
