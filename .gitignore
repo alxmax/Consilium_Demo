@@ -62,3 +62,6 @@ benchmark/report.html
 # Never commit a scoring tree inside benchmark/ — it would defeat the blind benchmark.
 benchmark/scoring/
 benchmark/Benchmark-scoring/
+
+# Source upload for docs/architecture (extracted into docs/architecture/)
+Arhitecture.zip

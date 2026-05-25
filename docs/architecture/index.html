@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Consilium — How it works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#f4ecd8">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <!-- Centered three-voice mark with terracotta diamond -->
+    <g transform="translate(600 400)">
+      <!-- Diamond frame -->
+      <rect x="-180" y="-180" width="360" height="360" fill="none" stroke="#1a1612" stroke-width="3" transform="rotate(45)" />
+      <!-- Three voice dots: amber (gen), blue (ctl), red (con) -->
+      <circle cx="-70" cy="-40" r="48" fill="#c08a3e" />
+      <circle cx="70"  cy="-40" r="48" fill="#5a8ec8" />
+      <circle cx="0"   cy="65"  r="48" fill="#c75148" />
+      <!-- Center diamond accent -->
+      <rect x="-12" y="-12" width="24" height="24" fill="#a4543b" transform="rotate(45)" />
+    </g>
+    <!-- Wordmark below -->
+    <text x="600" y="680" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="42" font-weight="600" fill="#1a1612" letter-spacing="-1">consilium</text>
+    <text x="600" y="720" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" fill="#7a715f" letter-spacing="2">ARCHITECTURE EXPLAINER</text>
+  </svg>
+</template>
+
+<div id="root"></div>
+
+<script type="text/babel" src="src/tweaks-panel.jsx"></script>
+<script type="text/babel" src="src/primitives.jsx"></script>
+<script type="text/babel" src="src/extras.jsx"></script>
+<script type="text/babel" src="src/voices.jsx"></script>
+<script type="text/babel" src="src/cascade.jsx"></script>
+<script type="text/babel" src="src/pipeline.jsx"></script>
+<script type="text/babel" src="src/voting.jsx"></script>
+<script type="text/babel" src="src/modes.jsx"></script>
+<script type="text/babel" src="src/trias.jsx"></script>
+<script type="text/babel" src="src/loop.jsx"></script>
+<script type="text/babel" src="src/app.jsx"></script>
+</body>
+</html>
