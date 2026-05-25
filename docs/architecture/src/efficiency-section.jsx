@@ -1,10 +1,10 @@
 /* efficiency-section.jsx — Usage & Efficiency section */
 
 const MODES_DATA = [
-  { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  note: 'in-context baseline' },
-  { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
-  { mode: 'trias',       costMultiplier: '3×',    dispatches: 3,  note: '3 personality sub-agents (9 voice runs)' },
-  { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, note: 'composable flag over any base' },
+  { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  model: 'Sonnet 4.6', note: 'in-context baseline' },
+  { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  model: 'Sonnet 4.6', note: '+ 1 skeptic sub-agent' },
+  { mode: 'trias',       costMultiplier: '3×',    dispatches: 3,  model: 'Sonnet 4.6', note: '3 personality sub-agents (9 voice runs)' },
+  { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, model: 'Sonnet 4.6', note: 'composable flag over any base' },
 ];
 
 function BarChart({ data }) {
@@ -37,12 +37,13 @@ function BarChart({ data }) {
   );
 }
 
-function ModeRow({ mode, costMultiplier, dispatches, note }) {
+function ModeRow({ mode, costMultiplier, dispatches, model, note }) {
   return (
     <tr>
       <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)' }}>{mode}</td>
       <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{costMultiplier}</td>
       <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{dispatches}</td>
+      <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ctl-ink)' }}>{model}</td>
       <td style={{ padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)', fontSize: 12, color: 'var(--ink-2)' }}>{note}</td>
     </tr>
   );
@@ -74,6 +75,7 @@ function EfficiencySection() {
                   <th style={{ textAlign: 'left', padding: '6px 16px 6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Mode</th>
                   <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Cost</th>
                   <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Sub-agents</th>
+                  <th style={{ textAlign: 'left', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Model</th>
                   <th style={{ textAlign: 'left', padding: '6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Note</th>
                 </tr>
               </thead>
@@ -89,7 +91,21 @@ function EfficiencySection() {
           </div>
         </div>
 
-        <div style={{ marginTop: 32, padding: '20px 24px', background: 'var(--paper-2)', border: '1px solid var(--rule)', borderRadius: 4 }}>
+        <div style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {[
+            { role: 'Orchestrator', model: 'Opus 4.7', color: 'var(--con)', note: 'the main Claude Code session — runs the workflow, dispatches sub-agents' },
+            { role: 'Voices & sub-agents', model: 'Sonnet 4.6', color: 'var(--ctl)', note: 'Generator · Control · Conservator · Skeptic · Trias personalities — pinned model: "sonnet"' },
+            { role: 'Override', model: 'Opus 4.7', color: 'var(--gen)', note: 'opt-in on the Generator for high-stakes / ambiguous changes' },
+          ].map((m) => (
+            <div key={m.role} style={{ padding: '14px 16px', border: '1px solid var(--rule)', borderTop: `3px solid ${m.color}`, borderRadius: 4, background: 'var(--paper)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 4 }}>{m.role}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 600, color: m.color, marginBottom: 6 }}>{m.model}</div>
+              <p style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5, margin: 0 }}>{m.note}</p>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 20, padding: '20px 24px', background: 'var(--paper-2)', border: '1px solid var(--rule)', borderRadius: 4 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 12 }}>Live data</div>
           <code style={{ display: 'block', fontSize: 12, fontFamily: 'var(--font-mono)', lineHeight: 1.8, color: 'var(--ink)' }}>
             python scripts/efficiency.py --by-mode<br />

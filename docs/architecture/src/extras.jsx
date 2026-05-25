@@ -104,10 +104,10 @@ function CostScatter() {
   // x = independence (0 = shared context, 1 = full sub-agent isolation)
   // y = cost multiplier of Sequential
   const MODES_PLOT = [
-    { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', sub: 'default · 0 sub-agents', color: 'var(--con)' },
-    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic V2', cost: '1.33×', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
-    { id: 'PAR',  x: 0.85, y: 1.00, label: 'Parallel*', cost: '1× (auto)', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
-    { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
+    { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', model: 'Sonnet 4.6', sub: 'default · 0 sub-agents', color: 'var(--con)' },
+    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic V2', cost: '1.33×', model: 'Sonnet 4.6', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
+    { id: 'PAR',  x: 0.85, y: 1.00, label: 'Parallel*', cost: '1× (auto)', model: 'Sonnet 4.6', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
+    { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet 4.6', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
   ];
 
   const W = 720, H = 360;
@@ -122,7 +122,7 @@ function CostScatter() {
     <div style={{ margin: '24px 0' }}>
       <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6 }}>Cost vs voice independence</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 720 }}>
-        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes.
+        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices run on <strong>Sonnet 4.6</strong>; the orchestrator runs on <strong>Opus 4.7</strong> (with an opt-in Opus override on the Generator for high-stakes changes).
       </p>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="diagram">
@@ -167,6 +167,8 @@ function CostScatter() {
               {/* label above */}
               <text x={cx} y={cy - 26} textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, fill: 'var(--ink)' }}>{m.label}</text>
               <text x={cx} y={cy - 14} textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>{m.cost}</text>
+              {/* model below */}
+              <text x={cx} y={cy + 32} textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: 'var(--ctl-ink)' }}>{m.model}</text>
             </g>
           );
         })}
