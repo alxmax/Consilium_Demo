@@ -51,11 +51,6 @@
 - [ ] **Veto budget for `meta_recommendation`: is 5/month acceptable?** Aurelius+Napoleon proposed it, but the number is arbitrary. You might prefer 10 or 3.
 - [ ] **Outcome tracking — manual or automatic?** For trading it can be automatic from MT4. For other domains it requires manual completion. If not, `principle_extraction` never activates.
 
-From `TODO_SENAT.md` Appendix D:
-
-- [ ] **Future senators (slot 8 and 9)** — decide when candidates appear. Rules: the P3 test, non-overlapping specialty >50%, audit by the existing Senate before adding.
-- [ ] **Reduce Senate from 7 to 6 if it seems too expensive after 5-10 invocations?**
-
 ---
 
 
@@ -63,89 +58,22 @@ From `TODO_SENAT.md` Appendix D:
 
 > Source: `TO_DO_Consilium.md` (now consolidated). Ranked by impact/effort. Categories: **Prompt** (prompts/*.md), **Skill** (SKILL.md + scripts), **Arch**.
 
-### Follow-up eval parity (planned)
+### Follow-up eval parity (de trecut prin Senat)
 
-Branch `feat/eval-parity-rest` with scenarios for:
-- `memory.py` tier medium/long/unknown (3 scenarios — require `runs/` fixtures)
-- `audit_feedback.py` orphan detection + `--backfill` idempotency (2 scenarios — require FEEDBACK.html + runs/*.json fixtures)
-- `mark_outcome.py` `[confirmed]` marker preservation (1 scenario — requires FEEDBACK.html fixture)
-- `priors.py` `weighted_bad_rate` + `missing_feedback_runs` + `stale_pendings` cutoff (3 scenarios)
+Branch `feat/eval-parity-rest` cu ~9 scenarii noi pentru:
+- `memory.py` tier medium/long/unknown (3 scenarii — necesită fixtures din `runs/`)
+- `audit_feedback.py` orphan detection + `--backfill` idempotency (2 scenarii — necesită FEEDBACK.html + runs/*.json fixtures)
+- `mark_outcome.py` `[confirmed]` marker preservation (1 scenariu — necesită FEEDBACK.html fixture)
+- `priors.py` `weighted_bad_rate` + `missing_feedback_runs` + `stale_pendings` cutoff (3 scenarii)
 
-Total ~9 new scenarios. Requires extending `run_evals.py` to accept filesystem fixtures.
+Total ~9 scenarii noi. Necesită extindere `run_evals.py` cu suport pentru filesystem fixtures.
+
+> **STATUS:** De trecut prin Senat — ce e OK de implementat și ce nu.
 
 ### Open items (Tier 2)
 
-#### 9. Goal-fit check moved to step 1 in Control · Prompt · Medium · Small-Medium · INVESTIGATE
-Currently Control runs types → logic → tests → style → goal-fit. If the candidate doesn't address success_criterion, the first 4 checks are wasted. Fix: move goal-fit to **step 0** in Task, before types. Fail fast.
-
 #### Substance-validation gap (accepted) · Arch · INVESTIGATE
 `validate_report.py` checks report SHAPE only — no enforced gate that the voices did substantive (non-vacuous) work. `meta_critic.py` is advisory and now trimmed to a single `conservator_spread` heuristic. Accepted as a known gap (Senate 2026-05-24 MODIFY; Socrate). Revisit only if empty-but-schema-valid deliberations are observed in practice; minimal fix would be a ~20-line minimum-reasoning heuristic inside `validate_report.py` (Musk). Noted in `validate_report.py` docstring.
-
-### Open items — Flow models audit
-
-#### 43. Iterative Dialectic — SPEC without implementation · Arch · Medium · Large
-`docs/architecture.html` describes the iterative mode with N=1..3 rounds + convergence stop, marked `SPEC`. `dialectic_merge.py` strictly accepts `{pass1, pass2}`. Fix: either implement the schema `{rounds: [...]}` with convergence detection, or delete the mode from the HTML.
-
-#### 45. End-to-end lens injection validation · Skill · Medium · Medium
-`prompts/<personality>_lens.md` are arbitrary files. No test that Pioneer is progress-leaning vs Steward risk-averse. Fix: eval scenario that runs a diff with a conservator-vs-progress trade-off.
-
-#### 46. Generator Pass-2 candidate semantic diff in `revision_log` · Skill · Small · Medium
-`dialectic_merge._diff_candidates` lists `fields: ["sketch", "summary"]` as "modified" but does not emit a proper diff. Fix: include before/after payload per field in `revision_log.diffs`.
-
-### Open items — LangGraph/LangChain integration audit
-
-> Source: `runs/2026-05-16_1430_audit_langgraph_langchain.json` (parallel mode, chosen=`do_nothing` conf=0.36 PEND).
-> The audit rejected deep integration: veto on full rewrite (risk 0.95), invalid on LangChain output parsers, invalid on topology-only.
-
-#### 47. `optional_sidecar_visualizer` — isolated `experiments/langgraph_replay/` · Arch · Medium · Medium · PROPOSED
-Optional sidecar that visualizes `runs/*.json` post-hoc. No role in live deliberation, no imports from `scripts/`, isolated venv.
-
-Mandatory contracts before ship:
-1. `experiments/langgraph_replay/` stays gitignored or explicitly marked "not part of the skill"
-2. `grep -r 'from scripts\|import scripts' experiments/` returns zero matches
-3. `replay.py` defined output schema: Mermaid with at least one node per step from `deliberation_log`
-
-#### 48. Analysis: per-step checkpoint between voices · Arch · Medium · Medium · INVESTIGATE
-Currently `runs/<id>.json` is written once at Step 6. If Control crashes, we lose all Generator output.
-
-Questions to explore:
-- Partial `runs/<id>_partial.json` per voice or directory `runs/<id>/<voice>.json`?
-- How does it interact with `audit_feedback.py`?
-- Cost/benefit: how often do Control/Conservator fail?
-
-Decision blocked until we have data.
-
-#### 49. Analysis: streaming / human-in-the-loop between Generator and Control · Arch · Medium · Large · INVESTIGATE
-After Generator, pause; user excludes/edits candidates before Control + Conservator see them.
-
-Questions:
-- Native Claude Code mechanism for pause + user input between sub-agent calls?
-- How is intervention logged in `runs/*.json`?
-- Conflict with Principle 1 (Think before coding)?
-
-Decision blocked until we know pause/resume availability.
-
-#### 50. Analysis: time-travel over `runs/*.json` · Skill · Small · Small-Medium · INVESTIGATE
-`scripts/replay_aggregator.py` that reads a run, allows manual score editing, re-runs aggregator + confidence.
-
-Questions:
-- Output: new run or stdout?
-- How does it interact with `validate_report.py`?
-
-Soft-positive decision, low priority.
-
-### Prompts & skill audit summary
-
-| # | Title | Category | Impact | Effort |
-|---|-------|-----------|--------|-------|
-| 9 | Goal-fit → step 0 in Control (INVESTIGATE) | Prompt | Medium | Small-Medium |
-| 43 | Iterative Dialectic — SPEC without implementation | Arch | Medium | Large |
-| 45 | End-to-end lens injection validation | Skill | Medium | Medium |
-| 46 | Pass-2 semantic diff in revision_log | Skill | Small | Medium |
-| 47 | `optional_sidecar_visualizer` PROPOSED | Arch | Medium | Medium |
-| 48 | Per-step checkpoint between voices INVESTIGATE | Arch | Medium | Medium |
-| 49 | Streaming / HITL Generator↔Control INVESTIGATE | Arch | Medium | Large |
-| 50 | Time-travel over runs/ INVESTIGATE | Skill | Small | Small-Medium |
 
 ---
 
