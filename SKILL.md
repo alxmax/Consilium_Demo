@@ -35,6 +35,20 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 
 ## Workflow
 
+### Pipeline at a glance
+
+| Stage | Name | Steps |
+|-------|------|-------|
+| 1 | Setup | **0** Bootstrap · **1** Gather & Goal · **1.5** Scope Gate |
+| 2 | Conservator | **2** Risk assessment (runs FIRST) |
+| 3 | Voices | **3** Generator · **4** Control |
+| 4 | Aggregate | **5** Aggregate · **5b** Confidence · **5c** Meta-critic (advisory) · **5d** Retry (optional) |
+| 5 | Output | **6** Report · **7** Auto-pipeline |
+
+Steps **5b, 5c, 5d** are sub-steps within Stage 4: **5b** (confidence) is mandatory; **5c** (meta-critic) is advisory and never blocks; **5d** (retry) runs only when confidence < 0.7 and `chosen` is non-null — skipped in headless mode.
+
+---
+
 ### 0. Bootstrap (before any grep / Read on the codebase)
 Two actions in order:
 
