@@ -117,14 +117,14 @@ def derive_note(report: dict) -> str:
     chosen = report.get("chosen_approach")
     if chosen is None:
         relaxed = (aggregate_result.get("retry_suggested") or {}).get("relaxed_threshold")
-        relaxed_s = f"{relaxed:.2f}" if isinstance(relaxed, (int, float)) else "?"
+        relaxed_s = f"{relaxed:.2f}" if isinstance(relaxed, (int, float)) and not isinstance(relaxed, bool) else "?"
         return truncate(f"all vetoed; relaxed={relaxed_s}", NOTE_MAX)
 
     generator_step = next((s for s in log if isinstance(s, dict) and s.get("step") == "generator"), {})
     n_cand = len(generator_step.get("candidates") or [])
     n_vetoed = len(aggregate_result.get("vetoed") or [])
     conf = report.get("confidence")
-    conf_s = f"{conf:.2f}" if isinstance(conf, (int, float)) else "?"
+    conf_s = f"{conf:.2f}" if isinstance(conf, (int, float)) and not isinstance(conf, bool) else "?"
     mode = (report.get("telemetry") or {}).get("mode", "?")
     return truncate(
         f"{n_cand} cand, {n_vetoed} vetoed, conf={conf_s}, mode={mode}",
@@ -310,9 +310,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.outcome == "OK":
         conf = report.get("confidence")
-        below = conf is None or (isinstance(conf, (int, float)) and conf < 0.7)
+        below = conf is None or (isinstance(conf, (int, float)) and not isinstance(conf, bool) and conf < 0.7)
         if below and not args.force_override:
-            conf_s = f"{conf:.2f}" if isinstance(conf, (int, float)) else str(conf)
+            conf_s = f"{conf:.2f}" if isinstance(conf, (int, float)) and not isinstance(conf, bool) else str(conf)
             print(
                 f"confidence {conf_s} is below threshold 0.70 — "
                 "pass --force-override to log OK despite low confidence",

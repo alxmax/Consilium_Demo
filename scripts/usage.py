@@ -106,14 +106,24 @@ def collect(reports: list[dict], mode_filter: str | None = None) -> dict:
         mode_bucket["count"] += 1
 
         voices = telemetry.get("voices") or {}
+        # Collect per-voice latencies separately so parallel modes use max, not sum.
+        run_latencies: list[float] = []
         for vname, vdata in voices.items():
             if vname not in by_voice or not isinstance(vdata, dict):
                 continue
             for f in COUNT_FIELDS:
                 if f in vdata and isinstance(vdata[f], (int, float)) and not isinstance(vdata[f], bool):
                     by_voice[vname][f].append(vdata[f])
-                    if f in mode_bucket:
+                    if f == "latency_ms":
+                        run_latencies.append(vdata[f])
+                    elif f in mode_bucket:
                         mode_bucket[f] += vdata[f]
+        # For parallel/trias modes voices run concurrently; wall-clock = max latency.
+        if run_latencies:
+            if mode in ("parallel", "trias", "trias_split"):
+                mode_bucket["latency_ms"] += max(run_latencies)
+            else:
+                mode_bucket["latency_ms"] += sum(run_latencies)
 
     return {
         "runs_total": total,

@@ -1,6 +1,6 @@
 ---
 personality: pioneer
-voice_bias: prepended
+voice_bias: prepended  # metadata only — consumed by scripts/test_lens_bias.py for sanity-check; not consumed at runtime
 ---
 
 # Pioneer's Lens

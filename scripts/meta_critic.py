@@ -44,12 +44,15 @@ import argparse
 import json
 import statistics
 import sys
+from math import sqrt
 
 from utils import force_utf8_streams, load_json_stdin
 
 
-# Maximum stdev for risk_scores in [0,1]: bimodal {0, 1} -> pstdev = 0.5
-MAX_RISK_STDEV = 0.5
+def _max_risk_stdev(n: int) -> float:
+    if n < 2:
+        return 0.0
+    return sqrt((n // 2) * (n - n // 2)) / n
 
 DEGENERATE = {
     "conservator_spread": 0.10,
@@ -76,7 +79,7 @@ def conservator_spread(scores: list[dict]) -> float | None:
         return None
     stdev = statistics.pstdev(risks)
     actual_range = max(risks) - min(risks)
-    denom = max(actual_range, 0.5)
+    denom = max(actual_range, _max_risk_stdev(len(risks)))
     return max(0.0, min(1.0, stdev / denom))
 
 

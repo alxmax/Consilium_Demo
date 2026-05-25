@@ -102,6 +102,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"could not load {scenarios_path}: {exc}", file=sys.stderr)
         return 2
 
+    if not isinstance(scenarios, list):
+        print(f"scenarios.json: expected a list, got {type(scenarios).__name__}", file=sys.stderr)
+        return 2
+
     if args.filter:
         scenarios = [s for s in scenarios if args.filter in s.get("name", "")]
 

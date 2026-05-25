@@ -63,7 +63,7 @@ def parse_numstat(text: str) -> tuple[dict, list[str]]:
     removed = 0
     paths: list[str] = []
     for line in text.splitlines():
-        parts = line.split("\t")
+        parts = line.split("\t", 2)
         if len(parts) != 3:
             continue
         a, r, path = parts
@@ -92,8 +92,9 @@ def _commit_count(path: str, days: int) -> int:
             capture_output=True,
             text=True,
         )
-    except subprocess.CalledProcessError:
-        return 0
+    except subprocess.CalledProcessError as e:
+        print(f"[probe_change] git log failed: {e}", file=sys.stderr)
+        return -1
     return sum(1 for line in result.stdout.splitlines() if line.strip())
 
 

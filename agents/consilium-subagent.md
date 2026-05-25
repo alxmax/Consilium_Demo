@@ -2,7 +2,7 @@
 name: consilium-subagent
 description: Dialectical code-change review (Generator/Control/Conservator). Returns a canonical runs/<file>.json report. Use when an orchestrator needs an isolated-context deliberation on a diff, refactor, or proposed change without polluting its own context with intermediate voice output.
 tools: Read, Write, Bash, Grep, Glob
-model: sonnet
+model: sonnet  # 'sonnet' resolves to the current Claude Sonnet alias — intentional; subagents track the latest Sonnet by design
 ---
 
 # Consilium Subagent

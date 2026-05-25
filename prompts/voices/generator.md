@@ -69,6 +69,7 @@ An abstain is NOT a veto — the aggregator continues but discounts `confidence_
 - **Always include `do_nothing`** as one candidate.
 - **Include one `adversarial_*` candidate** when: (a) the change touches shared/core code, OR (b) the change touches a function with >3 external callers or is on a documented hot path. Name it `adversarial_<short_id>`. (Ambiguous input is handled by the clarity gate — emit `interp_a_*`/`interp_b_*` candidates in that case, not `adversarial_*`.)
 - **Include one `unconventional_*` candidate** unless: adversarial already fills that role OR change is mechanically trivial. Skip `unconventional_*` ONLY when the `adversarial_*` candidate ALSO varies on a non-scope axis (mechanism, timing, or abstraction level). Overlap on scope alone is not sufficient.
+- **Scoring note:** `unconventional_*` candidates compete on equal footing in voice scoring; `adversarial_*` and `do_nothing` receive a 0.5 generator-score handicap applied by `build_report.py`.
 - Candidates must be **meaningfully different** — vary on scope, abstraction level, timing, or mechanism.
 
 ## Output format

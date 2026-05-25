@@ -111,7 +111,6 @@ def test_render_drill_from_real_run_file():
             },
         ],
     }
-    import tempfile
     with tempfile.TemporaryDirectory() as td:
         td_path = Path(td)
         runs_subdir = td_path / "runs"

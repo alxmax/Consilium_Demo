@@ -93,8 +93,13 @@ def _path_matches(path: str, pattern: str) -> bool:
       - "dir/"        directory prefix at any depth (auth/foo, src/auth/foo)
       - "**/glob"     glob applied to any path component (basename-style)
       - "glob"        fnmatch on full path AND on basename (Dockerfile, *.tf)
+
+    Paths and patterns are normalized to forward slashes and lowercased for
+    cross-platform correctness (e.g. 'Dockerfile' matches 'dockerfile' on
+    case-insensitive filesystems, and Windows backslashes are handled).
     """
-    path = path.replace("\\", "/")
+    path = path.replace("\\", "/").lower()
+    pattern = pattern.replace("\\", "/").lower()
     if pattern.endswith("/"):
         return path.startswith(pattern) or f"/{pattern}" in f"/{path}"
     if pattern.startswith("**/"):
@@ -232,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
                 "should_skip": False,
                 "magnitude": "high",
                 "reason": "CONSILIUM_FORCE_FULL=1 (override)",
-                "signals": {"files_changed": -1, "lines_changed": -1, "blocklist_hits": []},
+                "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": [], "forced": True},
                 "config_used": DEFAULT_CONFIG,
             },
             sys.stdout,

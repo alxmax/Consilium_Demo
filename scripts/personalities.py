@@ -81,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.name is not None:
         json.dump(get_by_name(args.name), sys.stdout, indent=2)
     else:
-        json.dump(PERSONALITIES, sys.stdout, indent=2)
+        json.dump([copy.deepcopy(p) for p in PERSONALITIES], sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0
 
