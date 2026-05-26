@@ -41,4 +41,9 @@
 ## 🎯 User directions (open)
 
 - [ ] **Public-release prep** — make the repo public; plan how to land it in a clean single commit.
+
+---
+
+## DEFERRED
+
 - [ ] **§6 Showcase project — "AI Incident Investigation & Knowledge Copilot"** (separate repo) — RAG over PDFs + DLT/automotive logs, Jira/Confluence ingestion, hybrid search + reranking, FastAPI backend, eval dashboards. Highest-leverage CV move for Enterprise-GenAI/RAG roles (per Senate audit). Consilium stays the deep agentic/LLMOps artifact; §6 is the breadth artifact.
