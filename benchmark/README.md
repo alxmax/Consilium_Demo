@@ -332,7 +332,7 @@ isolation guarantees in detail.
 | 1 | `code/01_circuit_breaker`        | Code (C++ concurrency)                        | Hard   |
 | 2 | `reasoning/01_transport_choice`  | Reasoning — multiple-choice                   | Easy   |
 | 3 | `reasoning/02_rule_of_three`     | Reasoning — multiple-choice + VALUE: tier     | Hard   |
-| 4 | `reasoning/03_cursor_pagination` | Reasoning — architecture / API design         | Medium |
+| 4 | `reasoning/03_schema_migration`  | Reasoning — architecture / zero-downtime ops  | Hard   |
 | 5 | `reasoning/04_binary_search_bug` | Reasoning — debugging / trace                 | Medium |
 
 > The `#` column is just a row index. Task slugs are numbered within their
