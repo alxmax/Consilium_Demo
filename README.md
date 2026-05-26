@@ -39,6 +39,7 @@ An interactive, single-page walkthrough of the voices, pipeline, modes, voting, 
 git clone https://github.com/alxmax/Consilium.git ~/dev/consilium
 mkdir -p ~/.claude/skills
 ln -s ~/dev/consilium ~/.claude/skills/consilium
+cd ~/dev/consilium && git config core.hooksPath .githooks
 ```
 
 ### Windows (PowerShell)
@@ -49,7 +50,10 @@ Junction (recommended — no admin required):
 git clone https://github.com/alxmax/Consilium.git $HOME\dev\consilium
 New-Item -ItemType Directory -Force -Path $HOME\.claude\skills
 New-Item -ItemType Junction -Path $HOME\.claude\skills\consilium -Target $HOME\dev\consilium
+cd $HOME\dev\consilium; git config core.hooksPath .githooks
 ```
+
+The last step activates the included `.githooks/pre-push` hook, which blocks direct pushes to `main`/`master` and enforces the feature-branch → PR workflow that keeps the deliberation trail intact.
 
 Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
 
