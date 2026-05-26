@@ -1,0 +1,5 @@
+{
+  "chosen_approach": "foo",
+  "voice_scores": {"generator": 0.7, "control": 0.7, "conservator": 0.3},
+  "deliberation_log": [{"step": "aggregate"}]
+}
