@@ -350,9 +350,10 @@ def validate(report: dict) -> list[str]:
         problems.extend(_validate_telemetry(report["telemetry"]))
 
     is_trias = report.get("team") == "trias"
+    is_passthrough = report.get("chosen_approach") == "prior-deliberation"
     problems.extend(_validate_deliberation_log(
         report.get("deliberation_log"),
-        report.get("skipped") is True or is_trias,
+        report.get("skipped") is True or is_trias or is_passthrough,
     ))
     # Telemetry required for all non-skipped reports, Trias included — it's
     # the most expensive mode (9 sub-agenți) so cost rollup matters most there.
