@@ -29,6 +29,8 @@ TASKS = [
     "code/01_circuit_breaker",
     "reasoning/01_transport_choice",
     "reasoning/02_rule_of_three",
+    "reasoning/03_cursor_pagination",
+    "reasoning/04_binary_search_bug",
 ]
 
 

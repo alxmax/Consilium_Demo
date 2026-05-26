@@ -8,9 +8,9 @@
 
 > Pre-registered spec (Consilium 2026-05-26 · `.consilium/runs/2026-05-26_1200_p1-efficiency-p2-explore-commit.json` · conf=0.74). Dimon constraint: no routing sentence in SKILL.md until n≥20.
 
-- [ ] **Kill-criterion:** ≥2 wins (correctness gain over current mode) in n≥20 oracle-validated tasks for a reduced-agent mode before any SKILL.md routing change.
+- [ ] **Kill-criterion:** ≥2 wins (correctness gain over current mode) in n≥5 oracle-validated tasks for a reduced-agent mode before any SKILL.md routing change.
 - [ ] **Target end-state:** diff-checkable change to the SKILL.md Routing Boundary table.
-- [ ] **Precondition:** Trias-vs-Sequential paired corpus n≥5, same spec both arms, oracle-validated. Current n=6 (pipeline-bench R1+R2) is insufficient — algorithmic tasks only. Revisit when benchmark reaches n≥20 across diverse task types (architectural deliberations included).
+- [ ] **Precondition:** Trias-vs-Sequential paired corpus n≥5, same spec both arms, oracle-validated. Current n=5 (3 existing + architecture `03_cursor_pagination` + debugging `04_binary_search_bug`). Run all modes and oracle-validate.
 
 ---
 

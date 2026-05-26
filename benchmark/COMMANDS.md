@@ -29,10 +29,12 @@ claude --version
 
 ## TASK ORDER
 
-3 tasks:
-1. `code/01_circuit_breaker`      — hard code (C++)
-2. `reasoning/01_transport_choice`        — reasoning
-3. `reasoning/02_rule_of_three`   — reasoning (rule-of-three multiple choice)
+5 tasks:
+1. `code/01_circuit_breaker`           — hard code (C++)
+2. `reasoning/01_transport_choice`     — reasoning (easy)
+3. `reasoning/02_rule_of_three`        — reasoning (hard, rule-of-three)
+4. `reasoning/03_cursor_pagination`    — reasoning (architecture / API design)
+5. `reasoning/04_binary_search_bug`    — reasoning (debugging / trace)
 
 ---
 
@@ -87,6 +89,8 @@ cd C:\Users\ALEX\Desktop\Doc\benchmark-modes
 python run_task.py --mode consilium_sequential --task code/01_circuit_breaker
 python run_task.py --mode consilium_sequential --task reasoning/01_transport_choice
 python run_task.py --mode consilium_sequential --task reasoning/02_rule_of_three
+python run_task.py --mode consilium_sequential --task reasoning/03_cursor_pagination
+python run_task.py --mode consilium_sequential --task reasoning/04_binary_search_bug
 ```
 
 ---
@@ -97,6 +101,8 @@ python run_task.py --mode consilium_sequential --task reasoning/02_rule_of_three
 python run_task.py --mode consilium_trias --task code/01_circuit_breaker
 python run_task.py --mode consilium_trias --task reasoning/01_transport_choice
 python run_task.py --mode consilium_trias --task reasoning/02_rule_of_three
+python run_task.py --mode consilium_trias --task reasoning/03_cursor_pagination
+python run_task.py --mode consilium_trias --task reasoning/04_binary_search_bug
 ```
 
 ---
@@ -107,6 +113,8 @@ python run_task.py --mode consilium_trias --task reasoning/02_rule_of_three
 python run_task.py --mode consilium_dialectic --task code/01_circuit_breaker
 python run_task.py --mode consilium_dialectic --task reasoning/01_transport_choice
 python run_task.py --mode consilium_dialectic --task reasoning/02_rule_of_three
+python run_task.py --mode consilium_dialectic --task reasoning/03_cursor_pagination
+python run_task.py --mode consilium_dialectic --task reasoning/04_binary_search_bug
 ```
 
 ---
@@ -117,6 +125,8 @@ python run_task.py --mode consilium_dialectic --task reasoning/02_rule_of_three
 python run_task.py --mode opus_bare --task code/01_circuit_breaker
 python run_task.py --mode opus_bare --task reasoning/01_transport_choice
 python run_task.py --mode opus_bare --task reasoning/02_rule_of_three
+python run_task.py --mode opus_bare --task reasoning/03_cursor_pagination
+python run_task.py --mode opus_bare --task reasoning/04_binary_search_bug
 ```
 
 ---
@@ -137,6 +147,8 @@ The runner prepends a structured prefix that:
 python run_task.py --mode superpowers --task code/01_circuit_breaker
 python run_task.py --mode superpowers --task reasoning/01_transport_choice
 python run_task.py --mode superpowers --task reasoning/02_rule_of_three
+python run_task.py --mode superpowers --task reasoning/03_cursor_pagination
+python run_task.py --mode superpowers --task reasoning/04_binary_search_bug
 ```
 
 ---
@@ -209,7 +221,8 @@ python analyze.py
 
 ## TOTAL
 
-7 modes × 3 tasks = 21 runs. Budget cap @ $3/task → maximum spend ~$63.
+6 modes × 5 tasks = 30 runs. Budget cap @ $3/task → maximum spend ~$90.
+Reasoning-only tasks (03, 04) typically cost well under $1 each.
 
 ---
 

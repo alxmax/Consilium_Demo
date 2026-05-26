@@ -284,7 +284,7 @@ python scripts/run.py mode --mode superpowers
 python scripts/run.py task --task reasoning/02_rule_of_three
 ```
 
-### 4. The whole matrix (7 modes × 3 tasks = 21 runs)
+### 4. The whole matrix (6 modes × 5 tasks = 30 runs)
 
 ```powershell
 python scripts/run.py all
@@ -329,9 +329,11 @@ isolation guarantees in detail.
 
 | # | Task | Type | Difficulty |
 |---|------|------|------------|
-| 1 | `code/01_circuit_breaker`     | Code (C++ concurrency)                        | Hard   |
-| 2 | `reasoning/01_transport_choice`       | Reasoning — multiple-choice                   | Easy   |
-| 3 | `reasoning/02_rule_of_three`  | Reasoning — multiple-choice + VALUE: tier     | Hard   |
+| 1 | `code/01_circuit_breaker`        | Code (C++ concurrency)                        | Hard   |
+| 2 | `reasoning/01_transport_choice`  | Reasoning — multiple-choice                   | Easy   |
+| 3 | `reasoning/02_rule_of_three`     | Reasoning — multiple-choice + VALUE: tier     | Hard   |
+| 4 | `reasoning/03_cursor_pagination` | Reasoning — architecture / API design         | Medium |
+| 5 | `reasoning/04_binary_search_bug` | Reasoning — debugging / trace                 | Medium |
 
 > The `#` column is just a row index. Task slugs are numbered within their
 > own category, so the filenames don't form a single contiguous sequence.
