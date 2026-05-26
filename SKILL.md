@@ -231,12 +231,12 @@ Bundle schema: `{success_criterion, verification, generator, control, conservato
 
 **Terminal output discipline.** Do not write intermediate JSON bundles to disk (`bundle_*.json`). Pipe outputs directly. The only output visible in the terminal at the end:
 ```
-chosen: <id> | conf: <X> | runs/<file>.json
+chosen: <id> | conf: <X> | .consilium/runs/<file>.json
 ```
 
 **Validation gate** (mandatory before considering the report final):
 ```bash
-cat runs/<file>.json | python scripts/validate_report.py
+cat .consilium/runs/<file>.json | python scripts/validate_report.py
 ```
 Exit 0 = OK. Exit 1 = missing/empty field or malformed telemetry. Exit 2 = malformed JSON.
 
@@ -244,22 +244,22 @@ Exit 0 = OK. Exit 1 = missing/empty field or malformed telemetry. Exit 2 = malfo
 
 The two calls below are **mandatory**. If the orchestrator stops before running them, the report exists on disk but is invisible to priors → the next deliberation will not benefit from this feedback. Periodic audit: `python scripts/audit_feedback.py` lists orphan runs; with `--backfill` it adds default PEND rows.
 
-1. **Persist the report** in `runs/YYYY-MM-DD_HHMM_<label>.json`.
-2. **Log to `FEEDBACK.html`** (confidence-gated, without skipping any case):
-   - `confidence >= 0.7` → `python -X utf8 scripts/log_feedback.py --outcome OK --run-path runs/<file>.json < runs/<file>.json`
+1. **Persist the report** in `.consilium/runs/YYYY-MM-DD_HHMM_<label>.json`.
+2. **Log to `.consilium/FEEDBACK.html`** (confidence-gated, without skipping any case):
+   - `confidence >= 0.7` → `python -X utf8 scripts/log_feedback.py --outcome OK --run-path .consilium/runs/<file>.json < .consilium/runs/<file>.json`
    - `confidence < 0.7` → ask: *"Confidence below threshold (`<X>`). Want to override `<chosen>`? Alternatives: `<alt_ids>`. Reply alt_id, 'no', or 'skip'."* Then: `no` → `--outcome OK --force-override`; `<alt_id>` → `--outcome OVR --override-target <alt_id>`; `skip` → no flag (PEND, but **do not let the call be skipped**).
-   - `confidence null` (all vetoed) → `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json`
-   - **Non-interactive path (headless — `claude -p`).** Skip the prompt at `confidence < 0.7` and call directly: `python -X utf8 scripts/log_feedback.py --outcome PEND_HEADLESS --run-path runs/<file>.json < runs/<file>.json`. `PEND_HEADLESS` is structurally excluded from `pend_pressure` and `stale_pendings` (PEND_HEADLESS ≠ "PEND" in Counter) — it requires no manual resolution.
+   - `confidence null` (all vetoed) → `python -X utf8 scripts/log_feedback.py --run-path .consilium/runs/<file>.json < .consilium/runs/<file>.json`
+   - **Non-interactive path (headless — `claude -p`).** Skip the prompt at `confidence < 0.7` and call directly: `python -X utf8 scripts/log_feedback.py --outcome PEND_HEADLESS --run-path .consilium/runs/<file>.json < .consilium/runs/<file>.json`. `PEND_HEADLESS` is structurally excluded from `pend_pressure` and `stale_pendings` (PEND_HEADLESS ≠ "PEND" in Counter) — it requires no manual resolution.
 
 **Outcome confirmation (retroactive).** The outcome logged in step 2 is subjective — it reflects the immediate impression. If production later reveals a regression or a good choice, overwrite it with the confirmed marker:
 ```bash
-python scripts/mark_outcome.py --run-path runs/<file>.json --outcome BAD --reason "broke prod migration"
+python scripts/mark_outcome.py --run-path .consilium/runs/<file>.json --outcome BAD --reason "broke prod migration"
 ```
 The `[confirmed]` marker appears in the note; `priors.py` weights these rows 2x compared to subjective feedback (see `weighted_bad_rate`).
 
 **Scale_down regret tracking (A2).** If `telemetry.mode == "sequential_scale_down"` and the retroactive outcome is `BAD`:
 ```bash
-python scripts/mark_outcome.py --run-path runs/<file>.json --outcome BAD --reason "scale_down regret — full deliberation needed"
+python scripts/mark_outcome.py --run-path .consilium/runs/<file>.json --outcome BAD --reason "scale_down regret — full deliberation needed"
 ```
 Calibration signal: if `scale_down` regret rate > 10% over n≥20 runs, Conservator's scale_down threshold is too aggressive — adjust the prompt. If the rate stays < 5%, the optimization is validated.
 
@@ -272,9 +272,9 @@ Calibration signal: if `scale_down` regret rate > 10% over n≥20 runs, Conserva
 After Step 6 is complete (report saved, feedback logged), infer and confirm the implementation steps:
 
 ```bash
-cat runs/<file>.json | python scripts/infer_pipeline.py          # interactive
-python scripts/infer_pipeline.py --input runs/<file>.json --yes  # CI/headless
-python scripts/infer_pipeline.py --input runs/<file>.json --dry-run  # print only
+cat .consilium/runs/<file>.json | python scripts/infer_pipeline.py          # interactive
+python scripts/infer_pipeline.py --input .consilium/runs/<file>.json --yes  # CI/headless
+python scripts/infer_pipeline.py --input .consilium/runs/<file>.json --dry-run  # print only
 ```
 
 The script reads `chosen_approach`, `magnitude`, and `reversibility` from the report and looks up the table below:
@@ -297,7 +297,7 @@ The script reads `chosen_approach`, `magnitude`, and `reversibility` from the re
 
 Output JSON: `{"steps": [...], "rationale": {"chosen": "...", "magnitude": "...", "reversibility": "...", "lookup_key": "..."}}`.
 
-Reject (`n` at prompt) → rejection logged in `runs/YYYY-MM-DD_HHMM_pipeline_rejected.json`. Rerun with `--yes` for CI or `--dry-run` for audit without confirmation.
+Reject (`n` at prompt) → rejection logged in `.consilium/runs/YYYY-MM-DD_HHMM_pipeline_rejected.json`. Rerun with `--yes` for CI or `--dry-run` for audit without confirmation.
 
 **Skip Step 7 if:** `chosen_approach` is `do_nothing` or `skipped` (the script exits with exit 1 and a clear message). In headless context (`claude -p`), run with `--yes` (non-interactive, no confirmation prompt).
 
@@ -312,7 +312,7 @@ The default `implement` step writes code single-shot for greenfield. For **regre
 **Routing gate (single-shot vs pipeline).** `recommend_implement_mode(report)` in `infer_pipeline.py` picks the mode, keyed on **regression risk, not size**: it returns `"pipeline"` when the change warrants a `review` step (the regression-prone quadrants — `moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), else `"single_shot"`. Greenfield (even large, fully reversible) stays single-shot. **Opt-out:** the routing decision is advisory — the user may override at the Step 7 prompt (press `n`) or by passing `--dry-run` to inspect before committing.
 
 ```bash
-python -X utf8 scripts/implement_pipeline.py --input runs/<file>.json --dry-run   # print dispatch plan
+python -X utf8 scripts/implement_pipeline.py --input .consilium/runs/<file>.json --dry-run   # print dispatch plan
 python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "pytest -x" --target <impl_file>
 ```
 
@@ -328,7 +328,7 @@ Dispatch via `Agent(subagent_type="consilium-implement-subagent", ...)` (see `ag
 |---|---|---|
 | **Observe** | Step 0 + Step 1 | `priors.py` (reads `FEEDBACK.html` + `runs/*.json`); orchestrator gathers context from the codebase |
 | **Think**   | Steps 2–5     | `aggregator.py`, `confidence.py`, `meta_critic.py`; Conservator → Generator → Control voices |
-| **Act**     | Step 6 + Step 7 | `validate_report.py`, `build_report.py` (write `runs/<file>.json`); `infer_pipeline.py` (write code) |
+| **Act**     | Step 6 + Step 7 | `validate_report.py`, `build_report.py` (write `.consilium/runs/<file>.json`); `infer_pipeline.py` (write code) |
 | **Learn**   | Step 6 final action + retroactive | `log_feedback.py` (append to `FEEDBACK.html`); `mark_outcome.py` (retroactive `[confirmed]` weighting) |
 
 ```
@@ -349,7 +349,7 @@ Dispatch via `Agent(subagent_type="consilium-implement-subagent", ...)` (see `ag
     │    ┌────────────────────▼───────────────────────┐
     │    │  ACT        (Step 6 + Step 7)              │
     │    │  validate_report.py · build_report.py      │
-    │    │  → runs/<file>.json                        │
+    │    │  → .consilium/runs/<file>.json             │
     │    │  infer_pipeline.py → code written          │
     │    └────────────────────┬───────────────────────┘
     │                         │
@@ -367,7 +367,7 @@ Dispatch via `Agent(subagent_type="consilium-implement-subagent", ...)` (see `ag
 
 A small in-run sub-iteration exists: at `confidence < 0.7`, Step 5d invokes `retry_context.py` to enrich input and re-run the voices once (`↻` in the diagram). This is the only formal iteration mechanism; there is no meta-controller.
 
-**Calibration note (Learn phase).** The Learn phase is presently *partial* in a structural sense: `log_feedback.py` writes outcomes into `FEEDBACK.html` (HTML rows), but `runs/<file>.json` does not carry a structured `outcome` field. Consequently `priors.py` reads outcomes from the HTML journal, not from a typed JSON field. The loop closes via the journal — naming the gap explicitly so future readers don't assume an unwired feedback channel exists.
+**Calibration note (Learn phase).** The Learn phase is presently *partial* in a structural sense: `log_feedback.py` writes outcomes into `.consilium/FEEDBACK.html` (HTML rows), but `.consilium/runs/<file>.json` does not carry a structured `outcome` field. Consequently `priors.py` reads outcomes from the HTML journal, not from a typed JSON field. The loop closes via the journal — naming the gap explicitly so future readers don't assume an unwired feedback channel exists.
 
 **What this framing is not.** This section does not introduce iteration triggers beyond Step 5d's `retry_context.py`, does not name a meta-controller, and does not authorize voices or aggregator to cite "OTAL step X" as ground for new behavior. If a future proposal seeks behavioral iteration triggers (e.g. firing a second pass on `meta_critic.generator_divergence < 0.4`), that requires its own Senate audit with empirical pilot data — `generator_divergence` currently has zero labeled triggering events in `runs/`, so any threshold would be uncalibrated. A dynamic meta-controller is explicitly out of scope: its TODO precondition (item #16) was dropped in triage, and recursive routing contradicts Constitution Principle 2 (Simplicity first).
 
@@ -429,8 +429,10 @@ Automation: `.claude/settings.json` `Stop` hook detects uncommitted changes on `
 
 ## Feedback loop
 
-- **`runs/`** — JSON per deliberation in `runs/YYYY-MM-DD_HHMM_<label>.json` (schema in `runs/README.md`). Gitignored. Read by `priors.py` (Step 0), `usage.py`, `feedback.py`.
-- **`FEEDBACK.html`** — one line per use: `date | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR`, `PEND`. Local, gitignored. **Drill-down:** when `log_feedback.py` appends, existing rows lose drill-down; use `scripts/deprecated/migrate_feedback_md_to_html.py` for bulk re-population (retired one-shot tool, see scripts/deprecated/).
+All deliberation state lives under **`.consilium/`** at the repo root (gitignored; the single data directory). Paths are centralized in `scripts/utils.py` (`DATA_DIR`/`RUNS_DIR`/`FEEDBACK_PATH`) — scripts import them as defaults, `--runs-dir`/`--feedback` still override.
+
+- **`.consilium/runs/`** — JSON per deliberation in `.consilium/runs/YYYY-MM-DD_HHMM_<label>.json` (schema in `docs/runs-schema.md`). Read by `priors.py` (Step 0), `usage.py`, `feedback.py`. Run-paths are stored relative to `.consilium/` (key `runs/<file>.json`); `--run-path` accepts any spelling (`.consilium/runs/<f>.json`, `runs/<f>.json`, absolute) and `utils.canonical_run_path` normalizes it to that key.
+- **`.consilium/FEEDBACK.html`** — one line per use: `date | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR`, `PEND`. **Drill-down:** when `log_feedback.py` appends, existing rows lose drill-down; use `scripts/deprecated/migrate_feedback_md_to_html.py` for bulk re-population (retired one-shot tool, see scripts/deprecated/).
 - **Confirmed outcome.** `mark_outcome.py` adds the `[confirmed]` marker in note. `priors.py` weights these rows 2x in `weighted_bad_rate`. Use when production reality contradicts the subjective outcome from Step 6.
 
 ## Memory tiers
@@ -440,8 +442,8 @@ Consilium has 3 memory layers with different lifecycles. `scripts/memory.py` pro
 | Tier | Location | Lifetime | Content | Read by |
 |---|---|---|---|---|
 | **Short** | conversation window | session | bundle under construction (Steps 1–5b), clarity gate, current success_criterion | agent only (not persisted) |
-| **Medium** | `runs/*.json` | indefinite (gitignored) | one file per deliberation; episodic | `priors.py`, `usage.py`, `memory.py`, `audit_feedback.py` |
-| **Long** | `FEEDBACK.html` + signals from `priors.py` | indefinite | one row per use; aggregated over time | `priors.py`, `feedback.py`, `memory.py`, `mark_outcome.py` |
+| **Medium** | `.consilium/runs/*.json` | indefinite (gitignored) | one file per deliberation; episodic | `priors.py`, `usage.py`, `memory.py`, `audit_feedback.py` |
+| **Long** | `.consilium/FEEDBACK.html` + signals from `priors.py` | indefinite | one row per use; aggregated over time | `priors.py`, `feedback.py`, `memory.py`, `mark_outcome.py` |
 
 Uniform CLI:
 ```bash

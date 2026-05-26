@@ -123,7 +123,7 @@ After the gate runs, emit **exactly** this JSON as your final assistant message 
 
 ```
 Agent(subagent_type="consilium-implement-subagent",
-      prompt="Implement the chosen approach from runs/<file>.json. Spec is the report.")
+      prompt="Implement the chosen approach from .consilium/runs/<file>.json. Spec is the report.")
 ```
 
 Pass criteria:

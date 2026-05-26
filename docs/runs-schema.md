@@ -1,9 +1,11 @@
 # Deliberation Runs
 
 Each time the skill is invoked on a real task, the agent writes the full
-deliberation as a JSON file here at the end of Step 6. Files are
-gitignored — they're personal logs that feed the priors loop, not
-part of the skill itself.
+deliberation as a JSON file to `.consilium/runs/` at the end of Step 6.
+Files are gitignored — they're personal logs that feed the priors loop,
+not part of the skill itself. The data directory layout and the path
+constants that locate it (`RUNS_DIR`/`FEEDBACK_PATH`) live in
+`scripts/utils.py`.
 
 Filename: `YYYY-MM-DD_HHMM_<short-label>.json`
 Example: `2026-05-12_1430_pr42-extract-helper.json`

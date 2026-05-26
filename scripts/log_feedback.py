@@ -48,7 +48,7 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
-from utils import atomic_write_text, force_utf8_streams, load_json_stdin
+from utils import FEEDBACK_PATH, atomic_write_text, canonical_run_path, force_utf8_streams, load_json_stdin
 
 
 CONTEXT_MAX = 60
@@ -284,7 +284,7 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> int:
 def main(argv: list[str] | None = None) -> int:
     force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: ./FEEDBACK.html)")
+    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: .consilium/FEEDBACK.html)")
     ap.add_argument("--dry-run", action="store_true", help="print summary, don't write file")
     ap.add_argument(
         "--outcome",
@@ -332,8 +332,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if not args.dry_run:
-        feedback_path = Path(args.feedback) if args.feedback else Path.cwd() / "FEEDBACK.html"
-        rc = append_entry(feedback_path, entry, args.run_path)
+        feedback_path = Path(args.feedback) if args.feedback else FEEDBACK_PATH
+        run_path = canonical_run_path(args.run_path) if args.run_path else None
+        rc = append_entry(feedback_path, entry, run_path)
         if rc != 0:
             # Exit 3 means duplicate detected — propagate so callers can distinguish
             # "duplicate skipped" from "success".

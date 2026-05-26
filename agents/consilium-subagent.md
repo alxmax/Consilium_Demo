@@ -40,7 +40,7 @@ Follow `$CONSILIUM_PATH/SKILL.md` steps 0 through 6 exactly. The deviations belo
 2. **Non-interactive — never prompt the user.** You have no user in this context:
    - **Step 0 stale_pendings.** If `priors.py` reports stale PENDs, *do not* prompt. Pass them through verbatim under a top-level `subagent_notes.stale_pendings` key on the returned report. The orchestrator decides whether to clear them.
    - **Step 1 clarity gate.** If you can write 2+ plausible interpretations of the goal, emit each as a separate Generator candidate (`id` prefixes `interp_a_*`, `interp_b_*`) instead of stopping. Document the interpretations in `subagent_notes.clarity_branches`.
-   - **Step 6 confidence override.** When `confidence < 0.7` OR `confidence = null` (all candidates vetoed), *do not* prompt. Use `python -X utf8 scripts/log_feedback.py --run-path runs/<file>.json < runs/<file>.json` with no `--outcome` flag for both cases — both default to PEND. The orchestrator can later upgrade via `log_feedback.py --outcome OK|OVR` on the same run file.
+   - **Step 6 confidence override.** When `confidence < 0.7` OR `confidence = null` (all candidates vetoed), *do not* prompt. Use `python -X utf8 scripts/log_feedback.py --run-path .consilium/runs/<file>.json < .consilium/runs/<file>.json` with no `--outcome` flag for both cases — both default to PEND. The orchestrator can later upgrade via `log_feedback.py --outcome OK|OVR` on the same run file.
    - **Blocking gates from aggregator/voices.** Any time a gate that SKILL.md routes to "ask user" fires (`irreversibility_flag: true` from Conservator, `glossary_fail: true` from Control, ESCALATE on 3+ simultaneous triggers, or any `result: BLOCK*` from `aggregate_rund2`), *do not* prompt and *do not* silently proceed. Force `chosen_approach: null`, `confidence: null`, and set `subagent_notes.blocked_reason` to the trigger name (e.g. `"irreversibility_no_consent"`, `"glossary_fail"`, `"escalate_multi_trigger"`). The orchestrator must see a populated `blocked_reason` to distinguish a safety-blocked deliberation from a low-confidence one — both produce null chosen, only the reason field disambiguates.
 
    - **Non-blocking gates — surface, do not stop.** The following aggregator results are not blocking; emit them in `subagent_notes` and continue to Step 6:
@@ -53,11 +53,11 @@ Follow `$CONSILIUM_PATH/SKILL.md` steps 0 through 6 exactly. The deviations belo
 
    `subagent_notes` is an optional top-level key for subagent-specific metadata (e.g., `clarity_branches`, `blocked_reason`, `rework_reason`) and is preserved through `validate_report.py`. It is the designated container for any non-schema fields the subagent needs to surface to the orchestrator.
 
-3. **Final message contract.** After `validate_report.py` exits 0 on the persisted `runs/<ts>.json`, emit *exactly that file's contents* as your final assistant message. No prose, no markdown fences, no preamble. The orchestrator parses your output as JSON.
+3. **Final message contract.** After `validate_report.py` exits 0 on the persisted `.consilium/runs/<ts>.json`, emit *exactly that file's contents* as your final assistant message. No prose, no markdown fences, no preamble. The orchestrator parses your output as JSON.
 
-4. **Skipped reports.** When `scope_gate.py` returns `should_skip: true`, build the short skipped-shape report (SKILL.md Step 1.5), validate, persist to `runs/`, and emit per the same contract.
+4. **Skipped reports.** When `scope_gate.py` returns `should_skip: true`, build the short skipped-shape report (SKILL.md Step 1.5), validate, persist to `.consilium/runs/`, and emit per the same contract.
 
-5. **Tools allowlist intent.** `Read` for prompts and existing files. `Write` for persisting `runs/<ts>.json` directly (preferred over shell redirect — avoids Windows encoding issues with `>`). `Bash` runs all Python scripts (`python -X utf8 scripts/<name>.py`). `Grep`/`Glob` for codebase exploration during gather-context. No `Edit`, no `Agent`.
+5. **Tools allowlist intent.** `Read` for prompts and existing files. `Write` for persisting `.consilium/runs/<ts>.json` directly (preferred over shell redirect — avoids Windows encoding issues with `>`). `Bash` runs all Python scripts (`python -X utf8 scripts/<name>.py`). `Grep`/`Glob` for codebase exploration during gather-context. No `Edit`, no `Agent`.
 
 ## Input expectations
 
@@ -74,7 +74,7 @@ If the input is too vague to formulate a testable `success_criterion`, emit clar
 - Does not edit code in the repository under review. All three voice prompts are read-only by design.
 - Does not push, commit, or branch.
 - Does not run `git rebase`, `git reset`, or any destructive git operation.
-- Does not modify files in the skill repo itself — only appends to `runs/` and `FEEDBACK.html` (via `log_feedback.py`).
+- Does not modify files in the skill repo itself — only appends to `.consilium/runs/` and `.consilium/FEEDBACK.html` (via `log_feedback.py`).
 
 ## Smoke test (for maintainers)
 
@@ -88,8 +88,8 @@ Agent(subagent_type="consilium-subagent",
 Pass criteria:
 1. Final message parses as JSON.
 2. `python scripts/validate_report.py < <that_json>` exits 0.
-3. Exactly one new file appears under `$CONSILIUM_PATH/runs/` matching `YYYY-MM-DD_HHMM_*.json` with contents equal to the final message.
-4. Low-confidence input (3+ close candidates) does not stall — completes within bounded turn count, outcome=PEND in `FEEDBACK.html`.
+3. Exactly one new file appears under `$CONSILIUM_PATH/.consilium/runs/` matching `YYYY-MM-DD_HHMM_*.json` with contents equal to the final message.
+4. Low-confidence input (3+ close candidates) does not stall — completes within bounded turn count, outcome=PEND in `.consilium/FEEDBACK.html`.
 
 ## Install
 

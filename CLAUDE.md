@@ -15,7 +15,7 @@ Stdlib-only, no test runner. Smoke tests run manually via CLI:
 - `python scripts/test_rund2.py` — sequential architecture (skeptic_on_chosen, MODE enum, validate_report extras)
 - `python scripts/test_feedback_html.py` — `render_feedback_html` + parser round-trip
 - `python scripts/run_evals.py` — regression scenarios from `evals/scenarios.json` (subprocess-based, deterministic; non-zero exit on first FAIL)
-- `python scripts/validate_report.py < runs/<file>.json` — Constitution Principle #4 gate; minimum required before any commit touching `prompts/voices/` or `aggregator.py`
+- `python scripts/validate_report.py < .consilium/runs/<file>.json` — Constitution Principle #4 gate; minimum required before any commit touching `prompts/voices/` or `aggregator.py`
 
 Type-check: `pyright` (config: `pyrightconfig.json`, `typeCheckingMode: basic`, Python 3.11, `scripts/` in `extraPaths`).
 
@@ -26,7 +26,7 @@ Canonical flow of a deliberation:
 1. Voices read `prompts/voices/<name>.md`, emit JSON per Constitution
 2. `scripts/aggregator.py` merges voice outputs → canonical report
 3. `scripts/confidence.py` computes the score; `scripts/priors.py` applies priors
-4. `scripts/validate_report.py` is the final gate before writing to `runs/<ts>_<slug>.json`
+4. `scripts/validate_report.py` is the final gate before writing to `.consilium/runs/<ts>_<slug>.json`
 
 Mode-specific scripts:
 - `dialectic_merge.py` — two-pass merge for Dialectic
@@ -40,7 +40,7 @@ Architecture visualization: `docs/architecture.html` (open locally). Benchmarks 
 
 - **Stdlib-only.** No script introduces external dependencies. If it seems necessary, it likely means the feature exceeds the skill's scope.
 - **Small, stand-alone scripts.** Each `scripts/*.py` has a CLI docstring, `argparse`, JSON I/O. Reuse between scripts goes through `importlib.util` (see `priors.py`), not packaging.
-- **No tests dir.** Manual smoke-test via CLI; see `python scripts/validate_report.py < runs/<latest>.json` as the minimum.
+- **No tests dir.** Manual smoke-test via CLI; see `python scripts/validate_report.py < .consilium/runs/<latest>.json` as the minimum.
 
 ## Authoritative areas (touch carefully)
 
@@ -65,13 +65,15 @@ User-selectable modes (SKILL.md documents them in detail):
 
 ## Local files (gitignored)
 
-- `FEEDBACK.html` — real-usage journal, append-only via `scripts/log_feedback.py` (atomic writes). See `scripts/deprecated/migrate_feedback_md_to_html.py` for the migration history from `.md` format (retired one-shot tool).
-- `runs/*.json` — output of each deliberation (only `runs/README.md` is tracked).
+All deliberation state lives under `.consilium/` (gitignored; paths centralized in `scripts/utils.py`).
+
+- `.consilium/FEEDBACK.html` — real-usage journal, append-only via `scripts/log_feedback.py` (atomic writes). See `scripts/deprecated/migrate_feedback_md_to_html.py` for the migration history from `.md` format (retired one-shot tool).
+- `.consilium/runs/*.json` — output of each deliberation (schema in `docs/runs-schema.md`; only `.consilium/runs/.gitkeep` is tracked).
 - `docs/superpowers/plans/`, `docs/superpowers/specs/` — artifacts from `superpowers:writing-plans` / `executing-plans` (one file per non-trivial feature, naming `YYYY-MM-DD-<slug>.md`).
 
 ## Self-improvement loop
 
-When editing the skill itself: run `/consilium` on your own change. For changes to core prompts / architecture, consider `trias` over single-context deliberation. Save the run to `runs/` and log it to `FEEDBACK.html` via `log_feedback.py`.
+When editing the skill itself: run `/consilium` on your own change. For changes to core prompts / architecture, consider `trias` over single-context deliberation. Save the run to `.consilium/runs/` and log it to `.consilium/FEEDBACK.html` via `log_feedback.py`.
 
 ## Git workflow
 

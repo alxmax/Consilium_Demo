@@ -44,7 +44,7 @@ Reviewer reuses the Control voice on the *written* code (not the proposal). No s
 
 ```bash
 # Plan only (dry-run)
-python -X utf8 scripts/implement_pipeline.py --input runs/<file>.json --dry-run
+python -X utf8 scripts/implement_pipeline.py --input .consilium/runs/<file>.json --dry-run
 
 # Verify the red→green gate on an already-written impl
 python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "pytest -x" --target <impl_file>

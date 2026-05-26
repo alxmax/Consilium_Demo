@@ -37,13 +37,12 @@ import argparse
 import hashlib
 import importlib.util
 import json
-import os
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-from utils import atomic_write_text, force_utf8_streams
+from utils import FEEDBACK_PATH, atomic_write_text, canonical_run_path, force_utf8_streams
 
 
 CONFIRMED_MARKER = "[confirmed]"
@@ -101,7 +100,7 @@ def _annotate_note(note: str, reason: str | None, outcome: str = "") -> str:
 def main(argv: list[str] | None = None) -> int:
     force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: ./FEEDBACK.html)")
+    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: .consilium/FEEDBACK.html)")
     ap.add_argument("--run-path", default=None, help="match the row whose sidecar maps to this run path")
     ap.add_argument("--date", default=None, help="match by date (with --chosen)")
     ap.add_argument("--chosen", default=None, help="match by chosen id (with --date)")
@@ -127,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
 
     fb_mod, render_mod = _load_modules()
 
-    feedback_path = Path(args.feedback) if args.feedback else Path.cwd() / "FEEDBACK.html"
+    feedback_path = Path(args.feedback) if args.feedback else FEEDBACK_PATH
     if not feedback_path.exists():
         print(f"mark_outcome: feedback file missing: {feedback_path}", file=sys.stderr)
         return 1
@@ -150,19 +149,15 @@ def main(argv: list[str] | None = None) -> int:
     # Identify candidates
     matched_idx: list[int] = []
     if args.run_path:
-        # Normalize: caller may pass absolute or repo-relative path
-        wanted = Path(args.run_path).as_posix()
+        # Normalize to the canonical sidecar key (runs/<basename>) so any of
+        # .consilium/runs/<f>.json, runs/<f>.json, or an absolute path matches
+        # the stored form. Run basenames are timestamped and unique.
+        wanted = canonical_run_path(args.run_path)
         for i, e in enumerate(entries):
             if not e.run_path:
                 continue
-            if os.path.dirname(wanted):
-                # full path — require exact match
-                if Path(e.run_path).as_posix() == wanted:
-                    matched_idx.append(i)
-            else:
-                # bare filename — match by name only
-                if Path(e.run_path).name == wanted:
-                    matched_idx.append(i)
+            if canonical_run_path(e.run_path) == wanted:
+                matched_idx.append(i)
     else:
         for i, e in enumerate(entries):
             if e.date == args.date and e.chosen == args.chosen:

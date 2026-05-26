@@ -32,10 +32,9 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
-import pathlib
 import sys
 
-from utils import force_utf8_streams
+from utils import RUNS_DIR, force_utf8_streams
 
 # Lookup table: (magnitude, reversibility) -> ordered step list.
 # Conservative tie-breaking: most restrictive key wins (see _infer_steps).
@@ -134,7 +133,7 @@ def recommend_implement_mode(report: dict) -> str:
 
 
 def _log_rejection(report: dict, steps: list[str], rationale: dict) -> None:
-    runs_dir = pathlib.Path(__file__).parent.parent / "runs"
+    runs_dir = RUNS_DIR
     if not runs_dir.exists():
         return
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")

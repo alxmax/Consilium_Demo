@@ -30,10 +30,11 @@ import sys
 from pathlib import Path
 
 try:
-    from utils import force_utf8_streams
+    from utils import RUNS_DIR, force_utf8_streams
     force_utf8_streams()
+    _DEFAULT_RUNS = str(RUNS_DIR)
 except ImportError:
-    pass
+    _DEFAULT_RUNS = "runs"
 
 DEFAULT_VETO = 0.8
 UNCERTAINTY_BAND = 0.15
@@ -170,7 +171,7 @@ def pick_candidates(runs_dir: str, n: int) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--runs-dir", default="runs", help="Directory with run JSON files")
+    p.add_argument("--runs-dir", default=_DEFAULT_RUNS, help="Directory with run JSON files")
     p.add_argument("--compare", nargs=2, metavar=("RUN_A", "RUN_B"),
                    help="Compare two runs on the same input")
     p.add_argument("--pick", type=int, metavar="N",

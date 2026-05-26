@@ -13,6 +13,38 @@ from pathlib import Path
 from typing import Any
 
 
+# ---------------------------------------------------------------------------
+# Canonical data locations (single source of truth).
+#
+# All deliberation state lives under .consilium/ at the repo root:
+#   .consilium/runs/*.json              — one file per deliberation (episodic)
+#   .consilium/runs/.run_path_map.json  — fingerprint -> run-path sidecar
+#   .consilium/FEEDBACK.html            — append-only outcome journal (long)
+#
+# Scripts import these as their DEFAULT; CLI flags (--runs-dir/--feedback)
+# still override. run-path strings stored in the sidecar / FEEDBACK rows are
+# relative to DATA_DIR (e.g. "runs/<file>.json"), so they keep resolving as
+# long as runs/ and FEEDBACK.html stay siblings under DATA_DIR.
+# ---------------------------------------------------------------------------
+ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = ROOT / ".consilium"
+RUNS_DIR = DATA_DIR / "runs"
+FEEDBACK_PATH = DATA_DIR / "FEEDBACK.html"
+
+
+def canonical_run_path(run_path: str) -> str:
+    """Normalize a run-path to the DATA_DIR-relative sidecar key ``runs/<name>``.
+
+    Run files are flat under ``RUNS_DIR`` with timestamped (unique) basenames,
+    so the basename alone identifies a run. Callers may pass any of
+    ``.consilium/runs/<f>.json``, ``runs/<f>.json``, or an absolute path — all
+    collapse to the same ``runs/<f>.json`` key. This keeps sidecar / FEEDBACK
+    keys stable regardless of how the orchestrator spelled the path, and is
+    backward-compatible with the historical ``runs/<f>.json`` convention.
+    """
+    return f"runs/{Path(run_path).name}"
+
+
 def force_utf8_streams() -> None:
     """Reconfigure stdin/stdout/stderr to UTF-8.
 
