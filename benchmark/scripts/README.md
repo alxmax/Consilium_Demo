@@ -72,7 +72,7 @@ python scripts/run.py clean --task reasoning/02_rule_of_three
 python scripts/run.py clean --mode consilium_dialectic
 
 # Wipe one specific cell.
-python scripts/run.py clean --mode opus_bare --task code/01_circuit_breaker
+python scripts/run.py clean --mode sonnet_bare --task code/01_circuit_breaker
 
 # Wipe the entire workspace.
 python scripts/run.py clean

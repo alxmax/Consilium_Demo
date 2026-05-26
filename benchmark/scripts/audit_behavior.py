@@ -58,7 +58,7 @@ SUSPICIOUS_TOKENS = [
 ]
 
 # Mode names — used to detect cross-mode contamination (a task running
-# under `consilium_sequential` reading `workspace/opus_bare/<task>/answer.md`).
+# under `consilium_sequential` reading `workspace/sonnet_bare/<task>/answer.md`).
 # Imported from _common to prevent drift: forgetting to extend this set
 # silently disables cross-mode detection for newly added modes.
 from _common import MODES as _MODES

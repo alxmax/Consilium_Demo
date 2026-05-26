@@ -9,10 +9,10 @@ time-limit / max-turn / timeout exhaustion explicitly. Hard wall-clock cap:
 
 Examples
 --------
-  python run_task.py --mode opus_bare --task code/01_circuit_breaker
+  python run_task.py --mode sonnet_bare --task code/01_circuit_breaker
   python run_task.py --mode consilium_sequential --task code/01_circuit_breaker --budget 5
   python run_task.py --mode superpowers --task code/01_circuit_breaker
-  python run_task.py --mode opus_bare --task code/01_circuit_breaker --clean   # wipes that workspace first
+  python run_task.py --mode sonnet_bare --task code/01_circuit_breaker --clean   # wipes that workspace first
 """
 
 import argparse
@@ -65,7 +65,6 @@ MODE_PREFIXES = {
     "consilium_trias":       "/consilium --mode trias ",
     "consilium_dialectic":   "/consilium --mode dialectic ",
     "superpowers":           "",
-    "opus_bare":             "",
     "sonnet_bare":           "",
 }
 
@@ -77,7 +76,6 @@ MODE_PREFIXES = {
 # Per-mode model pin. Modes whose name implies a specific model lock to it,
 # regardless of the --model flag default. Pass --model explicitly to override.
 MODE_MODELS = {
-    "opus_bare":   "claude-opus-4-7",
     "sonnet_bare": "claude-sonnet-4-6",
 }
 

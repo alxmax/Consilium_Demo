@@ -21,7 +21,7 @@ Supported `kind`s:
 Invoked automatically by `run_task.py` after each run. Can also be called
 standalone to re-score historical runs:
 
-    python verify.py --mode opus_bare --task code/01_circuit_breaker
+    python verify.py --mode sonnet_bare --task code/01_circuit_breaker
 """
 
 import argparse
