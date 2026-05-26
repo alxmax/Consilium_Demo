@@ -55,7 +55,7 @@ Steps **5b, 5c, 5d** are sub-steps within Stage 4: **5b** (confidence) is mandat
 | 1.5 | auto — scope gate, fails open; skippable for non-diff tasks |
 | 5c | advisory, never blocks |
 | 5d | conditional — only when `confidence < 0.7` and `chosen` non-null, non-headless |
-| 7 | opt-in (mandatory when prompt declares deliverables via the authoritative regex) |
+| 7 | **auto-dispatch** when prompt declares deliverables (no confirmation); opt-in otherwise |
 
 ---
 

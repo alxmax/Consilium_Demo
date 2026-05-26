@@ -26,8 +26,8 @@ VOCABULARY_MAP: dict[str, dict] = {
         "critical": "consecințe majore (afectează > 1 an)",
     },
     "meta_recommendation": {
-        "scale_down": "întrebarea nu cere deliberare extinsă",
-        "scale_up": "întrebarea cere mai multă atenție",
+        "scale_down": "question does not require extended deliberation",
+        "scale_up": "question requires more attention",
         None: "",
     },
     "verdict": {
