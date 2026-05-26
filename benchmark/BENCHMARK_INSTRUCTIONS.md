@@ -6,8 +6,10 @@ Read this file first. Find your mode below and follow ONLY that section.
 | # | Task | Type |
 |---|------|------|
 | 1 | Circuit Breaker C++17 — `code/01_circuit_breaker` | Hard Code |
-| 2 | Transport Choice — `reasoning/01_transport_choice` | Reasoning |
-| 3 | Rule of Three — `reasoning/02_rule_of_three` | Reasoning |
+| 2 | Transport Choice — `reasoning/01_transport_choice` | Reasoning (Easy) |
+| 3 | Rule of Three — `reasoning/02_rule_of_three` | Reasoning (Hard) |
+| 4 | Schema Migration — `reasoning/03_schema_migration` | Reasoning (Hard) |
+| 5 | Binary Search Bug — `reasoning/04_binary_search_bug` | Reasoning (Medium) |
 
 ## Environment (same for every mode — fair across the board)
 - OS: Windows 11, PowerShell + Git Bash
@@ -63,10 +65,10 @@ doesn't drop the task content on consecutive invocations.
 
 ---
 
-## OPUS BARE
-No skill or plugin. Run via Claude Code:
+## SONNET BARE
+No skill or plugin. Plain Sonnet 4.6 baseline. Run via Claude Code:
 ```
-python run_task.py --mode opus_bare --task code/01_circuit_breaker
+python run_task.py --mode sonnet_bare --task code/01_circuit_breaker
 ```
 Script handles everything automatically.
 
@@ -87,7 +89,7 @@ Script handles everything automatically.
 Reason: Anthropic rate limits apply per account. Simultaneous runs cause API throttling that inflates `api_duration` for whichever run gets queued — making a slow model look slower than it actually is and a fast model look penalized. Since `api_duration` is a primary benchmark metric, any cross-run interference corrupts the comparison.
 
 Recommended order per task:
-1. `opus_bare` (baseline first, no skill overhead)
+1. `sonnet_bare` (baseline first, no skill overhead)
 2. `consilium_sequential`
 3. `consilium_trias`
 4. `consilium_dialectic`

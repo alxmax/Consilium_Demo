@@ -22,7 +22,6 @@ MODES = [
     "consilium_dialectic",
     "superpowers",
     "sonnet_bare",
-    "opus_bare",
 ]
 
 TASKS = [

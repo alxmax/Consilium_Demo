@@ -74,7 +74,7 @@ Even with physical separation, the subprocess can:
 - Read `verify.py` and learn that `SCORING_DIR = BASE.parent /
   "Benchmark-scoring"`
 - Glob `workspace/` upward from cwd → find **other modes' completed
-  runs** (`workspace/opus_bare/<task>/answer.md`) and copy the answer
+  runs** (`workspace/sonnet_bare/<task>/answer.md`) and copy the answer
   rather than computing it. This is a real cross-mode contamination
   vector when `python scripts/run.py all` runs each mode in sequence on the same task.
 
@@ -185,7 +185,7 @@ python scripts/audit_behavior.py workspace/<mode>/<task> --json
    (after physically stashing it for the subprocess and restoring it for
    `verify.py`):
    ```powershell
-   python scripts/run.py single --mode opus_bare --task reasoning/01_transport_choice
+   python scripts/run.py single --mode sonnet_bare --task reasoning/01_transport_choice
    ```
 
 ### Rules
@@ -221,18 +221,18 @@ with Python on PATH — no ExecutionPolicy changes needed.
 ### 1. One mode against one task (smoke test)
 
 ```powershell
-python scripts/run.py single --mode opus_bare --task reasoning/02_rule_of_three
+python scripts/run.py single --mode sonnet_bare --task reasoning/02_rule_of_three
 ```
 
 Equivalent direct call:
 
 ```powershell
-python run_task.py --mode opus_bare --task reasoning/02_rule_of_three --clean
+python run_task.py --mode sonnet_bare --task reasoning/02_rule_of_three --clean
 ```
 
 What happens, end-to-end:
 
-1. `workspace/opus_bare/reasoning/02_rule_of_three/` is wiped clean.
+1. `workspace/sonnet_bare/reasoning/02_rule_of_three/` is wiped clean.
 2. `_recover_orphan_stashes()` checks `%TEMP%\.bms_*` and restores any
    `Benchmark-scoring/` left behind by a crashed previous run.
 3. `stash_scoring_for_run()` enters: `..\Benchmark-scoring\` is physically
@@ -269,7 +269,7 @@ What happens, end-to-end:
 re-score any historical run without re-spawning the model:
 
 ```powershell
-python verify.py --mode opus_bare --task reasoning/02_rule_of_three
+python verify.py --mode sonnet_bare --task reasoning/02_rule_of_three
 ```
 
 ### 2. One mode against every task
@@ -284,7 +284,7 @@ python scripts/run.py mode --mode superpowers
 python scripts/run.py task --task reasoning/02_rule_of_three
 ```
 
-### 4. The whole matrix (6 modes × 5 tasks = 30 runs)
+### 4. The whole matrix (5 modes × 5 tasks = 25 runs)
 
 ```powershell
 python scripts/run.py all
@@ -312,7 +312,7 @@ and opens it in the default browser.
 
 Use `--extra` for any direct-CLI knob: `--budget`, `--effort`, `--model`,
 `--no-verify`. Do **not** pass `--rep` via `--extra` — the wrapper manages
-slot indices. Example: `python scripts/run.py single --mode opus_bare
+slot indices. Example: `python scripts/run.py single --mode sonnet_bare
 --task code/01_circuit_breaker --reps 3 --extra --budget 5 --effort medium`.
 
 Replicate aggregation: `analyze.py` collects all runs found under
@@ -348,13 +348,13 @@ isolation guarantees in detail.
 
 | Mode | Model (default) | Effort (default) | What it adds |
 |------|-----------------|------------------|--------------|
-| `opus_bare`              | `claude-opus-4-7`   | `high` | Plain Opus, no skills, no prefix. Baseline. |
+| `sonnet_bare`            | `claude-sonnet-4-6` | `high` | Plain Sonnet, no skills, no prefix. Baseline. |
 | `superpowers`            | `claude-sonnet-4-6` | `high` | Auto-loads the `superpowers:*` skill bundle. |
 | `consilium_sequential`   | `claude-sonnet-4-6` | `high` | `/consilium` skill in sequential mode. |
 | `consilium_trias`        | `claude-sonnet-4-6` | `high` | `/consilium --mode trias` (three voices). |
 | `consilium_dialectic`    | `claude-sonnet-4-6` | `high` | `/consilium --mode dialectic`. |
 
-> The model is pinned per mode in `MODE_MODELS` (currently only `opus_bare`);
+> The model is pinned per mode in `MODE_MODELS` (currently only `sonnet_bare`);
 > all other modes inherit the global `--model` default. Effort is the same
 > default for every mode. Override on the CLI with `--model <id>` /
 > `--effort low|medium|high|xhigh|max`, or via

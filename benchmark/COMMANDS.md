@@ -44,7 +44,7 @@ claude --version
 ```
 --clean             → wipe this task's workspace before running
 --rep N             → write to workspace/<mode>/<task>/rep_<N>/ (single slot)
---model    claude-sonnet-4-6   (default; opus_bare pins claude-opus-4-7)
+--model    claude-sonnet-4-6   (default; sonnet_bare pins claude-opus-4-7)
 --effort   high                (default; choices: low/medium/high/xhigh/max)
 --budget   3.0                 (USD cap; halts with `error_max_budget` if hit)
 --no-verify                    (skip automatic verify step after the run)
@@ -76,7 +76,7 @@ and rubrics cannot leak into the model's context.
 Re-score retroactively without re-running the model:
 
 ```powershell
-python verify.py --mode opus_bare --task code/01_circuit_breaker
+python verify.py --mode sonnet_bare --task code/01_circuit_breaker
 ```
 
 
@@ -119,18 +119,6 @@ python run_task.py --mode consilium_dialectic --task reasoning/04_binary_search_
 
 ---
 
-## OPUS BARE
-
-```powershell
-python run_task.py --mode opus_bare --task code/01_circuit_breaker
-python run_task.py --mode opus_bare --task reasoning/01_transport_choice
-python run_task.py --mode opus_bare --task reasoning/02_rule_of_three
-python run_task.py --mode opus_bare --task reasoning/03_schema_migration
-python run_task.py --mode opus_bare --task reasoning/04_binary_search_bug
-```
-
----
-
 ## SUPERPOWERS
 
 Runs in `--auto` like every other mode. The `superpowers:*` skills auto-load
@@ -157,10 +145,10 @@ python run_task.py --mode superpowers --task reasoning/04_binary_search_bug
 
 ```powershell
 # Single fresh run, one cell:
-python scripts/run.py single --mode opus_bare --task code/01_circuit_breaker --clean
+python scripts/run.py single --mode sonnet_bare --task code/01_circuit_breaker --clean
 
 # Multiple fresh replicates, one cell:
-python scripts/run.py single --mode opus_bare --task code/01_circuit_breaker --reps 3 --clean
+python scripts/run.py single --mode sonnet_bare --task code/01_circuit_breaker --reps 3 --clean
 
 # All modes, one task, fresh batch (use after editing the task prompt):
 python scripts/run.py task --task reasoning/01_transport_choice --reps 3 --clean
@@ -183,11 +171,11 @@ the next free `rep_N` slot.
   ```
 - Lower effort to compare quality vs cost:
   ```powershell
-  python run_task.py --mode opus_bare --task code/01_circuit_breaker --effort medium
+  python run_task.py --mode sonnet_bare --task code/01_circuit_breaker --effort medium
   ```
 - Different model (e.g. Haiku for smoke test):
   ```powershell
-  python run_task.py --mode opus_bare --task code/01_circuit_breaker --model haiku --budget 1
+  python run_task.py --mode sonnet_bare --task code/01_circuit_breaker --model haiku --budget 1
   ```
 
 ---
@@ -221,7 +209,7 @@ python analyze.py
 
 ## TOTAL
 
-6 modes × 5 tasks = 30 runs. Budget cap @ $3/task → maximum spend ~$90.
+5 modes × 5 tasks = 25 runs. Budget cap @ $3/task → maximum spend ~$75.
 Reasoning-only tasks (03, 04) typically cost well under $1 each.
 
 ---

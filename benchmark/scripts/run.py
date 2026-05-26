@@ -4,7 +4,7 @@ Run from anywhere — every subcommand resolves paths against the repo root.
 
 Examples:
     python scripts/run.py all
-    python scripts/run.py mode --mode opus_bare
+    python scripts/run.py mode --mode sonnet_bare
     python scripts/run.py task --task reasoning/02_rule_of_three --reps 3
     python scripts/run.py single --mode superpowers --task code/01_circuit_breaker
     python scripts/run.py clean --task reasoning/02_rule_of_three
@@ -168,11 +168,11 @@ examples:
   python scripts/run.py all --reps 3                                 # append 3 reps per cell
   python scripts/run.py all --reps 3 --clean                         # wipe everything then run a fresh 3-rep batch
   python scripts/run.py task --task reasoning/01_transport_choice --reps 3 --clean
-  python scripts/run.py mode --mode opus_bare --reps 3
+  python scripts/run.py mode --mode sonnet_bare --reps 3
   python scripts/run.py single --mode superpowers --task code/01_circuit_breaker --reps 5
   python scripts/run.py clean --task reasoning/02_rule_of_three      # wipe one task across all modes
   python scripts/run.py clean --mode consilium_dialectic             # wipe one mode across all tasks
-  python scripts/run.py clean --mode opus_bare --task code/01_circuit_breaker
+  python scripts/run.py clean --mode sonnet_bare --task code/01_circuit_breaker
   python scripts/run.py report
 """
 
