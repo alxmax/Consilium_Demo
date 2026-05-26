@@ -12,12 +12,11 @@ The **report is the spec** — `chosen_approach` + `success_criterion` + `verifi
 only inputs the pipeline needs. The skill (`SKILL.md`) remains the source of truth for the
 deliberation that produced the report; this file specifies the *implementation* deviations.
 
-> **Status: default for regression-risk changes (promoted 2026-05-25).** Routing via
-> `recommend_implement_mode()` in `infer_pipeline.py` — pipeline for regression-risk quadrants
-> (`moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), single-shot for
-> greenfield. Override: decline at the Step 7 prompt. This vehicle is separate from
-> `consilium-subagent` because its output contract is a **file manifest + Control verdict**,
-> not a `runs/<file>.json` report.
+> **Status: auto-dispatch on deliverables-regex prompts (2026-05-26); default for regression-risk changes (promoted 2026-05-25).** Two triggers:
+> 1. **Auto (no confirmation):** prompt contains `**Required output file(s):**` / `**Deliverable(s):**` header AND verdict == GO AND `success_criterion` + `verification` non-empty — SKILL.md Step 7 mandatory clause.
+> 2. **Opt-in:** all other GO verdicts — user confirms at Step 7.
+>
+> Routing via `recommend_implement_mode()` in `infer_pipeline.py` — pipeline for regression-risk quadrants (`moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), single-shot for greenfield. **Mode-agnostic:** fires identically after sequential, dialectic, or trias deliberation. This vehicle is separate from `consilium-subagent` because its output contract is a **file manifest + Control verdict**, not a `runs/<file>.json` report.
 
 ## Working directory
 
