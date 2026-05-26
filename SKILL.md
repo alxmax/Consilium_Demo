@@ -501,6 +501,14 @@ When `CLAUDE_HEADLESS=1` (set by the external orchestrator that invoked `claude 
 
 **Senate note:** `runs/senate/2026-05-18_164154-mode-bugfix-performance.json` + mini-senate H2+H4 (verdict B+X 5/7 + 4/7) validated this contract.
 
+### Pipeline-execution contract (orchestrator-enforced)
+
+Every `/consilium` invocation MUST terminate by writing a report to `.consilium/runs/` — either a real deliberation report, or a `skipped` / `trivial-direct` report (Step 1.5 / scale_down short-circuit). A run that produces **no** report did not execute the pipeline (it answered directly with the skill merely in context — the gap found in the 2026-05-26 benchmark audit, where `consilium_sequential`/`dialectic` collapsed to bare Sonnet).
+
+**Detection is the orchestrator's responsibility, not the skill's.** A guard written as SKILL.md prose ("assert dispatch happened, else warn") is self-defeating: the skip happens *because* the model didn't execute the steps, so it would skip the guard too — a non-executing process cannot run its own self-check (Senate 2026-05-26, `runs/senate/2026-05-26_215328-trias-dialectic-audit-improvements.json`). Therefore the skill does **not** self-enforce headless execution. Instead, any orchestrator that invokes `claude -p` with this skill detects a skipped deliberation by the **absence of a fresh `runs/` report** for the invocation. Reference implementation: `benchmark/run_task.py` `detect_pipeline_execution()` (writes `pipeline_audit.json`; surfaced in `report.html` as a `pipeline: deliberated|skipped` badge). Interactive (non-headless) use is not silent — the operator sees in the transcript whether the pipeline ran.
+
+> Deliberation of record: `.consilium/runs/2026-05-26_2230_live-path-guard.json` (chosen `doc_only_invariant` over a `.claude/settings.json` Stop hook — the hook has a global blast radius and false-positives on correct `trivial-direct` short-circuits, for a benefit confined to third-party headless orchestration).
+
 ## Dispatch defaults (per voice)
 
 Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `opus` Generator for high-stakes) — single source of truth per mode, descriptive not enforced.
