@@ -104,6 +104,8 @@ Required Questions (Q1-Q5): reversibility, magnitude, counterparty_risks, status
 
 Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_concern}, counterparty_risks, bias_check, meta_recommendation, tokens_budget: {generator, control}, irreversibility_flag, rollback_recipe, notes}`.
 
+**Categorical flip caveat:** Conservator `magnitude`/`reversibility` labels have a ~40% inter-run flip rate on ambiguous inputs (experiment 2026-05-17). If the deliberation is sensitive to the magnitude/reversibility boundary, consider double-sampling.
+
 **Sequential-first.** Conservator runs before Generator and Control. Its `tokens_budget` output caps how deep the other voices go. Its `irreversibility_flag: true` BLOCKS the pipeline — confirm user consent before proceeding.
 
 **Veto check (auto, after Conservator output):**

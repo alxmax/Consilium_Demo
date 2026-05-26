@@ -111,6 +111,56 @@ def retrospective(runs_dir: str) -> None:
     print("  (re-run each selected input twice, then --compare each pair)")
 
 
+def _categorical_fields(run: dict) -> dict | None:
+    """Extract conservator magnitude/reversibility from either log schema.
+
+    Handles flat schema {step:conservator, reversibility:..., magnitude:...} and
+    nested schema {step:conservator, scores:[{id, regression_risk:{reversibility, magnitude}}]}.
+    For nested, picks the chosen_approach candidate's score; falls back to first score.
+    Returns None when conservator step or categorical fields are absent.
+    """
+    log = run.get("deliberation_log")
+    if not isinstance(log, list):
+        return None
+
+    conservator_entry = None
+    for entry in log:
+        if isinstance(entry, dict) and entry.get("step") == "conservator":
+            conservator_entry = entry
+            break
+
+    if conservator_entry is None:
+        return None
+
+    # Flat schema
+    if "reversibility" in conservator_entry or "magnitude" in conservator_entry:
+        rev = conservator_entry.get("reversibility")
+        mag = conservator_entry.get("magnitude")
+        if rev is not None or mag is not None:
+            return {"reversibility": rev, "magnitude": mag}
+
+    # Nested schema
+    scores = conservator_entry.get("scores")
+    if isinstance(scores, list) and scores:
+        chosen = run.get("chosen_approach")
+        score_entry = None
+        if chosen:
+            for s in scores:
+                if isinstance(s, dict) and s.get("id") == chosen:
+                    score_entry = s
+                    break
+        if score_entry is None:
+            score_entry = scores[0]  # fallback to first candidate
+        rr = score_entry.get("regression_risk", {}) if isinstance(score_entry, dict) else {}
+        rev = rr.get("reversibility")
+        mag = rr.get("magnitude")
+        source_id = score_entry.get("id") if isinstance(score_entry, dict) else None
+        if rev is not None or mag is not None:
+            return {"reversibility": rev, "magnitude": mag, "source_id": source_id}
+
+    return None
+
+
 def compare(path_a: str, path_b: str) -> None:
     run_a = _load_run(path_a)
     run_b = _load_run(path_b)
@@ -143,6 +193,34 @@ def compare(path_a: str, path_b: str) -> None:
         mean_pstdev = statistics.mean(pstdevs)
         verdict = "CONFIRMED (> 0.10)" if mean_pstdev > STABILITY_THRESHOLD else "OK (≤ 0.10)"
         print(f"\n  mean pstdev across voices: {mean_pstdev:.3f} → Bug #1 {verdict}")
+
+    # Categorical stability
+    cat_a = _categorical_fields(run_a)
+    cat_b = _categorical_fields(run_b)
+    print("\n--- Categorical stability ---")
+    if cat_a is None and cat_b is None:
+        print("  MISSING — categorical fields not found in either run")
+    elif cat_a is None:
+        print("  MISSING — categorical fields not found in run A")
+    elif cat_b is None:
+        print("  MISSING — categorical fields not found in run B")
+    else:
+        for field in ("magnitude", "reversibility"):
+            a_val = cat_a.get(field)
+            b_val = cat_b.get(field)
+            if a_val is None and b_val is None:
+                print(f"  {field:14s}: MISSING in both runs")
+            elif a_val is None:
+                print(f"  {field:14s}: MISSING in run A  B={b_val}")
+            elif b_val is None:
+                print(f"  {field:14s}: A={a_val}  MISSING in run B")
+            else:
+                match = "OK" if a_val == b_val else "*** FLIP"
+                print(f"  {field:14s}: A={a_val}  B={b_val}  {match}")
+        if cat_a.get("source_id"):
+            print(f"  (A: scores from candidate '{cat_a['source_id']}')")
+        if cat_b.get("source_id"):
+            print(f"  (B: scores from candidate '{cat_b['source_id']}')")
 
 
 def pick_candidates(runs_dir: str, n: int) -> None:
