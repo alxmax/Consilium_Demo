@@ -133,7 +133,7 @@ def report(entries: list[dict], runs: list[dict] | None = None) -> str:
     out = []
     out.append(f"Total logged uses: {len(entries)}")
     if not entries:
-        out.append("No entries yet. Use the skill on a real change, then append a line to FEEDBACK.md.")
+        out.append("No entries yet. Use the skill on a real change — log_feedback.py will append to FEEDBACK.html automatically.")
         return "\n".join(out)
 
     outcomes = Counter(e["outcome"] for e in entries)
