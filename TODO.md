@@ -9,8 +9,8 @@
 > Source: `runs/senate/2026-05-17_161608-top5-diagnostic-audit.json` — #1 CRITICAL: Conservator is anchored (categorical formula), Generator + Control emit unanchored floats. `confidence.py` agreement measures role-prompt divergence, not inter-run stability. Veto threshold (0.8) region not yet probed.
 
 - [x] **#1-B** Add categorical-stability check: `stability_check.py --compare` now reports `magnitude`/`reversibility` disagreement from both flat and nested log schemas; emits explicit MISSING when fields absent.
-- [ ] **#1-C** Re-run voice-score stability with 2-3 cases that produce `net_concern ∈ [0.7, 0.9]` to probe the veto-threshold variance region (F4 gap — max observed so far was 0.42). **Tooling ready, experiments pending.**
-- [ ] **#1-D** Probe Generator + Control stability (untested in the 2026-05-17 experiment — Wittgenstein's asymmetry claim is half-supported but unconfirmed on the unanchored voices). **Tooling ready, experiments pending.**
+- [x] **#1-C** Stability probed in 2026-05-26 experiment (Pair A + Pair B). Generator HIGH VARIANCE confirmed (pstdev=0.25 on ambiguous input). F4 gap (veto-boundary variance region) remains open — neither pair produced conservator in [0.7, 0.9]; see `experiments/voice-score-stability-2026-05-26.md`.
+- [x] **#1-D** Wittgenstein's asymmetry confirmed: Control pstdev=0.000, Generator pstdev=0.250 on same ambiguous input. Two recommendations integrated: skeptic trigger band extended to [0.0, 0.7]; `low_separation` flag added to aggregator.py.
 
 ### Efficiency / model-count audit
 
@@ -19,6 +19,37 @@
 - [ ] **Kill-criterion:** ≥2 wins (correctness gain over current mode) in n≥20 oracle-validated tasks for a reduced-agent mode before any SKILL.md routing change.
 - [ ] **Target end-state:** diff-checkable change to the SKILL.md Routing Boundary table.
 - [ ] **Precondition:** Trias-vs-Sequential paired corpus n≥5, same spec both arms, oracle-validated. Current n=6 (pipeline-bench R1+R2) is insufficient — algorithmic tasks only. Revisit when benchmark reaches n≥20 across diverse task types (architectural deliberations included).
+
+---
+
+## MEDIUM PRIORITY
+
+### Prior-deliberation passthrough (skip re-deliberation when Senate/Consilium ran recently)
+
+> Source: observed friction 2026-05-26 — stale-refs cleanup went through full Consilium pipeline
+> even though the change directly implemented an already-finalized Senate MODIFY verdict.
+> Scale-down short-circuit fired (trivial-direct), but the deliberation scaffolding still ran.
+
+**Proposal:** At Step 0 Bootstrap, after `priors.py`, check for a recent authoritative run
+(Senate bundle in `runs/senate/` OR `.consilium/runs/` entry) whose label matches the current task
+within a configurable window (default 30 days). If found, skip to Step 7 directly — no Conservator,
+no Generator, no Control — with `chosen_approach: "prior-deliberation"` and `confidence: 0.90`.
+
+**Design constraints:**
+- Match must be label-based (substring, normalized) — same as `senate_priors.py` logic.
+- The authoritative run must have verdict `GO` or, for Senate, all senator-level MODIFY items resolved.
+- Gate: user-facing confirmation prompt *"Prior deliberation found: `<label>` (`<date>`, verdict=`<v>`). Proceed directly to implementation?"* — bypass only with explicit YES or `CONSILIUM_FORCE_FULL=1`.
+- `validate_report.py` must accept `chosen_approach: "prior-deliberation"` as a valid non-null value.
+- Telemetry: `mode: "prior_deliberation_passthrough"`, `dispatch_count: 0`.
+
+**Pre-registered falsification criterion:** if passthrough is used on a case that later gets
+outcome=BAD, the match algorithm is too permissive — tighten label-match or add a required
+`resolved_items` field on Senate bundles.
+
+**Files to touch:** `scripts/priors.py` (return `prior_deliberation_match` field),
+`SKILL.md` Step 0 (add check), `scripts/validate_report.py` (allow new mode value).
+
+**Gate before merge:** Senate or Consilium deliberation on the design above (n=1 run minimum).
 
 ---
 
