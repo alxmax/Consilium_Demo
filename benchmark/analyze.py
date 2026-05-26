@@ -99,11 +99,29 @@ def load_audit(workspace_dir):
         return "-", "-"
 
 
+def load_pipeline(workspace_dir):
+    """Read pipeline_audit.json; return pipeline_executed (True/False/None).
+
+    Written only for consilium_* runs (see run_task.detect_pipeline_execution).
+    None = non-consilium mode or legacy run with no pipeline_audit.json → no badge.
+    False = a consilium run that answered directly without executing the pipeline
+    (bare-equivalent; the 2026-05-26 audit gap). True = real deliberation.
+    """
+    p = workspace_dir / "pipeline_audit.json"
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding="utf-8")).get("pipeline_executed")
+    except Exception:
+        return None
+
+
 def _load_one_run(d):
     """Read one workspace directory; return metrics dict or None."""
     raw = d / "claude_raw.json"
     verify_state, verify_score, verify_max, verify_raw = load_verify(d)
     audit_verdict, audit_summary = load_audit(d)
+    pipeline_executed = load_pipeline(d)
 
     if not raw.exists():
         # No API data — surface only if verify data is present.
@@ -118,6 +136,7 @@ def _load_one_run(d):
             "verify_state": verify_state, "verify_score": verify_score,
             "verify_max": verify_max, "verify_raw": verify_raw,
             "audit_verdict": audit_verdict, "audit_summary": audit_summary,
+            "pipeline_executed": pipeline_executed,
         }
 
     try:
@@ -159,6 +178,7 @@ def _load_one_run(d):
         "verify_raw":    verify_raw,
         "audit_verdict": audit_verdict,
         "audit_summary": audit_summary,
+        "pipeline_executed": pipeline_executed,
     }
 
 
@@ -400,6 +420,26 @@ def audit_html(r):
     return f'<div class="audit {css}" title="{title}">behavior: {label}</div>'
 
 
+def pipeline_html(r):
+    """Render the pipeline-execution badge for a consilium_* cell.
+
+    `deliberated` (green) = the run wrote a .consilium/runs/ report (the 8-step
+    pipeline actually ran). `pipeline-skipped` (amber) = a consilium run that
+    answered directly with no report — bare-Sonnet-equivalent, NOT a real
+    deliberation (the 2026-05-26 audit gap). None = non-consilium mode or legacy
+    run → no badge. Makes the bare-vs-Consilium distinction visible in the report.
+    """
+    status = r.get("pipeline_executed")
+    if status is None:
+        return ""
+    if status:
+        return ('<div class="pipe pipe-ok" title="wrote a .consilium/runs/ report — '
+                'the deliberation pipeline ran">pipeline: deliberated</div>')
+    return ('<div class="pipe pipe-warn" title="no runs/ report written — answered '
+            'directly, bare-Sonnet-equivalent, not a real deliberation">'
+            'pipeline: skipped</div>')
+
+
 def _replicates_html(r):
     """Render 'n=K · p L-H · $σ X.XX' line when the cell aggregates >1 runs."""
     reps = r.get("replicates")
@@ -479,6 +519,7 @@ def cell_html(r, rank=None):
         f'{meta_cache}'
         f'{verify_html(r)}'
         f'{audit_html(r)}'
+        f'{pipeline_html(r)}'
         f'{halt}'
         f'{judge_rationale_html(r)}'
         f'</td>'
@@ -539,6 +580,9 @@ td.rank-worst { background: #3a1a1f; border: 1px solid #b62324; }
 .audit-warn  { color: #d29922; }
 .audit-bad   { color: #f85149; font-weight: 600; }
 .audit-unk   { color: #6e7681; }
+.pipe        { font-size: 11px; margin-top: 4px; cursor: help; }
+.pipe-ok     { color: #3fb950; }
+.pipe-warn   { color: #d29922; font-weight: 600; }
 .task { font-weight: 600; color: #c9d1d9; background: #1c232b !important; }
 .score { font-size: 22px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
 .score-good { color: #3fb950; }
@@ -751,6 +795,11 @@ def build_html(rows):
         '&nbsp;&nbsp;<code>CR X · CW X</code> — <code>CR</code> = cache-read tokens (served from Anthropic prompt cache, ~10% of input price), <code>CW</code> = cache-write tokens (added to cache this run). The Claude Code system prompt (~30K tokens) reads from cache on every <code>claude -p</code> invocation — a constant cost floor across modes, not a bias source. Cross-run CR variance signals real cache state change.<br>'
         '&nbsp;&nbsp;<code>verify: OK/FAIL (score/max)</code> — automatic verification result.<br>'
         '&nbsp;&nbsp;<code>behavior: computed/searched/cheat</code> — anti-cheat audit verdict.<br>'
+        '&nbsp;&nbsp;<code>pipeline: deliberated/skipped</code> — consilium_* modes only. '
+        '<code>deliberated</code> = the run wrote a <code>.consilium/runs/</code> report (the 8-step pipeline ran); '
+        '<code>skipped</code> = the run answered directly with no report, i.e. bare-Sonnet-equivalent and NOT a real '
+        'deliberation. A <code>skipped</code> cell means that mode/task pair did not exercise Consilium, '
+        'so its score reflects the base model, not the deliberation process.<br>'
         '&nbsp;&nbsp;<code>▸ judge rationale</code> / <code>▸ verify details</code> — collapsible. '
         'For <code>llm_judge</code> tasks: per-criterion sub-scores + one-line summary from the judge. '
         'For other verifiers (pytest, cpp_self_tests, closed_answer): shown only on failure, '

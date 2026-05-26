@@ -179,14 +179,43 @@ def count_questions(text):
             count += 1
     return count
 
+# Skill prints run-paths as .consilium/runs/<f>.json; the optional prefix
+# keeps the bare runs/<f>.json form matching too (legacy / canonicalized).
+_RUN_PATH_RE = re.compile(r"(?:\.consilium/)?\bruns/[\w\-.]+\.json\b")
+
+
+def detect_pipeline_execution(mode: str, response: str, workspace: Path) -> None:
+    """Record whether a consilium_* run actually executed the deliberation pipeline.
+
+    Signal: the skill, on a real deliberation, prints the canonical terminal line
+    `chosen: <id> | conf: <X> | .consilium/runs/<file>.json` (SKILL.md Step 6).
+    A run that short-circuits to a direct answer (~2 turns, no pipeline) emits no
+    such run-path. We treat the presence of a runs/ path in the response as proof
+    the pipeline ran. Non-consilium modes have no pipeline → status null (badge N/A).
+
+    Writes pipeline_audit.json so analyze.py can mark the cell. Without this, a
+    sequential run that answered directly is indistinguishable from bare Sonnet
+    in the report (the gap found in the 2026-05-26 audit).
+    """
+    if not mode.startswith("consilium_"):
+        return
+    run_paths = _RUN_PATH_RE.findall(response or "")
+    (workspace / "pipeline_audit.json").write_text(
+        json.dumps({
+            "pipeline_executed": bool(run_paths),
+            "run_paths": run_paths,
+            "signal": "runs/ report path in response",
+        }, indent=2),
+        encoding="utf-8",
+    )
+
+
 def fix_pend_headless(response: str) -> None:
     """Convert PEND entries created by this benchmark run to PEND_HEADLESS."""
     fix_script = CONSILIUM_ROOT / "scripts" / "fix_benchmark_pendings.py"
     if not fix_script.exists():
         return
-    # Skill prints run-paths as .consilium/runs/<f>.json; the optional prefix
-    # keeps the bare runs/<f>.json form matching too (legacy / canonicalized).
-    run_paths = re.findall(r"(?:\.consilium/)?\bruns/[\w\-.]+\.json\b", response)
+    run_paths = _RUN_PATH_RE.findall(response)
     if not run_paths:
         return
     abs_paths = [str(CONSILIUM_ROOT / p) for p in run_paths]
@@ -913,6 +942,7 @@ def main():
                  verify_report=verify_report)
 
     if args.mode.startswith("consilium_") and response:
+        detect_pipeline_execution(args.mode, response, workspace)
         fix_pend_headless(response)
 
     print(f"\nDone. Open RESULT.md to fill in the scoring.")
