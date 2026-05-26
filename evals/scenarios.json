@@ -2084,5 +2084,37 @@
     "expect_stdout_contains": [
       "Categorical stability"
     ]
+  },
+  {
+    "name": "aggregator/conservative_override emits low_separation when top-2 score delta < 0.12",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "conservative_override"
+    ],
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "a",
+          "scores": {
+            "generator": 0.9,
+            "control": 0.9,
+            "conservator": 0.2
+          }
+        },
+        {
+          "id": "b",
+          "scores": {
+            "generator": 0.85,
+            "control": 0.85,
+            "conservator": 0.25
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "low_separation": true
+    }
   }
 ]
