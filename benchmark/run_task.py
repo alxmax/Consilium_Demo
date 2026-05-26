@@ -186,7 +186,9 @@ def fix_pend_headless(response: str) -> None:
     fix_script = CONSILIUM_ROOT / "scripts" / "fix_benchmark_pendings.py"
     if not fix_script.exists():
         return
-    run_paths = re.findall(r"\bruns/[\w\-.]+\.json\b", response)
+    # Skill prints run-paths as .consilium/runs/<f>.json; the optional prefix
+    # keeps the bare runs/<f>.json form matching too (legacy / canonicalized).
+    run_paths = re.findall(r"(?:\.consilium/)?\bruns/[\w\-.]+\.json\b", response)
     if not run_paths:
         return
     abs_paths = [str(CONSILIUM_ROOT / p) for p in run_paths]
