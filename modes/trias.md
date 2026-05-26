@@ -125,6 +125,15 @@ magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin
 
 **Max cost (worst case 1-1-1 → Round 2 → Skeptic):** 3 + 3 + 1 = 7 sub-agents.
 
+**Dispatch failure / timeout guard (B2).** The cascade is depth-bounded (≤7 sub-agents) but each dispatch can still hang or error — a sub-agent that never returns must not strand the run with burned budget and no result. Every cascade dispatch (Round 2 ×3, Skeptic ×1) is treated as **best-effort**:
+
+- A sub-agent that errors, times out, or returns malformed JSON is counted as a **non-vote** (it does not block the others). Do not retry more than once per dispatch.
+- After Round 2, vote over **whichever personalities returned**. If ≥2 valid votes yield a clear majority → exit normally. If fewer than 2 valid votes remain, or the surviving votes still tie → **PEND immediately**; do NOT escalate to the Skeptic tiebreaker on incomplete data.
+- A Skeptic dispatch that fails or times out → **PEND** (never hang waiting on it).
+- Whenever the cascade exits on incomplete data, surface the **partial result** — the Round 1 `{personality, chosen_approach}` triple — in the report so the user sees the divergence, and set `cascade_incomplete: true` in telemetry alongside the count of sub-agents that actually returned (`cascade_dispatches_returned: <n>`). A PEND with the three competing positions shown is more useful than a silent stall.
+
+Rationale: Senate audit 2026-05-26 (Dimon) flagged that the 6th/7th cascade dispatch hanging on a slow/near-budget session would burn cost and write no run report (the badge never fires). This guard makes the failure **graceful and visible** instead of silent. The 1-1-1 path that triggers the cascade is rare in practice (≈8% of Trias runs — see `scripts/vote_degeneracy.py`), so the guard protects a real but infrequent tail.
+
 ## Skip Trias if
 - Diff < 20 lines / 1 file — `scope_gate.py` will skip anyway
 - Strict conservatism required (aggregated Trias is −18% Conservator)
