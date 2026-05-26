@@ -37,7 +37,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-from utils import atomic_write_text, force_utf8_streams
+from utils import FEEDBACK_PATH, RUNS_DIR, atomic_write_text, force_utf8_streams
 
 
 def _load_modules():
@@ -72,16 +72,16 @@ def _load_modules():
 def main(argv: list[str] | None = None) -> int:
     force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--runs-dir", default=None, help="path to runs/ (default: ./runs)")
-    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: ./FEEDBACK.html)")
+    ap.add_argument("--runs-dir", default=None, help="path to runs/ (default: .consilium/runs)")
+    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: .consilium/FEEDBACK.html)")
     ap.add_argument("--backfill", action="store_true", help="append PEND rows for each missing run")
     ap.add_argument("--dry-run", action="store_true", help="with --backfill: print plan but don't write")
     args = ap.parse_args(argv)
 
     priors_mod, fb_mod, log_mod, render_mod = _load_modules()
 
-    runs_dir = Path(args.runs_dir) if args.runs_dir else Path.cwd() / "runs"
-    feedback_path = Path(args.feedback) if args.feedback else Path.cwd() / "FEEDBACK.html"
+    runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS_DIR
+    feedback_path = Path(args.feedback) if args.feedback else FEEDBACK_PATH
 
     entries = fb_mod.parse_feedback(feedback_path)
     missing = priors_mod.find_missing_feedback_runs(runs_dir, entries, cap=999)

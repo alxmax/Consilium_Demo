@@ -17,6 +17,12 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+# This module is loaded via importlib from several entry points (including
+# scripts/deprecated/), so scripts/ may not be on sys.path. Bootstrap it
+# before importing the shared utils constants.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from utils import RUNS_DIR
+
 
 @dataclass
 class Entry:
@@ -307,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     data = json.load(sys.stdin)
     entries = [Entry(**e) for e in data.get("entries", [])]
-    runs_dir = Path(args.runs_dir) if args.runs_dir else Path.cwd() / "runs"
+    runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS_DIR
     sys.stdout.write(render(entries, runs_dir))
     return 0
 

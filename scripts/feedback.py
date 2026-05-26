@@ -19,9 +19,14 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+# Loaded via importlib from several entry points (priors, log_feedback,
+# efficiency, deprecated/), so scripts/ may not be on sys.path. Bootstrap it.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from utils import FEEDBACK_PATH, RUNS_DIR
+
 ROOT = Path(__file__).resolve().parent.parent
-FEEDBACK = ROOT / "FEEDBACK.html"
-RUNS = ROOT / "runs"
+FEEDBACK = FEEDBACK_PATH
+RUNS = RUNS_DIR
 
 OUTCOMES = ("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS")
 

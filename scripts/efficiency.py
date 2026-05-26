@@ -35,6 +35,8 @@ import json
 import sys
 from pathlib import Path
 
+from utils import FEEDBACK_PATH, RUNS_DIR
+
 
 MIN_RUNS = 3  # modes with fewer runs marked insufficient_data
 HERE = Path(__file__).resolve().parent
@@ -365,16 +367,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--self-test", action="store_true",
                     help="run against inline fixture and exit; no filesystem reads")
     ap.add_argument("--feedback", default=None,
-                    help="path to FEEDBACK.html (default: ./FEEDBACK.html)")
+                    help="path to FEEDBACK.html (default: .consilium/FEEDBACK.html)")
     ap.add_argument("--runs", default=None,
-                    help="path to runs/ dir (default: ./runs)")
+                    help="path to runs/ dir (default: .consilium/runs)")
     args = ap.parse_args(argv)
 
     if args.self_test:
         return run_self_test()
 
-    runs_dir = Path(args.runs) if args.runs else ROOT / "runs"
-    feedback_path = Path(args.feedback) if args.feedback else ROOT / "FEEDBACK.html"
+    runs_dir = Path(args.runs) if args.runs else RUNS_DIR
+    feedback_path = Path(args.feedback) if args.feedback else FEEDBACK_PATH
 
     if not runs_dir.is_dir():
         json.dump({"error": f"runs dir not found: {runs_dir}"}, sys.stdout, indent=2)

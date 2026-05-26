@@ -41,11 +41,11 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-RUNS = ROOT / "runs"
-FEEDBACK = ROOT / "FEEDBACK.html"
+from utils import FEEDBACK_PATH, RUNS_DIR, force_utf8_streams
 
-from utils import force_utf8_streams
+ROOT = Path(__file__).resolve().parent.parent
+RUNS = RUNS_DIR
+FEEDBACK = FEEDBACK_PATH
 
 
 _FB_PATH = ROOT / "scripts" / "feedback.py"

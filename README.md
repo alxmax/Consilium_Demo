@@ -14,7 +14,7 @@ The three core voices:
 
 - **Adversarial-by-design deliberation** — roles with conflicting incentives, not one model agreeing with itself.
 - **An 8-component veto cascade** (`scripts/aggregator.py`) that turns three voice outputs into one decision with 7 distinct routing outcomes (block / rework / adapt / escalate / aggregate).
-- **A self-calibrating feedback loop** — every run lands as canonical JSON in `runs/`, outcomes are logged to `FEEDBACK.html`, and the next deliberation reads those priors. Confidence below a per-mode floor is flagged.
+- **A self-calibrating feedback loop** — every run lands as canonical JSON in `.consilium/runs/`, outcomes are logged to `.consilium/FEEDBACK.html`, and the next deliberation reads those priors. Confidence below a per-mode floor is flagged.
 - **Cost-aware modes** — from a 1× single-context pass up to a 3× three-personality vote (Trias), with a scope gate that auto-skips trivial diffs.
 - **Measured, not asserted** — a benchmark harness (`benchmark/`) compares each mode against bare-model baselines on real coding/reasoning tasks with a hidden oracle.
 - **Stdlib-only Python** — no external dependencies; each script is a small, standalone CLI with JSON I/O.
@@ -65,7 +65,7 @@ consilium/
 ├── benchmark/       # mode-vs-baseline benchmark harness (oracle kept in an external sibling repo)
 ├── docs/            # architecture.html explainer + its React source under docs/architecture/
 ├── evals/           # deterministic regression scenarios for the scripts
-└── runs/            # one JSON report per deliberation (gitignored)
+└── .consilium/      # local deliberation state (gitignored): runs/*.json + FEEDBACK.html
 ```
 
 ## Modes
@@ -92,7 +92,7 @@ What this project concretely shows, in Agentic-AI / LLMOps terms. Rated **Full**
 | Deterministic orchestration | Full | `scope_gate → voices → aggregator → validate_report → implementation pipeline`, all stdlib scripts |
 | Retry / reflection / self-healing | Full | `retry_context.py` (low-confidence re-deliberation), sub-agent-crash fallback, malformed-JSON retry, red→green test gate |
 | Agent execution visualization | Full | the interactive architecture explainer (`docs/architecture/`) |
-| Agent memory | **Partial** | 3 tiers via `memory.py` — session context, `runs/*.json` episodic logs, `FEEDBACK.html` outcome journal. This is **journaling + run logs, not vector / retrieval-augmented memory** |
+| Agent memory | **Partial** | 3 tiers via `memory.py` — session context, `.consilium/runs/*.json` episodic logs, `.consilium/FEEDBACK.html` outcome journal. This is **journaling + run logs, not vector / retrieval-augmented memory** |
 | Token-cost telemetry | Full (instrumentation) | per-dispatch telemetry → `efficiency.py` / `usage.py` (`tokens_per_OK`). Aggregate efficiency figures in the explainer are currently **illustrative**, pending a larger measured run |
 | Regression testing | Full | `evals/scenarios.json` + `run_evals.py` — deterministic subprocess tests of the scripts (not LLM-output evals) |
 | Benchmarking vs baselines | Full | `benchmark/` compares each mode against bare-model baselines with a hidden oracle kept out-of-tree |

@@ -38,6 +38,8 @@ import statistics
 import sys
 from pathlib import Path
 
+from utils import RUNS_DIR
+
 
 CORE_VOICES = ("generator", "control", "conservator")
 VOICES = CORE_VOICES
@@ -174,12 +176,12 @@ def load_reports(runs_dir: Path, last: int | None) -> tuple[list[Path], list[dic
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--runs", default=None, help="path to runs/ dir (default: ./runs)")
+    ap.add_argument("--runs", default=None, help="path to runs/ dir (default: .consilium/runs)")
     ap.add_argument("--last", type=int, default=None, help="restrict to most-recent N runs")
     ap.add_argument("--mode", default=None, help="filter by telemetry.mode (e.g. trias, sequential)")
     args = ap.parse_args(argv)
 
-    runs_dir = Path(args.runs) if args.runs else Path.cwd() / "runs"
+    runs_dir = Path(args.runs) if args.runs else RUNS_DIR
     if not runs_dir.is_dir():
         json.dump(
             {"error": f"runs dir not found: {runs_dir}"},
