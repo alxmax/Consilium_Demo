@@ -324,12 +324,12 @@ Dispatch via `Agent(subagent_type="consilium-implement-subagent", ...)` (see `ag
 
 **This section is descriptive only.** It does not create new behavioral contracts; Steps 0–7 above remain the authoritative workflow. The mapping below is a reading aid for contributors who arrive expecting an Observe–Think–Act–Learn shape — it names what is already present without prescribing anything new.
 
-| OTAL phase | Step(s) | Script(s) that implement the phase |
-|---|---|---|
-| **Observe** | Step 0 + Step 1 | `priors.py` (reads `FEEDBACK.html` + `runs/*.json`); orchestrator gathers context from the codebase |
-| **Think**   | Steps 2–5     | `aggregator.py`, `confidence.py`, `meta_critic.py`; Conservator → Generator → Control voices |
-| **Act**     | Step 6 + Step 7 | `validate_report.py`, `build_report.py` (write `.consilium/runs/<file>.json`); `infer_pipeline.py` (write code) |
-| **Learn**   | Step 6 final action + retroactive | `log_feedback.py` (append to `FEEDBACK.html`); `mark_outcome.py` (retroactive `[confirmed]` weighting) |
+| OTAL phase | Alias | Step(s) | Script(s) that implement the phase |
+|---|---|---|---|
+| **Observe** | **EXPLORE** | Step 0 + Step 1 | `priors.py` (reads `FEEDBACK.html` + `runs/*.json`); orchestrator gathers context from the codebase |
+| **Think**   | — | Steps 2–5     | `aggregator.py`, `confidence.py`, `meta_critic.py`; Conservator → Generator → Control voices |
+| **Act**     | **COMMIT** | Step 6 + Step 7 | `validate_report.py`, `build_report.py` (write `.consilium/runs/<file>.json`); `infer_pipeline.py` (write code) |
+| **Learn**   | — | Step 6 final action + retroactive | `log_feedback.py` (append to `FEEDBACK.html`); `mark_outcome.py` (retroactive `[confirmed]` weighting) |
 
 ```
          ┌────────────────────────────────────────────┐
