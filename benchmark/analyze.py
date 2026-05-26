@@ -26,9 +26,11 @@ from _common import MODES, TASKS  # noqa: E402  — single source of truth
 # Author's calibration of how much each task discriminates between modes.
 # Kept out of the prompt files on purpose so models can't tune effort to it.
 TASK_DIFFICULTY = {
-    "code/01_circuit_breaker":     "Hard",
+    "code/01_circuit_breaker":       "Hard",
     "reasoning/01_transport_choice": "Easy",
-    "reasoning/02_rule_of_three":  "Hard",
+    "reasoning/02_rule_of_three":    "Hard",
+    "reasoning/03_schema_migration": "Hard",
+    "reasoning/04_binary_search_bug": "Medium",
 }
 
 PROMPTS = BASE / "prompts"
@@ -639,6 +641,14 @@ def build_html(rows):
         for m in MODES:
             r = rows.get((m, task))
             if r is None or r["broken"] or r.get("audit_verdict") == "cheat":
+                continue
+            # Pipeline-skipped consilium runs answered as bare Sonnet (no
+            # deliberation). Crowning such a cell "best" would credit Consilium
+            # for work it did not do — exclude from the per-task ranking. The
+            # cell still renders (with its pipeline:skipped badge) and still
+            # counts toward cost/run totals; it just cannot win/lose as a
+            # deliberation result. (Senate 2026-05-26 rec#1.)
+            if r.get("pipeline_executed") is False:
                 continue
             sc = proxy_score(r)
             if sc is not None:
