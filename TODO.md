@@ -24,32 +24,17 @@
 
 ## MEDIUM PRIORITY
 
-### Prior-deliberation passthrough (skip re-deliberation when Senate/Consilium ran recently)
+### Prior-deliberation passthrough — DONE (2026-05-26, branch `feat/prior-deliberation-passthrough`)
 
 > Source: observed friction 2026-05-26 — stale-refs cleanup went through full Consilium pipeline
 > even though the change directly implemented an already-finalized Senate MODIFY verdict.
-> Scale-down short-circuit fired (trivial-direct), but the deliberation scaffolding still ran.
 
-**Proposal:** At Step 0 Bootstrap, after `priors.py`, check for a recent authoritative run
-(Senate bundle in `runs/senate/` OR `.consilium/runs/` entry) whose label matches the current task
-within a configurable window (default 30 days). If found, skip to Step 7 directly — no Conservator,
-no Generator, no Control — with `chosen_approach: "prior-deliberation"` and `confidence: 0.90`.
+- [x] `scripts/priors.py`: `--label TEXT` arg + `_find_prior_match()` (8-char min-length guard, 30-day window, outcomes OK/GO)
+- [x] `scripts/validate_report.py`: bypass `_validate_deliberation_log` for `chosen_approach == "prior-deliberation"`
+- [x] `SKILL.md` Step 0: passthrough gate documented with confirmation prompt + headless/FORCE_FULL semantics
+- [x] `evals/scenarios.json`: 3 new scenarios (label match, min-length guard, validate_report acceptance) — 68 total
 
-**Design constraints:**
-- Match must be label-based (substring, normalized) — same as `senate_priors.py` logic.
-- The authoritative run must have verdict `GO` or, for Senate, all senator-level MODIFY items resolved.
-- Gate: user-facing confirmation prompt *"Prior deliberation found: `<label>` (`<date>`, verdict=`<v>`). Proceed directly to implementation?"* — bypass only with explicit YES or `CONSILIUM_FORCE_FULL=1`.
-- `validate_report.py` must accept `chosen_approach: "prior-deliberation"` as a valid non-null value.
-- Telemetry: `mode: "prior_deliberation_passthrough"`, `dispatch_count: 0`.
-
-**Pre-registered falsification criterion:** if passthrough is used on a case that later gets
-outcome=BAD, the match algorithm is too permissive — tighten label-match or add a required
-`resolved_items` field on Senate bundles.
-
-**Files to touch:** `scripts/priors.py` (return `prior_deliberation_match` field),
-`SKILL.md` Step 0 (add check), `scripts/validate_report.py` (allow new mode value).
-
-**Gate before merge:** Senate or Consilium deliberation on the design above (n=1 run minimum).
+**Falsification criterion still active:** if passthrough fires on a case that later gets outcome=BAD, tighten the `--label` value or require more specific task descriptions.
 
 ---
 
