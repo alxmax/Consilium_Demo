@@ -116,6 +116,8 @@ def main(argv: list[str] | None = None) -> int:
     passed = 0
     failed = 0
     for s in scenarios:
+        if "tool" not in s:  # skip meta/comment entries
+            continue
         name = s.get("name", "<unnamed>")
         failures = run_one(s, repo_root)
         if failures:

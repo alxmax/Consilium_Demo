@@ -1,5 +1,9 @@
 [
   {
+    "_meta": true,
+    "_note": "Synthetic fixtures — validate code-path coverage only, not semantic correctness. A passing scenario confirms the script handles the given input shape; it does not assert that the heuristic or threshold is calibrated correctly. (Deming MODIFY, eval-parity audit 2026-05-25)"
+  },
+  {
     "name": "aggregator/majority picks highest mean",
     "tool": "scripts/aggregator.py",
     "args": [
