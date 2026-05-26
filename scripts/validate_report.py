@@ -365,6 +365,36 @@ def validate(report: dict) -> list[str]:
     return problems
 
 
+_SUBSTANCE_SKIP_CHOSEN = frozenset({"trivial-direct", "prior-deliberation", "skipped"})
+
+
+def _warn_substance(report: dict) -> list[str]:
+    """Non-blocking heuristic: warn when voices ran but produced empty output.
+
+    Does not add to the exit-1 problems list — emitted to stderr as advisory.
+    Skipped/passthrough/trivial-direct reports are exempt (no voices ran).
+    """
+    if report.get("skipped"):
+        return []
+    chosen = report.get("chosen_approach")
+    if chosen in _SUBSTANCE_SKIP_CHOSEN:
+        return []
+    warnings = []
+    for step in report.get("deliberation_log") or []:
+        if not isinstance(step, dict):
+            continue
+        s = step.get("step")
+        if s == "generator":
+            cands = step.get("candidates")
+            if isinstance(cands, list) and len(cands) == 0:
+                warnings.append("SUBSTANCE WARNING: generator.candidates is empty — voices may not have done substantive work")
+        elif s == "control":
+            verdicts = step.get("verdicts")
+            if isinstance(verdicts, list) and len(verdicts) == 0:
+                warnings.append("SUBSTANCE WARNING: control.verdicts is empty — voices may not have done substantive work")
+    return warnings
+
+
 def main(argv: list[str] | None = None) -> int:
     force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
@@ -419,6 +449,8 @@ def main(argv: list[str] | None = None) -> int:
         for p in problems:
             print(p, file=sys.stderr)
         return 1
+    for w in _warn_substance(report):
+        print(w, file=sys.stderr)
     return 0
 
 
