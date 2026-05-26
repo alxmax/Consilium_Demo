@@ -2116,5 +2116,62 @@
     "expect_stdout_subset": {
       "low_separation": true
     }
+  },
+  {
+    "name": "priors/--label finds match when context contains substring",
+    "note": "Synthetic fixture: validates label-match code path. Fixture uses date 2099-12-31 so the entry always falls within the 30-day window.",
+    "tool": "scripts/priors.py",
+    "args": [
+      "--label", "aggregator scoring",
+      "--no-runs",
+      "--feedback-file", "evals/fixtures/priors_label_match.html"
+    ],
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "prior_deliberation_match": {
+        "label": "aggregator scoring",
+        "date": "2099-12-31",
+        "outcome": "OK",
+        "chosen": "extend_trigger_plus_low_sep"
+      }
+    }
+  },
+  {
+    "name": "priors/--label too short returns null (min-length guard)",
+    "note": "Synthetic fixture: validates that labels shorter than 8 chars are rejected before any FEEDBACK lookup.",
+    "tool": "scripts/priors.py",
+    "args": [
+      "--label", "fix",
+      "--no-runs",
+      "--feedback-file", "evals/fixtures/priors_label_match.html"
+    ],
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "prior_deliberation_match": null
+    }
+  },
+  {
+    "name": "validate_report/accepts chosen_approach prior-deliberation with empty deliberation_log",
+    "note": "Synthetic fixture: validates that passthrough reports with no aggregate step pass the validator.",
+    "tool": "scripts/validate_report.py",
+    "args": [],
+    "stdin_json": {
+      "success_criterion": "The passthrough feature ships without re-deliberating.",
+      "chosen_approach": "prior-deliberation",
+      "verification": "manual",
+      "alternatives": [],
+      "voice_scores": null,
+      "confidence": 0.9,
+      "deliberation_log": [
+        {"step": "prior_deliberation_passthrough", "matched": "extend_trigger_plus_low_sep", "date": "2026-05-26"}
+      ],
+      "telemetry": {
+        "mode": "prior_deliberation_passthrough",
+        "dispatch_count": 0
+      }
+    },
+    "expect_exit": 0
   }
 ]

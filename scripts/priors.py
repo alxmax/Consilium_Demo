@@ -231,7 +231,39 @@ def find_stale_pendings(entries: list[dict], days_old: int = STALE_PEND_DAYS) ->
     ][:STALE_PEND_CAP]
 
 
-def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False) -> dict:
+_PRIOR_MATCH_MIN_LABEL_LEN = 8
+_PRIOR_MATCH_WINDOW_DAYS = 30
+_PRIOR_MATCH_OUTCOMES = {"OK", "GO"}
+
+
+def _find_prior_match(label: str, entries: list[dict], window_days: int = _PRIOR_MATCH_WINDOW_DAYS) -> dict | None:
+    """Return the most recent authoritative FEEDBACK entry whose context contains label.
+
+    Returns None when label is too short (< 8 chars after strip) or no match exists
+    within window_days. Scans entries newest-first so the most recent match wins.
+    Only entries with outcome in {"OK", "GO"} qualify — PEND/BAD/OVR do not.
+    """
+    if len(label.strip()) < _PRIOR_MATCH_MIN_LABEL_LEN:
+        return None
+    cutoff = (date.today() - timedelta(days=window_days)).isoformat()
+    needle = label.strip().lower()
+    for entry in reversed(entries):
+        if entry.get("date", "") < cutoff:
+            continue
+        if entry.get("outcome") not in _PRIOR_MATCH_OUTCOMES:
+            continue
+        context = (entry.get("context") or "").lower()
+        if needle in context:
+            return {
+                "label": label,
+                "date": entry.get("date"),
+                "outcome": entry.get("outcome"),
+                "chosen": entry.get("chosen"),
+            }
+    return None
+
+
+def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False, label: str | None = None) -> dict:
     entries = parse_feedback(FEEDBACK)
     recent = entries[-n:]
     counts = dict(_outcome_counts(recent))
@@ -255,6 +287,8 @@ def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False)
         out["source"]["runs_total"] = len(runs)
         out.update(_veto_rate(runs))
         out["missing_feedback_runs"] = find_missing_feedback_runs(RUNS, entries)
+    if label is not None:
+        out["prior_deliberation_match"] = _find_prior_match(label, entries)
     if headless:
         out["stale_pendings"] = []
         out["missing_feedback_runs"] = []
@@ -269,6 +303,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--headless", action="store_true", help="suppress stale_pendings and missing_feedback_runs for non-interactive/CI runs")
     ap.add_argument("--feedback-file", metavar="PATH", help="override FEEDBACK.html path (default: <repo>/FEEDBACK.html). Note: audit_feedback.py uses --feedback for the same concept.")
     ap.add_argument("--runs-dir", metavar="PATH", help="override runs/ directory path (default: <repo>/runs)")
+    ap.add_argument("--label", metavar="TEXT", help="check FEEDBACK for a recent authoritative run matching this task label; emits prior_deliberation_match field")
     args = ap.parse_args(argv)
 
     global FEEDBACK, RUNS
@@ -278,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
         RUNS = Path(args.runs_dir).resolve()
 
     _headless = (args.headless or (not sys.stdin.isatty()) or (os.environ.get("CONSILIUM_HEADLESS") == "1")) and os.environ.get("CONSILIUM_HEADLESS") != "0"
-    priors = build_priors(n=args.n, include_runs=args.runs, headless=_headless)
+    priors = build_priors(n=args.n, include_runs=args.runs, headless=_headless, label=args.label)
     json.dump(priors, sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0

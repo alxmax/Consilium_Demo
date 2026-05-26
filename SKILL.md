@@ -65,12 +65,33 @@ Steps **5b, 5c, 5d** are sub-steps within Stage 4: **5b** (confidence) is mandat
 Two actions in order:
 
 1. **Read the contracts required by the mode** — minimum 3 core voices: `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Dialectic also reads `*_pass2.md` (`generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md`); Trias also reads `<personality>_lens.md` (`pioneer_lens.md`, `architect_lens.md`, `steward_lens.md`); skeptic modes also read `prompts/voices/skeptic.md`. They define the exact fields produced by each voice. **Parallel/dialectic note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough. **Also:** if running a non-default mode, read `modes/<mode>.md` for the full mode workflow and machine-readable config (subagents, cost_multiplier, confidence_floor).
-2. **Run `python scripts/priors.py`** — returns soft priors from `FEEDBACK.html` + `runs/`. Three fields can block the current deliberation until resolved:
+2. **Run `python scripts/priors.py --label "<short task label>"`** — returns soft priors from `FEEDBACK.html` + `runs/`. The `--label` flag also checks for a prior authoritative run matching this task (see **Prior-deliberation passthrough** below). Three fields can block the current deliberation until resolved:
    - `stale_pendings` non-empty (PEND older than 2 days): ask *"You have N old PEND entries: [date | chosen] × N. Want me to close them (OK/BAD/skip)?"* — update via `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferred) or via `Edit` directly on `FEEDBACK.html`. **Do not** use `log_feedback.py` — it duplicates the row. **Headless** (`is_headless()`): log `[priors] stale_pendings: N entries — skipping prompt` to stderr and continue without asking.
    - `missing_feedback_runs` non-empty: run `python scripts/audit_feedback.py --backfill` to create PEND entries for orphan runs, then resolve them as above. If the list is larger than 3, prefer to resolve the gap *before* starting a new deliberation. **Headless**: run `audit_feedback.py --backfill` automatically and continue.
    - `pend_pressure > 0.3` (PEND ratio in the last N=20 entries — threshold lowered from 0.5): soft alert *"{pend_count}/{window_size} recent entries are PEND — consider closing them?"* — do not block, but record the signal. **Headless**: log only, no prompt.
 
    **Headless (non-interactive — `claude -p` or CI):** `stale_pendings` and `missing_feedback_runs` are automatically suppressed (returned `[]`) when `sys.stdin.isatty()` is `False`. Explicit override: `--headless` flag or `CONSILIUM_HEADLESS=1` env var. Output includes `headless_mode: true` as a marker for consumers.
+
+   **Prior-deliberation passthrough.** If `priors.py --label` returns a non-null `prior_deliberation_match` field, a recent authoritative FEEDBACK entry (outcome OK or GO, within 30 days) matches this task by label substring. Present it to the user:
+   > *"Prior deliberation found: `<match.chosen>` (`<match.date>`, outcome=`<match.outcome>`). Proceed directly to implementation without re-deliberating?"*
+   
+   - **YES** → skip Steps 1–5 entirely; build a passthrough report and go to Step 7:
+     ```json
+     {
+       "success_criterion": "<current task>",
+       "chosen_approach": "prior-deliberation",
+       "verification": "manual — implement per prior run's chosen_approach",
+       "alternatives": [],
+       "voice_scores": null,
+       "confidence": 0.90,
+       "deliberation_log": [{"step": "prior_deliberation_passthrough", "matched": "<match.chosen>", "date": "<match.date>"}],
+       "telemetry": {"mode": "prior_deliberation_passthrough", "dispatch_count": 0}
+     }
+     ```
+   - **NO** → continue with the full pipeline from Step 1.
+   - **Headless:** skip the prompt; continue with the full pipeline (do not auto-passthrough headlessly).
+   - **`CONSILIUM_FORCE_FULL=1`:** always run the full pipeline regardless of match.
+   - **Falsification criterion:** if passthrough fires on a case that later gets outcome=BAD, tighten the `--label` value used or add specificity to the task description.
 
 ### 1. Gather context & state the goal
 Read the proposed change. Identify scope (files, modules, lines), type (bugfix/feature/refactor/cleanup), blast radius. Formulate `success_criterion` — a testable sentence.
