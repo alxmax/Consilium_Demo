@@ -8,9 +8,9 @@
 
 > Source: `runs/senate/2026-05-17_161608-top5-diagnostic-audit.json` — #1 CRITICAL: Conservator is anchored (categorical formula), Generator + Control emit unanchored floats. `confidence.py` agreement measures role-prompt divergence, not inter-run stability. Veto threshold (0.8) region not yet probed.
 
-- [ ] **#1-B** Add categorical-stability check: sample Conservator twice on the same input; surface `magnitude`/`reversibility` disagreement to orchestrator (don't auto-resolve). Catches the 40% flip rate at its source.
-- [ ] **#1-C** Re-run voice-score stability with 2-3 cases that produce `net_concern ∈ [0.7, 0.9]` to probe the veto-threshold variance region (F4 gap — max observed so far was 0.42).
-- [ ] **#1-D** Probe Generator + Control stability (untested in the 2026-05-17 experiment — Wittgenstein's asymmetry claim is half-supported but unconfirmed on the unanchored voices).
+- [x] **#1-B** Add categorical-stability check: `stability_check.py --compare` now reports `magnitude`/`reversibility` disagreement from both flat and nested log schemas; emits explicit MISSING when fields absent.
+- [ ] **#1-C** Re-run voice-score stability with 2-3 cases that produce `net_concern ∈ [0.7, 0.9]` to probe the veto-threshold variance region (F4 gap — max observed so far was 0.42). **Tooling ready, experiments pending.**
+- [ ] **#1-D** Probe Generator + Control stability (untested in the 2026-05-17 experiment — Wittgenstein's asymmetry claim is half-supported but unconfirmed on the unanchored voices). **Tooling ready, experiments pending.**
 
 ### Efficiency / model-count audit
 
@@ -19,10 +19,6 @@
 - [ ] **Kill-criterion:** ≥2 wins (correctness gain over current mode) in n≥20 oracle-validated tasks for a reduced-agent mode before any SKILL.md routing change.
 - [ ] **Target end-state:** diff-checkable change to the SKILL.md Routing Boundary table.
 - [ ] **Precondition:** Trias-vs-Sequential paired corpus n≥5, same spec both arms, oracle-validated. Current n=6 (pipeline-bench R1+R2) is insufficient — algorithmic tasks only. Revisit when benchmark reaches n≥20 across diverse task types (architectural deliberations included).
-
-### Infrastructure
-
-- [ ] **benchmark/run_task.py regex fix** — update PEND-conversion regex from `\bruns/[\w.-]+\.json\b` to `.consilium/runs/...` (else PEND→PEND_HEADLESS conversion silently stops since the skill moved to `.consilium/`).
 
 ---
 
