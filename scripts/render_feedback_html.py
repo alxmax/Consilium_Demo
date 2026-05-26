@@ -298,7 +298,7 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
         "<title>Consilium feedback</title>\n"
         f"<style>{CSS}</style>\n"
         "<h2>Consilium feedback</h2>\n"
-        f"<div class=\"sub\">{len(entries)} entries · skills/consilium/FEEDBACK.html · click pe rând pentru detalii voci</div>\n"
+        f"<div class=\"sub\">{len(entries)} entries · skills/consilium/FEEDBACK.html · click a row for voice details</div>\n"
         "<table>\n"
         "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Tokens</th><th>Note</th><th>Vote Pattern</th></tr></thead>\n"
         f"<tbody>\n{rows_html}</tbody>\n"
