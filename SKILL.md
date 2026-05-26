@@ -123,7 +123,7 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
     "telemetry": {"mode": "sequential_scale_down", "dispatch_count": 1}
   }
   ```
-  `confidence: 0.85` is deliberate — Conservator's judgment is the signal, not a weak guess. Designed to stay above the `[0.5, 0.7]` skeptic auto-trigger band.
+  `confidence: 0.85` is deliberate — Conservator's judgment is the signal, not a weak guess. Designed to stay above the `[0.0, 0.7]` skeptic auto-trigger band.
 - If `meta_recommendation: scale_up` → warn user, add context request before Generator. **Headless**: warning emitted to stderr, the context cannot be requested interactively — continue with existing input.
 
 **Optional — autoprobe:**
@@ -546,7 +546,7 @@ Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI 
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
-Cross-cutting flag — +1 Skeptic sub-agent over any base mode post-hoc. Auto-triggers when `confidence ∈ [0.5, 0.7]`. Advisory by default; `--skeptic-can-override` for opt-in. **Full workflow: [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md).**
+Cross-cutting flag — +1 Skeptic sub-agent over any base mode post-hoc. Auto-triggers when `confidence ∈ [0.0, 0.7]`. Advisory by default; `--skeptic-can-override` for opt-in. **Full workflow: [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md).**
 
 ## Routing boundary
 
@@ -554,7 +554,7 @@ When to escalate beyond a standard Consilium mode:
 
 | Decision profile | Mode |
 |---|---|
-| `confidence ∈ [0.5, 0.7]` from standard mode AND single drift concern | `dialectic + skeptic_on_chosen` |
+| `confidence ∈ [0.0, 0.7]` from standard mode AND single drift concern | `dialectic + skeptic_on_chosen` |
 | 2+ plausible architectural approaches without clear winner | `trias` |
 | Bugfix evident OR diff <20 lines / 1 file | Sequential (scope_gate skips) |
 | All other PR-level reviews | Sequential / Parallel auto cross-check |

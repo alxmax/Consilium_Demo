@@ -43,6 +43,8 @@ DEFAULT_VETO = 0.8
 RELAXED_VETO_CAP = 0.85
 # Predicted inter-run pstdev for conservator risk_score is 0.12–0.18 (Dimon R2 2026-05-17).
 VETO_UNCERTAINTY_BAND = 0.15
+# Score delta below which the top-2 ranking is coin-flip territory (2026-05-26 experiment).
+LOW_SEPARATION_THRESHOLD = 0.12
 # Sigmoid risk penalty parameters: 50% at risk=0.5, ~0.79 at 0.7, ~0.93 at 0.85
 SIGMOID_MIDPOINT = 0.5
 SIGMOID_STEEPNESS = 10.0
@@ -159,6 +161,8 @@ def aggregate_conservative_override(
         "vetoed": vetoed,
         "weights": dict(zip(VOICES, w)),
     }
+    if len(ranked) >= 2 and ranked[0][0] - ranked[1][0] < LOW_SEPARATION_THRESHOLD:
+        result["low_separation"] = True
     uncertain = [v["id"] for v in vetoed if abs(v["risk"] - veto_threshold) <= VETO_UNCERTAINTY_BAND]
     if uncertain:
         result["veto_uncertain"] = True

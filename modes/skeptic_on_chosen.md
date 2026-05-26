@@ -18,7 +18,7 @@ description: Cross-cutting flag — +1 Skeptic sub-agent over any base mode post
 ## When to use
 
 **Auto-trigger conditions** (any is sufficient):
-- Confidence ∈ `[0.5, 0.7]` — classic trigger
+- Confidence ∈ `[0.0, 0.7]` — classic trigger
 - Confidence > 0.7 BUT `Conservator.net_concern` > 0.7 — high-conf/high-concern discrepancy is worth probing: `trigger_reason: "high_conf_high_concern"`
 - `chosen_approach` coincides with a `BAD` outcome from `FEEDBACK.html` (last 30 days, substring match on label): `trigger_reason: "similar_to_recent_bad"` — Tacitus-lite for classic modes
 - `irreversibility_flag: true` — existing consent gate, Skeptic adds object-level check: `trigger_reason: "irreversibility_gate"`
@@ -30,7 +30,7 @@ description: Cross-cutting flag — +1 Skeptic sub-agent over any base mode post
 
 ## Workflow
 1. Run the full base mode (any: Sequential / Parallel / Dialectic / Trias) → produces `chosen`, `confidence`, intermediate report
-2. If `confidence ∈ [0.5, 0.7]` (auto) or the `--skeptic-on-chosen` flag is active, dispatch 1 Sonnet 4.6 sub-agent with `prompts/voices/skeptic.md` inline + minimal input:
+2. If `confidence ∈ [0.0, 0.7]` (auto) or the `--skeptic-on-chosen` flag is active, dispatch 1 Sonnet 4.6 sub-agent with `prompts/voices/skeptic.md` inline + minimal input:
    ```
    chosen: <id, summary, sketch, rationale>
    success_criterion: <the testable sentence>
@@ -60,7 +60,7 @@ Summary table:
 
 ## Skip if
 - Confidence ≥ 0.7 and the `--skeptic-on-chosen` flag is not manually active — the Skeptic has no structural motivation to find anything
-- Confidence < 0.5 — the band is too low for a single challenger voice; escalate to Trias or the user directly
+- `chosen` is null (all candidates vetoed) — there is no chosen to challenge
 - Diff is intrinsically high-stakes (auth, migrations, security) — use full Trias with justified cost
 
 **Empirical origin.** The mode emerged from the analysis in `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (the conceptual equivalent of this flag) reached 100% catch-rate in simulation and 4/7 in real reruns on P3 car wash — performance superior to any other mode tested on that problem. **Scope caveat (n=1):** these figures derive from a single problem instance; generalizability to other problems is unconfirmed until ≥3 distinct problems are tested.
