@@ -265,9 +265,18 @@ Calibration signal: if `scale_down` regret rate > 10% over n≥20 runs, Conserva
 
 ### 7. Auto-pipeline (post-report)
 
-**Mandatory if the user's prompt contains a header of the form `**Required output file(s):**` or `**Deliverable(s):**` (with or without colon, singular or plural) — authoritative detection regex: `\*\*\s*(?:Required\s+output\s+files?|Deliverables?)\s*\*\*\s*:?` applied per whole line, case-insensitive.** In this case Step 7 is no longer optional: after Step 6 is complete, go directly to `infer_pipeline.py` and execute all inferred steps (at minimum `implement` with the Write tool for each declared path). The deliberation report alone does not satisfy the contract — files must exist on disk before the turn closes.
+**Mandatory — auto-dispatch (no confirmation prompt) if the user's prompt contains a header of the form `**Required output file(s):**` or `**Deliverable(s):**` (with or without colon, singular or plural) — authoritative detection regex: `\*\*\s*(?:Required\s+output\s+files?|Deliverables?)\s*\*\*\s*:?` applied per whole line, case-insensitive.** In this case Step 7 fires automatically after Step 6 completes:
 
-**Opt-in otherwise** — when the prompt does not declare deliverables (audit, "should I commit", "which approach", "before implementing"-without-code-required), Step 7 is at the user's discretion.
+```
+Agent(subagent_type="consilium-implement-subagent",
+      prompt="Implement the chosen approach from .consilium/runs/<file>.json. Spec is the report.")
+```
+
+**Preconditions (skip with visible error if not met):** `chosen_approach` ∉ `{do_nothing, skipped}` AND `success_criterion` non-empty AND `verification` non-empty. If either precondition fails, emit an error in the response and stop — do not dispatch.
+
+**Mode-agnostic:** the dispatch is identical regardless of whether the deliberation ran as sequential, dialectic, or trias. The report JSON (validated by `validate_report.py`) is the spec; the subagent handles routing internally via `recommend_implement_mode()` (single-shot for greenfield, Coder→Test Writer∥Reviewer pipeline for regression-risk quadrants). Files must exist on disk before the turn closes.
+
+**Opt-in otherwise** — when the prompt does not declare deliverables (audit, "should I commit", "which approach", "before implementing"-without-code-required), Step 7 is at the user's discretion. When the user confirms, dispatch via the same `Agent(subagent_type="consilium-implement-subagent", ...)` call above.
 
 After Step 6 is complete (report saved, feedback logged), infer and confirm the implementation steps:
 
