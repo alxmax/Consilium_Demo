@@ -2044,5 +2044,45 @@
       "mode_ceiling": "trias",
       "should_skip": false
     }
+  },
+  {
+    "name": "stability_check/compare flat schema outputs Categorical stability section with flip",
+    "tool": "scripts/stability_check.py",
+    "args": [
+      "--compare",
+      "evals/fixtures/stability_flat_a.json",
+      "evals/fixtures/stability_flat_b.json"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "Categorical stability",
+      "*** FLIP"
+    ]
+  },
+  {
+    "name": "stability_check/compare missing conservator step emits MISSING not traceback",
+    "tool": "scripts/stability_check.py",
+    "args": [
+      "--compare",
+      "evals/fixtures/stability_flat_a.json",
+      "evals/fixtures/stability_no_conservator.json"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "MISSING"
+    ]
+  },
+  {
+    "name": "stability_check/compare nested schema outputs Categorical stability section",
+    "tool": "scripts/stability_check.py",
+    "args": [
+      "--compare",
+      "evals/fixtures/stability_nested_a.json",
+      "evals/fixtures/stability_nested_b.json"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "Categorical stability"
+    ]
   }
 ]
