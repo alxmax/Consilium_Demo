@@ -17,7 +17,7 @@ Escape hatch: env CONSILIUM_FORCE_FULL=1 always returns should_skip=false
 Output (always to stdout, exit 0 on success):
   {
     "should_skip": bool,
-    "magnitude": "low" | "medium" | "high",
+    "magnitude": "low" | "medium" | "high" | "critical",
     "mode_ceiling": "sequential" | "dialectic" | "trias",
     "reason": str,
     "signals": {
@@ -29,15 +29,17 @@ Output (always to stdout, exit 0 on success):
   }
 
 magnitude thresholds (used by Trias lazy routing — independent of should_skip):
-  low    — files ≤ 1, lines ≤ 15, no blocklist hits
-  medium — files ≤ 5, lines ≤ 100, no blocklist hits
-  high   — files > 5, lines > 100, or any blocklist hit
+  low      — files ≤ 1, lines ≤ 15, no blocklist hits
+  medium   — files ≤ 5, lines ≤ 100, no blocklist hits
+  high     — files > 5 or lines > 100, no blocklist hits
+  critical — any blocklist hit (auth, security, migrations, CI workflows, secrets)
 
 mode_ceiling — mechanical upper bound on mode cost derived from magnitude:
-  low    → sequential  (single-context deliberation is sufficient)
-  medium → dialectic   (two-pass warranted; Trias would be over-spec)
-  high   → trias       (full 3-personality deliberation warranted)
-  Blocklist hits force magnitude=high and therefore mode_ceiling=trias.
+  low      → sequential  (single-context deliberation is sufficient)
+  medium   → dialectic   (two-pass warranted; Trias would be over-spec)
+  high     → dialectic   (large but routine refactor; Trias over-spec without a critical signal)
+  critical → trias       (security/sensitive path; full 3-personality deliberation warranted)
+  Blocklist hits force magnitude=critical and therefore mode_ceiling=trias.
   This makes advisory prose in SKILL.md enforceable via script output.
 
 Probe failure (no git, not a repo, bad ref) -> should_skip=false with the
@@ -126,19 +128,20 @@ def _path_matches(path: str, pattern: str) -> bool:
 _MODE_CEILING: dict[str, str] = {
     "low": "sequential",
     "medium": "dialectic",
-    "high": "trias",
+    "high": "dialectic",
+    "critical": "trias",
 }
 
 
 def classify_magnitude(files: int, lines: int, has_blocklist_hits: bool) -> str:
-    """Return low / medium / high for lazy Trias routing.
+    """Return low / medium / high / critical for lazy Trias routing.
 
     Magnitude is independent of should_skip — it answers "how complex is this
     change?" so the caller can decide whether Dialectic is sufficient or full
     Trias is warranted.
     """
     if has_blocklist_hits:
-        return "high"
+        return "critical"
     if files > 5 or lines > 100:
         return "high"
     if files > 1 or lines > 15:
@@ -192,7 +195,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
     if "error" in summary:
         return {
             "should_skip": False,
-            "magnitude": "high",
+            "magnitude": "critical",
             "mode_ceiling": "trias",
             "reason": f"probe failed: {summary['error']}",
             "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": []},
@@ -267,7 +270,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(
             {
                 "should_skip": False,
-                "magnitude": "high",
+                "magnitude": "critical",
                 "mode_ceiling": "trias",
                 "reason": "CONSILIUM_FORCE_FULL=1 (override)",
                 "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": [], "forced": True},
