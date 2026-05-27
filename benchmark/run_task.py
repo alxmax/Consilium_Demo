@@ -21,6 +21,7 @@ import os
 import re
 import secrets
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -306,6 +307,23 @@ def _recover_orphan_stashes():
             pass
 
 
+def _rmtree_force(path: str) -> None:
+    """Remove a directory tree, clearing read-only bits first (Windows .git objects)."""
+    def _on_readonly(func, fpath, _):
+        os.chmod(fpath, stat.S_IWRITE)
+        func(fpath)
+    shutil.rmtree(path, onerror=_on_readonly)
+
+
+def _move_dir(src: Path, dst: Path) -> None:
+    """Move a directory, handling read-only files (Windows git repos)."""
+    try:
+        os.rename(str(src), str(dst))
+    except OSError:
+        shutil.copytree(str(src), str(dst))
+        _rmtree_force(str(src))
+
+
 @contextmanager
 def stash_scoring_for_run():
     """Move Benchmark-scoring/ to a random temp path for the duration of
@@ -319,12 +337,12 @@ def stash_scoring_for_run():
         return
     stash_name = SCORING_STASH_PREFIX + secrets.token_hex(16)
     stash_path = STASH_ROOT / stash_name
-    shutil.move(str(SCORING_DIR), str(stash_path))
+    _move_dir(SCORING_DIR, stash_path)
     try:
         yield
     finally:
         if stash_path.exists() and not SCORING_DIR.exists():
-            shutil.move(str(stash_path), str(SCORING_DIR))
+            _move_dir(stash_path, SCORING_DIR)
 
 
 def _windows_safe_move(src: Path, dst: Path, retries: int = 5, base_delay: float = 0.4):
