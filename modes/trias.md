@@ -15,6 +15,8 @@ description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential i
 
 **Why the vote diverges (D4).** The three sub-agents run the *same* model — what makes them choose differently is the lens, which **re-ranks the three voice scores** (Generator/Control/Conservator) per personality before each picks its winner: Pioneer up-weights Generator (upside), Steward up-weights Conservator (risk), Architect balances. So divergence is not model noise — it is a deterministic re-weighting of the same evidence, which is why `vote_degeneracy.py` measures real disagreement (~50% non-unanimous, n=26) rather than the forced 3-0 a single-perspective ensemble would produce.
 
+The weights act **within** each personality only — they decide that personality's own `chose`. **Between** personalities there is no precedence ordering: `aggregator.py --scheme team_vote` is a flat majority over the three `chose` values, and no lens outranks another. A true tie (1-1-1) does not resolve to a "senior" personality — it routes to the B2 deadlock cascade (Round 2 → Skeptic → PEND). So there is no authority hierarchy among the three; the only re-ranking is internal to each sub-agent.
+
 **Previous mechanics (archived):** The old Trias dispatched 9 parallel sub-agents (3 personalities × 3 voices). The new design reduces from 9 to 3 sub-agents — each personality runs its own Sequential deliberation internally. The democratic vote over 3 chosen results is preserved.
 
 ## When to use
