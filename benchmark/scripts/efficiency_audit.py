@@ -97,7 +97,7 @@ def _collect_reps(mode: str, task: str) -> list[dict]:
         reps.append(_load_rep(base))
     if base.is_dir():
         for sub in sorted(base.iterdir()):
-            if sub.is_dir() and sub.name.startswith("rep_"):
+            if sub.is_dir() and sub.name.startswith("rep_") and any(sub.iterdir()):
                 reps.append(_load_rep(sub))
     return reps
 
@@ -139,13 +139,14 @@ def run_audit(scoring_dir: Path) -> dict:
             if rep["score"] is not None and rep["max_score"]:
                 score_vec.append(rep["score"] / rep["max_score"])
 
-            # pipeline
-            if rep["pipeline"] is True:
-                pipe_yes += 1
-            elif rep["pipeline"] is False:
-                pipe_no += 1
-            else:
-                pipe_unknown += 1
+            # pipeline (oracle tasks only — keeps denominator consistent with accuracy)
+            if task in oracles:
+                if rep["pipeline"] is True:
+                    pipe_yes += 1
+                elif rep["pipeline"] is False:
+                    pipe_no += 1
+                else:
+                    pipe_unknown += 1
 
         acc = mean(acc_vec) if acc_vec else None
         acc_ci = _bootstrap_ci(acc_vec) if acc_vec else None
@@ -168,13 +169,13 @@ def run_audit(scoring_dir: Path) -> dict:
 
     power_note = (
         f"n_eff={n_tasks} distinct tasks. Bootstrap CIs resample over tasks, not reps. "
-        "With n=4 all pairwise differences are inconclusive (p>=0.25). "
+        f"With n={n_tasks} all pairwise differences are inconclusive (p>=0.25). "
         "Results are DIRECTIONAL ONLY — do not infer significance."
     )
     warnings = [
         power_note,
         "pipeline_executed flag is post-hoc inferred from claude_raw.json, not live instrumentation — treat as indicative, not authoritative.",
-        "pipeline denominator includes all tasks with a pipeline_audit.json (reasoning + code); accuracy denominator is oracle-scored reasoning tasks only — populations differ.",
+        "pipeline denominator is now scoped to oracle-scored reasoning tasks only (same population as accuracy denominator); code tasks excluded from pipeline count.",
     ]
     return {
         "n_eff": n_tasks,
