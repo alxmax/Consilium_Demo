@@ -2004,8 +2004,8 @@
     }
   },
   {
-    "name": "scope_gate/blocklist hit forces high magnitude + trias mode_ceiling",
-    "note": "Deterministic via --signals-stdin (no git/SHA dependency, survives history squash). A blocklisted path forces magnitude=high regardless of line count.",
+    "name": "scope_gate/blocklist hit forces critical magnitude + trias mode_ceiling",
+    "note": "Deterministic via --signals-stdin (no git/SHA dependency, survives history squash). A blocklisted path forces magnitude=critical regardless of line count.",
     "tool": "scripts/scope_gate.py",
     "args": [
       "--signals-stdin"
@@ -2020,14 +2020,14 @@
     },
     "expect_exit": 0,
     "expect_stdout_subset": {
-      "magnitude": "high",
+      "magnitude": "critical",
       "mode_ceiling": "trias",
       "should_skip": false
     }
   },
   {
-    "name": "scope_gate/many lines via stdin emits high magnitude + trias",
-    "note": "Deterministic via --signals-stdin: >100 changed lines forces magnitude=high without any git diff.",
+    "name": "scope_gate/many lines via stdin emits high magnitude + dialectic",
+    "note": "Deterministic via --signals-stdin: >100 changed lines forces magnitude=high (routes to dialectic, not trias — trias requires critical/blocklist hit).",
     "tool": "scripts/scope_gate.py",
     "args": [
       "--signals-stdin"
@@ -2045,7 +2045,7 @@
     "expect_exit": 0,
     "expect_stdout_subset": {
       "magnitude": "high",
-      "mode_ceiling": "trias",
+      "mode_ceiling": "dialectic",
       "should_skip": false
     }
   },
