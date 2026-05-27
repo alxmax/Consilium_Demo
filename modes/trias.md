@@ -13,6 +13,8 @@ description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential i
 
 **Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward), each dispatched as **one Sequential sub-agent** (Conservator→Generator→Control internally) with the personality lens prepended. Democratic majority vote over the 3 chosen results. Cost: 3× Sequential (3 sub-agents vs 1).
 
+**Why the vote diverges (D4).** The three sub-agents run the *same* model — what makes them choose differently is the lens, which **re-ranks the three voice scores** (Generator/Control/Conservator) per personality before each picks its winner: Pioneer up-weights Generator (upside), Steward up-weights Conservator (risk), Architect balances. So divergence is not model noise — it is a deterministic re-weighting of the same evidence, which is why `vote_degeneracy.py` measures real disagreement (~50% non-unanimous, n=26) rather than the forced 3-0 a single-perspective ensemble would produce.
+
 **Previous mechanics (archived):** The old Trias dispatched 9 parallel sub-agents (3 personalities × 3 voices). The new design reduces from 9 to 3 sub-agents — each personality runs its own Sequential deliberation internally. The democratic vote over 3 chosen results is preserved.
 
 ## When to use
@@ -27,6 +29,13 @@ description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential i
 **Purpose:** Avoid the 3× Sequential cost when the change does not warrant it. Trias checks magnitude via `scope_gate.py` and auto-downgrades to Dialectic for low/medium changes.
 
 **Default:** `lazy=true` — Trias auto-downgrades low/medium magnitude to Dialectic. To force full Trias, the user must explicitly state "use full Trias" or "no lazy routing" in their request.
+
+**Override cost-warning (D2).** An explicit override on a sub-high-magnitude change is honored, but **not silently** — the user is paying 3× Sequential for a change `scope_gate.py` judged low/medium. Before dispatching the 3 sub-agents on an overridden low/medium change, emit a one-line warning so the cost is a conscious choice:
+```json
+{"trias_override_warning": true, "magnitude": "<low|medium>", "cost_multiplier": 3.0,
+ "note": "Full Trias forced below high magnitude — 3x Sequential cost. Drop the override to auto-route to Dialectic."}
+```
+This is a warning, not a refusal: there is no hard block, because the user holds the authority on their own spend (a hard floor would override an explicit, informed instruction). The warning makes the tradeoff visible; the override still proceeds.
 
 **Sequencing contract (mandatory):** Magnitude classification MUST run on the **original unstripped context** BEFORE Phase 1 context stripping is applied. Strip happens after the routing decision.
 
