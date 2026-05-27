@@ -31,6 +31,11 @@ TASKS = [
     "reasoning/03_schema_migration",
     "reasoning/04_binary_search_bug",
     "reasoning/05_warehouse_contradiction",
+    "reasoning/06_split_brain_db",
+    "reasoning/07_composite_index_prefix",
+    "reasoning/08_locking_strategy",
+    "reasoning/09_pipeline_freshness",
+    "reasoning/10_checkout_degradation",
 ]
 
 
