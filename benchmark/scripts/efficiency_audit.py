@@ -6,10 +6,16 @@ the sibling Benchmark-scoring/ repo. Reports per-mode accuracy (correct/n),
 mean LLM-judge score, pipeline execution rate, and bootstrap 95% CI.
 
 POWER NOTE: n_eff = number of distinct tasks with an oracle answer (currently
-4 reasoning tasks). Bootstrap CIs are computed by resampling over tasks, so
-the effective sample size is 4 — not total reps. With n=4 all pairwise
+5 reasoning tasks). Bootstrap CIs are computed by resampling over tasks, so
+the effective sample size is 5 — not total reps. With n=5 all pairwise
 differences are statistically inconclusive (p >= 0.25 by construction for a
 one-sided Fisher test). Results are DIRECTIONAL ONLY.
+
+BOOTSTRAP ARTIFACT: When all tasks are correct (acc=1.0 for a mode), the
+bootstrap CI is [100%,100%] — this is a degenerate artifact of resampling an
+all-correct binary vector, not a real binomial interval. It means zero variance
+in the sample, not zero uncertainty. Treat [100%,100%] as "all observed tasks
+correct" and nothing more.
 
 CLI:
     python benchmark/scripts/efficiency_audit.py
@@ -170,10 +176,13 @@ def run_audit(scoring_dir: Path) -> dict:
     power_note = (
         f"n_eff={n_tasks} distinct tasks. Bootstrap CIs resample over tasks, not reps. "
         f"With n={n_tasks} all pairwise differences are inconclusive (p>=0.25). "
-        "Results are DIRECTIONAL ONLY — do not infer significance."
+        "Results are DIRECTIONAL ONLY — do not infer significance. "
+        "CI=[100%,100%] is a bootstrap artifact (all-correct binary vector has zero variance) — "
+        "treat it as 'all observed tasks correct', not a tight binomial interval."
     )
     warnings = [
         power_note,
+        "CI=[100%,100%] is a degenerate bootstrap artifact, not a real binomial interval — see power_note.",
         "pipeline_executed flag is post-hoc inferred from claude_raw.json, not live instrumentation — treat as indicative, not authoritative.",
         "pipeline denominator is now scoped to oracle-scored reasoning tasks only (same population as accuracy denominator); code tasks excluded from pipeline count.",
     ]

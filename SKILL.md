@@ -571,7 +571,7 @@ Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI 
 
 ## Trias mode (high-stakes opt-in)
 
-3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally. Lazy routing auto-downgrades to Dialectic for low/medium magnitude. Max cost: 7 sub-agents (1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
+3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally. Lazy routing auto-downgrades to Dialectic for low/medium/high magnitude — only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. **Cost: 3× Sequential** (worst-case 7× on 1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
