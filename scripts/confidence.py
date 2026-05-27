@@ -146,6 +146,14 @@ def check_mode_floor(mode: str, confidence: float | None) -> dict:
         "outcome_hint": "WEAK" if below else "OK",
     }
 
+# UNCALIBRATED PRIORS — these numbers encode inter-personality CONSENSUS, not
+# validated accuracy. vote_degeneracy.py (n=26) confirms the ORDERING is earned
+# (3-0 occurs only ~50% of the time, so unanimity is a real signal, not forced),
+# but the specific MAGNITUDES are not calibrated against correctness: on the
+# transport_choice benchmark task a 3-0 was recorded on a WRONG answer (32/100).
+# Agreement != truth. Until a corpus of >=20 labeled (vote_pattern, outcome)
+# pairs yields a calibration curve (Brier/AUC), treat these as ordered priors,
+# not probabilities. (Senate 2026-05-26 round 2, D1 — 5 MODIFY / 2 STOP / 2 GO.)
 VOTE_PATTERN_CONFIDENCE = {
     "3-0": 0.95,
     "2-1": 0.75,  # dissent: one personality chose a different candidate (recoverable)
