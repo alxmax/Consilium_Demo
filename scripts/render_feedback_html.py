@@ -55,6 +55,7 @@ td.chosen{font-family:Consolas,Menlo,monospace;font-size:12px;color:var(--mono)}
 td.note{color:var(--fg-soft);font-size:12px}
 td.tokens{font-family:Consolas,Menlo,monospace;font-size:12px;color:var(--fg-dim);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td.tokens.na{color:var(--border)}
+td.tokens .calc{color:var(--border);font-size:10px;margin-left:3px;font-style:italic}
 td.chev{width:18px;color:var(--fg-dim);text-align:center;font-family:monospace}
 tr.entry.open td.chev{color:var(--accent)}
 tr.drill{display:none;background:var(--bg-drill)}
@@ -101,9 +102,9 @@ def _esc(text: str) -> str:
     return html.escape(text or "", quote=True)
 
 
-def _row_html(e: Entry, drill_inner: str, tokens_str: str) -> str:
+def _row_html(e: Entry, drill_inner: str, tokens_html: str, tokens_kind: str) -> str:
     chev = "▸"
-    tokens_cls = "tokens" if tokens_str != "—" else "tokens na"
+    tokens_cls = "tokens" if tokens_kind != "na" else "tokens na"
     return (
         f'<tr class="entry" onclick="toggleDrill(this)">'
         f'<td class="chev">{chev}</td>'
@@ -111,7 +112,7 @@ def _row_html(e: Entry, drill_inner: str, tokens_str: str) -> str:
         f'<td data-field="context">{_esc(e.context)}</td>'
         f'<td class="chosen" data-field="chosen">{_esc(e.chosen)}</td>'
         f'<td class="outcome {_esc(e.outcome)}" data-field="outcome">{_esc(e.outcome)}</td>'
-        f'<td class="{tokens_cls}" data-field="tokens">{tokens_str}</td>'
+        f'<td class="{tokens_cls}" data-field="tokens">{tokens_html}</td>'
         f'<td class="note" data-field="note">{_esc(e.note)}</td>'
         f'<td data-field="vote_pattern">{_esc(e.vote_pattern)}</td>'
         f'</tr>\n'
@@ -119,17 +120,20 @@ def _row_html(e: Entry, drill_inner: str, tokens_str: str) -> str:
     )
 
 
-def _total_tokens(run: dict | None) -> str:
-    """Sum tokens_in + tokens_out across all voices in run.telemetry.voices.
+def _format_int_compact(total: int) -> str:
+    if total < 1000:
+        return str(total)
+    formatted = f"{total/1000:.1f}"
+    if formatted.endswith(".0"):
+        formatted = formatted[:-2]
+    return f"{formatted}k"
 
-    Returns compact format: integer below 1000, X.Yk for 1000-9999,
-    rounded Nk for >=10000. Returns '—' if telemetry is missing/empty.
-    """
+
+def _measured_tokens(run: dict | None) -> int:
+    """Sum tokens_in + tokens_out across run.telemetry.voices. Returns 0 if absent."""
     if not run:
-        return "—"
+        return 0
     voices = ((run.get("telemetry") or {}).get("voices") or {})
-    if not voices:
-        return "—"
     total = 0
     for v in voices.values():
         if not isinstance(v, dict):
@@ -140,14 +144,37 @@ def _total_tokens(run: dict | None) -> str:
             total += int(ti)
         if isinstance(to, (int, float)):
             total += int(to)
-    if total <= 0:
-        return "—"
-    if total < 1000:
-        return str(total)
-    formatted = f"{total/1000:.1f}"
-    if formatted.endswith(".0"):
-        formatted = formatted[:-2]
-    return f"{formatted}k"
+    return total
+
+
+def _candidate_count(run: dict | None) -> int:
+    """Number of candidates in the generator step of the deliberation log."""
+    if not run:
+        return 0
+    for step in run.get("deliberation_log") or []:
+        if isinstance(step, dict) and step.get("step") == "generator":
+            return len(step.get("candidates") or [])
+    return 0
+
+
+def _format_tokens(run: dict | None, avg_per_candidate: float | None) -> tuple[str, str]:
+    """Return (html_fragment, kind) where kind in {measured, calculated, na}.
+
+    Measured: telemetry present and non-zero.
+    Calculated: telemetry missing/empty, candidate count available, and
+                avg_per_candidate derivable from peer runs — estimate marked (calc).
+    na: nothing usable — render em-dash.
+    """
+    measured = _measured_tokens(run)
+    if measured > 0:
+        return _format_int_compact(measured), "measured"
+    if avg_per_candidate is not None:
+        nc = _candidate_count(run)
+        if nc > 0:
+            est = int(round(nc * avg_per_candidate))
+            if est > 0:
+                return f'{_format_int_compact(est)} <span class="calc">(calc)</span>', "calculated"
+    return "—", "na"
 
 
 def _risk_class(score: float) -> str:
@@ -267,30 +294,40 @@ def _legacy_stub() -> str:
     return '<div class="stub">no detailed run data — older entry pre-runs/</div>'
 
 
+def _load_run_dict(run_path: str | None, runs_dir: Path) -> dict | None:
+    if not run_path:
+        return None
+    run_file = runs_dir.parent / run_path if not Path(run_path).is_absolute() else Path(run_path)
+    if not run_file.exists():
+        run_file = runs_dir / Path(run_path).name
+    if not run_file.exists():
+        return None
+    try:
+        return json.loads(run_file.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
 def render(entries: list[Entry], runs_dir: Path) -> str:
+    # First pass: load run dicts and derive median tokens/candidate from measured runs.
+    # Used to backfill a (calc) estimate for legacy runs without telemetry.
+    run_dicts: list[dict | None] = [_load_run_dict(e.run_path, runs_dir) for e in entries]
+    per_cand_samples: list[float] = []
+    for rd in run_dicts:
+        tt = _measured_tokens(rd)
+        nc = _candidate_count(rd)
+        if tt > 0 and nc > 0:
+            per_cand_samples.append(tt / nc)
+    avg_per_candidate: float | None = None
+    if per_cand_samples:
+        per_cand_samples.sort()
+        avg_per_candidate = per_cand_samples[len(per_cand_samples) // 2]
+
     rows = []
-    for e in entries:
-        run_dict = None
-        if e.run_path:
-            run_file = runs_dir.parent / e.run_path if not Path(e.run_path).is_absolute() else Path(e.run_path)
-            # Accept both repo-relative ("runs/foo.json") and direct ("foo.json") forms.
-            if not run_file.exists():
-                run_file = runs_dir / Path(e.run_path).name
-            if run_file.exists():
-                try:
-                    run_dict = json.loads(run_file.read_text(encoding="utf-8"))
-                except json.JSONDecodeError as _exc:
-                    drill = f'<div class="stub error">corrupted run JSON: {_exc}</div>'
-                    rows.append(_row_html(e, drill, "—"))
-                    continue
-                except OSError:
-                    run_dict = None
-        if run_dict:
-            drill = render_drill(run_dict, e.chosen)
-        else:
-            drill = _legacy_stub()
-        tokens_str = _total_tokens(run_dict)
-        rows.append(_row_html(e, drill, tokens_str))
+    for e, run_dict in zip(entries, run_dicts):
+        drill = render_drill(run_dict, e.chosen) if run_dict else _legacy_stub()
+        tokens_html, tokens_kind = _format_tokens(run_dict, avg_per_candidate)
+        rows.append(_row_html(e, drill, tokens_html, tokens_kind))
     rows_html = "".join(rows)
     return (
         "<!doctype html>\n"
