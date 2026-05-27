@@ -38,7 +38,7 @@ If `chosen` is `null` (all vetoed), returns `{"confidence": null}` — confidenc
 | 2-0 | 0.70 | 0.67 |
 | 1-1-1 / 1-1-0 / 1-0-0 / 0-0-0 | null | 0.0 |
 
-**Uncalibrated priors, not probabilities.** These confidence values encode inter-personality **consensus**, not validated accuracy. `scripts/vote_degeneracy.py` (n=26) confirms the *ordering* is earned — 3-0 occurs only ~50% of the time, so unanimity is a genuine signal rather than forced — but the *magnitudes* (0.95 / 0.75 / 0.70) are not calibrated against correctness. On the `transport_choice` benchmark task a 3-0 landed on a **wrong** answer (32/100): agreement ≠ truth. Treat the numbers as ordered priors until a corpus of ≥20 labeled `(vote_pattern, outcome)` pairs produces a calibration curve. (Senate 2026-05-26 round 2, D1.)
+**Uncalibrated priors, not probabilities.** These confidence values encode inter-personality **consensus**, not validated accuracy. `scripts/vote_degeneracy.py` (n=25) confirms the *ordering* is earned — 3-0 occurs only ~48% of the time, so unanimity is a genuine signal rather than forced — but the *magnitudes* (0.95 / 0.75 / 0.70) are not calibrated against correctness. On the `transport_choice` benchmark task a 3-0 landed on a **wrong** answer (32/100): agreement ≠ truth. Treat the numbers as ordered priors until a corpus of ≥20 labeled `(vote_pattern, outcome)` pairs produces a calibration curve. (Senate 2026-05-26 round 2, D1.)
 
 **Steward penalty.** Steward is the conservative-leaning personality. When it is the dissenter in a 2-1 (−0.10) or the abstainer in a 2-0 (−0.15), confidence drops below the auto-ship threshold so the orchestrator prompts the user. The same outcome from Pioneer or Architect carries no penalty.
 

@@ -76,6 +76,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: .consilium/FEEDBACK.html)")
     ap.add_argument("--backfill", action="store_true", help="append PEND rows for each missing run")
     ap.add_argument("--dry-run", action="store_true", help="with --backfill: print plan but don't write")
+    ap.add_argument("--check", action="store_true",
+                    help="corpus-completeness gate: exit 1 if any run lacks a FEEDBACK row "
+                         "(read-only, no write). Use in CI / before building a calibration corpus.")
     args = ap.parse_args(argv)
 
     priors_mod, fb_mod, log_mod, render_mod = _load_modules()
@@ -93,6 +96,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"runs without feedback rows: {len(missing)}")
     for m in missing:
         print(f"  {m['run']}  date={m['date']}  chosen={m['chosen']}")
+
+    # Completeness gate: a missing row is silent corpus loss (a run that never
+    # got an outcome can never enter a labeled calibration corpus). validate_report
+    # is a pure per-report gate and cannot see FEEDBACK.html, so the corpus-level
+    # check lives here. (Senate 2026-05-27 — Dimon D5.)
+    if args.check:
+        print(f"\nFAIL: {len(missing)} run(s) without a FEEDBACK row. "
+              f"Run with --backfill to append default PEND rows.", file=sys.stderr)
+        return 1
 
     if not args.backfill:
         print("\nrun with --backfill to append default PEND rows for these runs.")
