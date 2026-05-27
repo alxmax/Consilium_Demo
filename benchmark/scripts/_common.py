@@ -30,6 +30,7 @@ TASKS = [
     "reasoning/02_rule_of_three",
     "reasoning/03_schema_migration",
     "reasoning/04_binary_search_bug",
+    "reasoning/05_warehouse_contradiction",
 ]
 
 
