@@ -16,6 +16,12 @@ distribution, and reports the 3-0 unanimity rate. The decision rule:
   enough that the majority vote can change the outcome vs a single run.
 - n < --min-n → `insufficient`: not enough Trias runs to conclude (Deming gate).
 
+Unanimity is 3-0 ONLY. A 2-0 pattern is a *veto* (one personality had all
+candidates vetoed), not three lenses agreeing — it is tallied separately as
+`veto_rate` rather than folded into unanimity. Runs are admitted only when the
+serialized report declares `"mode": "trias"` / `"trias_split"` exactly, so a
+non-Trias run that merely cites a vote_pattern in its body is not counted.
+
 Read-only. Does not touch any voice prompt, mode file, or the live pipeline.
 
 CLI:
@@ -39,8 +45,24 @@ DEFAULT_RUNS = ROOT / ".consilium" / "runs"
 # A vote_pattern is "N-N" (2-personality / legacy) or "N-N-N" (3-personality).
 _VOTE_PATTERN_RE = re.compile(r'"vote_pattern"\s*:\s*"(\d-\d(?:-\d)?)"')
 
+# A run is corpus-admissible only if it is a *genuine* Trias run. We match the
+# mode marker with the closing quote anchored, so `trias` / `trias_split` count
+# but composite modes like `trias_plus_dialectic_skeptic_defenders` or
+# `meta_orchestrator_2_subagents` do NOT — those runs merely *cite* a
+# vote_pattern in their body and would otherwise contaminate the count.
+_TRIAS_MODE_RE = re.compile(r'"mode"\s*:\s*"(?:trias|trias_split)"')
+
 DEGENERATE_THRESHOLD = 0.85
 MIN_N = 20
+
+
+def is_trias_run(text: str) -> bool:
+    """True if the serialized run declares mode trias / trias_split exactly.
+
+    Text-based (not json.loads) so a malformed-but-genuine Trias report is still
+    counted, and so a non-Trias run that quotes a vote_pattern is excluded.
+    """
+    return bool(_TRIAS_MODE_RE.search(text))
 
 
 def extract_vote_pattern(text: str) -> str | None:
@@ -63,6 +85,8 @@ def scan(runs_dir: Path) -> tuple[Counter, list[dict]]:
             text = f.read_text(encoding="utf-8")
         except OSError:
             continue
+        if not is_trias_run(text):
+            continue
         vp = extract_vote_pattern(text)
         if vp:
             patterns[vp] += 1
@@ -72,23 +96,31 @@ def scan(runs_dir: Path) -> tuple[Counter, list[dict]]:
 
 def assess(patterns: Counter, threshold: float, min_n: int) -> dict:
     n = sum(patterns.values())
-    unanimous = patterns.get("3-0", 0) + patterns.get("2-0", 0)
+    # Unanimity is 3-0 ONLY. 2-0 is a veto (one personality had all candidates
+    # vetoed), not three lenses agreeing — folding it into unanimity overstates
+    # decorrelation. It is reported separately as veto_rate so the signal is not
+    # lost. (Senate 2026-05-27 — Wittgenstein/Deming/Dimon.)
+    unanimous = patterns.get("3-0", 0)
+    veto = patterns.get("2-0", 0)
     rate = (unanimous / n) if n else None
+    veto_rate = (veto / n) if n else None
     if n < min_n:
         verdict = "insufficient"
         note = f"n={n} < min_n={min_n}; not enough Trias runs to conclude (Deming gate)."
     elif rate is not None and rate > threshold:
         verdict = "vote_degenerate"
-        note = (f"unanimity rate {rate:.0%} > {threshold:.0%}: lenses do not decorrelate; "
+        note = (f"3-0 unanimity rate {rate:.0%} > {threshold:.0%}: lenses do not decorrelate; "
                 f"the majority vote adds no signal over a single Sequential run.")
     else:
         verdict = "vote_meaningful"
-        note = (f"unanimity rate {rate:.0%} <= {threshold:.0%}: personalities disagree often "
+        note = (f"3-0 unanimity rate {rate:.0%} <= {threshold:.0%}: personalities disagree often "
                 f"enough that the vote can change the outcome - the vote carries information.")
     return {
         "n": n,
         "distribution": dict(patterns.most_common()),
         "unanimity_rate": round(rate, 4) if rate is not None else None,
+        "veto_rate": round(veto_rate, 4) if veto_rate is not None else None,
+        "veto_count": veto,
         "degenerate_threshold": threshold,
         "min_n": min_n,
         "verdict": verdict,
@@ -124,7 +156,9 @@ def main(argv: list[str] | None = None) -> int:
         share = count / report["n"] if report["n"] else 0
         print(f"    {pat}: {count}  ({share:.0%})")
     if report["unanimity_rate"] is not None:
-        print(f"  unanimity (3-0/2-0) rate: {report['unanimity_rate']:.0%}")
+        print(f"  3-0 unanimity rate: {report['unanimity_rate']:.0%}")
+    if report["veto_rate"] is not None:
+        print(f"  2-0 veto rate:      {report['veto_rate']:.0%}  ({report['veto_count']} run(s))")
     print(f"  verdict: {report['verdict']}")
     print(f"  {report['note']}")
     return 0
