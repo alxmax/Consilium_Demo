@@ -97,7 +97,7 @@ def _collect_reps(mode: str, task: str) -> list[dict]:
         reps.append(_load_rep(base))
     if base.is_dir():
         for sub in sorted(base.iterdir()):
-            if sub.is_dir() and sub.name.startswith("rep_"):
+            if sub.is_dir() and sub.name.startswith("rep_") and any(sub.iterdir()):
                 reps.append(_load_rep(sub))
     return reps
 
