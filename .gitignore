@@ -36,6 +36,10 @@ Thumbs.db
 
 # Personal feedback journal (local-only, not shared between machines)
 .consilium/FEEDBACK.html
+
+# Silent parallel audit state (counter + rolling divergence log)
+.consilium/audit_state.json
+.consilium/audit_state.json.tmp
 FEEDBACK.md
 FEEDBACK.html
 *.md.bak

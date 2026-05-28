@@ -5757,7 +5757,7 @@ const WALKTHROUGHS = {
         nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl', 'cons_agg', 'ctl_agg'] },
       { id: '5', name: 'aggregate', caption: 'Aggregator applies the cascade and conservative_override scheme over the three outputs.',
         nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl', 'cons_agg', 'ctl_agg'] },
-      { id: '6', name: 'done', caption: 'Winner chosen. (A silent audit every 20 deliberations is documented in SKILL.md but unverified in the runs/ corpus — pending implementation check.)',
+      { id: '6', name: 'done', caption: 'Winner chosen. Also fires as a silent audit every 20 Sequential runs (1/5 in HOT mode after ≥2 divergences in the last 5 audits) — implemented in scripts/audit_counter.py, state in .consilium/audit_state.json.',
         nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_cons', 'orch_gen', 'orch_ctl', 'cons_agg', 'gen_agg', 'ctl_agg', 'agg_out'] },
     ],
   },

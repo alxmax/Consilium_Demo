@@ -33,7 +33,7 @@ Default order: **Conservator → Generator → Control**
 
 Auto-parallel cross-check: triggered only when Conservator outputs `magnitude: critical` AND `reversibility: irreversible`. Not user-selectable.
 
-Silent audit: every 20 runs, parallel mode runs silently alongside sequential. If systematic divergence detected → audit frequency increases to 1/5.
+Silent audit: implemented in `scripts/audit_counter.py`; state in `.consilium/audit_state.json`. Default cadence 1 silent parallel audit per 20 sequential runs; bumps to 1/5 when ≥2 of the last 5 audits diverged (restores to 1/20 after 5 clean audits). Full workflow + counted-runs semantics in SKILL.md §"Silent parallel audit".
 
 ## Veto powers
 
