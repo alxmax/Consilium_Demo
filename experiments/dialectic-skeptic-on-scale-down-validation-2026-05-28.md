@@ -48,6 +48,24 @@ Each task workspace was wiped before re-run (`--clean` equivalent via `rm -rf`).
 - Cost-benefit ratio uncertain — 1 win for 4× cost increase is poor return if generalized, but on isolated runs the wins may concentrate where they matter (the "implicit-constraint" tasks).
 - Task 01 specifically is contaminated and should be re-validated with a clean task.
 
+## Clean re-validation 2026-05-28 (post spec-leak removal)
+
+PR #261 (`fix/spec-priming-leak-cleanup`) removed the answer text from modes/dialectic.md and SKILL.md. Task 01 was re-run across all 5 modes with a wiped workspace.
+
+**Result: all 5 modes scored 100/100, including `sonnet_bare`, with `pipeline_executed=False` and `num_turns=2` across the board.**
+
+| Mode | Score | Pipeline executed | Turns | Cost |
+|---|---|---|---|---|
+| consilium_sequential | 100/100 | False | 2 | $0.091 |
+| consilium_trias | 100/100 | False | 2 | $0.088 |
+| consilium_dialectic | 100/100 | False | 2 | $0.090 |
+| superpowers | 100/100 | N/A | 2 | $0.089 |
+| sonnet_bare | 100/100 | N/A | 2 | $0.088 |
+
+**Interpretation:** Task 01 is not a discriminator for the Skeptic-on-scale_down mechanism. The base model at `--effort high` answers B correctly on its own — the previous A→B flip was non-determinism on an early run, not a spec-priming or Skeptic effect. None of the consilium modes ran the deliberation pipeline (all scale_down or bare-answer). The correct answer was already achievable by the base model; removing spec-priming had no impact on correctness. Task 01 cannot be used to isolate the Skeptic mechanism.
+
+**Next step:** construct a new eval task where the base model reliably fails without Skeptic guidance (see Follow-ups item 2 below).
+
 ## Follow-ups (in TODO.md HIGH PRIORITY)
 
 1. **Validation-leak cleanup:** rewrite the empirical-motivation prose in modes/dialectic.md + SKILL.md so the validation task's correct letter is NOT embedded in spec text the orchestrator reads.
