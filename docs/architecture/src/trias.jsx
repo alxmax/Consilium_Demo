@@ -23,8 +23,8 @@ const LENSES = [
 
 const TRIAS_OUTCOMES = [
   { p: '3–0', label: 'Unanimous', desc: 'All three personalities picked the same.', conf: 0.95, outcome: 'OK auto' },
-  { p: '2–1', label: 'Majority + dissent', desc: 'One personality prefers a different candidate; dissent logged.', conf: 0.70, outcome: 'OK auto' },
-  { p: '2–0', label: 'Majority + abstention', desc: 'One personality vetoed all (chosen = null).', conf: 0.75, outcome: 'OK auto' },
+  { p: '2–1', label: 'Majority + dissent', desc: 'One personality prefers a different candidate; dissent logged.', conf: 0.75, outcome: 'OK auto' },
+  { p: '2–0', label: 'Majority + abstention', desc: 'One personality vetoed all (chosen = null).', conf: 0.70, outcome: 'OK auto' },
   { p: '1–1–1', label: 'Fragmented', desc: 'Three distinct chosen results · no consensus.', conf: null, outcome: 'PEND · escalate' },
   { p: '0–0–0', label: 'Total veto', desc: 'All three personalities vetoed all candidates.', conf: null, outcome: 'PEND · retry_suggested' },
 ];
