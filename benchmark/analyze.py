@@ -102,18 +102,23 @@ def load_audit(workspace_dir):
 
 
 def load_pipeline(workspace_dir):
-    """Read pipeline_audit.json; return pipeline_executed (True/False/None).
+    """Read pipeline_audit.json; return report_detected (True/False/None).
 
     Written only for consilium_* runs (see run_task.detect_pipeline_execution).
     None = non-consilium mode or legacy run with no pipeline_audit.json → no badge.
-    False = a consilium run that answered directly without executing the pipeline
-    (bare-equivalent; the 2026-05-26 audit gap). True = real deliberation.
+    False = a consilium run that answered directly without a runs/ report path.
+    True = response contained a runs/ path (proxy for pipeline execution).
+
+    Field name: `report_detected` (renamed from `pipeline_executed` 2026-05-28 to
+    disambiguate from runs/<file>.json `pipeline_executed` deliberation-quality gate).
+    Fallback to old name for legacy files written before the rename.
     """
     p = workspace_dir / "pipeline_audit.json"
     if not p.exists():
         return None
     try:
-        return json.loads(p.read_text(encoding="utf-8")).get("pipeline_executed")
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return data.get("report_detected", data.get("pipeline_executed"))
     except Exception:
         return None
 

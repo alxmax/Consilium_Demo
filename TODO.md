@@ -51,13 +51,7 @@
 
 - [ ] **§6 Showcase project — "AI Incident Investigation & Knowledge Copilot"** (separate repo) — RAG over PDFs + DLT/automotive logs, Jira/Confluence ingestion, hybrid search + reranking, FastAPI backend, eval dashboards. Highest-leverage CV move for Enterprise-GenAI/RAG roles (per Senate audit). Consilium stays the deep agentic/LLMOps artifact; §6 is the breadth artifact.
 
-- [ ] **pipeline_executed integration gaps** (left intentionally during 2026-05-28 sequential-observability work)
-  - Two artifacts share the name `pipeline_executed` with ~80% overlapping semantics:
-    - `.consilium/runs/<file>.json.pipeline_executed` — canonical Consilium field, "did the 3-voice deliberation actually run?" (added in `feat/sequential-observability-tightening`)
-    - `benchmark/workspace/.../pipeline_audit.json.pipeline_executed` — benchmark-harness artifact, "did the model invoke `.consilium/runs/` path in its response?" (pre-existing, written by `benchmark/run_task.py`)
-  - Decide: unify the two (single field with shared semantics, benchmark reads canonical) OR explicitly document the divergence (rename one to disambiguate).
-  - Related: `scripts/audit_counter.py --increment` currently fires on every Sequential run including scale_down. Consider gating on canonical `pipeline_executed: true` so the silent-audit baseline measures only actual deliberations. Caveat: the original spec said "count scale_down too" because sequential-scale_down vs parallel-full IS divergence worth detecting; a change here is a spec change.
-  - Effort: ~2-4h (decide direction + small refactor + update SKILL.md / TODO).
+- [x] **pipeline_executed integration gaps** — **Done 2026-05-28**: renamed benchmark field to `report_detected` in `pipeline_audit.json` (run_task.py + analyze.py with legacy fallback). Decision: document divergence by renaming, not unifying — the two fields measure genuinely different things (deliberation quality vs. subprocess observability). `audit_counter.py --increment` behavior unchanged (counts scale_down too, per original spec — a change here would require empirical justification).
 
 ---
 
