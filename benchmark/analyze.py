@@ -123,12 +123,35 @@ def load_pipeline(workspace_dir):
         return None
 
 
+def load_trias_parallelism(workspace_dir):
+    """Return (serial_dispatch, max_agents_in_message, pattern) or (None, None, None).
+
+    Source: Claude CLI session JSONL transcript (per-message Agent tool_use counts).
+    serial_dispatch True  = max=1: each Agent dispatched alone (separate orchestrator messages).
+    serial_dispatch False = max>=2 (parallel/mixed) OR scale_down (no dispatch).
+    See benchmark/scripts/check_trias_parallelism.py for the contract.
+    """
+    p = workspace_dir / "pipeline_audit.json"
+    if not p.exists():
+        return None, None, None
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return (
+            data.get("trias_serial_dispatch"),
+            data.get("trias_max_agents_in_message"),
+            data.get("trias_dispatch_pattern"),
+        )
+    except Exception:
+        return None, None, None
+
+
 def _load_one_run(d):
     """Read one workspace directory; return metrics dict or None."""
     raw = d / "claude_raw.json"
     verify_state, verify_score, verify_max, verify_raw = load_verify(d)
     audit_verdict, audit_summary = load_audit(d)
     pipeline_executed = load_pipeline(d)
+    trias_serial, trias_max_in_msg, trias_pattern = load_trias_parallelism(d)
 
     if not raw.exists():
         # No API data — surface only if verify data is present.
@@ -144,6 +167,9 @@ def _load_one_run(d):
             "verify_max": verify_max, "verify_raw": verify_raw,
             "audit_verdict": audit_verdict, "audit_summary": audit_summary,
             "pipeline_executed": pipeline_executed,
+            "trias_serial_dispatch": trias_serial,
+            "trias_max_agents_in_message": trias_max_in_msg,
+            "trias_dispatch_pattern": trias_pattern,
         }
 
     try:
@@ -186,6 +212,9 @@ def _load_one_run(d):
         "audit_verdict": audit_verdict,
         "audit_summary": audit_summary,
         "pipeline_executed": pipeline_executed,
+        "trias_serial_dispatch": trias_serial,
+        "trias_max_agents_in_message": trias_max_in_msg,
+        "trias_dispatch_pattern": trias_pattern,
     }
 
 
@@ -447,6 +476,35 @@ def pipeline_html(r):
             'pipeline: skipped</div>')
 
 
+def trias_parallelism_html(r):
+    """Render the Trias parallelism badge.
+
+    Source: Claude CLI JSONL transcript (per-message Agent tool_use counts).
+    serial → all personalities dispatched in separate orchestrator messages (max=1).
+    parallel/mixed → some message contained 2+ Agent calls (max>=2).
+    scale_down or absent → no badge.
+    """
+    pattern = r.get("trias_dispatch_pattern")
+    max_in_msg = r.get("trias_max_agents_in_message")
+    if pattern is None or max_in_msg is None:
+        return ""
+    if pattern == "serial":
+        return (f'<div class="pipe pipe-warn" title="Each personality Agent call was in '
+                f'its own orchestrator message (max=1) — Trias dispatched personalities '
+                f'sequentially, not in parallel (spec drift vs modes/trias.md Step 3)">'
+                f'⚠ trias: serial dispatch (max={max_in_msg})</div>')
+    if pattern == "parallel":
+        return (f'<div class="pipe pipe-ok" title="All Agent calls in the same orchestrator '
+                f'message (max={max_in_msg}) — Trias personalities dispatched in parallel">'
+                f'trias: parallel (max={max_in_msg})</div>')
+    if pattern == "mixed":
+        return (f'<div class="pipe pipe-warn" title="Some messages dispatched multiple agents '
+                f'(max={max_in_msg}), others single — mixed parallelism">'
+                f'trias: mixed (max={max_in_msg})</div>')
+    # scale_down or no_dispatch_observed → no badge.
+    return ""
+
+
 def _replicates_html(r):
     """Render 'n=K · p L-H · $σ X.XX' line when the cell aggregates >1 runs."""
     reps = r.get("replicates")
@@ -527,6 +585,7 @@ def cell_html(r, rank=None):
         f'{verify_html(r)}'
         f'{audit_html(r)}'
         f'{pipeline_html(r)}'
+        f'{trias_parallelism_html(r)}'
         f'{halt}'
         f'{judge_rationale_html(r)}'
         f'</td>'
