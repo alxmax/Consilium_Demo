@@ -964,6 +964,11 @@ def main():
     if args.mode.startswith("consilium_") and response:
         detect_pipeline_execution(args.mode, response, workspace)
         fix_pend_headless(response)
+        if args.mode == "consilium_trias":
+            from check_trias_parallelism import check as _check_trias_par, update_pipeline_audit as _update_audit
+            _verdict = _check_trias_par(workspace)
+            if _verdict is not None:
+                _update_audit(workspace, _verdict)
 
     print(f"\nDone. Open RESULT.md to fill in the scoring.")
     print(f"  {workspace / 'RESULT.md'}")
