@@ -88,6 +88,13 @@ INVARIANTS = [
         "rationale": "Trias must dispatch 3 sub-agents in parallel; sequential loop triples wall-clock and caused task-08 to time out at 15min in n=10 benchmark.",
     },
     {
+        "id": "trias_parallelism_runtime_audit",
+        "file": "modes/trias.md",
+        "required": r"benchmark/scripts/check_trias_parallelism\.py|check_trias_parallelism\.py",
+        "source": "Senate 2026-05-28 (trias-parallelism-enforcement.json) — Tacitus: 'pin enforcement at orchestrator/drift-checker, NOT voice prompts'",
+        "rationale": "Spec prose alone has 0/6 clean-GO historical record for dispatch enforcement (per Tacitus retrospective on 6 prior runs). modes/trias.md MUST reference the runtime audit script that detects serial dispatch from JSONL transcripts. Removing the audit reference without removing the parallel mandate leaves a hidden, unmeasured drift — the exact gap this invariant prevents.",
+    },
+    {
         "id": "sequential_scale_down_skips_pipeline",
         "file": "modes/sequential.md",
         "required": r"scale_down.*SHORT-CIRCUIT.*Skip\s+Generator\s+AND\s+Control",

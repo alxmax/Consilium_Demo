@@ -124,21 +124,25 @@ def load_pipeline(workspace_dir):
 
 
 def load_trias_parallelism(workspace_dir):
-    """Return (serial_dispatch, ratio) from pipeline_audit.json or (None, None).
+    """Return (serial_dispatch, max_agents_in_message, pattern) or (None, None, None).
 
-    serial_dispatch True  = Trias dispatched 3 personalities sequentially (api/wall < 1.5).
-    serial_dispatch False = parallel evidence (ratio >= 1.5) OR scale_down (no dispatch).
-    None = field absent (non-Trias mode, raw missing, or pre-2026-05-28 run).
+    Source: Claude CLI session JSONL transcript (per-message Agent tool_use counts).
+    serial_dispatch True  = max=1: each Agent dispatched alone (separate orchestrator messages).
+    serial_dispatch False = max>=2 (parallel/mixed) OR scale_down (no dispatch).
     See benchmark/scripts/check_trias_parallelism.py for the contract.
     """
     p = workspace_dir / "pipeline_audit.json"
     if not p.exists():
-        return None, None
+        return None, None, None
     try:
         data = json.loads(p.read_text(encoding="utf-8"))
-        return data.get("trias_serial_dispatch"), data.get("trias_parallel_ratio")
+        return (
+            data.get("trias_serial_dispatch"),
+            data.get("trias_max_agents_in_message"),
+            data.get("trias_dispatch_pattern"),
+        )
     except Exception:
-        return None, None
+        return None, None, None
 
 
 def _load_one_run(d):
@@ -147,7 +151,7 @@ def _load_one_run(d):
     verify_state, verify_score, verify_max, verify_raw = load_verify(d)
     audit_verdict, audit_summary = load_audit(d)
     pipeline_executed = load_pipeline(d)
-    trias_serial, trias_ratio = load_trias_parallelism(d)
+    trias_serial, trias_max_in_msg, trias_pattern = load_trias_parallelism(d)
 
     if not raw.exists():
         # No API data — surface only if verify data is present.
@@ -164,7 +168,8 @@ def _load_one_run(d):
             "audit_verdict": audit_verdict, "audit_summary": audit_summary,
             "pipeline_executed": pipeline_executed,
             "trias_serial_dispatch": trias_serial,
-            "trias_parallel_ratio": trias_ratio,
+            "trias_max_agents_in_message": trias_max_in_msg,
+            "trias_dispatch_pattern": trias_pattern,
         }
 
     try:
@@ -208,7 +213,8 @@ def _load_one_run(d):
         "audit_summary": audit_summary,
         "pipeline_executed": pipeline_executed,
         "trias_serial_dispatch": trias_serial,
-        "trias_parallel_ratio": trias_ratio,
+        "trias_max_agents_in_message": trias_max_in_msg,
+        "trias_dispatch_pattern": trias_pattern,
     }
 
 
@@ -473,26 +479,29 @@ def pipeline_html(r):
 def trias_parallelism_html(r):
     """Render the Trias parallelism badge.
 
-    serial_dispatch True → red badge with measured ratio (spec drift — personalities
-    dispatched sequentially despite modes/trias.md Step 3 mandating parallel).
-    serial_dispatch False on real deliberation → green badge (parallel evidence).
-    None or scale_down → no badge.
+    Source: Claude CLI JSONL transcript (per-message Agent tool_use counts).
+    serial → all personalities dispatched in separate orchestrator messages (max=1).
+    parallel/mixed → some message contained 2+ Agent calls (max>=2).
+    scale_down or absent → no badge.
     """
-    serial = r.get("trias_serial_dispatch")
-    ratio = r.get("trias_parallel_ratio")
-    if serial is None or ratio is None:
+    pattern = r.get("trias_dispatch_pattern")
+    max_in_msg = r.get("trias_max_agents_in_message")
+    if pattern is None or max_in_msg is None:
         return ""
-    if serial is True:
-        return (f'<div class="pipe pipe-warn" title="api/wall ratio {ratio:.2f}x < 1.5 — '
-                f'Trias dispatched personalities sequentially, not in parallel '
-                f'(spec drift vs modes/trias.md Step 3)">'
-                f'⚠ trias: serial dispatch ({ratio:.2f}x)</div>')
-    # serial == False on real deliberation → parallel evidence (ratio >= 1.5).
-    # Skip badge for scale_down (no dispatch to evaluate).
-    if r.get("turns") and r["turns"] > 4:
-        return (f'<div class="pipe pipe-ok" title="api/wall ratio {ratio:.2f}x ≥ 1.5 — '
-                f'Trias personalities dispatched in parallel">'
-                f'trias: parallel ({ratio:.2f}x)</div>')
+    if pattern == "serial":
+        return (f'<div class="pipe pipe-warn" title="Each personality Agent call was in '
+                f'its own orchestrator message (max=1) — Trias dispatched personalities '
+                f'sequentially, not in parallel (spec drift vs modes/trias.md Step 3)">'
+                f'⚠ trias: serial dispatch (max={max_in_msg})</div>')
+    if pattern == "parallel":
+        return (f'<div class="pipe pipe-ok" title="All Agent calls in the same orchestrator '
+                f'message (max={max_in_msg}) — Trias personalities dispatched in parallel">'
+                f'trias: parallel (max={max_in_msg})</div>')
+    if pattern == "mixed":
+        return (f'<div class="pipe pipe-warn" title="Some messages dispatched multiple agents '
+                f'(max={max_in_msg}), others single — mixed parallelism">'
+                f'trias: mixed (max={max_in_msg})</div>')
+    # scale_down or no_dispatch_observed → no badge.
     return ""
 
 
