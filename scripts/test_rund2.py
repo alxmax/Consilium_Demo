@@ -67,15 +67,29 @@ class TestVocabularyMap(unittest.TestCase):
 
 class TestAggregateRund2(unittest.TestCase):
     def _base_conservator(self, reversibility="complete", magnitude="trivial", meta=None, flag=False):
+        # meta_recommendation belongs inside scores[i] (per-candidate), per
+        # conservator.md output contract. aggregate_sequential() reads it from
+        # there; top-level meta_recommendation is legacy and ignored.
         return {
             "regression_risk": {
                 "reversibility": reversibility,
                 "magnitude": magnitude,
                 "net_concern": 0.05,
             },
-            "meta_recommendation": meta,
             "irreversibility_flag": flag,
             "tokens_budget": {"generator": 300, "control": 300},
+            "scores": [
+                {
+                    "id": "A",
+                    "regression_risk": {
+                        "reversibility": reversibility,
+                        "magnitude": magnitude,
+                        "net_concern": 0.05,
+                    },
+                    "meta_recommendation": meta,
+                    "tokens_budget": {"generator": 300, "control": 300},
+                }
+            ],
         }
 
     def _base_generator(self, preferred="A", abstain=False):
