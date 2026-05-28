@@ -4,6 +4,28 @@
 
 ## HIGH PRIORITY
 
+### Silent-audit-every-20-runs: implement or remove
+
+> Discovered 2026-05-28 via Senate audit (`runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`, Socrate's load-bearing premise). SKILL.md §"Parallel voices mode" and `modes/sequential.md` claim "every 20 runs parallel mode runs silently alongside sequential." Grep across `scripts/` for `silent.*audit|every.*20.*run|audit.*freq` returns **zero matches**. The mechanism does not exist.
+
+- [ ] Decide between:
+  - **Implement:** counter in `.consilium/`, increment per sequential run, every 20th triggers silent parallel cross-check stored alongside the normal run. Audit divergence; if N divergences in last M runs → frequency → 1/5.
+  - **Remove:** delete the claim from SKILL.md (~L520) + `modes/sequential.md` (Auto-parallel section) + architecture diagram (modes.jsx parallel_auto step 6, currently marked "pending implementation check").
+- [ ] **Acceptance:** either grep returns a real implementation OR no doc surface mentions the 20-run audit.
+- [ ] **Constraint:** architecture explainer is CV-visible — solid > impressive-but-shaky. Don't leave the "pending check" note in place beyond one session.
+
+---
+
+### Track 2 — CI grep enforcement of mode invariants — DONE (2026-05-28)
+
+> Senate audit `2026-05-28_094832-doc-drift-ssot-mode-docs.json` verdict MODIFY→GO after R2 (Tacitus position change MODIFY_R1_to_GO). Track 1 (commit `2114f21` on `fix/docs-arch-drift-sync`) shipped the 4 drift fixes; Track 2 implemented on `feat/doc-drift-ci-enforcement-v2`.
+
+- [x] **b2 CI grep job**: `scripts/check_doc_drift.py` — 4 invariants (Trias parallel dispatch, Trias 2-1/2-0 confidence parity with `confidence.py`, sequential scale_down behavior, parallel-auto 2-turn structure) + legacy MODE alias removal-milestone enforcement. Negative-tested: induced drift → exit 1.
+- [x] **Cite May-25 run id**: SKILL.md §"Parallel voices mode" now opens with a lineage blockquote citing `.consilium/runs/2026-05-25_160009-modes-dir-frontmatter-refactor.json` + the Senate audit bundle.
+- [x] **Removal milestone**: `validate_report.py` `_LEGACY_MODE_ALIASES` annotated with `# remove after 2026-08-17` (parallel_skeptic, dialectic_skeptic) and `# remove after 2026-08-21` (trias_split). Script enforces presence of these dates.
+
+---
+
 ### Efficiency / model-count audit
 
 > Pre-registered spec (Consilium 2026-05-26 · `.consilium/runs/2026-05-26_1200_p1-efficiency-p2-explore-commit.json` · conf=0.74). Dimon constraint: no routing sentence in SKILL.md until n≥20.
