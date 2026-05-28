@@ -84,6 +84,7 @@ Two actions in order:
        "alternatives": [],
        "voice_scores": null,
        "confidence": 0.90,
+       "pipeline_executed": false,
        "deliberation_log": [{"step": "prior_deliberation_passthrough", "matched": "<match.chosen>", "date": "<match.date>"}],
        "telemetry": {"mode": "prior_deliberation_passthrough", "dispatch_count": 0}
      }
@@ -140,6 +141,7 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
     "alternatives": [],
     "voice_scores": {"conservator": "<conservator net_concern>"},
     "confidence": 0.85,
+    "pipeline_executed": false,
     "deliberation_log": [{"step": "scale_down_short_circuit", "reason": "<conservator notes>"}],
     "telemetry": {"mode": "sequential_scale_down", "dispatch_count": 1}
   }

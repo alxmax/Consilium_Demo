@@ -173,7 +173,13 @@ def _validate_telemetry(telemetry: object) -> list[str]:
     return problems
 
 
-def _validate_deliberation_log(log: object, skipped: bool) -> list[str]:
+# Reports whose pipeline was bypassed by design — voice-step presence is not required
+# because Generator/Control never ran. See SKILL.md Step 2 (scale_down) and
+# §"Prior-deliberation passthrough".
+_PIPELINE_BYPASS_CHOSEN = frozenset({"trivial-direct", "prior-deliberation"})
+
+
+def _validate_deliberation_log(log: object, skipped: bool, chosen: object = None) -> list[str]:
     if skipped:
         return []
     if not isinstance(log, list):
@@ -189,6 +195,48 @@ def _validate_deliberation_log(log: object, skipped: bool) -> list[str]:
         return [
             f"deliberation_log[aggregate].result must be an object "
             f"(got {type(result).__name__}) — did you bypass build_report.py?"
+        ]
+    # Voice-step presence: a non-bypassed report must show that Generator and Control
+    # actually ran. Hand-assembled reports that skip these steps would have passed before.
+    if chosen not in _PIPELINE_BYPASS_CHOSEN:
+        problems: list[str] = []
+        steps_present = {s.get("step") for s in log if isinstance(s, dict)}
+        for required_step in ("generator", "control"):
+            if required_step not in steps_present:
+                problems.append(
+                    f"deliberation_log missing '{required_step}' step "
+                    f"(required for chosen_approach={chosen!r}; exempt only for "
+                    f"trivial-direct/prior-deliberation reports)"
+                )
+        if problems:
+            return problems
+    return []
+
+
+def _validate_pipeline_executed(report: dict) -> list[str]:
+    """pipeline_executed must be present for non-skipped reports.
+
+    True ⇔ the 3-voice Generator→Control deliberation ran end-to-end (build_report
+    sets this automatically). False ⇔ the pipeline was bypassed (scale_down
+    short-circuit, prior-deliberation passthrough — see SKILL.md Step 2).
+    """
+    if report.get("skipped") is True:
+        return []
+    pe = report.get("pipeline_executed")
+    if pe is None:
+        return [
+            "pipeline_executed required (bool) for non-skipped reports; "
+            "build_report.py emits True by default — set False explicitly for "
+            "trivial-direct / prior-deliberation passthrough templates"
+        ]
+    if not isinstance(pe, bool):
+        return [f"pipeline_executed must be bool, got {type(pe).__name__}"]
+    # Consistency: bypassed-chosen ⇒ pipeline_executed: false
+    chosen = report.get("chosen_approach")
+    if chosen in _PIPELINE_BYPASS_CHOSEN and pe is True:
+        return [
+            f"pipeline_executed: true inconsistent with chosen_approach={chosen!r} "
+            f"(bypass templates must set pipeline_executed: false)"
         ]
     return []
 
@@ -357,10 +405,14 @@ def validate(report: dict) -> list[str]:
     problems.extend(_validate_deliberation_log(
         report.get("deliberation_log"),
         report.get("skipped") is True or is_trias or is_passthrough,
+        report.get("chosen_approach"),
     ))
     # Telemetry required for all non-skipped reports, Trias included — it's
     # the most expensive mode (9 sub-agenți) so cost rollup matters most there.
     problems.extend(_validate_telemetry_required(report))
+    # pipeline_executed required for non-skipped reports (Trias and Sequential alike).
+    # Distinguishes the 3-voice path from scale_down / passthrough short-circuits.
+    problems.extend(_validate_pipeline_executed(report))
 
     if is_trias:
         _validate_trias(report, problems)
@@ -369,20 +421,34 @@ def validate(report: dict) -> list[str]:
 
 
 _SUBSTANCE_SKIP_CHOSEN = frozenset({"trivial-direct", "prior-deliberation", "skipped"})
+# Conservator "shrug" floor — net_concern pstdev below this is taken as a sign the
+# voice gave nearly-uniform scores across candidates (no real differentiation).
+_SUBSTANCE_SHRUG_PSTDEV_FLOOR = 0.01
 
 
 def _warn_substance(report: dict) -> list[str]:
-    """Non-blocking heuristic: warn when voices ran but produced empty output.
+    """Heuristic substance checks. Returns a list of warning strings.
 
-    Does not add to the exit-1 problems list — emitted to stderr as advisory.
+    By default these are emitted to stderr as advisory (non-blocking).
+    With ``--strict-substance``, they are promoted to errors (exit 1).
     Skipped/passthrough/trivial-direct reports are exempt (no voices ran).
+
+    Checks:
+    1. generator.candidates is non-empty
+    2. control.verdicts is non-empty
+    3. STRICT-only: every valid:true verdict has a non-empty tests_to_write list
+       (Control's mandatory deliverable per its prompt — exempted only for do_nothing
+       candidates per the contract)
+    4. STRICT-only: conservator.scores net_concern values are not all near-identical
+       (the "shrug" antipattern — Conservator gave the same score to every candidate,
+       indicating no real risk assessment was done)
     """
     if report.get("skipped"):
         return []
     chosen = report.get("chosen_approach")
     if chosen in _SUBSTANCE_SKIP_CHOSEN:
         return []
-    warnings = []
+    warnings: list[str] = []
     for step in report.get("deliberation_log") or []:
         if not isinstance(step, dict):
             continue
@@ -396,6 +462,61 @@ def _warn_substance(report: dict) -> list[str]:
             if isinstance(verdicts, list) and len(verdicts) == 0:
                 warnings.append("SUBSTANCE WARNING: control.verdicts is empty — voices may not have done substantive work")
     return warnings
+
+
+def _strict_substance_problems(report: dict) -> list[str]:
+    """Stricter substance checks — promoted to errors under --strict-substance.
+
+    Includes everything from _warn_substance plus:
+    - missing tests_to_write on valid:true verdicts (except do_nothing)
+    - Conservator score uniformity ("shrug" antipattern)
+    """
+    problems = list(_warn_substance(report))
+    if report.get("skipped"):
+        return problems
+    chosen = report.get("chosen_approach")
+    if chosen in _SUBSTANCE_SKIP_CHOSEN:
+        return problems
+
+    for step in report.get("deliberation_log") or []:
+        if not isinstance(step, dict):
+            continue
+        s = step.get("step")
+        if s == "control":
+            for v in step.get("verdicts") or []:
+                if not isinstance(v, dict):
+                    continue
+                if v.get("valid") is True and v.get("id") != "do_nothing":
+                    tw = v.get("tests_to_write")
+                    if not isinstance(tw, list) or len(tw) == 0:
+                        problems.append(
+                            f"STRICT SUBSTANCE: control verdict {v.get('id')!r} valid:true "
+                            f"but tests_to_write is empty or missing (Control contract requires "
+                            f"1-4 acceptance tests for non-do_nothing valid candidates)"
+                        )
+        elif s == "conservator":
+            scores = step.get("scores") or []
+            net_concerns: list[float] = []
+            for sc in scores:
+                if not isinstance(sc, dict):
+                    continue
+                rr = sc.get("regression_risk")
+                if isinstance(rr, dict):
+                    nc = rr.get("net_concern")
+                else:
+                    nc = rr
+                if isinstance(nc, (int, float)) and not isinstance(nc, bool):
+                    net_concerns.append(float(nc))
+            if len(net_concerns) >= 3:
+                pstdev = statistics.pstdev(net_concerns)
+                if pstdev < _SUBSTANCE_SHRUG_PSTDEV_FLOOR:
+                    problems.append(
+                        f"STRICT SUBSTANCE: conservator scores show 'shrug' antipattern "
+                        f"(net_concern pstdev={pstdev:.4f} < {_SUBSTANCE_SHRUG_PSTDEV_FLOOR}; "
+                        f"all candidates rated nearly-identically — Conservator did not "
+                        f"differentiate risk between alternatives)"
+                    )
+    return problems
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -424,6 +545,13 @@ def main(argv: list[str] | None = None) -> int:
         help=f"require philosophical voice fields; one of: {', '.join(sorted(_PHILOSOPHICAL_VOICES))}",
     )
     # === END PHILOSOPHICAL VOICES ===
+    ap.add_argument(
+        "--strict-substance",
+        action="store_true",
+        default=False,
+        help="promote substance heuristics (empty candidates/verdicts, missing tests_to_write, "
+             "Conservator score uniformity) from advisory warnings to blocking errors",
+    )
     args = ap.parse_args(argv)
 
     try:
@@ -448,12 +576,16 @@ def main(argv: list[str] | None = None) -> int:
             voice_output = report.get("voice_outputs", {}).get(args.strict_philosophical, report)
             problems.extend(validator(voice_output))
     # === END PHILOSOPHICAL VOICES ===
+    if args.strict_substance:
+        problems.extend(_strict_substance_problems(report))
     if problems:
         for p in problems:
             print(p, file=sys.stderr)
         return 1
-    for w in _warn_substance(report):
-        print(w, file=sys.stderr)
+    if not args.strict_substance:
+        # Advisory mode — warnings to stderr but don't block exit 0
+        for w in _warn_substance(report):
+            print(w, file=sys.stderr)
     return 0
 
 
