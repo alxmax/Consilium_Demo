@@ -36,6 +36,7 @@ TASKS = [
     "reasoning/08_locking_strategy",
     "reasoning/09_pipeline_freshness",
     "reasoning/10_checkout_degradation",
+    "reasoning/11_marathon_prep",
 ]
 
 
