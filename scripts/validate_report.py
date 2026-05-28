@@ -224,10 +224,13 @@ def _validate_telemetry_required(report: dict) -> list[str]:
         return ["telemetry.mode required (non-empty string) for non-skipped reports"]
     # Alias resolution — collapsed 2026-05-17.  The live dispatcher no longer
     # emits these names; historical runs/*.json may still carry them.
+    # Dated removal milestones (enforced by scripts/check_doc_drift.py):
+    #   parallel_skeptic, dialectic_skeptic → remove after 2026-08-17 (3mo post-collapse)
+    #   trias_split → remove after 2026-08-21 (3mo post-deprecation)
     _LEGACY_MODE_ALIASES: dict[str, str] = {
-        "parallel_skeptic": "skeptic_on_chosen",
-        "dialectic_skeptic": "skeptic_on_chosen",
-        "trias_split": "trias",  # deprecated 2026-05-21: trias 9→3 makes split redundant
+        "parallel_skeptic": "skeptic_on_chosen",   # remove after 2026-08-17
+        "dialectic_skeptic": "skeptic_on_chosen",  # remove after 2026-08-17
+        "trias_split": "trias",                    # remove after 2026-08-21
     }
     mode = _LEGACY_MODE_ALIASES.get(mode.strip(), mode.strip())
     # All modes that dispatch multiple voices require per-voice telemetry so

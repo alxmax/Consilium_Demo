@@ -1,0 +1,220 @@
+"""Check that mode docs (modes/*.md, docs/architecture/src/*.jsx) match the
+authoritative behavior in SKILL.md and scripts/confidence.py.
+
+Stdlib-only. Exit 0 = OK, exit 1 = drift detected, exit 2 = malformed input.
+
+Origin: Senate audit 2026-05-28 (runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json)
+found 4 discrepancies between docs/architecture/ (CV-visible explainer) and the
+authoritative behavior in modes/*.md + scripts/confidence.py + SKILL.md. Track 1
+(fix/docs-arch-drift-sync, commit 2114f21) fixed the 4 drifts; this script is
+Track 2 — enforces the invariants so the same drifts cannot recur silently.
+
+Prior precedent: .consilium/runs/2026-05-25_160009-modes-dir-frontmatter-refactor.json
+chose YAML frontmatter as the single source of truth for mode structured fields.
+That outcome was marked OK but the 4 drifts found 3 days later proved frontmatter
+alone is insufficient — the missing piece is enforcement (this script).
+
+Each invariant has:
+- `required`: a regex pattern that MUST appear in the file
+- `forbidden` (optional): a regex pattern that MUST NOT appear in the file
+- `source`: the authoritative source the invariant derives from
+
+Usage:
+    python -X utf8 scripts/check_doc_drift.py
+"""
+
+from __future__ import annotations
+
+import ast
+import re
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _read(rel_path: str) -> str:
+    p = REPO_ROOT / rel_path
+    if not p.exists():
+        print(f"check_doc_drift: missing file {rel_path}", file=sys.stderr)
+        sys.exit(2)
+    return p.read_text(encoding="utf-8")
+
+
+def _extract_confidence_values() -> dict[str, float | None]:
+    """Parse VOTE_PATTERN_CONFIDENCE from scripts/confidence.py via AST."""
+    src = _read("scripts/confidence.py")
+    tree = ast.parse(src)
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "VOTE_PATTERN_CONFIDENCE":
+                    return ast.literal_eval(node.value)
+    print("check_doc_drift: VOTE_PATTERN_CONFIDENCE not found in confidence.py", file=sys.stderr)
+    sys.exit(2)
+
+
+def _extract_trias_jsx_outcomes() -> dict[str, float | None]:
+    """Parse TRIAS_OUTCOMES rows from docs/architecture/src/trias.jsx.
+
+    Returns {pattern: conf} where pattern is normalized to ASCII hyphens
+    (jsx uses en-dash). Patterns like '3-0', '2-1', '2-0', '1-1-1', '0-0-0'.
+    """
+    src = _read("docs/architecture/src/trias.jsx")
+    # Each row looks like: { p: '2-1', label: '...', desc: '...', conf: 0.75, ...}
+    # Use a tolerant regex that captures p and conf together.
+    pattern = re.compile(
+        r"\{\s*p:\s*['\"]([^'\"]+)['\"][^}]*?conf:\s*([0-9.]+|null)",
+        re.DOTALL,
+    )
+    out: dict[str, float | None] = {}
+    for p_raw, conf_raw in pattern.findall(src):
+        p_ascii = p_raw.replace("–", "-").replace("—", "-")
+        out[p_ascii] = None if conf_raw == "null" else float(conf_raw)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Invariants (text-based)
+# ---------------------------------------------------------------------------
+
+INVARIANTS = [
+    {
+        "id": "trias_parallel_dispatch",
+        "file": "modes/trias.md",
+        "required": r"[Dd]ispatch\s+all\s+3\s+personalities\s+in\s+parallel|in\s+parallel.*personalities|parallel\s+dispatch.*personalities",
+        "forbidden": r"For\s+each\s+personality,\s+dispatch\s+\*\*1\s+`consilium-subagent`\*\*",
+        "source": "Senate 2026-05-28 audit + benchmark task-08 timeout (sequential loop)",
+        "rationale": "Trias must dispatch 3 sub-agents in parallel; sequential loop triples wall-clock and caused task-08 to time out at 15min in n=10 benchmark.",
+    },
+    {
+        "id": "sequential_scale_down_skips_pipeline",
+        "file": "modes/sequential.md",
+        "required": r"scale_down.*SHORT-CIRCUIT.*Skip\s+Generator\s+AND\s+Control",
+        "forbidden": r"scale_down.*ADAPT_SHORT.*max\s+2\s+candidates",
+        "source": "SKILL.md Step 2 + benchmark 10/10 sequential runs (pipeline_executed=false)",
+        "rationale": "Conservator scale_down skips Generator AND Control entirely per SKILL.md authoritative; old description 'ADAPT_SHORT max 2 candidates' implied Generator ran, which contradicts pipeline_audit.json output.",
+    },
+    {
+        "id": "parallel_auto_is_two_turn",
+        "file": "docs/architecture/src/modes.jsx",
+        "required": r"parallel_auto[\s\S]*?(Two-turn|two-turn|Turn 1[\s\S]*?Turn 2)",
+        "forbidden": r"parallel_auto[\s\S]*?true\s+3-way\s+(parallel\s+)?isolation",
+        "source": "SKILL.md §'How (2 turns)' — Turn 1=Generator alone, Turn 2=Control+Conservator parallel with candidates",
+        "rationale": "Control needs candidates to verdict and Conservator needs them to assess risk; true 3-way isolation breaks this data dependency. SKILL.md explicitly describes the 2-turn flow.",
+    },
+]
+
+
+# ---------------------------------------------------------------------------
+# Checks
+# ---------------------------------------------------------------------------
+
+
+def check_text_invariants() -> list[str]:
+    failures: list[str] = []
+    for inv in INVARIANTS:
+        content = _read(inv["file"])
+        req = inv["required"]
+        if not re.search(req, content):
+            failures.append(
+                f"[{inv['id']}] {inv['file']}: required pattern not found\n"
+                f"  pattern: {req}\n"
+                f"  source:  {inv['source']}\n"
+                f"  why:     {inv['rationale']}"
+            )
+        forbidden = inv.get("forbidden")
+        if forbidden and re.search(forbidden, content):
+            failures.append(
+                f"[{inv['id']}] {inv['file']}: forbidden pattern present\n"
+                f"  pattern: {forbidden}\n"
+                f"  source:  {inv['source']}\n"
+                f"  why:     {inv['rationale']}"
+            )
+    return failures
+
+
+def check_trias_confidence_parity() -> list[str]:
+    """Invariant 4: trias.jsx TRIAS_OUTCOMES must match confidence.py VOTE_PATTERN_CONFIDENCE."""
+    failures: list[str] = []
+    auth = _extract_confidence_values()
+    jsx = _extract_trias_jsx_outcomes()
+    # Check 2-1 and 2-0 specifically (the ones that drifted).
+    for pattern in ("2-1", "2-0", "3-0"):
+        if pattern not in auth:
+            failures.append(
+                f"[trias_confidence_parity] confidence.py missing pattern {pattern!r}"
+            )
+            continue
+        if pattern not in jsx:
+            failures.append(
+                f"[trias_confidence_parity] trias.jsx TRIAS_OUTCOMES missing pattern {pattern!r}"
+            )
+            continue
+        if auth[pattern] != jsx[pattern]:
+            failures.append(
+                f"[trias_confidence_parity] {pattern}: confidence.py={auth[pattern]} "
+                f"vs trias.jsx={jsx[pattern]}\n"
+                f"  source: scripts/confidence.py VOTE_PATTERN_CONFIDENCE (authoritative)\n"
+                f"  fix:    update docs/architecture/src/trias.jsx TRIAS_OUTCOMES + run build.py"
+            )
+    return failures
+
+
+# ---------------------------------------------------------------------------
+# Legacy MODE enum removal milestone (Tacitus R1 pattern D)
+# ---------------------------------------------------------------------------
+
+REMOVAL_MILESTONES: dict[str, str] = {
+    # alias -> dated removal milestone (ISO date). Removed after that date.
+    "parallel_skeptic": "2026-08-17",   # collapsed 2026-05-17, +3mo
+    "dialectic_skeptic": "2026-08-17",  # collapsed 2026-05-17, +3mo
+    "trias_split": "2026-08-21",        # deprecated 2026-05-21, +3mo
+}
+
+
+def check_legacy_mode_milestone() -> list[str]:
+    """Verify legacy MODE aliases in validate_report.py carry a dated removal note."""
+    failures: list[str] = []
+    src = _read("scripts/validate_report.py")
+    for alias, milestone_date in REMOVAL_MILESTONES.items():
+        if alias not in src:
+            # Already removed — that's fine, milestone reached.
+            continue
+        # Require a comment containing the milestone date near the alias line.
+        # Tolerant: the date must appear within 200 chars of the alias literal.
+        idx = src.find(f'"{alias}"')
+        if idx < 0:
+            continue
+        window = src[max(0, idx - 200): idx + 200]
+        if milestone_date not in window:
+            failures.append(
+                f"[legacy_mode_milestone] {alias!r}: removal date {milestone_date} not declared\n"
+                f"  fix: add comment '# remove after {milestone_date}' adjacent to the alias entry"
+            )
+    return failures
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+
+def main() -> int:
+    all_failures: list[str] = []
+    all_failures.extend(check_text_invariants())
+    all_failures.extend(check_trias_confidence_parity())
+    all_failures.extend(check_legacy_mode_milestone())
+
+    if not all_failures:
+        print("doc-drift OK: all invariants hold", flush=True)
+        return 0
+
+    print(f"doc-drift FAIL: {len(all_failures)} invariant(s) violated", file=sys.stderr)
+    for i, f in enumerate(all_failures, 1):
+        print(f"\n{i}. {f}", file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

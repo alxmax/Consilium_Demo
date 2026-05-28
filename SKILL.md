@@ -517,9 +517,11 @@ Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× �
 
 ## Parallel voices mode
 
-**Parallel mode removed.** Parallel dispatch is no longer a user-selectable option. Auto-triggered internally only when `magnitude = critical` AND `reversibility = irreversible`, as a cross-check on the sequential result. Every 20 runs, a silent parallel audit runs automatically; if systematic divergence is detected, frequency increases to 1/5.
+> **Lineage.** Mode metadata single-source-of-truth was settled by prior Consilium deliberation `.consilium/runs/2026-05-25_160009-modes-dir-frontmatter-refactor.json` (YAML frontmatter chosen over JSON-manifest codegen). Doc-vs-impl parity for the 4 invariants below is enforced by `scripts/check_doc_drift.py` (Senate audit `runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`, Track 2).
 
-**Legacy reference (auto cross-check only).** Dispatch the 3 voices as independent sub-agents — eliminates cross-contamination completely.
+**Parallel mode removed.** Parallel dispatch is no longer a user-selectable option. Auto-triggered internally only when `magnitude = critical` AND `reversibility = irreversible`, as a cross-check on the sequential result. The "silent parallel audit every 20 runs" claim from earlier docs has **no implementation in `scripts/`** (verified 2026-05-28 via grep); decision pending in TODO.md HIGH PRIORITY — implement-or-remove.
+
+**Legacy reference (auto cross-check only).** Dispatch follows the 2-turn flow below — Generator alone first, then Control + Conservator in parallel with Generator's candidates. This preserves the data dependency (Control needs candidates to verdict, Conservator needs them to assess risk) while isolating each voice in its own context within a turn.
 
 ### How (2 turns)
 1. **Turn 1:** dispatch Generator (1 Agent call). Wait for candidates.
