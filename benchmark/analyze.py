@@ -123,12 +123,31 @@ def load_pipeline(workspace_dir):
         return None
 
 
+def load_trias_parallelism(workspace_dir):
+    """Return (serial_dispatch, ratio) from pipeline_audit.json or (None, None).
+
+    serial_dispatch True  = Trias dispatched 3 personalities sequentially (api/wall < 1.5).
+    serial_dispatch False = parallel evidence (ratio >= 1.5) OR scale_down (no dispatch).
+    None = field absent (non-Trias mode, raw missing, or pre-2026-05-28 run).
+    See benchmark/scripts/check_trias_parallelism.py for the contract.
+    """
+    p = workspace_dir / "pipeline_audit.json"
+    if not p.exists():
+        return None, None
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return data.get("trias_serial_dispatch"), data.get("trias_parallel_ratio")
+    except Exception:
+        return None, None
+
+
 def _load_one_run(d):
     """Read one workspace directory; return metrics dict or None."""
     raw = d / "claude_raw.json"
     verify_state, verify_score, verify_max, verify_raw = load_verify(d)
     audit_verdict, audit_summary = load_audit(d)
     pipeline_executed = load_pipeline(d)
+    trias_serial, trias_ratio = load_trias_parallelism(d)
 
     if not raw.exists():
         # No API data — surface only if verify data is present.
@@ -144,6 +163,8 @@ def _load_one_run(d):
             "verify_max": verify_max, "verify_raw": verify_raw,
             "audit_verdict": audit_verdict, "audit_summary": audit_summary,
             "pipeline_executed": pipeline_executed,
+            "trias_serial_dispatch": trias_serial,
+            "trias_parallel_ratio": trias_ratio,
         }
 
     try:
@@ -186,6 +207,8 @@ def _load_one_run(d):
         "audit_verdict": audit_verdict,
         "audit_summary": audit_summary,
         "pipeline_executed": pipeline_executed,
+        "trias_serial_dispatch": trias_serial,
+        "trias_parallel_ratio": trias_ratio,
     }
 
 
@@ -447,6 +470,32 @@ def pipeline_html(r):
             'pipeline: skipped</div>')
 
 
+def trias_parallelism_html(r):
+    """Render the Trias parallelism badge.
+
+    serial_dispatch True → red badge with measured ratio (spec drift — personalities
+    dispatched sequentially despite modes/trias.md Step 3 mandating parallel).
+    serial_dispatch False on real deliberation → green badge (parallel evidence).
+    None or scale_down → no badge.
+    """
+    serial = r.get("trias_serial_dispatch")
+    ratio = r.get("trias_parallel_ratio")
+    if serial is None or ratio is None:
+        return ""
+    if serial is True:
+        return (f'<div class="pipe pipe-warn" title="api/wall ratio {ratio:.2f}x < 1.5 — '
+                f'Trias dispatched personalities sequentially, not in parallel '
+                f'(spec drift vs modes/trias.md Step 3)">'
+                f'⚠ trias: serial dispatch ({ratio:.2f}x)</div>')
+    # serial == False on real deliberation → parallel evidence (ratio >= 1.5).
+    # Skip badge for scale_down (no dispatch to evaluate).
+    if r.get("turns") and r["turns"] > 4:
+        return (f'<div class="pipe pipe-ok" title="api/wall ratio {ratio:.2f}x ≥ 1.5 — '
+                f'Trias personalities dispatched in parallel">'
+                f'trias: parallel ({ratio:.2f}x)</div>')
+    return ""
+
+
 def _replicates_html(r):
     """Render 'n=K · p L-H · $σ X.XX' line when the cell aggregates >1 runs."""
     reps = r.get("replicates")
@@ -527,6 +576,7 @@ def cell_html(r, rank=None):
         f'{verify_html(r)}'
         f'{audit_html(r)}'
         f'{pipeline_html(r)}'
+        f'{trias_parallelism_html(r)}'
         f'{halt}'
         f'{judge_rationale_html(r)}'
         f'</td>'
