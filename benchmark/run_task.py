@@ -201,9 +201,11 @@ def detect_pipeline_execution(mode: str, response: str, workspace: Path) -> None
     if not mode.startswith("consilium_"):
         return
     run_paths = _RUN_PATH_RE.findall(response or "")
+    # `report_detected` is a subprocess-observability proxy (runs/ path in response text),
+    # distinct from runs/<file>.json `pipeline_executed` (deliberation quality gate).
     (workspace / "pipeline_audit.json").write_text(
         json.dumps({
-            "pipeline_executed": bool(run_paths),
+            "report_detected": bool(run_paths),
             "run_paths": run_paths,
             "signal": "runs/ report path in response",
         }, indent=2),
