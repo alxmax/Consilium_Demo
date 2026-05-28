@@ -37,14 +37,14 @@ Silent audit: every 20 runs, parallel mode runs silently alongside sequential. I
 
 ## Veto powers
 
-The 8 design components (per spec): vocabulary_map, length_targets, priority_veto_order, tension_expose, metadata, user_profile, multi_confidence, escalation_rule. The `aggregate_sequential()` function produces 7 distinct routing outcomes derived from these components: `BLOCK` (glossary_fail), `BLOCK` (irreversibility), `REWORK`, `ADAPT_SHORT`, `ADAPT_EXTENDED`, `ESCALATE` (3+ triggers), `AGGREGATE` (default).
+The 8 design components (per spec): vocabulary_map, length_targets, priority_veto_order, tension_expose, metadata, user_profile, multi_confidence, escalation_rule. The `aggregate_sequential()` function produces 7 distinct routing outcomes derived from these components: `BLOCK` (glossary_fail), `BLOCK` (irreversibility), `REWORK`, `SHORT-CIRCUIT` (scale_down — skip Gen+Ctrl), `ADAPT_EXTENDED` (scale_up), `ESCALATE` (3+ triggers), `AGGREGATE` (default).
 
 | Trigger | Source | Effect | Action |
 |---|---|---|---|
 | `irreversibility_flag: true` | Conservator | BLOCK (hard) | Ask user for explicit consent before Generator |
 | `glossary_fail: true` | Control | BLOCK (soft) | Ask user to reformulate with operational terms |
 | `disagreements: substantial` | Control | REWORK | Re-run Generator with clarification context |
-| `meta_recommendation: scale_down` | Conservator | ADAPT_SHORT | Short path: max 2 candidates, 2-sentence output |
+| `meta_recommendation: scale_down` | Conservator | SHORT-CIRCUIT | Skip Generator AND Control entirely. Emit minimal report with `chosen_approach: "trivial-direct"`, `confidence: 0.85`, `pipeline_executed: false`. See SKILL.md Step 2 (authoritative). |
 | `meta_recommendation: scale_up` | Conservator | ADAPT_EXTENDED | Warn user, add context before Generator |
 | 3+ of above simultaneously | Aggregator | ESCALATE | Present trigger table to user, request decision |
 
