@@ -28,7 +28,7 @@ This injection activates code-specific reasoning in the existing voices without 
 
 After Sequential produces `chosen`, always dispatch `skeptic_on_chosen` (not conditional on confidence band). The Skeptic receives the chosen + `success_criterion` + the code context. The verification claim must be concrete: a named test, a build command, or a CI check.
 
-**Skeptic runs on scale_down too.** When Sequential's Step 2 short-circuits via Conservator `scale_down` (Gen+Ctrl skipped, `chosen_approach: "trivial-direct"`), the Skeptic stage STILL dispatches on the trivial-direct chosen. Cost-aware skipping of Gen+Ctrl is fine; skipping Skeptic would collapse Dialectic into bare Sequential and defeat the mode. See SKILL.md Step 2 "Dialectic mode exception (scale_down + Skeptic)" for the override. Motivating empirical case: 2026-05-28 benchmark `transport_choice` — scale_down'd directly to A (walk), correct answer is B (drive); a live Skeptic could have caught the "car must arrive" constraint.
+**Skeptic runs on scale_down too.** When Sequential's Step 2 short-circuits via Conservator `scale_down` (Gen+Ctrl skipped, `chosen_approach: "trivial-direct"`), the Skeptic stage STILL dispatches on the trivial-direct chosen. Cost-aware skipping of Gen+Ctrl is fine; skipping Skeptic would collapse Dialectic into bare Sequential and defeat the mode. See SKILL.md Step 2 "Dialectic mode exception (scale_down + Skeptic)" for the override. Motivating empirical case: 2026-05-28 benchmark validation (`experiments/dialectic-skeptic-on-scale-down-validation-2026-05-28.md`).
 
 ## When to use
 - Code change where implementation strategy and verification strategy are both non-obvious
