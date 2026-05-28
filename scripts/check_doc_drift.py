@@ -111,6 +111,20 @@ INVARIANTS = [
         "source": "scripts/audit_counter.py exists; state file .consilium/audit_state.json; SKILL.md §'Silent parallel audit'",
         "rationale": "Senate 2026-05-28 (Socrate) found the 'every 20 runs silent audit' claim had zero implementation. Once implemented, SKILL.md must reference audit_counter.py and must NOT carry the 'pending' caveat. If you remove the implementation, also remove the §'Silent parallel audit' section — never leave the claim with the 'pending' caveat.",
     },
+    {
+        "id": "build_report_emits_pipeline_executed",
+        "file": "scripts/build_report.py",
+        "required": r'"pipeline_executed":\s*True',
+        "source": "validate_report.py _validate_pipeline_executed() requires the field for non-skipped reports",
+        "rationale": "Trias R1 vote (Pioneer 2026-05-28): consumers of runs/*.json cannot distinguish full-pipeline runs from scale_down short-circuits without this field. build_report.py is the canonical emitter for non-skipped reports — it MUST always set pipeline_executed: True. Hand-built bypass templates (trivial-direct, prior-deliberation) set False in SKILL.md.",
+    },
+    {
+        "id": "skill_templates_have_pipeline_executed",
+        "file": "SKILL.md",
+        "required": r'"pipeline_executed":\s*false',
+        "source": "SKILL.md Step 2 scale_down short-circuit + §'Prior-deliberation passthrough' templates",
+        "rationale": "Bypass templates in SKILL.md (scale_down trivial-direct, prior-deliberation passthrough) construct reports by hand without build_report.py. They MUST include pipeline_executed: false so validate_report.py accepts them. If this disappears from SKILL.md, all headless scale_down runs will start failing validation silently.",
+    },
 ]
 
 

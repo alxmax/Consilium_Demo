@@ -302,8 +302,8 @@ def _sequential_methodology_notes(g: dict, c: dict) -> str:
         notes.append("Generator challenged Conservator (challenge_upward)")
     if c.get("disagreements"):
         n = len(c["disagreements"])
-        notes.append(f"{n} disagreement(s) detectate")
-    return " | ".join(notes) if notes else "Deliberare completă fără anomalii"
+        notes.append(f"{n} disagreement(s) detected")
+    return " | ".join(notes) if notes else "Deliberation completed without anomalies"
 
 
 def aggregate_sequential(
@@ -333,7 +333,7 @@ def aggregate_sequential(
             "result": "BLOCK",
             "reason": "glossary_fail",
             "attempts": control_out.get("glossary_attempts", []),
-            "action": "Reformulează întrebarea cu termeni operaționali verificabili",
+            "action": "Reformulate the question using operationally-verifiable terms",
         }
 
     # Priority 2: Irreversibility without consent
@@ -344,7 +344,7 @@ def aggregate_sequential(
             "result": "BLOCK",
             "reason": "irreversibility_no_consent",
             "magnitude": rr.get("magnitude") if isinstance(rr, dict) else None,
-            "action": "Confirmă explicit că această decizie este ireversibilă înainte de a continua",
+            "action": "Confirm explicitly that this decision is irreversible before proceeding",
         }
 
     # Collect triggers for escalation check
@@ -372,8 +372,8 @@ def aggregate_sequential(
             "result": "ESCALATE",
             "triggers": triggers,
             "action": (
-                "Multiple semnale critice detectate simultan. "
-                "Aggregator nu poate decide singur. Alege ordinea de rezolvare:\n"
+                "Multiple critical signals detected simultaneously. "
+                "Aggregator cannot decide alone. Choose the resolution order:\n"
                 + "\n".join(f"  - {t}" for t in triggers)
             ),
         }
@@ -385,7 +385,7 @@ def aggregate_sequential(
             "result": "REWORK",
             "reason": "substantial_disagreement",
             "disagreements": substantial,
-            "action": "Vocile au divergențe substanțiale — clarifică înainte de agregare finală",
+            "action": "Voices show substantial disagreement — clarify before final aggregation",
         }
 
     # Priority 4a: scale_down
@@ -396,7 +396,7 @@ def aggregate_sequential(
             "result": "ADAPT_SHORT",
             "meta_recommendation": "scale_down",
             "chosen": preferred,
-            "action": "Deliberare comprimată — răspuns scurt (max 2 propoziții)",
+            "action": "Compressed deliberation — short response (max 2 sentences)",
         }
 
     # Priority 4b: scale_up
@@ -405,7 +405,7 @@ def aggregate_sequential(
             "scheme": "sequential",
             "result": "ADAPT_EXTENDED",
             "meta_recommendation": "scale_up",
-            "action": "Deliberare extinsă necesară — cere clarificare user înainte de a continua",
+            "action": "Extended deliberation required — ask user for clarification before proceeding",
         }
 
     # Default: aggregate normally
@@ -441,7 +441,7 @@ def aggregate_sequential(
         "methodology_notes": _sequential_methodology_notes(generator_out, control_out),
     }
     if methodology_confidence < 0.5:
-        result["warning"] = "Deliberare incompletă — consideră rezultatul ca preliminar"
+        result["warning"] = "Deliberation incomplete — treat the result as preliminary"
     return result
 # === END SEQUENTIAL ===
 

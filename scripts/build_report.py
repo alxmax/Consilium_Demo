@@ -205,6 +205,10 @@ def build(bundle: dict) -> dict:
         "alternatives": _alternatives(generator, control, conservator, aggregate, alt_limit),
         "voice_scores": _voice_scores_for(chosen, control, conservator),
         "confidence": confidence_block.get("confidence"),
+        # pipeline_executed: True when the 3-voice deliberation pipeline ran end-to-end.
+        # Hand-built reports (trivial-direct from scale_down, prior-deliberation passthrough)
+        # set this to False in their template — see SKILL.md Step 2.
+        "pipeline_executed": True,
         "deliberation_log": [
             {"step": "generator",   "candidates": generator.get("candidates") or []},
             {"step": "control",     "verdicts":   control.get("verdicts")   or []},
