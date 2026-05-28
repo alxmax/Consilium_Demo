@@ -519,9 +519,9 @@ Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× �
 
 > **Lineage.** Mode metadata single-source-of-truth was settled by prior Consilium deliberation `.consilium/runs/2026-05-25_160009-modes-dir-frontmatter-refactor.json` (YAML frontmatter chosen over JSON-manifest codegen). Doc-vs-impl parity for the 4 invariants below is enforced by `scripts/check_doc_drift.py` (Senate audit `runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`, Track 2).
 
-**Parallel mode removed.** Parallel dispatch is no longer a user-selectable option. Auto-triggered internally only when `magnitude = critical` AND `reversibility = irreversible`, as a cross-check on the sequential result. The "silent parallel audit every 20 runs" claim from earlier docs has **no implementation in `scripts/`** (verified 2026-05-28 via grep); decision pending in TODO.md HIGH PRIORITY — implement-or-remove.
+**Parallel mode removed.** Parallel dispatch is no longer a user-selectable option. Auto-triggered internally in two cases: (a) when Conservator returns `magnitude = critical` AND `reversibility = irreversible`, as a cross-check on the sequential result; (b) the silent-audit cadence described in §"Silent parallel audit" below.
 
-**Legacy reference (auto cross-check only).** Dispatch follows the 2-turn flow below — Generator alone first, then Control + Conservator in parallel with Generator's candidates. This preserves the data dependency (Control needs candidates to verdict, Conservator needs them to assess risk) while isolating each voice in its own context within a turn.
+**Dispatch flow (auto cross-check).** The 2-turn flow below — Generator alone first, then Control + Conservator in parallel with Generator's candidates. This preserves the data dependency (Control needs candidates to verdict, Conservator needs them to assess risk) while isolating each voice in its own context within a turn.
 
 ### How (2 turns)
 1. **Turn 1:** dispatch Generator (1 Agent call). Wait for candidates.
@@ -529,6 +529,40 @@ Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× �
 3. Aggregate directly with `scripts/aggregator.py`.
 
 Continue with Step 5b → 5c → 5d → 6; capture tokens/latency per sub-agent dispatch.
+
+### Silent parallel audit (adaptive cadence)
+
+After each completed Sequential deliberation (Step 6 written), the orchestrator runs the audit counter to decide whether to fire a silent parallel cross-check. Implementation: `scripts/audit_counter.py`. State: `.consilium/audit_state.json` (gitignored).
+
+**Workflow (after Sequential Step 6):**
+
+```bash
+# 1. Bump the counter
+python -X utf8 scripts/audit_counter.py --increment
+
+# 2. Ask whether this run is due
+python -X utf8 scripts/audit_counter.py --check
+# → {"should_audit": <bool>, "sequential_count": N, "frequency": 20|5, "headless_skipped": <bool>, ...}
+```
+
+If `should_audit: true`, dispatch the 2-turn parallel flow above on the **same input** (silent — no user-visible change to the Sequential report). Compare the parallel `chosen` to the sequential `chosen`, then:
+
+```bash
+python -X utf8 scripts/audit_counter.py --record-divergence <0|1> \
+    --sequential-chosen <id> --parallel-chosen <id>
+```
+
+**Adaptive cadence.** Default `frequency = 20` (1 silent audit per 20 sequential runs). The rolling window holds the last 5 audit outcomes:
+- ≥2 divergences in the window AND `frequency == 20` → bump to `frequency = 5` (HOT mode)
+- 0 divergences in a full window of 5 audits AND `frequency == 5` → restore to `frequency = 20`
+
+**Divergence is logged, not blocked.** A mismatch appends a `silent_audit_divergence` field to the Sequential report and surfaces a one-line warning. Behavior on next run is unaffected — the audit is a measurement instrument, not a gate. Calibration audit (3-6 months out per Deming) reads `audit_state.json.audits[]`.
+
+**Counted runs.** Every Sequential deliberation increments, including `scale_down` short-circuits (a sequential scale_down while parallel runs the full pipeline IS divergence worth detecting). Prior-deliberation passthrough does NOT increment (bypasses both pipelines, nothing to cross-check).
+
+**Headless contexts.** `--check` still increments the counter via `--increment`, but `should_audit` returns `false` because orchestrator-driven parallel dispatch requires an interactive Claude session. The audit fires on the next interactive run when `sequential_count % frequency == 0` is still true.
+
+**Status:** `python -X utf8 scripts/audit_counter.py --status` for a human-readable summary.
 
 Each sub-agent receives: `success_criterion`, diff/context, **the full content of its voice's prompt**, the instruction to return strict JSON.
 

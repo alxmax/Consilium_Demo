@@ -4,15 +4,14 @@
 
 ## HIGH PRIORITY
 
-### Silent-audit-every-20-runs: implement or remove
+### Silent-audit-every-20-runs — DONE (2026-05-28)
 
-> Discovered 2026-05-28 via Senate audit (`runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`, Socrate's load-bearing premise). SKILL.md §"Parallel voices mode" and `modes/sequential.md` claim "every 20 runs parallel mode runs silently alongside sequential." Grep across `scripts/` for `silent.*audit|every.*20.*run|audit.*freq` returns **zero matches**. The mechanism does not exist.
+> Discovered 2026-05-28 via Senate audit (`runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`, Socrate's load-bearing premise). Implemented on `feat/silent-parallel-audit`.
 
-- [ ] Decide between:
-  - **Implement:** counter in `.consilium/`, increment per sequential run, every 20th triggers silent parallel cross-check stored alongside the normal run. Audit divergence; if N divergences in last M runs → frequency → 1/5.
-  - **Remove:** delete the claim from SKILL.md (~L520) + `modes/sequential.md` (Auto-parallel section) + architecture diagram (modes.jsx parallel_auto step 6, currently marked "pending implementation check").
-- [ ] **Acceptance:** either grep returns a real implementation OR no doc surface mentions the 20-run audit.
-- [ ] **Constraint:** architecture explainer is CV-visible — solid > impressive-but-shaky. Don't leave the "pending check" note in place beyond one session.
+- [x] **Implementation:** `scripts/audit_counter.py` — counter + adaptive frequency (1/20 default, 1/5 HOT after ≥2 divergences in window of 5). State in `.consilium/audit_state.json` (gitignored). Lifecycle tested: 20-run trigger fires `should_audit: true`; headless contexts increment counter but skip dispatch; 3 divergences → frequency bumps to 1/5.
+- [x] **Workflow wiring:** SKILL.md §"Silent parallel audit" describes the post-Step-6 orchestrator workflow (`--increment` → `--check` → optional 2-turn parallel dispatch → `--record-divergence`).
+- [x] **Doc-drift guard:** new invariant `silent_audit_implemented` in `scripts/check_doc_drift.py` requires SKILL.md to reference `scripts/audit_counter.py` and forbids the old "no implementation in scripts/" / "pending implementation check" caveats.
+- [x] **Calibration window:** Deming's 3-6 month longitudinal audit (TODO below) reads `audit_state.json.audits[]` for the before/after baseline.
 
 ---
 
