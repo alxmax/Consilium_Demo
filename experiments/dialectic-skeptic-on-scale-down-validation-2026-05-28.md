@@ -14,18 +14,21 @@ Each task workspace was wiped before re-run (`--clean` equivalent via `rm -rf`).
 
 ## Per-task results
 
-| Task | Wall | Cost | Letter | Skeptic dispatched? |
+> Correct-letter column redacted: these are answer keys for **live** benchmark
+> tasks. The oracle lives only in the external scoring repo. ✓ = matched oracle.
+
+| Task | Wall | Cost | Correct? | Skeptic dispatched? |
 |---|---|---|---|---|
-| 01 transport_choice | 18.5s | $0.0864 | B ✓ | No (scale_down direct) |
-| 02 rule_of_three | 52.3s | $0.1326 | C ✓ | No |
-| 03 schema_migration | 1m13s | $0.1349 | C ✓ | No |
-| 04 binary_search_bug | **5m20s** | **$0.8285** | C ✓ | **Yes** |
-| 05 warehouse_contradiction | **4m53s** | **$0.8445** | D ✓ | **Yes** |
-| 06 split_brain_db | 47.9s | $0.1109 | B ✓ | No |
-| 07 composite_index_prefix | 43.0s | $0.1135 | D ✓ | No |
-| 08 locking_strategy | **6m50s** | **$0.9843** | B ✓ | **Yes** |
-| 09 pipeline_freshness | 3m23s | $0.4736 | A ✓ | Likely |
-| 10 checkout_degradation | 3m43s | $0.4487 | C ✓ | Likely |
+| 01 transport_choice | 18.5s | $0.0864 | ✓ | No (scale_down direct) |
+| 02 rule_of_three | 52.3s | $0.1326 | ✓ | No |
+| 03 schema_migration | 1m13s | $0.1349 | ✓ | No |
+| 04 binary_search_bug | **5m20s** | **$0.8285** | ✓ | **Yes** |
+| 05 warehouse_contradiction | **4m53s** | **$0.8445** | ✓ | **Yes** |
+| 06 split_brain_db | 47.9s | $0.1109 | ✓ | No |
+| 07 composite_index_prefix | 43.0s | $0.1135 | ✓ | No |
+| 08 locking_strategy | **6m50s** | **$0.9843** | ✓ | **Yes** |
+| 09 pipeline_freshness | 3m23s | $0.4736 | ✓ | Likely |
+| 10 checkout_degradation | 3m43s | $0.4487 | ✓ | Likely |
 
 **Total:** 10/10 correct (up from 9/10), ~$4.16, ~28 min wall.
 
@@ -34,13 +37,13 @@ Each task workspace was wiped before re-run (`--clean` equivalent via `rm -rf`).
 ## What the data says
 
 **Positive:**
-- 10/10 vs 9/10 previously → +1 win (task 01 flipped A→B)
+- 10/10 vs 9/10 previously → +1 win (task 01 flipped to the correct answer)
 - Zero regression on the 9 previously-correct tasks
 - Skeptic empirically dispatched on at least 5 tasks (04, 05, 08, 09, 10) — the mechanism is real, not just spec-text priming
 
 **Negative:**
 - Cost grew 4× (~$1 → ~$4.16) for +10 percentage points accuracy on this corpus
-- Task 01's flip cannot be cleanly attributed to Skeptic-as-mechanism because the spec text in modes/dialectic.md and SKILL.md NOW CONTAINS the correct answer ("correct is B (drive)"). Orchestrator reads spec during Bootstrap → answer leaks via context, separately from any Skeptic dispatch. This is a contamination bug introduced by the same PR.
+- Task 01's flip cannot be cleanly attributed to Skeptic-as-mechanism because the spec text in modes/dialectic.md and SKILL.md at the time CONTAINED the correct answer verbatim. Orchestrator reads spec during Bootstrap → answer leaks via context, separately from any Skeptic dispatch. This is a contamination bug introduced by the same PR (the leaking spec text was later removed in PR #261).
 - Per-task variance is large ($0.09 to $0.98). Conservator's scale_down vs full-dispatch decision is not stable run-to-run; expect noise in repeated runs.
 
 **Net:**
@@ -62,7 +65,7 @@ PR #261 (`fix/spec-priming-leak-cleanup`) removed the answer text from modes/dia
 | superpowers | 100/100 | N/A | 2 | $0.089 |
 | sonnet_bare | 100/100 | N/A | 2 | $0.088 |
 
-**Interpretation:** Task 01 is not a discriminator for the Skeptic-on-scale_down mechanism. The base model at `--effort high` answers B correctly on its own — the previous A→B flip was non-determinism on an early run, not a spec-priming or Skeptic effect. None of the consilium modes ran the deliberation pipeline (all scale_down or bare-answer). The correct answer was already achievable by the base model; removing spec-priming had no impact on correctness. Task 01 cannot be used to isolate the Skeptic mechanism.
+**Interpretation:** Task 01 is not a discriminator for the Skeptic-on-scale_down mechanism. The base model at `--effort high` answers it correctly on its own — the previous flip was non-determinism on an early run, not a spec-priming or Skeptic effect. None of the consilium modes ran the deliberation pipeline (all scale_down or bare-answer). The correct answer was already achievable by the base model; removing spec-priming had no impact on correctness. Task 01 cannot be used to isolate the Skeptic mechanism.
 
 **Next step:** construct a new eval task where the base model reliably fails without Skeptic guidance (see Follow-ups item 2 below).
 

@@ -63,4 +63,4 @@ Summary table:
 - `chosen` is null (all candidates vetoed) — there is no chosen to challenge
 - Diff is intrinsically high-stakes (auth, migrations, security) — use full Trias with justified cost
 
-**Empirical origin.** The mode emerged from the analysis in `experiments/p3-car-wash.html`: `chosen_confirmation_pass` (the conceptual equivalent of this flag) reached 100% catch-rate in simulation and 4/7 in real reruns on P3 car wash — performance superior to any other mode tested on that problem. **Scope caveat (n=1):** these figures derive from a single problem instance; generalizability to other problems is unconfirmed until ≥3 distinct problems are tested.
+**Empirical origin.** The mode emerged from the analysis in `experiments/oracle-discipline.md`: `chosen_confirmation_pass` (the conceptual equivalent of this flag) reached 100% catch-rate in simulation and 4/7 in real reruns on the P3 implicit-constraint problem — performance superior to any other mode tested on that problem. **Scope caveat (n=1):** these figures derive from a single problem instance; generalizability to other problems is unconfirmed until ≥3 distinct problems are tested.

@@ -36,7 +36,7 @@ Mode-specific scripts:
 
 Sub-agent dispatch (Trias, Skeptic): see `agents/consilium-subagent.md`. All sub-agents use `model: "sonnet"` explicitly — do not inherit Opus.
 
-Architecture visualization: `docs/architecture.html` (open locally). Benchmarks on real problems: `experiments/` (see `experiments/p3-car-wash.html`).
+Architecture visualization: `docs/architecture.html` (open locally). Benchmarks on real problems: `experiments/` (benchmarking discipline: `experiments/oracle-discipline.md`).
 
 ## Python conventions
 
@@ -60,7 +60,7 @@ User-selectable modes (SKILL.md documents them in detail):
 - **Sequential** (default) — Conservator → Generator → Control single-context.
 - **Dialectic** — two-pass with cross-review in Pass-2 (`scripts/dialectic_merge.py`).
 - **Trias** — 3 personalities × 3 voices, democratic vote over the 3 chosen results (9 sub-agents).
-- **`trias_split`** — Trias with Sonnet Generator + Haiku verifiers (~3.3× Parallel). Shallow-amplifier on problems with implicit constraints — see `experiments/p3-car-wash.html`.
+- **`trias_split`** — Trias with Sonnet Generator + Haiku verifiers (~3.3× Parallel). Shallow-amplifier on problems with implicit constraints — see `experiments/oracle-discipline.md`.
 - **`skeptic_on_chosen`** — composable flag over any base mode (+1 sub-agent overhead). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-triggers when `confidence ∈ [0.5, 0.7]`. Replaces the fixed modes `parallel_skeptic` (= `parallel + skeptic_on_chosen`) and `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — collapsed on 2026-05-17, legacy names remain in `validate_report.py` MODE enum for backward-compat.
 
 **Parallel removed.** No longer user-selectable (only via `parallel + skeptic_on_chosen`). Remains as an internal auto cross-check when `magnitude=critical ∧ reversibility=irreversible`, plus a silent audit every 20 runs.

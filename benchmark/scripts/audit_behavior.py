@@ -55,6 +55,13 @@ SUSPICIOUS_TOKENS = [
     # future enhancement; this is Variant-A: detection only.
     ".claude/projects",
     ".claude\\projects",
+    # Repo-root experiment write-ups. These live OUTSIDE the scoring stash and
+    # workspace mechanisms, yet a benchmarked subprocess (cwd in workspace/,
+    # bypassPermissions) can Glob/Read them via the tracked repo. Historically
+    # some write-ups recorded per-task answers; flag any read of experiments/
+    # as a defense-in-depth answer-key access signal (no benchmark prompt
+    # references "experiments", so this does not false-positive on task content).
+    "experiments",
 ]
 
 # Mode names — used to detect cross-mode contamination (a task running

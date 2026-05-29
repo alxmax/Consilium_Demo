@@ -1,10 +1,10 @@
 # Experiments — Benchmarking Discipline
 
-Folderul ține rapoarte HTML din runs experimentale ale skill-ului (e.g. `p3-car-wash.html`).
+Folderul ține note de disciplină și write-up-uri experimentale ale skill-ului (e.g. `oracle-discipline.md`). Rapoartele per-problemă care ar dezvălui răspunsul unui task **activ** de benchmark sunt ținute în afara repo-ului public (oracle-ul trăiește doar în repo-ul extern de scoring).
 
 ## Înainte de a publica orice fab-rate / accuracy / catch-rate
 
-Disciplină de benchmarking pentru a evita inversări semantice ulterioare (vezi corigendum-ul P3 din `p3-car-wash.html`):
+Disciplină de benchmarking pentru a evita inversări semantice ulterioare (vezi corigendum-ul P3 din `oracle-discipline.md`):
 
 - [ ] **Oracle independent.** Răspunsul corect e fixat prin (a) un al doilea expert care nu a văzut quick-take-ul evaluatorului, SAU (b) citation explicită din enunț/specs care reduce ambiguitatea sub un prag clar. Quick-take-ul evaluatorului ≠ oracle.
 - [ ] **Critique adverbial per opțiune.** Pentru fiecare răspuns plauzibil (A/B/C/D...), documentează explicit înainte de a rula benchmark-ul: *"există o citire alternativă a problemei în care răspunsul X devine corect?"*. Răspunsul "nu" trebuie justificat, nu presupus tacit. Acest pas a fost cel ratat pe P3.
@@ -14,13 +14,13 @@ Disciplină de benchmarking pentru a evita inversări semantice ulterioare (vezi
 
 Orice fab-rate / catch-rate / accuracy publicat anterior se revizuiește prin grila de mai sus. Risc activ identificat 2026-05-16 (P3 corrigendum):
 
-- **P3** — `p3-car-wash.html` are corigendum-ul deja prezent (oracle inversat de la A la C).
+- **P3** — corigendum documentat în `oracle-discipline.md` (oracle-ul a fost inversat; toate label-urile downstream s-au inversat cu el — nota e answer-free).
 - **P1** (date refactor) — neauditat.
 - **P2** (auth) — neauditat.
 
 ## Format raport
 
-Fișierele HTML din folder sunt consolidate per problemă (e.g. `p3-car-wash.html` agregă run1/run2/run3 + corigendum într-un singur document). Schema neformalizată; conținut minim recomandat:
+Write-up-urile sunt consolidate per problemă (run-uri + corigendum într-un singur document). Pentru un task **activ** de benchmark, write-up-ul rămâne în afara repo-ului public dacă ar dezvălui răspunsul; notele păstrate aici sunt answer-free. Schema neformalizată; conținut minim recomandat:
 
 - enunț (cu citation explicită a constraint-urilor)
 - oracle (cum a fost stabilit + de cine)
