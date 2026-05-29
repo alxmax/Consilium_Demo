@@ -19,6 +19,7 @@
 - [ ] **CHANGELOG.md** — none exists. Seed it for v1.0 (modes, pipeline, silent audit, architecture explainer, run-consilium skill).
 - [ ] **Tag v1.0.0** — no git tags exist. Optionally add a version marker the skill can surface.
 - [ ] **Land public history clean** — ties into *User directions › Public-release prep* below; the repo has a large branch backlog, so plan the single-clean-commit / squash strategy for the public mirror.
+- [ ] **Wire `trace_graph.py` into the README** (deferred — script already shipped on `feat/trace-graph-mermaid`). Add a short "Pipeline trace" section: one `python scripts/trace_graph.py --input .consilium/runs/<file>.json --fence` example + the rendered Mermaid block (GitHub renders it natively). Shows the per-run executed pipeline as a portfolio detail. Optional sibling follow-up: in-explainer rendering (own `/consilium`, touches `docs/architecture/`).
 
 ### Phase 2 — Post-v1 growth (already tracked below; not release-blockers)
 
