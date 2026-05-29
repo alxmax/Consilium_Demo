@@ -28,18 +28,14 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Personal deliberation state, all under .consilium/ (schema in docs/runs-schema.md).
-# Only the .gitkeep is tracked so a fresh clone has the dir to write into.
-.consilium/runs/*.json
-# Drill-down sidecar (auto-managed by log_feedback.py)
-.consilium/runs/.run_path_map.json
-
-# Personal feedback journal (local-only, not shared between machines)
-.consilium/FEEDBACK.html
-
-# Silent parallel audit state (counter + rolling divergence log)
-.consilium/audit_state.json
-.consilium/audit_state.json.tmp
+# Personal deliberation state — the ENTIRE .consilium/ directory is local-only
+# (runs, feedback journal, audit state, scratch bundles, screenshots). Ignore it
+# wholesale except the single tracked placeholder, so no scratch file can leak
+# via `git add -A`. Schema in docs/runs-schema.md.
+.consilium/*
+!.consilium/runs/
+.consilium/runs/*
+!.consilium/runs/.gitkeep
 FEEDBACK.md
 FEEDBACK.html
 *.md.bak
@@ -73,6 +69,10 @@ benchmark/Benchmark-scoring/
 # Source upload for docs/architecture (extracted into docs/architecture/)
 Arhitecture.zip
 
-# Personal / scratch files at repo root — never publish
-Enterprise_GenAI_Roadmap_Alex.pdf
+# Personal / scratch files — never publish. Broad class patterns so newly-named
+# scratch can't slip in via `git add -A` (verified: no tracked file matches these).
+*.pdf
+tmp_*
+*_tmp.*
+scratch/
 test_bundle.json
