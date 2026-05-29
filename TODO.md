@@ -2,6 +2,32 @@
 
 ---
 
+## 🚀 Release roadmap — v1.0 (public, source-available)
+
+> Goal: make the repo public + presentable as the flagship agentic/LLMOps CV artifact, then cut a tagged v1.0. Grounded in a repo audit on 2026-05-29. License is already **BSL** (Licensor: Schipor Alexandru → Apache-2.0 on 2030-05-16) — source-available, *not* OSS; state this plainly in the README. All green gates pass locally today: `run_evals` 68/0, `check_doc_drift` OK, `driver.py smoke` green.
+
+### Phase 0 — Pre-release hygiene (blockers)
+
+- [ ] **Privacy sweep before going public.** `Enterprise_GenAI_Roadmap_Alex.pdf` is in the repo root, untracked AND not gitignored → committable by accident. Remove it or add to `.gitignore`. Re-confirm `.consilium/` (FEEDBACK.html real-usage data, runs/) stays gitignored and Benchmark answer keys remain an external sibling (CV-piece honesty: no leaked oracle values).
+- [ ] **Clean the working tree.** Untracked scratch in root (`bundle_high_priority.json`, `bundle_min.json`, `bundle_smoke_tests.json`, `bundle_veto_op.json`, `test_bundle.json`) + `.consilium/*.py` / `tmp_*.json`. Per file: keep a canonical sample where it's referenced (the `run-consilium` driver + SKILL.md use `bundle_smoke_tests.json` — consider moving it to `evals/fixtures/`), gitignore the rest, delete pure scratch.
+- [ ] **README for an outside reader** (currently 114 lines). Must answer: what Consilium is, install (drop into `.claude/skills/` → `/consilium`), a 30-second usage example, a link to the architecture explainer, and the BSL note. Clear/accurate/honest over impressive.
+- [ ] **CI green-gate** — no `.github/workflows/` exists yet. Add a workflow running `run_evals.py`, `check_doc_drift.py`, `test_rund2.py`, `test_feedback_html.py`, and `docs/architecture/build.py --check` on every PR so the public repo can't drift red.
+
+### Phase 1 — Cut the release
+
+- [ ] **Distribution story** — decide how others consume it: (a) manual-install docs (copy to `~/.claude/skills/consilium/`), or (b) package as a Claude Code plugin (`.claude-plugin/plugin.json` + a marketplace entry). Pick one, document it in the README. The `run-consilium` skill is the "how to run/verify" companion.
+- [ ] **CHANGELOG.md** — none exists. Seed it for v1.0 (modes, pipeline, silent audit, architecture explainer, run-consilium skill).
+- [ ] **Tag v1.0.0** — no git tags exist. Optionally add a version marker the skill can surface.
+- [ ] **Land public history clean** — ties into *User directions › Public-release prep* below; the repo has a large branch backlog, so plan the single-clean-commit / squash strategy for the public mirror.
+
+### Phase 2 — Post-v1 growth (already tracked below; not release-blockers)
+
+- [ ] Efficiency / model-count audit kill-criterion (see HIGH PRIORITY) — gate any routing change on n≥5 oracle-validated wins.
+- [ ] *User directions (open)*: multi-modal input, human-readable audit trail, versioning & config system, API backend, explainability UI.
+- [ ] §6 Showcase project (see DEFERRED) — breadth CV artifact, separate repo.
+
+---
+
 ## HIGH PRIORITY
 
 ### Silent-audit-every-20-runs — DONE (2026-05-28)
