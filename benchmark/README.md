@@ -284,7 +284,7 @@ python scripts/run.py mode --mode superpowers
 python scripts/run.py task --task reasoning/02_rule_of_three
 ```
 
-### 4. The whole matrix (5 modes × 5 tasks = 25 runs)
+### 4. The whole matrix (5 modes × 12 tasks = 60 runs)
 
 ```powershell
 python scripts/run.py all
@@ -329,11 +329,18 @@ isolation guarantees in detail.
 
 | # | Task | Type | Difficulty |
 |---|------|------|------------|
-| 1 | `code/01_circuit_breaker`        | Code (C++ concurrency)                        | Hard   |
-| 2 | `reasoning/01_transport_choice`  | Reasoning — multiple-choice                   | Easy   |
-| 3 | `reasoning/02_rule_of_three`     | Reasoning — multiple-choice + VALUE: tier     | Hard   |
-| 4 | `reasoning/03_schema_migration`  | Reasoning — architecture / zero-downtime ops  | Hard   |
-| 5 | `reasoning/04_binary_search_bug` | Reasoning — debugging / trace                 | Medium |
+| 1  | `code/01_circuit_breaker`         | Code (C++ concurrency)                        | Hard   |
+| 2  | `reasoning/01_transport_choice`   | Reasoning — multiple-choice                   | Easy   |
+| 3  | `reasoning/02_rule_of_three`      | Reasoning — multiple-choice + VALUE: tier     | Hard   |
+| 4  | `reasoning/03_schema_migration`   | Reasoning — architecture / zero-downtime ops  | Hard   |
+| 5  | `reasoning/04_binary_search_bug`  | Reasoning — debugging / trace                 | Medium |
+| 6  | `reasoning/05_warehouse_contradiction` | Reasoning — contradiction / consistency  | Hard   |
+| 7  | `reasoning/06_split_brain_db`     | Reasoning — distributed systems               | Hard   |
+| 8  | `reasoning/07_composite_index_prefix` | Reasoning — database indexing            | Hard   |
+| 9  | `reasoning/08_locking_strategy`   | Reasoning — concurrency / locking             | Hard   |
+| 10 | `reasoning/09_pipeline_freshness` | Reasoning — data pipeline / freshness         | Medium |
+| 11 | `reasoning/10_checkout_degradation` | Reasoning — incident / degradation          | Medium |
+| 12 | `reasoning/11_marathon_prep`      | Reasoning — multi-step arithmetic             | Medium |
 
 > The `#` column is just a row index. Task slugs are numbered within their
 > own category, so the filenames don't form a single contiguous sequence.

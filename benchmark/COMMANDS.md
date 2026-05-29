@@ -1,6 +1,6 @@
 # BENCHMARK COMMANDS
 
-All runs use `claude -p` headless mode (Sonnet 4.6 by default, effort=max,
+All runs use `claude -p` headless mode (Sonnet 4.6 by default, effort=high,
 budget cap $3/task).
 
 > **Easy mode:** the wrapper at `scripts/run.py` covers the common batches
@@ -29,12 +29,19 @@ claude --version
 
 ## TASK ORDER
 
-5 tasks:
-1. `code/01_circuit_breaker`           — hard code (C++)
-2. `reasoning/01_transport_choice`     — reasoning (easy)
-3. `reasoning/02_rule_of_three`        — reasoning (hard, rule-of-three)
-4. `reasoning/03_schema_migration`    — reasoning (architecture / zero-downtime ops)
-5. `reasoning/04_binary_search_bug`    — reasoning (debugging / trace)
+12 tasks:
+1.  `code/01_circuit_breaker`            — hard code (C++)
+2.  `reasoning/01_transport_choice`      — reasoning (easy)
+3.  `reasoning/02_rule_of_three`         — reasoning (hard, rule-of-three)
+4.  `reasoning/03_schema_migration`      — reasoning (architecture / zero-downtime ops)
+5.  `reasoning/04_binary_search_bug`     — reasoning (debugging / trace)
+6.  `reasoning/05_warehouse_contradiction` — reasoning (contradiction / consistency)
+7.  `reasoning/06_split_brain_db`        — reasoning (distributed systems)
+8.  `reasoning/07_composite_index_prefix` — reasoning (database indexing)
+9.  `reasoning/08_locking_strategy`      — reasoning (concurrency / locking)
+10. `reasoning/09_pipeline_freshness`    — reasoning (data pipeline / freshness)
+11. `reasoning/10_checkout_degradation`  — reasoning (incident / degradation)
+12. `reasoning/11_marathon_prep`         — reasoning (multi-step arithmetic)
 
 ---
 
@@ -44,7 +51,7 @@ claude --version
 ```
 --clean             → wipe this task's workspace before running
 --rep N             → write to workspace/<mode>/<task>/rep_<N>/ (single slot)
---model    claude-sonnet-4-6   (default; sonnet_bare pins claude-opus-4-7)
+--model    claude-sonnet-4-6   (default; sonnet_bare pins claude-sonnet-4-6)
 --effort   high                (default; choices: low/medium/high/xhigh/max)
 --budget   3.0                 (USD cap; halts with `error_max_budget` if hit)
 --no-verify                    (skip automatic verify step after the run)
@@ -209,14 +216,14 @@ python analyze.py
 
 ## TOTAL
 
-5 modes × 5 tasks = 25 runs. Budget cap @ $3/task → maximum spend ~$75.
-Reasoning-only tasks (03, 04) typically cost well under $1 each.
+5 modes × 12 tasks = 60 runs. Budget cap @ $3/task → maximum spend ~$180.
+Reasoning-only tasks typically cost well under $1 each.
 
 ---
 
 ## AFTER CONSILIUM RUNS
 
-Each `consilium_*` run creates a PEND entry in `../Consilium/FEEDBACK.html`.
+Each `consilium_*` run creates a PEND entry in `.consilium/FEEDBACK.html`.
 `run_task.py` converts these automatically to `PEND_HEADLESS` after each run
 (blind benchmark — entries are excluded from pend_pressure). No manual step needed.
 In practice most runs land below $1; consilium modes are the heaviest.

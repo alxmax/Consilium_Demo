@@ -6,7 +6,7 @@ in `aggregator.py` accidentally make `risk_adjusted_utility` pick the risky
 candidate?).
 
 **Scope.** Eval covers only deterministic scripts: `aggregator.py`,
-`confidence.py`, `validate_report.py`, `strip_context.py`, `dialectic_merge.py`.
+`confidence.py`, `validate_report.py`, `strip_context.py`, `personalities.py`.
 LLM-driven voice prompts (`prompts/*.md`) are not testable here — that needs
 a separate replay harness with golden voice outputs (deferred).
 
