@@ -1,7 +1,7 @@
 """Standalone tests for render_feedback_html + feedback.py HTML parser.
 
 Run: python scripts/test_feedback_html.py
-Exit 0 = all pass; exit 1 = first failure with traceback.
+Exit 0 = all pass; exit 1 = one or more failures (all tests run; failures listed).
 """
 from __future__ import annotations
 

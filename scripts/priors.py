@@ -239,7 +239,7 @@ def find_stale_pendings(entries: list[dict], days_old: int = STALE_PEND_DAYS) ->
 
 _PRIOR_MATCH_MIN_LABEL_LEN = 8
 _PRIOR_MATCH_WINDOW_DAYS = 30
-_PRIOR_MATCH_OUTCOMES = {"OK", "GO"}
+_PRIOR_MATCH_OUTCOMES = {"OK"}
 
 
 def _find_prior_match(label: str, entries: list[dict], window_days: int = _PRIOR_MATCH_WINDOW_DAYS) -> dict | None:
@@ -247,7 +247,8 @@ def _find_prior_match(label: str, entries: list[dict], window_days: int = _PRIOR
 
     Returns None when label is too short (< 8 chars after strip) or no match exists
     within window_days. Scans entries newest-first so the most recent match wins.
-    Only entries with outcome in {"OK", "GO"} qualify — PEND/BAD/OVR do not.
+    Only entries with outcome "OK" qualify — PEND/BAD/OVR do not. (GO is a Senate
+    verdict, never a FEEDBACK outcome, so it can never match.)
     """
     if len(label.strip()) < _PRIOR_MATCH_MIN_LABEL_LEN:
         return None
