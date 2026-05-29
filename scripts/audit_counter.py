@@ -52,11 +52,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from datetime import datetime, timezone
 
-from utils import DATA_DIR, force_utf8_streams
+from utils import DATA_DIR, force_utf8_streams, is_headless
 
 STATE_PATH = DATA_DIR / "audit_state.json"
 DEFAULT_FREQUENCY = 20
@@ -64,10 +63,6 @@ HOT_FREQUENCY = 5
 ROLLING_WINDOW = 5
 DIVERGENCE_TRIGGER = 2  # >= this many divergences in window → bump to HOT
 AUDIT_LOG_LIMIT = 20    # keep last N audit records
-
-
-def _is_headless() -> bool:
-    return os.environ.get("CLAUDE_HEADLESS") == "1" or not sys.stdin.isatty()
 
 
 def _now_iso() -> str:
@@ -129,7 +124,7 @@ def cmd_increment(args) -> int:
 
 def cmd_check(_args) -> int:
     state = load_state()
-    headless = _is_headless()
+    headless = is_headless()
     is_due = (
         state["sequential_count"] > 0
         and state["sequential_count"] % state["frequency"] == 0

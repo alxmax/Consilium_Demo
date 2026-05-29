@@ -166,8 +166,8 @@ def main(argv: list[str] | None = None) -> int:
         except (AttributeError, ValueError):
             pass
 
-    raw = open(args.input, encoding="utf-8").read() if args.input else sys.stdin.read()
     try:
+        raw = open(args.input, encoding="utf-8").read() if args.input else sys.stdin.read()
         report = json.loads(raw)
     except (json.JSONDecodeError, OSError) as exc:
         print(f"trace_graph: cannot parse report: {exc}", file=sys.stderr)
