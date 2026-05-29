@@ -50,7 +50,10 @@ BUGS.md
 bugs-agent-*.md
 
 # Local plans and experiments
-docs/superpowers/plans/2026-05-16-arch-sync-modes-flow.md
+# superpowers writing-plans / executing-plans artifacts — personal planning
+# scratch (local absolute paths, insider detail); kept on disk, never published.
+docs/superpowers/plans/
+docs/superpowers/specs/
 experiments/New phase senat/
 .tmp_backup/
 

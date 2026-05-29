@@ -8,7 +8,7 @@ PR #259 (`fix/dialectic-skeptic-on-scale-down`, commit `3d50215`) updated SKILL.
 
 Re-ran `consilium_dialectic` mode against the 10-task reasoning benchmark corpus (`benchmark/prompts/reasoning/01..10`). Compared against:
 - Old dialectic n=10 (pre-fix, from 2026-05-27 benchmark): 9/10 correct, ~$1 total cost
-- Oracle answers in `C:/Users/ALEX/Desktop/Doc/Benchmark-scoring/reasoning/*/expected_answer.txt`
+- Oracle answers in the external Benchmark-scoring repo (`reasoning/*/expected_answer.txt`)
 
 Each task workspace was wiped before re-run (`--clean` equivalent via `rm -rf`).
 

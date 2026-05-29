@@ -71,7 +71,7 @@ All deliberation state lives under `.consilium/` (gitignored; paths centralized 
 
 - `.consilium/FEEDBACK.html` — real-usage journal, append-only via `scripts/log_feedback.py` (atomic writes). See `scripts/deprecated/migrate_feedback_md_to_html.py` for the migration history from `.md` format (retired one-shot tool).
 - `.consilium/runs/*.json` — output of each deliberation (schema in `docs/runs-schema.md`; only `.consilium/runs/.gitkeep` is tracked).
-- `docs/superpowers/plans/`, `docs/superpowers/specs/` — artifacts from `superpowers:writing-plans` / `executing-plans` (one file per non-trivial feature, naming `YYYY-MM-DD-<slug>.md`).
+- `docs/superpowers/plans/`, `docs/superpowers/specs/` — artifacts from `superpowers:writing-plans` / `executing-plans` (one file per non-trivial feature, naming `YYYY-MM-DD-<slug>.md`). **Local-only (gitignored):** personal planning scratch with local paths/insider detail — kept on disk, not published.
 
 ## Self-improvement loop
 
