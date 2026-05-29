@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+"""run-consilium driver — build / launch / drive Consilium's runnable surface.
+
+Consilium has no single "app". Its deterministic, drivable surface is:
+  - three stdlib-only smoke-test suites,
+  - the doc-drift gate,
+  - the voice -> report pipeline (aggregator -> confidence, build_report -> validate_report),
+  - a static React architecture explainer (docs/architecture.html) you can screenshot.
+
+This driver exercises all of it without an LLM. Stdlib-only, like the rest of the repo.
+
+Usage (run from the repo root; paths below are relative to it):
+  python .claude/skills/run-consilium/driver.py smoke           # tests + drift + pipeline (default)
+  python .claude/skills/run-consilium/driver.py pipeline        # voice->report pipeline demo, prints each stage
+  python .claude/skills/run-consilium/driver.py shot [OUT.png]  # screenshot docs/architecture.html via headless Chrome/Edge
+
+Exit 0 iff every step it ran succeeded. On Windows, all child Pythons run with -X utf8.
+"""
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+# driver.py lives at <repo>/.claude/skills/run-consilium/driver.py
+REPO = Path(__file__).resolve().parents[3]
+PY = [sys.executable, "-X", "utf8"]
+ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+
+# run_evals.py is currently RED on main: commit 7176f11 made validate_report.py
+# require a `pipeline_executed` (bool) field, but 6 inline fixtures in
+# evals/scenarios.json were never updated. smoke() treats this as the baseline:
+# green means "you regressed nothing beyond it". Drop to 0 once the fixtures are fixed.
+BASELINE_EVAL_FAILURES = 6
+
+# Known headless-capable browsers on Windows (no chromium-cli here).
+BROWSERS = [
+    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+]
+
+
+def run(label, argv, stdin_text=None):
+    """Run a child process from REPO; print a PASS/FAIL line + tail. Return CompletedProcess."""
+    proc = subprocess.run(
+        argv, cwd=REPO, env=ENV, input=stdin_text,
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    ok = proc.returncode == 0
+    print(f"[{'PASS' if ok else 'FAIL'}] {label}  (exit {proc.returncode})")
+    if not ok:
+        tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-12:]
+        for line in tail:
+            print("    " + line)
+    return proc
+
+
+def eval_failures(proc):
+    """Parse run_evals.py's '<n> passed, <m> failed' summary (it writes to stderr); -1 if not found."""
+    for line in reversed(((proc.stdout or "") + "\n" + (proc.stderr or "")).splitlines()):
+        if "passed," in line and "failed" in line:
+            try:
+                return int(line.split("passed,")[1].split("failed")[0].strip())
+            except (ValueError, IndexError):
+                return -1
+    return -1
+
+
+def script(rel):
+    return PY + [str(REPO / "scripts" / rel)]
+
+
+def smoke():
+    """Run the deterministic suites + drift gate + the pipeline.
+
+    Exit 0 means: every should-be-green check passed AND run_evals regressed
+    nothing beyond BASELINE_EVAL_FAILURES (the documented pre-existing drift).
+    """
+    failures = 0
+
+    failures += run("test_rund2.py", script("test_rund2.py")).returncode != 0
+    failures += run("test_feedback_html.py", script("test_feedback_html.py")).returncode != 0
+    failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0
+
+    # run_evals: informational. Only count it as a failure if it regressed past baseline.
+    ev = run("run_evals.py (regression scenarios)", script("run_evals.py"))
+    failed = eval_failures(ev)
+    if failed > BASELINE_EVAL_FAILURES or failed < 0:
+        print(f"    -> {failed} eval failures > baseline {BASELINE_EVAL_FAILURES}: likely YOUR regression")
+        failures += 1
+    elif failed:
+        print(f"    -> {failed} known eval failures (baseline {BASELINE_EVAL_FAILURES}) - pre-existing drift, ignored")
+
+    # Pipeline tail: a full bundle -> canonical report -> Constitution gate.
+    bundle = (REPO / "bundle_smoke_tests.json").read_text(encoding="utf-8")
+    report = subprocess.run(
+        script("build_report.py"), cwd=REPO, env=ENV, input=bundle,
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    if report.returncode != 0:
+        print(f"[FAIL] build_report.py  (exit {report.returncode})")
+        failures += 1
+    else:
+        failures += run("build_report.py | validate_report.py",
+                        script("validate_report.py"), stdin_text=report.stdout).returncode != 0
+
+    print(f"\n{'OK - all green (baseline drift aside)' if failures == 0 else f'{failures} step(s) FAILED'}")
+    return 1 if failures else 0
+
+
+def pipeline():
+    """Demo the deterministic voice->report pipeline, printing each stage's JSON."""
+    cands = {"candidates": [
+        {"id": "a", "scores": {"generator": 0.9, "control": 0.9, "conservator": 0.2}},
+        {"id": "b", "scores": {"generator": 0.5, "control": 0.5, "conservator": 0.5}},
+    ]}
+    print("== aggregator (--scheme conservative_override) ==")
+    agg = subprocess.run(
+        script("aggregator.py") + ["--scheme", "conservative_override"],
+        cwd=REPO, env=ENV, input=json.dumps(cands),
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    print(agg.stdout.strip())
+    chosen = json.loads(agg.stdout).get("chosen", "a")
+
+    print("\n== confidence ==")
+    conf = subprocess.run(
+        script("confidence.py"), cwd=REPO, env=ENV,
+        input=json.dumps({**cands, "chosen": chosen}),
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    print(conf.stdout.strip())
+
+    print("\n== build_report.py | validate_report.py (bundle_smoke_tests.json) ==")
+    bundle = (REPO / "bundle_smoke_tests.json").read_text(encoding="utf-8")
+    rep = subprocess.run(script("build_report.py"), cwd=REPO, env=ENV, input=bundle,
+                         capture_output=True, text=True, encoding="utf-8")
+    val = run("validate_report.py", script("validate_report.py"), stdin_text=rep.stdout)
+    return 1 if (agg.returncode or conf.returncode or rep.returncode or val.returncode) else 0
+
+
+def shot(out=None):
+    """Screenshot docs/architecture.html with headless Chrome/Edge. Needs internet (React/Babel via CDN)."""
+    browser = next((b for b in BROWSERS if Path(b).exists()), None)
+    if not browser:
+        print("FAIL: no Chrome/Edge found. Checked:\n  " + "\n  ".join(BROWSERS))
+        return 1
+    target = REPO / "docs" / "architecture.html"
+    out_path = Path(out) if out else REPO / ".consilium" / "shots" / "architecture.png"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    file_url = target.resolve().as_uri()
+    print(f"browser: {browser}\ntarget:  {file_url}\nout:     {out_path}")
+    subprocess.run([
+        browser, "--headless=new", "--disable-gpu", "--window-size=1280,1600",
+        "--virtual-time-budget=8000",
+        f"--screenshot={out_path}", file_url,
+    ], capture_output=True, text=True)
+    ok = out_path.exists() and out_path.stat().st_size > 0
+    print(f"[{'PASS' if ok else 'FAIL'}] screenshot ({out_path.stat().st_size if ok else 0} bytes)")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "smoke"
+    if cmd == "smoke":
+        raise SystemExit(smoke())
+    if cmd == "pipeline":
+        raise SystemExit(pipeline())
+    if cmd == "shot":
+        raise SystemExit(shot(sys.argv[2] if len(sys.argv) > 2 else None))
+    print(__doc__)
+    raise SystemExit(2)
