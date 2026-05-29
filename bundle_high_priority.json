@@ -1,0 +1,202 @@
+{
+  "success_criterion": "After implementation: stability_check.py --compare reports categorical magnitude/reversibility disagreement between two paired runs (handling both log schemas); SKILL.md Step 2 has a 2-line note about the 40% categorical flip risk; TODO reflects actual state (regex already done removed, #1-B marked done, #1-C/#1-D marked experiments-pending).",
+  "verification": "python scripts/stability_check.py --compare .consilium/runs/2026-05-26_0030_todo-triage-cv.json .consilium/runs/2026-05-26_0100_consilium-data-folder.json outputs a 'Categorical stability' section; python scripts/run_evals.py exits 0.",
+  "generator": {
+    "candidates": [
+      {
+        "id": "extend_categorical_plus_cleanup",
+        "summary": "Extend stability_check.py to compare categorical fields; add SKILL.md Step 2 flip-rate note; clean up TODO.",
+        "sketch": "In stability_check.py: add _categorical_fields(run) that extracts (magnitude, reversibility) from deliberation_log conservator step — handles both flat schema {step:conservator, reversibility:..., magnitude:...} and nested schema {step:conservator, scores:[{id, regression_risk:{reversibility, magnitude}}]}. For nested, pick the chosen_approach candidate's score. Extend compare() to print a 'Categorical stability' section showing magnitude/reversibility from each run and flagging disagreement. In SKILL.md Step 2: add 2-line note after Conservator output description: 'Categorical flip caveat: Conservator magnitude/reversibility labels have a 40% inter-run flip rate on ambiguous inputs (experiment 2026-05-17). If the deliberation is sensitive to the magnitude/reversibility boundary, consider double-sampling.' In TODO: remove regex fix item (already done in run_task.py line 191), mark #1-B done, update #1-C/#1-D to 'tooling ready, experiments pending'.",
+        "rationale": "Addresses all three open items at once. The script change directly implements #1-B. The SKILL.md note makes the risk visible to orchestrators without mandating expensive double-sampling. The TODO cleanup reflects reality.",
+        "downside_estimate": "~60 lines of code change across 3 files. Moderate scope, low risk."
+      },
+      {
+        "id": "script_only",
+        "summary": "Only extend stability_check.py for categorical comparison; no SKILL.md or TODO changes.",
+        "sketch": "Same stability_check.py change as above. No SKILL.md edit. No TODO cleanup.",
+        "rationale": "Minimal footprint. Script change is the core deliverable.",
+        "downside_estimate": "SKILL.md remains silent on categorical flip risk. TODO remains stale on regex item."
+      },
+      {
+        "id": "run_1c_1d_now",
+        "summary": "Run the actual stability experiments (#1-C/#1-D): pick 3 boundary candidates, re-run Consilium twice each, compare.",
+        "sketch": "python scripts/stability_check.py --pick 3 to identify candidates. For each, dispatch a Consilium run sub-agent twice on the same input. Save as stability_a/b.json pairs. Compare with --compare. Document findings.",
+        "rationale": "Provides actual empirical data for F4 gap and Generator/Control unanchored voices. No code change needed.",
+        "downside_estimate": "Expensive: 6 full Consilium sub-agent dispatches. Results are data, not code — non-persistent unless saved to experiments/."
+      },
+      {
+        "id": "adversarial_null_output",
+        "summary": "Adversarial: script extension silently produces no categorical output if schema detection fails.",
+        "sketch": "If _categorical_fields() returns None on both log schemas (e.g., chosen_approach not in conservator scores, or deliberation_log missing conservator step), compare() prints nothing for categorical section — false green. Mitigation: emit explicit 'MISSING — categorical fields not found in one or both runs' when detection fails.",
+        "rationale": "Identifies the silent-failure risk in the script extension.",
+        "downside_estimate": "If not mitigated: users see no categorical output and assume stability when data is actually missing."
+      },
+      {
+        "id": "do_nothing",
+        "summary": "Leave all items as-is.",
+        "sketch": "No changes.",
+        "rationale": "Baseline.",
+        "downside_estimate": "TODO stays stale. #1-B unimplemented. Categorical flip risk invisible."
+      }
+    ],
+    "fallback_scenario": "If categorical comparison is too complex, user accepts script-only numeric comparison (already exists) and a SKILL.md note as the deliverable.",
+    "coverage_check": true,
+    "challenge_upward": {"triggered": false, "reason": null},
+    "abstain": {"triggered": false, "reason": null},
+    "preferred": "extend_categorical_plus_cleanup",
+    "adversarial_skipped": "adversarial_null_output included as a candidate"
+  },
+  "control": {
+    "glossary": {
+      "flat schema": "deliberation_log conservator entry with reversibility/magnitude at top level: {step:conservator, reversibility:..., magnitude:...}",
+      "nested schema": "deliberation_log conservator entry with per-candidate scores: {step:conservator, scores:[{id, regression_risk:{reversibility, magnitude}}]}",
+      "categorical flip": "two independent Conservator runs on the same input produce different magnitude or reversibility labels (observed 40% rate for magnitude in 2026-05-17 experiment)",
+      "chosen_approach": "the id of the winning candidate from aggregation — needed to pick which nested score to compare"
+    },
+    "hidden_assumptions": [
+      {"assumption": "deliberation_log always contains a conservator step", "if_false_then": "_categorical_fields returns None — must emit explicit MISSING message, not silent null"},
+      {"assumption": "chosen_approach in the report matches an id in conservator scores array (nested schema)", "if_false_then": "categorical extraction fails for nested schema — must fall back to first score or emit MISSING"}
+    ],
+    "disagreements": [],
+    "fixed_constraints": ["Must not break existing stability_check.py numeric comparison", "Must handle both log schemas — no assumption about which one a run uses"],
+    "negotiable_constraints": ["Whether SKILL.md note is 2 lines or a full sub-section"],
+    "glossary_fail": false,
+    "glossary_attempts": [],
+    "verdicts": [
+      {
+        "id": "extend_categorical_plus_cleanup",
+        "valid": true,
+        "confidence_in_verdict": "high",
+        "issues": [],
+        "tests_to_write": [
+          {"name": "compare two runs with known categorical fields produces categorical section", "assert": "stability_check.py --compare run_a run_b stdout contains 'Categorical stability'"},
+          {"name": "compare handles missing conservator step gracefully", "assert": "stability_check.py --compare run_missing_log run_b prints 'MISSING' not traceback"},
+          {"name": "run_evals passes after changes", "assert": "python scripts/run_evals.py exits 0"}
+        ],
+        "notes": "Must handle the adversarial_null_output case — emit MISSING when fields not found. Otherwise clean implementation."
+      },
+      {
+        "id": "script_only",
+        "valid": true,
+        "confidence_in_verdict": "high",
+        "issues": [{"category": "style", "detail": "Leaves SKILL.md silent on the 40% categorical flip risk — a known finding from the 2026-05-17 experiment.", "severity": "low"}],
+        "tests_to_write": [
+          {"name": "compare outputs categorical section", "assert": "stability_check.py --compare outputs 'Categorical stability'"}
+        ],
+        "notes": "Valid but incomplete — same script change, skips the docs note."
+      },
+      {
+        "id": "run_1c_1d_now",
+        "valid": true,
+        "confidence_in_verdict": "medium",
+        "issues": [{"category": "logic", "detail": "Requires 6 full Consilium sub-agent dispatches; results are ephemeral unless saved to experiments/. The tooling exists; this is purely a question of cost vs timing.", "severity": "low"}],
+        "tests_to_write": [],
+        "notes": "Valid but orthogonal to #1-B. Can be deferred — tooling is ready."
+      },
+      {
+        "id": "adversarial_null_output",
+        "valid": true,
+        "confidence_in_verdict": "high",
+        "issues": [],
+        "tests_to_write": [],
+        "notes": "Correctly identifies the silent-failure risk. Mitigation is mandatory in extend_categorical_plus_cleanup."
+      },
+      {
+        "id": "do_nothing",
+        "valid": true,
+        "confidence_in_verdict": "medium",
+        "issues": [],
+        "tests_to_write": [],
+        "notes": "Baseline. Goals unaddressed."
+      }
+    ]
+  },
+  "conservator": {
+    "scores": [
+      {
+        "id": "extend_categorical_plus_cleanup",
+        "regression_risk": {"reversibility": "complete", "magnitude": "moderate", "net_concern": 0.23},
+        "counterparty_risks": ["Two log schemas may not cover all edge cases; future schema changes could break extraction silently"],
+        "bias_check": "Not status quo bias — the 40% flip rate is a real measured gap.",
+        "meta_recommendation": null,
+        "tokens_budget": {"generator": 800, "control": 800},
+        "irreversibility_flag": false,
+        "rollback_recipe": ["git revert the stability_check.py and SKILL.md changes"],
+        "notes": "Moderate scope (3 files, ~60 lines). Fully reversible. Main risk: schema detection edge cases — mitigated by explicit MISSING output."
+      },
+      {
+        "id": "script_only",
+        "regression_risk": {"reversibility": "complete", "magnitude": "trivial", "net_concern": 0.12},
+        "counterparty_risks": [],
+        "bias_check": "Low risk, low value — does not close the SKILL.md documentation gap.",
+        "meta_recommendation": null,
+        "tokens_budget": {"generator": 800, "control": 800},
+        "irreversibility_flag": false,
+        "rollback_recipe": ["git revert stability_check.py"],
+        "notes": "Minimal footprint, minimal value beyond what extend_categorical does."
+      },
+      {
+        "id": "run_1c_1d_now",
+        "regression_risk": {"reversibility": "complete", "magnitude": "moderate", "net_concern": 0.28},
+        "counterparty_risks": ["6 sub-agent dispatches may surface unexpected Consilium bugs or timeouts"],
+        "bias_check": "Running experiments now vs later is a timing tradeoff, not a real irreversibility.",
+        "meta_recommendation": null,
+        "tokens_budget": {"generator": 800, "control": 800},
+        "irreversibility_flag": false,
+        "rollback_recipe": ["Delete the experiment run files"],
+        "notes": "Empirical work — valuable but detached from the code change goals. Better deferred to a dedicated experiment session."
+      },
+      {
+        "id": "adversarial_null_output",
+        "regression_risk": {"reversibility": "complete", "magnitude": "trivial", "net_concern": 0.08},
+        "counterparty_risks": [],
+        "bias_check": "Not status quo bias — this identifies a real silent-failure mode.",
+        "meta_recommendation": null,
+        "tokens_budget": {"generator": 300, "control": 300},
+        "irreversibility_flag": false,
+        "rollback_recipe": [],
+        "notes": "Adversarial candidate — correctly flags the risk that must be mitigated in the chosen approach."
+      },
+      {
+        "id": "do_nothing",
+        "regression_risk": {"reversibility": "complete", "magnitude": "trivial", "net_concern": 0.05},
+        "counterparty_risks": [],
+        "bias_check": "Status quo acceptable but the 40% flip rate is a known unaddressed gap.",
+        "meta_recommendation": null,
+        "tokens_budget": {"generator": 800, "control": 800},
+        "irreversibility_flag": false,
+        "rollback_recipe": [],
+        "notes": "Baseline."
+      }
+    ]
+  },
+  "aggregate": {
+    "scheme": "conservative_override",
+    "chosen": "extend_categorical_plus_cleanup",
+    "scores": {
+      "extend_categorical_plus_cleanup": 0.79,
+      "script_only": 0.66,
+      "run_1c_1d_now": 0.60,
+      "adversarial_null_output": 0.15,
+      "do_nothing": 0.10
+    },
+    "vetoed": []
+  },
+  "confidence": {
+    "confidence": 0.76,
+    "agreement": 0.92,
+    "separation": 0.13
+  },
+  "telemetry": {
+    "mode": "sequential",
+    "dispatch_count": 3,
+    "voices": {
+      "conservator": {"tokens_in": 920, "tokens_out": 420, "latency_ms": 2400},
+      "generator": {"tokens_in": 1280, "tokens_out": 640, "latency_ms": 3200},
+      "control": {"tokens_in": 1740, "tokens_out": 580, "latency_ms": 3500}
+    },
+    "total_tokens_in": 3940,
+    "total_tokens_out": 1640,
+    "total_latency_ms": 9100
+  }
+}
