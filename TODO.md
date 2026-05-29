@@ -16,6 +16,7 @@
 ### Phase 1 — Cut the release
 
 - [ ] **Distribution story** — decide how others consume it: (a) manual-install docs (copy to `~/.claude/skills/consilium/`), or (b) package as a Claude Code plugin (`.claude-plugin/plugin.json` + a marketplace entry). Pick one, document it in the README. The `run-consilium` skill is the "how to run/verify" companion.
+- [ ] **README §"Why not RAG / LangGraph / LangChain" (architectural decisions).** Short, honest section documenting the *deliberate* rejection on scope/discipline grounds — stdlib-only, zero-dep reproducibility, no measured need at ~220 runs, native Agent-tool orchestration already covers the graph — framed as a strength, not an omission. Cite the Senate audit (Senate repo: `runs/senate/2026-05-29_120838-rag-langgraph-in-consilium-core.json` — verdict MODIFY; STOP 7 / MODIFY 2 / GO 0; both routed to §6) and its three precedents (2026-05-16, 2026-05-19 ×2). Recommended by the 2026-05-25 CV-strategy audit: "frame the LangGraph rejection as a scope/discipline decision, not 'LangGraph found inferior'." RAG/LangGraph/LangChain belong in §6.
 - [ ] **CHANGELOG.md** — none exists. Seed it for v1.0 (modes, pipeline, silent audit, architecture explainer, run-consilium skill).
 - [ ] **Tag v1.0.0** — no git tags exist. Optionally add a version marker the skill can surface.
 - [ ] **Land public history clean** — ties into *User directions › Public-release prep* below; the repo has a large branch backlog, so plan the single-clean-commit / squash strategy for the public mirror.
@@ -25,6 +26,7 @@
 - [ ] Efficiency / model-count audit kill-criterion (see HIGH PRIORITY) — gate any routing change on n≥5 oracle-validated wins.
 - [ ] *User directions (open)*: multi-modal input, human-readable audit trail, versioning & config system, API backend, explainability UI.
 - [ ] §6 Showcase project (see DEFERRED) — breadth CV artifact, separate repo.
+- [ ] **Pipeline observability graph — WITHOUT LangGraph.** Visualize the deliberation flow (Conservator→Generator→Control→aggregate→confidence→report; the scale_down short-circuit; Trias 3×3 cascades) for the architecture explainer. Key insight from the 2026-05-29 Senate audit: this is a **view, not runtime orchestration** — so LangGraph/LangChain are not needed. Approach, stdlib-only: (a) a small stdlib script reads a `.consilium/runs/<file>.json` (`deliberation_log` + `telemetry` already record the executed path, `mode`, `dispatch_count`) and emits **Mermaid** (or Graphviz DOT) flowchart text via plain f-string templating — zero deps, governed correctly since the rule binds `scripts/`; (b) the React explainer renders it (Mermaid via CDN, exactly like React/Babel already load) → a static canonical pipeline diagram + a per-run *dynamic trace* of what actually fired. Aurelius flagged this same stdlib+Mermaid alternative in the 2026-05-19 audit. Run `/consilium` before building (touches `docs/architecture/`).
 
 ---
 
