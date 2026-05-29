@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  green-gate:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: "1"   # non-ASCII (→ arrows) in trace_graph / reports
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # Stdlib-only — no pip install step by design.
+      - name: RUND2 smoke tests
+        run: python scripts/test_rund2.py
+      - name: Feedback HTML round-trip tests
+        run: python scripts/test_feedback_html.py
+      - name: Regression scenarios (run_evals)
+        run: python scripts/run_evals.py
+      - name: Mode-doc drift invariants (check_doc_drift)
+        run: python scripts/check_doc_drift.py
+      - name: Architecture explainer build is in sync
+        run: python docs/architecture/build.py --check

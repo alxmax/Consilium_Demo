@@ -14,7 +14,7 @@ Stdlib-only, no test runner. Smoke tests run manually via CLI:
 
 - `python scripts/test_rund2.py` — sequential architecture (skeptic_on_chosen, MODE enum, validate_report extras)
 - `python scripts/test_feedback_html.py` — `render_feedback_html` + parser round-trip
-- `python scripts/run_evals.py` — regression scenarios from `evals/scenarios.json` (subprocess-based, deterministic; non-zero exit on first FAIL)
+- `python scripts/run_evals.py` — regression scenarios from `evals/scenarios.json` (subprocess-based, deterministic; all scenarios run, non-zero exit if any fails)
 - `python scripts/validate_report.py < .consilium/runs/<file>.json` — Constitution Principle #4 gate; minimum required before any commit touching `prompts/voices/` or `aggregator.py`
 - `python scripts/check_doc_drift.py` — enforces parity between `modes/*.md`, `docs/architecture/src/*.jsx`, and `scripts/confidence.py` (5 invariants: Trias parallel dispatch, Trias 2-1/2-0 confidence values, sequential scale_down behavior, parallel-auto 2-turn structure, silent-audit-is-implemented) + dated removal milestones for legacy MODE aliases. Run before any commit touching `modes/`, `docs/architecture/src/`, or `scripts/confidence.py`. Origin: Senate audit `runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`.
 - `python scripts/audit_counter.py --status` — silent-parallel-audit state summary (counter, frequency, recent divergences). Orchestrator calls `--increment` / `--check` / `--record-divergence` automatically per SKILL.md §"Silent parallel audit"; state in `.consilium/audit_state.json` (gitignored).

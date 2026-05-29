@@ -171,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  {fail}", file=sys.stderr)
         else:
             passed += 1
-            print(f"PASS {name}")
+            print(f"PASS {name}", file=sys.stderr)
 
     print(f"\n{passed} passed, {failed} failed", file=sys.stderr)
     return 0 if failed == 0 else 1
