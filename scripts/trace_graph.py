@@ -95,14 +95,23 @@ def build_mermaid(report: dict) -> str:
     conf = (report.get("confidence") or {})
     conf_val = conf.get("confidence") if isinstance(conf, dict) else None
 
-    # 4. Trias fan (3 personalities, each a full sub-deliberation) -----------
+    # 4. Trias fan: 3 personalities dispatched IN PARALLEL, each a single
+    # one-shot deliberation whose lens re-weights the 3 voice scores (since
+    # 2026-05-21 one-shot dispatch — NOT 3 sequential voice sub-steps). Canonical
+    # topology; per-run serial-vs-parallel drift is detected by
+    # check_trias_parallelism.py, not derivable from the report alone. -----------
     if mode in ("trias", "trias_split"):
-        node("ROOT", "Trias dispatch")
-        for pid, plabel in (("PIO", "Pioneer"), ("ARC", "Architect"), ("STE", "Steward")):
-            node(pid, f"{plabel}<br/>Conservator→Generator→Control")
+        node("ROOT", "Trias dispatch<br/>(3 personalities · parallel)")
+        personas = (
+            ("PIO", "Pioneer<br/>one-shot · lens up-weights Generator"),
+            ("ARC", "Architect<br/>one-shot · lens balances voices"),
+            ("STE", "Steward<br/>one-shot · lens up-weights Conservator"),
+        )
+        for pid, plabel in personas:
+            node(pid, plabel)
             edge("ROOT", pid)
         node("VOTE", f"democratic vote<br/>chosen: {chosen or 'null'}")
-        for pid in ("PIO", "ARC", "STE"):
+        for pid, _ in personas:
             edge(pid, "VOTE")
         if conf_val is not None:
             node("CONF", f"confidence<br/>{conf_val}")
