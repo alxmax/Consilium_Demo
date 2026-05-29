@@ -44,20 +44,15 @@ python .claude/skills/run-consilium/driver.py shot       # screenshot docs/archi
 [PASS] test_feedback_html.py  (exit 0)
 [PASS] check_doc_drift.py  (exit 0)
 [PASS] architecture build --check  (exit 0)
-[FAIL] run_evals.py (regression scenarios)  (exit 1)
-    ...
-    62 passed, 6 failed
-    -> 6 known eval failures (baseline 6) - pre-existing drift, ignored
+[PASS] run_evals.py (regression scenarios)  (exit 0)
 [PASS] build_report.py | validate_report.py  (exit 0)
 
-OK - all green (baseline drift aside)
+OK - all green
 ```
 
-**`smoke` exits 0 when nothing regressed past the known baseline.** The 6 failing
-`run_evals` scenarios are a *pre-existing* drift on `main` (see Gotchas), so the
-driver counts them as the baseline and still exits 0. If you see **more than 6**
-eval failures, or any other `[FAIL]`, that's *your* change — `smoke` exits 1 and
-names it.
+**`smoke` exits 0 when nothing regressed past the known baseline** (`BASELINE_EVAL_FAILURES`,
+currently `0` — the suite is fully green). If you see *any* `[FAIL]`, or more eval
+failures than the baseline, that's *your* change — `smoke` exits 1 and names it.
 
 `shot` writes to `.consilium/shots/architecture.png` (gitignored) and prints the byte size:
 
@@ -75,7 +70,7 @@ Each script is a standalone CLI with JSON over stdin/stdout. Verified commands:
 ```bash
 python scripts/test_rund2.py                      # 25 RUND2 unit tests -> OK
 python scripts/test_feedback_html.py              # 11 feedback tests -> "11/11 passed"
-python -X utf8 scripts/run_evals.py               # regression scenarios: 62 pass, 6 known-fail (see baseline)
+python -X utf8 scripts/run_evals.py               # regression scenarios: 68 passed, 0 failed
 python -X utf8 scripts/check_doc_drift.py         # "doc-drift OK: all invariants hold"
 python -X utf8 scripts/audit_counter.py --status  # silent-parallel-audit state summary
 python docs/architecture/build.py --check         # "outputs up to date" (exit 1 if src/*.jsx unbuilt)
@@ -108,11 +103,12 @@ to capture it headlessly.
 
 ## Gotchas
 
-- **`run_evals.py` is RED on `main` (6 failures) — pre-existing, not yours.** Commit
-  `7176f11` made `validate_report.py` require a `pipeline_executed` (bool) field for
-  non-skipped reports, but 6 inline fixtures in `evals/scenarios.json` were never
-  updated. They fail with `pipeline_executed required (bool)...`. The driver hardcodes
-  `BASELINE_EVAL_FAILURES = 6`; drop it to 0 once the fixtures are fixed.
+- **`validate_report.py` requires `pipeline_executed` (bool) on non-skipped reports**
+  (since `7176f11`), and **bypass templates must set it `false`** — `chosen_approach`
+  of `trivial-direct` or `prior-deliberation` with `pipeline_executed: true` is rejected
+  as inconsistent (`validate_report.py:236`). New `evals/scenarios.json` fixtures must
+  honor this, or `run_evals` goes red. (The driver's `BASELINE_EVAL_FAILURES` records
+  how many such failures are pre-existing vs. your regression — currently `0`.)
 - **`run_evals.py` prints its `N passed, M failed` summary to *stderr*,** not stdout.
   Capture both if you parse it (the driver does).
 - **`check_doc_drift.py` and `audit_counter.py` need `python -X utf8` on Windows** —

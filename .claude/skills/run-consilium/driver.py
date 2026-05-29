@@ -27,11 +27,11 @@ REPO = Path(__file__).resolve().parents[3]
 PY = [sys.executable, "-X", "utf8"]
 ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
 
-# run_evals.py is currently RED on main: commit 7176f11 made validate_report.py
-# require a `pipeline_executed` (bool) field, but 6 inline fixtures in
-# evals/scenarios.json were never updated. smoke() treats this as the baseline:
-# green means "you regressed nothing beyond it". Drop to 0 once the fixtures are fixed.
-BASELINE_EVAL_FAILURES = 6
+# Baseline of known-failing run_evals scenarios treated as pre-existing (not a
+# regression): smoke() exits non-zero only when failures exceed it. Was 6 — the
+# validate_report fixtures missing the `pipeline_executed` field required since
+# 7176f11; fixed 2026-05-29 (fix/eval-pipeline-executed-drift), so the suite is green.
+BASELINE_EVAL_FAILURES = 0
 
 # Known headless-capable browsers on Windows (no chromium-cli here).
 BROWSERS = [
@@ -108,7 +108,7 @@ def smoke():
         failures += run("build_report.py | validate_report.py",
                         script("validate_report.py"), stdin_text=report.stdout).returncode != 0
 
-    print(f"\n{'OK - all green (baseline drift aside)' if failures == 0 else f'{failures} step(s) FAILED'}")
+    print(f"\n{'OK - all green' if failures == 0 else f'{failures} step(s) FAILED'}")
     return 1 if failures else 0
 
 
