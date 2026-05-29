@@ -289,6 +289,7 @@ def main(argv: list[str] | None = None) -> int:
             {
                 "should_skip": False,
                 "magnitude": "high",
+                "mode_ceiling": _MODE_CEILING["high"],
                 "reason": f"config load failed: {exc}",
                 "signals": {"files_changed": 0, "lines_changed": 0, "blocklist_hits": []},
                 "config_used": DEFAULT_CONFIG,

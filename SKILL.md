@@ -72,7 +72,7 @@ Two actions in order:
 
    **Headless (non-interactive — `claude -p` or CI):** `stale_pendings` and `missing_feedback_runs` are automatically suppressed (returned `[]`) when `sys.stdin.isatty()` is `False`. Explicit override: `--headless` flag or `CONSILIUM_HEADLESS=1` env var. Output includes `headless_mode: true` as a marker for consumers.
 
-   **Prior-deliberation passthrough.** If `priors.py --label` returns a non-null `prior_deliberation_match` field, a recent authoritative FEEDBACK entry (outcome OK or GO, within 30 days) matches this task by label substring. Present it to the user:
+   **Prior-deliberation passthrough.** If `priors.py --label` returns a non-null `prior_deliberation_match` field, a recent authoritative FEEDBACK entry (outcome OK, within 30 days) matches this task by label substring. Present it to the user:
    > *"Prior deliberation found: `<match.chosen>` (`<match.date>`, outcome=`<match.outcome>`). Proceed directly to implementation without re-deliberating?"*
    
    - **YES** → skip Steps 1–5 entirely; build a passthrough report and go to Step 7:
