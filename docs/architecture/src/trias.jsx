@@ -43,7 +43,7 @@ function TriasSection() {
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Three Claudes run the full pipeline in parallel — one is told to be bold, one structural, one cautious. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
+            <p>Three Claudes each run the full pipeline — one is told to be bold, one structural, one cautious. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
           </div>
         </div>
 
