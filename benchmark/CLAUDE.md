@@ -35,6 +35,6 @@ python analyze.py
 - g++ 14.2 (MSYS2 UCRT64) on PATH — `run_task.py` augments PATH automatically
 - `claude` CLI on PATH
 
-## Author notes (do not surface to benchmarked models)
+## Answer-key isolation (maintainer notes)
 
 - Answer keys live in **`../Benchmark-scoring/`**, a separate sibling git repo *outside* this project root. The benchmark subprocess runs with `cwd=workspace/<mode>/<task>/` and `--permission-mode bypassPermissions`, so file access is unrestricted by absolute path; the only real isolation is physical (Benchmark-scoring is outside any Glob path the model knows). Keep it that way: never copy files from `../Benchmark-scoring/` into this repo, never reference its absolute path in prompts, and never re-commit `scoring/` here.

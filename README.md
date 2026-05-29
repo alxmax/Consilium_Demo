@@ -89,11 +89,13 @@ The chosen approach beat `do_nothing` and a plausible-but-weaker alternative —
 ```
 consilium/
 ├── SKILL.md         # the contract: Constitution (4 principles) + 8-step workflow
+├── TODO.md          # release + project roadmap
 ├── prompts/voices/  # per-voice role prompts (generator, control, conservator, skeptic, lenses)
 ├── modes/           # per-mode workflow + machine-readable config (cost, sub-agents, floors)
 ├── scripts/         # stdlib-only CLIs: aggregator, confidence, priors, scope_gate, …
 ├── agents/          # consilium-subagent — isolated dispatch via the Agent tool
 ├── benchmark/       # mode-vs-baseline benchmark harness (oracle kept in an external sibling repo)
+├── experiments/     # benchmarking-discipline notes + validation write-ups
 ├── docs/            # architecture.html explainer + its React source under docs/architecture/
 ├── evals/           # deterministic regression scenarios for the scripts
 └── .consilium/      # local deliberation state (gitignored): runs/*.json + FEEDBACK.html
@@ -132,7 +134,7 @@ What this project concretely shows, in Agentic-AI / LLMOps terms. Rated **Full**
 | Framework orchestration (LangGraph / CrewAI) | n/a | evaluated and deliberately rejected — see below |
 | RAG / embeddings / vector search · web backend · cloud deploy | n/a | out of scope by design; targeted by a separate showcase project |
 
-> **Why not LangGraph / CrewAI?** Evaluated and rejected on documented architectural grounds, not avoided. A 2026-05-16 deliberation chose `do_nothing`; two follow-up Senate audits (2026-05-19) reaffirmed it — `STOP 6` on integration and `STOP 6` even on an isolated, deletable sidecar. The recorded reasons: keep the **stdlib-only, zero-dependency** constraint; preserve the **file-based memory contract** (`runs/*.json`, globbed by `priors.py` / `usage.py` / `memory.py`); keep the **self-improvement loop** coupled to Claude Code; and avoid **regression risk** in the authoritative `prompts/voices/*.md`. The deliberations are recorded in `runs/` and `TODO.md`.
+> **Why not LangGraph / CrewAI?** Evaluated and rejected on documented architectural grounds, not avoided. A 2026-05-16 deliberation chose `do_nothing`; two follow-up Senate audits (2026-05-19) reaffirmed it — `STOP 6` on integration and `STOP 6` even on an isolated, deletable sidecar. The recorded reasons: keep the **stdlib-only, zero-dependency** constraint; preserve the **file-based memory contract** (`runs/*.json`, globbed by `priors.py` / `usage.py` / `memory.py`); keep the **self-improvement loop** coupled to Claude Code; and avoid **regression risk** in the authoritative `prompts/voices/*.md`. The deliberations are recorded in `.consilium/runs/` (local, gitignored) and `TODO.md`.
 
 ## License
 

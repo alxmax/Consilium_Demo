@@ -25,7 +25,7 @@ notes) lives in a **separate git repo**, *not* in this project. Layout on disk:
 <parent>/                    ← any dir holding both repos as siblings
 ├── Consilium/              ← this repo
 │   └── benchmark/          ← the harness (prompts, scripts, verify.py)
-└── Benchmark-scoring/      ← separate private repo (alxmax/Benchmark-scoring)
+└── Benchmark-scoring/      ← separate private repo (answer keys)
     ├── code/01_circuit_breaker/…
     ├── reasoning/01_transport_choice/…
     └── …
@@ -54,7 +54,7 @@ Why three layers of defense are necessary, in order:
 #### Layer 1 — Physical separation (`Benchmark-scoring/` sibling repo)
 
 The scoring tree lives outside `Benchmark/`, in a **separate private git
-repo** (currently `alxmax/Benchmark-scoring`). It is never committed here
+repo** (a separate private repo, kept outside this tree). It is never committed here
 and never referenced by absolute path in any `prompts/*.md`. `.gitignore`
 in this repo has `scoring/` as a backstop.
 
@@ -174,7 +174,7 @@ python scripts/audit_behavior.py workspace/<mode>/<task> --json
 1. Clone (or copy) the scoring repo as a sibling of this one:
    ```powershell
    cd ..   # the directory that contains the Consilium repo
-   git clone https://github.com/alxmax/Benchmark-scoring.git
+   git clone https://github.com/<your-org>/Benchmark-scoring.git   # your own private scoring repo
    ```
 2. Verify the layout:
    ```powershell
