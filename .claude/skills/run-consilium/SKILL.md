@@ -15,7 +15,7 @@ deterministically, without an LLM, is everything around it:
 - a static React **architecture explainer** (`docs/architecture.html`) you can screenshot.
 
 The driver below exercises all of it. **Paths are relative to the repo root**
-(`C:\Users\ALEX\Desktop\Doc\Consilium`); run everything from there.
+(the Consilium checkout); run everything from there.
 
 > Environment note: this was authored and verified on **Windows 11 / PowerShell**,
 > not a Linux container. There is no `apt-get`/`xvfb`/`chromium-cli` here — the

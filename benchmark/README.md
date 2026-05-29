@@ -22,12 +22,12 @@ The scoring tree (expected answers, rubrics, hidden pytest files, solution
 notes) lives in a **separate git repo**, *not* in this project. Layout on disk:
 
 ```
-C:\Users\ALEX\Desktop\Doc\
-├── Benchmark\            ← this repo (harness, prompts, scripts)
-│   └── verify.py         ← reads from ../Benchmark-scoring/<task>/
-└── Benchmark-scoring\    ← separate private repo (alxmax/Benchmark-scoring)
-    ├── code\01_circuit_breaker\…
-    ├── reasoning\01_transport_choice\…
+<parent>/                    ← any dir holding both repos as siblings
+├── Consilium/              ← this repo
+│   └── benchmark/          ← the harness (prompts, scripts, verify.py)
+└── Benchmark-scoring/      ← separate private repo (alxmax/Benchmark-scoring)
+    ├── code/01_circuit_breaker/…
+    ├── reasoning/01_transport_choice/…
     └── …
 ```
 
@@ -44,7 +44,7 @@ subprocess has:
   the scoring tree by name)
 
 So a curious or adversarial model can (without intervention):
-- Glob `**/expected_answer*` from `C:/Users/ALEX/Desktop/Doc/` → find sibling
+- Glob `**/expected_answer*` from the repo's parent directory → find sibling
 - `git show <hash>:scoring/…/expected_answer.txt` → recover deleted files
   from this repo's history
 - Read `verify.py` → learn the path convention, then read the file directly
@@ -69,7 +69,7 @@ old SHAs were force-pushed). A clone today contains no scoring blobs in
 #### Layer 3 — Runtime stash (`stash_scoring_for_run` + `stash_sibling_workspaces` in `run_task.py`)
 
 Even with physical separation, the subprocess can:
-- Glob `C:/Users/ALEX/Desktop/Doc/` (parent of Benchmark/) → find the
+- Glob the repo's parent directory (one level above the Consilium repo) → find the
   sibling directory
 - Read `verify.py` and learn that `SCORING_DIR = BASE.parent /
   "Benchmark-scoring"`
@@ -173,7 +173,7 @@ python scripts/audit_behavior.py workspace/<mode>/<task> --json
 
 1. Clone (or copy) the scoring repo as a sibling of this one:
    ```powershell
-   cd C:\Users\ALEX\Desktop\Doc
+   cd ..   # the directory that contains the Consilium repo
    git clone https://github.com/alxmax/Benchmark-scoring.git
    ```
 2. Verify the layout:

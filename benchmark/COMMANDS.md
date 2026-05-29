@@ -15,7 +15,7 @@ budget cap $3/task).
 ## SETUP (once)
 
 ```powershell
-cd C:\Users\ALEX\Desktop\Doc\benchmark-modes
+cd benchmark   # from the Consilium repo root
 # git init && git add . && git commit -m "init"   # if not initialised
 ```
 
@@ -92,7 +92,7 @@ python verify.py --mode sonnet_bare --task code/01_circuit_breaker
 ## CONSILIUM SEQUENTIAL
 
 ```powershell
-cd C:\Users\ALEX\Desktop\Doc\benchmark-modes
+cd benchmark   # from the Consilium repo root
 python run_task.py --mode consilium_sequential --task code/01_circuit_breaker
 python run_task.py --mode consilium_sequential --task reasoning/01_transport_choice
 python run_task.py --mode consilium_sequential --task reasoning/02_rule_of_three
