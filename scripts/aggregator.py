@@ -58,6 +58,8 @@ def aggregate_majority(candidates: list[dict]) -> dict:
     """Pick candidate with highest mean voice score; tiebreak by lowest stdev,
     then by original insertion order (stable — avoids TypeError on dict comparisons
     when both mean and stdev are equal)."""
+    if not candidates:
+        raise ValueError("aggregate_majority requires a non-empty candidates list")
     rows = []
     for i, c in enumerate(candidates):
         vec = _voice_vec(c["scores"])
@@ -193,6 +195,8 @@ def aggregate_risk_adjusted_utility(candidates: list[dict]) -> dict:
     too coarse (e.g. you have many candidates clustered near the veto
     threshold and want a smooth tiebreaker instead of a cliff).
     """
+    if not candidates:
+        raise ValueError("aggregate_risk_adjusted_utility requires a non-empty candidates list")
     ranked = []
     for c in candidates:
         gen = float(c["scores"]["generator"])
