@@ -336,6 +336,7 @@
     "name": "validate_report/full report with required fields passes",
     "tool": "scripts/validate_report.py",
     "stdin_json": {
+      "pipeline_executed": true,
       "success_criterion": "x is y",
       "verification": "run pytest",
       "chosen_approach": "approach_a",
@@ -450,6 +451,7 @@
     "name": "validate_report/well-formed telemetry passes",
     "tool": "scripts/validate_report.py",
     "stdin_json": {
+      "pipeline_executed": true,
       "success_criterion": "x",
       "verification": "y",
       "chosen_approach": "approach_a",
@@ -1149,6 +1151,7 @@
     "name": "validate_report/parallel mode with voices passes",
     "tool": "scripts/validate_report.py",
     "stdin_json": {
+      "pipeline_executed": true,
       "success_criterion": "x",
       "verification": "y",
       "chosen_approach": "approach_a",
@@ -1200,6 +1203,7 @@
     "name": "validate_report/sequential mode without voices passes",
     "tool": "scripts/validate_report.py",
     "stdin_json": {
+      "pipeline_executed": true,
       "success_criterion": "x",
       "verification": "y",
       "chosen_approach": "approach_a",
@@ -1266,6 +1270,7 @@
     "name": "validate_report/trias report with telemetry passes",
     "tool": "scripts/validate_report.py",
     "stdin_json": {
+      "pipeline_executed": true,
       "success_criterion": "x",
       "verification": "y",
       "chosen_approach": "approach_a",
@@ -2162,6 +2167,7 @@
     "tool": "scripts/validate_report.py",
     "args": [],
     "stdin_json": {
+      "pipeline_executed": false,
       "success_criterion": "The passthrough feature ships without re-deliberating.",
       "chosen_approach": "prior-deliberation",
       "verification": "manual",
