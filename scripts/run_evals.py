@@ -86,6 +86,43 @@ def run_one(scenario: dict, repo_root: Path) -> list[str]:
     return failures
 
 
+# Bypass templates: their reports set pipeline_executed=false (validate_report.py
+# rejects true for them). Keep in sync with validate_report._PIPELINE_BYPASS_CHOSEN.
+_BYPASS_CHOSEN = frozenset({"trivial-direct", "prior-deliberation"})
+
+
+def lint_validate_report_fixtures(scenarios: list) -> list[str]:
+    """Corpus pre-flight (defense-in-depth over validate_report itself).
+
+    Every validate_report fixture that should pass (expect_exit 0, not skipped) must
+    declare pipeline_executed, and bypass-chosen fixtures must set it false. Catches
+    the 2026-05-29 fixture/validator drift at corpus level with a clear, fixture-named
+    message before scenarios run, instead of as a generic per-scenario failure.
+    """
+    problems: list[str] = []
+    for s in scenarios:
+        if not (isinstance(s, dict) and str(s.get("tool", "")).endswith("validate_report.py")):
+            continue
+        if s.get("expect_exit", 0) != 0:
+            continue  # exit-nonzero fixtures are intentionally malformed (rejection tests)
+        sj = s.get("stdin_json", {})
+        if not isinstance(sj, dict) or sj.get("skipped") is True:
+            continue
+        name = s.get("name", "<unnamed>")
+        if "pipeline_executed" not in sj:
+            problems.append(
+                f"{name}: non-skipped validate_report report (expect_exit 0) must set "
+                "pipeline_executed (bool)"
+            )
+            continue
+        if sj.get("chosen_approach") in _BYPASS_CHOSEN and sj["pipeline_executed"] is True:
+            problems.append(
+                f"{name}: pipeline_executed must be false for bypass-chosen "
+                f"chosen_approach={sj.get('chosen_approach')!r}"
+            )
+    return problems
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--scenarios", default=None, help="path to scenarios.json (default: evals/scenarios.json)")
@@ -104,6 +141,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if not isinstance(scenarios, list):
         print(f"scenarios.json: expected a list, got {type(scenarios).__name__}", file=sys.stderr)
+        return 2
+
+    corpus_problems = lint_validate_report_fixtures(scenarios)
+    if corpus_problems:
+        print("scenarios.json: malformed validate_report fixture(s):", file=sys.stderr)
+        for p in corpus_problems:
+            print(f"  {p}", file=sys.stderr)
         return 2
 
     if args.filter:
