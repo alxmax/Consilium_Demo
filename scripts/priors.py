@@ -166,6 +166,12 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
             data = json.loads(run_file.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
+        # Only canonical reports are expected to have a FEEDBACK row. Non-report
+        # artifacts saved under runs/ (e.g. Trias personality sub-runs, which carry
+        # `chose`/`personality` instead) lack chosen_approach — a field validate_report
+        # requires on every real report — so skip them rather than flag a false orphan.
+        if not isinstance(data, dict) or "chosen_approach" not in data:
+            continue
         chosen = data.get("chosen_approach")
         chosen_s = "null" if chosen is None else str(chosen)
         # Fallback: legacy rows without sidecar entry
