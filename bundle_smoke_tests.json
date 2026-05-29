@@ -1,0 +1,71 @@
+{
+  "success_criterion": "python scripts/run_evals.py --filter stability_check passes with 3 new scenarios covering flat-schema categorical comparison (with FLIP detection), missing-conservator MISSING output, and nested-schema comparison; python scripts/run_evals.py exits 0.",
+  "verification": "python scripts/run_evals.py --filter stability_check (3 PASS); python scripts/run_evals.py (all 64 PASS, 0 FAIL)",
+  "generator": {
+    "candidates": [
+      {"id": "add_fixtures_and_scenarios", "summary": "Create evals/fixtures/ stubs + 3 scenarios via --compare args", "sketch": "4 minimal fixture JSON files in evals/fixtures/; 3 scenarios in scenarios.json using expect_stdout_contains. No production code change.", "rationale": "Zero production-code risk. Fits existing harness exactly.", "downside_estimate": "5 files added to evals/; paths relative to repo root."},
+      {"id": "extend_run_evals_harness", "summary": "Add fixture_files dict support to run_evals.py", "sketch": "run_evals.py writes temp files per scenario, substitutes paths in args.", "rationale": "Keeps fixture data inside scenarios.json.", "downside_estimate": "~40 lines added to harness."},
+      {"id": "add_stdin_mode", "summary": "Add --compare-json flag to stability_check.py", "sketch": "Accept inline JSON so scenarios use stdin_json.", "rationale": "No fixture files needed.", "downside_estimate": "Changes production script interface for test convenience only."},
+      {"id": "adversarial_path_relative", "summary": "Adversarial: fixture paths break if cwd mismatches", "sketch": "run_evals.py uses cwd=repo_root; relative paths resolve correctly.", "rationale": "Confirms no mitigation needed.", "downside_estimate": "none"},
+      {"id": "do_nothing", "summary": "Leave adversarial_null_output risk unguarded.", "sketch": "No changes.", "rationale": "Baseline.", "downside_estimate": "MISSING path unguarded."}
+    ],
+    "fallback_scenario": "user accepts 2 scenarios (flat + missing) if nested fixture is complex",
+    "coverage_check": true,
+    "challenge_upward": {"triggered": false, "reason": null},
+    "abstain": {"triggered": false, "reason": null},
+    "preferred": "add_fixtures_and_scenarios",
+    "adversarial_skipped": false
+  },
+  "control": {
+    "glossary": {
+      "fixture file": "minimal valid run JSON in evals/fixtures/ with voice_scores + deliberation_log + chosen_approach",
+      "flat schema": "deliberation_log conservator entry with reversibility/magnitude at top level",
+      "nested schema": "deliberation_log conservator entry with scores:[{id, regression_risk:{reversibility,magnitude}}]",
+      "MISSING": "string emitted by compare() when _categorical_fields returns None"
+    },
+    "hidden_assumptions": [
+      {"assumption": "stability_check.py --compare exits 0 even when categorical fields are missing", "if_false_then": "case-2 scenario needs expect_exit changed"},
+      {"assumption": "run_evals.py subprocess inherits cwd=repo_root so relative fixture paths resolve", "if_false_then": "all fixture-path scenarios break silently"}
+    ],
+    "disagreements": [],
+    "fixed_constraints": ["Must not break existing 61 passing evals", "Fixture files must be valid JSON"],
+    "negotiable_constraints": ["Whether nested scenario asserts same-values OK or different-values FLIP"],
+    "glossary_fail": false,
+    "glossary_attempts": [],
+    "verdicts": [
+      {"id": "add_fixtures_and_scenarios", "valid": true, "confidence_in_verdict": "high", "issues": [], "tests_to_write": [{"name": "flat schema emits Categorical stability", "assert": "stdout contains Categorical stability"}, {"name": "flat schema flip emits FLIP", "assert": "stdout contains *** FLIP"}, {"name": "missing conservator emits MISSING", "assert": "stdout contains MISSING"}, {"name": "nested schema emits Categorical stability", "assert": "stdout contains Categorical stability"}], "notes": "MISSING test is the adversarial guard."},
+      {"id": "extend_run_evals_harness", "valid": true, "confidence_in_verdict": "medium", "issues": [{"category": "logic", "detail": "Adds complexity to harness", "severity": "medium"}], "tests_to_write": [], "notes": "Unnecessary scope."},
+      {"id": "add_stdin_mode", "valid": true, "confidence_in_verdict": "medium", "issues": [{"category": "style", "detail": "Changes production interface for test convenience", "severity": "medium"}], "tests_to_write": [], "notes": "Violates surgical-changes principle."},
+      {"id": "adversarial_path_relative", "valid": true, "confidence_in_verdict": "high", "issues": [], "tests_to_write": [], "notes": "cwd=repo_root makes relative paths safe."},
+      {"id": "do_nothing", "valid": true, "confidence_in_verdict": "high", "issues": [], "tests_to_write": [], "notes": "Baseline. Goal unaddressed."}
+    ]
+  },
+  "conservator": {
+    "scores": [
+      {"id": "add_fixtures_and_scenarios", "regression_risk": {"reversibility": "complete", "magnitude": "trivial", "net_concern": 0.13}, "counterparty_risks": [], "bias_check": "Not status quo bias.", "meta_recommendation": null, "tokens_budget": {"generator": 800, "control": 800}, "irreversibility_flag": false, "rollback_recipe": ["git revert scenarios.json and delete evals/fixtures/"], "notes": "Minimal scope. No production code touched."},
+      {"id": "extend_run_evals_harness", "regression_risk": {"reversibility": "complete", "magnitude": "moderate", "net_concern": 0.25}, "counterparty_risks": [], "bias_check": "Real moderate risk.", "meta_recommendation": null, "tokens_budget": {"generator": 800, "control": 800}, "irreversibility_flag": false, "rollback_recipe": ["git revert run_evals.py"], "notes": "More risk than the goal warrants."},
+      {"id": "add_stdin_mode", "regression_risk": {"reversibility": "complete", "magnitude": "moderate", "net_concern": 0.22}, "counterparty_risks": [], "bias_check": "Scope drift.", "meta_recommendation": null, "tokens_budget": {"generator": 800, "control": 800}, "irreversibility_flag": false, "rollback_recipe": ["git revert stability_check.py"], "notes": "Not worth the drift."},
+      {"id": "adversarial_path_relative", "regression_risk": {"reversibility": "complete", "magnitude": "trivial", "net_concern": 0.08}, "counterparty_risks": [], "bias_check": "Correctly identifies cwd contract.", "meta_recommendation": null, "tokens_budget": {"generator": 300, "control": 300}, "irreversibility_flag": false, "rollback_recipe": [], "notes": "Adversarial."},
+      {"id": "do_nothing", "regression_risk": {"reversibility": "complete", "magnitude": "trivial", "net_concern": 0.05}, "counterparty_risks": [], "bias_check": "Status quo acceptable but leaves known risk unguarded.", "meta_recommendation": null, "tokens_budget": {"generator": 800, "control": 800}, "irreversibility_flag": false, "rollback_recipe": [], "notes": "Baseline."}
+    ]
+  },
+  "aggregate": {
+    "scheme": "conservative_override",
+    "chosen": "add_fixtures_and_scenarios",
+    "scores": {"add_fixtures_and_scenarios": 0.857, "extend_run_evals_harness": 0.667, "add_stdin_mode": 0.643, "adversarial_path_relative": 0.623, "do_nothing": 0.567},
+    "vetoed": []
+  },
+  "confidence": {"confidence": 0.718, "agreement": 0.944, "separation": 0.19},
+  "telemetry": {
+    "mode": "sequential",
+    "dispatch_count": 3,
+    "voices": {
+      "conservator": {"tokens_in": 680, "tokens_out": 320, "latency_ms": 1800},
+      "generator": {"tokens_in": 920, "tokens_out": 480, "latency_ms": 2400},
+      "control": {"tokens_in": 1240, "tokens_out": 520, "latency_ms": 2900}
+    },
+    "total_tokens_in": 2840,
+    "total_tokens_out": 1320,
+    "total_latency_ms": 7100
+  }
+}

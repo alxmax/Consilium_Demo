@@ -72,3 +72,7 @@ benchmark/Benchmark-scoring/
 
 # Source upload for docs/architecture (extracted into docs/architecture/)
 Arhitecture.zip
+
+# Personal / scratch files at repo root — never publish
+Enterprise_GenAI_Roadmap_Alex.pdf
+test_bundle.json
