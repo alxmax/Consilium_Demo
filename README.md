@@ -57,6 +57,33 @@ The last step activates the included `.githooks/pre-push` hook, which blocks dir
 
 Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
 
+## Example
+
+Consilium reviews its own changes. Here's a **real run from this repo's history** — asking it to evaluate a three-bug fix. It prints one terminal line:
+
+```
+chosen: fix_canonical | conf: 0.57 | .consilium/runs/2026-05-29_2333_core-script-bugfixes.json
+```
+
+and writes a canonical JSON report to disk (string fields trimmed for length, all else verbatim):
+
+```json
+{
+  "success_criterion": "aggregator raises a clear error on empty candidates; audit_counter uses the shared headless check; trace_graph exits cleanly on a missing file — run_evals stays green. …",
+  "chosen_approach": "fix_canonical",
+  "confidence": 0.57,
+  "voice_scores": { "generator": 1.0, "control": 1.0, "conservator": 0.35 },
+  "alternatives": [
+    { "id": "do_nothing", "why_not": "control: three real defects persist" },
+    { "id": "fix_agg_structured_null", "why_not": "control: returning null on malformed input masks the error; downstream must special-case" }
+  ],
+  "verification": "python scripts/run_evals.py (green); empty candidates → ValueError not IndexError; trace_graph --input missing.json → exit 2. …",
+  "pipeline_executed": true
+}
+```
+
+The chosen approach beat `do_nothing` and a plausible-but-weaker alternative — and the rejected options stay on record *with the reason they lost*. Confidence `0.57` is below the Sequential floor (`0.70`), so a Skeptic sub-agent auto-fires on the chosen answer before the result is trusted. Every run lands in `.consilium/runs/` (local, gitignored) and feeds the priors of the next deliberation.
+
 ## Structure
 
 ```
