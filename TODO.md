@@ -59,6 +59,11 @@
 ## 🎯 User directions (open)
 
 - [ ] **Public-release prep** — make the repo public; plan how to land it in a clean single commit.
+- [ ] **Multi-modal input** — Consilium să accepte și documente/specificații, nu doar text liber. Relevant pentru enterprise workflows reale.
+- [ ] **Audit trail human-readable** — nu JSON pentru developeri, ci un raport citibil de un manager. Demonstrează gândire la utilizatorul final.
+- [ ] **Versioning & config system** — versiuni de prompts, versiuni de agents, config per workflow.
+- [ ] **API real backend** — FastAPI / Node backend; endpoints: `/chat`, `/agents`, `/workflow`, `/memory`. (Verifică ce există deja înainte.)
+- [ ] **Explainability UI** — "Why this answer?", "Which agents were used?", "What data was retrieved?".
 
 ---
 
