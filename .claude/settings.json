@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/commit_remind.sh"
+            "command": "bash -c 'cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null && bash scripts/commit_remind.sh; true'"
           }
         ]
       }
