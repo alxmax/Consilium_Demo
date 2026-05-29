@@ -83,6 +83,8 @@ def smoke():
     failures += run("test_rund2.py", script("test_rund2.py")).returncode != 0
     failures += run("test_feedback_html.py", script("test_feedback_html.py")).returncode != 0
     failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0
+    failures += run("architecture build --check",
+                    PY + [str(REPO / "docs" / "architecture" / "build.py"), "--check"]).returncode != 0
 
     # run_evals: informational. Only count it as a failure if it regressed past baseline.
     ev = run("run_evals.py (regression scenarios)", script("run_evals.py"))

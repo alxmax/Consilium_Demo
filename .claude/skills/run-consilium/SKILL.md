@@ -43,6 +43,7 @@ python .claude/skills/run-consilium/driver.py shot       # screenshot docs/archi
 [PASS] test_rund2.py  (exit 0)
 [PASS] test_feedback_html.py  (exit 0)
 [PASS] check_doc_drift.py  (exit 0)
+[PASS] architecture build --check  (exit 0)
 [FAIL] run_evals.py (regression scenarios)  (exit 1)
     ...
     62 passed, 6 failed
@@ -77,6 +78,7 @@ python scripts/test_feedback_html.py              # 11 feedback tests -> "11/11 
 python -X utf8 scripts/run_evals.py               # regression scenarios: 62 pass, 6 known-fail (see baseline)
 python -X utf8 scripts/check_doc_drift.py         # "doc-drift OK: all invariants hold"
 python -X utf8 scripts/audit_counter.py --status  # silent-parallel-audit state summary
+python docs/architecture/build.py --check         # "outputs up to date" (exit 1 if src/*.jsx unbuilt)
 ```
 
 The full deterministic pipeline, end to end:
@@ -98,9 +100,11 @@ echo '{"candidates":[{"id":"a","scores":{"generator":0.9,"control":0.9,"conserva
 ## Architecture explainer (human path)
 
 `docs/architecture.html` is built React source. To **edit** it, change
-`docs/architecture/src/*.jsx` and regenerate with `python docs/architecture/build.py`
-(per the repo `CLAUDE.md` — not run by this skill). To just **view** it, open the
-file in a browser (needs internet), or use `driver.py shot` to capture it headlessly.
+`docs/architecture/src/*.jsx` and regenerate with `python docs/architecture/build.py`.
+`smoke` runs `build.py --check`, which exits 1 if you edited the source but forgot to
+rebuild — so a stale build shows up as a `[FAIL] architecture build --check`. To just
+**view** the page, open the file in a browser (needs internet), or use `driver.py shot`
+to capture it headlessly.
 
 ## Gotchas
 
