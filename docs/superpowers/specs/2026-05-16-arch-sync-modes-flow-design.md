@@ -82,7 +82,7 @@ Structure (matches existing `.mode parallel` cards):
     <b>Use when:</b> vrei o voce focală post-deliberare disponibilă pe <i>orice</i> mod de bază, fără a comuta la modurile fixe <code>parallel_skeptic</code> / <code>dialectic_skeptic</code>. Compune onest cu Sequential și Trias unde altfel n-ai avea acces la Skeptic.
     <br><b>Override:</b> advisory by default; <code>--skeptic-can-override</code> permite Skeptic verdict să suprascrie <code>chosen</code> dacă <code>addressable: requires_redesign</code>.
     <br><b>Cost:</b> +1 sub-agent peste modul de bază.
-    <br><b>Origin empiric:</b> <code>chosen_confirmation_pass</code> a obținut 100% catch-rate în sim și 4/7 în reruns reale P3 (vezi <code>experiments/p3-car-wash.html</code>).
+    <br><b>Origin empiric:</b> <code>chosen_confirmation_pass</code> a obținut 100% catch-rate în sim și 4/7 în reruns reale P3 (vezi <code>experiments/oracle-discipline.md</code>).
   </div>
 </div>
 ```
@@ -113,7 +113,7 @@ Content draft:
 <div class="decision">
   <h3>Benchmarking discipline — process gate pre-claim</h3>
   <div class="lede">
-    Înainte de a publica orice claim cantitativ pe comportamentul vocilor (<code>fab-rate</code>, <code>accuracy</code>, <code>catch-rate</code>) — 3 verificări obligatorii. Origin: corigendum-ul P3 (vezi <code>experiments/p3-car-wash.html</code>) — oracle-ul greșit a inversat semantic concluzia "fabrication" → "real constraint catch".
+    Înainte de a publica orice claim cantitativ pe comportamentul vocilor (<code>fab-rate</code>, <code>accuracy</code>, <code>catch-rate</code>) — 3 verificări obligatorii. Origin: corigendum-ul P3 (vezi <code>experiments/oracle-discipline.md</code>) — oracle-ul greșit a inversat semantic concluzia "fabrication" → "real constraint catch".
   </div>
   <ul style="margin: 12px 0; padding-left: 20px; color: var(--ink); font-size: 13px; line-height: 1.6;">
     <li><b>Oracle independent.</b> Răspunsul corect e fixat de (a) al doilea expert care nu a văzut quick-take-ul evaluatorului, SAU (b) citation explicită din enunț/specs care reduce ambiguitatea. Quick-take-ul evaluatorului ≠ oracle.</li>
