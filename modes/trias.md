@@ -6,7 +6,7 @@ confidence_floor: 0.80
 models: sonnet
 dispatch_count_worst_case: 7
 lazy_routing: true
-description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally. Auto-downgrades to Dialectic for non-critical changes (lazy routing on critical threshold — blocklist hits only).
+description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally. Lazy routing downgrades by magnitude tier — low/medium → Sequential, high → Dialectic, critical → full Trias (blocklist hits only).
 ---
 
 # Trias mode (high-stakes opt-in)
@@ -28,14 +28,20 @@ The weights act **within** each personality only — they decide that personalit
 
 ## Lazy routing (default: enabled)
 
-**Purpose:** Avoid the 3× Sequential cost when the change does not warrant it. Trias checks magnitude via `scope_gate.py` and auto-downgrades to Dialectic for low/medium changes.
+**Purpose:** Avoid the 3× Trias cost when the change does not warrant it. Trias classifies magnitude via `scope_gate.py` and routes to the cheapest mode that fits — a **graduated ladder** keyed on `scope_gate._MODE_CEILING`:
 
-**Default:** `lazy=true` — Trias auto-downgrades low/medium/high magnitude to Dialectic; only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. To force full Trias on a non-critical change, the user must explicitly state "use full Trias" or "no lazy routing" in their request.
+| magnitude | routes to | cost |
+|---|---|---|
+| low / medium | **Sequential** | 1× |
+| high | **Dialectic** | 1.33× |
+| critical (blocklist hit: auth, security, migrations, CI workflows, secrets) | **full Trias** | 3× |
 
-**Override cost-warning (D2).** An explicit override on a sub-high-magnitude change is honored, but **not silently** — the user is paying 3× Sequential for a change `scope_gate.py` judged low/medium. Before dispatching the 3 sub-agents on an overridden low/medium change, emit a one-line warning so the cost is a conscious choice:
+**Default:** `lazy=true`. Only `critical` magnitude proceeds to full Trias; `high` downgrades to Dialectic; `low`/`medium` downgrade all the way to bare Sequential — at low/medium magnitude the marginal scrutiny of Dialectic's Skeptic isn't worth the 1.33× over Sequential. To force full Trias on a non-critical change, the user must explicitly state "use full Trias" or "no lazy routing" in their request.
+
+**Override cost-warning (D2).** An explicit override on a sub-critical change is honored, but **not silently** — the user is paying 3× for a change `scope_gate.py` judged low/medium/high. Before dispatching the 3 sub-agents on an overridden change, emit a one-line warning so the cost is a conscious choice:
 ```json
-{"trias_override_warning": true, "magnitude": "<low|medium>", "cost_multiplier": 3.0,
- "note": "Full Trias forced below high magnitude — 3x Sequential cost. Drop the override to auto-route to Dialectic."}
+{"trias_override_warning": true, "magnitude": "<low|medium|high>", "cost_multiplier": 3.0,
+ "note": "Full Trias forced below critical magnitude — 3x cost. Drop the override to auto-route (low/medium → Sequential, high → Dialectic)."}
 ```
 This is a warning, not a refusal: there is no hard block, because the user holds the authority on their own spend (a hard floor would override an explicit, informed instruction). The warning makes the tradeoff visible; the override still proceeds.
 
@@ -46,13 +52,16 @@ This is a warning, not a refusal: there is no hard block, because the user holds
 gate=$(python -X utf8 scripts/scope_gate.py)          # on original context
 magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin)['magnitude'])")
 ```
-- If `magnitude == "critical"` → proceed to full Trias (then apply Phase 1 strip below)
-- If `magnitude != "critical"` → downgrade to Dialectic and emit structured notification:
-  ```json
+- `magnitude == "critical"` → proceed to full Trias (then apply Phase 1 strip below)
+- `magnitude == "high"` → downgrade to **Dialectic**
+- `magnitude in {"low", "medium"}` → downgrade to **Sequential**
+
+For any downgrade, emit the structured notification:
+```json
   {
     "trias_lazy_routed": true,
-    "routed_to": "dialectic",
-    "magnitude": "<low|medium>",
+    "routed_to": "<sequential|dialectic>",
+    "magnitude": "<low|medium|high>",
     "magnitude_score": {"files": "<n>", "lines": "<n>", "blocklist_hits": "<n>"},
     "threshold": "critical",
     "context_tokens_available": "<approx>",
@@ -61,7 +70,7 @@ magnitude=$(echo "$gate" | python -c "import sys,json; print(json.load(sys.stdin
   ```
 
 ## Workflow
-0. **(Phase 2 — lazy routing)** Run scope_gate on original context and check magnitude. If `magnitude != "critical"` AND user has not explicitly requested full Trias, downgrade to Dialectic (emit notification above) and stop Trias workflow here.
+0. **(Phase 2 — lazy routing)** Run scope_gate on original context and check magnitude. If `magnitude != "critical"` AND user has not explicitly requested full Trias, downgrade per the ladder above (high → Dialectic; low/medium → Sequential), emit the notification, and stop the Trias workflow here.
 1. Orchestrator reads `python -X utf8 scripts/personalities.py` — emits the 3 personalities
 2. **(Phase 1 — context strip)** Before building each sub-agent prompt, truncate the raw conversation context to ≈15 000 tokens:
    ```bash
