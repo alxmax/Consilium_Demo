@@ -25,10 +25,10 @@ const TRIAS_OUTCOMES = [
   { p: '3–0', label: 'Unanimous', desc: 'All three personalities picked the same.', conf: 0.95, outcome: 'OK auto' },
   { p: '2–1', label: 'Majority + dissent', desc: 'One personality prefers a different candidate; dissent logged.', conf: 0.75, outcome: 'OK auto' },
   { p: '2–0', label: 'Majority + abstention', desc: 'One personality abstained — its own chose=null (all its candidates vetoed); the two agreeing personalities still elect a winner.', conf: 0.70, outcome: 'OK auto' },
-  { p: '1–1–1', label: 'Fragmented', desc: 'Three distinct chosen results · no consensus.', conf: null, outcome: 'PEND · escalate' },
-  { p: '1–1–0', label: 'Split + abstention', desc: 'Two distinct chosen results · one personality vetoed all.', conf: null, outcome: 'PEND · escalate' },
-  { p: '1–0–0', label: 'Lone vote + 2 abstentions', desc: 'One chosen result · two personalities vetoed all.', conf: null, outcome: 'PEND · escalate' },
-  { p: '0–0–0', label: 'Total veto', desc: 'All three personalities vetoed all candidates.', conf: null, outcome: 'PEND · retry_suggested' },
+  { p: '1–1–1', label: 'Fragmented', desc: 'Three distinct chosen results · no consensus → B2 deadlock cascade.', conf: null, outcome: 'Round 2 → Skeptic → PEND' },
+  { p: '1–1–0', label: 'Split + abstention', desc: 'Two distinct chosen results · one personality vetoed all. No majority.', conf: null, outcome: 'PEND' },
+  { p: '1–0–0', label: 'Lone vote + 2 abstentions', desc: 'One chosen result · two personalities vetoed all. No majority.', conf: null, outcome: 'PEND' },
+  { p: '0–0–0', label: 'Total veto', desc: 'All three personalities vetoed all candidates → B2 cascade, then PEND.', conf: null, outcome: 'Round 2 → PEND' },
 ];
 
 function TriasSection() {
@@ -78,6 +78,13 @@ function TriasSection() {
         </Collapsible>
 
         <div className="note" style={{ marginTop: 28 }}>
+          <span className="note__label">Deadlock cascade — 1-1-1 / 0-0-0</span>
+          <span>
+            A true tie doesn't resolve to a "senior" personality — it escalates. <strong>Round 2</strong> re-dispatches all three personalities (+3 sub-agents), each now seeing the other two's Round-1 pick and reasoning. If they still split 1-1-1, a single <strong>Skeptic</strong> tiebreaker (+1 sub-agent) selects the winner; <code>0-0-0</code> — everyone vetoed everything — falls straight through to <strong>PEND</strong>. That path is the worst-case cost of <strong>7 sub-agents</strong> (3 + Round 2's 3 + 1 Skeptic). In practice it is rare: <strong>4 of 37</strong> Trias runs reached a 1-1-1 deadlock (≈11%), and ≈51% were non-unanimous — measured by <code>scripts/vote_degeneracy.py</code>.
+          </span>
+        </div>
+
+        <div className="note" style={{ marginTop: 16 }}>
           <span className="note__label">Aggregate bias</span>
           <span>
             Mean weights across the three personalities: <VToken v="gen">Generator 0.363</VToken>, <VToken v="ctl">Control 0.333</VToken>, <VToken v="con">Conservator 0.303</VToken>. Compared to a balanced 0.333, the team tilts <strong>slightly toward exploration</strong>. Trias costs 3× Sequential — use only when the cost of a wrong decision dominates the cost of running 9 voice invocations.

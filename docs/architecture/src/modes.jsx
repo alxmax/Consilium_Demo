@@ -32,7 +32,7 @@ const MODES = [
     plain: 'Three independent Claude sub-agents each run the full Sequential pipeline. Each has a different personality (bold / structural / protective). Their three answers go to a democratic vote.',
     desc: 'Three sub-agents, one per personality lens (Pioneer / Architect / Steward). Each runs Sequential internally with its lens prepended to the system prompt. Each returns a chosen answer. A simple majority vote decides the winner — 3-0 / 2-1 / 2-0. (Spec mandates parallel dispatch; in practice the runtime dispatches them serially — see the Trias parallelism audit, check_trias_parallelism.py.)',
     use: 'highest-stakes — DB migrations, security, large refactors',
-    cost: '3× (3 sub-agents, Sequential each)',
+    cost: '3× · worst case 7 sub-agents (1-1-1 → Round 2 → Skeptic)',
     isolation: 'sub-agent per personality + strip per voice inside',
     voices: '3× (Cons · Gen · Ctrl)',
     subagents: '3 (1 per personality)',
