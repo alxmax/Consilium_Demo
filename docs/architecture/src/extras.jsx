@@ -104,10 +104,10 @@ function CostScatter() {
   // x = independence (0 = shared context, 1 = full sub-agent isolation)
   // y = cost multiplier of Sequential
   const MODES_PLOT = [
-    { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', model: 'Sonnet', sub: 'default · 0 sub-agents', color: 'var(--con)' },
-    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic', cost: '1.33×', model: 'Sonnet', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
-    { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
-    { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
+    { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', model: 'Sonnet 4.6', sub: 'default · 0 sub-agents', color: 'var(--con)' },
+    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic', cost: '1.33×', model: 'Sonnet 4.6', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
+    { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet 4.6', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
+    { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet 4.6', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
   ];
 
   const W = 720, H = 360;
@@ -490,7 +490,7 @@ function ImplementSection() {
       name: 'Coder',
       color: 'var(--gen)',
       lane: 'implementation files',
-      model: 'Sonnet',
+      model: 'Sonnet 4.6',
       desc: 'Reads chosen_approach + success_criterion. Writes all implementation files. Returns a strict JSON manifest. Skipped if chosen_approach is do_nothing or skipped.',
     },
     {
@@ -498,7 +498,7 @@ function ImplementSection() {
       name: 'Test Writer',
       color: 'var(--ctl)',
       lane: 'test_* files only',
-      model: 'Sonnet',
+      model: 'Sonnet 4.6',
       desc: 'Runs in parallel with Reviewer. Reads spec + files_written. Writes test_* files only. Tests must be RED against a stub and GREEN against the implementation (red→green gate).',
     },
     {
@@ -506,7 +506,7 @@ function ImplementSection() {
       name: 'Reviewer',
       color: 'var(--con)',
       lane: 'read-only',
-      model: 'Sonnet',
+      model: 'Sonnet 4.6',
       desc: 'Runs in parallel with Test Writer. Inlines prompts/voices/control.md against the actual written code as a single synthetic candidate. Goal-fit → types → logic → tests → style. Writes nothing.',
     },
   ];
