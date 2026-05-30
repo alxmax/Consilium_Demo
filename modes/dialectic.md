@@ -8,7 +8,7 @@ dispatch_count: 4
 description: Sequential + 1 Skeptic sub-agent. Code-specialized context injection. Opt-in.
 ---
 
-# Dialectic mode — V2 (opt-in, code-specialized)
+# Dialectic mode (opt-in)
 
 **Mechanics:** Standard Sequential (Conservator→Generator→Control) with code-specific context injected into the voice inputs, followed by `skeptic_on_chosen`. Cost: 1.33× Sequential (1× Sequential + 1/3 for Skeptic sub-agent). No new prompt files — context is injected via the voice input fields.
 

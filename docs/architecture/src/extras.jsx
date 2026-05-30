@@ -105,7 +105,7 @@ function CostScatter() {
   // y = cost multiplier of Sequential
   const MODES_PLOT = [
     { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', model: 'Sonnet', sub: 'default · 0 sub-agents', color: 'var(--con)' },
-    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic V2', cost: '1.33×', model: 'Sonnet', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
+    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic', cost: '1.33×', model: 'Sonnet', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
     { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
     { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
   ];
@@ -185,7 +185,7 @@ function CostScatter() {
 function CostBars() {
   const ROWS = [
     { name: 'sequential', cost: 1.0, label: '1×', sub: 'default', color: 'var(--con)', subagents: 0 },
-    { name: 'dialectic V2', cost: 1.33, label: '1.33×', sub: 'seq + skeptic', color: 'var(--ctl)', subagents: 1 },
+    { name: 'dialectic', cost: 1.33, label: '1.33×', sub: 'seq + skeptic', color: 'var(--ctl)', subagents: 1 },
     { name: 'parallel', cost: 3.0, label: '3× (auto)', sub: 'auto-only', color: 'var(--gen)', subagents: 3 },
     { name: 'trias', cost: 3.0, label: '3×', sub: '3 sub-agents', color: 'oklch(0.55 0.16 320)', subagents: 3 },
   ];
