@@ -57,6 +57,8 @@ The last step activates the included `.githooks/pre-push` hook, which blocks dir
 
 Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
 
+> **Distribution:** manual install is the supported path — Consilium is not available as a package or marketplace plugin.
+
 ## Example
 
 Consilium reviews its own changes. Here's a **real run from this repo's history** — asking it to evaluate a three-bug fix. It prints one terminal line:
@@ -83,6 +85,31 @@ and writes a canonical JSON report to disk (string fields trimmed for length, al
 ```
 
 The chosen approach beat `do_nothing` and a plausible-but-weaker alternative — and the rejected options stay on record *with the reason they lost*. Confidence `0.57` is below the Sequential floor (`0.70`), so a Skeptic sub-agent auto-fires on the chosen answer before the result is trusted. Every run lands in `.consilium/runs/` (local, gitignored) and feeds the priors of the next deliberation.
+
+## Pipeline trace
+
+Every run records its executed path. `trace_graph.py` reads a `.consilium/runs/` report and emits a Mermaid flowchart of what actually fired — which steps ran, which short-circuited, and how sub-agents were dispatched:
+
+```bash
+python scripts/trace_graph.py --input .consilium/runs/<file>.json --fence
+```
+
+Here is the trace for the run shown above (`fix_canonical`, Sequential mode):
+
+```mermaid
+flowchart TD
+  CON["Conservator<br/>risk assessment"]
+  GEN["Generator<br/>candidates"]
+  CTRL["Control<br/>verdicts"]
+  AGG["aggregate<br/>chosen: fix_canonical"]
+  REP["report"]
+  CON --> GEN
+  GEN --> CTRL
+  CTRL --> AGG
+  AGG --> REP
+```
+
+GitHub renders Mermaid natively — paste the `--fence` output directly into any `.md` file.
 
 ## Structure
 
