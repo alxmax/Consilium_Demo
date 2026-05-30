@@ -111,6 +111,41 @@ function EfficiencySection() {
           ))}
         </div>
 
+        <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginTop: 40, marginBottom: 4 }}>Base model — Sonnet vs Opus (measured cost)</h3>
+        <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 760 }}>
+          In Sequential mode the voices run <em>in-context</em>, so they inherit the session model — which lets us measure the base-model cost directly. Three reasoning tasks, real <code>total_cost_usd</code> from the benchmark harness, captured 2026-05-30:
+        </p>
+        <table style={{ width: '100%', maxWidth: 620, borderCollapse: 'collapse', fontSize: 13, fontFamily: 'var(--font-mono)' }}>
+          <thead>
+            <tr>
+              {['task', 'Sonnet', 'Opus', 'Opus ÷ Sonnet'].map((h, i) => (
+                <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '6px 16px 6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { task: 'transport_choice', s: '$0.078', o: '$0.428', r: '5.5×' },
+              { task: 'rule_of_three', s: '$0.114', o: '$0.559', r: '4.9×' },
+              { task: 'binary_search_bug', s: '$0.152', o: '$0.517', r: '3.4×' },
+              { task: 'mean', s: '$0.11', o: '$0.50', r: '~4.4×', bold: true },
+            ].map((row) => (
+              <tr key={row.task} style={{ fontWeight: row.bold ? 600 : 400, background: row.bold ? 'var(--paper-2)' : 'transparent' }}>
+                <td style={{ textAlign: 'left', padding: '8px 16px 8px 0', borderBottom: '1px solid var(--rule)', color: 'var(--ink)' }}>{row.task}</td>
+                <td style={{ textAlign: 'right', padding: '8px 16px 8px 0', borderBottom: '1px solid var(--rule)', color: 'var(--ctl-ink)' }}>{row.s}</td>
+                <td style={{ textAlign: 'right', padding: '8px 16px 8px 0', borderBottom: '1px solid var(--rule)', color: 'var(--con-ink)' }}>{row.o}</td>
+                <td style={{ textAlign: 'right', padding: '8px 16px 8px 0', borderBottom: '1px solid var(--rule)', color: 'var(--ink)' }}>{row.r}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="note" style={{ marginTop: 16 }}>
+          <span className="note__label">Why this justifies the Sonnet pin</span>
+          <span>
+            Opus costs <strong>~4–5×</strong> per Sequential deliberation and emits <strong>~2× more</strong> reasoning tokens — but that extra reasoning rarely changes the verdict, so the marginal gain doesn’t justify 5× the bill. That measured gap is exactly why the dispatched voices are pinned to Sonnet. <em>Caveats:</em> n=3 reasoning tasks, Sequential only (Dialectic/Trias keep their sub-agents on Sonnet regardless of the session); this is measured <em>cost</em>, not graded quality; and the Opus runs were cache-cold, so the dollar ratio is an upper bound — the ~2× output-token gap is the cleaner model-behaviour signal.
+          </span>
+        </div>
+
         <div style={{ marginTop: 20, padding: '20px 24px', background: 'var(--paper-2)', border: '1px solid var(--rule)', borderRadius: 4 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 12 }}>Reproduce / live data</div>
           <code style={{ display: 'block', fontSize: 12, fontFamily: 'var(--font-mono)', lineHeight: 1.8, color: 'var(--ink)' }}>
