@@ -10,7 +10,7 @@ const SCHEMES = [
   {
     id: 'majority',
     name: 'majority',
-    sub: 'mean of all three (treats risk as utility — historical bug)',
+    sub: 'mean of all three voices, no risk flip (treats risk as utility)',
     veto: false,
   },
   {
@@ -158,7 +158,7 @@ function VotingSection() {
             <div className="note" style={{ marginTop: 24 }}>
               <span className="note__label">Why the default is conservative_override</span>
               <span>
-                The naive <code>majority</code> and <code>weighted</code> schemes treat the Conservator score as utility — higher = better. That picks the <em>riskier</em> candidate. Only schemes that flip risk into safety (<code>1 − k</code>) give the intuitive verdict.
+                The naive <code>majority</code> scheme treats the Conservator score as utility — higher = better — which picks the <em>riskier</em> candidate. Only the schemes that flip risk into safety (<code>1 − k</code>), i.e. <code>conservative_override</code> and <code>risk_adjusted_utility</code>, give the intuitive verdict.
               </span>
             </div>
           </div>

@@ -50,7 +50,7 @@ function LoopDiagram() {
       {[
         { x: 30,  title: 'Deliberation', sub: 'voices · steps 1 → 5', code: '' },
         { x: 280, title: 'Report', sub: 'step 6 · canonical JSON', code: 'build_report.py · validate_report.py' },
-        { x: 530, title: 'FEEDBACK.md', sub: 'append-only outcome log', code: 'OK / OVR / PEND / BAD' },
+        { x: 530, title: 'FEEDBACK.html', sub: 'append-only outcome log', code: 'OK / OVR / PEND / BAD' },
         { x: 780, title: 'Priors', sub: 'soft priors for next run', code: 'priors.py' },
       ].map((s, i) => (
         <g key={i}>
@@ -81,7 +81,7 @@ function LoopDiagram() {
 
       {/* Stale pendings side note */}
       <text x="970" y="240" textAnchor="end" className="d-faint" style={{ fontSize: 10 }}>
-        stale_pendings (PEND &gt; 7 days) surfaced before next step 1
+        stale_pendings (PEND &gt; 2 days) surfaced before next step 1
       </text>
 
       {/* Pretty side label */}

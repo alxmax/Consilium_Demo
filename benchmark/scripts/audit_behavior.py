@@ -162,8 +162,8 @@ def _session_dir_for_workspace(workspace: Path) -> Path:
 
     Convention observed across `~/.claude/projects/`: drive colon, path
     separators, AND underscores all become `-`. So
-    `C:\\Users\\ALEX\\…\\01_circuit_breaker` becomes
-    `C--Users-ALEX-…-01-circuit-breaker`. Verified empirically.
+    `C:\\Users\\<user>\\…\\01_circuit_breaker` becomes
+    `C--Users-<user>-…-01-circuit-breaker`. Verified empirically.
     """
     slug = str(workspace.resolve())
     for ch in (":", "\\", "/", "_"):

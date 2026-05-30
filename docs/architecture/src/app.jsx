@@ -144,7 +144,7 @@ function Topbar() {
       </div>
       <a
         className="topbar__repo"
-        href="https://github.com/alxmax/Consilium_Demo"
+        href="https://github.com/alxmax/Consilium"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -169,7 +169,7 @@ function Hero() {
           <span className="hero__dot" />
           <span>CLAUDE CODE SKILL</span>
           <span style={{ opacity: 0.4 }}>·</span>
-          <span>v1.01 · 2026</span>
+          <span>2026</span>
         </div>
         <h1 className="h-display">
           A second opinion,
@@ -184,8 +184,8 @@ function Hero() {
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--gen)' }} />Generator</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--ctl)' }} />Control</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'oklch(0.55 0.16 320)' }} />Skeptic</span>
-          <span className="chip">5 modes</span>
-          <span className="chip">3 voting schemes</span>
+          <span className="chip">3 modes + 1 flag + 1 auto</span>
+          <span className="chip">3 score-combination schemes</span>
           <span className="chip">8-component cascade</span>
           <span className="chip">self-calibrating</span>
         </div>

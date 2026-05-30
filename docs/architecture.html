@@ -4203,10 +4203,10 @@ function CostScatter() {
   // x = independence (0 = shared context, 1 = full sub-agent isolation)
   // y = cost multiplier of Sequential
   const MODES_PLOT = [
-    { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', model: 'Sonnet 4.6', sub: 'default · 0 sub-agents', color: 'var(--con)' },
-    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic V2', cost: '1.33×', model: 'Sonnet 4.6', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
-    { id: 'PAR',  x: 0.85, y: 1.00, label: 'Parallel*', cost: '1× (auto)', model: 'Sonnet 4.6', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
-    { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet 4.6', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
+    { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', model: 'Sonnet', sub: 'default · 0 sub-agents', color: 'var(--con)' },
+    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic V2', cost: '1.33×', model: 'Sonnet', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
+    { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
+    { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
   ];
 
   const W = 720, H = 360;
@@ -4221,7 +4221,7 @@ function CostScatter() {
     <div style={{ margin: '24px 0' }}>
       <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6 }}>Cost vs voice independence</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 720 }}>
-        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices run on <strong>Sonnet 4.6</strong>; the orchestrator runs on <strong>Opus 4.7</strong> (with an opt-in Opus override on the Generator for high-stakes changes).
+        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices run on <strong>Sonnet</strong>; the orchestrator runs on <strong>Opus</strong> (with an opt-in Opus override on the Generator for high-stakes changes).
       </p>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="diagram">
@@ -4356,7 +4356,7 @@ public:
     bool is_open() const;
     State state() const;
 };`,
-    grading: 'Header compiles + self-test suite (tests_self.cpp) returns exit 0.',
+    grading: 'Two-phase: the model\'s own tests_self.cpp (~20 pts) plus a hidden suite it never sees, compiled against a reference solution (~40 pts). Both must compile and exit 0; the hidden suite carries most of the weight.',
   },
   {
     id: 'rule_of_three',
@@ -4392,8 +4392,8 @@ Pick one. Justify.`,
 ];
 
 const MODES_TESTED = [
-  { id: 'opus_bare',     name: 'opus_bare',          tag: 'baseline', desc: 'Single Opus invocation, no orchestration.' },
-  { id: 'superpowers',   name: 'superpowers',        tag: 'baseline', desc: 'Opus + tool harness, no Consilium.' },
+  { id: 'sonnet_bare',   name: 'sonnet_bare',        tag: 'baseline', desc: 'Single Sonnet invocation, no orchestration.' },
+  { id: 'superpowers',   name: 'superpowers',        tag: 'baseline', desc: 'Sonnet + tool harness, no Consilium.' },
   { id: 'seq',           name: 'consilium_sequential', tag: 'consilium', desc: 'Default mode — 3 voices in single context.' },
   { id: 'dial',          name: 'consilium_dialectic', tag: 'consilium', desc: 'Sequential + Skeptic sub-agent on chosen.' },
   { id: 'tri',           name: 'consilium_trias',    tag: 'consilium', desc: '3 personalities, each runs Sequential = 3 sub-agents.' },
@@ -4410,13 +4410,13 @@ function BenchmarkSection() {
           num="09"
           eyebrow="Benchmark"
           title="How the modes are tested."
-          lede="A local harness runs each Consilium mode against three tasks via Claude Code in headless mode. Each call is fire-and-forget; an automated verifier grades the output. No browser, no user input, no interactive prompts."
+          lede="A local harness runs each Consilium mode against twelve tasks via Claude Code in headless mode — three representative tasks are shown below. Each call is fire-and-forget; an automated verifier grades the output. No browser, no user input, no interactive prompts."
         />
 
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Three problems. Five modes per problem. Each run is sandboxed in its own workspace. The model has 15 minutes, no internet, no access to answer keys — solve from first principles or fail. Cost, correctness, and a self-estimate calibration score are all recorded.</p>
+            <p>Twelve problems. Five modes per problem — 60 runs (three representative problems shown below). Each run is sandboxed in its own workspace. The model has 15 minutes, no internet, no access to answer keys — solve from first principles or fail. Cost, correctness, and a self-estimate calibration score are all recorded.</p>
           </div>
         </div>
 
@@ -4430,11 +4430,12 @@ function BenchmarkSection() {
         }}>
           <StatCell label="Model" value="Sonnet 4.6" sub="--effort high" />
           <StatCell label="Time limit" value="15 min" sub="API wall-clock" />
-          <StatCell label="Budget" value="$1.50" sub="$3.00 multi-agent" />
+          <StatCell label="Budget" value="$3.00" sub="uniform per task" />
           <StatCell label="Isolation" value="workspace/" sub="sibling folders blocked" />
         </div>
 
         <h3 className="h-sub" style={{ fontSize: 20 }}>Tasks</h3>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', margin: '4px 0 0' }}>Three of the twelve shown — one Code task and two Reasoning tasks.</p>
         <div className="bench-tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '14px 0 16px' }}>
           {BENCH_TASKS.map((t) => (
             <button
@@ -4551,7 +4552,7 @@ function BenchmarkSection() {
         <div className="note" style={{ marginTop: 24 }}>
           <span className="note__label">Status</span>
           <span>
-            Full benchmark in progress. Per-task and per-mode scores will be published once all five modes have completed each task. Early signal: <strong>sequential</strong> baselines around opus_bare on reasoning tasks, while <strong>trias</strong> shows the largest gains on tasks with implicit constraints (Rule of Three, Transport Choice).
+            Full benchmark in progress. Per-task and per-mode scores will be published once all five modes have completed each task. Early signal: <strong>sequential</strong> baselines around sonnet_bare on reasoning tasks, while <strong>trias</strong> shows the largest gains on tasks with implicit constraints (Rule of Three, Transport Choice).
           </span>
         </div>
       </div>
@@ -4588,7 +4589,7 @@ function ImplementSection() {
       name: 'Coder',
       color: 'var(--gen)',
       lane: 'implementation files',
-      model: 'Sonnet 4.6',
+      model: 'Sonnet',
       desc: 'Reads chosen_approach + success_criterion. Writes all implementation files. Returns a strict JSON manifest. Skipped if chosen_approach is do_nothing or skipped.',
     },
     {
@@ -4596,7 +4597,7 @@ function ImplementSection() {
       name: 'Test Writer',
       color: 'var(--ctl)',
       lane: 'test_* files only',
-      model: 'Sonnet 4.6',
+      model: 'Sonnet',
       desc: 'Runs in parallel with Reviewer. Reads spec + files_written. Writes test_* files only. Tests must be RED against a stub and GREEN against the implementation (red→green gate).',
     },
     {
@@ -4604,14 +4605,14 @@ function ImplementSection() {
       name: 'Reviewer',
       color: 'var(--con)',
       lane: 'read-only',
-      model: 'Sonnet 4.6',
+      model: 'Sonnet',
       desc: 'Runs in parallel with Test Writer. Inlines prompts/voices/control.md against the actual written code as a single synthetic candidate. Goal-fit → types → logic → tests → style. Writes nothing.',
     },
   ];
 
   const GATE_ITEMS = [
     { label: 'Status', value: 'default for regression-risk', note: 'promoted 2026-05-25 (user decision)' },
-    { label: 'Model', value: 'Sonnet 4.6 sub-agents', note: 'Coder · Test Writer · Reviewer all on Sonnet 4.6' },
+    { label: 'Model', value: 'Sonnet sub-agents', note: 'Coder · Test Writer · Reviewer all on Sonnet' },
     { label: 'Routing', value: 'pipeline vs single-shot', note: 'regression-risk → pipeline; greenfield → single-shot' },
     { label: 'Promotion gate', value: '≥2/3 wins', note: 'criterion not met — promoted anyway' },
     { label: 'Signal (R1+R2)', value: 'n=6: 1 win / 5 ties / 0 losses', note: 'pipeline vs single-shot — both Sonnet 4.6 (see experiments/pipeline-bench/)' },
@@ -4790,7 +4791,7 @@ function VoicesSection() {
             </ul>
             <div className="voice-card__io">
               <div><span className="io-tag">in</span> diff + context</div>
-              <div><span className="io-tag">out</span> {`{ risk_score, tokens_budget, meta_recommendation }`}</div>
+              <div><span className="io-tag">out</span> {`{ regression_risk{ net_concern }, tokens_budget, meta_recommendation }`}</div>
             </div>
           </article>
 
@@ -4824,7 +4825,7 @@ function VoicesSection() {
             </div>
             <p className="voice-card__mantra">"Pedantic, not pessimistic. Verify, don't speculate. Concrete over abstract."</p>
             <ul className="voice-card__list">
-              <li>Per-candidate: types → logic → tests → style</li>
+              <li>Per-candidate: goal-fit → types → logic → tests → style</li>
               <li>Writes <code>tests_to_write</code> for every <code>valid:true</code></li>
               <li>Raises <code>disagreements</code> if it spots a substantive gap</li>
             </ul>
@@ -4847,11 +4848,11 @@ function VoicesSection() {
               </div>
             </div>
             <p className="skeptic-card__desc">
-              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.5, 0.7]</code>. Sees <strong>only the chosen answer</strong> — never the candidates, never the verdicts — and tries to find a concrete failure scenario.
+              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.0, 0.7]</code>. Sees <strong>only the chosen answer</strong> — never the candidates, never the verdicts — and tries to find a concrete failure scenario.
             </p>
             <div className="skeptic-card__io">
               <div><span className="io-tag">in</span> chosen approach + context</div>
-              <div><span className="io-tag">out</span> {`{ can_object, concrete_concerns[], failure_mode, addressable }`}</div>
+              <div><span className="io-tag">out</span> {`{ can_object, objection: { concrete_concerns[], failure_mode, addressable }, notes }`}</div>
               <div><span className="io-tag">mode</span> advisory by default · <code>--skeptic-can-override</code> for veto</div>
             </div>
           </div>
@@ -4921,7 +4922,7 @@ const CASCADE_ROWS = [
     sourceName: 'Conservator',
     outcome: 'ADAPT_SHORT',
     outcomeKind: 'adapt',
-    action: 'Short path — max 2 candidates, 2-sentence output.',
+    action: 'Short-circuit — skip Generator and Control; emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed: false).',
   },
   {
     trigger: 'meta_recommendation: scale_up',
@@ -4957,7 +4958,7 @@ function CascadeSection() {
           num="05"
           eyebrow="Aggregation routing"
           title="Before voting: an eight-component cascade."
-          lede="The aggregator first checks for triggers that should short-circuit the vote — irreversibility, fundamental disagreement, scope mismatches. Only when nothing fires does the actual aggregation run."
+          lede="The aggregator first checks for triggers that should short-circuit the vote — irreversibility, fundamental disagreement, scope mismatches. Only when nothing fires does the actual aggregation run. The eight design components compile into the seven routing outcomes below — the table lists those outcomes, not the components."
         />
 
         <div className="tldr">
@@ -5057,7 +5058,7 @@ function TwoLayerSection() {
             <div className="two-layer__tag">LAYER 1</div>
             <h3 className="two-layer__name">Deliberation</h3>
             <p className="two-layer__desc">
-              Runs on every user question. The three voices process the change in sequence (Conservator → Generator → Control) inside a single context, with <code>strip_context.py</code> minimizing what each downstream voice sees from the upstream one.
+              Runs on every user question. The three voices process the change in sequence (Conservator → Generator → Control) inside a single context, with <code>strip_context.py</code> projecting the Generator's candidates down to id/summary/sketch before Control sees them — minimizing cross-voice contamination.
             </p>
             <div className="two-layer__bits">
               <div className="two-layer__bit">3 voices, run in fixed order</div>
@@ -5097,7 +5098,7 @@ const STEPS = [
   {
     id: '0', name: 'bootstrap',
     title: 'Bootstrap',
-    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — override rate, veto rate, recurring keywords, pending entries. Three signals can block until resolved: stale_pendings, missing_feedback_runs, pend_pressure.',
+    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — override rate, veto rate, recurring keywords, pending entries. Two signals can block until resolved (stale_pendings, missing_feedback_runs); a third, pend_pressure, is only a soft alert — recorded, never blocking.',
     plain: 'Wakes up. Reads each voice\'s job description and checks what worked last time.',
     inputs: ['prompts/voices/*.md', 'runs/*.json', 'FEEDBACK.html'],
     outputs: ['soft priors', 'stale_pendings prompt?'],
@@ -5127,7 +5128,7 @@ const STEPS = [
     desc: 'Runs FIRST in RUND2. Answers Q1–Q5: reversibility, magnitude, counterparty risks, status-quo bias, meta_recommendation. Its tokens_budget output caps how deep Generator and Control go. irreversibility_flag:true halts the pipeline until the user explicitly confirms.',
     plain: 'The cautious one. Sizes up the risk before anyone proposes anything, and sets a token budget for the others.',
     inputs: ['diff + context'],
-    outputs: ['risk_score', 'tokens_budget', 'meta_recommendation', 'irreversibility_flag'],
+    outputs: ['regression_risk.net_concern', 'tokens_budget', 'meta_recommendation', 'irreversibility_flag'],
     scripts: ['probe_change.py'],
     voice: 'con',
   },
@@ -5144,7 +5145,7 @@ const STEPS = [
   {
     id: '4', name: 'control',
     title: 'Control',
-    desc: 'Per candidate: types → logic → tests → style. Writes tests_to_write for every valid:true (1–4 acceptance tests). Receives the full Conservator and Generator outputs so it can spot disagreements.',
+    desc: 'Per candidate: goal-fit (fail-fast) → types → logic → tests → style. Writes tests_to_write for every valid:true (1–4 acceptance tests). Receives the full Conservator and Generator outputs so it can spot disagreements.',
     plain: 'The technical checker. Marks each candidate valid or not, writes the tests it should pass.',
     inputs: ['candidates', 'Conservator output (full)'],
     outputs: ['verdicts[]', 'glossary', 'disagreements'],
@@ -5163,7 +5164,7 @@ const STEPS = [
   {
     id: '5b', name: 'confidence',
     title: 'Confidence',
-    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. A run below floor signals the mode did not deliver value for the cost — logged as WEAK in FEEDBACK.html. ≥ 0.7 → continue. ∈ [0.5, 0.7] → auto-triggers Skeptic (if mode supports it). < 0.5 → retry context, then ask user.',
+    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. A run below floor signals the mode did not deliver value for the cost — logged as WEAK in FEEDBACK.html. ≥ 0.7 → continue. < 0.7 (i.e. ∈ [0.0, 0.7]) → auto-triggers the Skeptic (if the mode supports it) and runs the single retry-context pass (Step 5d); if still < 0.7, ask the user.',
     plain: 'How sure are the voices? Each mode has a confidence floor it should clear — if it doesn\'t, that\'s a signal the mode was wrong for this task.',
     inputs: ['ranking', 'voice variances', 'mode'],
     outputs: ['confidence ∈ [0, 1]', 'below_floor: bool'],
@@ -5429,7 +5430,7 @@ const SCHEMES = [
   {
     id: 'majority',
     name: 'majority',
-    sub: 'mean of all three (treats risk as utility — historical bug)',
+    sub: 'mean of all three voices, no risk flip (treats risk as utility)',
     veto: false,
   },
   {
@@ -5577,7 +5578,7 @@ function VotingSection() {
             <div className="note" style={{ marginTop: 24 }}>
               <span className="note__label">Why the default is conservative_override</span>
               <span>
-                The naive <code>majority</code> and <code>weighted</code> schemes treat the Conservator score as utility — higher = better. That picks the <em>riskier</em> candidate. Only schemes that flip risk into safety (<code>1 − k</code>) give the intuitive verdict.
+                The naive <code>majority</code> scheme treats the Conservator score as utility — higher = better — which picks the <em>riskier</em> candidate. Only the schemes that flip risk into safety (<code>1 − k</code>), i.e. <code>conservative_override</code> and <code>risk_adjusted_utility</code>, give the intuitive verdict.
               </span>
             </div>
           </div>
@@ -5599,7 +5600,7 @@ const MODES = [
     name: 'Sequential — blind',
     tag: 'DEFAULT',
     plain: 'One Claude turn plays all three voices in order, in the same context. A small script strips each voice\'s output before passing it to the next — so each voice sees only what it needs.',
-    desc: 'A single Claude turn plays Conservator → Generator → Control sequentially. Between voices, scripts/strip_context.py removes everything they don\'t need: Generator receives only Conservator\'s budget and magnitude, Control receives candidates without their rationale.',
+    desc: 'A single Claude turn plays Conservator → Generator → Control sequentially. Between voices, scripts/strip_context.py removes everything they don\'t need: Generator receives only Conservator\'s magnitude, counterparty_risks, and tokens_budget, Control receives candidates without their rationale.',
     use: 'most deliberations — fast, with a chinese wall via context stripping',
     cost: '1× (baseline)',
     isolation: 'context strip',
@@ -5635,9 +5636,9 @@ const MODES = [
     name: 'Skeptic-on-chosen',
     tag: 'FLAG',
     plain: 'A composable flag, not a standalone mode. Adds one Skeptic sub-agent to any base mode that challenges the chosen answer after aggregation. Auto-fires when the system isn\'t sure.',
-    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.5, 0.7]. Manual trigger: --skeptic-on-chosen.',
+    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.0, 0.7]. Manual trigger: --skeptic-on-chosen.',
     use: 'whenever you want a focal challenger post-hoc',
-    cost: '+1× over base mode',
+    cost: 'base +1 (≈1.33× of a 3-voice base)',
     isolation: '+1 isolated Skeptic',
     voices: 'base + Skeptic',
     subagents: '+1',
@@ -5713,7 +5714,7 @@ const WALKTHROUGHS = {
         nodes: { orch: 'done', p1: 'active', p2: 'active', p3: 'active', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
       { id: '4', name: 'chosen', caption: 'Each personality returns its own chosen answer.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'active' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote'] },
-      { id: '5', name: 'tally', caption: 'Democratic vote tally. 3-0 → confidence 0.95. 2-1 → 0.70. 1-1-1 → PEND + escalate.',
+      { id: '5', name: 'tally', caption: 'Democratic vote tally. 3-0 → confidence 0.95. 2-1 → 0.75. 2-0 → 0.70. 1-1-1 → PEND + escalate.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'active' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote'] },
       { id: '6', name: 'done', caption: 'Winner declared. Dissent (if any) logged for human review.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'done' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote', 'vote_out'] },
@@ -5727,7 +5728,7 @@ const WALKTHROUGHS = {
         nodes: { base: 'active', conf: 'idle', skp: 'idle', out: 'idle' }, arrows: [] },
       { id: '2', name: 'confidence', caption: 'Confidence gate checks the score after aggregation.',
         nodes: { base: 'done', conf: 'active', skp: 'idle', out: 'idle' }, arrows: ['base_conf'] },
-      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.5, 0.7] — the uncertainty band — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
+      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.0, 0.7] — below the trust floor — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
       { id: '4', name: 'skeptic', caption: 'Skeptic receives only the chosen answer — never candidates, never verdicts. Tries to find a concrete failure mode.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
@@ -5758,7 +5759,7 @@ const WALKTHROUGHS = {
       { id: '5', name: 'aggregate', caption: 'Aggregator applies the cascade and conservative_override scheme over the three outputs.',
         nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl', 'cons_agg', 'ctl_agg'] },
       { id: '6', name: 'done', caption: 'Winner chosen. Also fires as a silent audit every 20 Sequential runs (1/5 in HOT mode after ≥2 divergences in the last 5 audits) — implemented in scripts/audit_counter.py, state in .consilium/audit_state.json.',
-        nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_cons', 'orch_gen', 'orch_ctl', 'cons_agg', 'gen_agg', 'ctl_agg', 'agg_out'] },
+        nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl', 'cons_agg', 'gen_agg', 'ctl_agg', 'agg_out'] },
     ],
   },
 };
@@ -6187,7 +6188,7 @@ function StageSkeptic({ step }) {
         <rect x="250" y="225" width="65" height="14" fill="oklch(0.92 0.06 5)" stroke="oklch(0.6 0.15 5)" rx="2" />
         <rect x="315" y="225" width="33" height="14" fill="oklch(0.93 0.07 60)" stroke="oklch(0.6 0.14 60)" rx="2" />
         <rect x="348" y="225" width="32" height="14" fill="oklch(0.94 0.05 150)" stroke="oklch(0.55 0.12 150)" rx="2" />
-        <text x="315" y="252" textAnchor="middle" className="d-faint" style={{ fontSize: 8 }}>0.5 — uncertain — 0.7</text>
+        <text x="315" y="252" textAnchor="middle" className="d-faint" style={{ fontSize: 8 }}>0.0 — uncertain — 0.7</text>
       </g>
 
       <WVoice x={460} y={130} v="skp" state={ns.skp} label="Skeptic" dashed w={140} h={50} />
@@ -6197,7 +6198,7 @@ function StageSkeptic({ step }) {
 
       <WArrow d="M 180 160 L 250 160" state={has('base_conf') ? 'done' : 'idle'} />
       <WArrow d="M 380 160 L 458 154" state={has('conf_skp') ? (ns.skp === 'active' ? 'active' : 'done') : 'idle'} dashed
-        label="conf ∈ [0.5, 0.7]" labelX={420} labelY={138} />
+        label="conf ∈ [0.0, 0.7]" labelX={420} labelY={138} />
       <WArrow d="M 600 154 L 620 154" state={has('skp_out') ? 'done' : 'idle'} />
     </svg>
   );
@@ -6235,9 +6236,9 @@ function StageParallel({ step }) {
 
       <text x={390} y={36} textAnchor="middle" className="d-faint" style={{ fontSize: 8 }}>isolated context windows</text>
 
-      <WArrow d="M 260 164 C 290 164, 290 72, 328 72" state={has('orch_cons') ? (ns.cons === 'active' ? 'active' : 'done') : 'idle'} dashed />
       <WArrow d="M 260 164 L 328 158" state={has('orch_gen') ? (ns.gen === 'active' ? 'active' : 'done') : 'idle'} dashed />
-      <WArrow d="M 260 164 C 290 164, 290 244, 328 244" state={has('orch_ctl') ? (ns.ctl === 'active' ? 'active' : 'done') : 'idle'} dashed />
+      <WArrow d="M 390 134 L 390 100" state={has('gen_cons') ? (ns.cons === 'active' ? 'active' : 'done') : 'idle'} dashed />
+      <WArrow d="M 390 184 L 390 218" state={has('gen_ctl') ? (ns.ctl === 'active' ? 'active' : 'done') : 'idle'} dashed />
 
       <WBox x={510} y={140} w={90} h={48} title="aggregate" state={ns.agg} fill="var(--paper-2)" />
 
@@ -6285,8 +6286,10 @@ const LENSES = [
 const TRIAS_OUTCOMES = [
   { p: '3–0', label: 'Unanimous', desc: 'All three personalities picked the same.', conf: 0.95, outcome: 'OK auto' },
   { p: '2–1', label: 'Majority + dissent', desc: 'One personality prefers a different candidate; dissent logged.', conf: 0.75, outcome: 'OK auto' },
-  { p: '2–0', label: 'Majority + abstention', desc: 'One personality vetoed all (chosen = null).', conf: 0.70, outcome: 'OK auto' },
+  { p: '2–0', label: 'Majority + abstention', desc: 'One personality abstained — its own chose=null (all its candidates vetoed); the two agreeing personalities still elect a winner.', conf: 0.70, outcome: 'OK auto' },
   { p: '1–1–1', label: 'Fragmented', desc: 'Three distinct chosen results · no consensus.', conf: null, outcome: 'PEND · escalate' },
+  { p: '1–1–0', label: 'Split + abstention', desc: 'Two distinct chosen results · one personality vetoed all.', conf: null, outcome: 'PEND · escalate' },
+  { p: '1–0–0', label: 'Lone vote + 2 abstentions', desc: 'One chosen result · two personalities vetoed all.', conf: null, outcome: 'PEND · escalate' },
   { p: '0–0–0', label: 'Total veto', desc: 'All three personalities vetoed all candidates.', conf: null, outcome: 'PEND · retry_suggested' },
 ];
 
@@ -6322,7 +6325,7 @@ function TriasSection() {
 
         <h3 className="h-sub" style={{ marginTop: 40 }}>Lazy routing — when Trias auto-downgrades</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', marginBottom: 22 }}>
-          Trias costs 3× Sequential. To avoid the bill on changes that don't need it, the orchestrator checks magnitude via <code>scope_gate.py</code> before dispatching. Low or medium magnitude → auto-downgrade to Dialectic. The user can override with an explicit flag.
+          Trias costs 3× Sequential. To avoid the bill on changes that don't need it, the orchestrator checks magnitude via <code>scope_gate.py</code> before dispatching. Anything below critical magnitude (low / medium / high) → auto-downgrade to Dialectic. Only a critical change — a blocklist hit (auth, security, migrations, CI workflows, secrets) — proceeds to full Trias. The user can override with an explicit flag.
         </p>
 
         <LazyRoutingDiagram />
@@ -6402,7 +6405,7 @@ function LensHeatmap({ lenses }) {
 }
 
 function HeatCell({ w, color }) {
-  // intensity: 0.2 → 0.5 weight maps to 0.15 → 1.0 alpha
+  // intensity: 0.2 → 0.5 weight maps to ~0.12 → 0.94 alpha (floor 0.12)
   const alpha = Math.max(0.12, Math.min(1, (w - 0.18) / 0.34));
   return (
     <div className="lens-heatmap__cell">
@@ -6472,11 +6475,11 @@ function LazyRoutingDiagram() {
 
         {/* Diamond → high (top right) */}
         <path d="M 410 152 C 460 130, 540 100, 660 80" stroke="var(--ink)" strokeWidth="1.5" fill="none" markerEnd="url(#lr-arrow)" />
-        <text x="540" y="118" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>high</text>
+        <text x="540" y="118" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>critical</text>
 
         {/* Diamond → low/medium (mid right) */}
         <line x1="460" y1="180" x2="660" y2="180" stroke="var(--ink)" strokeWidth="1.5" markerEnd="url(#lr-arrow)" />
-        <text x="540" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>low · medium</text>
+        <text x="540" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>low · medium · high</text>
         <text x="540" y="195" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: 'var(--ink-3)' }}>auto-downgrade</text>
 
         {/* Diamond → skip (bottom right) */}
@@ -6601,7 +6604,7 @@ function LoopDiagram() {
       {[
         { x: 30,  title: 'Deliberation', sub: 'voices · steps 1 → 5', code: '' },
         { x: 280, title: 'Report', sub: 'step 6 · canonical JSON', code: 'build_report.py · validate_report.py' },
-        { x: 530, title: 'FEEDBACK.md', sub: 'append-only outcome log', code: 'OK / OVR / PEND / BAD' },
+        { x: 530, title: 'FEEDBACK.html', sub: 'append-only outcome log', code: 'OK / OVR / PEND / BAD' },
         { x: 780, title: 'Priors', sub: 'soft priors for next run', code: 'priors.py' },
       ].map((s, i) => (
         <g key={i}>
@@ -6632,7 +6635,7 @@ function LoopDiagram() {
 
       {/* Stale pendings side note */}
       <text x="970" y="240" textAnchor="end" className="d-faint" style={{ fontSize: 10 }}>
-        stale_pendings (PEND &gt; 7 days) surfaced before next step 1
+        stale_pendings (PEND &gt; 2 days) surfaced before next step 1
       </text>
 
       {/* Pretty side label */}
@@ -6718,7 +6721,7 @@ function EfficiencySection() {
           num="12"
           eyebrow="Usage & Efficiency"
           title="How much does each mode actually cost?"
-          lede="scripts/efficiency.py rolls up per-dispatch telemetry from every run. The chart shows measured tokens-per-dispatch (outcome-independent). The stricter tokens_per_OK metric also exists but is held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."
+          lede="scripts/efficiency.py rolls up per-dispatch telemetry from every run. The chart below is a frozen snapshot of measured tokens-per-dispatch, captured 2026-05-26 — re-run the command in the panel below for current numbers. The stricter tokens_per_OK metric also exists but is held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 32, alignItems: 'start' }}>
@@ -6742,16 +6745,16 @@ function EfficiencySection() {
 
           <div>
             <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>tokens / dispatch (measured)</h3>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>efficiency.py over runs/*.json telemetry · 2026-05-26</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>frozen snapshot · efficiency.py over runs/*.json · captured 2026-05-26</p>
             <BarChart data={measured} />
           </div>
         </div>
 
         <div style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {[
-            { role: 'Orchestrator', model: 'Opus 4.7', color: 'var(--con)', note: 'the main Claude Code session — runs the workflow, dispatches sub-agents' },
-            { role: 'Voices & sub-agents', model: 'Sonnet 4.6', color: 'var(--ctl)', note: 'Generator · Control · Conservator · Skeptic · Trias personalities — pinned model: "sonnet"' },
-            { role: 'Override', model: 'Opus 4.7', color: 'var(--gen)', note: 'opt-in on the Generator for high-stakes / ambiguous changes' },
+            { role: 'Orchestrator', model: 'Opus', color: 'var(--con)', note: 'the main Claude Code session — runs the workflow, dispatches sub-agents' },
+            { role: 'Voices & sub-agents', model: 'Sonnet', color: 'var(--ctl)', note: 'Generator · Control · Conservator · Skeptic · Trias personalities — pinned model: "sonnet"' },
+            { role: 'Override', model: 'Opus', color: 'var(--gen)', note: 'opt-in on the Generator for high-stakes / ambiguous changes' },
           ].map((m) => (
             <div key={m.role} style={{ padding: '14px 16px', border: '1px solid var(--rule)', borderTop: `3px solid ${m.color}`, borderRadius: 4, background: 'var(--paper)' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 4 }}>{m.role}</div>
@@ -6762,7 +6765,7 @@ function EfficiencySection() {
         </div>
 
         <div style={{ marginTop: 20, padding: '20px 24px', background: 'var(--paper-2)', border: '1px solid var(--rule)', borderRadius: 4 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 12 }}>Live data</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 12 }}>Reproduce / live data</div>
           <code style={{ display: 'block', fontSize: 12, fontFamily: 'var(--font-mono)', lineHeight: 1.8, color: 'var(--ink)' }}>
             python scripts/efficiency.py --by-mode<br />
             python scripts/efficiency.py --self-test<br />
@@ -6934,7 +6937,7 @@ function Topbar() {
       </div>
       <a
         className="topbar__repo"
-        href="https://github.com/alxmax/Consilium_Demo"
+        href="https://github.com/alxmax/Consilium"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -6959,7 +6962,7 @@ function Hero() {
           <span className="hero__dot" />
           <span>CLAUDE CODE SKILL</span>
           <span style={{ opacity: 0.4 }}>·</span>
-          <span>v1.01 · 2026</span>
+          <span>2026</span>
         </div>
         <h1 className="h-display">
           A second opinion,
@@ -6974,8 +6977,8 @@ function Hero() {
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--gen)' }} />Generator</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--ctl)' }} />Control</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'oklch(0.55 0.16 320)' }} />Skeptic</span>
-          <span className="chip">5 modes</span>
-          <span className="chip">3 voting schemes</span>
+          <span className="chip">3 modes + 1 flag + 1 auto</span>
+          <span className="chip">3 score-combination schemes</span>
           <span className="chip">8-component cascade</span>
           <span className="chip">self-calibrating</span>
         </div>

@@ -68,7 +68,7 @@ function EfficiencySection() {
           num="12"
           eyebrow="Usage & Efficiency"
           title="How much does each mode actually cost?"
-          lede="scripts/efficiency.py rolls up per-dispatch telemetry from every run. The chart shows measured tokens-per-dispatch (outcome-independent). The stricter tokens_per_OK metric also exists but is held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."
+          lede="scripts/efficiency.py rolls up per-dispatch telemetry from every run. The chart below is a frozen snapshot of measured tokens-per-dispatch, captured 2026-05-26 — re-run the command in the panel below for current numbers. The stricter tokens_per_OK metric also exists but is held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 32, alignItems: 'start' }}>
@@ -92,16 +92,16 @@ function EfficiencySection() {
 
           <div>
             <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>tokens / dispatch (measured)</h3>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>efficiency.py over runs/*.json telemetry · 2026-05-26</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>frozen snapshot · efficiency.py over runs/*.json · captured 2026-05-26</p>
             <BarChart data={measured} />
           </div>
         </div>
 
         <div style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {[
-            { role: 'Orchestrator', model: 'Opus 4.7', color: 'var(--con)', note: 'the main Claude Code session — runs the workflow, dispatches sub-agents' },
-            { role: 'Voices & sub-agents', model: 'Sonnet 4.6', color: 'var(--ctl)', note: 'Generator · Control · Conservator · Skeptic · Trias personalities — pinned model: "sonnet"' },
-            { role: 'Override', model: 'Opus 4.7', color: 'var(--gen)', note: 'opt-in on the Generator for high-stakes / ambiguous changes' },
+            { role: 'Orchestrator', model: 'Opus', color: 'var(--con)', note: 'the main Claude Code session — runs the workflow, dispatches sub-agents' },
+            { role: 'Voices & sub-agents', model: 'Sonnet', color: 'var(--ctl)', note: 'Generator · Control · Conservator · Skeptic · Trias personalities — pinned model: "sonnet"' },
+            { role: 'Override', model: 'Opus', color: 'var(--gen)', note: 'opt-in on the Generator for high-stakes / ambiguous changes' },
           ].map((m) => (
             <div key={m.role} style={{ padding: '14px 16px', border: '1px solid var(--rule)', borderTop: `3px solid ${m.color}`, borderRadius: 4, background: 'var(--paper)' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 4 }}>{m.role}</div>
@@ -112,7 +112,7 @@ function EfficiencySection() {
         </div>
 
         <div style={{ marginTop: 20, padding: '20px 24px', background: 'var(--paper-2)', border: '1px solid var(--rule)', borderRadius: 4 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 12 }}>Live data</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 12 }}>Reproduce / live data</div>
           <code style={{ display: 'block', fontSize: 12, fontFamily: 'var(--font-mono)', lineHeight: 1.8, color: 'var(--ink)' }}>
             python scripts/efficiency.py --by-mode<br />
             python scripts/efficiency.py --self-test<br />
