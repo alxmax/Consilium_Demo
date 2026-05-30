@@ -6,7 +6,7 @@ const MODES = [
     name: 'Sequential — blind',
     tag: 'DEFAULT',
     plain: 'One Claude turn plays all three voices in order, in the same context. A small script strips each voice\'s output before passing it to the next — so each voice sees only what it needs.',
-    desc: 'A single Claude turn plays Conservator → Generator → Control sequentially. Between voices, scripts/strip_context.py removes everything they don\'t need: Generator receives only Conservator\'s budget and magnitude, Control receives candidates without their rationale.',
+    desc: 'A single Claude turn plays Conservator → Generator → Control sequentially. Between voices, scripts/strip_context.py removes everything they don\'t need: Generator receives only Conservator\'s magnitude, counterparty_risks, and tokens_budget, Control receives candidates without their rationale.',
     use: 'most deliberations — fast, with a chinese wall via context stripping',
     cost: '1× (baseline)',
     isolation: 'context strip',
@@ -42,9 +42,9 @@ const MODES = [
     name: 'Skeptic-on-chosen',
     tag: 'FLAG',
     plain: 'A composable flag, not a standalone mode. Adds one Skeptic sub-agent to any base mode that challenges the chosen answer after aggregation. Auto-fires when the system isn\'t sure.',
-    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.5, 0.7]. Manual trigger: --skeptic-on-chosen.',
+    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.0, 0.7]. Manual trigger: --skeptic-on-chosen.',
     use: 'whenever you want a focal challenger post-hoc',
-    cost: '+1× over base mode',
+    cost: 'base +1 (≈1.33× of a 3-voice base)',
     isolation: '+1 isolated Skeptic',
     voices: 'base + Skeptic',
     subagents: '+1',
@@ -120,7 +120,7 @@ const WALKTHROUGHS = {
         nodes: { orch: 'done', p1: 'active', p2: 'active', p3: 'active', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
       { id: '4', name: 'chosen', caption: 'Each personality returns its own chosen answer.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'active' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote'] },
-      { id: '5', name: 'tally', caption: 'Democratic vote tally. 3-0 → confidence 0.95. 2-1 → 0.70. 1-1-1 → PEND + escalate.',
+      { id: '5', name: 'tally', caption: 'Democratic vote tally. 3-0 → confidence 0.95. 2-1 → 0.75. 2-0 → 0.70. 1-1-1 → PEND + escalate.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'active' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote'] },
       { id: '6', name: 'done', caption: 'Winner declared. Dissent (if any) logged for human review.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'done' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote', 'vote_out'] },
@@ -134,7 +134,7 @@ const WALKTHROUGHS = {
         nodes: { base: 'active', conf: 'idle', skp: 'idle', out: 'idle' }, arrows: [] },
       { id: '2', name: 'confidence', caption: 'Confidence gate checks the score after aggregation.',
         nodes: { base: 'done', conf: 'active', skp: 'idle', out: 'idle' }, arrows: ['base_conf'] },
-      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.5, 0.7] — the uncertainty band — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
+      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.0, 0.7] — below the trust floor — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
       { id: '4', name: 'skeptic', caption: 'Skeptic receives only the chosen answer — never candidates, never verdicts. Tries to find a concrete failure mode.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
@@ -165,7 +165,7 @@ const WALKTHROUGHS = {
       { id: '5', name: 'aggregate', caption: 'Aggregator applies the cascade and conservative_override scheme over the three outputs.',
         nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl', 'cons_agg', 'ctl_agg'] },
       { id: '6', name: 'done', caption: 'Winner chosen. Also fires as a silent audit every 20 Sequential runs (1/5 in HOT mode after ≥2 divergences in the last 5 audits) — implemented in scripts/audit_counter.py, state in .consilium/audit_state.json.',
-        nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_cons', 'orch_gen', 'orch_ctl', 'cons_agg', 'gen_agg', 'ctl_agg', 'agg_out'] },
+        nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl', 'cons_agg', 'gen_agg', 'ctl_agg', 'agg_out'] },
     ],
   },
 };
@@ -594,7 +594,7 @@ function StageSkeptic({ step }) {
         <rect x="250" y="225" width="65" height="14" fill="oklch(0.92 0.06 5)" stroke="oklch(0.6 0.15 5)" rx="2" />
         <rect x="315" y="225" width="33" height="14" fill="oklch(0.93 0.07 60)" stroke="oklch(0.6 0.14 60)" rx="2" />
         <rect x="348" y="225" width="32" height="14" fill="oklch(0.94 0.05 150)" stroke="oklch(0.55 0.12 150)" rx="2" />
-        <text x="315" y="252" textAnchor="middle" className="d-faint" style={{ fontSize: 8 }}>0.5 — uncertain — 0.7</text>
+        <text x="315" y="252" textAnchor="middle" className="d-faint" style={{ fontSize: 8 }}>0.0 — uncertain — 0.7</text>
       </g>
 
       <WVoice x={460} y={130} v="skp" state={ns.skp} label="Skeptic" dashed w={140} h={50} />
@@ -604,7 +604,7 @@ function StageSkeptic({ step }) {
 
       <WArrow d="M 180 160 L 250 160" state={has('base_conf') ? 'done' : 'idle'} />
       <WArrow d="M 380 160 L 458 154" state={has('conf_skp') ? (ns.skp === 'active' ? 'active' : 'done') : 'idle'} dashed
-        label="conf ∈ [0.5, 0.7]" labelX={420} labelY={138} />
+        label="conf ∈ [0.0, 0.7]" labelX={420} labelY={138} />
       <WArrow d="M 600 154 L 620 154" state={has('skp_out') ? 'done' : 'idle'} />
     </svg>
   );
@@ -642,9 +642,9 @@ function StageParallel({ step }) {
 
       <text x={390} y={36} textAnchor="middle" className="d-faint" style={{ fontSize: 8 }}>isolated context windows</text>
 
-      <WArrow d="M 260 164 C 290 164, 290 72, 328 72" state={has('orch_cons') ? (ns.cons === 'active' ? 'active' : 'done') : 'idle'} dashed />
       <WArrow d="M 260 164 L 328 158" state={has('orch_gen') ? (ns.gen === 'active' ? 'active' : 'done') : 'idle'} dashed />
-      <WArrow d="M 260 164 C 290 164, 290 244, 328 244" state={has('orch_ctl') ? (ns.ctl === 'active' ? 'active' : 'done') : 'idle'} dashed />
+      <WArrow d="M 390 134 L 390 100" state={has('gen_cons') ? (ns.cons === 'active' ? 'active' : 'done') : 'idle'} dashed />
+      <WArrow d="M 390 184 L 390 218" state={has('gen_ctl') ? (ns.ctl === 'active' ? 'active' : 'done') : 'idle'} dashed />
 
       <WBox x={510} y={140} w={90} h={48} title="aggregate" state={ns.agg} fill="var(--paper-2)" />
 

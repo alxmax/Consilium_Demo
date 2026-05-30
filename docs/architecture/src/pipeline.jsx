@@ -4,7 +4,7 @@ const STEPS = [
   {
     id: '0', name: 'bootstrap',
     title: 'Bootstrap',
-    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — override rate, veto rate, recurring keywords, pending entries. Three signals can block until resolved: stale_pendings, missing_feedback_runs, pend_pressure.',
+    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — override rate, veto rate, recurring keywords, pending entries. Two signals can block until resolved (stale_pendings, missing_feedback_runs); a third, pend_pressure, is only a soft alert — recorded, never blocking.',
     plain: 'Wakes up. Reads each voice\'s job description and checks what worked last time.',
     inputs: ['prompts/voices/*.md', 'runs/*.json', 'FEEDBACK.html'],
     outputs: ['soft priors', 'stale_pendings prompt?'],
@@ -34,7 +34,7 @@ const STEPS = [
     desc: 'Runs FIRST in RUND2. Answers Q1–Q5: reversibility, magnitude, counterparty risks, status-quo bias, meta_recommendation. Its tokens_budget output caps how deep Generator and Control go. irreversibility_flag:true halts the pipeline until the user explicitly confirms.',
     plain: 'The cautious one. Sizes up the risk before anyone proposes anything, and sets a token budget for the others.',
     inputs: ['diff + context'],
-    outputs: ['risk_score', 'tokens_budget', 'meta_recommendation', 'irreversibility_flag'],
+    outputs: ['regression_risk.net_concern', 'tokens_budget', 'meta_recommendation', 'irreversibility_flag'],
     scripts: ['probe_change.py'],
     voice: 'con',
   },
@@ -51,7 +51,7 @@ const STEPS = [
   {
     id: '4', name: 'control',
     title: 'Control',
-    desc: 'Per candidate: types → logic → tests → style. Writes tests_to_write for every valid:true (1–4 acceptance tests). Receives the full Conservator and Generator outputs so it can spot disagreements.',
+    desc: 'Per candidate: goal-fit (fail-fast) → types → logic → tests → style. Writes tests_to_write for every valid:true (1–4 acceptance tests). Receives the full Conservator and Generator outputs so it can spot disagreements.',
     plain: 'The technical checker. Marks each candidate valid or not, writes the tests it should pass.',
     inputs: ['candidates', 'Conservator output (full)'],
     outputs: ['verdicts[]', 'glossary', 'disagreements'],
@@ -70,7 +70,7 @@ const STEPS = [
   {
     id: '5b', name: 'confidence',
     title: 'Confidence',
-    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. A run below floor signals the mode did not deliver value for the cost — logged as WEAK in FEEDBACK.html. ≥ 0.7 → continue. ∈ [0.5, 0.7] → auto-triggers Skeptic (if mode supports it). < 0.5 → retry context, then ask user.',
+    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. A run below floor signals the mode did not deliver value for the cost — logged as WEAK in FEEDBACK.html. ≥ 0.7 → continue. < 0.7 (i.e. ∈ [0.0, 0.7]) → auto-triggers the Skeptic (if the mode supports it) and runs the single retry-context pass (Step 5d); if still < 0.7, ask the user.',
     plain: 'How sure are the voices? Each mode has a confidence floor it should clear — if it doesn\'t, that\'s a signal the mode was wrong for this task.',
     inputs: ['ranking', 'voice variances', 'mode'],
     outputs: ['confidence ∈ [0, 1]', 'below_floor: bool'],

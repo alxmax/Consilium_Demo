@@ -104,10 +104,10 @@ function CostScatter() {
   // x = independence (0 = shared context, 1 = full sub-agent isolation)
   // y = cost multiplier of Sequential
   const MODES_PLOT = [
-    { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', model: 'Sonnet 4.6', sub: 'default · 0 sub-agents', color: 'var(--con)' },
-    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic V2', cost: '1.33×', model: 'Sonnet 4.6', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
-    { id: 'PAR',  x: 0.85, y: 1.00, label: 'Parallel*', cost: '1× (auto)', model: 'Sonnet 4.6', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
-    { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet 4.6', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
+    { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', model: 'Sonnet', sub: 'default · 0 sub-agents', color: 'var(--con)' },
+    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic V2', cost: '1.33×', model: 'Sonnet', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
+    { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
+    { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
   ];
 
   const W = 720, H = 360;
@@ -122,7 +122,7 @@ function CostScatter() {
     <div style={{ margin: '24px 0' }}>
       <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6 }}>Cost vs voice independence</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 720 }}>
-        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices run on <strong>Sonnet 4.6</strong>; the orchestrator runs on <strong>Opus 4.7</strong> (with an opt-in Opus override on the Generator for high-stakes changes).
+        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices run on <strong>Sonnet</strong>; the orchestrator runs on <strong>Opus</strong> (with an opt-in Opus override on the Generator for high-stakes changes).
       </p>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="diagram">
@@ -257,7 +257,7 @@ public:
     bool is_open() const;
     State state() const;
 };`,
-    grading: 'Header compiles + self-test suite (tests_self.cpp) returns exit 0.',
+    grading: 'Two-phase: the model\'s own tests_self.cpp (~20 pts) plus a hidden suite it never sees, compiled against a reference solution (~40 pts). Both must compile and exit 0; the hidden suite carries most of the weight.',
   },
   {
     id: 'rule_of_three',
@@ -293,8 +293,8 @@ Pick one. Justify.`,
 ];
 
 const MODES_TESTED = [
-  { id: 'opus_bare',     name: 'opus_bare',          tag: 'baseline', desc: 'Single Opus invocation, no orchestration.' },
-  { id: 'superpowers',   name: 'superpowers',        tag: 'baseline', desc: 'Opus + tool harness, no Consilium.' },
+  { id: 'sonnet_bare',   name: 'sonnet_bare',        tag: 'baseline', desc: 'Single Sonnet invocation, no orchestration.' },
+  { id: 'superpowers',   name: 'superpowers',        tag: 'baseline', desc: 'Sonnet + tool harness, no Consilium.' },
   { id: 'seq',           name: 'consilium_sequential', tag: 'consilium', desc: 'Default mode — 3 voices in single context.' },
   { id: 'dial',          name: 'consilium_dialectic', tag: 'consilium', desc: 'Sequential + Skeptic sub-agent on chosen.' },
   { id: 'tri',           name: 'consilium_trias',    tag: 'consilium', desc: '3 personalities, each runs Sequential = 3 sub-agents.' },
@@ -311,13 +311,13 @@ function BenchmarkSection() {
           num="09"
           eyebrow="Benchmark"
           title="How the modes are tested."
-          lede="A local harness runs each Consilium mode against three tasks via Claude Code in headless mode. Each call is fire-and-forget; an automated verifier grades the output. No browser, no user input, no interactive prompts."
+          lede="A local harness runs each Consilium mode against twelve tasks via Claude Code in headless mode — three representative tasks are shown below. Each call is fire-and-forget; an automated verifier grades the output. No browser, no user input, no interactive prompts."
         />
 
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Three problems. Five modes per problem. Each run is sandboxed in its own workspace. The model has 15 minutes, no internet, no access to answer keys — solve from first principles or fail. Cost, correctness, and a self-estimate calibration score are all recorded.</p>
+            <p>Twelve problems. Five modes per problem — 60 runs (three representative problems shown below). Each run is sandboxed in its own workspace. The model has 15 minutes, no internet, no access to answer keys — solve from first principles or fail. Cost, correctness, and a self-estimate calibration score are all recorded.</p>
           </div>
         </div>
 
@@ -331,11 +331,12 @@ function BenchmarkSection() {
         }}>
           <StatCell label="Model" value="Sonnet 4.6" sub="--effort high" />
           <StatCell label="Time limit" value="15 min" sub="API wall-clock" />
-          <StatCell label="Budget" value="$1.50" sub="$3.00 multi-agent" />
+          <StatCell label="Budget" value="$3.00" sub="uniform per task" />
           <StatCell label="Isolation" value="workspace/" sub="sibling folders blocked" />
         </div>
 
         <h3 className="h-sub" style={{ fontSize: 20 }}>Tasks</h3>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', margin: '4px 0 0' }}>Three of the twelve shown — one Code task and two Reasoning tasks.</p>
         <div className="bench-tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '14px 0 16px' }}>
           {BENCH_TASKS.map((t) => (
             <button
@@ -452,7 +453,7 @@ function BenchmarkSection() {
         <div className="note" style={{ marginTop: 24 }}>
           <span className="note__label">Status</span>
           <span>
-            Full benchmark in progress. Per-task and per-mode scores will be published once all five modes have completed each task. Early signal: <strong>sequential</strong> baselines around opus_bare on reasoning tasks, while <strong>trias</strong> shows the largest gains on tasks with implicit constraints (Rule of Three, Transport Choice).
+            Full benchmark in progress. Per-task and per-mode scores will be published once all five modes have completed each task. Early signal: <strong>sequential</strong> baselines around sonnet_bare on reasoning tasks, while <strong>trias</strong> shows the largest gains on tasks with implicit constraints (Rule of Three, Transport Choice).
           </span>
         </div>
       </div>
@@ -489,7 +490,7 @@ function ImplementSection() {
       name: 'Coder',
       color: 'var(--gen)',
       lane: 'implementation files',
-      model: 'Sonnet 4.6',
+      model: 'Sonnet',
       desc: 'Reads chosen_approach + success_criterion. Writes all implementation files. Returns a strict JSON manifest. Skipped if chosen_approach is do_nothing or skipped.',
     },
     {
@@ -497,7 +498,7 @@ function ImplementSection() {
       name: 'Test Writer',
       color: 'var(--ctl)',
       lane: 'test_* files only',
-      model: 'Sonnet 4.6',
+      model: 'Sonnet',
       desc: 'Runs in parallel with Reviewer. Reads spec + files_written. Writes test_* files only. Tests must be RED against a stub and GREEN against the implementation (red→green gate).',
     },
     {
@@ -505,14 +506,14 @@ function ImplementSection() {
       name: 'Reviewer',
       color: 'var(--con)',
       lane: 'read-only',
-      model: 'Sonnet 4.6',
+      model: 'Sonnet',
       desc: 'Runs in parallel with Test Writer. Inlines prompts/voices/control.md against the actual written code as a single synthetic candidate. Goal-fit → types → logic → tests → style. Writes nothing.',
     },
   ];
 
   const GATE_ITEMS = [
     { label: 'Status', value: 'default for regression-risk', note: 'promoted 2026-05-25 (user decision)' },
-    { label: 'Model', value: 'Sonnet 4.6 sub-agents', note: 'Coder · Test Writer · Reviewer all on Sonnet 4.6' },
+    { label: 'Model', value: 'Sonnet sub-agents', note: 'Coder · Test Writer · Reviewer all on Sonnet' },
     { label: 'Routing', value: 'pipeline vs single-shot', note: 'regression-risk → pipeline; greenfield → single-shot' },
     { label: 'Promotion gate', value: '≥2/3 wins', note: 'criterion not met — promoted anyway' },
     { label: 'Signal (R1+R2)', value: 'n=6: 1 win / 5 ties / 0 losses', note: 'pipeline vs single-shot — both Sonnet 4.6 (see experiments/pipeline-bench/)' },

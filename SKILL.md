@@ -639,7 +639,7 @@ Key veto triggers (inline for quick reference during Steps 2–5):
 | `irreversibility_flag: true` | Conservator | BLOCK (hard) | Ask user for explicit consent before Generator |
 | `glossary_fail: true` | Control | BLOCK (soft) | Ask user to reformulate with operational terms |
 | `disagreements: substantial` | Control | REWORK | Re-run Generator with clarification context |
-| `meta_recommendation: scale_down` | Conservator | ADAPT_SHORT | Short path: max 2 candidates, 2-sentence output |
+| `meta_recommendation: scale_down` | Conservator | ADAPT_SHORT | Short-circuit: skip Generator + Control, emit trivial-direct report (`pipeline_executed: false`) |
 | `meta_recommendation: scale_up` | Conservator | ADAPT_EXTENDED | Warn user, add context before Generator |
 | 3+ of above simultaneously | Aggregator | ESCALATE | Present trigger table to user, request decision |
 

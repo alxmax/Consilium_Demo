@@ -31,7 +31,7 @@ function VoicesSection() {
             </ul>
             <div className="voice-card__io">
               <div><span className="io-tag">in</span> diff + context</div>
-              <div><span className="io-tag">out</span> {`{ risk_score, tokens_budget, meta_recommendation }`}</div>
+              <div><span className="io-tag">out</span> {`{ regression_risk{ net_concern }, tokens_budget, meta_recommendation }`}</div>
             </div>
           </article>
 
@@ -65,7 +65,7 @@ function VoicesSection() {
             </div>
             <p className="voice-card__mantra">"Pedantic, not pessimistic. Verify, don't speculate. Concrete over abstract."</p>
             <ul className="voice-card__list">
-              <li>Per-candidate: types → logic → tests → style</li>
+              <li>Per-candidate: goal-fit → types → logic → tests → style</li>
               <li>Writes <code>tests_to_write</code> for every <code>valid:true</code></li>
               <li>Raises <code>disagreements</code> if it spots a substantive gap</li>
             </ul>
@@ -88,11 +88,11 @@ function VoicesSection() {
               </div>
             </div>
             <p className="skeptic-card__desc">
-              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.5, 0.7]</code>. Sees <strong>only the chosen answer</strong> — never the candidates, never the verdicts — and tries to find a concrete failure scenario.
+              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.0, 0.7]</code>. Sees <strong>only the chosen answer</strong> — never the candidates, never the verdicts — and tries to find a concrete failure scenario.
             </p>
             <div className="skeptic-card__io">
               <div><span className="io-tag">in</span> chosen approach + context</div>
-              <div><span className="io-tag">out</span> {`{ can_object, concrete_concerns[], failure_mode, addressable }`}</div>
+              <div><span className="io-tag">out</span> {`{ can_object, objection: { concrete_concerns[], failure_mode, addressable }, notes }`}</div>
               <div><span className="io-tag">mode</span> advisory by default · <code>--skeptic-can-override</code> for veto</div>
             </div>
           </div>

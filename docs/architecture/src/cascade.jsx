@@ -31,7 +31,7 @@ const CASCADE_ROWS = [
     sourceName: 'Conservator',
     outcome: 'ADAPT_SHORT',
     outcomeKind: 'adapt',
-    action: 'Short path — max 2 candidates, 2-sentence output.',
+    action: 'Short-circuit — skip Generator and Control; emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed: false).',
   },
   {
     trigger: 'meta_recommendation: scale_up',
@@ -67,7 +67,7 @@ function CascadeSection() {
           num="05"
           eyebrow="Aggregation routing"
           title="Before voting: an eight-component cascade."
-          lede="The aggregator first checks for triggers that should short-circuit the vote — irreversibility, fundamental disagreement, scope mismatches. Only when nothing fires does the actual aggregation run."
+          lede="The aggregator first checks for triggers that should short-circuit the vote — irreversibility, fundamental disagreement, scope mismatches. Only when nothing fires does the actual aggregation run. The eight design components compile into the seven routing outcomes below — the table lists those outcomes, not the components."
         />
 
         <div className="tldr">
@@ -167,7 +167,7 @@ function TwoLayerSection() {
             <div className="two-layer__tag">LAYER 1</div>
             <h3 className="two-layer__name">Deliberation</h3>
             <p className="two-layer__desc">
-              Runs on every user question. The three voices process the change in sequence (Conservator → Generator → Control) inside a single context, with <code>strip_context.py</code> minimizing what each downstream voice sees from the upstream one.
+              Runs on every user question. The three voices process the change in sequence (Conservator → Generator → Control) inside a single context, with <code>strip_context.py</code> projecting the Generator's candidates down to id/summary/sketch before Control sees them — minimizing cross-voice contamination.
             </p>
             <div className="two-layer__bits">
               <div className="two-layer__bit">3 voices, run in fixed order</div>

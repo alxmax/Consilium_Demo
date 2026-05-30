@@ -24,8 +24,10 @@ const LENSES = [
 const TRIAS_OUTCOMES = [
   { p: '3–0', label: 'Unanimous', desc: 'All three personalities picked the same.', conf: 0.95, outcome: 'OK auto' },
   { p: '2–1', label: 'Majority + dissent', desc: 'One personality prefers a different candidate; dissent logged.', conf: 0.75, outcome: 'OK auto' },
-  { p: '2–0', label: 'Majority + abstention', desc: 'One personality vetoed all (chosen = null).', conf: 0.70, outcome: 'OK auto' },
+  { p: '2–0', label: 'Majority + abstention', desc: 'One personality abstained — its own chose=null (all its candidates vetoed); the two agreeing personalities still elect a winner.', conf: 0.70, outcome: 'OK auto' },
   { p: '1–1–1', label: 'Fragmented', desc: 'Three distinct chosen results · no consensus.', conf: null, outcome: 'PEND · escalate' },
+  { p: '1–1–0', label: 'Split + abstention', desc: 'Two distinct chosen results · one personality vetoed all.', conf: null, outcome: 'PEND · escalate' },
+  { p: '1–0–0', label: 'Lone vote + 2 abstentions', desc: 'One chosen result · two personalities vetoed all.', conf: null, outcome: 'PEND · escalate' },
   { p: '0–0–0', label: 'Total veto', desc: 'All three personalities vetoed all candidates.', conf: null, outcome: 'PEND · retry_suggested' },
 ];
 
@@ -61,7 +63,7 @@ function TriasSection() {
 
         <h3 className="h-sub" style={{ marginTop: 40 }}>Lazy routing — when Trias auto-downgrades</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', marginBottom: 22 }}>
-          Trias costs 3× Sequential. To avoid the bill on changes that don't need it, the orchestrator checks magnitude via <code>scope_gate.py</code> before dispatching. Low or medium magnitude → auto-downgrade to Dialectic. The user can override with an explicit flag.
+          Trias costs 3× Sequential. To avoid the bill on changes that don't need it, the orchestrator checks magnitude via <code>scope_gate.py</code> before dispatching. Anything below critical magnitude (low / medium / high) → auto-downgrade to Dialectic. Only a critical change — a blocklist hit (auth, security, migrations, CI workflows, secrets) — proceeds to full Trias. The user can override with an explicit flag.
         </p>
 
         <LazyRoutingDiagram />
@@ -141,7 +143,7 @@ function LensHeatmap({ lenses }) {
 }
 
 function HeatCell({ w, color }) {
-  // intensity: 0.2 → 0.5 weight maps to 0.15 → 1.0 alpha
+  // intensity: 0.2 → 0.5 weight maps to ~0.12 → 0.94 alpha (floor 0.12)
   const alpha = Math.max(0.12, Math.min(1, (w - 0.18) / 0.34));
   return (
     <div className="lens-heatmap__cell">
@@ -211,11 +213,11 @@ function LazyRoutingDiagram() {
 
         {/* Diamond → high (top right) */}
         <path d="M 410 152 C 460 130, 540 100, 660 80" stroke="var(--ink)" strokeWidth="1.5" fill="none" markerEnd="url(#lr-arrow)" />
-        <text x="540" y="118" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>high</text>
+        <text x="540" y="118" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>critical</text>
 
         {/* Diamond → low/medium (mid right) */}
         <line x1="460" y1="180" x2="660" y2="180" stroke="var(--ink)" strokeWidth="1.5" markerEnd="url(#lr-arrow)" />
-        <text x="540" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>low · medium</text>
+        <text x="540" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>low · medium · high</text>
         <text x="540" y="195" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: 'var(--ink-3)' }}>auto-downgrade</text>
 
         {/* Diamond → skip (bottom right) */}

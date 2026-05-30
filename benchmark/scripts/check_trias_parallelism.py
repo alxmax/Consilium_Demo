@@ -39,8 +39,8 @@ SCALE_DOWN_MAX_TURNS = 4
 def _encode_cwd(cwd: Path) -> str:
     """Replicate Claude CLI's project-dir encoding.
 
-    Observed: 'C:\\Users\\ALEX\\Desktop\\Doc\\Consilium\\benchmark\\workspace\\consilium_trias\\code\\01_circuit_breaker'
-       maps to: 'C--Users-ALEX-Desktop-Doc-Consilium-benchmark-workspace-consilium-trias-code-01-circuit-breaker'
+    Observed: 'C:\\Users\\<user>\\…\\Consilium\\benchmark\\workspace\\consilium_trias\\code\\01_circuit_breaker'
+       maps to: 'C--Users-<user>-…-Consilium-benchmark-workspace-consilium-trias-code-01-circuit-breaker'
 
     Rule (empirical): backslash, colon, and underscore all collapse to '-'.
     """
