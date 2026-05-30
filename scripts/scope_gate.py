@@ -127,7 +127,7 @@ def _path_matches(path: str, pattern: str) -> bool:
 
 _MODE_CEILING: dict[str, str] = {
     "low": "sequential",
-    "medium": "dialectic",
+    "medium": "sequential",
     "high": "dialectic",
     "critical": "trias",
 }

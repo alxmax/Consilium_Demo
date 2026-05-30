@@ -6332,7 +6332,7 @@ function TriasSection() {
 
         <h3 className="h-sub" style={{ marginTop: 40 }}>Lazy routing — when Trias auto-downgrades</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', marginBottom: 22 }}>
-          Trias costs 3× Sequential. To avoid the bill on changes that don't need it, the orchestrator checks magnitude via <code>scope_gate.py</code> before dispatching. Anything below critical magnitude (low / medium / high) → auto-downgrade to Dialectic. Only a critical change — a blocklist hit (auth, security, migrations, CI workflows, secrets) — proceeds to full Trias. The user can override with an explicit flag.
+          Trias costs 3× Sequential. To avoid the bill on changes that don't need it, the orchestrator checks magnitude via <code>scope_gate.py</code>, then routes down a graduated ladder: <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), and only a <strong>critical</strong> change — a blocklist hit (auth, security, migrations, CI workflows, secrets) — proceeds to <strong>full Trias</strong> (3×). At low/medium magnitude even Dialectic's one Skeptic isn't worth the cost. The user can override with an explicit flag.
         </p>
 
         <LazyRoutingDiagram />
@@ -6491,15 +6491,15 @@ function LazyRoutingDiagram() {
         <path d="M 410 152 C 460 130, 540 100, 660 80" stroke="var(--ink)" strokeWidth="1.5" fill="none" markerEnd="url(#lr-arrow)" />
         <text x="540" y="118" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>critical</text>
 
-        {/* Diamond → low/medium (mid right) */}
+        {/* Diamond → high (mid right) */}
         <line x1="460" y1="180" x2="660" y2="180" stroke="var(--ink)" strokeWidth="1.5" markerEnd="url(#lr-arrow)" />
-        <text x="540" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>low · medium · high</text>
+        <text x="540" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>high</text>
         <text x="540" y="195" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: 'var(--ink-3)' }}>auto-downgrade</text>
 
-        {/* Diamond → skip (bottom right) */}
-        <path d="M 410 208 C 460 240, 540 280, 660 280" stroke="var(--ink-3)" strokeWidth="1.4" strokeDasharray="3 4" fill="none" markerEnd="url(#lr-arrow-faint)" />
-        <text x="540" y="240" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-3)' }}>trivial diff</text>
-        <text x="540" y="254" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: 'var(--ink-3)' }}>(skip · step 6 direct)</text>
+        {/* Diamond → low/medium (bottom right) */}
+        <path d="M 410 208 C 460 240, 540 280, 660 280" stroke="var(--ink)" strokeWidth="1.5" fill="none" markerEnd="url(#lr-arrow)" />
+        <text x="540" y="240" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-2)' }}>low · medium</text>
+        <text x="540" y="254" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: 'var(--ink-3)' }}>auto-downgrade</text>
 
         {/* OUTCOMES — right column */}
         {/* Trias full */}
@@ -6521,12 +6521,12 @@ function LazyRoutingDiagram() {
           <text x="760" y="203" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>notification emitted</text>
         </g>
 
-        {/* Skipped */}
+        {/* Sequential */}
         <g>
           <rect x="660" y="252" width="200" height="56" rx="4"
-            fill="var(--paper-2)" stroke="var(--rule-2)" strokeDasharray="4 3" />
-          <text x="760" y="274" textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 500, fill: 'var(--ink-2)' }}>scope_gate SKIP</text>
-          <text x="760" y="291" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>≤1 file · ≤15 lines</text>
+            fill="var(--con-soft)" stroke="var(--con)" strokeWidth="1.4" />
+          <text x="760" y="274" textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, fill: 'var(--ink)' }}>Sequential</text>
+          <text x="760" y="291" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>3 voices in-context · 1×</text>
         </g>
 
         {/* Footer note */}
