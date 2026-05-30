@@ -5123,34 +5123,19 @@ const STEPS = [
     scripts: ['scope_gate.py', 'probe_change.py'],
   },
   {
-    id: '2', name: 'conservator',
-    title: 'Conservator',
-    desc: 'Runs FIRST in RUND2. Answers Q1–Q5: reversibility, magnitude, counterparty risks, status-quo bias, meta_recommendation. Its tokens_budget output caps how deep Generator and Control go. irreversibility_flag:true halts the pipeline until the user explicitly confirms.',
-    plain: 'The cautious one. Sizes up the risk before anyone proposes anything, and sets a token budget for the others.',
-    inputs: ['diff + context'],
-    outputs: ['regression_risk.net_concern', 'tokens_budget', 'meta_recommendation', 'irreversibility_flag'],
-    scripts: ['probe_change.py'],
-    voice: 'con',
-  },
-  {
-    id: '3', name: 'generator',
-    title: 'Generator',
-    desc: 'Produces 3–5 candidate approaches via divergent thinking. Always includes do_nothing. Respects tokens_budget.generator. Adversarial is conditional: only when the change touches shared/core code or a function with >3 external callers.',
-    plain: 'The brainstormer. Comes up with 3–5 ways to do the change, including "do nothing".',
-    inputs: ['success_criterion', 'tokens_budget.generator', 'magnitude'],
-    outputs: ['candidates[]', 'preferred', 'fallback_scenario'],
-    scripts: [],
-    voice: 'gen',
-  },
-  {
-    id: '4', name: 'control',
-    title: 'Control',
-    desc: 'Per candidate: goal-fit (fail-fast) → types → logic → tests → style. Writes tests_to_write for every valid:true (1–4 acceptance tests). Receives the full Conservator and Generator outputs so it can spot disagreements.',
-    plain: 'The technical checker. Marks each candidate valid or not, writes the tests it should pass.',
-    inputs: ['candidates', 'Conservator output (full)'],
-    outputs: ['verdicts[]', 'glossary', 'disagreements'],
-    scripts: [],
-    voice: 'ctl',
+    id: '2–4', name: 'voices',
+    title: 'Voices — Conservator · Generator · Control',
+    desc: 'The three voices. Conservator always runs FIRST (it scores risk and sets the tokens_budget the others operate under); Generator proposes 3–5 candidates including do_nothing; Control verdicts each on goal-fit → types → logic → tests → style. What this single step does NOT fix is the DISPATCH — that depends on the chosen mode (see below). All voices run on Sonnet.',
+    plain: 'The three reviewers do their work. Whether they run one-after-another or side-by-side depends on the mode you picked.',
+    inputs: ['diff + context', 'tokens_budget (Conservator → others)'],
+    outputs: ['regression_risk', 'candidates[]', 'verdicts[]'],
+    scripts: ['strip_context.py', 'probe_change.py'],
+    voices: ['con', 'gen', 'ctl'],
+    dispatch: [
+      ['Sequential', 'Cons → Gen → Ctrl in one context, strip_context.py between them'],
+      ['Parallel (auto)', 'Gen alone, then Control ∥ Conservator on its candidates'],
+      ['Trias', '3 personality sub-agents, each a full Sequential pass, then a vote'],
+    ],
   },
   {
     id: '5', name: 'aggregate',
@@ -5209,7 +5194,7 @@ const STEPS = [
 ];
 
 function PipelineSection() {
-  const [active, setActive] = React.useState(3); // start on Conservator
+  const [active, setActive] = React.useState(3); // start on the Voices stage
   const [playing, setPlaying] = React.useState(false);
   const playRef = React.useRef(null);
 
@@ -5235,8 +5220,8 @@ function PipelineSection() {
         <SectionHead
           num="04"
           eyebrow="The pipeline"
-          title="One deliberation, twelve steps."
-          lede="0 → 7, including 1.5 / 5b / 5c / 5d. Hit play and watch the data move from station to station."
+          title="One deliberation, ten steps."
+          lede="0 → 7, with the three voices (2–4) collapsed into one stage whose dispatch depends on the mode. Hit play and watch the data move from station to station."
         />
 
         <div className="tldr">
@@ -5275,7 +5260,7 @@ function PipelineSection() {
             </div>
             <div className="step-detail">
               <div className="step-detail__left">
-                <div className="step-detail__id">Step {step.id}{step.voice && <> · <VToken v={step.voice} /></>}</div>
+                <div className="step-detail__id">Step {step.id}{step.voice && <> · <VToken v={step.voice} /></>}{step.voices && <> · {step.voices.map((v) => <VToken key={v} v={v} />)}</>}</div>
                 <h3 className="step-detail__title">{step.title}</h3>
                 {step.plain && (
                   <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-3)', letterSpacing: '0.03em', margin: '0 0 12px', textTransform: 'uppercase' }}>
@@ -5291,6 +5276,19 @@ function PipelineSection() {
                   Technical
                 </p>
                 <p className="step-detail__desc">{step.desc}</p>
+                {step.dispatch && (
+                  <div style={{ marginTop: 16 }}>
+                    <div className="step-detail__id">Dispatch depends on the mode</div>
+                    <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+                      {step.dispatch.map(([mode, how]) => (
+                        <div key={mode} style={{ display: 'grid', gridTemplateColumns: '132px 1fr', gap: 10, fontSize: 12.5, alignItems: 'baseline' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--ink)' }}>{mode}</span>
+                          <span style={{ color: 'var(--ink-2)', lineHeight: 1.5 }}>{how}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {step.scripts.length > 0 && (
                   <>
                     <div className="step-detail__id" style={{ marginTop: 18 }}>Scripts</div>
@@ -5399,6 +5397,15 @@ function PipelineDiagram({ active }) {
                 fill={isActive ? 'var(--paper)' : voiceColor}
               />
             )}
+            {s.voices && s.voices.map((v, vi) => (
+              <circle
+                key={v}
+                cx={x + stationW - 10 - vi * 9}
+                cy={ystation + 10}
+                r="4"
+                fill={isActive ? 'var(--paper)' : { gen: 'var(--gen)', ctl: 'var(--ctl)', con: 'var(--con)' }[v]}
+              />
+            ))}
             {isActive && (
               <g>
                 <circle cx={x + stationW / 2} cy={ystation + stationH + 14} r="3" fill="var(--ink)" />
