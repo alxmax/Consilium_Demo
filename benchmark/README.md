@@ -377,7 +377,7 @@ isolation guarantees in detail.
 | `--budget`   | `3.0`                | `--max-budget-usd` cap (USD). |
 | `--no-verify`| off                  | Skip the automated verification step. |
 
-Hard wall-clock cap: 15 minutes per run (subprocess is killed past that).
+Hard wall-clock cap: 10 minutes per run (subprocess is killed past that). The task prompt itself states a 15-minute API-duration limit — the 10-minute wall-clock kill is the harness guardrail.
 
 ## Adding a new task
 

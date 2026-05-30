@@ -68,7 +68,7 @@ Default behavior of the wrapper: each cell auto-detects highest existing
 `rep_N` and writes to `rep_(N+1)`, `rep_(N+2)`, …, `rep_(N+reps)` — no data
 is overwritten. Use `--clean` to wipe and start from `rep_1`.
 
-Hard wall-clock cap per run: **15 minutes** (subprocess killed past that).
+Hard wall-clock cap per run: **10 minutes** (subprocess killed past that). The task prompt states a 15-minute API-duration limit; the 10-minute wall-clock kill is the harness guardrail.
 
 After each run, the runner auto-invokes `verify.py` if the task has a
 `scoring/<task>/` folder (containing `meta.yaml` + tests/rubric/expected

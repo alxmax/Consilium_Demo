@@ -259,7 +259,8 @@ def load_run(mode, task):
 
 
 # Cost/speed caps anchor the /25 components. Calibrated at 50% of the
-# per-task budget cap ($3 → $1.50) and 67% of the wall-clock cap (900s → 600s).
+# per-task budget cap ($3 → $1.50) and a 600s speed cap (≈ the "under 10 min"
+# API-duration bonus; first set as 67% of a former 900s wall-clock cap, now 600s).
 # This keeps all modes in the scoring range while preserving signal across the
 # observed cost spread ($0.14–$1.15). The previous tighter caps ($0.50/120s)
 # clipped all deliberation modes to 0 on both components — no signal.

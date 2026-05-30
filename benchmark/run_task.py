@@ -5,7 +5,8 @@ Benchmark runner.
 Spawns `claude -p` headless with the configured model + effort, parses the
 JSON output (cost / duration / tokens), writes RESULT.md. Reports budget /
 time-limit / max-turn / timeout exhaustion explicitly. Hard wall-clock cap:
-15 min per run.
+10 min per run (RUN_TIMEOUT_SEC). The task prompt states a separate 15 min
+API-duration limit; the 10 min wall-clock kill is the harness guardrail.
 
 Examples
 --------
