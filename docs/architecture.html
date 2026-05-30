@@ -4692,8 +4692,41 @@ function ImplementSection() {
           </div>
         </div>
 
+        {/* Worked example */}
+        <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6, marginTop: 8 }}>Worked example</h3>
+        <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 760 }}>
+          Illustrative — a small null-guard bugfix. The deliberation's report is the <em>only</em> input; the subagent returns a strict JSON manifest of what it wrote, tested, and reviewed.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'stretch' }}>
+          <div style={{ border: '1px solid var(--rule)', borderTop: '3px solid var(--ink-3)', borderRadius: 4, background: 'var(--paper)', padding: '14px 16px' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 8 }}>IN · report.json (the spec)</div>
+            <pre style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: 11.5, lineHeight: 1.6, color: 'var(--ink-2)', whiteSpace: 'pre-wrap' }}>{`chosen_approach: "guard_then_divide"
+success_criterion: "safe_divide(a, b)
+  returns None when b == 0 instead of
+  raising; normal division unchanged"
+verification: "pytest tests/test_math.py"
+magnitude: moderate · reversibility: complete
+  → routes to the 3-role pipeline`}</pre>
+          </div>
+          <div style={{ border: '1px solid var(--rule)', borderTop: '3px solid var(--gen)', borderRadius: 4, background: 'var(--paper)', padding: '14px 16px' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 8 }}>OUT · manifest (returned)</div>
+            <pre style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: 11.5, lineHeight: 1.6, color: 'var(--ink-2)', whiteSpace: 'pre-wrap' }}>{`files_written:
+  mathutils.py        → safe_divide
+test_files_written:
+  tests/test_math.py  → b==0 → None,
+    normal division, negatives
+gate:   red ✓  green ✓  passed ✓
+review (Control on written code):
+  implemented → valid ✓  · no issues
+blocked: false`}</pre>
+          </div>
+        </div>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginTop: 8, maxWidth: 820 }}>
+          ↳ Coder wrote <code>mathutils.py</code> · Test Writer wrote the <code>test_*</code> file · Reviewer re-ran the Control voice on the written code · the red→green gate confirmed the tests fail against a stub and pass against the real implementation.
+        </p>
+
         {/* Roles */}
-        <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 12, marginTop: 8 }}>Roles and lane rules</h3>
+        <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 12, marginTop: 36 }}>Roles and lane rules</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 28 }}>
           {ROLES.map((r) => (
             <div key={r.id} style={{
