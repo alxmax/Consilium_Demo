@@ -51,14 +51,14 @@ function ModeRow({ mode, costMultiplier, dispatches, note }) {
 }
 
 function EfficiencySection() {
-  // Measured by scripts/efficiency.py over runs/*.json telemetry (2026-05-26).
+  // Measured by scripts/efficiency.py over runs/*.json telemetry (2026-05-30).
   // tokens_per_dispatch is outcome-independent (no labelling needed), unlike
   // tokens_per_OK which is still gated on more confirmed-OK labels.
   const measured = [
-    { mode: 'sequential', value: 1403, label: '1 403 tok · n=85', model: 'Sonnet 4.6' },
-    { mode: 'dialectic',  value: 2918, label: '2 918 tok · n=11', model: 'Sonnet 4.6' },
-    { mode: 'trias',      value: 4447, label: '4 447 tok · n=19', model: 'Sonnet 4.6' },
-    { mode: 'parallel',   value: 5367, label: '5 367 tok · n=26', model: 'Sonnet 4.6' },
+    { mode: 'sequential', value: 1565, label: '1 565 tok · n=131', model: 'Sonnet 4.6' },
+    { mode: 'dialectic',  value: 2313, label: '2 313 tok · n=20',  model: 'Sonnet 4.6' },
+    { mode: 'trias',      value: 6346, label: '6 346 tok · n=37',  model: 'Sonnet 4.6' },
+    { mode: 'parallel',   value: 5367, label: '5 367 tok · n=26',  model: 'Sonnet 4.6' },
   ];
 
   return (
@@ -68,7 +68,7 @@ function EfficiencySection() {
           num="12"
           eyebrow="Usage & Efficiency"
           title="How much does each mode actually cost?"
-          lede="scripts/efficiency.py rolls up per-dispatch telemetry from every run. The chart below is a frozen snapshot of measured tokens-per-dispatch, captured 2026-05-26 — re-run the command in the panel below for current numbers. The stricter tokens_per_OK metric also exists but is held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."
+          lede="scripts/efficiency.py rolls up per-dispatch telemetry from every run. The chart below is a frozen snapshot of measured tokens-per-dispatch, captured 2026-05-30 — re-run the command in the panel below for current numbers. The stricter tokens_per_OK metric also exists but is held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 32, alignItems: 'start' }}>
@@ -92,7 +92,7 @@ function EfficiencySection() {
 
           <div>
             <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>tokens / dispatch (measured)</h3>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>frozen snapshot · efficiency.py over runs/*.json · captured 2026-05-26</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>frozen snapshot · efficiency.py over runs/*.json · captured 2026-05-30</p>
             <BarChart data={measured} />
           </div>
         </div>
