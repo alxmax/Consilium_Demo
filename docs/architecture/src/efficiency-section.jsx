@@ -1,10 +1,23 @@
 /* efficiency-section.jsx — Usage & Efficiency section */
 
+// Theoretical dispatch-cost multipliers (sub-agent count vs Sequential).
 const MODES_DATA = [
-  { mode: 'sequential',  costMultiplier: '1×',    usd: '~$0.11', dispatches: 0,  note: 'in-context baseline · measured' },
-  { mode: 'dialectic',   costMultiplier: '1.33×', usd: '~$0.15', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
-  { mode: 'trias',       costMultiplier: '3×',    usd: '~$0.33', dispatches: 3,  note: '3 personality sub-agents (9 voice runs)' },
-  { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', usd: '+~$0.04', dispatches: 1, note: 'composable flag over any base' },
+  { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  note: 'in-context baseline' },
+  { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
+  { mode: 'trias',       costMultiplier: '3×',    dispatches: 3,  note: '3 personality sub-agents (9 voice runs)' },
+  { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, note: 'composable flag over any base' },
+];
+
+// Measured avg cost/run over the 12-task benchmark (Sonnet 4.6, 100% correctness
+// on every mode) — benchmark/RESULTS.md. sonnet_bare = baseline; deliberation
+// modes cost 1.3×–4.1× bare. The measured premium EXCEEDS the theoretical dispatch
+// multiplier above (a real Skeptic + code-context injection costs more than +1/3).
+const MEASURED_COST = [
+  { mode: 'sonnet_bare',          usd: '$0.148', vsBare: '1.0×', baseline: true, note: 'bare model · no Consilium' },
+  { mode: 'superpowers',          usd: '$0.124', vsBare: '0.8×', note: 'generic agent-skill harness' },
+  { mode: 'consilium_sequential', usd: '$0.189', vsBare: '1.3×', note: 'Consilium default' },
+  { mode: 'consilium_dialectic',  usd: '$0.398', vsBare: '2.7×', note: '+ Skeptic + code context' },
+  { mode: 'consilium_trias',      usd: '$0.612', vsBare: '4.1×', note: '3 personality sub-agents' },
 ];
 
 function BarChart({ data }) {
@@ -39,15 +52,47 @@ function BarChart({ data }) {
   );
 }
 
-function ModeRow({ mode, costMultiplier, usd, dispatches, note }) {
+function ModeRow({ mode, costMultiplier, dispatches, note }) {
   return (
     <tr>
       <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)' }}>{mode}</td>
       <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{costMultiplier}</td>
-      <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--ctl-ink)' }}>{usd}</td>
       <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{dispatches}</td>
       <td style={{ padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)', fontSize: 12, color: 'var(--ink-2)' }}>{note}</td>
     </tr>
+  );
+}
+
+function MeasuredCostTable() {
+  return (
+    <div style={{ marginTop: 36 }}>
+      <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>Measured cost — bare vs the modes</h3>
+      <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 13.5, marginBottom: 14, maxWidth: 820 }}>
+        Real average cost / run over the 12-task benchmark (Sonnet 4.6, <strong>100% correctness on every mode</strong> — see <code>benchmark/RESULTS.md</code>). This is what deliberation actually costs over a bare model call. Note the measured premium <em>exceeds</em> the theoretical dispatch multipliers on the left — a real Skeptic plus code-context injection costs more than the "+⅓" the dispatch count implies.
+      </p>
+      <table style={{ width: '100%', maxWidth: 680, borderCollapse: 'collapse', fontSize: 13, fontFamily: 'var(--font-mono)' }}>
+        <thead>
+          <tr>
+            {[['mode', 'left'], ['$ / run', 'right'], ['× bare', 'right'], ['', 'left']].map(([h, a], i) => (
+              <th key={i} style={{ textAlign: a, padding: '6px 16px 6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {MEASURED_COST.map((r) => (
+            <tr key={r.mode} style={{ background: r.baseline ? 'var(--paper-2)' : 'transparent' }}>
+              <td style={{ padding: '9px 16px 9px 0', borderBottom: '1px solid var(--rule)', fontWeight: r.baseline ? 600 : 400, color: 'var(--ink)' }}>{r.mode}{r.baseline ? '  ◀ baseline' : ''}</td>
+              <td style={{ padding: '9px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', color: 'var(--con-ink)', fontWeight: 600 }}>{r.usd}</td>
+              <td style={{ padding: '9px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', color: 'var(--ink-2)' }}>{r.vsBare}</td>
+              <td style={{ padding: '9px 0', borderBottom: '1px solid var(--rule)', fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--ink-3)' }}>{r.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginTop: 8 }}>
+        same 100% score on this corpus across all five — the modes buy an auditable decision process, not a higher score (RESULTS.md)
+      </p>
+    </div>
   );
 }
 
@@ -74,14 +119,13 @@ function EfficiencySection() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 32, alignItems: 'start' }}>
           <div>
-            <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>Mode cost multipliers</h3>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>1× baseline = Sequential on Sonnet 4.6 · $/run ≈ multiplier × measured Sequential</p>
+            <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>Mode cost multipliers <span style={{ color: 'var(--ink-3)', textTransform: 'none', letterSpacing: 0 }}>(dispatch count)</span></h3>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>1× = Sequential on Sonnet 4.6 · theoretical sub-agent dispatch ratio — measured $ below</p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', padding: '6px 16px 6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Mode</th>
                   <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Cost</th>
-                  <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>$ / run</th>
                   <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Sub-agents</th>
                   <th style={{ textAlign: 'left', padding: '6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Note</th>
                 </tr>
@@ -98,6 +142,8 @@ function EfficiencySection() {
             <BarChart data={measured} />
           </div>
         </div>
+
+        <MeasuredCostTable />
 
         <div style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {[
