@@ -4221,7 +4221,7 @@ function CostScatter() {
     <div style={{ margin: '24px 0' }}>
       <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6 }}>Cost vs voice independence</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 720 }}>
-        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices run on <strong>Sonnet</strong>; the orchestrator runs on <strong>Opus</strong> (with an opt-in Opus override on the Generator for high-stakes changes).
+        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices are pinned to <strong>Sonnet</strong>; the orchestrator runs on <strong>your session model</strong> (Opus or Sonnet — your choice), with an opt-in <strong>Opus</strong> override that bumps the Generator up for high-stakes changes.
       </p>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="diagram">
@@ -6802,9 +6802,9 @@ function EfficiencySection() {
 
         <div style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {[
-            { role: 'Orchestrator', model: 'Opus', color: 'var(--con)', note: 'the main Claude Code session — runs the workflow, dispatches sub-agents' },
-            { role: 'Voices & sub-agents', model: 'Sonnet', color: 'var(--ctl)', note: 'Generator · Control · Conservator · Skeptic · Trias personalities — pinned model: "sonnet"' },
-            { role: 'Override', model: 'Opus', color: 'var(--gen)', note: 'opt-in on the Generator for high-stakes / ambiguous changes' },
+            { role: 'Orchestrator', model: 'your session model', color: 'var(--con)', note: 'the main Claude Code session that runs the workflow and dispatches sub-agents — on whatever model you launched Claude Code with (Opus or Sonnet). The skill does not pin it; Opus gives the strongest orchestration.' },
+            { role: 'Voices & sub-agents', model: 'Sonnet', color: 'var(--ctl)', note: 'Generator · Control · Conservator · Skeptic · Trias personalities — pinned to model: "sonnet"; they do not inherit the session model.' },
+            { role: 'Override', model: '→ Opus', color: 'var(--gen)', note: 'an opt-in that bumps the Generator from its pinned Sonnet up to Opus for high-stakes / ambiguous changes.' },
           ].map((m) => (
             <div key={m.role} style={{ padding: '14px 16px', border: '1px solid var(--rule)', borderTop: `3px solid ${m.color}`, borderRadius: 4, background: 'var(--paper)' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 4 }}>{m.role}</div>
