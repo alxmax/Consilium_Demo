@@ -452,6 +452,7 @@ python scripts/run_evals.py
 | `prompts/voices/skeptic.md` | Focal voice for the `skeptic_on_chosen` flag (composable over any mode) — receives only the chosen, produces a concrete objection or `meta_scope_mismatch` |
 | `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite for deterministic scripts |
 | `scripts/usage.py` | Telemetry rollup from runs/ |
+| `scripts/trace_graph.py` | Pipeline trace — reads a `runs/<file>.json` and emits a Mermaid flowchart of the executed path; `--fence` for GitHub rendering |
 | `agents/consilium-subagent.md` | Subagent for isolated invocation via `Agent(subagent_type="consilium-subagent", ...)` |
 | `scripts/vocabulary_map.py` | User-facing translations (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
 

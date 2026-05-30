@@ -79,3 +79,7 @@ tmp_*
 *_tmp.*
 scratch/
 test_bundle.json
+# Scratch deliberation bundles (bundle_smoke_tests.json kept — referenced by run-consilium)
+bundle_high_priority.json
+bundle_min.json
+bundle_veto_op.json

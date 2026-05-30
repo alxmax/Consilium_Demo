@@ -48,9 +48,9 @@ Architecture visualization: `docs/architecture.html` (open locally). Benchmarks 
 
 - **`prompts/voices/*.md`** — read by each voice at runtime. A change here affects all future deliberations → high `regression_risk` in Conservator. Prefer injecting extra context into the voice's input rather than into the prompt.
   - Core voices: `generator.md`, `control.md`, `conservator.md` — run in any mode
-  - Pass-2: `generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md` — used only by Dialectic
-  - `skeptic.md` — focal challenger, run in `parallel_skeptic`, `dialectic_skeptic`, `skeptic_on_chosen`
-  - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended over core voices in `trias` and `trias_split`
+  - Pass-2: `generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md` — legacy; on disk but no longer dispatched (Dialectic moved to Sequential + Skeptic)
+  - `skeptic.md` — focal challenger, run in `skeptic_on_chosen` (composable flag over any base mode)
+  - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended over core voices in `trias`
 - **`SKILL.md` Constitution + workflow** — changing steps 0–7 breaks the JSON format expected by `aggregator.py` and `validate_report.py`. Modify both at the same time.
 
 ## Available modes
@@ -58,9 +58,9 @@ Architecture visualization: `docs/architecture.html` (open locally). Benchmarks 
 User-selectable modes (SKILL.md documents them in detail):
 
 - **Sequential** (default) — Conservator → Generator → Control single-context.
-- **Dialectic** — two-pass with cross-review in Pass-2 (`scripts/dialectic_merge.py`).
-- **Trias** — 3 personalities × 3 voices, democratic vote over the 3 chosen results (9 sub-agents).
-- **`trias_split`** — Trias with Sonnet Generator + Haiku verifiers (~3.3× Parallel). Shallow-amplifier on problems with implicit constraints — see `experiments/oracle-discipline.md`.
+- **Dialectic** — Sequential + Skeptic sub-agent on the chosen answer (`scripts/deprecated/dialectic_merge.py` retired; Dialectic no longer uses Pass-2).
+- **Trias** — 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally; democratic vote over the 3 results (3 sub-agents).
+- **`trias_split`** — deprecated; use standard `trias` (cost is now equivalent).
 - **`skeptic_on_chosen`** — composable flag over any base mode (+1 sub-agent overhead). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-triggers when `confidence ∈ [0.0, 0.7]`. Replaces the fixed modes `parallel_skeptic` (= `parallel + skeptic_on_chosen`) and `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — collapsed on 2026-05-17, legacy names remain in `validate_report.py` MODE enum for backward-compat.
 
 **Parallel removed.** No longer user-selectable (only via `parallel + skeptic_on_chosen`). Remains as an internal auto cross-check when `magnitude=critical ∧ reversibility=irreversible`, plus a silent audit every 20 runs.
