@@ -122,7 +122,7 @@ function CostScatter() {
     <div style={{ margin: '24px 0' }}>
       <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6 }}>Cost vs voice independence</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 720 }}>
-        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices run on <strong>Sonnet</strong>; the orchestrator runs on <strong>Opus</strong> (with an opt-in Opus override on the Generator for high-stakes changes).
+        Where each mode lands on the cost / isolation map. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices are pinned to <strong>Sonnet</strong>; the orchestrator runs on <strong>your session model</strong> (Opus or Sonnet — your choice), with an opt-in <strong>Opus</strong> override that bumps the Generator up for high-stakes changes.
       </p>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="diagram">
