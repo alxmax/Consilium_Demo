@@ -1,10 +1,10 @@
 /* efficiency-section.jsx — Usage & Efficiency section */
 
 const MODES_DATA = [
-  { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  note: 'in-context baseline' },
-  { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
-  { mode: 'trias',       costMultiplier: '3×',    dispatches: 3,  note: '3 personality sub-agents (9 voice runs)' },
-  { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, note: 'composable flag over any base' },
+  { mode: 'sequential',  costMultiplier: '1×',    usd: '~$0.11', dispatches: 0,  note: 'in-context baseline · measured' },
+  { mode: 'dialectic',   costMultiplier: '1.33×', usd: '~$0.15', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
+  { mode: 'trias',       costMultiplier: '3×',    usd: '~$0.33', dispatches: 3,  note: '3 personality sub-agents (9 voice runs)' },
+  { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', usd: '+~$0.04', dispatches: 1, note: 'composable flag over any base' },
 ];
 
 function BarChart({ data }) {
@@ -39,11 +39,12 @@ function BarChart({ data }) {
   );
 }
 
-function ModeRow({ mode, costMultiplier, dispatches, note }) {
+function ModeRow({ mode, costMultiplier, usd, dispatches, note }) {
   return (
     <tr>
       <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)' }}>{mode}</td>
       <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{costMultiplier}</td>
+      <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--ctl-ink)' }}>{usd}</td>
       <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--rule)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{dispatches}</td>
       <td style={{ padding: '10px 16px 10px 0', borderBottom: '1px solid var(--rule)', fontSize: 12, color: 'var(--ink-2)' }}>{note}</td>
     </tr>
@@ -74,12 +75,13 @@ function EfficiencySection() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 32, alignItems: 'start' }}>
           <div>
             <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>Mode cost multipliers</h3>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>1× baseline = Sequential on Sonnet 4.6</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>1× baseline = Sequential on Sonnet 4.6 · $/run ≈ multiplier × measured Sequential</p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', padding: '6px 16px 6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Mode</th>
                   <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Cost</th>
+                  <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>$ / run</th>
                   <th style={{ textAlign: 'right', padding: '6px 16px', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Sub-agents</th>
                   <th style={{ textAlign: 'left', padding: '6px 0', borderBottom: '2px solid var(--rule-2)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Note</th>
                 </tr>
