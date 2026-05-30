@@ -606,7 +606,7 @@ Each mode has its own `.md` file in `modes/` with YAML frontmatter (`name`, `sub
 
 `modes/` also holds reference docs for sub-components (not selectable modes): [implement_pipeline.md](modes/implement_pipeline.md) (Step 7), [aggregator_schemes.md](modes/aggregator_schemes.md) (Step 5), [confidence.md](modes/confidence.md) (Step 5b).
 
-## Dialectic mode — V2 (opt-in, code-specialized)
+## Dialectic mode (opt-in)
 
 Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI gate) injected into voice inputs. `telemetry.mode: "dialectic"`. **Full workflow: [modes/dialectic.md](modes/dialectic.md).**
 

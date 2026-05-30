@@ -4204,7 +4204,7 @@ function CostScatter() {
   // y = cost multiplier of Sequential
   const MODES_PLOT = [
     { id: 'SEQ',  x: 0.10, y: 1.00, label: 'Sequential', cost: '1×', model: 'Sonnet', sub: 'default · 0 sub-agents', color: 'var(--con)' },
-    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic V2', cost: '1.33×', model: 'Sonnet', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
+    { id: 'DIAL', x: 0.30, y: 1.33, label: 'Dialectic', cost: '1.33×', model: 'Sonnet', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
     { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
     { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
   ];
@@ -4284,7 +4284,7 @@ function CostScatter() {
 function CostBars() {
   const ROWS = [
     { name: 'sequential', cost: 1.0, label: '1×', sub: 'default', color: 'var(--con)', subagents: 0 },
-    { name: 'dialectic V2', cost: 1.33, label: '1.33×', sub: 'seq + skeptic', color: 'var(--ctl)', subagents: 1 },
+    { name: 'dialectic', cost: 1.33, label: '1.33×', sub: 'seq + skeptic', color: 'var(--ctl)', subagents: 1 },
     { name: 'parallel', cost: 3.0, label: '3× (auto)', sub: 'auto-only', color: 'var(--gen)', subagents: 3 },
     { name: 'trias', cost: 3.0, label: '3×', sub: '3 sub-agents', color: 'oklch(0.55 0.16 320)', subagents: 3 },
   ];
@@ -5609,7 +5609,7 @@ const MODES = [
   },
   {
     id: 'dialectic_v2',
-    name: 'Dialectic — V2 code-specialized',
+    name: 'Dialectic',
     tag: 'OPT-IN',
     plain: 'A normal Sequential pass with extra code context injected, then a single Skeptic sub-agent is dispatched specifically to challenge the chosen answer.',
     desc: 'Stage 1: Sequential — blind, but the voice inputs are enriched with code context (language, framework, files_touched[], test_files[], ci_gates). Stage 2: a single Skeptic sub-agent receives only the chosen answer plus code context. Skeptic runs unconditionally — not gated on the confidence band.',
@@ -5685,7 +5685,7 @@ const WALKTHROUGHS = {
     ],
   },
   dialectic_v2: {
-    name: 'Dialectic V2',
+    name: 'Dialectic',
     layout: 'dialectic',
     steps: [
       { id: '1', name: 'arrive', caption: 'Diff arrives. Code context (language, framework, test files, CI gates) is gathered and injected into voice inputs.',
@@ -5809,7 +5809,7 @@ function ModesSection() {
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Same three voices, different staging. The default mode runs everything in one Claude turn with information filtered between voices. Other modes spin up isolated sub-agents — three different "personalities" in <strong>Trias</strong>, or a single challenger in <strong>Dialectic V2</strong> and <strong>Skeptic-on-chosen</strong>. <strong>Parallel</strong> is no longer user-selectable — the system fires it automatically on critical, irreversible changes.</p>
+            <p>Same three voices, different staging. The default mode runs everything in one Claude turn with information filtered between voices. Other modes spin up isolated sub-agents — three different "personalities" in <strong>Trias</strong>, or a single challenger in <strong>Dialectic</strong> and <strong>Skeptic-on-chosen</strong>. <strong>Parallel</strong> is no longer user-selectable — the system fires it automatically on critical, irreversible changes.</p>
           </div>
         </div>
 
@@ -6066,7 +6066,7 @@ function StageSeq({ step }) {
   );
 }
 
-/* === Dialectic V2 stage === */
+/* === Dialectic stage === */
 function StageDialectic({ step }) {
   const ns = step.nodes;
   const ar = step.arrows;
@@ -6178,7 +6178,7 @@ function StageSkeptic({ step }) {
       <WtDefs />
 
       <WBox x={30} y={130} w={150} h={60} title="any base mode" state={ns.base} fill="var(--paper-2)" />
-      <text x={105} y={210} textAnchor="middle" className="d-faint" style={{ fontSize: 9 }}>Sequential / Trias / Dialectic V2 …</text>
+      <text x={105} y={210} textAnchor="middle" className="d-faint" style={{ fontSize: 9 }}>Sequential / Trias / Dialectic …</text>
 
       <WBox x={250} y={140} w={130} h={40} title="confidence" state={ns.conf} />
       <text x={315} y={196} textAnchor="middle" className="d-faint" style={{ fontSize: 9 }}>checked after aggregate</text>
@@ -6505,11 +6505,11 @@ function LazyRoutingDiagram() {
           <text x="760" y="97" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>9 voice runs total</text>
         </g>
 
-        {/* Dialectic V2 */}
+        {/* Dialectic */}
         <g>
           <rect x="660" y="146" width="200" height="68" rx="4"
             fill="var(--ctl-soft)" stroke="var(--ctl)" strokeWidth="1.4" />
-          <text x="760" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, fill: 'var(--ink)' }}>Dialectic V2</text>
+          <text x="760" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, fill: 'var(--ink)' }}>Dialectic</text>
           <text x="760" y="188" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ctl-ink)' }}>seq + 1 Skeptic · 1.33×</text>
           <text x="760" y="203" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>notification emitted</text>
         </g>

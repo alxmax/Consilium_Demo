@@ -243,11 +243,11 @@ function LazyRoutingDiagram() {
           <text x="760" y="97" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>9 voice runs total</text>
         </g>
 
-        {/* Dialectic V2 */}
+        {/* Dialectic */}
         <g>
           <rect x="660" y="146" width="200" height="68" rx="4"
             fill="var(--ctl-soft)" stroke="var(--ctl)" strokeWidth="1.4" />
-          <text x="760" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, fill: 'var(--ink)' }}>Dialectic V2</text>
+          <text x="760" y="170" textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, fill: 'var(--ink)' }}>Dialectic</text>
           <text x="760" y="188" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ctl-ink)' }}>seq + 1 Skeptic · 1.33×</text>
           <text x="760" y="203" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>notification emitted</text>
         </g>

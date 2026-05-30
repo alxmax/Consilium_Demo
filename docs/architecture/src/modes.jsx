@@ -15,7 +15,7 @@ const MODES = [
   },
   {
     id: 'dialectic_v2',
-    name: 'Dialectic — V2 code-specialized',
+    name: 'Dialectic',
     tag: 'OPT-IN',
     plain: 'A normal Sequential pass with extra code context injected, then a single Skeptic sub-agent is dispatched specifically to challenge the chosen answer.',
     desc: 'Stage 1: Sequential — blind, but the voice inputs are enriched with code context (language, framework, files_touched[], test_files[], ci_gates). Stage 2: a single Skeptic sub-agent receives only the chosen answer plus code context. Skeptic runs unconditionally — not gated on the confidence band.',
@@ -91,7 +91,7 @@ const WALKTHROUGHS = {
     ],
   },
   dialectic_v2: {
-    name: 'Dialectic V2',
+    name: 'Dialectic',
     layout: 'dialectic',
     steps: [
       { id: '1', name: 'arrive', caption: 'Diff arrives. Code context (language, framework, test files, CI gates) is gathered and injected into voice inputs.',
@@ -215,7 +215,7 @@ function ModesSection() {
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Same three voices, different staging. The default mode runs everything in one Claude turn with information filtered between voices. Other modes spin up isolated sub-agents — three different "personalities" in <strong>Trias</strong>, or a single challenger in <strong>Dialectic V2</strong> and <strong>Skeptic-on-chosen</strong>. <strong>Parallel</strong> is no longer user-selectable — the system fires it automatically on critical, irreversible changes.</p>
+            <p>Same three voices, different staging. The default mode runs everything in one Claude turn with information filtered between voices. Other modes spin up isolated sub-agents — three different "personalities" in <strong>Trias</strong>, or a single challenger in <strong>Dialectic</strong> and <strong>Skeptic-on-chosen</strong>. <strong>Parallel</strong> is no longer user-selectable — the system fires it automatically on critical, irreversible changes.</p>
           </div>
         </div>
 
@@ -472,7 +472,7 @@ function StageSeq({ step }) {
   );
 }
 
-/* === Dialectic V2 stage === */
+/* === Dialectic stage === */
 function StageDialectic({ step }) {
   const ns = step.nodes;
   const ar = step.arrows;
@@ -584,7 +584,7 @@ function StageSkeptic({ step }) {
       <WtDefs />
 
       <WBox x={30} y={130} w={150} h={60} title="any base mode" state={ns.base} fill="var(--paper-2)" />
-      <text x={105} y={210} textAnchor="middle" className="d-faint" style={{ fontSize: 9 }}>Sequential / Trias / Dialectic V2 …</text>
+      <text x={105} y={210} textAnchor="middle" className="d-faint" style={{ fontSize: 9 }}>Sequential / Trias / Dialectic …</text>
 
       <WBox x={250} y={140} w={130} h={40} title="confidence" state={ns.conf} />
       <text x={315} y={196} textAnchor="middle" className="d-faint" style={{ fontSize: 9 }}>checked after aggregate</text>
