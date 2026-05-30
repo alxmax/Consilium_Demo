@@ -264,7 +264,7 @@ public:
     name: 'Rule of Three',
     kind: 'Reasoning',
     lang: '—',
-    difficulty: 'Medium',
+    difficulty: 'Hard',
     summary: 'Day 1: 57 workers produce 100 pieces in 3 hours. Day 2: 100 scheduled, 4 sick, 2 injured. How long does the day-2 crew take to produce 20 pieces? The trap: status-quo workforce math distracts from per-worker rate.',
     prompt: `Day 1: 57 workers · 100 pieces · 3 hours
 Day 2: 100 - 4 (sick) - 2 (injured) = 94 active
@@ -280,7 +280,7 @@ Output 20 pieces. How long?
     name: 'Transport Choice',
     kind: 'Reasoning',
     lang: '—',
-    difficulty: 'Medium',
+    difficulty: 'Easy',
     summary: 'You want to wash your car 50 meters away. Walk / something else / train / fly? Tests whether the model commits to a sensible answer with one assumption stated, or hedges.',
     prompt: `Wash car · 50 meters away.
   A) Walk there
