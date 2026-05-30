@@ -330,8 +330,8 @@ function BenchmarkSection() {
           marginBottom: 28,
         }}>
           <StatCell label="Model" value="Sonnet 4.6" sub="--effort high" />
-          <StatCell label="Time limit" value="15 min" sub="API wall-clock" />
-          <StatCell label="Budget" value="$3.00" sub="uniform per task" />
+          <StatCell label="Time limit" value="15 min" sub="API duration · 10 min wall-clock cap" />
+          <StatCell label="Budget" value="$3.00" sub="cap · per task" />
           <StatCell label="Isolation" value="workspace/" sub="sibling folders blocked" />
         </div>
 
