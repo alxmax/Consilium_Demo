@@ -6,12 +6,20 @@ optional metrics (personalities_divergence, control_speculation).
 Run:
     python scripts/test_meta_critic_trim.py
 """
+import importlib.util
 import sys
 import pathlib
 
-sys.path.insert(0, str(pathlib.Path(__file__).parent))
-
-from meta_critic import critique, conservator_spread
+# meta_critic was retired to scripts/deprecated/ (2026-05-25, Step 5c retirement).
+# Load it from there via importlib (the repo's cross-script convention, see
+# priors.py) rather than a static import that no longer resolves.
+_MC_PATH = pathlib.Path(__file__).parent / "deprecated" / "meta_critic.py"
+_spec = importlib.util.spec_from_file_location("meta_critic", _MC_PATH)
+assert _spec and _spec.loader
+_meta_critic = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_meta_critic)
+critique = _meta_critic.critique
+conservator_spread = _meta_critic.conservator_spread
 
 PASS = 0
 FAIL = 0
@@ -66,9 +74,9 @@ def test_well_spread_scores() -> None:
 
 
 def test_single_candidate_spread() -> None:
-    """conservator_spread([single]) == 0.0."""
+    """conservator_spread([single]) is None (no spread possible — see docstring)."""
     result = conservator_spread([{"id": "x", "risk_score": 0.7}])
-    check("single candidate: spread == 0.0", result == 0.0)
+    check("single candidate: spread is None", result is None)
 
 
 def test_trias_personalities_divergence() -> None:
