@@ -336,9 +336,9 @@ def main(argv: list[str] | None = None) -> int:
         run_path = canonical_run_path(args.run_path) if args.run_path else None
         rc = append_entry(feedback_path, entry, run_path)
         if rc != 0:
-            # Exit 3 means duplicate detected — propagate so callers can distinguish
-            # "duplicate skipped" from "success".
-            print(f"{entry['date']} | {entry['context']} | {entry['chosen']} | {entry['outcome']} | {entry['note']}")
+            # Exit 3 means duplicate detected — prefix the line so callers parsing
+            # stdout can distinguish "duplicate skipped" from a real "success" write.
+            print(f"skipped (duplicate): {entry['date']} | {entry['context']} | {entry['chosen']} | {entry['outcome']} | {entry['note']}")
             return rc
 
     print(f"{entry['date']} | {entry['context']} | {entry['chosen']} | {entry['outcome']} | {entry['note']}")
