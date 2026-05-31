@@ -23,6 +23,8 @@ import argparse
 import json
 import sys
 
+from utils import force_utf8_streams
+
 # Canonical execution order (Conservator runs FIRST — see SKILL.md Stage 2).
 # Maps a deliberation_log step / telemetry voice to (node_id, label).
 VOICE_NODES = [
@@ -165,13 +167,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--fence", action="store_true", help="wrap output in a ```mermaid fence")
     args = ap.parse_args(argv)
 
-    # Labels contain non-ASCII (e.g. the → arrow); force UTF-8 so a bare
-    # `python scripts/trace_graph.py` works on a cp1252 Windows console.
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
-        except (AttributeError, ValueError):
-            pass
+    # Labels contain non-ASCII (e.g. the → arrow) and the report read from stdin
+    # carries UTF-8 (ț/ș/ă in success_criterion); reconfigure all three streams —
+    # including stdin — so a bare `cat run.json | python scripts/trace_graph.py`
+    # works on a cp1252 Windows console (the prior loop missed stdin).
+    force_utf8_streams()
 
     try:
         raw = open(args.input, encoding="utf-8").read() if args.input else sys.stdin.read()

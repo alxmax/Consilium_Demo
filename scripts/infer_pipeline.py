@@ -115,7 +115,10 @@ def infer_steps(report: dict) -> tuple[list[str], dict]:
     mag_valid = magnitude in _VALID_MAGNITUDES
     rev_valid = reversibility in _VALID_REVERSIBILITY
     if not (mag_valid and rev_valid):
-        net_concern = float(report.get("voice_scores", {}).get("conservator", 0.5) or 0.5)
+        # `voice_scores` is explicitly null on hand-built reports (prior-deliberation
+        # passthrough, scale_down trivial-direct), so `.get("voice_scores", {})` returns
+        # None — guard with `or {}` before the nested .get to avoid AttributeError.
+        net_concern = float((report.get("voice_scores") or {}).get("conservator", 0.5) or 0.5)
         fb_mag, fb_rev = _fallback_from_concern(net_concern, reversibility if rev_valid else None)
         # Keep whichever axis the report actually provided; reconstruct only the
         # missing one. A known reversibility sidesteps the floored-scalar ambiguity

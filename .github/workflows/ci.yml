@@ -25,6 +25,16 @@ jobs:
         run: python scripts/test_feedback_html.py
       - name: Silent-audit counter decision tests
         run: python scripts/test_audit_counter.py
+      - name: Trias lens-bias contract tests
+        run: python scripts/test_lens_bias.py
+      - name: Vote-pattern degeneracy tests
+        run: python scripts/test_vote_degeneracy.py
+      - name: Meta-critic trim tests
+        run: python scripts/test_meta_critic_trim.py
+      - name: Step-7 implement-mode routing tests
+        run: python scripts/test_implement_mode.py
+      - name: Step-7 implement-pipeline (red-green) tests
+        run: python scripts/test_implement_pipeline.py
       - name: Regression scenarios (run_evals)
         run: python scripts/run_evals.py
       - name: Mode-doc drift invariants (check_doc_drift)

@@ -81,9 +81,11 @@ def _check_frontmatter(name: str, body: str) -> list[str]:
         return [f"{name}: missing YAML frontmatter (--- delimiters)"]
     fm = head[1]
     problems: list[str] = []
-    if not re.search(rf"^personality:\s*{re.escape(name)}\s*$", fm, re.M):
+    # Tolerate an optional trailing inline comment (e.g. `voice_bias: prepended  # ...`)
+    # — the lens files annotate voice_bias with a `# metadata only` comment.
+    if not re.search(rf"^personality:\s*{re.escape(name)}\s*(#.*)?$", fm, re.M):
         problems.append(f"{name}: frontmatter missing `personality: {name}`")
-    if not re.search(r"^voice_bias:\s*prepended\s*$", fm, re.M):
+    if not re.search(r"^voice_bias:\s*prepended\s*(#.*)?$", fm, re.M):
         problems.append(f"{name}: frontmatter missing `voice_bias: prepended`")
     return problems
 
