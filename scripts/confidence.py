@@ -130,22 +130,6 @@ def _load_mode_floors() -> dict[str, float]:
 MODE_CONFIDENCE_FLOOR: dict[str, float] = _load_mode_floors()
 
 
-def check_mode_floor(mode: str, confidence: float | None) -> dict:
-    """Return {below_floor: bool, floor: float|None, outcome_hint: str}.
-
-    Callers check this after confidence derivation and log WEAK in FEEDBACK.html
-    when below_floor is True. outcome_hint is 'WEAK' or 'OK' (advisory only).
-    """
-    floor = MODE_CONFIDENCE_FLOOR.get(mode)
-    if floor is None or confidence is None:
-        return {"below_floor": False, "floor": floor, "outcome_hint": "OK"}
-    below = confidence < floor
-    return {
-        "below_floor": below,
-        "floor": floor,
-        "outcome_hint": "WEAK" if below else "OK",
-    }
-
 # UNCALIBRATED PRIORS — these numbers encode inter-personality CONSENSUS, not
 # validated accuracy. vote_degeneracy.py (n=25) confirms the ORDERING is earned
 # (3-0 occurs only ~48% of the time, so unanimity is a real signal, not forced),
@@ -163,6 +147,49 @@ VOTE_PATTERN_CONFIDENCE = {
     "1-0-0": None,
     "0-0-0": None,
 }
+
+# Decisive Trias patterns (a winner emerged) — derived from the canonical map so
+# it cannot drift. Used by check_mode_floor to exempt structurally-bounded splits
+# (2-1/2-0) from the WEAK floor flag. Null patterns carry confidence=None and are
+# already handled by the confidence-is-None branch.
+_DECISIVE_VOTE_PATTERNS = frozenset(
+    p for p, c in VOTE_PATTERN_CONFIDENCE.items() if c is not None
+)
+
+
+def check_mode_floor(
+    mode: str, confidence: float | None, vote_pattern: str | None = None
+) -> dict:
+    """Return {below_floor: bool, floor: float|None, outcome_hint: str}.
+
+    Callers check this after confidence derivation and log WEAK in FEEDBACK.html
+    when below_floor is True. outcome_hint is 'WEAK' or 'OK' (advisory only).
+
+    Trias confidence is derived from the democratic vote pattern, not voice-score
+    variance: a decisive split (2-1=0.75, 2-0=0.70) sits *structurally* below the
+    0.80 Trias floor without signalling a weak deliberation. When ``vote_pattern``
+    is one of the decisive patterns (3-0/2-1/2-0) the run is exempt from the WEAK
+    flag, so the floor catches only genuinely weak runs (score-based modes that
+    underperform, or null/deadlock patterns whose confidence is already None).
+    The exempt set is derived from VOTE_PATTERN_CONFIDENCE (single source — no
+    drift), so it cannot diverge from the canonical patterns.
+    """
+    floor = MODE_CONFIDENCE_FLOOR.get(mode)
+    if floor is None or confidence is None:
+        return {"below_floor": False, "floor": floor, "outcome_hint": "OK"}
+    if vote_pattern in _DECISIVE_VOTE_PATTERNS:
+        return {
+            "below_floor": False,
+            "floor": floor,
+            "outcome_hint": "OK",
+            "exempt": "decisive_vote_pattern",
+        }
+    below = confidence < floor
+    return {
+        "below_floor": below,
+        "floor": floor,
+        "outcome_hint": "WEAK" if below else "OK",
+    }
 
 # Steward is the conservative-leaning personality (weights K=0.40). When it
 # dissents or abstains, that carries more risk-signal than the same outcome

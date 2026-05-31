@@ -204,18 +204,61 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> int:
     runs_dir = feedback_path.parent / "runs"
     run_map = _load_map(runs_dir)
 
-    # Idempotent on re-run: if run_path is provided, check whether it is already
-    # a value in the sidecar map — that is the most reliable duplicate signal
-    # because the fingerprint key is stable only when the same run_id is used.
-    # For entries logged without a run_path, fall back to a content hash over
-    # the full context string (no truncation, no timestamp component).
     run_id = Path(run_path).name if run_path else None
     new_fp = _fingerprint(entry["date"], entry["chosen"], entry["context"], run_id=run_id)
-    is_duplicate = False
+
+    # Restore run_path for existing rows from the sidecar map so drill-down
+    # survives re-renders. For each row, reconstruct its fingerprint using the
+    # run_id extracted from each known run_path; on a match the row's run_path is
+    # recovered. Rows logged without a run_id used an unstable timestamp and
+    # cannot be matched — they fall back to run_path=None (legacy behaviour).
+    def _row_run_path(row: dict) -> str | None:
+        for fp, rp in run_map.items():
+            run_id_candidate = Path(rp).name if rp else None
+            fp_candidate = _fingerprint(row["date"], row["chosen"], row["context"], run_id=run_id_candidate)
+            if fp_candidate == fp:
+                return rp
+        return None
+
+    # Close-the-loop: when run_path already has a row, distinguish a true
+    # duplicate (same outcome — skip) from an outcome update (PEND -> OK/BAD/OVR
+    # — upgrade the row in place). The old blanket "run_path seen => duplicate"
+    # swallowed Step-6 close-the-loop calls, leaving PEND rows un-upgraded.
+    matched_idx = None
     if run_path and run_path in run_map.values():
-        is_duplicate = True
-    elif not run_path:
-        # Stable content-only hash: same date+chosen+full-context means same entry.
+        for i, row in enumerate(existing):
+            if _row_run_path(row) == run_path:
+                matched_idx = i
+                break
+
+    if matched_idx is not None:
+        assert run_path  # matched_idx is only set when run_path is truthy
+        prior = existing[matched_idx]
+        if prior.get("outcome") == entry["outcome"]:
+            print(
+                f"log_feedback: duplicate entry (fp {new_fp[:8]}) — already in FEEDBACK.html, skipping append.",
+                file=sys.stderr,
+            )
+            run_map[new_fp] = run_path
+            _save_map(runs_dir, run_map)
+            return 3
+        prior["outcome"] = entry["outcome"]
+        prior["note"] = entry["note"]
+        if entry.get("vote_pattern"):
+            prior["vote_pattern"] = entry["vote_pattern"]
+        entries = [render_mod.Entry(**row, run_path=_row_run_path(row)) for row in existing]
+        run_map[new_fp] = run_path
+        _save_map(runs_dir, run_map)
+        atomic_write_text(feedback_path, render_mod.render(entries, runs_dir))
+        print(
+            f"log_feedback: upgraded {prior['chosen']} -> {entry['outcome']} in place (run {run_id}).",
+            file=sys.stderr,
+        )
+        return 0
+
+    # Content-only duplicate check for rows logged WITHOUT a run_path:
+    # same date+chosen+full-context means the same entry (no timestamp component).
+    if not run_path:
         stable_fp = hashlib.sha256(
             f"{entry['date']}|{entry['chosen']}|{entry['context']}".encode()
         ).hexdigest()[:16]
@@ -226,33 +269,11 @@ def append_entry(feedback_path: Path, entry: dict, run_path: str | None) -> int:
             for row in existing
         }
         if stable_fp in stable_existing:
-            is_duplicate = True
-    if is_duplicate:
-        print(
-            f"log_feedback: duplicate entry (fp {new_fp[:8]}) — already in FEEDBACK.html, skipping append.",
-            file=sys.stderr,
-        )
-        # Still refresh the sidecar map for the new run_path even when the row
-        # itself is a duplicate (a later mark_outcome may want to drill into the
-        # newer run JSON for the same logical decision).
-        if run_path:
-            run_map[new_fp] = run_path
-            _save_map(runs_dir, run_map)
-        return 3
-
-    # Restore run_path for existing rows from sidecar map so drill-down survives
-    # re-renders. For each existing row, try to reconstruct its fingerprint using
-    # the run_id extracted from each known run_path in the sidecar — when a match
-    # is found the row's run_path is recovered.  Rows originally logged without a
-    # run_id used an unstable timestamp and cannot be matched; they fall back to
-    # run_path=None (same as legacy behaviour).
-    def _row_run_path(row: dict) -> str | None:
-        for fp, rp in run_map.items():
-            run_id_candidate = Path(rp).name if rp else None
-            fp_candidate = _fingerprint(row["date"], row["chosen"], row["context"], run_id=run_id_candidate)
-            if fp_candidate == fp:
-                return rp
-        return None
+            print(
+                f"log_feedback: duplicate entry (fp {new_fp[:8]}) — already in FEEDBACK.html, skipping append.",
+                file=sys.stderr,
+            )
+            return 3
 
     entries = [
         render_mod.Entry(

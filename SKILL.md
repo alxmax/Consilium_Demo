@@ -203,10 +203,10 @@ Returns `{confidence, agreement, separation}`. If `chosen` is `null` (all candid
 **Mode confidence floor (E1).** After confidence is derived, check whether the mode reached the minimum floor:
 ```python
 from scripts.confidence import check_mode_floor
-result = check_mode_floor(telemetry_mode, confidence_value)
+result = check_mode_floor(telemetry_mode, confidence_value, vote_pattern)  # vote_pattern only for trias; omit/None otherwise
 # result["below_floor"] == True → log with --outcome WEAK in FEEDBACK.html
 ```
-Floors: `sequential=0.70`, `dialectic=0.75`, `trias=0.80`. A run below floor signals the mode did not deliver value for the cost. The data accumulates in `FEEDBACK.html` — the pattern becomes visible after ≥10 runs per mode.
+Floors: `sequential=0.70`, `dialectic=0.75`, `trias=0.80`. A run below floor signals the mode did not deliver value for the cost. **Trias exemption:** a decisive vote pattern (`3-0`/`2-1`/`2-0`) is exempt from the WEAK flag — `2-1` (0.75) and `2-0` (0.70) sit *structurally* below the 0.80 floor by design, not because the deliberation was weak; pass `vote_pattern` so the floor flags only genuinely weak runs. The data accumulates in `FEEDBACK.html` — the pattern becomes visible after ≥10 runs per mode.
 
 ### 5c. Meta-critic (auto, advisory) — *retired 2026-05-25*
 ```bash
