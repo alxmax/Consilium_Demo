@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Block direct commits on main/master.
+# Pairs with .githooks/pre-push — keeps the Consilium feature-branch -> PR workflow
+# (one commit per branch, deliberation trail intact). Maintainer dev-tooling: active
+# only after `git config core.hooksPath .githooks`; NOT a plugin hook, so it never
+# affects anyone who installs Consilium as a plugin/skill.
+branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
+if [[ "$branch" == "main" || "$branch" == "master" ]]; then
+    echo "ERROR: commit on '$branch' is blocked — work on a feature branch."
+    echo "  git checkout -b feat/<slug>     # new capability"
+    echo "  git checkout -b fix/<slug>      # bugfix"
+    echo "Then commit there and open a PR."
+    echo "(Intentional one-liner/typo? bypass with: git commit --no-verify)"
+    exit 1
+fi
+exit 0
