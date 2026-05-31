@@ -322,13 +322,13 @@ def aggregate_sequential(
 
     Input: voice output dicts (not candidate scores).
 
-    Priority order:
+    Priority order (matches the execution order below):
     1. glossary_fail (Control) → BLOCK
     2. irreversibility_flag (Conservator) → BLOCK
-    3. substantial disagreement (Control) → REWORK
-    4. scale_down (Conservator meta) → ADAPT_SHORT
-    5. scale_up (Conservator meta) → ADAPT_EXTENDED
-    6. 3+ triggers simultaneously → ESCALATE
+    3. 3+ triggers simultaneously → ESCALATE
+    4. substantial disagreement (Control) → REWORK
+    5. scale_down (Conservator meta) → ADAPT_SHORT
+    6. scale_up (Conservator meta) → ADAPT_EXTENDED
     7. default → AGGREGATE
     """
     triggers: list[str] = []

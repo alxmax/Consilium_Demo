@@ -282,7 +282,13 @@ def _verify_closed_answer(workspace: Path, verify_src: Path, meta: dict) -> dict
         for i, line in enumerate(lines):
             m = re.match(pattern, line)
             if m:
-                extracted = m.group(1).upper()
+                try:
+                    extracted = m.group(1).upper()
+                except IndexError:
+                    # answer_pattern matched but defines no capture group —
+                    # malformed meta config. Treat as no-extraction rather than
+                    # crashing (which would write no report.json at all).
+                    break
                 answer_line_idx = i
                 break
         if answer_line_idx is not None:
@@ -345,7 +351,9 @@ def _verify_closed_answer(workspace: Path, verify_src: Path, meta: dict) -> dict
                 if m:
                     try:
                         value_extracted = float(m.group(1))
-                    except ValueError:
+                    except (ValueError, IndexError):
+                        # ValueError: group not numeric. IndexError: value_pattern
+                        # matched but defines no capture group (malformed meta).
                         value_extracted = None
                     break
 
