@@ -243,6 +243,8 @@ cat bundle.json | python scripts/build_report.py | python scripts/validate_repor
 ```
 Bundle schema: `{success_criterion, verification, generator, control, conservator, aggregate, confidence, telemetry}`. `build_report.py` derives `voice_scores`, assembles `alternatives` (with `why_not`) and `deliberation_log`. (`voice_scores` is derived by `build_report.py` from voice outputs — it is not emitted by the voices directly.)
 
+> **Interception contract.** `build_report.py` accepts only the `AGGREGATE` aggregate shape (which carries `chosen`) or a `skipped` bundle. The non-`AGGREGATE` results of `aggregate_sequential` — `BLOCK` (glossary_fail / irreversibility), `REWORK` (substantial disagreement), `ESCALATE` (3+ triggers), `ADAPT_EXTENDED` (scale_up) — are **interception points** the orchestrator handles *before* Step 6 (ask the user, reformulate, re-run). `ADAPT_SHORT` (scale_down) builds its `trivial-direct` report by hand (SKILL.md Step 2), not via `build_report.py`. So `build_report.py` raising `ValueError` on a `chosen`-less aggregate is the correct hard-fail for a contract violation, not a shape it is expected to render.
+
 **Output JSON** (required fields — validated by `validate_report.py`, required by Principle #4):
 ```json
 {

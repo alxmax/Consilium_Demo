@@ -313,6 +313,33 @@ def _sequential_methodology_notes(g: dict, c: dict) -> str:
     return " | ".join(notes) if notes else "Deliberation completed without anomalies"
 
 
+def _any_irreversibility_flag(conservator_out: dict) -> tuple[bool, str | None]:
+    """Scan per-candidate scores for an irreversibility consent flag.
+
+    Per conservator.md, irreversibility_flag lives inside scores[i], not at the
+    top level. Returns (any_flagged, magnitude_of_first_flagged_candidate).
+    """
+    for s in conservator_out.get("scores") or []:
+        if isinstance(s, dict) and s.get("irreversibility_flag"):
+            rr = s.get("regression_risk")
+            return True, (rr.get("magnitude") if isinstance(rr, dict) else None)
+    return False, None
+
+
+def _net_concern_for(conservator_out: dict, cid: str, default: float = 0.15) -> float:
+    """Per-candidate net_concern from scores[i].regression_risk (conservator.md).
+
+    Falls back to ``default`` when the candidate is absent or unscored — the
+    same 0.15 the legacy top-level read defaulted to.
+    """
+    for s in conservator_out.get("scores") or []:
+        if isinstance(s, dict) and s.get("id") == cid:
+            rr = s.get("regression_risk")
+            if isinstance(rr, dict) and isinstance(rr.get("net_concern"), (int, float)):
+                return float(rr["net_concern"])
+    return default
+
+
 def aggregate_sequential(
     generator_out: dict,
     control_out: dict,
@@ -343,14 +370,16 @@ def aggregate_sequential(
             "action": "Reformulate the question using operationally-verifiable terms",
         }
 
-    # Priority 2: Irreversibility without consent
-    if conservator_out.get("irreversibility_flag"):
-        rr = conservator_out.get("regression_risk", {})
+    # Priority 2: Irreversibility without consent.
+    # irreversibility_flag lives per-candidate in scores[i] (conservator.md),
+    # not at the top level — scan all candidates.
+    irrev_flagged, irrev_magnitude = _any_irreversibility_flag(conservator_out)
+    if irrev_flagged:
         return {
             "scheme": "sequential",
             "result": "BLOCK",
             "reason": "irreversibility_no_consent",
-            "magnitude": rr.get("magnitude") if isinstance(rr, dict) else None,
+            "magnitude": irrev_magnitude,
             "action": "Confirm explicitly that this decision is irreversible before proceeding",
         }
 
@@ -418,16 +447,13 @@ def aggregate_sequential(
     # Default: aggregate normally
     preferred = generator_out.get("preferred")
     options = generator_out.get("options", generator_out.get("candidates", []))
-    rr = conservator_out.get("regression_risk", {})
-    net_concern = (
-        rr.get("net_concern", 0.15) if isinstance(rr, dict) else float(rr)
-        if isinstance(rr, (int, float)) else 0.15
-    )
-
+    # net_concern is per-candidate in scores[i] (conservator.md); score each
+    # option against its own risk instead of one top-level value applied to all.
     confidence_per_option: dict[str, float] = {}
     for opt in options:
         oid = opt.get("id", "")
         base = 1.0 if oid == preferred else 0.5
+        net_concern = _net_concern_for(conservator_out, oid)
         confidence_per_option[oid] = round(base * (1.0 - net_concern), 3)
 
     methodology_confidence = 1.0

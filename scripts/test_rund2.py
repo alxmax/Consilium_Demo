@@ -67,17 +67,13 @@ class TestVocabularyMap(unittest.TestCase):
 
 class TestAggregateRund2(unittest.TestCase):
     def _base_conservator(self, reversibility="complete", magnitude="trivial", meta=None, flag=False):
-        # meta_recommendation belongs inside scores[i] (per-candidate), per
-        # conservator.md output contract. aggregate_sequential() reads it from
-        # there; top-level meta_recommendation is legacy and ignored.
+        # Mirror the real conservator.md output contract: every per-candidate
+        # field (regression_risk, meta_recommendation, irreversibility_flag)
+        # lives inside scores[i]. The voice emits NO top-level regression_risk
+        # or irreversibility_flag — aggregate_sequential reads them from scores[].
+        # (Earlier this fixture injected top-level copies that masked the nesting
+        # bug — TODO bug-audit 2026-05-31, Cluster A.)
         return {
-            "regression_risk": {
-                "reversibility": reversibility,
-                "magnitude": magnitude,
-                "net_concern": 0.05,
-            },
-            "irreversibility_flag": flag,
-            "tokens_budget": {"generator": 300, "control": 300},
             "scores": [
                 {
                     "id": "A",
@@ -87,6 +83,7 @@ class TestAggregateRund2(unittest.TestCase):
                         "net_concern": 0.05,
                     },
                     "meta_recommendation": meta,
+                    "irreversibility_flag": flag,
                     "tokens_budget": {"generator": 300, "control": 300},
                 }
             ],
