@@ -113,7 +113,7 @@ If `should_skip: true`, emit the minimal report and stop:
   "voice_scores": null, "confidence": null, "alternatives": [], "deliberation_log": []
 }
 ```
-Defaults: `max_files=1`, `max_lines=15`, conservative blocklist (`auth/`, `security/`, `migrations/`, `.github/workflows/`, `**/secrets*`, `.env*`, `Dockerfile`, `*.tf`, dependency files). Override via `scope_gate.json` (`{max_files, max_lines, blocklist}`). Escape hatch: `CONSILIUM_FORCE_FULL=1` forces `should_skip=false`. Gate **fails open** (no repo / bad ref → `should_skip: false`).
+Defaults: `max_files=1`, `max_lines=15`, conservative blocklist (`auth/`, `security/`, `migrations/`, `.github/workflows/`, `**/*secrets*`, `.env*`, `Dockerfile`, `*.tf`, dependency files). Override via `scope_gate.json` (`{max_files, max_lines, blocklist}`). Escape hatch: `CONSILIUM_FORCE_FULL=1` forces `should_skip=false`. Gate **fails open** (no repo / bad ref → `should_skip: false`).
 
 **Non-diff tasks** (audit, architecture review, planning): scope_gate is a no-op — you can skip Step 1.5.
 
@@ -612,7 +612,7 @@ Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI 
 
 ## Trias mode (high-stakes opt-in)
 
-3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally. Lazy routing auto-downgrades to Dialectic for low/medium/high magnitude — only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. **Cost: 3× Sequential** (worst-case 7× on 1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
+3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally. Lazy routing graduates by magnitude: low/medium → Sequential, high → Dialectic — only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. **Cost: 3× Sequential** (worst-case 7× on 1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 

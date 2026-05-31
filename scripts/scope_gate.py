@@ -36,7 +36,7 @@ magnitude thresholds (used by Trias lazy routing — independent of should_skip)
 
 mode_ceiling — mechanical upper bound on mode cost derived from magnitude:
   low      → sequential  (single-context deliberation is sufficient)
-  medium   → dialectic   (two-pass warranted; Trias would be over-spec)
+  medium   → sequential  (single-context sufficient; Dialectic/Trias over-spec)
   high     → dialectic   (large but routine refactor; Trias over-spec without a critical signal)
   critical → trias       (security/sensitive path; full 3-personality deliberation warranted)
   Blocklist hits force magnitude=critical and therefore mode_ceiling=trias.

@@ -51,7 +51,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import statistics
 import sys
 
@@ -164,10 +163,10 @@ def _validate_telemetry(telemetry: object) -> list[str]:
                         )
             if not problems:
                 _warn_latency_spikes(voices)
-    if "passes" in telemetry:
-        p = telemetry["passes"]
-        if not (isinstance(p, int) and not isinstance(p, bool) and p > 0):
-            problems.append("telemetry.passes must be a positive int")
+    if "dispatch_count" in telemetry:
+        dc = telemetry["dispatch_count"]
+        if not (isinstance(dc, int) and not isinstance(dc, bool) and dc >= 0):
+            problems.append("telemetry.dispatch_count must be a non-negative int")
     if "mode" in telemetry and not isinstance(telemetry["mode"], str):
         problems.append("telemetry.mode must be a string")
     return problems
@@ -284,9 +283,11 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     # All modes that dispatch multiple voices require per-voice telemetry so
     # usage.py can roll up cost across runs/. parallel_skeptic/dialectic_skeptic
     # are resolved via _LEGACY_MODE_ALIASES above before this check.
+    # Legacy aliases (trias_split/parallel_skeptic/dialectic_skeptic) are resolved
+    # to canonical names by _LEGACY_MODE_ALIASES above, so only canonical names are
+    # reachable here.
     _MULTI_VOICE_MODES = frozenset({
-        "parallel", "trias", "dialectic", "trias_split",
-        "skeptic_on_chosen", "parallel_skeptic", "dialectic_skeptic",
+        "parallel", "trias", "dialectic", "skeptic_on_chosen",
     })
     if mode in _MULTI_VOICE_MODES:
         voices = telemetry.get("voices")
@@ -299,18 +300,18 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     return []
 
 
-VOTE_PATTERN_REGEX = re.compile(r"^([0-3])-([0-3])(-([0-1]))?$")
+# Canonical Trias vote patterns — single source: confidence.py VOTE_PATTERN_CONFIDENCE
+# keys. 3-0/2-1/2-0 carry confidence; the null set are deadlock/abstention shapes.
+# Validation is MEMBERSHIP, not a digit-sum: 2-0/1-1-0/1-0-0/0-0-0 are legitimate yet
+# sum < 3, while 3-0-0 sums to 3 but is non-canonical and crashes confidence.py.
+# check_doc_drift.py enforces 2-1/2-0 parity with confidence.py.
+_TRIAS_NULL_PATTERNS = {"1-1-1", "1-1-0", "1-0-0", "0-0-0"}
+_TRIAS_VOTE_PATTERNS = frozenset({"3-0", "2-1", "2-0"} | _TRIAS_NULL_PATTERNS)
 
 
 def _vote_pattern_valid(pattern: str) -> bool:
-    """Return True if pattern matches regex AND vote counts sum to exactly 3."""
-    m = VOTE_PATTERN_REGEX.match(pattern)
-    if not m:
-        return False
-    parts = [int(x) for x in pattern.split("-")]
-    return sum(parts) == 3
-
-_TRIAS_NULL_PATTERNS = {"1-1-1", "1-1-0", "1-0-0", "0-0-0"}
+    """Return True iff pattern is one of the 7 canonical Trias vote patterns."""
+    return pattern in _TRIAS_VOTE_PATTERNS
 
 
 def _validate_trias(report: dict, errors: list) -> None:
