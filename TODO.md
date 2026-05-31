@@ -2,6 +2,64 @@
 
 ---
 
+## 🐞 Bug audit (2026-05-31) — multi-agent, **v1.0 BLOCKERS**
+
+> Source: exhaustive `consilium-bug-audit` Workflow (152 sub-agents, ~4.7M tokens, 22 min) over all 56 Python files. Each finding verified 2/2 (confirm-by-trace + adversarial refute); synthesis reclassified 3 raw findings as non-bugs. **51 raw → 37 distinct.** These passed the green gates (`run_evals` 72/0, `check_doc_drift`, `pyright`) — the suite did not catch them, and `test_rund2.py` fixtures **actively mask** several by injecting top-level fields the real voices never emit.
+>
+> **Systemic root cause:** producer↔consumer contract drift on `runs/<file>.json` — `build_report.py` writes one shape; `trace_graph`/`priors`/`retry_context`/`aggregator`/`efficiency`/`mark_outcome`/`usage` read a different key/level/type. Fix direction for the cluster: a single shared schema accessor that the writer and all readers go through. **Do `/consilium` before touching authoritative code (`validate_report`, `probe_change`, `aggregator`, `build_report`) + rewrite fixtures to mirror real voice output.**
+>
+> **Clean / reference modules (reuse these):** `utils.py` (`atomic_write_text`, `force_utf8_streams`), `audit_feedback.py` (imports `log_feedback._fingerprint` correctly), `analyze.py:proxy_score`, `confidence.py:VOTE_PATTERN_CONFIDENCE`.
+
+### 🔴 Critical (4) — block v1.0
+- [ ] **`scripts/probe_change.py:69-71` (parse_numstat)** — security-gate bypass: C-quoted git paths (non-ASCII filenames under `core.quotepath=true`) defeat 13/14 blocklist patterns → critical changes silently downgraded. → *decode C-quoted/octal paths to raw bytes before any consumer.* [CONFIRMED 2/2]
+- [ ] **`scripts/validate_report.py:305-311` (`_vote_pattern_valid`)** — `sum(parts)==3` invariant rejects 4/7 legit vote patterns (`2-0`, `1-1-0`, `1-0-0`, `0-0-0`) → every Trias-with-abstention run fails the final gate; also wrongly accepts `3-0-0`. → *membership in the canonical 7-pattern set, single-sourced from `confidence.py:VOTE_PATTERN_CONFIDENCE`.* [CONFIRMED, 7 merged]
+- [ ] **`scripts/validate_report.py:104` (`_validate_sequential_fields`)** — `--strict-rund2` crashes `AttributeError` on every real report (`float.get("scores")`). → *read conservator scores from `deliberation_log`, or guard the type.* [CONFIRMED, 2 merged]
+- [ ] **`scripts/efficiency.py:59-61` + `scripts/mark_outcome.py:52-54` (`_fingerprint`)** — `context[:30]` + omits `run_id` → disjoint hash space vs `log_feedback.py` sidecar keys → `outcome_map` always empty, `mark_outcome --run-path` always fails. (Blocks the `calibrate.py`/outcome-join feature ideas.) → *delete both copies; import `log_feedback._fingerprint(... run_id=...)`.* [CONFIRMED, 5 merged]
+
+### 🟠 High (19)
+- [ ] **`scripts/aggregator.py:344-351, 418-421` (aggregate_sequential)** — reads `regression_risk`/`irreversibility_flag` at top level; real voice nests them in `scores[i]` → irreversibility BLOCK never fires, `net_concern` always 0.15. (`test_rund2` fixture masks it.) → *aggregate per-candidate; fix fixture.* [CONFIRMED 2/2]
+- [ ] **`scripts/build_report.py:192-193`** — raises `ValueError` on 5/7 sequential result shapes (BLOCK/REWORK/ESCALATE/ADAPT_EXTENDED carry no `chosen`). → *handle non-chosen shapes, or document the interception contract in SKILL.md Step 6.* [CONFIRMED 2/2]
+- [ ] **`scripts/trace_graph.py:90` + `scripts/priors.py:196`** — read a non-existent top-level `aggregate`/`aggregation` key (it lives in `deliberation_log[i]["result"]`) → "vetoed: N" never renders; `priors._run_had_veto` fast path dead. → *read from `deliberation_log`; centralize accessor.* [CONFIRMED 2/2 each]
+- [ ] **`scripts/trace_graph.py:95-96`** — reads `confidence` as a dict; writer emits a scalar → confidence node never renders. → *treat as scalar.* [CONFIRMED 2/2]
+- [ ] **`scripts/priors.py:207, 209` (`_run_had_veto`)** — `result` is a dict (string-guard early-returns), `chosen` checked at wrong level → `conservator_veto_rate` always 0. → *inspect `step["result"]` as dict; check `result["chosen"] is None`/`result["vetoed"]`.* [CONFIRMED 2/2]
+- [ ] **`scripts/retry_context.py:82` (`_scores_for`)** — reads dead `risk_score` key → every candidate conservator=0.5, retry top-2 is risk-blind. → *read `regression_risk.net_concern` with legacy fallback (mirror `build_report._conservator_risk`).* [CONFIRMED 2/2]
+- [ ] **`scripts/usage.py:44-45, 103-112`** — drops non-core voices (skeptic, Trias personalities) from per-voice + mode-bucket totals → Dialectic/Trias cost undercounted; disagrees with `efficiency.py`. → *accumulate mode-bucket over all voices.* [CONFIRMED, 2 merged]
+- [ ] **`benchmark/scripts/efficiency_audit.py:92`** — reads stale `pipeline_executed` after rename to `report_detected` (no fallback, unlike `analyze.py`) → `pipeline_rate` always None. → *`pa.get("report_detected", pa.get("pipeline_executed"))`.* [CONFIRMED 2/2]
+- [ ] **`benchmark/verify.py:364-382` + `benchmark/analyze.py:301-315`** — `ok=True, score=0` wrong-answer runs enter the efficiency table + inflate `verified_ok`. → *gate `efficiency_score`/`verified_ok` on `score>0`, not `ok`.* [CONFIRMED 2/2]
+- [ ] **`scripts/scope_gate.py:39` (docstring) vs `:130` (`_MODE_CEILING`)** — docstring says `medium → dialectic`; code maps `medium → sequential` (drift from the lazy-routing change). → *correct the docstring.* [CONFIRMED, 2 merged]
+- [ ] **`SKILL.md:615` vs `modes/trias.md` vs `scope_gate.py`** — summary says low/medium/high → Dialectic; real routing low/medium → Sequential, high → Dialectic → cost inflation (1.33× where 1× is correct). → *align the SKILL.md sentence.* [CONFIRMED 2/2]
+- [ ] **`modes/trias.md:100`** — output example shows `vote_pattern: "3-0-0"` (unreachable; crashes `confidence.py`, validator wrongly accepts). → *change to `3-0`; extend drift check to `trias.md`.* [CONFIRMED, 2 merged]
+- [ ] **`scripts/probe_change.py:46-51` (`_run_numstat`)** — `text=True` without `encoding="utf-8"` → cp1252 mangles UTF-8 filenames on Windows; `_commit_count` identical. → *pass `encoding="utf-8"` (use `utils.force_utf8_streams` pattern).* [CONTESTED 1/2 — Windows-specific, low FP risk]
+- [ ] **`scripts/scope_gate.py:179-191` (`_gather_signals`)** — transitively inherits both `probe_change` path bugs; only `--signals-stdin` test hatch is clean. → *fix root + add a non-ASCII/C-quoted path eval scenario.* [CONFIRMED 2/2]
+- [ ] **`scripts/audit_counter.py:99-101` (save_state)** — fixed `.json.tmp` + no fsync; concurrent writers corrupt it → `load_state` silently resets, wiping history. → *route through `utils.atomic_write_text`.* [CONFIRMED 2/2]
+- [ ] **`scripts/audit_counter.py:116-122` (cmd_increment)** — unguarded read-modify-write loses increments under concurrency (TOCTOU). → *file lock (msvcrt/fcntl) or atomic CAS.* [CONTESTED 1/2 — shares root with save_state]
+- [ ] **`scripts/log_feedback.py:215-216`** — `run_path` dedup swallows PEND→OK/BAD updates → Step-6 close-the-loop call exits 3, PEND never upgraded. → *only dedupe when stored outcome equals new; else upgrade in place.* [CONFIRMED 2/2]
+
+### 🟡 Medium (9)
+- [ ] **`SKILL.md:116` vs `scope_gate.py:81`** — docs `**/secrets*`, impl `**/*secrets*` → reader won't realize `prod-secrets.yaml` is blocked. → *correct SKILL.md.* [CONFIRMED 2/2]
+- [ ] **`SKILL.md:237` vs `usage.py:14` vs `validate_report.py:167-169`** — `dispatch_count` (documented) vs `passes` (validated, never written) drift → validator check dead. → *pick one canonical name; update all three.* [CONFIRMED, 2 merged]
+- [ ] **`scripts/infer_pipeline.py:95-106`** — off-prompt `'none'` token is truthy → bypasses falsy guard → full step set + `pipeline` routing instead of `single_shot`. → *treat `'none'`/off-vocab as missing.* [CONFIRMED 2/2]
+- [ ] **`scripts/infer_pipeline.py:58-63, 78-82`** — reversibility floor pushes `trivial+irreversible` into the `critical/irreversible` bucket → spurious `review` step + `pipeline` misroute. → *separate magnitude axis from reversibility floor in bucketing.* [CONFIRMED 2/2]
+- [ ] **`benchmark/verify.py:344-350, 284-285`** — uncaught `IndexError` (pattern matches but no capture group) crashes verification, writes no `report.json`. → *validate ≥1 group / catch `IndexError`.* [CONFIRMED 2/2]
+- [ ] **`benchmark/analyze.py:332-341` (verify_html)** — green `verify-ok` badge for wrong-answer (`score=0, ok=True`) runs. → *color from `score>0`, not `state`.* [CONFIRMED 2/2 — same `ok`-vs-`correct` root as the High finding]
+- [ ] **`scripts/render_feedback_html.py:52`** — `PEND_HEADLESS` outcome has no CSS rule → rows render unstyled. → *add `.PEND_HEADLESS` rule + update Entry-doc enum.* [CONFIRMED, 2 merged]
+- [ ] **`scripts/log_feedback.py:338-342`** — exit-3 (duplicate skip) prints the same stdout summary as exit-0 → caller can't distinguish. → *suppress stdout on exit 3, or prefix `skipped:`.* [CONFIRMED, 2 merged]
+- [ ] **`scripts/audit_counter.py:125-142` (cmd_check)** — non-idempotent: repeated `--check` before `--record-divergence` double-fires the audit trigger. → *pending sentinel, or make trigger idempotent on the same count.* [CONFIRMED 2/2]
+
+### ⚪ Low (5)
+- [ ] **`scripts/aggregator.py:156` (aggregate_conservative_override)** — tie-break uses insertion order; spec says "safer wins on tie". → *secondary sort key `(-score, conservator_risk, idx)` + a true-tie eval.* [CONFIRMED 2/2]
+- [ ] **`scripts/aggregator.py:318-329` (docstring)** — ESCALATE documented at priority 6, fires at effective 3. → *reorder docstring to match code.* [CONFIRMED 2/2]
+- [ ] **`modes/trias.md:5` (`confidence_floor: 0.80`)** — exceeds OK-auto confidences `2-1` (0.75) / `2-0` (0.70) → WEAK logged for valid Trias runs. → *lower Trias floor ≤0.70, or exempt valid non-null patterns from the WEAK check.* [CONFIRMED 2/2]
+- [ ] **`scripts/validate_report.py:287-290` (`_MULTI_VOICE_MODES`)** — dead legacy alias entries (resolved to canonical before the check → unreachable). → *drop legacy names from the set.* [CONFIRMED 2/2]
+- [ ] **`scripts/audit_counter.py:104-113, 125-142`** — HOT→DEFAULT transition can shorten the first DEFAULT window to 5 runs (no base reset). → *track an audit base offset, reset on frequency flip.* [CONFIRMED 2/2]
+
+### Reclassified (verified NON-bugs — do not fix)
+- `scripts/infer_pipeline.py:66-75` (`_extract_conservator_fields`) — correct: reads the properly-nested `scores[i]` from the stored report. NOT a bug.
+- `benchmark/analyze.py:469` (`pipeline_executed` internal key) — internally consistent; naming-hygiene note only.
+- `validate_report.py:302` regex permissiveness — subsumed by the Critical `_vote_pattern_valid` fix.
+
+---
+
 ## 🚀 Release roadmap — v1.0 (public, source-available)
 
 > Goal: make the repo public + presentable as the flagship agentic/LLMOps CV artifact, then cut a tagged v1.0. Grounded in a repo audit on 2026-05-29. License is already **BSL** (Licensor: Schipor Alexandru → Apache-2.0 on 2030-05-16) — source-available, *not* OSS; state this plainly in the README. All green gates pass locally today: `run_evals` 68/0, `check_doc_drift` OK, `driver.py smoke` green.
