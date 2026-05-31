@@ -1,7 +1,8 @@
 # Pipeline vs plain Step 7 — benchmark results (kill-criterion)
 
-Protocol: `../pipeline-vs-step7-benchmark-spec.md`. Both arms = fresh Sonnet sub-agents,
-shared Consilium spec per task, scored by a hidden deterministic oracle neither arm saw.
+Protocol: both arms = fresh Sonnet sub-agents, shared Consilium spec per task,
+scored by a hidden deterministic oracle neither arm saw. (Raw per-task arms and the
+full protocol spec were trimmed from the repo; this file is the retained summary.)
 
 ## Scoreboard — Round 1 (2026-05-24)
 
@@ -21,7 +22,7 @@ All 3 R2 tasks are in the refactor/regression-trap regime (same pattern as T3).
 |---|---|---|---|---|---|
 | T4 normalize_weights+scale | refactor / algebraic extension | 8/8 ✅ | 8/8 ✅ | **tie** | Trap not activated — algebraically obvious |
 | T5 weighted_average+default | refactor / trivial substitution | 9/9 ✅ | 9/9 ✅ | **tie** | Not a regression trap; 1-line change |
-| T6 compute_histogram+normalize | refactor / early-return trap | 8/8 ✅ | 8/8 ✅ | **tie** | ⚠ arm A prompt compromised (see T6/result.md) |
+| T6 compute_histogram+normalize | refactor / early-return trap | 8/8 ✅ | 8/8 ✅ | **tie** | ⚠ arm A prompt compromised |
 
 R2 tally: pipeline **0 wins / 3 ties / 0 losses**.
 
