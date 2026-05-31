@@ -291,6 +291,42 @@ def test_log_feedback_dedup_skips_duplicate():
         assert len(parsed) == 1, f"expected 1 row after dedup, got {len(parsed)}"
 
 
+def test_log_feedback_upgrades_pend_in_place():
+    """A second log with the same --run-path but a different outcome upgrades the
+    existing row in place (close-the-loop), instead of skipping it as a duplicate."""
+    import subprocess
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import feedback  # noqa: E402
+
+    report = {
+        "success_criterion": "close-the-loop test",
+        "chosen_approach": "approach_y",
+        "confidence": 0.62,
+        "telemetry": {"mode": "sequential"},
+        "deliberation_log": [],
+    }
+    with tempfile.TemporaryDirectory() as td:
+        feedback_path = Path(td) / "FEEDBACK.html"
+        (Path(td) / "runs").mkdir()
+        base = [
+            sys.executable, str(ROOT / "scripts" / "log_feedback.py"),
+            "--feedback", str(feedback_path),
+            "--run-path", "runs/loop.json",
+        ]
+        inp = json.dumps(report).encode("utf-8")
+        r1 = subprocess.run(base + ["--outcome", "PEND_HEADLESS"], input=inp, capture_output=True, check=False)
+        assert r1.returncode == 0, f"first log failed: {r1.stderr.decode()}"
+        # Same run, same outcome -> duplicate skip (exit 3).
+        r2 = subprocess.run(base + ["--outcome", "PEND_HEADLESS"], input=inp, capture_output=True, check=False)
+        assert r2.returncode == 3, f"expected exit 3 (duplicate), got {r2.returncode}"
+        # Same run, NEW outcome -> upgrade in place (exit 0, no new row).
+        r3 = subprocess.run(base + ["--outcome", "OK", "--force-override"], input=inp, capture_output=True, check=False)
+        assert r3.returncode == 0, f"in-place upgrade failed: {r3.stderr.decode()}"
+        parsed = feedback.parse_feedback(feedback_path)
+        assert len(parsed) == 1, f"expected 1 row after in-place upgrade, got {len(parsed)}"
+        assert parsed[0]["outcome"] == "OK", f"expected OK after upgrade, got {parsed[0]['outcome']}"
+
+
 def test_mark_outcome_happy_path():
     """mark_outcome updates outcome and annotates note on a matched row."""
     import subprocess

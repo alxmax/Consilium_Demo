@@ -53,13 +53,16 @@ _STEP_TABLE: dict[tuple[str, str], list[str]] = {
     ("critical", "irreversible"):["implement", "compile", "review", "test"],
 }
 
-# Fallback buckets when conservator fields are missing from the report.
-# Maps net_concern range to (magnitude, reversibility).
-_CONCERN_BUCKETS = [
-    (0.0,  0.15, "trivial",  "complete"),
-    (0.15, 0.35, "moderate", "partial"),
-    (0.35, 0.65, "high",     "partial"),
-    (0.65, 1.01, "critical", "irreversible"),
+# Fallback magnitude tiers when conservator fields are missing from the report.
+# net_concern is floored UP to >=0.9 when a candidate is irreversible
+# (conservator.md net_concern formula), so it is a magnitude PROXY only — the
+# reversibility axis is handled separately in _fallback_from_concern, never
+# inferred from this scalar.
+_MAGNITUDE_BUCKETS = [
+    (0.0,  0.15, "trivial"),
+    (0.15, 0.35, "moderate"),
+    (0.35, 0.65, "high"),
+    (0.65, 1.01, "critical"),
 ]
 
 # Valid conservator vocabularies. Any off-vocabulary token (e.g. an emitted
@@ -81,11 +84,22 @@ def _extract_conservator_fields(report: dict, chosen: str) -> tuple[str | None, 
     return None, None
 
 
-def _fallback_from_concern(net_concern: float) -> tuple[str, str]:
-    for lo, hi, mag, rev in _CONCERN_BUCKETS:
+def _fallback_from_concern(net_concern: float, reversibility: str | None = None) -> tuple[str, str]:
+    """Reconstruct (magnitude, reversibility) from a scalar net_concern.
+
+    Separates the two axes. net_concern maps to a magnitude tier; reversibility
+    is taken from the caller when the report already provided a valid value, and
+    otherwise defaults to the conservative-but-bounded 'partial'. We never infer
+    'irreversible' from the scalar: net_concern is floored up to >=0.9 for
+    irreversible candidates, so a high value is ambiguous between 'genuinely
+    critical' and 'merely irreversible' — guessing 'irreversible' would over-route
+    trivial-but-irreversible changes into the review quadrant.
+    """
+    rev = reversibility if reversibility in _VALID_REVERSIBILITY else "partial"
+    for lo, hi, mag in _MAGNITUDE_BUCKETS:
         if lo <= net_concern < hi:
             return mag, rev
-    return "critical", "irreversible"
+    return "critical", rev
 
 
 def infer_steps(report: dict) -> tuple[list[str], dict]:
@@ -98,10 +112,18 @@ def infer_steps(report: dict) -> tuple[list[str], dict]:
     magnitude, reversibility = _extract_conservator_fields(report, chosen)
     source = "deliberation_log"
 
-    if magnitude not in _VALID_MAGNITUDES or reversibility not in _VALID_REVERSIBILITY:
-        net_concern = report.get("voice_scores", {}).get("conservator", 0.5)
-        magnitude, reversibility = _fallback_from_concern(float(net_concern))
-        source = f"voice_scores.conservator={net_concern} (fallback)"
+    mag_valid = magnitude in _VALID_MAGNITUDES
+    rev_valid = reversibility in _VALID_REVERSIBILITY
+    if not (mag_valid and rev_valid):
+        net_concern = float(report.get("voice_scores", {}).get("conservator", 0.5) or 0.5)
+        fb_mag, fb_rev = _fallback_from_concern(net_concern, reversibility if rev_valid else None)
+        # Keep whichever axis the report actually provided; reconstruct only the
+        # missing one. A known reversibility sidesteps the floored-scalar ambiguity
+        # for that axis (e.g. a known 'complete' avoids a spurious review step).
+        magnitude = magnitude if mag_valid else fb_mag
+        reversibility = reversibility if rev_valid else fb_rev
+        missing = " + ".join(a for a, ok in (("magnitude", mag_valid), ("reversibility", rev_valid)) if not ok)
+        source = f"voice_scores.conservator={net_concern} (fallback; reconstructed {missing})"
 
     key = (magnitude, reversibility)
     steps = _STEP_TABLE.get(key)
