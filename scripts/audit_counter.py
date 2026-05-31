@@ -41,6 +41,8 @@ State schema (.consilium/audit_state.json):
       "frequency": 20|5,                # current adaptive frequency
       "recent_divergences": [bool]*5,   # last 5 audit outcomes (newest last)
       "last_audit_run": <int|null>,     # sequential_count at last audit fired
+      "pending_audit_at": <int|null>,   # count already signaled by --check,
+                                        # awaiting --record-divergence (idempotency)
       "audits": [                       # rolling log (last 20)
         {"at": <int>, "divergence": bool, "seq": "<id>", "par": "<id>",
          "timestamp": "ISO8601"}
@@ -76,6 +78,7 @@ def _empty_state() -> dict:
         "frequency": DEFAULT_FREQUENCY,
         "recent_divergences": [],
         "last_audit_run": None,
+        "pending_audit_at": None,
         "audits": [],
     }
 
@@ -123,21 +126,48 @@ def cmd_increment(args) -> int:
     return 0
 
 
+def _audit_decision(state: dict, headless: bool) -> dict:
+    """Pure: decide whether the current run is due for a silent audit. No I/O.
+
+    Cadence is anchored to ``last_audit_run`` (not the absolute count) so a
+    frequency flip (HOT<->DEFAULT) restarts a full window — otherwise the first
+    window after a HOT->DEFAULT flip could be as short as HOT_FREQUENCY runs
+    (e.g. flip at count 55 would re-fire at the next absolute multiple of 20 = 60,
+    only 5 runs later). Idempotent within a count: once ``--check`` has signalled
+    an audit (pending_audit_at == count), a repeat check returns
+    ``should_audit=False`` until ``--record-divergence`` clears the sentinel.
+    """
+    count = state["sequential_count"]
+    base = state["last_audit_run"] or 0
+    is_due = (
+        count > 0
+        and count != state["last_audit_run"]
+        and (count - base) % state["frequency"] == 0
+    )
+    already_pending = state.get("pending_audit_at") == count
+    return {
+        "is_due": is_due,
+        "already_pending": already_pending,
+        "should_audit": is_due and not headless and not already_pending,
+    }
+
+
 def cmd_check(_args) -> int:
     state = load_state()
     headless = is_headless()
-    is_due = (
-        state["sequential_count"] > 0
-        and state["sequential_count"] % state["frequency"] == 0
-        and state["sequential_count"] != state["last_audit_run"]
-    )
-    should_audit = is_due and not headless
+    decision = _audit_decision(state, headless)
+    if decision["should_audit"]:
+        # Mark this count as signalled so a repeat --check before
+        # --record-divergence does not double-fire the audit.
+        state["pending_audit_at"] = state["sequential_count"]
+        save_state(state)
     print(json.dumps({
-        "should_audit": should_audit,
+        "should_audit": decision["should_audit"],
         "sequential_count": state["sequential_count"],
         "frequency": state["frequency"],
         "last_audit_run": state["last_audit_run"],
-        "headless_skipped": is_due and headless,
+        "headless_skipped": decision["is_due"] and headless,
+        "already_pending": decision["already_pending"],
         "recent_divergences": state["recent_divergences"][-ROLLING_WINDOW:],
     }))
     return 0
@@ -151,6 +181,7 @@ def cmd_record_divergence(args) -> int:
     state = load_state()
     state["audit_count"] += 1
     state["last_audit_run"] = state["sequential_count"]
+    state["pending_audit_at"] = None  # audit resolved; clear the --check sentinel
     state["recent_divergences"].append(div)
     state["recent_divergences"] = state["recent_divergences"][-ROLLING_WINDOW:]
     state["audits"].append({
