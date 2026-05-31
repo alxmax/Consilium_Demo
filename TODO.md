@@ -15,19 +15,19 @@
 
 ### Phase 1 — Cut the release
 
-- [ ] **Distribution story** — decide how others consume it: (a) manual-install docs (copy to `~/.claude/skills/consilium/`), or (b) package as a Claude Code plugin (`.claude-plugin/plugin.json` + a marketplace entry). Pick one, document it in the README. The `run-consilium` skill is the "how to run/verify" companion.
+- [x] **Distribution story** — DONE: README §"Install" (Linux/macOS + Windows) + the `> **Distribution:** manual install is the supported path` note (README:60). Manual-install chosen over plugin/marketplace. Senate `2026-05-31_105804-consilium-v1-scope-decision` confirmed it is already shipped.
 - [x] **README §"Why not RAG / LangGraph / LangChain" (architectural decisions).** Short, honest section documenting the *deliberate* rejection on scope/discipline grounds — stdlib-only, zero-dep reproducibility, no measured need at ~220 runs, native Agent-tool orchestration already covers the graph — framed as a strength, not an omission. Cite the Senate audit (Senate repo: `runs/senate/2026-05-29_120838-rag-langgraph-in-consilium-core.json` — verdict MODIFY; STOP 7 / MODIFY 2 / GO 0; both routed to §6) and its three precedents (2026-05-16, 2026-05-19 ×2). Recommended by the 2026-05-25 CV-strategy audit: "frame the LangGraph rejection as a scope/discipline decision, not 'LangGraph found inferior'." RAG/LangGraph/LangChain belong in §6.
 - [x] **CHANGELOG.md** — none exists. Seed it for v1.0 (modes, pipeline, silent audit, architecture explainer, run-consilium skill).
 - [ ] **Tag v1.0.0** — no git tags exist. Optionally add a version marker the skill can surface.
 - [ ] **Land public history clean** — ties into *User directions › Public-release prep* below; the repo has a large branch backlog, so plan the single-clean-commit / squash strategy for the public mirror.
-- [ ] **Wire `trace_graph.py` into the README** (deferred — script already shipped on `feat/trace-graph-mermaid`). Add a short "Pipeline trace" section: one `python scripts/trace_graph.py --input .consilium/runs/<file>.json --fence` example + the rendered Mermaid block (GitHub renders it natively). Shows the per-run executed pipeline as a portfolio detail. Optional sibling follow-up: in-explainer rendering (own `/consilium`, touches `docs/architecture/`).
+- [x] **Wire `trace_graph.py` into the README** — DONE: README §"Pipeline trace" (README:89) has the `trace_graph.py --fence` example + a static ```mermaid block (GitHub renders natively). The optional sibling follow-up (in-explainer **live** rendering via mermaid.js CDN) is **dropped** — Senate `2026-05-31_105804` Round 2, 6/6 senators against the runtime CDN: it duplicates the already-shipped static fence and adds a non-stdlib runtime surface (Tacitus: the 2026-05-19 sidecar precedent). The static fence IS the observability graph; if ever revived it must clear the sidecar bar (isolation contract + value kill-criterion + fully-offline build).
 
 ### Phase 2 — Post-v1 growth (already tracked below; not release-blockers)
 
 - [ ] Efficiency / model-count audit kill-criterion (see HIGH PRIORITY) — gate any routing change on n≥5 oracle-validated wins.
-- [ ] *User directions (open)*: multi-modal input, human-readable audit trail, versioning & config system, API backend, explainability UI.
+- [ ] *User directions (open)*: multi-modal input, versioning & config system, API backend, explainability UI. (Human-readable audit trail RESOLVED — see User directions below.)
 - [ ] §6 Showcase project (see DEFERRED) — breadth CV artifact, separate repo.
-- [ ] **Pipeline observability graph — WITHOUT LangGraph.** Visualize the deliberation flow (Conservator→Generator→Control→aggregate→confidence→report; the scale_down short-circuit; Trias 3×3 cascades) for the architecture explainer. Key insight from the 2026-05-29 Senate audit: this is a **view, not runtime orchestration** — so LangGraph/LangChain are not needed. Approach, stdlib-only: (a) a small stdlib script reads a `.consilium/runs/<file>.json` (`deliberation_log` + `telemetry` already record the executed path, `mode`, `dispatch_count`) and emits **Mermaid** (or Graphviz DOT) flowchart text via plain f-string templating — zero deps, governed correctly since the rule binds `scripts/`; (b) the React explainer renders it (Mermaid via CDN, exactly like React/Babel already load) → a static canonical pipeline diagram + a per-run *dynamic trace* of what actually fired. Aurelius flagged this same stdlib+Mermaid alternative in the 2026-05-19 audit. Run `/consilium` before building (touches `docs/architecture/`).
+- [x] **Pipeline observability graph — WITHOUT LangGraph.** RESOLVED (Senate `2026-05-31_105804` Round 2). Part (a) — a stdlib script that reads `.consilium/runs/<file>.json` (`deliberation_log` + `telemetry`) and emits Mermaid flowchart text, zero deps — **shipped** as `scripts/trace_graph.py`, surfaced via README §"Pipeline trace" (static ```mermaid fence, GitHub renders natively). Part (b) — live in-explainer render via mermaid.js **CDN** — **dropped**: 6/6 senators against the runtime CDN (it duplicates the already-shipped static fence and adds a non-stdlib runtime surface). The static fence IS the canonical diagram; reviving a live render must clear the sidecar bar (isolation contract + value kill-criterion + fully-offline build — Tacitus, 2026-05-19 sidecar precedent).
 
 ---
 
@@ -89,7 +89,7 @@
 
 - [ ] **Public-release prep** — make the repo public; plan how to land it in a clean single commit.
 - [ ] **Multi-modal input** — Consilium să accepte și documente/specificații, nu doar text liber. Relevant pentru enterprise workflows reale.
-- [ ] **Audit trail human-readable** — nu JSON pentru developeri, ci un raport citibil de un manager. Demonstrează gândire la utilizatorul final.
+- [x] **Audit trail human-readable** — RESOLVED (Senate `2026-05-31_105804` Round 2, **unanimous 6/6: fold into existing `.consilium/FEEDBACK.html`**, do not build a separate renderer). FEEDBACK.html (append-only, `log_feedback.py`, atomic writes) already is the human-readable real-usage journal. Any future manager-facing view extends that single source of truth — no new audit-trail component.
 - [ ] **Versioning & config system** — versiuni de prompts, versiuni de agents, config per workflow.
 - [ ] **API real backend** — FastAPI / Node backend; endpoints: `/chat`, `/agents`, `/workflow`, `/memory`. (Verifică ce există deja înainte.)
 - [ ] **Explainability UI** — "Why this answer?", "Which agents were used?", "What data was retrieved?".
