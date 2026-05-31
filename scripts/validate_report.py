@@ -71,13 +71,13 @@ def _is_non_negative_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
-# === RUND2 ===
+# === ROUND2 ===
 _REVERSIBILITY_VALUES = frozenset({"complete", "partial", "irreversible"})
 _MAGNITUDE_VALUES = frozenset({"trivial", "moderate", "high", "critical"})
 
 
 def _validate_regression_risk(value: object) -> list[str]:
-    """Accept scalar float (old format) OR object with reversibility/magnitude/net_concern (RUND2)."""
+    """Accept scalar float (old format) OR object with reversibility/magnitude/net_concern (ROUND2)."""
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         if not (0.0 <= float(value) <= 1.0):
             return [f"regression_risk scalar must be in [0.0, 1.0], got {value}"]
@@ -98,12 +98,12 @@ def _validate_regression_risk(value: object) -> list[str]:
 
 
 def _validate_sequential_fields(report: dict) -> list[str]:
-    """Strict sequential-mode field validation — only run with --strict-rund2 flag."""
+    """Strict sequential-mode field validation — only run with --strict-round2 flag."""
     problems = []
     # Per-candidate conservator scores (regression_risk + tokens_budget) live in
     # deliberation_log[step=conservator].scores. report["voice_scores"]["conservator"]
     # is a scalar float (build_report), so the old traversal raised AttributeError
-    # ("float has no .get") on every real report under --strict-rund2.
+    # ("float has no .get") on every real report under --strict-round2.
     cons_scores: list = []
     for step in report.get("deliberation_log", []):
         if isinstance(step, dict) and step.get("step") == "conservator":
@@ -118,7 +118,7 @@ def _validate_sequential_fields(report: dict) -> list[str]:
         if "tokens_budget" not in score:
             problems.append(f"strict-sequential: candidate '{score.get('id')}' conservator missing tokens_budget")
     return problems
-# === END RUND2 ===
+# === END ROUND2 ===
 
 
 # === PHILOSOPHICAL VOICES ===
@@ -538,14 +538,14 @@ def main(argv: list[str] | None = None) -> int:
         default=sys.stdin,
         help="JSON input file (default: stdin)",
     )
-    # === RUND2 ===
+    # === ROUND2 ===
     ap.add_argument(
-        "--strict-rund2",
+        "--strict-round2",
         action="store_true",
         default=False,
-        help="require RUND2 fields (regression_risk object, tokens_budget) in conservator scores",
+        help="require ROUND2 fields (regression_risk object, tokens_budget) in conservator scores",
     )
-    # === END RUND2 ===
+    # === END ROUND2 ===
     # === PHILOSOPHICAL VOICES ===
     ap.add_argument(
         "--strict-philosophical",
@@ -575,10 +575,10 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     problems = validate(report)
-    # === RUND2 ===
-    if args.strict_rund2:
+    # === ROUND2 ===
+    if args.strict_round2:
         problems.extend(_validate_sequential_fields(report))
-    # === END RUND2 ===
+    # === END ROUND2 ===
     # === PHILOSOPHICAL VOICES ===
     if args.strict_philosophical:
         validator = _PHILOSOPHICAL_VALIDATORS.get(args.strict_philosophical)

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import argparse
 
-# === RUND2 ===
+# === ROUND2 ===
 VOCABULARY_MAP: dict[str, dict] = {
     "reversibility": {
         "complete": "ușor de anulat",
@@ -46,7 +46,7 @@ TOKENS_BUDGET: dict[tuple[str, str], int] = {
     ("critical", "irreversible"): 4000,
 }
 _DEFAULT_BUDGET = 800
-# === END RUND2 ===
+# === END ROUND2 ===
 
 
 def translate(category: str, value: object) -> str:

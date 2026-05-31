@@ -1,4 +1,4 @@
-/* trias.jsx — Trias deep-dive (RUND2 weights) + lens heatmap + lazy routing */
+/* trias.jsx — Trias deep-dive (ROUND2 weights) + lens heatmap + lazy routing */
 
 const LENSES = [
   {

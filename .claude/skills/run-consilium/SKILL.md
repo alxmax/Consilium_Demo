@@ -40,7 +40,7 @@ python .claude/skills/run-consilium/driver.py shot       # screenshot docs/archi
 `smoke` is what you run to confirm a change didn't break anything. Verified output:
 
 ```
-[PASS] test_rund2.py  (exit 0)
+[PASS] test_round2.py  (exit 0)
 [PASS] test_feedback_html.py  (exit 0)
 [PASS] check_doc_drift.py  (exit 0)
 [PASS] architecture build --check  (exit 0)
@@ -68,7 +68,7 @@ nav tabs PREMISE/VOICES/LAYERS/...). A blank/tiny PNG means the CDN didn't load 
 Each script is a standalone CLI with JSON over stdin/stdout. Verified commands:
 
 ```bash
-python scripts/test_rund2.py                      # 25 RUND2 unit tests -> OK
+python scripts/test_round2.py                     # 25 ROUND2 unit tests -> OK
 python scripts/test_feedback_html.py              # 11 feedback tests -> "11/11 passed"
 python -X utf8 scripts/run_evals.py               # regression scenarios: 68 passed, 0 failed
 python -X utf8 scripts/check_doc_drift.py         # "doc-drift OK: all invariants hold"

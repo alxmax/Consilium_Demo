@@ -1,4 +1,4 @@
-/* pipeline.jsx — animated step 0 → 7 walkthrough (RUND2: Conservator first) */
+/* pipeline.jsx — animated step 0 → 7 walkthrough (ROUND2: Conservator first) */
 
 const STEPS = [
   {

@@ -24,7 +24,7 @@ cat input.json | python scripts/aggregator.py --scheme conservative_override
 | `risk_adjusted_utility` | `candidates[].scores` | none (soft) | `utility × (1 − sigmoid(risk))` | many candidates clustered near the veto threshold; want a smooth ramp, not a cliff |
 | `majority` | `candidates[].scores` | none | highest mean; tie → lowest stdev → insertion order | quick mean-of-voices pick without risk weighting |
 | `team_vote` | `personalities[].chose` + `candidates[]` | abstain = `chose: null` | democratic majority (≥2 of 3); exact tie raises | Trias mode — vote over 3 personalities' chosen candidates |
-| `sequential` (alias `rund2`) | `generator`, `control`, `conservator` voice outputs | cascade (see below) | priority-ordered verdict, not a score rank | Sequential mode — single-context veto cascade |
+| `sequential` | `generator`, `control`, `conservator` voice outputs | cascade (see below) | priority-ordered verdict, not a score rank | Sequential mode — single-context veto cascade |
 
 ## conservative_override (default)
 
