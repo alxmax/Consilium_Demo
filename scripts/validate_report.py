@@ -100,7 +100,16 @@ def _validate_regression_risk(value: object) -> list[str]:
 def _validate_sequential_fields(report: dict) -> list[str]:
     """Strict sequential-mode field validation — only run with --strict-rund2 flag."""
     problems = []
-    for score in report.get("voice_scores", {}).get("conservator", {}).get("scores", []):
+    # Per-candidate conservator scores (regression_risk + tokens_budget) live in
+    # deliberation_log[step=conservator].scores. report["voice_scores"]["conservator"]
+    # is a scalar float (build_report), so the old traversal raised AttributeError
+    # ("float has no .get") on every real report under --strict-rund2.
+    cons_scores: list = []
+    for step in report.get("deliberation_log", []):
+        if isinstance(step, dict) and step.get("step") == "conservator":
+            cons_scores = step.get("scores") or []
+            break
+    for score in cons_scores:
         rr = score.get("regression_risk")
         if rr is None:
             problems.append(f"strict-sequential: candidate '{score.get('id')}' conservator missing regression_risk object")

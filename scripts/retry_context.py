@@ -79,7 +79,14 @@ def _scores_for(cid: str, control: list, conservator: list) -> dict:
     risk = next((s for s in conservator if isinstance(s, dict) and s.get("id") == cid), {})
     issues = verdict.get("issues") or []
     control_score = 0.0 if not verdict.get("valid") else max(0.3, 1.0 - 0.15 * len(issues))
-    risk_score = risk.get("risk_score", 0.5)
+    # Conservator risk lives at regression_risk.net_concern (conservator.md);
+    # the old top-level risk_score key is never populated, so retry top-2
+    # selection was risk-blind (every candidate got 0.5). Mirror build_report.
+    rr = risk.get("regression_risk")
+    if isinstance(rr, dict) and isinstance(rr.get("net_concern"), (int, float)):
+        risk_score = rr["net_concern"]
+    else:
+        risk_score = risk.get("risk_score", 0.5)
     return {
         "generator": 0.5 if cid == "do_nothing" or cid.startswith("adversarial_") else 1.0,
         "control": round(control_score, 3),

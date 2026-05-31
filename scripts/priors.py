@@ -183,30 +183,21 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
     return missing
 
 
-def _result_mentions_veto(result: object) -> bool:
-    if not isinstance(result, str):
-        return False
-    low = result.lower()
-    if "veto" not in low:
-        return False
-    return "niciun veto" not in low and "no veto" not in low
-
-
 def _run_had_veto(run: dict) -> bool:
-    agg = run.get("aggregation")
-    if isinstance(agg, dict):
-        if agg.get("vetoed"):
-            return True
-        if "chosen" in agg and agg["chosen"] is None:
-            return True
+    # The aggregate result is a dict under deliberation_log[step=aggregate].result
+    # (build_report). A veto shows as a non-empty `vetoed` list or chosen == None
+    # (all candidates vetoed). The old run["aggregation"] top-level key never
+    # existed, and the result-as-string check never fired on the real dict shape —
+    # so conservator_veto_rate was permanently 0.
     for step in run.get("deliberation_log", []):
-        if step.get("step") != "aggregate":
+        if not isinstance(step, dict) or step.get("step") != "aggregate":
             continue
-        if step.get("scheme") != "conservative_override":
+        result = step.get("result")
+        if not isinstance(result, dict):
             continue
-        if _result_mentions_veto(step.get("result")):
+        if result.get("vetoed"):
             return True
-        if "chosen" in step and step["chosen"] is None:
+        if "chosen" in result and result["chosen"] is None:
             return True
     return False
 
