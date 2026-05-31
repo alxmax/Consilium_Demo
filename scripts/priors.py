@@ -136,7 +136,6 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
     """
     if not runs_dir.exists():
         return []
-    import re
 
     # Load sidecar: maps fingerprint → "runs/<file>.json"
     sidecar_path = runs_dir / ".run_path_map.json"
