@@ -11,7 +11,7 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from infer_pipeline import recommend_implement_mode  # noqa: E402
+from infer_pipeline import infer_steps, recommend_implement_mode  # noqa: E402
 
 
 def _report(magnitude: str, reversibility: str, chosen: str = "approach_x") -> dict:
@@ -54,6 +54,26 @@ def main() -> int:
         passed += ok
         failed += not ok
         print(f"  {'PASS' if ok else 'FAIL'}  chosen={chosen} -> {got} (expected single_shot)")
+
+    # Regression: a hand-built report (prior-deliberation passthrough / scale_down)
+    # carries voice_scores=null and no conservator scores. infer_steps/recommend_implement_mode
+    # must route via the 0.5-net_concern fallback, NOT crash with AttributeError on None.get().
+    passthrough = {
+        "chosen_approach": "prior-deliberation",
+        "voice_scores": None,
+        "deliberation_log": [{"step": "prior_deliberation_passthrough", "matched": "x", "date": "2026-05-31"}],
+    }
+    try:
+        steps, _ = infer_steps(passthrough)
+        mode = recommend_implement_mode(passthrough)
+        ok = isinstance(steps, list) and mode in ("pipeline", "single_shot")
+        note = f"steps={steps}, mode={mode}"
+    except Exception as exc:  # noqa: BLE001 — the bug under test raised AttributeError
+        ok = False
+        note = f"raised {type(exc).__name__}: {exc}"
+    passed += ok
+    failed += not ok
+    print(f"  {'PASS' if ok else 'FAIL'}  null voice_scores report does not crash ({note})")
 
     print(f"\n{passed}/{passed + failed} passed, {failed} failed")
     return 1 if failed else 0

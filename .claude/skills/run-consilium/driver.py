@@ -80,8 +80,18 @@ def smoke():
     """
     failures = 0
 
-    failures += run("test_rund2.py", script("test_rund2.py")).returncode != 0
-    failures += run("test_feedback_html.py", script("test_feedback_html.py")).returncode != 0
+    # All scripts/test_*.py unit suites — kept in lockstep with .github/workflows/ci.yml.
+    for suite in (
+        "test_rund2.py",
+        "test_feedback_html.py",
+        "test_audit_counter.py",
+        "test_lens_bias.py",
+        "test_vote_degeneracy.py",
+        "test_meta_critic_trim.py",
+        "test_implement_mode.py",
+        "test_implement_pipeline.py",
+    ):
+        failures += run(suite, script(suite)).returncode != 0
     failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0
     failures += run("architecture build --check",
                     PY + [str(REPO / "docs" / "architecture" / "build.py"), "--check"]).returncode != 0
