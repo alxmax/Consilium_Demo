@@ -55,6 +55,8 @@ RUNS = _feedback.RUNS
 parse_feedback = _feedback.parse_feedback
 parse_runs = _feedback.parse_runs
 
+from version import prompts_changed_since  # noqa: E402 — sibling script, scripts/ on path
+
 TOKEN_RE = re.compile(r"[^\W\d_]{4,}", re.UNICODE)
 STOPWORDS = {
     "the", "and", "with", "from", "this", "that", "was", "were", "but",
@@ -260,6 +262,32 @@ def _find_prior_match(label: str, entries: list[dict], window_days: int = _PRIOR
     return None
 
 
+def _prompt_drift(runs_dir: Path) -> dict | None:
+    """Step-0 advisory: did prompts/ or modes/ change since the most-recent prior run?
+
+    Reads ``telemetry.consilium_ref`` from the newest run that carries one (older runs
+    predate the provenance feature) and diffs it against HEAD. Returns a note only when
+    a resolvable baseline exists AND files changed; otherwise None. Never raises —
+    ``prompts_changed_since`` guards an empty/"unknown"/dirty/unreachable ref.
+    """
+    if not runs_dir.exists():
+        return None
+    for run_file in sorted(runs_dir.glob("*.json"), reverse=True):
+        try:
+            data = json.loads(run_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        ref = (data.get("telemetry") or {}).get("consilium_ref")
+        if not ref:
+            continue
+        # Newest stamped run is the baseline; compute drift against it and stop.
+        n = prompts_changed_since(ref)
+        return {"changed_files": n, "since_ref": ref, "since_run": run_file.name} if n > 0 else None
+    return None
+
+
 def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False, label: str | None = None) -> dict:
     entries = parse_feedback(FEEDBACK)
     recent = entries[-n:]
@@ -284,6 +312,9 @@ def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False,
         out["source"]["runs_total"] = len(runs)
         out.update(_veto_rate(runs))
         out["missing_feedback_runs"] = find_missing_feedback_runs(RUNS, entries)
+        drift = _prompt_drift(RUNS)
+        if drift:
+            out["prompt_drift"] = drift
     if label is not None:
         out["prior_deliberation_match"] = _find_prior_match(label, entries)
     if headless:

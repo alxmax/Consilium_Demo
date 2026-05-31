@@ -157,7 +157,7 @@ What this project concretely shows, in Agentic-AI / LLMOps terms. Rated **Full**
 | Regression testing | Full | `evals/scenarios.json` + `run_evals.py` — deterministic subprocess tests of the scripts (not LLM-output evals) |
 | Benchmarking vs baselines | Full | `benchmark/` compares each mode against bare-model baselines with a hidden oracle kept out-of-tree |
 | Fabrication / hallucination discipline | **Partial** | a documented independent-oracle rule for any quantitative claim (`experiments/README.md`) — a review process, not an automated metric |
-| Prompt versioning | **Partial** | prompts live in `prompts/voices/*.md` under git; no formal version registry |
+| Version provenance | Full | every run stamps `telemetry.consilium_version` (`git describe`) + `consilium_ref` (the committed sha, blank on a dirty tree) — any `.consilium/runs/*.json` is reproducible via `git checkout`, and `scripts/version.py --drift <ref>` shows which prompts/modes changed since. Git is the version system — no bespoke registry |
 | Framework orchestration (LangGraph / CrewAI) | n/a | evaluated and deliberately rejected — see below |
 | RAG / embeddings / vector search · web backend · cloud deploy | n/a | out of scope by design; targeted by a separate showcase project |
 

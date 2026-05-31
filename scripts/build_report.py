@@ -48,10 +48,28 @@ import sys
 from typing import Any
 
 from utils import force_utf8_streams, issue_penalty, validate_keys
+from version import consilium_ref, consilium_version
 
 
 def _err(msg: str) -> None:
     print(msg, file=sys.stderr)
+
+
+def _stamp_provenance(report: dict) -> dict:
+    """Stamp repo version provenance into every report's telemetry block.
+
+    consilium_version = human display stamp; consilium_ref = the resolvable diff
+    operand drift checks read (empty on a dirty/unknown tree). build_report is one
+    of three report producers — the two hand-built SKILL.md templates (scale_down,
+    prior-deliberation passthrough) stamp the same two fields inline.
+    """
+    tele = report.get("telemetry")
+    if not isinstance(tele, dict):
+        tele = {}
+        report["telemetry"] = tele
+    tele["consilium_version"] = consilium_version()
+    tele["consilium_ref"] = consilium_ref()
+    return report
 
 
 def _candidate_by_id(items: list[dict], cid: str) -> dict | None:
@@ -174,7 +192,7 @@ def _build_skipped(bundle: dict) -> dict:
 
 def build(bundle: dict) -> dict:
     if bundle.get("skipped") is True:
-        return _build_skipped(bundle)
+        return _stamp_provenance(_build_skipped(bundle))
 
     for required in ("success_criterion", "verification"):
         v = bundle.get(required)
@@ -239,7 +257,7 @@ def build(bundle: dict) -> dict:
             report["dissent"] = aggregate["dissent"]
         if "abstained" in aggregate:
             report["abstained"] = aggregate["abstained"]
-    return report
+    return _stamp_provenance(report)
 
 
 def _default_reasoning(aggregate: dict, confidence_block: dict) -> str:
