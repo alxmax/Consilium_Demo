@@ -90,6 +90,7 @@ def smoke():
         "test_meta_critic_trim.py",
         "test_implement_mode.py",
         "test_implement_pipeline.py",
+        "test_probe_change.py",
     ):
         failures += run(suite, script(suite)).returncode != 0
     failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0

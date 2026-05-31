@@ -35,6 +35,8 @@ jobs:
         run: python scripts/test_implement_mode.py
       - name: Step-7 implement-pipeline (red-green) tests
         run: python scripts/test_implement_pipeline.py
+      - name: probe_change path-decode (security-gate) tests
+        run: python scripts/test_probe_change.py
       - name: Regression scenarios (run_evals)
         run: python scripts/run_evals.py
       - name: Mode-doc drift invariants (check_doc_drift)
