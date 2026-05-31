@@ -418,7 +418,7 @@ def validate(report: dict) -> list[str]:
         report.get("chosen_approach"),
     ))
     # Telemetry required for all non-skipped reports, Trias included — it's
-    # the most expensive mode (9 sub-agenți) so cost rollup matters most there.
+    # the most expensive mode (3 sub-agents, worst case 7) so cost rollup matters most there.
     problems.extend(_validate_telemetry_required(report))
     # pipeline_executed required for non-skipped reports (Trias and Sequential alike).
     # Distinguishes the 3-voice path from scale_down / passthrough short-circuits.

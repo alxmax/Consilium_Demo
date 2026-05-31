@@ -10,7 +10,7 @@ deliberation skill). It is not a server or a GUI app — a live deliberation is
 LLM-orchestrated and can't be driven headlessly. What *can* be driven
 deterministically, without an LLM, is everything around it:
 
-- three smoke-test suites + the doc-drift gate,
+- the unit-test suites (all `scripts/test_*.py`) + the doc-drift gate,
 - the voice→report **pipeline** (`aggregator`→`confidence`, `build_report`→`validate_report`),
 - a static React **architecture explainer** (`docs/architecture.html`) you can screenshot.
 
@@ -42,6 +42,12 @@ python .claude/skills/run-consilium/driver.py shot       # screenshot docs/archi
 ```
 [PASS] test_round2.py  (exit 0)
 [PASS] test_feedback_html.py  (exit 0)
+[PASS] test_audit_counter.py  (exit 0)
+[PASS] test_lens_bias.py  (exit 0)
+[PASS] test_vote_degeneracy.py  (exit 0)
+[PASS] test_meta_critic_trim.py  (exit 0)
+[PASS] test_implement_mode.py  (exit 0)
+[PASS] test_implement_pipeline.py  (exit 0)
 [PASS] check_doc_drift.py  (exit 0)
 [PASS] architecture build --check  (exit 0)
 [PASS] run_evals.py (regression scenarios)  (exit 0)
@@ -69,8 +75,8 @@ Each script is a standalone CLI with JSON over stdin/stdout. Verified commands:
 
 ```bash
 python scripts/test_round2.py                     # 25 ROUND2 unit tests -> OK
-python scripts/test_feedback_html.py              # 11 feedback tests -> "11/11 passed"
-python -X utf8 scripts/run_evals.py               # regression scenarios: 68 passed, 0 failed
+python scripts/test_feedback_html.py              # feedback tests -> "12/12 passed"
+python -X utf8 scripts/run_evals.py               # regression scenarios: 72 passed, 0 failed
 python -X utf8 scripts/check_doc_drift.py         # "doc-drift OK: all invariants hold"
 python -X utf8 scripts/audit_counter.py --status  # silent-parallel-audit state summary
 python docs/architecture/build.py --check         # "outputs up to date" (exit 1 if src/*.jsx unbuilt)

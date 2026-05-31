@@ -113,6 +113,8 @@ For any downgrade, emit the structured notification:
 | 2-1 | 0.75 | OK auto |
 | 2-0 | 0.70 | OK auto |
 | 1-1-1 | null | → B2 cascade (Round 2 → Skeptic → PEND) |
+| 1-1-0 | null | → B2 cascade (2 distinct chosen + 1 abstain) |
+| 1-0-0 | null | → B2 cascade (1 chosen + 2 abstain) |
 | 0-0-0 | null | → B2 cascade (Round 2 → PEND) |
 
 ## Output JSON (Trias-specific fields)

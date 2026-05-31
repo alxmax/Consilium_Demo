@@ -157,7 +157,7 @@ Both fields are optional. Omit them when a genuine rollback recipe can be produc
       "regression_risk": {
         "reversibility": "irreversible",
         "magnitude": "high",
-        "net_concern": 0.75
+        "net_concern": 0.9
       },
       "counterparty_risks": ["clients already calling v1 endpoint"],
       "bias_check": "Real irreversibility — clients have already integrated the published contract.",

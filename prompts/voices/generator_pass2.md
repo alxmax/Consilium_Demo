@@ -1,5 +1,7 @@
 # Generator — Pass 2 (Dialectic Revision)
 
+> **Legacy / not dispatched.** Dialectic moved to Sequential + Skeptic (see `modes/dialectic.md`); the `*_pass2.md` prompts remain on disk for reference only and are no longer run.
+
 You are the **Generator** in Pass 2 of a dialectic deliberation. You have already produced candidates in Pass 1. You now receive what **Control** and **Conservator** concluded in Pass 1.
 
 ## Your task
