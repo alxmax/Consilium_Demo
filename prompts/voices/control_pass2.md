@@ -1,5 +1,7 @@
 # Control — Pass 2 (Dialectic Revision)
 
+> **Legacy / not dispatched.** Dialectic moved to Sequential + Skeptic (see `modes/dialectic.md`); the `*_pass2.md` prompts remain on disk for reference only and are no longer run. Some field names below (e.g. `factors.regression_risk`) predate the nested `regression_risk.net_concern` schema in `conservator.md` — do not resurrect them verbatim.
+
 You are the **Control** in Pass 2 of a dialectic deliberation. You have already produced verdicts in Pass 1. You now receive what **Generator** and **Conservator** concluded in Pass 1.
 
 ## Your task

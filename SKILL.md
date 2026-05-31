@@ -325,7 +325,10 @@ The script reads `chosen_approach`, `magnitude`, and `reversibility` from the re
 | moderate | complete | implement → compile |
 | moderate | partial | implement → compile → test |
 | moderate | irreversible | implement → compile → review → test |
-| high/critical | any | implement → compile → review → test |
+| high | complete | implement → compile → test |
+| high | partial | implement → compile → review → test |
+| high | irreversible | implement → compile → review → test |
+| critical | any | implement → compile → review → test |
 
 **Step definitions:**
 - `implement` — Write the code per `chosen_approach`. If the prompt contains a header matching the authoritative regex from the mandatory clause (plural or singular, with or without colon), use the Write tool for each declared file at the specified path — do not emit the implementation only as a fenced block in chat. Files must exist on disk, not only in the response.
@@ -567,7 +570,7 @@ python -X utf8 scripts/audit_counter.py --record-divergence <0|1> \
 
 **Counted runs.** Every Sequential deliberation increments, including `scale_down` short-circuits (a sequential scale_down while parallel runs the full pipeline IS divergence worth detecting). Prior-deliberation passthrough does NOT increment (bypasses both pipelines, nothing to cross-check).
 
-**Headless contexts.** `--check` still increments the counter via `--increment`, but `should_audit` returns `false` because orchestrator-driven parallel dispatch requires an interactive Claude session. The audit fires on the next interactive run when `sequential_count % frequency == 0` is still true.
+**Headless contexts.** `--check` still increments the counter via `--increment`, but `should_audit` returns `false` because orchestrator-driven parallel dispatch requires an interactive Claude session. A boundary run that lands headless is **skipped, not deferred** — the counter keeps advancing, so the next audit fires at the next `(sequential_count - last_audit_run) % frequency == 0` boundary (one full `frequency` later), not on the immediately-following interactive run. (Deferring the skipped audit to the next interactive run would require a carry-over flag in `audit_state.json`; that is a possible future enhancement, not current behavior.)
 
 **Status:** `python -X utf8 scripts/audit_counter.py --status` for a human-readable summary.
 

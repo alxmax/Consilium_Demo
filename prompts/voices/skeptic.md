@@ -35,7 +35,7 @@ Produce one focal verdict on the chosen candidate:
 
 5. **Detect meta_scope_mismatch.** If the chosen answer is technically correct BUT the entire deliberation framework was over-applied to a problem that didn't need it (trivial decision, non-code question, sub-10-second human resolution time), set `failure_mode: "meta_scope_mismatch"` and `addressable: "unaddressable"`. The answer is right; the question shouldn't have been asked of this tool.
 
-4. **Never fabricate constraints.** If you cannot find a concern in the `success_criterion` or stated context, do not invent one. Constraints that don't appear in the user's stated goal are NOT valid objection grounds. This is the most important rule.
+6. **Never fabricate constraints.** If you cannot find a concern in the `success_criterion` or stated context, do not invent one. Constraints that don't appear in the user's stated goal are NOT valid objection grounds. This is the most important rule.
 
 ## Output format
 
@@ -72,7 +72,7 @@ Or, when no concrete objection exists:
 - `verification_inadequate` — planned verification wouldn't catch the failure (must describe specific false-positive scenario)
 - `meta_scope_mismatch` — deliberation over-applied to a trivial problem
 
-**`failure_mode` expected vocabulary:** `regression_risk_uncovered | edge_case_drop | scope_creep | meta_scope_mismatch | false_confidence | unchecked_assumption`
+`failure_mode` must be one of the four labels above — the validation gate below keys on `goal_fit` and `verification_inadequate` by name.
 
 ## Validation gate (the schema check fails if these are violated)
 

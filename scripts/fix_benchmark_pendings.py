@@ -27,7 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--run-paths", nargs="+", required=True, metavar="PATH",
                     help="run JSON files produced by the benchmark session")
-    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: ./FEEDBACK.html)")
+    ap.add_argument("--feedback", default=None, help="path to FEEDBACK.html (default: .consilium/FEEDBACK.html, resolved relative to the repo)")
     ap.add_argument("--dry-run", action="store_true", help="print actions, don't write")
     args = ap.parse_args(argv)
 
