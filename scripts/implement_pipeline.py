@@ -94,8 +94,9 @@ def verify_red_green(
 ) -> dict:
     """Run the suite against the real impl (expect GREEN) and a stubbed copy (expect RED).
 
-    Never mutates the real target permanently: the original is restored from a backup.
-    A green run on the stub means the tests do not pin behavior -> gate fails.
+    Never mutates the real target permanently: the original text is held in memory and
+    rewritten in the finally block. A green run on the stub means the tests do not pin
+    behavior -> gate fails.
     """
     target = pathlib.Path(target_file)
     if not target.is_file():
@@ -109,17 +110,13 @@ def verify_red_green(
 
     # RED run: stub every def/async-def body, suite should now fail (exit != 0).
     stubbed = _stub_bodies(original, stub_marker)
-    backup = target.with_suffix(target.suffix + ".redgreen.bak")
     red_ok = False
     try:
-        backup.write_text(original, encoding="utf-8")
         target.write_text(stubbed, encoding="utf-8")
         red_code = _run(test_cmd)
         red_ok = red_code != 0
     finally:
         target.write_text(original, encoding="utf-8")
-        if backup.exists():
-            backup.unlink()
 
     return {
         "red_ok": red_ok,

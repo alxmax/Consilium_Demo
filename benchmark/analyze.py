@@ -518,7 +518,7 @@ def _replicates_html(r):
     reps = r.get("replicates")
     if not reps or len(reps) < 2:
         return ""
-    proxies = [p for p, *_ in [(x["proxy"],) for x in reps] if p is not None]
+    proxies = [x["proxy"] for x in reps if x["proxy"] is not None]
     if proxies:
         lo, hi = min(proxies), max(proxies)
         spread = f"p {lo}-{hi}" if lo != hi else f"p {lo}"

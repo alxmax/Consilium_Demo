@@ -54,7 +54,6 @@ assert _spec and _spec.loader
 _feedback = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_feedback)
 parse_feedback = _feedback.parse_feedback
-parse_runs = _feedback.parse_runs
 
 
 CONFIRMED_MARKER = "[confirmed]"

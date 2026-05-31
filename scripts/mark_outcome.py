@@ -96,7 +96,6 @@ def _annotate_note(note: str, reason: str | None, outcome: str = "") -> str:
     if reason:
         clean = reason.replace("|", "/").replace("\n", " ").strip()
         if clean:
-            parts = [p for p in parts if not p.startswith("outcome_reason=")]
             parts.append(f"outcome_reason={clean}")
     return "; ".join(parts)
 
