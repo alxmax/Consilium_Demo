@@ -4,6 +4,16 @@
 
 ## 🐞 Bug audit (2026-05-31) — multi-agent, **v1.0 BLOCKERS**
 
+> **✅ Implementation status (2026-05-31) — branch `fix/bug-audit-implementation` (7 commits; pyright 0, run_evals 72/0, test_rund2 + test_feedback_html green throughout).** **25 / 37 fixed**, including **all 4 Criticals**. **10 deferred** to a `/consilium`-deliberated pass — these are NOT safe one-liners (semantics / coordinated fixture rewrite / calibration / cross-platform locking):
+> - `aggregator.py:344` conservator nesting + `build_report.py:192` non-chosen result shapes — change BLOCK/aggregation semantics and need the masking `test_rund2` fixture rewritten in lockstep.
+> - `log_feedback.py:215` PEND→OK in-place upgrade — close-the-loop workflow design (append vs update).
+> - `modes/trias.md:5` Trias floor 0.80 — calibration decision (mirrored in `confidence.py` + `SKILL.md` + drift gate).
+> - `audit_counter.py` cmd_increment lock (CONTESTED), cmd_check idempotency, HOT→DEFAULT window — concurrency/cadence semantics (save_state atomicity already fixed).
+> - `infer_pipeline.py:58` reversibility-floor bucketing — heuristic; current behavior errs conservative/safe.
+> - `verify.py:344` IndexError guard + `aggregator.py:318` ESCALATE docstring — small follow-ups.
+>
+> The 2 reclassified items remain non-bugs. Every other finding below is fixed on the branch.
+
 > Source: exhaustive `consilium-bug-audit` Workflow (152 sub-agents, ~4.7M tokens, 22 min) over all 56 Python files. Each finding verified 2/2 (confirm-by-trace + adversarial refute); synthesis reclassified 3 raw findings as non-bugs. **51 raw → 37 distinct.** These passed the green gates (`run_evals` 72/0, `check_doc_drift`, `pyright`) — the suite did not catch them, and `test_rund2.py` fixtures **actively mask** several by injecting top-level fields the real voices never emit.
 >
 > **Systemic root cause:** producer↔consumer contract drift on `runs/<file>.json` — `build_report.py` writes one shape; `trace_graph`/`priors`/`retry_context`/`aggregator`/`efficiency`/`mark_outcome`/`usage` read a different key/level/type. Fix direction for the cluster: a single shared schema accessor that the writer and all readers go through. **Do `/consilium` before touching authoritative code (`validate_report`, `probe_change`, `aggregator`, `build_report`) + rewrite fixtures to mirror real voice output.**
