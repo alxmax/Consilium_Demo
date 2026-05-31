@@ -249,6 +249,39 @@ def check_legacy_mode_milestone() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Test-suite coverage (audit 2026-05-31)
+# ---------------------------------------------------------------------------
+
+
+def check_test_suite_coverage() -> list[str]:
+    """Every scripts/test_*.py must be gated in BOTH ci.yml and the run-consilium driver.
+
+    Prevents the test-drift class that let test_lens_bias.py sit RED on `main`
+    unnoticed (audit 2026-05-31): a suite present on disk that no gate runs. Keeps
+    the explicit named CI steps — this only fails the build if a suite is added
+    without being wired into both gates.
+    """
+    failures: list[str] = []
+    test_files = sorted(p.name for p in (REPO_ROOT / "scripts").glob("test_*.py"))
+    if not test_files:
+        return failures
+    ci = _read(".github/workflows/ci.yml")
+    driver = _read(".claude/skills/run-consilium/driver.py")
+    for name in test_files:
+        if name not in ci:
+            failures.append(
+                f"[test_suite_coverage] {name} is not gated in .github/workflows/ci.yml\n"
+                f"  fix: add a step `run: python scripts/{name}` to the green-gate job"
+            )
+        if name not in driver:
+            failures.append(
+                f"[test_suite_coverage] {name} is not gated in run-consilium driver.py smoke()\n"
+                f"  fix: add {name!r} to the test-suite loop in smoke()"
+            )
+    return failures
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -258,6 +291,7 @@ def main() -> int:
     all_failures.extend(check_text_invariants())
     all_failures.extend(check_trias_confidence_parity())
     all_failures.extend(check_legacy_mode_milestone())
+    all_failures.extend(check_test_suite_coverage())
 
     if not all_failures:
         print("doc-drift OK: all invariants hold", flush=True)
