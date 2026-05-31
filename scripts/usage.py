@@ -11,7 +11,7 @@ Telemetry shape expected on each report:
     {
       "telemetry": {
         "mode": "sequential" | "parallel" | "dialectic" | "trias",
-        "passes": 1,
+        "dispatch_count": 1,
         "voices": {
           "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
           "wittgenstein": {"tokens_in": 6000, "tokens_out": 1200, "latency_ms": 8000,
@@ -101,11 +101,14 @@ def collect(reports: list[dict], mode_filter: str | None = None) -> dict:
         # Collect per-voice latencies separately so parallel modes use max, not sum.
         run_latencies: list[float] = []
         for vname, vdata in voices.items():
-            if vname not in by_voice or not isinstance(vdata, dict):
+            if not isinstance(vdata, dict):
                 continue
+            # Include non-core voices (skeptic, Trias personalities) so Dialectic/
+            # Trias cost is not undercounted and the per-voice rollup is complete.
+            bucket = by_voice.setdefault(vname, _new_voice_bucket())
             for f in COUNT_FIELDS:
                 if f in vdata and isinstance(vdata[f], (int, float)) and not isinstance(vdata[f], bool):
-                    by_voice[vname][f].append(vdata[f])
+                    bucket[f].append(vdata[f])
                     if f == "latency_ms":
                         run_latencies.append(vdata[f])
                     elif f in mode_bucket:

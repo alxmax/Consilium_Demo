@@ -41,13 +41,35 @@ import subprocess
 import sys
 
 
+def _unquote_git_path(path: str) -> str:
+    """Decode git's C-quoted path form back to a plain UTF-8 string.
+
+    git wraps paths containing special bytes in double quotes with octal/C
+    escapes (e.g. ``"auth/fi\\305\\237ier.py"``). Left verbatim, the leading
+    quote defeats blocklist prefix/glob matching, silently downgrading critical
+    changes. ``core.quotepath=false`` (forced below) stops octal-escaping
+    non-ASCII bytes, but git still quotes paths with spaces, quotes, or control
+    chars — decode those here too. Falls back to the raw input on any error.
+    """
+    if len(path) >= 2 and path.startswith('"') and path.endswith('"'):
+        inner = path[1:-1]
+        try:
+            return inner.encode("latin-1").decode("unicode_escape").encode("latin-1").decode("utf-8")
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            return path
+    return path
+
+
 def _run_numstat(args: list[str]) -> str:
     try:
         result = subprocess.run(
-            ["git", "diff", "--numstat", "--no-renames", *args],
+            # core.quotepath=false: emit raw UTF-8 paths instead of octal-escaped
+            # ones; encoding="utf-8": decode them correctly (cp1252 mangles on Windows).
+            ["git", "-c", "core.quotepath=false", "diff", "--numstat", "--no-renames", *args],
             check=True,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
     except FileNotFoundError:
         raise RuntimeError("git executable not found on PATH")
@@ -67,6 +89,7 @@ def parse_numstat(text: str) -> tuple[dict, list[str]]:
         if len(parts) != 3:
             continue
         a, r, path = parts
+        path = _unquote_git_path(path)
         files += 1
         paths.append(path)
         # Binary files show "-\t-\t<path>"; treat as 0 lines but counted file.
@@ -87,10 +110,11 @@ def parse_numstat(text: str) -> tuple[dict, list[str]]:
 def _commit_count(path: str, days: int) -> int:
     try:
         result = subprocess.run(
-            ["git", "log", f"--since={days}.days", "--pretty=format:%H", "--", path],
+            ["git", "-c", "core.quotepath=false", "log", f"--since={days}.days", "--pretty=format:%H", "--", path],
             check=True,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
     except subprocess.CalledProcessError as e:
         print(f"[probe_change] git log failed: {e}", file=sys.stderr)

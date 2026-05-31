@@ -49,7 +49,7 @@ tbody tr.entry:nth-child(4n+3){background:var(--bg-row-alt)}
 tbody tr.entry:hover{background:#252530}
 tbody tr.entry.open{background:#2b2b36}
 td.outcome{font-weight:600;text-align:center;white-space:nowrap;font-size:12px;letter-spacing:.05em}
-.OK{color:var(--ok)}.BAD{color:var(--bad)}.OVR{color:var(--ovr)}.PEND{color:var(--pend)}
+.OK{color:var(--ok)}.BAD{color:var(--bad)}.OVR{color:var(--ovr)}.PEND{color:var(--pend)}.PEND_HEADLESS{color:var(--pend);opacity:.65}
 td.date{white-space:nowrap;color:var(--fg-dim);font-variant-numeric:tabular-nums}
 td.chosen{font-family:Consolas,Menlo,monospace;font-size:12px;color:var(--mono)}
 td.note{color:var(--fg-soft);font-size:12px}

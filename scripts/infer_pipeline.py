@@ -62,6 +62,12 @@ _CONCERN_BUCKETS = [
     (0.65, 1.01, "critical", "irreversible"),
 ]
 
+# Valid conservator vocabularies. Any off-vocabulary token (e.g. an emitted
+# "none") is treated as missing so it routes through the net_concern fallback
+# instead of falsely defaulting to the full step set + 'pipeline'.
+_VALID_MAGNITUDES = frozenset({"trivial", "moderate", "high", "critical"})
+_VALID_REVERSIBILITY = frozenset({"complete", "partial", "irreversible"})
+
 
 def _extract_conservator_fields(report: dict, chosen: str) -> tuple[str | None, str | None]:
     """Return (magnitude, reversibility) for chosen from deliberation_log."""
@@ -92,7 +98,7 @@ def infer_steps(report: dict) -> tuple[list[str], dict]:
     magnitude, reversibility = _extract_conservator_fields(report, chosen)
     source = "deliberation_log"
 
-    if not magnitude or not reversibility:
+    if magnitude not in _VALID_MAGNITUDES or reversibility not in _VALID_REVERSIBILITY:
         net_concern = report.get("voice_scores", {}).get("conservator", 0.5)
         magnitude, reversibility = _fallback_from_concern(float(net_concern))
         source = f"voice_scores.conservator={net_concern} (fallback)"

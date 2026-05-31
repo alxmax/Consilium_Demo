@@ -29,7 +29,6 @@ CLI:
 from __future__ import annotations
 
 import argparse
-import hashlib
 import importlib.util
 import json
 import sys
@@ -56,9 +55,13 @@ def _load_feedback_mod():
     return mod
 
 
-def _fingerprint(date_str: str, chosen: str, context: str) -> str:
-    raw = f"{date_str}|{chosen}|{context[:30]}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+def _load_log_feedback_mod():
+    spec = importlib.util.spec_from_file_location("consilium_log_feedback", HERE / "log_feedback.py")
+    if spec is None or spec.loader is None:
+        return None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def load_outcome_map(feedback_path: Path, runs_dir: Path) -> dict[str, str]:
@@ -80,17 +83,23 @@ def load_outcome_map(feedback_path: Path, runs_dir: Path) -> dict[str, str]:
     if fb_mod is None or not feedback_path.exists():
         return {}
 
-    rows: list[dict] = fb_mod.parse_feedback(feedback_path)
-    fp_to_outcome: dict[str, str] = {}
-    for row in rows:
-        fp = _fingerprint(row["date"], row["chosen"], row["context"])
-        fp_to_outcome[fp] = row["outcome"]
+    log_mod = _load_log_feedback_mod()
+    if log_mod is None:
+        return {}
 
+    rows: list[dict] = fb_mod.parse_feedback(feedback_path)
+    # Join FEEDBACK rows to run paths via the CANONICAL fingerprint. The sidecar
+    # key encodes run_id (= run-file basename), so derive it from each stored
+    # run_path and recompute the row's fingerprint with it (mirrors
+    # audit_feedback._row_run_path). The old context[:30]/no-run_id local copy
+    # produced a disjoint hash space, so this map was always empty.
     result: dict[str, str] = {}
     for fp, run_path in fp_to_run.items():
-        outcome = fp_to_outcome.get(fp)
-        if outcome is not None:
-            result[run_path] = outcome
+        run_id = Path(run_path).name if run_path else None
+        for row in rows:
+            if log_mod._fingerprint(row["date"], row["chosen"], row["context"], run_id=run_id) == fp:
+                result[run_path] = row["outcome"]
+                break
     return result
 
 

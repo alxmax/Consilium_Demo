@@ -34,7 +34,6 @@ CLI:
 from __future__ import annotations
 
 import argparse
-import hashlib
 import importlib.util
 import json
 import sys
@@ -49,9 +48,14 @@ CONFIRMED_MARKER = "[confirmed]"
 RUN_PATH_MAP = ".run_path_map.json"
 
 
-def _fingerprint(date_str: str, chosen: str, context: str) -> str:
-    raw = f"{date_str}|{chosen}|{context[:30]}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+def _load_log_mod():
+    here = Path(__file__).resolve().parent
+    spec = importlib.util.spec_from_file_location("consilium_log_feedback", here / "log_feedback.py")
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["consilium_log_feedback"] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _load_modules():
@@ -134,15 +138,22 @@ def main(argv: list[str] | None = None) -> int:
 
     existing = fb_mod.parse_feedback(feedback_path)
     run_map = _load_run_map(runs_dir)
-    # Reverse map: fingerprint -> run_path for forward lookup
-    fp_to_run = {fp: rp for fp, rp in run_map.items()}
+    log_mod = _load_log_mod()
 
-    # Build entries with run_path attached
+    # Attach run_path via the CANONICAL fingerprint. The sidecar key encodes
+    # run_id (= run-file basename), so derive it from each stored run_path and
+    # recompute the row fingerprint with it (mirrors audit_feedback._row_run_path).
+    # The old context[:30]/no-run_id local copy never matched, so --run-path
+    # lookup always failed for any context > 30 chars.
+    def _row_run_path(row: dict) -> str | None:
+        for fp, rp in run_map.items():
+            run_id = Path(rp).name if rp else None
+            if log_mod._fingerprint(row["date"], row["chosen"], row["context"], run_id=run_id) == fp:
+                return rp
+        return None
+
     entries = [
-        render_mod.Entry(
-            **row,
-            run_path=fp_to_run.get(_fingerprint(row["date"], row["chosen"], row["context"])),
-        )
+        render_mod.Entry(**row, run_path=_row_run_path(row))
         for row in existing
     ]
 

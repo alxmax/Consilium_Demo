@@ -89,7 +89,7 @@ def _load_rep(rep_dir: Path) -> dict:
     if pa_file.exists():
         try:
             pa = json.loads(pa_file.read_text(encoding="utf-8"))
-            pipeline = pa.get("pipeline_executed")
+            pipeline = pa.get("report_detected", pa.get("pipeline_executed"))
         except (json.JSONDecodeError, OSError):
             pass
 

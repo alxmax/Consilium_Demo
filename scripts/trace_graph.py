@@ -87,13 +87,20 @@ def build_mermaid(report: dict) -> str:
         return "\n".join(lines)
 
     # Shared tail: aggregate -> confidence -> report -------------------------
-    agg = report.get("aggregate") or {}
+    # The aggregate result lives in deliberation_log[step=aggregate].result
+    # (build_report), not at report["aggregate"]; confidence is a scalar float.
+    agg: dict = {}
+    for step in report.get("deliberation_log", []):
+        if isinstance(step, dict) and step.get("step") == "aggregate":
+            res = step.get("result")
+            agg = res if isinstance(res, dict) else {}
+            break
     vetoed = agg.get("vetoed") or []
     agg_label = f"aggregate<br/>chosen: {chosen or 'null'}"
     if vetoed:
         agg_label += f" · vetoed: {len(vetoed)}"
-    conf = (report.get("confidence") or {})
-    conf_val = conf.get("confidence") if isinstance(conf, dict) else None
+    conf_raw = report.get("confidence")
+    conf_val = conf_raw if isinstance(conf_raw, (int, float)) and not isinstance(conf_raw, bool) else None
 
     # 4. Trias fan: 3 personalities dispatched IN PARALLEL, each a single
     # one-shot deliberation whose lens re-weights the 3 voice scores (since

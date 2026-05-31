@@ -97,7 +97,7 @@ For any downgrade, emit the structured notification:
 {
   "chosen_approach": "candidate_id or null",
   "confidence": 0.82,
-  "vote_pattern": "3-0-0",
+  "vote_pattern": "3-0",
   "personalities": [
     {"name": "Pioneer", "lens": "pioneer_lens.md", "chose": "candidate_id", "weights": {}},
     {"name": "Architect", "lens": "architect_lens.md", "chose": "candidate_id", "weights": {}},

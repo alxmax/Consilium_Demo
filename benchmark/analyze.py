@@ -308,6 +308,11 @@ def efficiency_score(r):
         return None
     if r.get("verify_state") != "OK":
         return None
+    # verify_state == "OK" means the verifier RAN, not that the answer is correct
+    # (closed_answer returns ok=True with score=0 on a wrong letter / out-of-range).
+    # Gate on a positive score so wrong-answer runs don't enter the efficiency table.
+    if not r.get("verify_score"):
+        return None
     cost = r.get("cost")
     turns = r.get("turns")
     if not cost or not turns:
@@ -337,7 +342,9 @@ def verify_html(r):
     score = r.get("verify_score")
     mx = r.get("verify_max")
     label = f"{score}/{mx}" if score is not None and mx is not None else state
-    css = "verify-ok" if state == "OK" else "verify-fail"
+    # Green only when the verifier ran AND scored > 0; an OK state with score 0
+    # (wrong answer) is a fail, not a pass — colour from the score, not the state.
+    css = "verify-ok" if (state == "OK" and score) else "verify-fail"
     return f'<div class="verify {css}">verify: {state} ({label})</div>'
 
 
@@ -793,10 +800,12 @@ def build_html(rows):
                     else:
                         totals[m]["crashed"] += 1
                 else:
-                    if r.get("verify_state") == "OK":
+                    if r.get("verify_state") == "OK" and r.get("verify_score"):
                         totals[m]["verified_ok"] += 1
                         totals[m]["cost_completed"] += r["cost"] or 0.0
-                    elif r.get("verify_state") == "FAIL":
+                    elif r.get("verify_state") in ("OK", "FAIL"):
+                        # verify_state OK with score 0 (wrong answer) is a fail, not
+                        # a completion — only score > 0 counts as verified-complete.
                         totals[m]["verify_fail"] += 1
                     sc = proxy_score(r)
                     if sc is not None:

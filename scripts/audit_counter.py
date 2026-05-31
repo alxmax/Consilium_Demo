@@ -55,7 +55,7 @@ import json
 import sys
 from datetime import datetime, timezone
 
-from utils import DATA_DIR, force_utf8_streams, is_headless
+from utils import DATA_DIR, atomic_write_text, force_utf8_streams, is_headless
 
 STATE_PATH = DATA_DIR / "audit_state.json"
 DEFAULT_FREQUENCY = 20
@@ -95,10 +95,11 @@ def load_state() -> dict:
 
 
 def save_state(state: dict) -> None:
+    # Route through the shared atomic writer (unique mkstemp temp + flush/fsync +
+    # atomic replace). The old fixed `.json.tmp` had no fsync and let concurrent
+    # writers clobber the same temp, after which load_state silently reset to empty.
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = STATE_PATH.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    tmp.replace(STATE_PATH)
+    atomic_write_text(STATE_PATH, json.dumps(state, indent=2))
 
 
 def _adapt_frequency(state: dict) -> int:

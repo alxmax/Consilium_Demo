@@ -153,7 +153,10 @@ def aggregate_conservative_override(
         safety = 1.0 - float(c["scores"]["conservator"])
         score = w[0] * gen + w[1] * ctrl + w[2] * safety
         ranked.append((score, c))
-    ranked.sort(key=lambda t: t[0], reverse=True)
+    # On a weighted-score tie, the safer candidate (lower conservator risk =
+    # higher safety) wins — that is the whole point of *conservative* override.
+    # Stable insertion order is too arbitrary a tiebreak for a safety scheme.
+    ranked.sort(key=lambda t: (t[0], 1.0 - float(t[1]["scores"]["conservator"])), reverse=True)
     winner = ranked[0][1]
     result = {
         "scheme": "conservative_override",
