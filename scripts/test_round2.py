@@ -1,8 +1,8 @@
-"""Tests for RUND2 architecture additions.
+"""Tests for ROUND2 architecture additions.
 
 Run:
-    python scripts/test_rund2.py
-    python -m pytest scripts/test_rund2.py -v  (if pytest available)
+    python scripts/test_round2.py
+    python -m pytest scripts/test_round2.py -v  (if pytest available)
 """
 import sys
 import unittest
@@ -65,7 +65,7 @@ class TestVocabularyMap(unittest.TestCase):
         self.assertEqual(budget["generator"], 1200)
 
 
-class TestAggregateRund2(unittest.TestCase):
+class TestAggregateRound2(unittest.TestCase):
     def _base_conservator(self, reversibility="complete", magnitude="trivial", meta=None, flag=False):
         # Mirror the real conservator.md output contract: every per-candidate
         # field (regression_risk, meta_recommendation, irreversibility_flag)
@@ -182,7 +182,7 @@ class TestAggregateRund2(unittest.TestCase):
         self.assertIn(result["result"], ("REWORK", "ESCALATE", "AGGREGATE"))
 
 
-class TestValidateReportRund2(unittest.TestCase):
+class TestValidateReportRound2(unittest.TestCase):
     def test_regression_risk_scalar_still_valid(self):
         problems = validate_report._validate_regression_risk(0.5)
         self.assertEqual(problems, [])

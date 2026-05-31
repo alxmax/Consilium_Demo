@@ -82,7 +82,7 @@ def smoke():
 
     # All scripts/test_*.py unit suites — kept in lockstep with .github/workflows/ci.yml.
     for suite in (
-        "test_rund2.py",
+        "test_round2.py",
         "test_feedback_html.py",
         "test_audit_counter.py",
         "test_lens_bias.py",

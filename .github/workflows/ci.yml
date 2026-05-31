@@ -19,8 +19,8 @@ jobs:
         with:
           python-version: "3.11"
       # Stdlib-only — no pip install step by design.
-      - name: RUND2 smoke tests
-        run: python scripts/test_rund2.py
+      - name: ROUND2 smoke tests
+        run: python scripts/test_round2.py
       - name: Feedback HTML round-trip tests
         run: python scripts/test_feedback_html.py
       - name: Silent-audit counter decision tests

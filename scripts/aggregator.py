@@ -497,11 +497,6 @@ SCHEMES = {
         data["control"],
         data["conservator"],
     ),
-    "rund2": lambda data: aggregate_sequential(  # backward-compat alias
-        data["generator"],
-        data["control"],
-        data["conservator"],
-    ),
 }
 
 

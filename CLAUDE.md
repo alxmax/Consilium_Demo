@@ -12,7 +12,7 @@ For behavioral guidelines (Think Before Coding, Simplicity First, Surgical Chang
 
 Stdlib-only, no test runner. Smoke tests run manually via CLI:
 
-- `python scripts/test_rund2.py` — sequential architecture (skeptic_on_chosen, MODE enum, validate_report extras)
+- `python scripts/test_round2.py` — sequential architecture (skeptic_on_chosen, MODE enum, validate_report extras)
 - `python scripts/test_feedback_html.py` — `render_feedback_html` + parser round-trip
 - `python scripts/run_evals.py` — regression scenarios from `evals/scenarios.json` (subprocess-based, deterministic; all scenarios run, non-zero exit if any fails)
 - `python scripts/validate_report.py < .consilium/runs/<file>.json` — Constitution Principle #4 gate; minimum required before any commit touching `prompts/voices/` or `aggregator.py`
