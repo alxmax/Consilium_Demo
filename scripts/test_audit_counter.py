@@ -95,5 +95,38 @@ class TestAdaptFrequency(unittest.TestCase):
         self.assertEqual(_adapt_frequency(s), HOT_FREQUENCY)
 
 
+class TestConcurrency(unittest.TestCase):
+    def test_concurrent_increments_lose_nothing(self):
+        """#5: N concurrent --increment on the same state file must all land.
+
+        Stress test — deterministically passes with the file lock; without it the
+        unguarded read-modify-write drops increments under this contention. Uses
+        --state-path so the real .consilium/audit_state.json is never touched.
+        """
+        import json as _json
+        import subprocess
+        import tempfile
+
+        script = str(Path(__file__).parent / "audit_counter.py")
+        n = 30
+        with tempfile.TemporaryDirectory() as td:
+            state_path = str(Path(td) / "audit_state.json")
+            procs = [
+                subprocess.Popen(
+                    [sys.executable, script, "--increment", "--state-path", state_path],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                for _ in range(n)
+            ]
+            for p in procs:
+                p.wait()
+            final = _json.load(open(state_path, encoding="utf-8"))
+        self.assertEqual(
+            final["sequential_count"], n,
+            f"expected {n} increments, got {final['sequential_count']} (lost under concurrency)",
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
