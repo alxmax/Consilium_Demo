@@ -69,6 +69,7 @@ Two actions in order:
    - `stale_pendings` non-empty (PEND older than 2 days): ask *"You have N old PEND entries: [date | chosen] × N. Want me to close them (OK/BAD/skip)?"* — update via `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferred) or via `Edit` directly on `FEEDBACK.html`. **Do not** use `log_feedback.py` — it duplicates the row. **Headless** (`is_headless()`): log `[priors] stale_pendings: N entries — skipping prompt` to stderr and continue without asking.
    - `missing_feedback_runs` non-empty: run `python scripts/audit_feedback.py --backfill` to create PEND entries for orphan runs, then resolve them as above. If the list is larger than 3, prefer to resolve the gap *before* starting a new deliberation. **Headless**: run `audit_feedback.py --backfill` automatically and continue.
    - `pend_pressure > 0.3` (PEND ratio in the last N=20 entries — threshold lowered from 0.5): soft alert *"{pend_count}/{window_size} recent entries are PEND — consider closing them?"* — do not block, but record the signal. **Headless**: log only, no prompt.
+   - `prompt_drift` non-empty (advisory, **non-blocking**): prompts/ or modes/ changed since the most-recent prior run's `consilium_ref` — surface a one-line note *"{changed_files} prompt/mode file(s) changed since last deliberation ({since_run})"* so the operator knows past comparisons may not be apples-to-apples. Inspect with `python scripts/version.py --drift <since_ref>`. Absent when there is no resolvable prior baseline (older runs predate the stamp) — never blocks.
 
    **Headless (non-interactive — `claude -p` or CI):** `stale_pendings` and `missing_feedback_runs` are automatically suppressed (returned `[]`) when `sys.stdin.isatty()` is `False`. Explicit override: `--headless` flag or `CONSILIUM_HEADLESS=1` env var. Output includes `headless_mode: true` as a marker for consumers.
 
@@ -86,7 +87,7 @@ Two actions in order:
        "confidence": 0.90,
        "pipeline_executed": false,
        "deliberation_log": [{"step": "prior_deliberation_passthrough", "matched": "<match.chosen>", "date": "<match.date>"}],
-       "telemetry": {"mode": "prior_deliberation_passthrough", "dispatch_count": 0}
+       "telemetry": {"mode": "prior_deliberation_passthrough", "dispatch_count": 0, "consilium_version": "<python scripts/version.py>", "consilium_ref": "<python scripts/version.py --ref>"}
      }
      ```
    - **NO** → continue with the full pipeline from Step 1.
@@ -143,7 +144,7 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
     "confidence": 0.85,
     "pipeline_executed": false,
     "deliberation_log": [{"step": "scale_down_short_circuit", "reason": "<conservator notes>"}],
-    "telemetry": {"mode": "sequential_scale_down", "dispatch_count": 1}
+    "telemetry": {"mode": "sequential_scale_down", "dispatch_count": 1, "consilium_version": "<python scripts/version.py>", "consilium_ref": "<python scripts/version.py --ref>"}
   }
   ```
   `confidence: 0.85` is deliberate — Conservator's judgment is the signal, not a weak guess. Designed to stay above the `[0.0, 0.7]` skeptic auto-trigger band.
@@ -235,6 +236,7 @@ At each dispatch (voice), immediately after return, accumulate in the bundle:
 - Sum tokens + latency per voice if there are retries on the same dispatch.
 - `telemetry.mode` ← canonical label (`"sequential"`, `"trias"` etc. — from `## Dispatch defaults`).
 - `telemetry.dispatch_count` ← total dispatches (including retries).
+- `telemetry.consilium_version` / `telemetry.consilium_ref` ← repo version provenance, stamped automatically by `build_report.py` (and by the two hand-built templates above). `consilium_version` = `git describe --tags --always --dirty` (display); `consilium_ref` = the committed HEAD sha or `""` on a dirty/unknown tree (the resolvable diff operand). Lets any run be reproduced via `git checkout` — see `scripts/version.py`.
 
 Why mandatory: `scripts/efficiency.py` returns `null` for any run without telemetry, polluting per-mode averages — a run without telemetry is invisible in efficiency comparisons.
 
@@ -433,7 +435,8 @@ python scripts/run_evals.py
 
 | Script | Role |
 |---|---|
-| `scripts/priors.py` | Soft priors from FEEDBACK.html + runs/ (Step 0). Surfaces `missing_feedback_runs`, `stale_pendings` (2-day threshold), `weighted_bad_rate`. |
+| `scripts/priors.py` | Soft priors from FEEDBACK.html + runs/ (Step 0). Surfaces `missing_feedback_runs`, `stale_pendings` (2-day threshold), `weighted_bad_rate`, and `prompt_drift` (advisory — set when prompts/modes changed since the most-recent prior run's `consilium_ref`). |
+| `scripts/version.py` | Repo version provenance: `consilium_version()` (git describe stamp), `consilium_ref()` (resolvable committed sha or `""`), `prompts_changed_since(ref)` (guarded drift count). CLI: `--version` / `--ref` / `--drift <ref>`. |
 | `scripts/scope_gate.py` | Auto-detect skip if scope is small (Step 1.5) |
 | `scripts/probe_change.py` | Anchor diff_size to `git diff --numstat` (Step 4) |
 | `scripts/aggregator.py` | 5 aggregation schemes + auto-relax on total veto (Step 5); reference: `modes/aggregator_schemes.md` |
