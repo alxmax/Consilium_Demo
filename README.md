@@ -33,31 +33,42 @@ An interactive, single-page walkthrough of the voices, pipeline, modes, voting, 
 
 ## Install
 
-### Linux / macOS
+### As a plugin (one step)
+
+```
+/plugin marketplace add alxmax/Consilium_Demo
+/plugin install consilium@consilium
+```
+
+This installs the `consilium` skill plus its sub-agents in a single step. Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
+
+### As a skill (manual)
+
+Clone and symlink the repo into your skills directory — use this if you want to read or modify the source, or run the dev hooks.
+
+**Linux / macOS**
 
 ```bash
-git clone https://github.com/alxmax/Consilium.git ~/dev/consilium
+git clone https://github.com/alxmax/Consilium_Demo.git ~/dev/consilium
 mkdir -p ~/.claude/skills
 ln -s ~/dev/consilium ~/.claude/skills/consilium
 cd ~/dev/consilium && git config core.hooksPath .githooks
 ```
 
-### Windows (PowerShell)
-
-Junction (recommended — no admin required):
+**Windows (PowerShell)** — Junction (no admin required):
 
 ```powershell
-git clone https://github.com/alxmax/Consilium.git $HOME\dev\consilium
+git clone https://github.com/alxmax/Consilium_Demo.git $HOME\dev\consilium
 New-Item -ItemType Directory -Force -Path $HOME\.claude\skills
 New-Item -ItemType Junction -Path $HOME\.claude\skills\consilium -Target $HOME\dev\consilium
 cd $HOME\dev\consilium; git config core.hooksPath .githooks
 ```
 
-The last step activates the included `.githooks/pre-push` hook, which blocks direct pushes to `main`/`master` and enforces the feature-branch → PR workflow that keeps the deliberation trail intact.
+The `.githooks/pre-push` step enforces the feature-branch → PR workflow that keeps the deliberation trail intact.
 
-Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
+> **Distribution:** installable as a Claude Code **plugin** (one step, above) or as a **manual skill** (clone + symlink). Both coexist — the plugin is the easy path; the manual clone is for reading or hacking the source.
 
-> **Distribution:** manual install is the supported path — Consilium is not available as a package or marketplace plugin.
+> **Repository layout:** this is the **public release** repo. Active development happens in a separate **private** repository; clean, tagged releases (currently **v1.1**) are published here for installation and review.
 
 ## Example
 
