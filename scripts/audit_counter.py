@@ -54,10 +54,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+from contextlib import contextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 
 from utils import DATA_DIR, atomic_write_text, force_utf8_streams, is_headless
+
+# Cross-platform advisory file lock for the state read-modify-write. fcntl is
+# POSIX-only and msvcrt is Windows-only — import exactly one.
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 STATE_PATH = DATA_DIR / "audit_state.json"
 DEFAULT_FREQUENCY = 20
@@ -65,6 +75,41 @@ HOT_FREQUENCY = 5
 ROLLING_WINDOW = 5
 DIVERGENCE_TRIGGER = 2  # >= this many divergences in window → bump to HOT
 AUDIT_LOG_LIMIT = 20    # keep last N audit records
+
+
+@contextmanager
+def _state_lock():
+    """Serialize the state read-modify-write across processes (blocks until free).
+
+    Locks a dedicated ``<state>.lock`` sentinel — never audit_state.json itself,
+    whose atomic os.replace in save_state would invalidate a held handle. The OS
+    releases the lock automatically when the holding process exits, so a crash
+    mid-update cannot leave it stuck (unlike a mkdir-based lockdir).
+    """
+    lock_path = STATE_PATH.with_suffix(".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    f = open(lock_path, "a+")
+    try:
+        if os.name == "nt":
+            # msvcrt.locking needs a real byte to lock; ensure the sentinel
+            # is non-empty, then lock 1 byte at offset 0 (blocking).
+            if os.fstat(f.fileno()).st_size == 0:
+                f.write("\0")
+                f.flush()
+            f.seek(0)
+            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            if os.name == "nt":
+                f.seek(0)
+                msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        finally:
+            f.close()
 
 
 def _now_iso() -> str:
@@ -101,7 +146,7 @@ def save_state(state: dict) -> None:
     # Route through the shared atomic writer (unique mkstemp temp + flush/fsync +
     # atomic replace). The old fixed `.json.tmp` had no fsync and let concurrent
     # writers clobber the same temp, after which load_state silently reset to empty.
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_text(STATE_PATH, json.dumps(state, indent=2))
 
 
@@ -118,9 +163,10 @@ def _adapt_frequency(state: dict) -> int:
 
 
 def cmd_increment(args) -> int:
-    state = load_state()
-    state["sequential_count"] += 1
-    save_state(state)
+    with _state_lock():
+        state = load_state()
+        state["sequential_count"] += 1
+        save_state(state)
     print(json.dumps({"sequential_count": state["sequential_count"],
                       "mode_recorded": args.mode}))
     return 0
@@ -153,14 +199,15 @@ def _audit_decision(state: dict, headless: bool) -> dict:
 
 
 def cmd_check(_args) -> int:
-    state = load_state()
-    headless = is_headless()
-    decision = _audit_decision(state, headless)
-    if decision["should_audit"]:
-        # Mark this count as signalled so a repeat --check before
-        # --record-divergence does not double-fire the audit.
-        state["pending_audit_at"] = state["sequential_count"]
-        save_state(state)
+    with _state_lock():
+        state = load_state()
+        headless = is_headless()
+        decision = _audit_decision(state, headless)
+        if decision["should_audit"]:
+            # Mark this count as signalled so a repeat --check before
+            # --record-divergence does not double-fire the audit.
+            state["pending_audit_at"] = state["sequential_count"]
+            save_state(state)
     print(json.dumps({
         "should_audit": decision["should_audit"],
         "sequential_count": state["sequential_count"],
@@ -178,23 +225,24 @@ def cmd_record_divergence(args) -> int:
         print("--record-divergence value must be 0 or 1", file=sys.stderr)
         return 2
     div = bool(args.divergence)
-    state = load_state()
-    state["audit_count"] += 1
-    state["last_audit_run"] = state["sequential_count"]
-    state["pending_audit_at"] = None  # audit resolved; clear the --check sentinel
-    state["recent_divergences"].append(div)
-    state["recent_divergences"] = state["recent_divergences"][-ROLLING_WINDOW:]
-    state["audits"].append({
-        "at": state["sequential_count"],
-        "divergence": div,
-        "seq": args.sequential_chosen or "",
-        "par": args.parallel_chosen or "",
-        "timestamp": _now_iso(),
-    })
-    state["audits"] = state["audits"][-AUDIT_LOG_LIMIT:]
-    prev_freq = state["frequency"]
-    state["frequency"] = _adapt_frequency(state)
-    save_state(state)
+    with _state_lock():
+        state = load_state()
+        state["audit_count"] += 1
+        state["last_audit_run"] = state["sequential_count"]
+        state["pending_audit_at"] = None  # audit resolved; clear the --check sentinel
+        state["recent_divergences"].append(div)
+        state["recent_divergences"] = state["recent_divergences"][-ROLLING_WINDOW:]
+        state["audits"].append({
+            "at": state["sequential_count"],
+            "divergence": div,
+            "seq": args.sequential_chosen or "",
+            "par": args.parallel_chosen or "",
+            "timestamp": _now_iso(),
+        })
+        state["audits"] = state["audits"][-AUDIT_LOG_LIMIT:]
+        prev_freq = state["frequency"]
+        state["frequency"] = _adapt_frequency(state)
+        save_state(state)
     print(json.dumps({
         "divergence_recorded": div,
         "audit_count": state["audit_count"],
@@ -240,7 +288,14 @@ def main() -> int:
                        help="chosen id from sequential run (for divergence log)")
     parser.add_argument("--parallel-chosen", default="",
                        help="chosen id from silent parallel cross-check")
+    parser.add_argument("--state-path", default=None,
+                       help="override the state file path (default: .consilium/audit_state.json); "
+                            "mainly for tests, so they don't touch the real state")
     args = parser.parse_args()
+
+    if args.state_path:
+        global STATE_PATH
+        STATE_PATH = Path(args.state_path)
 
     if args.increment:
         return cmd_increment(args)
