@@ -1,0 +1,14 @@
+{
+  "name": "consilium",
+  "owner": { "name": "Schipor Alexandru" },
+  "metadata": {
+    "description": "Consilium — a multi-voice code-deliberation skill for Claude Code, distributed as a single-plugin marketplace."
+  },
+  "plugins": [
+    {
+      "name": "consilium",
+      "source": "./",
+      "description": "Multi-voice deliberation for code changes (Generator/Control/Conservator) — confidence scoring, Sequential/Dialectic/Trias modes, and a post-deliberation implement pipeline. Stdlib-only."
+    }
+  ]
+}
