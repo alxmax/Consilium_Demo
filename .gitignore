@@ -54,6 +54,11 @@ bugs-agent-*.md
 # scratch (local absolute paths, insider detail); kept on disk, never published.
 docs/superpowers/plans/
 docs/superpowers/specs/
+# TODO.md — internal dev roadmap / bug-audit records / deferred-item notes. Same
+# class as the superpowers plans above: planning scratch with insider detail,
+# kept on disk but not published. (History still contains it — full scrub is the
+# separate clean-public-history task.)
+TODO.md
 experiments/New phase senat/
 .tmp_backup/
 
