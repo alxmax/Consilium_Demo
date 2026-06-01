@@ -1,0 +1,5 @@
+{
+  "chosen_approach": "foo",
+  "voice_scores": {"generator": 0.8, "control": 0.8, "conservator": 0.4},
+  "deliberation_log": [{"step": "conservator", "reversibility": "partial", "magnitude": "moderate"}]
+}

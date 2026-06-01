@@ -1,17 +1,90 @@
-# Editors
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# IDE
 .vscode/
 .idea/
 *.swp
-*~
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Claude Code workspace
-.claude/
-.superpowers/
+# Personal deliberation state — the ENTIRE .consilium/ directory is local-only
+# (runs, feedback journal, audit state, scratch bundles, screenshots). Ignore it
+# wholesale except the single tracked placeholder, so no scratch file can leak
+# via `git add -A`. Schema in docs/runs-schema.md.
+.consilium/*
+!.consilium/runs/
+.consilium/runs/*
+!.consilium/runs/.gitkeep
+FEEDBACK.md
+FEEDBACK.html
+*.md.bak
 
-# Consilium runtime artefacts (would be created by the live skill, not the demo)
-runs/
-FEEDBACK.html.bak
+# Claude Code session metadata (permissions, local settings)
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+
+# Local bug tracking / agent reports
+BUGS.md
+bugs-agent-*.md
+
+# Local plans and experiments
+# superpowers writing-plans / executing-plans artifacts — personal planning
+# scratch (local absolute paths, insider detail); kept on disk, never published.
+docs/superpowers/plans/
+docs/superpowers/specs/
+# TODO.md — internal dev roadmap / bug-audit records / deferred-item notes. Same
+# class as the superpowers plans above: planning scratch with insider detail,
+# kept on disk but not published. (History still contains it — full scrub is the
+# separate clean-public-history task.)
+TODO.md
+experiments/New phase senat/
+.tmp_backup/
+
+# Benchmark harness — regenerable run artifacts (analog of runs/), local only
+benchmark/workspace/
+benchmark/files/
+benchmark/runs/
+benchmark/FEEDBACK.html
+# Generated report embeds oracle answer values (analyze.py output) — regenerable, never commit
+benchmark/report.html
+# Answer keys live ONLY in the EXTERNAL sibling Benchmark-scoring/ repo.
+# Never commit a scoring tree inside benchmark/ — it would defeat the blind benchmark.
+benchmark/scoring/
+benchmark/Benchmark-scoring/
+
+# Source upload for docs/architecture (extracted into docs/architecture/)
+Arhitecture.zip
+
+# Personal / scratch files — never publish. Broad class patterns so newly-named
+# scratch can't slip in via `git add -A` (verified: no tracked file matches these).
+*.pdf
+tmp_*
+*_tmp.*
+scratch/
+test_bundle.json
+# Scratch deliberation bundles (bundle_smoke_tests.json kept — referenced by run-consilium)
+bundle_high_priority.json
+bundle_min.json
+bundle_veto_op.json

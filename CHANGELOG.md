@@ -1,38 +1,46 @@
 # Changelog
 
-## v1.01 — 2026-05-21
+All notable changes to Consilium are recorded here, following
+[Keep a Changelog](https://keepachangelog.com/). This project is source-available
+under the Business Source License 1.1 (see `LICENSE`).
 
-### Mode changes
+## [Unreleased]
 
-**Trias** — internal execution model revised:
-- Was: 9 sub-agents (3 personalities × 3 voices dispatched in parallel, each personality running its own parallel mode)
-- Now: 3 sub-agents (one per personality). Within each sub-agent, the three voices run sequentially with context stripping between them (same isolation mechanism as Sequential — Blind). Democratic vote on the 3 chosen results is unchanged.
-- Tie rule (1-1-1) made explicit: result is `PEND`, orchestrator must escalate or re-run.
+Public-readiness pass (2026-05) ahead of the first tagged release: closed a
+benchmark answer-leak, hardened `.gitignore`, fixed three core-script bugs,
+corrected benchmark doc-drift, made the architecture explainer's Trias dispatch
+claim honest (parallel by spec mandate, serial in practice), added a README
+usage example, scrubbed personal paths/artifacts, and added a stdlib CI
+green-gate. Each change deliberated via `/consilium`.
 
-**Parallel** — removed from user-selectable modes (RUND2):
-- Was: OPT-IN mode, user could invoke explicitly
-- Now: internal auto cross-check only. Auto-triggers when `magnitude=critical ∧ reversibility=irreversible`. Also runs as a silent audit every 20 runs. Not exposed in the `--mode` selector.
-
-### Architecture poster (architecture.html)
-
-- Hero section added (pitch, voice chips, stat badges, mini SVG flow)
-- "Patterns" tab renamed to "Interactive Demo"
-- "Benchmark" tab added: 3 tasks, 5 modes, `claude -p` methodology, results in progress
-- Voice cards: accent moved from `border-top` to `border-left` strip
-- `DEFAULT` badge added to `conservative_override` in Modes tab
-- Trias info-flow SVG updated: sequential voice layout (strip labels, no parallel fan-out inside personalities)
-- Flowmap SVG: SEQUENTIAL — NAIVE labelled as LEGACY; PARALLEL labelled as AUTO
-- Footer added
-- Benchmark task difficulty: Transport Choice → Medium, Rule of Three → Medium
-
----
-
-## v1.00 — 2025-01-01
+## [1.0.0] — unreleased
 
 Initial public release.
 
-- Architecture poster with Architecture / Flow / Modes / Patterns tabs
-- Three voices: Generator / Control / Conservator
-- Modes: Sequential — Blind (default), Parallel, Dialectic (two-pass), Dialectic (iterative, SPEC), Trias, Sequential — Naive (legacy)
-- Voting schemes: conservative_override (default), weighted, majority, team_vote
-- Canonical run example in `example_output.json`
+### Deliberation engine
+- Three adversarial voices — **Conservator** (risk/reversibility), **Generator**
+  (alternatives, incl. `do_nothing`), **Control** (correctness + acceptance tests)
+  — merged by an 8-component veto cascade (`scripts/aggregator.py`) into one
+  canonical, validated report.
+- Confidence scoring with per-mode floors (`scripts/confidence.py`); soft priors
+  from a file-based feedback loop (`scripts/priors.py` + `.consilium/`).
+- Scope gate (`scripts/scope_gate.py`) auto-skips trivial diffs; silent parallel
+  cross-check audit (`scripts/audit_counter.py`).
+
+### Modes
+- **Sequential** (default, 1×), **Dialectic** (1.33×), **Trias** (3×, three
+  personality lenses + democratic vote), and the composable
+  **`skeptic_on_chosen`** flag.
+
+### Tooling & docs
+- Benchmark harness (`benchmark/`) comparing each mode to bare-model baselines
+  against an external hidden oracle.
+- Interactive architecture explainer (`docs/architecture.html`; React source
+  under `docs/architecture/`, built by `build.py`).
+- `run-consilium` companion skill (build / test / smoke / screenshot).
+- Deterministic regression suite (`evals/`), mode-doc drift gate
+  (`scripts/check_doc_drift.py`), and a stdlib-only CI green-gate.
+
+### License
+- Business Source License 1.1 © 2026 Schipor Alexandru; converts to Apache-2.0
+  on 2030-05-16.

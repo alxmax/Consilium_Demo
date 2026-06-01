@@ -1,0 +1,5 @@
+{
+  "chosen_approach": "chosen_id",
+  "voice_scores": {"generator": 0.7, "control": 0.7, "conservator": 0.3},
+  "deliberation_log": [{"step": "conservator", "scores": [{"id": "chosen_id", "regression_risk": {"reversibility": "complete", "magnitude": "trivial", "net_concern": 0.1}}]}]
+}

@@ -1,142 +1,189 @@
 # Consilium
 
-**v1.01** · [Changelog](./CHANGELOG.md)
+**A second opinion, structured.** Consilium is a [Claude Code](https://docs.claude.com/en/docs/claude-code) skill that evaluates a risky code change through three independent voices that don't trust each other — a creative, an analyst, and a skeptic — then aggregates their verdicts under a veto cascade into one canonical decision, with the disagreement preserved on disk.
 
----
+One LLM reviewing its own proposal has predictable blind spots: it generates an idea and validates it from the same perspective. Consilium splits that into separate roles with disjoint mandates so a change is cross-examined before it ships.
 
-<div align="center">
+The three core voices:
 
-# Public release: **v1.1 — June 1, 2026**
+- **Conservator** (prudent) — scores risk and reversibility; runs *first* and sets the effort budget for the others
+- **Generator** (creative) — proposes alternatives, including `do_nothing`
+- **Control** (analytical) — verifies correctness and writes acceptance tests
 
-### Consilium skill goes public on **2026-06-01**
+## What's interesting here
 
-</div>
+- **Adversarial-by-design deliberation** — roles with conflicting incentives, not one model agreeing with itself.
+- **An 8-component veto cascade** (`scripts/aggregator.py`) that turns three voice outputs into one decision with 7 distinct routing outcomes (block / rework / adapt / escalate / aggregate).
+- **A self-calibrating feedback loop** — every run lands as canonical JSON in `.consilium/runs/`, outcomes are logged to `.consilium/FEEDBACK.html`, and the next deliberation reads those priors. Confidence below a per-mode floor is flagged.
+- **Cost-aware modes** — from a 1× single-context pass up to a 3× three-personality vote (Trias), with a scope gate that auto-skips trivial diffs.
+- **Measured, not asserted** — a benchmark harness (`benchmark/`) compares each mode against bare-model baselines on real coding/reasoning tasks with a hidden oracle.
+- **Stdlib-only Python** — no external dependencies; each script is a small, standalone CLI with JSON I/O.
 
-**Scope locked for v1.1:**
+## Architecture explainer
 
-- Sequential — Blind / Dialectic / Trias modes stabilised
-- Calibration loop wired to `FEEDBACK.html`
-- Scope gate auto-skip for trivial diffs
-- Canonical JSON report schema frozen
-- Final benchmark numbers (Interactive Demo tab) published with the release
-
----
-
-Three specialized sub-agents (Generator / Control / Conservator) are orchestrated by a Claude Code skill that aggregates their outputs via configurable voting schemes into a canonical JSON decision.
-
-- **Generator** (creative) — proposes alternatives, divergent thinking
-- **Control** (analytical) — verifies technical correctness
-- **Conservator** (prudent) — assesses risk and reversibility
-
-The voices are prompt-constrained from doing each other's job. They run sequentially by default (Sequential — Blind), with context stripping between them to prevent cross-contamination. Outputs are aggregated by a voting scheme with veto (default: `conservative_override`) into a canonical JSON report plus a one-line console summary.
-
-> **About this repository.** Public showcase / portfolio demo, maintained by **Schipor Alexandru Ionut**. The live skill source is in a private repository — this repo contains the design, the architecture poster, and a canonical run example. For source-code access requests, see contact details on my CV.
-
-<p>
-  <a href="architecture.html" style="display:inline-block;background:#fbbf24;color:#0f1419;padding:13px 28px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;">Explore Architecture &#8594;</a>
-</p>
-
-## Live demo
-
-**[https://alxmax.github.io/Consilium_Demo/](https://alxmax.github.io/Consilium_Demo/)**
-
-Open the link in any modern browser — no install needed. Five tabs walk you through the system from overview to interactive flow demo.
-
-## Try the visual architecture
-
-Open [`architecture.html`](./architecture.html) in any modern browser. Five tabs:
-
-- **Architecture** — system overview, the three voices, aggregation schemes
-- **Flow** — step-by-step deliberation
-- **Modes** — Sequential — Blind / Dialectic / Trias / Parallel (auto)
-- **Interactive Demo** — click any flow in the sidebar to highlight its path through the system. Includes the Voices bias profile, the Trias team weights, the 3-sub-agent Trias deep-dive, and the calibration loop sub-diagram. A **Play tour** button auto-plays the full deliberation cycle in fullscreen.
-- **Benchmark** — 3 tasks tested across 5 modes using `claude -p` headless mode. Results in progress.
+An interactive, single-page walkthrough of the voices, pipeline, modes, voting, and the calibration loop is published at **[alxmax.github.io/Consilium_Demo/architecture.html](https://alxmax.github.io/Consilium_Demo/architecture.html)** (also served from `architecture.html` at the repo root). It's authored as editable React source in `docs/architecture/` — see that folder's README to preview or rebuild it.
 
 ## When to use
 
-- PR or diff review
-- Refactor planning touching 2+ files
-- Choosing between several implementation approaches
-- Before committing to shared / core code
-- Risk assessment for non-trivial changes
+- PR review or diff
+- Refactor planning across 2+ files
+- Choosing between multiple implementation approaches
+- Before committing to shared/core code
+- Risk assessment for a non-trivial change
 
-## Modes
+## Install
 
-| Mode | Sub-agents | When |
-|---|---|---|
-| **Sequential — Blind** (default) | 1 context, 3 voices in sequence with context strip | Most deliberations — fast, reduced contamination via `strip_context.py`. |
-| **Dialectic** | 3 voices × 2 rounds — each round sees the others' outputs | Multi-file refactors, when positions need to evolve. |
-| **Trias** | 3 sub-agents (one per personality), each running voices sequentially; democratic vote | High-stakes (migrations, security, large refactors) — see Interactive Demo tab for deep-dive. |
-| **Parallel** (auto) | 3 independent sub-agents | Internal auto cross-check — not user-selectable. Fires when `magnitude=critical ∧ reversibility=irreversible` or as silent audit every 20 runs. |
+### As a plugin (one step)
 
-## Install (live skill — private)
+```
+/plugin marketplace add alxmax/Consilium_Demo
+/plugin install consilium@consilium
+```
 
-The live skill is installed at `~/.claude/skills/consilium/` (via symlink or junction). The source repository is private; access is by request.
+This installs the `consilium` skill plus its sub-agents in a single step. Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
 
-Once installed, the skill auto-activates in a Claude Code session when keywords like `review PR`, `evaluate change`, `refactor planning`, or `risk assessment` appear in the prompt.
+### As a skill (manual)
 
-## Layout (live skill)
+Clone and symlink the repo into your skills directory — use this if you want to read or modify the source, or run the dev hooks.
+
+**Linux / macOS**
+
+```bash
+git clone https://github.com/alxmax/Consilium_Demo.git ~/dev/consilium
+mkdir -p ~/.claude/skills
+ln -s ~/dev/consilium ~/.claude/skills/consilium
+cd ~/dev/consilium && git config core.hooksPath .githooks
+```
+
+**Windows (PowerShell)** — Junction (no admin required):
+
+```powershell
+git clone https://github.com/alxmax/Consilium_Demo.git $HOME\dev\consilium
+New-Item -ItemType Directory -Force -Path $HOME\.claude\skills
+New-Item -ItemType Junction -Path $HOME\.claude\skills\consilium -Target $HOME\dev\consilium
+cd $HOME\dev\consilium; git config core.hooksPath .githooks
+```
+
+The `.githooks/pre-push` step enforces the feature-branch → PR workflow that keeps the deliberation trail intact.
+
+> **Distribution:** installable as a Claude Code **plugin** (one step, above) or as a **manual skill** (clone + symlink). Both coexist — the plugin is the easy path; the manual clone is for reading or hacking the source.
+
+> **Repository layout:** this is the **public release** repo. Active development happens in a separate **private** repository; clean, tagged releases (currently **v1.1**) are published here for installation and review.
+
+## Example
+
+Consilium reviews its own changes. Here's a **real run from this repo's history** — asking it to evaluate a three-bug fix. It prints one terminal line:
+
+```
+chosen: fix_canonical | conf: 0.57 | .consilium/runs/2026-05-29_2333_core-script-bugfixes.json
+```
+
+and writes a canonical JSON report to disk (string fields trimmed for length, all else verbatim):
+
+```json
+{
+  "success_criterion": "aggregator raises a clear error on empty candidates; audit_counter uses the shared headless check; trace_graph exits cleanly on a missing file — run_evals stays green. …",
+  "chosen_approach": "fix_canonical",
+  "confidence": 0.57,
+  "voice_scores": { "generator": 1.0, "control": 1.0, "conservator": 0.35 },
+  "alternatives": [
+    { "id": "do_nothing", "why_not": "control: three real defects persist" },
+    { "id": "fix_agg_structured_null", "why_not": "control: returning null on malformed input masks the error; downstream must special-case" }
+  ],
+  "verification": "python scripts/run_evals.py (green); empty candidates → ValueError not IndexError; trace_graph --input missing.json → exit 2. …",
+  "pipeline_executed": true
+}
+```
+
+The chosen approach beat `do_nothing` and a plausible-but-weaker alternative — and the rejected options stay on record *with the reason they lost*. Confidence `0.57` is below the Sequential floor (`0.70`), so a Skeptic sub-agent auto-fires on the chosen answer before the result is trusted. Every run lands in `.consilium/runs/` (local, gitignored) and feeds the priors of the next deliberation.
+
+## Pipeline trace
+
+Every run records its executed path. `trace_graph.py` reads a `.consilium/runs/` report and emits a Mermaid flowchart of what actually fired — which steps ran, which short-circuited, and how sub-agents were dispatched:
+
+```bash
+python scripts/trace_graph.py --input .consilium/runs/<file>.json --fence
+```
+
+Here is the trace for the run shown above (`fix_canonical`, Sequential mode):
+
+```mermaid
+flowchart TD
+  CON["Conservator<br/>risk assessment"]
+  GEN["Generator<br/>candidates"]
+  CTRL["Control<br/>verdicts"]
+  AGG["aggregate<br/>chosen: fix_canonical"]
+  REP["report"]
+  CON --> GEN
+  GEN --> CTRL
+  CTRL --> AGG
+  AGG --> REP
+```
+
+GitHub renders Mermaid natively — paste the `--fence` output directly into any `.md` file.
+
+## Structure
 
 ```
 consilium/
-├── SKILL.md             # YAML frontmatter + workflow
-├── README.md
-├── FEEDBACK.html        # manual outcome log (kept / rejected / partial / pending)
-├── .gitignore
-├── scripts/
-│   ├── aggregator.py    # voting schemes (incl. conservative_override, team_vote)
-│   ├── confidence.py    # variance + separation -> confidence score
-│   ├── scope_gate.py    # auto-skip for trivial changes (Step 1.5)
-│   ├── strip_context.py # sequential-blind context stripper
-│   ├── dialectic_merge.py
-│   ├── personalities.py # Trias mode — 3 personalities with G/C/K weights
-│   ├── priors.py        # loads priors from FEEDBACK.html + runs/
-│   └── feedback.py      # stats over FEEDBACK.html + runs/
-├── prompts/
-│   ├── generator.md     # creative voice prompt
-│   ├── control.md       # analytical voice prompt
-│   └── conservator.md   # skeptical voice prompt
-├── agents/
-│   └── consilium-subagent.md  # one-shot sub-agent wrapper for isolated dispatch
-├── runs/                # one JSON per deliberation (gitignored)
-└── examples/
-    └── pr_review_example.md
+├── SKILL.md         # the contract: Constitution (4 principles) + 8-step workflow
+├── .claude-plugin/  # plugin manifest + marketplace (one-step install)
+├── prompts/voices/  # per-voice role prompts (generator, control, conservator, skeptic, lenses)
+├── modes/           # per-mode workflow + machine-readable config (cost, sub-agents, floors)
+├── scripts/         # stdlib-only CLIs: aggregator, confidence, priors, scope_gate, …
+├── agents/          # consilium-subagent — isolated dispatch via the Agent tool
+├── benchmark/       # mode-vs-baseline benchmark harness (oracle kept in an external sibling repo)
+├── experiments/     # benchmarking-discipline notes + validation write-ups
+├── docs/            # architecture.html explainer + its React source under docs/architecture/
+├── evals/           # deterministic regression scenarios for the scripts
+└── .consilium/      # local deliberation state (gitignored): runs/*.json + FEEDBACK.html
 ```
 
-## Usage
+## Modes
 
-The skill auto-activates when keywords like `review PR`, `evaluate change`, `refactor planning`, or `risk assessment` appear in a Claude Code prompt.
+| Mode | Cost | What it adds |
+|------|------|--------------|
+| **Sequential** (default) | 1× | Conservator → Generator → Control in one context |
+| **Dialectic** | 1.33× | Sequential + a Skeptic sub-agent on the chosen answer, with code-context injection |
+| **Trias** | 3× | 3 personalities (Pioneer / Architect / Steward), each running its own Sequential pass as a sub-agent, then a majority vote |
+| **`skeptic_on_chosen`** | base +1 | Composable flag over any mode — a focal Skeptic challenges the chosen answer. Auto-triggers when `confidence ∈ [0.0, 0.7]` |
 
-Output: a canonical JSON in `runs/YYYY-MM-DD_HHMM_<label>.json` with `chosen_approach`, `alternatives`, `voice_scores`, `confidence`, `deliberation_log`, plus a one-line console summary.
+Parallel dispatch is no longer user-selectable; it remains an automatic cross-check when a change is both `critical` and `irreversible`. All dispatched voices run on Sonnet; the orchestrator runs on Opus.
 
-For the feedback loop and post-deliberation calibration, see the **Feedback loop** section in `SKILL.md`.
+**Canonical output** (validated by `scripts/validate_report.py`): JSON with `success_criterion`, `chosen_approach`, `verification`, `alternatives`, `voice_scores`, `confidence`, and a `deliberation_log`.
 
-## Visual architecture
+## Competencies demonstrated
 
-Open [`architecture.html`](./architecture.html) in a browser. Five tabs: **Architecture / Flow / Modes / Interactive Demo / Benchmark**. The Interactive Demo tab includes a click-through of every flow (PR review, Refactor planning, Risk assessment, Veto trigger, Multi-file refactor, Trias deliberation) with the Voices bias profile, Trias team weights, the 3-sub-agent deep-dive, and the calibration loop.
+What this project concretely shows, in Agentic-AI / LLMOps terms. Rated **Full** (named feature, runs via a documented command, artifact in-repo), **Partial** (present but not the textbook form — caveat noted), or **n/a** (deliberately out of scope).
 
-## Project size (live skill, as of 2026-05-21)
+| Capability | Status | Where / honest caveat |
+|---|---|---|
+| Multi-agent orchestration | Full | 3 voices + 3 Trias personalities + Skeptic, dispatched as isolated sub-agents (`agents/`, `scripts/personalities.py`) |
+| Planner / executor split | Full | orchestrator selects the mode and scope-gates, then dispatches voice executors |
+| Deterministic orchestration | Full | `scope_gate → voices → aggregator → validate_report → implementation pipeline`, all stdlib scripts |
+| Retry / reflection / self-healing | Full | `retry_context.py` (low-confidence re-deliberation), sub-agent-crash fallback, malformed-JSON retry, red→green test gate |
+| Agent execution visualization | Full | the interactive architecture explainer (`docs/architecture/`) |
+| Agent memory | **Partial** | 3 tiers via `memory.py` — session context, `.consilium/runs/*.json` episodic logs, `.consilium/FEEDBACK.html` outcome journal. This is **journaling + run logs, not vector / retrieval-augmented memory** |
+| Token-cost telemetry | Full (instrumentation) | per-dispatch telemetry → `efficiency.py` / `usage.py`. The explainer's tokens-per-dispatch figures are **measured** from real run telemetry; the stricter `tokens_per_OK` metric is implemented but withheld until enough runs carry a confirmed OK/BAD label |
+| Regression testing | Full | `evals/scenarios.json` + `run_evals.py` — deterministic subprocess tests of the scripts (not LLM-output evals) |
+| Benchmarking vs baselines | Full | `benchmark/` compares each mode against bare-model baselines with a hidden oracle kept out-of-tree |
+| Fabrication / hallucination discipline | **Partial** | a documented independent-oracle rule for any quantitative claim (`experiments/README.md`) — a review process, not an automated metric |
+| Version provenance | Full | every run stamps `telemetry.consilium_version` (`git describe`) + `consilium_ref` (the committed sha, blank on a dirty tree) — any `.consilium/runs/*.json` is reproducible via `git checkout`, and `scripts/version.py --drift <ref>` shows which prompts/modes changed since. Git is the version system — no bespoke registry |
+| Framework orchestration (LangGraph / CrewAI) | n/a | evaluated and deliberately rejected — see below |
+| RAG / embeddings / vector search · web backend · cloud deploy | n/a | out of scope by design — see below; targeted by a separate showcase project |
 
-These numbers describe the **private skill repository** that powers Consilium, not this public showcase. Counts are derived from tracked files only (`git ls-files`), excluding `runs/` artefacts and worktrees.
+> **Why not LangGraph / CrewAI?** Evaluated and rejected on documented architectural grounds, not avoided — a 2026-05-16 deliberation chose `do_nothing` (confidence 0.36, conservative override), reaffirmed by two follow-ups on 2026-05-19. Three concrete integration shapes were proposed and scored:
+>
+> - **Full rewrite on LangGraph** — voices as `StateGraph` nodes calling the Anthropic API directly. Scored `risk=0.95`, control-invalid: it discards the orchestration substrate the skill is *built on* — Claude Code's sub-agent dispatch (the `Agent` tool, `agents/consilium-subagent.md`). Consilium's graph is small and fixed (Conservator → Generator → Control, fanning out to Trias/Skeptic sub-agents); that topology is already expressed as typed dispatch, not something a graph runtime would simplify.
+> - **Vocabulary / diagrams only, no dependency** — rejected as cargo-culting: it borrows LangGraph's mental model with zero runtime benefit.
+> - **Isolated post-hoc sidecar** (`experiments/langgraph_replay/` rendering `runs/*.json`) — the closest to viable, rejected because it would need a hard, fragile contract that `experiments/` is *never* imported by `scripts/`, to keep the dependency strictly off the runtime path.
+>
+> The deterministic glue (aggregator veto cascade, confidence, scope gate, `validate_report`) is already pure stdlib functions over JSON — independently runnable and testable as CLIs. State and resume are already file-based: every run persists as canonical JSON in `.consilium/runs/`, which *doubles* as episodic memory, the priors source, and the audit trail (globbed by `priors.py` / `usage.py` / `memory.py`). A framework checkpointer would duplicate or displace that contract; a dependency tree would add supply-chain and version surface plus indirection through the authoritative `prompts/voices/*.md` — net more surface, no new capability. The deliberations are recorded in `.consilium/runs/` (local, gitignored).
 
-| Metric | Value |
-|---|---|
-| Local branches | 164 |
-| Remote-tracking branches | 155 |
-| Commits (total) | 414 |
-| Tracked files | 108 |
-
-**Lines of code by language** (tracked files):
-
-| Language | Files | Lines |
-|---|---:|---:|
-| Python (`scripts/`, `evals/`) | 40 | 10,411 |
-| Markdown (docs, prompts, SKILL.md) | — | 17,273 |
-| HTML (architecture poster, FEEDBACK.html) | — | 3,849 |
-| JSON (schemas, eval fixtures, runs examples) | — | 2,145 |
-
-Python carries the orchestration logic: `aggregator.py`, `confidence.py`, `scope_gate.py`, `strip_context.py`, `dialectic_merge.py`, `personalities.py`, `priors.py`, `feedback.py`, `validate_report.py`, and the evaluation harness.
+> **Why not RAG / vector memory?** The retrieval surface is small and *structured*, not a corpus: priors come from globbing `.consilium/runs/*.json` and parsing `FEEDBACK.html` — tens to low-hundreds of records — and selection is by recency, `--label` substring, and OK/BAD outcome. That lookup is exact, cheap to scan in full, and fully explainable. Embeddings + an ANN index would add a vector store and an embedding-model dependency to *approximately* match over a set small enough to read exhaustively — trading a deterministic, auditable query for a fuzzy one with no recall it couldn't already get. The precondition for RAG (a large unstructured corpus) isn't present, so it stays out of scope.
 
 ## License
 
-This showcase repository is released under the **Business Source License 1.1** — see [`LICENSE`](./LICENSE). Non-production use (evaluation, education, research, personal study) is permitted under the Additional Use Grant. Any production or commercial use requires a separate agreement with the Licensor. The license converts to **MIT** on **2030-05-21**.
+[Business Source License 1.1](LICENSE) © 2026 Schipor Alexandru.
+
+Free for non-commercial use (evaluation, education, research, personal). Commercial use within a revenue-generating organization requires a commercial license — contact the Licensor. Converts automatically to Apache 2.0 on **2030-05-16**.

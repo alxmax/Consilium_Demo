@@ -1,0 +1,2219 @@
+[
+  {
+    "_meta": true,
+    "_note": "Synthetic fixtures — validate code-path coverage only, not semantic correctness. A passing scenario confirms the script handles the given input shape; it does not assert that the heuristic or threshold is calibrated correctly. (Deming MODIFY, eval-parity audit 2026-05-25)"
+  },
+  {
+    "name": "aggregator/majority picks highest mean",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "majority"
+    ],
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "a",
+          "scores": {
+            "generator": 0.9,
+            "control": 0.9,
+            "conservator": 0.2
+          }
+        },
+        {
+          "id": "b",
+          "scores": {
+            "generator": 0.5,
+            "control": 0.5,
+            "conservator": 0.5
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "scheme": "majority",
+      "chosen": "a"
+    }
+  },
+  {
+    "name": "aggregator/weighted scheme removed from CLI (deprecated)",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "weighted"
+    ],
+    "stdin_json": {
+      "candidates": []
+    },
+    "expect_exit": 2,
+    "expect_stderr_contains": [
+      "invalid choice",
+      "weighted"
+    ]
+  },
+  {
+    "name": "aggregator/conservative_override vetoes risky candidate",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "conservative_override"
+    ],
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "safe",
+          "scores": {
+            "generator": 0.7,
+            "control": 0.7,
+            "conservator": 0.3
+          }
+        },
+        {
+          "id": "risky",
+          "scores": {
+            "generator": 0.95,
+            "control": 0.95,
+            "conservator": 0.85
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "scheme": "conservative_override",
+      "chosen": "safe"
+    }
+  },
+  {
+    "name": "aggregator/conservative_override survivor ranking prefers lower risk at gen+ctrl tie",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "conservative_override"
+    ],
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "lower_risk",
+          "scores": {
+            "generator": 0.8,
+            "control": 0.8,
+            "conservator": 0.4
+          }
+        },
+        {
+          "id": "higher_risk",
+          "scores": {
+            "generator": 0.8,
+            "control": 0.8,
+            "conservator": 0.6
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "scheme": "conservative_override",
+      "chosen": "lower_risk"
+    }
+  },
+  {
+    "name": "aggregator/conservative_override veto-all attaches retry_suggested",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "conservative_override"
+    ],
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "a",
+          "scores": {
+            "generator": 0.9,
+            "control": 0.9,
+            "conservator": 0.9
+          }
+        },
+        {
+          "id": "b",
+          "scores": {
+            "generator": 0.7,
+            "control": 0.7,
+            "conservator": 0.85
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "chosen": null,
+      "retry_suggested": {
+        "would_survive_relaxed": true
+      }
+    }
+  },
+  {
+    "name": "aggregator/risk_adjusted_utility prefers safe over high-utility-but-risky",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "risk_adjusted_utility"
+    ],
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "safe_modest",
+          "scores": {
+            "generator": 0.6,
+            "control": 0.6,
+            "conservator": 0.2
+          }
+        },
+        {
+          "id": "risky_brilliant",
+          "scores": {
+            "generator": 0.95,
+            "control": 0.95,
+            "conservator": 0.85
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "scheme": "risk_adjusted_utility",
+      "chosen": "safe_modest"
+    }
+  },
+  {
+    "_comment": "HM1 regression: meta_recommendation lives inside conservator.scores[], not at top level",
+    "name": "aggregator/sequential scale_down triggers ADAPT_SHORT via nested scores meta_recommendation",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "sequential"
+    ],
+    "stdin_json": {
+      "generator": {
+        "candidates": [
+          {
+            "id": "opt_a",
+            "summary": "simple fix",
+            "sketch": "one liner",
+            "rationale": "fast",
+            "downside_estimate": "none"
+          }
+        ],
+        "preferred": "opt_a"
+      },
+      "control": {
+        "verdicts": [],
+        "disagreements": [],
+        "glossary_fail": false
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "opt_a",
+            "regression_risk": {
+              "reversibility": "complete",
+              "magnitude": "trivial",
+              "net_concern": 0.1
+            },
+            "meta_recommendation": "scale_down",
+            "irreversibility_flag": false
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "result": "ADAPT_SHORT"
+    }
+  },
+  {
+    "name": "confidence/well-aligned chosen returns numeric confidence",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "x",
+          "scores": {
+            "generator": 0.9,
+            "control": 0.85,
+            "conservator": 0.1
+          }
+        },
+        {
+          "id": "y",
+          "scores": {
+            "generator": 0.4,
+            "control": 0.4,
+            "conservator": 0.6
+          }
+        }
+      ],
+      "chosen": "x"
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "confidence": 0.81,
+      "agreement": 0.95,
+      "separation": 0.483
+    }
+  },
+  {
+    "name": "confidence/null chosen returns null confidence with reason",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "candidates": [],
+      "chosen": null
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "confidence": null
+    }
+  },
+  {
+    "name": "confidence/vote_pattern 2-1 with steward dissent drops below PEND threshold",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "vote_pattern": "2-1",
+      "dissent": [
+        {
+          "personality": "steward",
+          "chose": "B"
+        }
+      ],
+      "abstained": []
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "confidence": 0.65,
+      "source": "vote_pattern"
+    }
+  },
+  {
+    "name": "confidence/vote_pattern 2-1 with pioneer dissent keeps baseline",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "vote_pattern": "2-1",
+      "dissent": [
+        {
+          "personality": "pioneer",
+          "chose": "B"
+        }
+      ],
+      "abstained": []
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "confidence": 0.75,
+      "source": "vote_pattern"
+    }
+  },
+  {
+    "name": "confidence/vote_pattern 2-0 with steward abstain drops below PEND threshold",
+    "tool": "scripts/confidence.py",
+    "stdin_json": {
+      "vote_pattern": "2-0",
+      "dissent": [],
+      "abstained": [
+        {
+          "name": "steward",
+          "reason": "all candidates vetoed"
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "confidence": 0.55,
+      "source": "vote_pattern"
+    }
+  },
+  {
+    "name": "validate_report/full report with required fields passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "pipeline_executed": true,
+      "success_criterion": "x is y",
+      "verification": "run pytest",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
+      ],
+      "telemetry": {
+        "mode": "sequential"
+      }
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "validate_report/skipped report with skip_reason passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "skipped",
+      "skipped": true,
+      "skip_reason": "1 file, 4 lines, no sensitive paths"
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "validate_report/skipped without skip_reason fails with explicit message",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "skipped",
+      "skipped": true
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "skip_reason"
+    ]
+  },
+  {
+    "name": "validate_report/missing success_criterion fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "verification": "y",
+      "chosen_approach": "approach_a"
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "success_criterion"
+    ]
+  },
+  {
+    "name": "validate_report/telemetry with malformed token count fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
+      ],
+      "telemetry": {
+        "mode": "parallel",
+        "voices": {
+          "generator": {
+            "tokens_in": -5
+          }
+        }
+      }
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "tokens_in"
+    ]
+  },
+  {
+    "name": "validate_report/well-formed telemetry passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "pipeline_executed": true,
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
+      ],
+      "telemetry": {
+        "mode": "parallel",
+        "passes": 1,
+        "voices": {
+          "generator": {
+            "tokens_in": 1200,
+            "tokens_out": 400,
+            "latency_ms": 3500
+          },
+          "control": {
+            "tokens_in": 800,
+            "tokens_out": 200,
+            "latency_ms": 2100
+          },
+          "conservator": {
+            "tokens_in": 900,
+            "tokens_out": 180,
+            "latency_ms": 1800
+          }
+        }
+      }
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "strip_context/for control drops rationale",
+    "tool": "scripts/strip_context.py",
+    "args": [
+      "--for",
+      "control"
+    ],
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "a",
+          "summary": "do x",
+          "sketch": "code",
+          "rationale": "must not leak"
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "candidates": [
+        {
+          "id": "a",
+          "summary": "do x",
+          "sketch": "code"
+        }
+      ]
+    }
+  },
+  {
+    "name": "strip_context/for conservator drops invalid verdicts and issue text",
+    "tool": "scripts/strip_context.py",
+    "args": [
+      "--for",
+      "conservator"
+    ],
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "a",
+          "summary": "ok",
+          "sketch": "good"
+        },
+        {
+          "id": "b",
+          "summary": "bad",
+          "sketch": "broken"
+        }
+      ],
+      "verdicts": [
+        {
+          "id": "a",
+          "valid": true,
+          "issues": []
+        },
+        {
+          "id": "b",
+          "valid": false,
+          "issues": [
+            "broken"
+          ]
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "candidates": [
+        {
+          "id": "a",
+          "summary": "ok",
+          "sketch": "good"
+        }
+      ]
+    }
+  },
+  {
+    "name": "build_report/full bundle produces canonical report with chosen + alternatives",
+    "tool": "scripts/build_report.py",
+    "stdin_json": {
+      "success_criterion": "introduce scope_gate auto without false-skip on sensitive paths",
+      "verification": "run scope_gate on synthetic scenarios and run_evals 21/21",
+      "generator": {
+        "candidates": [
+          {
+            "id": "gate_with_blocklist",
+            "summary": "files+lines+blocklist"
+          },
+          {
+            "id": "path_aware_only",
+            "summary": "blocklist only, no max_lines"
+          },
+          {
+            "id": "do_nothing",
+            "summary": "keep manual hint"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "gate_with_blocklist",
+            "valid": true,
+            "issues": []
+          },
+          {
+            "id": "path_aware_only",
+            "valid": true,
+            "issues": [
+              {
+                "category": "logic",
+                "detail": "PR mari false-skipped"
+              }
+            ]
+          },
+          {
+            "id": "do_nothing",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "gate_with_blocklist",
+            "risk_score": 0.3
+          },
+          {
+            "id": "path_aware_only",
+            "risk_score": 0.55
+          },
+          {
+            "id": "do_nothing",
+            "risk_score": 0.0
+          }
+        ]
+      },
+      "aggregate": {
+        "scheme": "risk_adjusted_utility",
+        "chosen": "gate_with_blocklist"
+      },
+      "confidence": {
+        "confidence": 0.79
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "success_criterion": "introduce scope_gate auto without false-skip on sensitive paths",
+      "chosen_approach": "gate_with_blocklist",
+      "confidence": 0.79,
+      "voice_scores": {
+        "generator": 1.0,
+        "control": 1.0,
+        "conservator": 0.3
+      }
+    }
+  },
+  {
+    "name": "build_report/skipped bundle short-circuits to skipped report",
+    "tool": "scripts/build_report.py",
+    "stdin_json": {
+      "success_criterion": "trivial change to docstring",
+      "verification": "n/a",
+      "skipped": true,
+      "skip_reason": "1 file, 4 lines, no sensitive paths",
+      "signals": {
+        "files_changed": 1,
+        "lines_changed": 4,
+        "blocklist_hits": []
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "chosen_approach": "skipped",
+      "skipped": true,
+      "skip_reason": "1 file, 4 lines, no sensitive paths",
+      "voice_scores": null,
+      "confidence": null,
+      "alternatives": []
+    }
+  },
+  {
+    "name": "build_report/missing success_criterion fails fast",
+    "tool": "scripts/build_report.py",
+    "stdin_json": {
+      "verification": "y",
+      "generator": {
+        "candidates": []
+      },
+      "aggregate": {
+        "chosen": "x"
+      }
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "success_criterion"
+    ]
+  },
+  {
+    "name": "build_report/output validates cleanly via validate_report contract",
+    "tool": "scripts/build_report.py",
+    "stdin_json": {
+      "success_criterion": "any non-empty sentence",
+      "verification": "any non-empty step",
+      "generator": {
+        "candidates": [
+          {
+            "id": "x",
+            "summary": "x"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "x",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "x",
+            "risk_score": 0.2
+          }
+        ]
+      },
+      "aggregate": {
+        "scheme": "majority",
+        "chosen": "x"
+      },
+      "confidence": {
+        "confidence": 0.7
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "success_criterion": "any non-empty sentence",
+      "verification": "any non-empty step",
+      "chosen_approach": "x"
+    }
+  },
+  {
+    "name": "log_feedback/normal report emits PEND line with cand+vetoed counts",
+    "tool": "scripts/log_feedback.py",
+    "args": [
+      "--dry-run"
+    ],
+    "stdin_json": {
+      "success_criterion": "scope_gate skips truly-trivial diffs without bypassing sensitive paths",
+      "verification": "run scope_gate.py on synthetic inputs",
+      "chosen_approach": "approach_a",
+      "confidence": 0.82,
+      "telemetry": {
+        "mode": "parallel"
+      },
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": [
+            {
+              "id": "approach_a"
+            },
+            {
+              "id": "approach_b"
+            },
+            {
+              "id": "do_nothing"
+            }
+          ]
+        },
+        {
+          "step": "aggregate",
+          "result": {
+            "vetoed": [
+              {
+                "id": "approach_b",
+                "risk": 0.85
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "PEND",
+      "approach_a",
+      "3 cand",
+      "1 vetoed",
+      "conf=0.82",
+      "mode=parallel"
+    ]
+  },
+  {
+    "name": "log_feedback/skipped report emits skipped note",
+    "tool": "scripts/log_feedback.py",
+    "args": [
+      "--dry-run"
+    ],
+    "stdin_json": {
+      "success_criterion": "trivial change to docstring",
+      "verification": "n/a",
+      "chosen_approach": "skipped",
+      "skipped": true,
+      "skip_reason": "1 file, 4 lines, no sensitive paths"
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "PEND",
+      "skipped",
+      "skipped: 1 file"
+    ]
+  },
+  {
+    "name": "log_feedback/all-vetoed report emits null chosen with relaxed threshold",
+    "tool": "scripts/log_feedback.py",
+    "args": [
+      "--dry-run"
+    ],
+    "stdin_json": {
+      "success_criterion": "every candidate breached veto",
+      "verification": "human review",
+      "chosen_approach": null,
+      "deliberation_log": [
+        {
+          "step": "aggregate",
+          "result": {
+            "retry_suggested": {
+              "relaxed_threshold": 0.78
+            }
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "PEND",
+      "| null |",
+      "all vetoed",
+      "relaxed=0.78"
+    ]
+  },
+  {
+    "name": "log_feedback/missing success_criterion fails with explicit message",
+    "tool": "scripts/log_feedback.py",
+    "args": [
+      "--dry-run"
+    ],
+    "stdin_json": {
+      "verification": "y",
+      "chosen_approach": "approach_a"
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "success_criterion"
+    ]
+  },
+  {
+    "name": "validate_report/non-skipped missing deliberation_log fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "telemetry": {
+        "mode": "sequential"
+      }
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "deliberation_log"
+    ]
+  },
+  {
+    "name": "validate_report/deliberation_log aggregate result as string fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": "narrative string instead of dict"
+        }
+      ],
+      "telemetry": {
+        "mode": "sequential"
+      }
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "result must be an object"
+    ]
+  },
+  {
+    "name": "validate_report/non-skipped missing telemetry fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
+      ]
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "telemetry block required"
+    ]
+  },
+  {
+    "name": "validate_report/telemetry without mode fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
+      ],
+      "telemetry": {
+        "passes": 1
+      }
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "telemetry.mode required"
+    ]
+  },
+  {
+    "name": "log_feedback/rejects --outcome OK when confidence < 0.70 without --force-override",
+    "tool": "scripts/log_feedback.py",
+    "args": [
+      "--dry-run",
+      "--outcome",
+      "OK"
+    ],
+    "stdin_json": {
+      "success_criterion": "any criterion",
+      "verification": "any step",
+      "chosen_approach": "approach_a",
+      "confidence": 0.49,
+      "telemetry": {
+        "mode": "parallel"
+      },
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": [
+            {
+              "id": "approach_a"
+            },
+            {
+              "id": "do_nothing"
+            }
+          ]
+        },
+        {
+          "step": "aggregate",
+          "result": {
+            "vetoed": []
+          }
+        }
+      ]
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "confidence",
+      "threshold"
+    ]
+  },
+  {
+    "name": "log_feedback/accepts --outcome OK with --force-override when confidence < 0.70",
+    "tool": "scripts/log_feedback.py",
+    "args": [
+      "--dry-run",
+      "--outcome",
+      "OK",
+      "--force-override"
+    ],
+    "stdin_json": {
+      "success_criterion": "any criterion",
+      "verification": "any step",
+      "chosen_approach": "approach_a",
+      "confidence": 0.49,
+      "telemetry": {
+        "mode": "parallel"
+      },
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": [
+            {
+              "id": "approach_a"
+            },
+            {
+              "id": "do_nothing"
+            }
+          ]
+        },
+        {
+          "step": "aggregate",
+          "result": {
+            "vetoed": []
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "OK",
+      "approach_a"
+    ]
+  },
+  {
+    "name": "log_feedback/accepts --outcome OK when confidence >= 0.70",
+    "tool": "scripts/log_feedback.py",
+    "args": [
+      "--dry-run",
+      "--outcome",
+      "OK"
+    ],
+    "stdin_json": {
+      "success_criterion": "any criterion",
+      "verification": "any step",
+      "chosen_approach": "approach_a",
+      "confidence": 0.72,
+      "telemetry": {
+        "mode": "parallel"
+      },
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": [
+            {
+              "id": "approach_a"
+            },
+            {
+              "id": "do_nothing"
+            }
+          ]
+        },
+        {
+          "step": "aggregate",
+          "result": {
+            "vetoed": []
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "OK",
+      "approach_a"
+    ]
+  },
+  {
+    "name": "validate_report/parallel mode with no voices fails hard",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
+      ],
+      "telemetry": {
+        "mode": "parallel"
+      }
+    },
+    "expect_exit": 1,
+    "expect_stderr_contains": [
+      "parallel",
+      "voices",
+      "required"
+    ]
+  },
+  {
+    "name": "validate_report/parallel mode with voices passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "pipeline_executed": true,
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
+      ],
+      "telemetry": {
+        "mode": "parallel",
+        "voices": {
+          "generator": {
+            "tokens_in": 800,
+            "tokens_out": 400,
+            "latency_ms": 3000
+          },
+          "control": {
+            "tokens_in": 800,
+            "tokens_out": 300,
+            "latency_ms": 2800
+          },
+          "conservator": {
+            "tokens_in": 800,
+            "tokens_out": 250,
+            "latency_ms": 2500
+          }
+        }
+      }
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "validate_report/sequential mode without voices passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "pipeline_executed": true,
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "deliberation_log": [
+        {
+          "step": "generator",
+          "candidates": []
+        },
+        {
+          "step": "control",
+          "verdicts": []
+        },
+        {
+          "step": "conservator",
+          "scores": []
+        },
+        {
+          "step": "aggregate",
+          "scheme": "majority",
+          "result": {
+            "chosen": "approach_a"
+          }
+        }
+      ],
+      "telemetry": {
+        "mode": "sequential"
+      }
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "validate_report/trias report without telemetry now fails",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "team": "trias",
+      "personalities": [
+        {
+          "name": "pioneer",
+          "weights": {},
+          "lens": "p",
+          "chose": "approach_a"
+        },
+        {
+          "name": "architect",
+          "weights": {},
+          "lens": "p",
+          "chose": "approach_a"
+        },
+        {
+          "name": "steward",
+          "weights": {},
+          "lens": "p",
+          "chose": "approach_a"
+        }
+      ],
+      "vote_pattern": "3-0"
+    },
+    "expect_exit": 1
+  },
+  {
+    "name": "validate_report/trias report with telemetry passes",
+    "tool": "scripts/validate_report.py",
+    "stdin_json": {
+      "pipeline_executed": true,
+      "success_criterion": "x",
+      "verification": "y",
+      "chosen_approach": "approach_a",
+      "team": "trias",
+      "vote_pattern": "3-0",
+      "personalities": [
+        {
+          "name": "pioneer",
+          "weights": {
+            "generator": 0.49,
+            "control": 0.3,
+            "conservator": 0.21
+          },
+          "lens": "pioneer_lens",
+          "chose": "approach_a"
+        },
+        {
+          "name": "architect",
+          "weights": {
+            "generator": 0.3,
+            "control": 0.4,
+            "conservator": 0.3
+          },
+          "lens": "architect_lens",
+          "chose": "approach_a"
+        },
+        {
+          "name": "steward",
+          "weights": {
+            "generator": 0.3,
+            "control": 0.3,
+            "conservator": 0.4
+          },
+          "lens": "steward_lens",
+          "chose": "approach_a"
+        }
+      ],
+      "telemetry": {
+        "mode": "trias",
+        "voices": {
+          "pioneer": {
+            "tokens_in": 100,
+            "tokens_out": 50,
+            "latency_ms": 1000
+          },
+          "architect": {
+            "tokens_in": 100,
+            "tokens_out": 50,
+            "latency_ms": 1000
+          },
+          "steward": {
+            "tokens_in": 100,
+            "tokens_out": 50,
+            "latency_ms": 1000
+          }
+        }
+      }
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "trias_unanimous_3_0",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
+    "stdin_json": {
+      "personalities": [
+        {
+          "name": "pioneer",
+          "chose": "A"
+        },
+        {
+          "name": "architect",
+          "chose": "A"
+        },
+        {
+          "name": "steward",
+          "chose": "A"
+        }
+      ],
+      "candidates": [
+        {
+          "id": "A"
+        },
+        {
+          "id": "B"
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "3-0",
+      "chosen": "A"
+    }
+  },
+  {
+    "name": "trias_majority_2_1",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
+    "stdin_json": {
+      "personalities": [
+        {
+          "name": "pioneer",
+          "chose": "A"
+        },
+        {
+          "name": "architect",
+          "chose": "A"
+        },
+        {
+          "name": "steward",
+          "chose": "B"
+        }
+      ],
+      "candidates": [
+        {
+          "id": "A"
+        },
+        {
+          "id": "B"
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "2-1",
+      "chosen": "A"
+    }
+  },
+  {
+    "name": "trias_abstain_2_0",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
+    "stdin_json": {
+      "personalities": [
+        {
+          "name": "pioneer",
+          "chose": "A"
+        },
+        {
+          "name": "architect",
+          "chose": "A"
+        },
+        {
+          "name": "steward",
+          "chose": null
+        }
+      ],
+      "candidates": [
+        {
+          "id": "A"
+        },
+        {
+          "id": "B"
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "2-0",
+      "chosen": "A"
+    }
+  },
+  {
+    "name": "trias_fragment_1_1_1",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
+    "stdin_json": {
+      "personalities": [
+        {
+          "name": "pioneer",
+          "chose": "A"
+        },
+        {
+          "name": "architect",
+          "chose": "B"
+        },
+        {
+          "name": "steward",
+          "chose": "C"
+        }
+      ],
+      "candidates": [
+        {
+          "id": "A"
+        },
+        {
+          "id": "B"
+        },
+        {
+          "id": "C"
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "1-1-1",
+      "chosen": null
+    }
+  },
+  {
+    "name": "trias_total_veto_0_0_0",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "team_vote"
+    ],
+    "stdin_json": {
+      "personalities": [
+        {
+          "name": "pioneer",
+          "chose": null
+        },
+        {
+          "name": "architect",
+          "chose": null
+        },
+        {
+          "name": "steward",
+          "chose": null
+        }
+      ],
+      "candidates": [
+        {
+          "id": "A"
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "scheme": "team_vote",
+      "vote_pattern": "0-0-0",
+      "chosen": null,
+      "retry_suggested": {
+        "reason": "all 3 personalities vetoed every candidate"
+      }
+    }
+  },
+  {
+    "name": "meta_critic/healthy bundle emits no flags",
+    "tool": "scripts/deprecated/meta_critic.py",
+    "args": [],
+    "stdin_json": {
+      "generator": {
+        "candidates": [
+          {
+            "id": "a",
+            "summary": "rewrite parser iterative approach",
+            "sketch": "for token in tokens state transition compute result accumulator"
+          },
+          {
+            "id": "b",
+            "summary": "memoize recursive function calls",
+            "sketch": "wrap with lru_cache decorator input parameters cache invalidation"
+          },
+          {
+            "id": "c",
+            "summary": "parallel worker threads partition",
+            "sketch": "pool map process chunk partitions merge results ordered"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "a",
+            "issues": [
+              {
+                "category": "logic",
+                "detail": "potential off-by-one in state transition at scripts/parser.py:42 when input is empty"
+              }
+            ]
+          },
+          {
+            "id": "b",
+            "issues": [
+              {
+                "category": "tests",
+                "detail": "tests/test_cache_invalidation.py needs update for new memo signature"
+              }
+            ]
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "a",
+            "risk_score": 0.25
+          },
+          {
+            "id": "b",
+            "risk_score": 0.55
+          },
+          {
+            "id": "c",
+            "risk_score": 0.8
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "deliberation_quality": {
+        "flags": []
+      }
+    }
+  },
+  {
+    "name": "meta_critic/paraphrasing generator triggers divergence flag",
+    "tool": "scripts/deprecated/meta_critic.py",
+    "args": [],
+    "stdin_json": {
+      "generator": {
+        "candidates": [
+          {
+            "id": "a",
+            "summary": "validation logic added new",
+            "sketch": "validation logic added new approach"
+          },
+          {
+            "id": "b",
+            "summary": "new validation logic added",
+            "sketch": "validation new logic added approach"
+          },
+          {
+            "id": "c",
+            "summary": "logic validation new added",
+            "sketch": "validation logic new added approach"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": []
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "a",
+            "risk_score": 0.3
+          },
+          {
+            "id": "b",
+            "risk_score": 0.4
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "conservator_spread"
+    ],
+    "_comment": "generator_divergence removed in 2026-05-24 trim; scenario updated to check spread is still present"
+  },
+  {
+    "name": "meta_critic/empty issues yields non-zero spread (control_concreteness removed)",
+    "tool": "scripts/deprecated/meta_critic.py",
+    "args": [],
+    "stdin_json": {
+      "generator": {
+        "candidates": [
+          {
+            "id": "alpha",
+            "summary": "first distinct option",
+            "sketch": "completely different approach number one"
+          },
+          {
+            "id": "beta",
+            "summary": "second different option",
+            "sketch": "another approach using parallel mechanism"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "alpha",
+            "valid": true,
+            "issues": []
+          },
+          {
+            "id": "beta",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "alpha",
+            "risk_score": 0.2
+          },
+          {
+            "id": "beta",
+            "risk_score": 0.7
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "deliberation_quality": {
+        "conservator_spread": 0.5,
+        "flags": []
+      }
+    }
+  },
+  {
+    "name": "meta_critic/single conservator score yields spread null",
+    "tool": "scripts/deprecated/meta_critic.py",
+    "args": [],
+    "stdin_json": {
+      "generator": {
+        "candidates": [
+          {
+            "id": "alpha",
+            "summary": "distinct approach one",
+            "sketch": "completely different mechanism"
+          },
+          {
+            "id": "beta",
+            "summary": "distinct approach two",
+            "sketch": "another orthogonal mechanism"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": []
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "alpha",
+            "risk_score": 0.5
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "deliberation_quality": {
+        "conservator_spread": null
+      }
+    }
+  },
+  {
+    "name": "retry_context/low confidence recommends retry with top-2 candidates",
+    "tool": "scripts/retry_context.py",
+    "args": [],
+    "stdin_json": {
+      "confidence": 0.5,
+      "generator": {
+        "candidates": [
+          {
+            "id": "approach_a",
+            "summary": "edit scripts/foo.py to call helper",
+            "sketch": "scripts/foo.py needs change in helper() to handle None input"
+          },
+          {
+            "id": "approach_b",
+            "summary": "modify scripts/bar.py",
+            "sketch": "scripts/bar.py modify validate() function arguments"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "approach_a",
+            "valid": true,
+            "issues": []
+          },
+          {
+            "id": "approach_b",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "approach_a",
+            "risk_score": 0.3
+          },
+          {
+            "id": "approach_b",
+            "risk_score": 0.4
+          }
+        ]
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "retry_recommended": true
+    }
+  },
+  {
+    "name": "retry_context/high confidence skips retry",
+    "tool": "scripts/retry_context.py",
+    "args": [],
+    "stdin_json": {
+      "confidence": 0.9,
+      "generator": {
+        "candidates": [
+          {
+            "id": "a",
+            "summary": "x",
+            "sketch": "y"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": []
+      },
+      "conservator": {
+        "scores": []
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "retry_recommended": false,
+      "top_candidates": []
+    }
+  },
+  {
+    "name": "build_report/passes through deliberation_quality when present",
+    "tool": "scripts/build_report.py",
+    "args": [],
+    "stdin_json": {
+      "success_criterion": "test sc",
+      "verification": "test verify",
+      "generator": {
+        "candidates": [
+          {
+            "id": "a",
+            "summary": "x",
+            "sketch": "y"
+          }
+        ]
+      },
+      "control": {
+        "verdicts": [
+          {
+            "id": "a",
+            "valid": true,
+            "issues": []
+          }
+        ]
+      },
+      "conservator": {
+        "scores": [
+          {
+            "id": "a",
+            "risk_score": 0.2
+          }
+        ]
+      },
+      "aggregate": {
+        "scheme": "majority",
+        "chosen": "a"
+      },
+      "confidence": {
+        "confidence": 0.85
+      },
+      "telemetry": {
+        "mode": "parallel",
+        "voices": {
+          "generator": {
+            "tokens_in": 0,
+            "tokens_out": 0,
+            "latency_ms": 0
+          }
+        }
+      },
+      "deliberation_quality": {
+        "generator_divergence": 0.8,
+        "control_concreteness": 0.9,
+        "conservator_spread": 0.5,
+        "flags": []
+      }
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "deliberation_quality": {
+        "generator_divergence": 0.8,
+        "flags": []
+      }
+    }
+  },
+  {
+    "name": "memory/tier short returns stub with empty entries",
+    "tool": "scripts/memory.py",
+    "args": [
+      "--tier",
+      "short"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "tier": "short",
+      "entries": []
+    }
+  },
+  {
+    "name": "personalities/pioneer weights generator highest (progress bias)",
+    "tool": "scripts/personalities.py",
+    "args": [
+      "--name",
+      "pioneer"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "name": "pioneer",
+      "weights": {
+        "generator": 0.49,
+        "control": 0.3,
+        "conservator": 0.21
+      },
+      "lens": "prompts/voices/pioneer_lens.md"
+    }
+  },
+  {
+    "name": "personalities/architect weights tilted toward control (structural bias)",
+    "tool": "scripts/personalities.py",
+    "args": [
+      "--name",
+      "architect"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "name": "architect",
+      "weights": {
+        "generator": 0.3,
+        "control": 0.4,
+        "conservator": 0.3
+      },
+      "lens": "prompts/voices/architect_lens.md"
+    }
+  },
+  {
+    "name": "personalities/steward weights conservator highest (risk-averse bias)",
+    "tool": "scripts/personalities.py",
+    "args": [
+      "--name",
+      "steward"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "name": "steward",
+      "weights": {
+        "generator": 0.3,
+        "control": 0.3,
+        "conservator": 0.4
+      },
+      "lens": "prompts/voices/steward_lens.md"
+    }
+  },
+  {
+    "name": "priors/weighted_bad_rate exceeds bad_rate when confirmed BAD present",
+    "note": "Synthetic fixture: validates code-path coverage only, not semantic correctness. The static HTML in evals/fixtures/ exercises priors.py parsing/arithmetic; it does not assert that the weighting heuristic is the right one.",
+    "tool": "scripts/priors.py",
+    "args": [
+      "--feedback-file",
+      "evals/fixtures/priors_weighted_bad.html",
+      "--no-runs"
+    ],
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "source": {
+        "feedback_total": 2
+      },
+      "counts": {
+        "BAD": 1,
+        "OK": 1
+      },
+      "bad_rate": 0.5,
+      "weighted_bad_rate": 0.6666666666666666
+    }
+  },
+  {
+    "name": "priors/stale_pendings surfaces old PEND entries",
+    "note": "Synthetic fixture: validates code-path coverage only, not semantic correctness. The 2020-01-01 PEND entry is anchored to stay stale; the scenario confirms detection fires, not that the staleness window is well-calibrated.",
+    "tool": "scripts/priors.py",
+    "args": [
+      "--feedback-file",
+      "evals/fixtures/priors_stale_pendings.html",
+      "--no-runs"
+    ],
+    "env": {
+      "CONSILIUM_HEADLESS": "0"
+    },
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "source": {
+        "feedback_total": 2
+      },
+      "stale_pendings": [
+        {
+          "date": "2020-01-01",
+          "context": "fixture-stale-test",
+          "chosen": "approach_a"
+        }
+      ]
+    }
+  },
+  {
+    "name": "scope_gate/low magnitude emits sequential mode_ceiling",
+    "tool": "scripts/scope_gate.py",
+    "args": [
+      "--files",
+      "scripts/aggregator.py"
+    ],
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "magnitude": "low",
+      "mode_ceiling": "sequential"
+    }
+  },
+  {
+    "name": "scope_gate/blocklist hit forces critical magnitude + trias mode_ceiling",
+    "note": "Deterministic via --signals-stdin (no git/SHA dependency, survives history squash). A blocklisted path forces magnitude=critical regardless of line count.",
+    "tool": "scripts/scope_gate.py",
+    "args": [
+      "--signals-stdin"
+    ],
+    "stdin_json": {
+      "files_changed": 1,
+      "lines_added": 3,
+      "lines_removed": 0,
+      "paths": [
+        ".github/workflows/ci.yml"
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "magnitude": "critical",
+      "mode_ceiling": "trias",
+      "should_skip": false
+    }
+  },
+  {
+    "name": "scope_gate/many lines via stdin emits high magnitude + dialectic",
+    "note": "Deterministic via --signals-stdin: >100 changed lines forces magnitude=high (routes to dialectic, not trias — trias requires critical/blocklist hit).",
+    "tool": "scripts/scope_gate.py",
+    "args": [
+      "--signals-stdin"
+    ],
+    "stdin_json": {
+      "files_changed": 3,
+      "lines_added": 120,
+      "lines_removed": 10,
+      "paths": [
+        "scripts/a.py",
+        "scripts/b.py",
+        "scripts/c.py"
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "magnitude": "high",
+      "mode_ceiling": "dialectic",
+      "should_skip": false
+    }
+  },
+  {
+    "name": "stability_check/compare flat schema outputs Categorical stability section with flip",
+    "tool": "scripts/stability_check.py",
+    "args": [
+      "--compare",
+      "evals/fixtures/stability_flat_a.json",
+      "evals/fixtures/stability_flat_b.json"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "Categorical stability",
+      "*** FLIP"
+    ]
+  },
+  {
+    "name": "stability_check/compare missing conservator step emits MISSING not traceback",
+    "tool": "scripts/stability_check.py",
+    "args": [
+      "--compare",
+      "evals/fixtures/stability_flat_a.json",
+      "evals/fixtures/stability_no_conservator.json"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "MISSING"
+    ]
+  },
+  {
+    "name": "stability_check/compare nested schema outputs Categorical stability section",
+    "tool": "scripts/stability_check.py",
+    "args": [
+      "--compare",
+      "evals/fixtures/stability_nested_a.json",
+      "evals/fixtures/stability_nested_b.json"
+    ],
+    "expect_exit": 0,
+    "expect_stdout_contains": [
+      "Categorical stability"
+    ]
+  },
+  {
+    "name": "aggregator/conservative_override emits low_separation when top-2 score delta < 0.12",
+    "tool": "scripts/aggregator.py",
+    "args": [
+      "--scheme",
+      "conservative_override"
+    ],
+    "stdin_json": {
+      "candidates": [
+        {
+          "id": "a",
+          "scores": {
+            "generator": 0.9,
+            "control": 0.9,
+            "conservator": 0.2
+          }
+        },
+        {
+          "id": "b",
+          "scores": {
+            "generator": 0.85,
+            "control": 0.85,
+            "conservator": 0.25
+          }
+        }
+      ]
+    },
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "low_separation": true
+    }
+  },
+  {
+    "name": "priors/--label finds match when context contains substring",
+    "note": "Synthetic fixture: validates label-match code path. Fixture uses date 2099-12-31 so the entry always falls within the 30-day window.",
+    "tool": "scripts/priors.py",
+    "args": [
+      "--label", "aggregator scoring",
+      "--no-runs",
+      "--feedback-file", "evals/fixtures/priors_label_match.html"
+    ],
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "prior_deliberation_match": {
+        "label": "aggregator scoring",
+        "date": "2099-12-31",
+        "outcome": "OK",
+        "chosen": "extend_trigger_plus_low_sep"
+      }
+    }
+  },
+  {
+    "name": "priors/--label too short returns null (min-length guard)",
+    "note": "Synthetic fixture: validates that labels shorter than 8 chars are rejected before any FEEDBACK lookup.",
+    "tool": "scripts/priors.py",
+    "args": [
+      "--label", "fix",
+      "--no-runs",
+      "--feedback-file", "evals/fixtures/priors_label_match.html"
+    ],
+    "stdin_json": null,
+    "expect_exit": 0,
+    "expect_stdout_subset": {
+      "prior_deliberation_match": null
+    }
+  },
+  {
+    "name": "validate_report/accepts chosen_approach prior-deliberation with empty deliberation_log",
+    "note": "Synthetic fixture: validates that passthrough reports with no aggregate step pass the validator.",
+    "tool": "scripts/validate_report.py",
+    "args": [],
+    "stdin_json": {
+      "pipeline_executed": false,
+      "success_criterion": "The passthrough feature ships without re-deliberating.",
+      "chosen_approach": "prior-deliberation",
+      "verification": "manual",
+      "alternatives": [],
+      "voice_scores": null,
+      "confidence": 0.9,
+      "deliberation_log": [
+        {"step": "prior_deliberation_passthrough", "matched": "extend_trigger_plus_low_sep", "date": "2026-05-26"}
+      ],
+      "telemetry": {
+        "mode": "prior_deliberation_passthrough",
+        "dispatch_count": 0
+      }
+    },
+    "expect_exit": 0
+  },
+  {
+    "name": "trace_graph/sequential emits flowchart with voice nodes",
+    "tool": "scripts/trace_graph.py",
+    "stdin_json": {
+      "chosen_approach": "approach_a",
+      "telemetry": {"mode": "sequential", "voices": {"conservator": {}, "generator": {}, "control": {}}},
+      "deliberation_log": [{"step": "generator"}, {"step": "control"}, {"step": "conservator"}, {"step": "aggregate"}],
+      "aggregate": {"chosen": "approach_a"}
+    },
+    "expect_exit": 0,
+    "expect_stdout_contains": ["flowchart TD", "Conservator", "Generator", "Control", "aggregate", "CON --> GEN"]
+  },
+  {
+    "name": "trace_graph/scale_down short-circuits Conservator to report",
+    "tool": "scripts/trace_graph.py",
+    "stdin_json": {"chosen_approach": "trivial-direct", "telemetry": {"mode": "sequential_scale_down"}},
+    "expect_exit": 0,
+    "expect_stdout_contains": ["CON -->|scale_down| REP", "trivial-direct"]
+  },
+  {
+    "name": "trace_graph/skipped run emits a single skipped node",
+    "tool": "scripts/trace_graph.py",
+    "stdin_json": {"skipped": true, "chosen_approach": "skipped", "skip_reason": "1 file, 4 lines"},
+    "expect_exit": 0,
+    "expect_stdout_contains": ["skipped", "1 file, 4 lines"]
+  },
+  {
+    "name": "trace_graph/empty stdin exits 2",
+    "tool": "scripts/trace_graph.py",
+    "expect_exit": 2,
+    "expect_stderr_contains": ["cannot parse report"]
+  }
+]
