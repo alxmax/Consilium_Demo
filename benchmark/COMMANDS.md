@@ -29,19 +29,10 @@ claude --version
 
 ## TASK ORDER
 
-12 tasks:
+3 tasks:
 1.  `code/01_circuit_breaker`            — hard code (C++)
 2.  `reasoning/01_transport_choice`      — reasoning (easy)
 3.  `reasoning/02_rule_of_three`         — reasoning (hard, rule-of-three)
-4.  `reasoning/03_schema_migration`      — reasoning (architecture / zero-downtime ops)
-5.  `reasoning/04_binary_search_bug`     — reasoning (debugging / trace)
-6.  `reasoning/05_warehouse_contradiction` — reasoning (contradiction / consistency)
-7.  `reasoning/06_split_brain_db`        — reasoning (distributed systems)
-8.  `reasoning/07_composite_index_prefix` — reasoning (database indexing)
-9.  `reasoning/08_locking_strategy`      — reasoning (concurrency / locking)
-10. `reasoning/09_pipeline_freshness`    — reasoning (data pipeline / freshness)
-11. `reasoning/10_checkout_degradation`  — reasoning (incident / degradation)
-12. `reasoning/11_marathon_prep`         — reasoning (multi-step arithmetic)
 
 ---
 
@@ -96,8 +87,6 @@ cd benchmark   # from the Consilium repo root
 python run_task.py --mode consilium_sequential --task code/01_circuit_breaker
 python run_task.py --mode consilium_sequential --task reasoning/01_transport_choice
 python run_task.py --mode consilium_sequential --task reasoning/02_rule_of_three
-python run_task.py --mode consilium_sequential --task reasoning/03_schema_migration
-python run_task.py --mode consilium_sequential --task reasoning/04_binary_search_bug
 ```
 
 ---
@@ -108,8 +97,6 @@ python run_task.py --mode consilium_sequential --task reasoning/04_binary_search
 python run_task.py --mode consilium_trias --task code/01_circuit_breaker
 python run_task.py --mode consilium_trias --task reasoning/01_transport_choice
 python run_task.py --mode consilium_trias --task reasoning/02_rule_of_three
-python run_task.py --mode consilium_trias --task reasoning/03_schema_migration
-python run_task.py --mode consilium_trias --task reasoning/04_binary_search_bug
 ```
 
 ---
@@ -120,8 +107,6 @@ python run_task.py --mode consilium_trias --task reasoning/04_binary_search_bug
 python run_task.py --mode consilium_dialectic --task code/01_circuit_breaker
 python run_task.py --mode consilium_dialectic --task reasoning/01_transport_choice
 python run_task.py --mode consilium_dialectic --task reasoning/02_rule_of_three
-python run_task.py --mode consilium_dialectic --task reasoning/03_schema_migration
-python run_task.py --mode consilium_dialectic --task reasoning/04_binary_search_bug
 ```
 
 ---
@@ -142,8 +127,6 @@ The runner prepends a structured prefix that:
 python run_task.py --mode superpowers --task code/01_circuit_breaker
 python run_task.py --mode superpowers --task reasoning/01_transport_choice
 python run_task.py --mode superpowers --task reasoning/02_rule_of_three
-python run_task.py --mode superpowers --task reasoning/03_schema_migration
-python run_task.py --mode superpowers --task reasoning/04_binary_search_bug
 ```
 
 ---
@@ -216,7 +199,7 @@ python analyze.py
 
 ## TOTAL
 
-5 modes × 12 tasks = 60 runs. Budget cap @ $3/task → maximum spend ~$180.
+5 modes × 3 tasks = 15 runs. Budget cap @ $3/task → maximum spend ~$45.
 Reasoning-only tasks typically cost well under $1 each.
 
 ---
