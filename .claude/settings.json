@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'for d in \"$CLAUDE_PROJECT_DIR\" \"$(git rev-parse --show-toplevel 2>/dev/null)\"; do [ -n \"$d\" ] && [ -f \"$d/scripts/commit_remind.sh\" ] && { cd \"$d\" && bash scripts/commit_remind.sh; break; }; done; true'"
+          }
+        ]
+      }
+    ]
+  }
+}
