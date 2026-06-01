@@ -45,3 +45,5 @@ jobs:
         run: python scripts/check_doc_drift.py
       - name: Architecture explainer build is in sync
         run: python docs/architecture/build.py --check
+      - name: No private-repo / local-path leaks (public-leak guard)
+        run: python scripts/check_public_leak.py

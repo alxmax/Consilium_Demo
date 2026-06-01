@@ -42,7 +42,7 @@ An interactive, single-page walkthrough of the voices, pipeline, modes, voting, 
 
 This installs the `consilium` skill plus its sub-agents in a single step. Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
 
-> **Repository layout:** this is the **public release** repo. Active development happens in a separate **private** repository; clean, tagged releases (currently **v1.1**) are published here for installation and review.
+> **Releases:** clean, tagged releases (currently **v1.1**) are published here for installation and review.
 
 ## Example
 
