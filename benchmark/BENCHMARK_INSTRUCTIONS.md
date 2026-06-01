@@ -8,8 +8,6 @@ Read this file first. Find your mode below and follow ONLY that section.
 | 1 | Circuit Breaker C++17 — `code/01_circuit_breaker` | Hard Code |
 | 2 | Transport Choice — `reasoning/01_transport_choice` | Reasoning (Easy) |
 | 3 | Rule of Three — `reasoning/02_rule_of_three` | Reasoning (Hard) |
-| 4 | Schema Migration — `reasoning/03_schema_migration` | Reasoning (Hard) |
-| 5 | Binary Search Bug — `reasoning/04_binary_search_bug` | Reasoning (Medium) |
 
 ## Environment (same for every mode — fair across the board)
 - OS: Windows 11, PowerShell + Git Bash

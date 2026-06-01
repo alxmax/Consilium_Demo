@@ -29,8 +29,6 @@ TASK_DIFFICULTY = {
     "code/01_circuit_breaker":       "Hard",
     "reasoning/01_transport_choice": "Easy",
     "reasoning/02_rule_of_three":    "Hard",
-    "reasoning/03_schema_migration": "Hard",
-    "reasoning/04_binary_search_bug": "Medium",
 }
 
 PROMPTS = BASE / "prompts"
