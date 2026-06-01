@@ -21,7 +21,7 @@ The three core voices:
 
 ## Architecture explainer
 
-An interactive, single-page walkthrough of the voices, pipeline, modes, voting, and the calibration loop is published at **[alxmax.github.io/Consilium_Demo/architecture.html](https://alxmax.github.io/Consilium_Demo/architecture.html)** (also served from `architecture.html` at the repo root). It's authored as editable React source in `docs/architecture/` — see that folder's README to preview or rebuild it.
+An interactive, single-page walkthrough of the voices, pipeline, modes, voting, and the calibration loop is published at **[alxmax.github.io/Consilium_Demo/architecture.html](https://alxmax.github.io/Consilium_Demo/architecture.html)**. It's authored as editable React source in `docs/architecture/` (built to `docs/architecture.html`, which GitHub Pages serves) — see that folder's README to preview or rebuild it.
 
 ## When to use
 
