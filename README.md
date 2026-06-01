@@ -42,32 +42,6 @@ An interactive, single-page walkthrough of the voices, pipeline, modes, voting, 
 
 This installs the `consilium` skill plus its sub-agents in a single step. Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
 
-### As a skill (manual)
-
-Clone and symlink the repo into your skills directory — use this if you want to read or modify the source, or run the dev hooks.
-
-**Linux / macOS**
-
-```bash
-git clone https://github.com/alxmax/Consilium_Demo.git ~/dev/consilium
-mkdir -p ~/.claude/skills
-ln -s ~/dev/consilium ~/.claude/skills/consilium
-cd ~/dev/consilium && git config core.hooksPath .githooks
-```
-
-**Windows (PowerShell)** — Junction (no admin required):
-
-```powershell
-git clone https://github.com/alxmax/Consilium_Demo.git $HOME\dev\consilium
-New-Item -ItemType Directory -Force -Path $HOME\.claude\skills
-New-Item -ItemType Junction -Path $HOME\.claude\skills\consilium -Target $HOME\dev\consilium
-cd $HOME\dev\consilium; git config core.hooksPath .githooks
-```
-
-The `.githooks/pre-push` step enforces the feature-branch → PR workflow that keeps the deliberation trail intact.
-
-> **Distribution:** installable as a Claude Code **plugin** (one step, above) or as a **manual skill** (clone + symlink). Both coexist — the plugin is the easy path; the manual clone is for reading or hacking the source.
-
 > **Repository layout:** this is the **public release** repo. Active development happens in a separate **private** repository; clean, tagged releases (currently **v1.1**) are published here for installation and review.
 
 ## Example
