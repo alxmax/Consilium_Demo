@@ -101,7 +101,7 @@ GitHub renders Mermaid natively — paste the `--fence` output directly into any
 ```
 consilium/
 ├── SKILL.md         # the contract: Constitution (4 principles) + 8-step workflow
-├── TODO.md          # release + project roadmap
+├── .claude-plugin/  # plugin manifest + marketplace (one-step install)
 ├── prompts/voices/  # per-voice role prompts (generator, control, conservator, skeptic, lenses)
 ├── modes/           # per-mode workflow + machine-readable config (cost, sub-agents, floors)
 ├── scripts/         # stdlib-only CLIs: aggregator, confidence, priors, scope_gate, …
