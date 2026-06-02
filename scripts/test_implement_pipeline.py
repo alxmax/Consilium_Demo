@@ -3,6 +3,7 @@
 Run:
     python scripts/test_implement_pipeline.py
 """
+# tested-by: CONSILIUM-IMPLEMENT-PIPELINE-001
 import sys
 import textwrap
 from pathlib import Path

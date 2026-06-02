@@ -29,6 +29,7 @@ CLI:
     python scripts/priors.py --feedback-file path/to/FEEDBACK.html
     python scripts/priors.py --runs-dir path/to/runs/
 """
+# implements: CONSILIUM-PRIORS-001
 
 from __future__ import annotations
 

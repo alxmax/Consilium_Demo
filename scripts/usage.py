@@ -29,6 +29,7 @@ CLI:
     python scripts/usage.py --last 50            # most-recent N runs only
     python scripts/usage.py --mode trias         # filter by telemetry.mode
 """
+# implements: CONSILIUM-USAGE-001
 
 from __future__ import annotations
 

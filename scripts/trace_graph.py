@@ -17,6 +17,7 @@ Stdlib-only. CLI:
 
 Exit 0 on success; 2 on malformed JSON / missing input.
 """
+# implements: CONSILIUM-TRACE-GRAPH-001
 from __future__ import annotations
 
 import argparse

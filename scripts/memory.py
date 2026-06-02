@@ -32,6 +32,7 @@ CLI:
     python scripts/memory.py --tier long --feedback-file path/to/FEEDBACK.html
     python scripts/memory.py --tier medium --runs-dir path/to/runs/
 """
+# implements: CONSILIUM-MEMORY-001
 
 from __future__ import annotations
 

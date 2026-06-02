@@ -45,6 +45,7 @@ CLI:
     cat bundle.json | python scripts/retry_context.py
     cat bundle.json | python scripts/retry_context.py --threshold 0.7
 """
+# implements: CONSILIUM-RETRY-CONTEXT-001
 
 from __future__ import annotations
 

@@ -13,6 +13,7 @@ Run:
     python scripts/test_audit_counter.py
     python -m pytest scripts/test_audit_counter.py -v  (if pytest available)
 """
+# tested-by: CONSILIUM-AUDIT-COUNTER-001
 import sys
 import unittest
 from pathlib import Path

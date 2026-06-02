@@ -9,6 +9,7 @@ CLI:
     python scripts/feedback.py --recent 10 # last 10 entries only
     python scripts/feedback.py --runs      # also scan runs/*.json
 """
+# implements: CONSILIUM-FEEDBACK-001
 
 from __future__ import annotations
 

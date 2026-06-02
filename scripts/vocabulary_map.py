@@ -7,6 +7,7 @@ CLI:
     python scripts/vocabulary_map.py magnitude critical
     python scripts/vocabulary_map.py meta_recommendation scale_down
 """
+# implements: CONSILIUM-VOCABULARY-MAP-001
 
 from __future__ import annotations
 

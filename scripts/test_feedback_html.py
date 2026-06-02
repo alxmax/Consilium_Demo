@@ -3,6 +3,7 @@
 Run: python scripts/test_feedback_html.py
 Exit 0 = all pass; exit 1 = one or more failures (all tests run; failures listed).
 """
+# tested-by: CONSILIUM-RENDER-FEEDBACK-HTML-001
 from __future__ import annotations
 
 import json

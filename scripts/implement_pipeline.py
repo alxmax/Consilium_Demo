@@ -29,6 +29,7 @@ Exit codes:
     1   chosen_approach is do_nothing/skipped (no pipeline), or gate failed.
     2   Input invalid (JSON parse error, missing fields, or bad gate args).
 """
+# implements: CONSILIUM-IMPLEMENT-PIPELINE-001
 
 from __future__ import annotations
 

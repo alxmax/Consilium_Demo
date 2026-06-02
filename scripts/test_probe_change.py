@@ -13,6 +13,7 @@ This guards the ACTUAL fixed code: it calls _unquote_git_path / parse_numstat
 directly. A scope_gate --signals-stdin scenario would NOT — it injects
 pre-parsed signals and bypasses the parser entirely (false coverage).
 """
+# tested-by: CONSILIUM-PROBE-CHANGE-001
 from __future__ import annotations
 
 import pathlib

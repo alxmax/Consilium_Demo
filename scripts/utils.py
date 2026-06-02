@@ -3,6 +3,7 @@
 All functions are stdlib-only. Scripts import from this module instead of
 defining their own copies. Each script remains a stand-alone executable.
 """
+# implements: CONSILIUM-UTILS-001
 from __future__ import annotations
 
 import json

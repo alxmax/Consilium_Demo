@@ -22,6 +22,7 @@ Each invariant has:
 Usage:
     python -X utf8 scripts/check_doc_drift.py
 """
+# implements: CONSILIUM-CHECK-DOC-DRIFT-001
 
 from __future__ import annotations
 

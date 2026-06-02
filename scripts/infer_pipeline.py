@@ -26,6 +26,7 @@ Exit codes:
     1   User declined, or step inference produced no steps.
     2   Input invalid (JSON parse error or missing required fields).
 """
+# implements: CONSILIUM-INFER-PIPELINE-001
 
 from __future__ import annotations
 
