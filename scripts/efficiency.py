@@ -25,6 +25,7 @@ CLI:
     python scripts/efficiency.py --feedback path/to/FEEDBACK.html
     python scripts/efficiency.py --runs path/to/runs
 """
+# implements: CONSILIUM-EFFICIENCY-001
 
 from __future__ import annotations
 

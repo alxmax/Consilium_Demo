@@ -16,6 +16,7 @@ Usage (run from the repo root; paths below are relative to it):
 
 Exit 0 iff every step it ran succeeded. On Windows, all child Pythons run with -X utf8.
 """
+# implements: SKILL-RUN-CONSILIUM-001
 import json
 import os
 import subprocess

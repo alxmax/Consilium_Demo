@@ -58,6 +58,7 @@ CLI:
     python scripts/scope_gate.py --config my_gate.json
     echo '{"files_changed":1,"paths":[".github/workflows/ci.yml"]}' | python scripts/scope_gate.py --signals-stdin
 """
+# implements: CONSILIUM-SCOPE-GATE-001
 
 from __future__ import annotations
 

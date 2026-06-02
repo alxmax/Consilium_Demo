@@ -21,6 +21,7 @@ EXPERIMENT PROTOCOL (prospective, ~1 day effort):
     4. Collect pstdev values across 5 pairs. If mean pstdev(risk_score) > 0.10,
        Bug #1 is empirically confirmed.
 """
+# implements: CONSILIUM-STABILITY-CHECK-001
 from __future__ import annotations
 
 import argparse

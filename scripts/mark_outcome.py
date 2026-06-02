@@ -30,6 +30,7 @@ CLI:
     python scripts/mark_outcome.py --date 2026-05-12 --chosen approach_a --outcome OK
     python scripts/mark_outcome.py --run-path runs/2026-05-12_foo.json --outcome BAD --dry-run
 """
+# implements: CONSILIUM-MARK-OUTCOME-001
 
 from __future__ import annotations
 

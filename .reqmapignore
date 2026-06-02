@@ -1,0 +1,14 @@
+scripts/reqmap.py
+.claude/worktrees/**
+benchmark/**
+experiments/**
+evals/**
+scripts/deprecated/**
+# Cross-cutting / deprecated-target tests stay out (no clean 1:1 capability).
+# The other scripts/test_*.py carry `tested-by:` tags and ARE scanned.
+scripts/test_round2.py
+scripts/test_meta_critic_trim.py
+scripts/fix_benchmark_pendings.py
+.consilium/**
+docs/architecture/src/**
+docs/architecture/build.py

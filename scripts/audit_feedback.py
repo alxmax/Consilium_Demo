@@ -26,6 +26,7 @@ CLI:
     python scripts/audit_feedback.py --backfill       # append PEND rows
     python scripts/audit_feedback.py --backfill --dry-run
 """
+# implements: CONSILIUM-AUDIT-FEEDBACK-001
 
 from __future__ import annotations
 

@@ -39,6 +39,7 @@ CLI:
     cat bundle.json | python scripts/build_report.py | python scripts/validate_report.py
     python scripts/build_report.py --input bundle.json
 """
+# implements: CONSILIUM-BUILD-REPORT-001
 
 from __future__ import annotations
 
