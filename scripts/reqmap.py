@@ -1360,22 +1360,31 @@ function switchTab(i){
 function paneBox(i){return document.getElementById('pane'+i).querySelector('.mermaid');}
 // render failed (CDN blocked / parse error / no svg): restore a scrollable pane so content isn't silently clipped
 function mapFallback(box){box.style.overflow='auto';box.style.cursor='default';}
-// intrinsic SVG size from width/height attrs, falling back to the viewBox
+// content size from the viewBox (mermaid's true drawn bounds), falling back to attrs
 function _svgDims(svg){
-  let w=parseFloat(svg.getAttribute('width')||0),h=parseFloat(svg.getAttribute('height')||0);
   const vb=svg.getAttribute('viewBox');
-  if(vb){const p=vb.trim().split(/[\s,]+/);w=+p[2]||w;h=+p[3]||h;}
-  return {w:w,h:h};
+  if(vb){const p=vb.trim().split(/[\s,]+/);const w=+p[2],h=+p[3];if(w>0&&h>0)return {w:w,h:h};}
+  return {w:parseFloat(svg.getAttribute('width'))||0,h:parseFloat(svg.getAttribute('height'))||0};
 }
-// fit-to-container scale: whole diagram visible, with a modest upscale cap so a
-// tiny diagram fills the pane without becoming a blurry giant. Returns null when
-// the box/svg has no measurable size yet (pane hidden / pre-layout).
+// Pin the svg element's layout size to its viewBox so element-size == content-size.
+// Mermaid ships width="100%"; without this the element lays out at container width
+// and our scale/center (computed from the viewBox) fight the real box -> the
+// huge-offset / right-shifted diagram. Cached on the box as _vw/_vh.
+function _normalizeSvg(box){
+  const svg=box.querySelector('svg');if(!svg)return null;
+  const d=_svgDims(svg);
+  if(d.w>0&&d.h>0){svg.setAttribute('width',d.w);svg.setAttribute('height',d.h);}
+  svg.style.maxWidth='none';
+  box._vw=d.w;box._vh=d.h;
+  return svg;
+}
+// fit-to-container scale: whole diagram visible, modest upscale cap so a tiny
+// diagram fills the pane without becoming a blurry giant. null = not measurable yet.
 const FIT_MAX=1.4, FIT_PAD=24;
 function computeFit(box){
-  const svg=box.querySelector('svg');if(!svg)return null;
-  const d=_svgDims(svg),br=box.getBoundingClientRect();
-  if(!(br.width>0&&br.height>0&&d.w>0&&d.h>0))return null;
-  return Math.max(0.05,Math.min(FIT_MAX,(br.width-FIT_PAD)/d.w,(br.height-FIT_PAD)/d.h));
+  const br=box.getBoundingClientRect();
+  if(!(br.width>0&&br.height>0&&box._vw>0&&box._vh>0))return null;
+  return Math.max(0.05,Math.min(FIT_MAX,(br.width-FIT_PAD)/box._vw,(br.height-FIT_PAD)/box._vh));
 }
 // re-fit + center, measured AFTER layout (double rAF) so a just-revealed pane
 // reports its true size instead of 0 — the over/under-zoom bug on tab switch.
@@ -1383,16 +1392,15 @@ function refit(box){
   if(!box._pz)return;
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const f=computeFit(box);if(f==null)return;
-    const svg=box.querySelector('svg'),d=_svgDims(svg),br=box.getBoundingClientRect(),st=box._pz;
+    const br=box.getBoundingClientRect(),st=box._pz;
     st.s=f;box._fitS=f;
-    st.x=Math.max(0,(br.width-d.w*f)/2);
-    st.y=Math.max(0,(br.height-d.h*f)/2);
+    st.x=Math.max(0,(br.width-box._vw*f)/2);
+    st.y=Math.max(0,(br.height-box._vh*f)/2);
     box._apply();
   }));
 }
 function initPanZoom(box){
-  const svg=box.querySelector('svg');if(!svg){mapFallback(box);return;}if(box._pz)return;
-  svg.style.maxWidth='none';
+  const svg=_normalizeSvg(box);if(!svg){mapFallback(box);return;}if(box._pz)return;
   const st={s:1,x:0,y:0};box._pz=st;box._fitS=1;
   const apply=()=>{svg.style.transform='translate('+st.x+'px,'+st.y+'px) scale('+st.s+')';};
   box._apply=apply;apply();
