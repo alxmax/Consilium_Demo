@@ -63,3 +63,6 @@ Veto budget for `meta_recommendation`: 5 activations of `scale_up` or `scale_dow
 - Bugfix or <20-line diff — scope_gate will often skip automatically
 - Low-stakes exploratory changes where isolation between voices is not needed
 - Any deliberation where the user has not explicitly requested a higher mode
+
+<!-- implements: CONSILIUM-MODE-SEQUENTIAL-001 -->
+

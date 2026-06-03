@@ -194,3 +194,6 @@ If the file at the cited path was not read in this dispatch, omit the claim or m
 - Re-validating correctness. Trust Control's verdict — if it said `valid: true`, score the risk and move on.
 - Status quo bias: rating irreversible because *not* changing feels safer, not because the change is actually irreversible.
 - Forgetting tokens_budget — Generator cannot self-calibrate without it.
+
+<!-- implements: CONSILIUM-VOICE-CONSERVATOR-001 -->
+

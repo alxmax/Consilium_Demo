@@ -1,7 +1,7 @@
 ---
-generated: 2026-06-02 23:56
-nodes: 31
-edges: 36
+generated: 2026-06-03 10:34
+nodes: 42
+edges: 51
 ---
 
 # Requirement Map
@@ -24,9 +24,16 @@ graph LR
     CONSILIUM_FEEDBACK_001["feedback<br><small>CONSILIUM-FEEDBACK-001</small>"]
     CONSILIUM_IMPLEMENT_PIPELINE_001["implement_pipeline<br><small>CONSILIUM-IMPLEMENT-PIPELINE-001</small>"]
     CONSILIUM_INFER_PIPELINE_001["infer_pipeline<br><small>CONSILIUM-INFER-PIPELINE-001</small>"]
+    CONSILIUM_LENS_ARCHITECT_001["architect lens<br><small>CONSILIUM-LENS-ARCHITECT-001</small>"]
+    CONSILIUM_LENS_PIONEER_001["pioneer lens<br><small>CONSILIUM-LENS-PIONEER-001</small>"]
+    CONSILIUM_LENS_STEWARD_001["steward lens<br><small>CONSILIUM-LENS-STEWARD-001</small>"]
     CONSILIUM_LOG_FEEDBACK_001["log_feedback<br><small>CONSILIUM-LOG-FEEDBACK-001</small>"]
     CONSILIUM_MARK_OUTCOME_001["mark_outcome<br><small>CONSILIUM-MARK-OUTCOME-001</small>"]
     CONSILIUM_MEMORY_001["memory<br><small>CONSILIUM-MEMORY-001</small>"]
+    CONSILIUM_MODE_DIALECTIC_001["dialectic mode<br><small>CONSILIUM-MODE-DIALECTIC-001</small>"]
+    CONSILIUM_MODE_SEQUENTIAL_001["sequential mode<br><small>CONSILIUM-MODE-SEQUENTIAL-001</small>"]
+    CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001["skeptic_on_chosen flag<br><small>CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001</small>"]
+    CONSILIUM_MODE_TRIAS_001["trias mode<br><small>CONSILIUM-MODE-TRIAS-001</small>"]
     CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small>"]
     CONSILIUM_PRIORS_001["priors<br><small>CONSILIUM-PRIORS-001</small>"]
     CONSILIUM_PROBE_CHANGE_001["probe_change<br><small>CONSILIUM-PROBE-CHANGE-001</small>"]
@@ -42,12 +49,27 @@ graph LR
     CONSILIUM_VALIDATE_REPORT_001["validate_report<br><small>CONSILIUM-VALIDATE-REPORT-001</small>"]
     CONSILIUM_VERSION_001["version<br><small>CONSILIUM-VERSION-001</small>"]
     CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
+    CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small>"]
+    CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small>"]
+    CONSILIUM_VOICE_GENERATOR_001["generator voice<br><small>CONSILIUM-VOICE-GENERATOR-001</small>"]
+    CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small>"]
     CONSILIUM_VOTE_DEGENERACY_001["vote_degeneracy<br><small>CONSILIUM-VOTE-DEGENERACY-001</small>"]
   end
   subgraph sg_misc["misc"]
     SKILL_RUN_CONSILIUM_001["run-consilium driver<br><small>SKILL-RUN-CONSILIUM-001</small>"]
   end
   CONSILIUM_AUDIT_FEEDBACK_001 --> CONSILIUM_PRIORS_001
+  CONSILIUM_MODE_DIALECTIC_001 --> CONSILIUM_MODE_SEQUENTIAL_001
+  CONSILIUM_MODE_DIALECTIC_001 --> CONSILIUM_VOICE_SKEPTIC_001
+  CONSILIUM_MODE_SEQUENTIAL_001 --> CONSILIUM_VOICE_GENERATOR_001
+  CONSILIUM_MODE_SEQUENTIAL_001 --> CONSILIUM_VOICE_CONTROL_001
+  CONSILIUM_MODE_SEQUENTIAL_001 --> CONSILIUM_VOICE_CONSERVATOR_001
+  CONSILIUM_MODE_SEQUENTIAL_001 --> CONSILIUM_AGGREGATOR_001
+  CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 --> CONSILIUM_VOICE_SKEPTIC_001
+  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_MODE_SEQUENTIAL_001
+  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_PIONEER_001
+  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_ARCHITECT_001
+  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_STEWARD_001
   SKILL_RUN_CONSILIUM_001 --> CONSILIUM_AGGREGATOR_001
   SKILL_RUN_CONSILIUM_001 --> CONSILIUM_CONFIDENCE_001
   style CONSILIUM_FEEDBACK_001 stroke-width:3px
@@ -104,6 +126,15 @@ graph LR
   CONSILIUM_INFER_PIPELINE_001 -->|implements| f_scripts_infer_pipeline_py_29
   f_scripts_test_implement_mode_py_8["scripts/test_implement_mode.py:8"]
   CONSILIUM_INFER_PIPELINE_001 -->|tested-by| f_scripts_test_implement_mode_py_8
+  CONSILIUM_LENS_ARCHITECT_001["architect lens<br><small>CONSILIUM-LENS-ARCHITECT-001</small>"]
+  f_prompts_voices_architect_lens_md_25["prompts/voices/architect_lens.md:25"]
+  CONSILIUM_LENS_ARCHITECT_001 -->|implements| f_prompts_voices_architect_lens_md_25
+  CONSILIUM_LENS_PIONEER_001["pioneer lens<br><small>CONSILIUM-LENS-PIONEER-001</small>"]
+  f_prompts_voices_pioneer_lens_md_25["prompts/voices/pioneer_lens.md:25"]
+  CONSILIUM_LENS_PIONEER_001 -->|implements| f_prompts_voices_pioneer_lens_md_25
+  CONSILIUM_LENS_STEWARD_001["steward lens<br><small>CONSILIUM-LENS-STEWARD-001</small>"]
+  f_prompts_voices_steward_lens_md_25["prompts/voices/steward_lens.md:25"]
+  CONSILIUM_LENS_STEWARD_001 -->|implements| f_prompts_voices_steward_lens_md_25
   CONSILIUM_LOG_FEEDBACK_001["log_feedback<br><small>CONSILIUM-LOG-FEEDBACK-001</small>"]
   f_scripts_log_feedback_py_41["scripts/log_feedback.py:41"]
   CONSILIUM_LOG_FEEDBACK_001 -->|implements| f_scripts_log_feedback_py_41
@@ -113,6 +144,18 @@ graph LR
   CONSILIUM_MEMORY_001["memory<br><small>CONSILIUM-MEMORY-001</small>"]
   f_scripts_memory_py_35["scripts/memory.py:35"]
   CONSILIUM_MEMORY_001 -->|implements| f_scripts_memory_py_35
+  CONSILIUM_MODE_DIALECTIC_001["dialectic mode<br><small>CONSILIUM-MODE-DIALECTIC-001</small>"]
+  f_modes_dialectic_md_47["modes/dialectic.md:47"]
+  CONSILIUM_MODE_DIALECTIC_001 -->|implements| f_modes_dialectic_md_47
+  CONSILIUM_MODE_SEQUENTIAL_001["sequential mode<br><small>CONSILIUM-MODE-SEQUENTIAL-001</small>"]
+  f_modes_sequential_md_67["modes/sequential.md:67"]
+  CONSILIUM_MODE_SEQUENTIAL_001 -->|implements| f_modes_sequential_md_67
+  CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001["skeptic_on_chosen flag<br><small>CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001</small>"]
+  f_modes_skeptic_on_chosen_md_68["modes/skeptic_on_chosen.md:68"]
+  CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 -->|implements| f_modes_skeptic_on_chosen_md_68
+  CONSILIUM_MODE_TRIAS_001["trias mode<br><small>CONSILIUM-MODE-TRIAS-001</small>"]
+  f_modes_trias_md_174["modes/trias.md:174"]
+  CONSILIUM_MODE_TRIAS_001 -->|implements| f_modes_trias_md_174
   CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small>"]
   f_scripts_personalities_py_13["scripts/personalities.py:13"]
   CONSILIUM_PERSONALITIES_001 -->|implements| f_scripts_personalities_py_13
@@ -166,6 +209,18 @@ graph LR
   CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
   f_scripts_vocabulary_map_py_10["scripts/vocabulary_map.py:10"]
   CONSILIUM_VOCABULARY_MAP_001 -->|implements| f_scripts_vocabulary_map_py_10
+  CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small>"]
+  f_prompts_voices_conservator_md_198["prompts/voices/conservator.md:198"]
+  CONSILIUM_VOICE_CONSERVATOR_001 -->|implements| f_prompts_voices_conservator_md_198
+  CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small>"]
+  f_prompts_voices_control_md_113["prompts/voices/control.md:113"]
+  CONSILIUM_VOICE_CONTROL_001 -->|implements| f_prompts_voices_control_md_113
+  CONSILIUM_VOICE_GENERATOR_001["generator voice<br><small>CONSILIUM-VOICE-GENERATOR-001</small>"]
+  f_prompts_voices_generator_md_134["prompts/voices/generator.md:134"]
+  CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_134
+  CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small>"]
+  f_prompts_voices_skeptic_md_123["prompts/voices/skeptic.md:123"]
+  CONSILIUM_VOICE_SKEPTIC_001 -->|implements| f_prompts_voices_skeptic_md_123
   CONSILIUM_VOTE_DEGENERACY_001["vote_degeneracy<br><small>CONSILIUM-VOTE-DEGENERACY-001</small>"]
   f_scripts_test_vote_degeneracy_py_11["scripts/test_vote_degeneracy.py:11"]
   CONSILIUM_VOTE_DEGENERACY_001 -->|tested-by| f_scripts_test_vote_degeneracy_py_11
@@ -182,7 +237,7 @@ _Area-level coupling: one box per area (N caps), arrow A->B = some capability in
 
 ```mermaid
 graph LR
-  a_CONSILIUM["CONSILIUM<br><small>30 caps</small>"]
+  a_CONSILIUM["CONSILIUM<br><small>41 caps</small>"]
   a_misc["misc<br><small>1 caps</small>"]
   a_misc --> a_CONSILIUM
   style a_CONSILIUM stroke-width:3px
@@ -206,10 +261,17 @@ graph LR
     CONSILIUM_FEEDBACK_001["feedback<br><small>CONSILIUM-FEEDBACK-001</small><br>unreviewed, blast-radius"]
     CONSILIUM_IMPLEMENT_PIPELINE_001["implement_pipeline<br><small>CONSILIUM-IMPLEMENT-PIPELINE-001</small><br>unreviewed"]
     CONSILIUM_INFER_PIPELINE_001["infer_pipeline<br><small>CONSILIUM-INFER-PIPELINE-001</small><br>unreviewed"]
+    CONSILIUM_LENS_ARCHITECT_001["architect lens<br><small>CONSILIUM-LENS-ARCHITECT-001</small><br>unreviewed"]
+    CONSILIUM_LENS_PIONEER_001["pioneer lens<br><small>CONSILIUM-LENS-PIONEER-001</small><br>unreviewed"]
+    CONSILIUM_LENS_STEWARD_001["steward lens<br><small>CONSILIUM-LENS-STEWARD-001</small><br>unreviewed"]
     CONSILIUM_LOG_FEEDBACK_001["log_feedback<br><small>CONSILIUM-LOG-FEEDBACK-001</small><br>unreviewed"]
     CONSILIUM_MARK_OUTCOME_001["mark_outcome<br><small>CONSILIUM-MARK-OUTCOME-001</small><br>unreviewed"]
     CONSILIUM_MEMORY_001["memory<br><small>CONSILIUM-MEMORY-001</small><br>unreviewed"]
-    CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small><br>unreviewed"]
+    CONSILIUM_MODE_DIALECTIC_001["dialectic mode<br><small>CONSILIUM-MODE-DIALECTIC-001</small><br>unreviewed"]
+    CONSILIUM_MODE_SEQUENTIAL_001["sequential mode<br><small>CONSILIUM-MODE-SEQUENTIAL-001</small><br>unreviewed"]
+    CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001["skeptic_on_chosen flag<br><small>CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001</small><br>unreviewed"]
+    CONSILIUM_MODE_TRIAS_001["trias mode<br><small>CONSILIUM-MODE-TRIAS-001</small><br>unreviewed"]
+    CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small><br>unreviewed, blast-radius"]
     CONSILIUM_PRIORS_001["priors<br><small>CONSILIUM-PRIORS-001</small><br>unreviewed"]
     CONSILIUM_PROBE_CHANGE_001["probe_change<br><small>CONSILIUM-PROBE-CHANGE-001</small><br>unreviewed"]
     CONSILIUM_RENDER_FEEDBACK_HTML_001["render_feedback_html<br><small>CONSILIUM-RENDER-FEEDBACK-HTML-001</small><br>unreviewed, blast-radius"]
@@ -224,6 +286,10 @@ graph LR
     CONSILIUM_VALIDATE_REPORT_001["validate_report<br><small>CONSILIUM-VALIDATE-REPORT-001</small><br>unreviewed"]
     CONSILIUM_VERSION_001["version<br><small>CONSILIUM-VERSION-001</small><br>unreviewed"]
     CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small><br>unreviewed"]
+    CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small><br>unreviewed"]
+    CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small><br>unreviewed"]
+    CONSILIUM_VOICE_GENERATOR_001["generator voice<br><small>CONSILIUM-VOICE-GENERATOR-001</small><br>unreviewed"]
+    CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small><br>unreviewed"]
     CONSILIUM_VOTE_DEGENERACY_001["vote_degeneracy<br><small>CONSILIUM-VOTE-DEGENERACY-001</small><br>unreviewed"]
   end
   subgraph sg_misc["misc"]
@@ -240,9 +306,16 @@ graph LR
   style CONSILIUM_FEEDBACK_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_IMPLEMENT_PIPELINE_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_INFER_PIPELINE_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_LENS_ARCHITECT_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_LENS_PIONEER_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_LENS_STEWARD_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_LOG_FEEDBACK_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_MARK_OUTCOME_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_MEMORY_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_MODE_DIALECTIC_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_MODE_SEQUENTIAL_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_MODE_TRIAS_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_PERSONALITIES_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_PRIORS_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_PROBE_CHANGE_001 fill:#fff3cd,stroke:#a66,color:#630
@@ -258,6 +331,10 @@ graph LR
   style CONSILIUM_VALIDATE_REPORT_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_VERSION_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_VOCABULARY_MAP_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_VOICE_CONSERVATOR_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_VOICE_CONTROL_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_VOICE_GENERATOR_001 fill:#fff3cd,stroke:#a66,color:#630
+  style CONSILIUM_VOICE_SKEPTIC_001 fill:#fff3cd,stroke:#a66,color:#630
   style CONSILIUM_VOTE_DEGENERACY_001 fill:#fff3cd,stroke:#a66,color:#630
   style SKILL_RUN_CONSILIUM_001 fill:#fff3cd,stroke:#a66,color:#630
 ```
@@ -266,7 +343,7 @@ graph LR
 
 | ID | status | members | dependents | risks | recommendation |
 | --- | --- | --- | --- | --- | --- |
-| CONSILIUM-AGGREGATOR-001 | baseline | 1 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-AGGREGATOR-001 | baseline | 1 | 2 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-AUDIT-COUNTER-001 | baseline | 2 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-AUDIT-FEEDBACK-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-BUILD-REPORT-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
@@ -277,10 +354,17 @@ graph LR
 | CONSILIUM-FEEDBACK-001 | baseline | 1 | 6 | unreviewed, blast-radius | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
 | CONSILIUM-IMPLEMENT-PIPELINE-001 | baseline | 2 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-INFER-PIPELINE-001 | baseline | 2 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-LENS-ARCHITECT-001 | baseline | 1 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-LENS-PIONEER-001 | baseline | 1 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-LENS-STEWARD-001 | baseline | 1 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-LOG-FEEDBACK-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-MARK-OUTCOME-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-MEMORY-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
-| CONSILIUM-PERSONALITIES-001 | baseline | 2 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-MODE-DIALECTIC-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-MODE-SEQUENTIAL-001 | baseline | 1 | 2 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-MODE-TRIAS-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-PERSONALITIES-001 | baseline | 2 | 5 | unreviewed, blast-radius | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
 | CONSILIUM-PRIORS-001 | baseline | 1 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-PROBE-CHANGE-001 | baseline | 2 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-RENDER-FEEDBACK-HTML-001 | baseline | 2 | 3 | unreviewed, blast-radius | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
@@ -295,5 +379,9 @@ graph LR
 | CONSILIUM-VALIDATE-REPORT-001 | baseline | 1 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-VERSION-001 | baseline | 2 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-VOCABULARY-MAP-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-VOICE-CONSERVATOR-001 | baseline | 1 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-VOICE-CONTROL-001 | baseline | 1 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-VOICE-GENERATOR-001 | baseline | 1 | 1 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
+| CONSILIUM-VOICE-SKEPTIC-001 | baseline | 1 | 2 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | CONSILIUM-VOTE-DEGENERACY-001 | baseline | 2 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
 | SKILL-RUN-CONSILIUM-001 | baseline | 1 | 0 | unreviewed | Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced. |
