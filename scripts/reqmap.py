@@ -875,7 +875,7 @@ def cmd_findings(reqs, reqs_dir, raw=False):  # implements: REQ-FINDINGS-010
 
 
 # ---------- map (HTML) ----------
-def cmd_map(reqs, members, reqs_dir):  # implements: REQ-MAP-007
+def cmd_map(reqs, members, reqs_dir, check=False):  # implements: REQ-MAP-007
     used_by = {rid: [] for rid in reqs}
     for rid, r in reqs.items():
         for dep in _as_list(r["meta"].get("depends_on")):
@@ -913,11 +913,44 @@ def cmd_map(reqs, members, reqs_dir):  # implements: REQ-MAP-007
     for rid, r in reqs.items():
         for dep in _as_list(r["meta"].get("depends_on")):
             data["edges"].append([rid, dep])
+
+    if check:
+        return _map_check(data, reqs_dir)
+
     html_out = render_html(data, reqs_dir)
     md_out   = render_md(data, reqs_dir)
     print("wrote {}".format(html_out))
     print("wrote {}".format(md_out))
     print("({} nodes, {} edges)".format(len(data["nodes"]), len(data["edges"])))
+    return 0
+
+
+def _strip_generated(text):
+    """Drop the volatile `generated: <timestamp>` frontmatter line so a freshness
+    diff compares content, not the regeneration time."""
+    return "\n".join(l for l in text.splitlines() if not l.startswith("generated: "))
+
+
+def _map_check(data, reqs_dir):  # implements: REQ-MAP-007
+    """Freshness gate: regenerate the map in memory and compare to the committed
+    files. Stale (committed != freshly-built) -> exit 1 so a code/requirement edit
+    that shifts the map can't be committed without regenerating it. A map that was
+    never generated (file absent) is NOT stale — consumers who don't track maps pass.
+    The `generated:` timestamp is ignored so an unchanged map never trips on time."""
+    stale = []
+    for name, fresh in (("_map.md", _build_md_text(data)),
+                        ("_map.html", _build_html_text(data))):
+        path = os.path.join(reqs_dir, name)
+        if not os.path.exists(path):
+            continue   # nothing committed to be stale against
+        on_disk = open(path, encoding="utf-8").read()
+        if _strip_generated(on_disk) != _strip_generated(fresh):
+            stale.append(name)
+    if stale:
+        print("FAIL  map is stale: {} — run `reqmap.py map` and commit the result."
+              .format(", ".join(stale)))
+        return 1
+    print("OK  map is fresh.")
     return 0
 
 
@@ -1233,7 +1266,7 @@ _LEGEND_MD = [
 ]
 
 
-def render_md(data, reqs_dir):  # implements: REQ-MAP-007
+def _build_md_text(data):  # implements: REQ-MAP-007
     from datetime import datetime
     ts = datetime.now().strftime("%Y-%m-%d %H:%M")
 
@@ -1281,10 +1314,14 @@ def render_md(data, reqs_dir):  # implements: REQ-MAP-007
             lines.append("| {} | {} | {} | {} | {} | {} |".format(*row))
         lines.append("")
 
+    return "\n".join(lines)
+
+
+def render_md(data, reqs_dir):  # implements: REQ-MAP-007
     out = os.path.join(reqs_dir, "_map.md")
     os.makedirs(reqs_dir, exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
+        f.write(_build_md_text(data))
     return out
 
 
@@ -1502,7 +1539,7 @@ def _js_str(value):
             .replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026"))
 
 
-def render_html(data, reqs_dir):  # implements: REQ-MAP-007
+def _build_html_text(data):  # implements: REQ-MAP-007
     diagrams = [
         ("System Map",      _add_clicks(_mermaid_system(data),        data)),
         ("Req→Code",   _add_clicks(_mermaid_req_to_code(data),   data)),
@@ -1549,7 +1586,11 @@ def render_html(data, reqs_dir):  # implements: REQ-MAP-007
     html = html.replace("REQMAP_TABS",      tab_btns)
     html = html.replace("REQMAP_PANES",     panes)
     html = html.replace("REQMAP_CALLBACKS", callbacks)
+    return html
 
+
+def render_html(data, reqs_dir):  # implements: REQ-MAP-007
+    html = _build_html_text(data)
     out = os.path.join(reqs_dir, "_map.html")
     os.makedirs(reqs_dir, exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
@@ -1581,6 +1622,8 @@ def main():
     ap.add_argument("--raw", action="store_true",
                     help="findings: ignore the triage sidecar and emit the raw grouped list")
     ap.add_argument("--update-lock", action="store_true")
+    ap.add_argument("--check", dest="check_fresh", action="store_true",
+                    help="map: verify the committed _map.* is fresh (exit 1 if stale) instead of writing")
     a = ap.parse_args()
     reqs_dir = a.reqs or os.path.join(a.root, "requirements")
     code_root = a.code or a.root
@@ -1603,7 +1646,7 @@ def main():
     if a.cmd == "check":
         return cmd_check(reqs, members, reqs_dir, a.update_lock)
     if a.cmd == "map":
-        return cmd_map(reqs, members, reqs_dir)
+        return cmd_map(reqs, members, reqs_dir, a.check_fresh)
     if a.cmd == "extract":
         return cmd_extract(reqs, members, code_root, reqs_dir)
     if a.cmd == "candidates":
