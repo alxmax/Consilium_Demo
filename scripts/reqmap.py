@@ -19,7 +19,8 @@ ROLES = ("implements", "generated-from", "validated-against", "tested-by")
 # `x-implements:` from being picked up as a real `implements:` tag
 TAG_RE = re.compile(r"(?<![\w-])(implements|generated-from|validated-against|tested-by)\s*:\s*([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)")
 CODE_EXTS = (".py", ".js", ".ts", ".tsx", ".jsx", ".c", ".cpp", ".h", ".hpp",
-             ".cc", ".java", ".go", ".rs", ".html", ".css", ".sql", ".yaml", ".yml")
+             ".cc", ".java", ".go", ".rs", ".html", ".css", ".sql", ".yaml", ".yml",
+             ".md")  # .md scanned for tags so prose capabilities (prompts/specs) can be members
 VALID_STATUS = {"draft", "baseline", "in-progress", "implemented", "confirmed", "deprecated"}
 VALID_LAYER = {"bus", "feature"}
 ENFORCED = {"in-progress", "implemented", "confirmed"}
@@ -46,7 +47,7 @@ RISK_ADVICE = {
 # Bumped on any change to this engine. `check` warns a seeded repo when its
 # vendored copy is older than the installed plugin's. ISO date: lexicographic
 # order == chronological order, so a plain string compare is enough.
-MAP_ENGINE_VERSION = "2026-06-02"
+MAP_ENGINE_VERSION = "2026-06-03"
 
 
 # ---------- parsing ----------
@@ -224,6 +225,19 @@ def save_lock(reqs_dir, lock):  # implements: CORE-DRIFT-003
 
 
 # ---------- commands ----------
+def _has_section(body, name):  # implements: REQ-CHECK-006
+    """True if the body has a `## ` heading whose text contains `name` (case-insensitive).
+    Used to detect legacy-schema requirements that lack a `## WHAT — Verify intent`
+    section — `findings` mines only that section, so its absence means findings is
+    silently inactive for that requirement."""
+    name = name.lower()
+    for line in body.splitlines():
+        s = line.strip().lower()
+        if s.startswith("## ") and name in s:
+            return True
+    return False
+
+
 def cmd_scan(reqs, members):  # implements: REQ-SCAN-005
     for cap in sorted(set(list(reqs) + list(members))):
         print(cap)
@@ -309,6 +323,18 @@ def cmd_check(reqs, members, reqs_dir, update_lock):  # implements: REQ-CHECK-00
             warns.append(f"{rid}: DRIFT — contract changed since lock; "
                          f"re-check {len(locs)} member(s): {where}")
 
+    # Health signals (non-blocking): how much of the corpus is human-validated, and
+    # how much still uses the legacy body schema. Surfaced so an all-baseline corpus
+    # (drift fires only on `confirmed`, so the gate enforces nothing yet) and a
+    # silently-inactive `findings` cannot be mistaken for a clean, enforcing SSOT.
+    n_confirmed = sum(1 for r in reqs.values() if r["meta"].get("status") == "confirmed")
+    legacy = [rid for rid in sorted(reqs)
+              if not _has_section(reqs[rid]["body"], "verify intent")]
+    if legacy:
+        warns.append("{}/{} requirement(s) use the legacy schema (no '## WHAT — Verify "
+                     "intent' section) — `findings` is inactive for them: {}"
+                     .format(len(legacy), len(reqs), ", ".join(legacy)))
+
     for w in warns:
         print("WARN ", w)
     for e in errors:
@@ -322,7 +348,8 @@ def cmd_check(reqs, members, reqs_dir, update_lock):  # implements: REQ-CHECK-00
     if n_find:
         print(f"info  {n_find} open verify-intent finding(s) — run `reqmap.py findings`")
 
-    print(f"\n{len(reqs)} requirements, {sum(len(v) for v in members.values())} members, "
+    print(f"\n{len(reqs)} requirements ({n_confirmed} confirmed, {len(legacy)} legacy-schema), "
+          f"{sum(len(v) for v in members.values())} members, "
           f"{len(errors)} errors, {len(warns)} warnings.")
     return 1 if errors else 0
 
@@ -431,7 +458,8 @@ def cmd_extract(reqs, members, code_root, reqs_dir):  # implements: REQ-EXTRACT-
                 # new emission schema (Contract / Verify-intent / Acceptance / Current-impl),
                 # matching cmd_new so a promoted draft needs no reshaping
                 f.write(f"---\nid: {cap}\nstatus: draft\nlayer: feature\n"
-                        f"owner: auto\ndepends_on: []\nrisk: {risk}  # {review}\n---\n\n"
+                        f"owner: auto\ndepends_on: []\n"
+                        f"risk: {risk}  # {review} — author triage hint, not read by the engine\n---\n\n"
                         f"# {os.path.splitext(fn)[0]}\n\n"
                         f"> DRAFT extracted from {rel}. Describes observed behavior, "
                         f"not validated intent.\n\n"
@@ -523,13 +551,41 @@ def _js_facts(src):  # implements: REQ-CANDIDATES-009
     return facts
 
 
+def _md_facts(src):  # implements: REQ-CANDIDATES-009
+    """Best-effort capability facts from a Markdown prompt/spec file (no parser):
+    the first H1 (`# `) is the title, the first blockquote (`>`) AFTER that H1 is the
+    intent, and each `## ` H2 heading is a structural-signature line. Free prose is
+    never hashed — these facts only seed a human-authored requirement (Stage 2); the
+    binding hash anchors on the authored Contract+Acceptance, like any code requirement."""
+    facts = {"signatures": [], "docstrings": {}, "imports": []}
+    title, intent, after_h1 = None, None, False
+    for line in src.splitlines():
+        s = line.strip()
+        if title is None and s.startswith("# "):
+            title = s[2:].strip(); after_h1 = True; continue
+        if after_h1 and intent is None and s.startswith(">"):
+            intent = s.lstrip(">").strip()
+        if s.startswith("## "):
+            facts["signatures"].append("## " + s[3:].strip())
+    if title:
+        facts["docstrings"]["title"] = title[:200]
+    if intent:
+        facts["docstrings"]["module"] = intent[:200]
+    return facts
+
+
 def _file_facts(path, rel):  # implements: REQ-CANDIDATES-009
     try:
         with open(path, encoding="utf-8", errors="ignore") as f:
             src = f.read()
     except OSError:
         return {"signatures": [], "docstrings": {}, "imports": [], "loc": 0}
-    facts = _py_facts(src) if rel.endswith(".py") else _js_facts(src)
+    if rel.endswith(".py"):
+        facts = _py_facts(src)
+    elif rel.endswith(".md"):
+        facts = _md_facts(src)
+    else:
+        facts = _js_facts(src)
     facts["loc"] = len(src.splitlines())
     facts["signatures"] = facts["signatures"][:40]
     return facts
@@ -560,28 +616,38 @@ def _mint_cap_id(rel):  # implements: REQ-CANDIDATES-009
     return (slug or "MOD") + "-001"
 
 
-def _collect_files(code_root, reqs_dir):  # implements: REQ-CANDIDATES-009
+def _collect_files(code_root, reqs_dir, md_globs=None):  # implements: REQ-CANDIDATES-009
     """Sorted rel paths of candidate source files, honoring _prune_dirs (noise +
-    the SSOT dir) and .reqmapignore — the same exclusions scan_members uses."""
+    the SSOT dir) and .reqmapignore — the same exclusions scan_members uses.
+
+    `md_globs` is the opt-in, scope-bounding allowlist for non-code discovery: a
+    `.md` file is included ONLY when it matches one of these globs (and is not
+    ignored). Empty/None -> no `.md` is ever collected (behavior unchanged). The
+    presence of a glob IS the opt-in; there is no separate on/off flag."""
     ignore = load_ignore(code_root, reqs_dir)   # match scan_members: look in requirements/ first
+    md_globs = md_globs or []
     out = []
     for dirpath, dirs, files in os.walk(code_root):
         _prune_dirs(dirpath, dirs, reqs_dir)
         dirs.sort()
         for fn in sorted(files):
-            if not fn.endswith(CANDIDATE_EXTS):
-                continue
             rel = os.path.relpath(os.path.join(dirpath, fn), code_root).replace(os.sep, "/")
-            if not any(fnmatch.fnmatch(rel, pat) for pat in ignore):
+            if any(fnmatch.fnmatch(rel, pat) for pat in ignore):
+                continue
+            if fn.endswith(CANDIDATE_EXTS):
+                out.append(rel)
+            elif fn.endswith(".md") and any(fnmatch.fnmatch(rel, g) for g in md_globs):
                 out.append(rel)
     return out
 
 
-def cmd_candidates(reqs, members, code_root, reqs_dir, out):  # implements: REQ-CANDIDATES-009
+def cmd_candidates(reqs, members, code_root, reqs_dir, out, md_globs=None):  # implements: REQ-CANDIDATES-009
     """Emit a deterministic JSON capability-extraction plan and write NO .md.
     Grouping: authoritative `requirements/_capmap.json` when present, else one
-    candidate per file (the Stage-2 agent merges/splits using judgment)."""
-    files = _collect_files(code_root, reqs_dir)
+    candidate per file (the Stage-2 agent merges/splits using judgment).
+    `md_globs` opts non-code `.md` files (prompts, specs) into discovery — advisory
+    only, never auto-written; a human authors + confirms each into the SSOT."""
+    files = _collect_files(code_root, reqs_dir, md_globs)
     facts_by_file = {rel: _file_facts(os.path.join(code_root, rel), rel) for rel in files}
 
     tagged = {}   # file -> already-implemented requirement id (idempotency hint)
@@ -645,8 +711,16 @@ def cmd_candidates(reqs, members, code_root, reqs_dir, out):  # implements: REQ-
         c["importer_count"] = n
         c["suggested_layer"] = c.pop("_layer") or ("bus" if n >= BUS_FANIN_THRESHOLD else "feature")
 
+    authored = sum(1 for c in cands if c["existing_req"])
     plan = {
         "engine_version": MAP_ENGINE_VERSION,
+        # surfaces the unfilled-plan gap so an advisory plan nobody authored cannot
+        # masquerade as coverage (with_existing_req = candidates already tagged in code)
+        "coverage_summary": {"total_candidates": len(cands), "with_existing_req": authored},
+        "lineage_note": ("A generated-from/implements tag records authoring lineage only; it "
+                         "does NOT mean the requirement auto-tracks later edits to the source "
+                         "file. Re-touch the requirement's Contract+Acceptance when the source's "
+                         "behavior changes."),
         "bus": sorted(c["suggested_id"] for c in cands if c["suggested_layer"] == "bus"),
         "candidates": cands,
     }
@@ -1436,6 +1510,9 @@ def main():
     ap.add_argument("--reqs", default=None)
     ap.add_argument("--code", default=None)
     ap.add_argument("--out", default=None, help="candidates: write plan JSON here ('-' or omit = stdout)")
+    ap.add_argument("--md-glob", action="append", default=None,
+                    help="candidates: also discover .md files matching this glob (repeatable; "
+                         "comma-separated ok). Off unless given. e.g. --md-glob 'prompts/**' --md-glob 'modes/**'")
     ap.add_argument("--raw", action="store_true",
                     help="findings: ignore the triage sidecar and emit the raw grouped list")
     ap.add_argument("--update-lock", action="store_true")
@@ -1465,7 +1542,10 @@ def main():
     if a.cmd == "extract":
         return cmd_extract(reqs, members, code_root, reqs_dir)
     if a.cmd == "candidates":
-        return cmd_candidates(reqs, members, code_root, reqs_dir, a.out)
+        md_globs = []
+        for g in (a.md_glob or []):
+            md_globs += [x.strip() for x in g.split(",") if x.strip()]
+        return cmd_candidates(reqs, members, code_root, reqs_dir, a.out, md_globs)
     if a.cmd == "findings":
         return cmd_findings(reqs, reqs_dir, a.raw)
 
