@@ -42,6 +42,12 @@ RISK_ADVICE = {
     "blast-radius": "High fan-in — many capabilities depend on this. Change it only "
                     "behind its contract, run the full gate + dependents' tests, and "
                     "treat it as shared foundation (bus).",
+    "untested": "Implemented but no `tested-by` member: write an acceptance test and tag "
+                "it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter "
+                "to acknowledge it intentionally and silence this signal.",
+    "unverified-intent": "Has open `## WHAT — Verify intent` question(s): run "
+                         "`reqmap.py findings`, resolve each in `requirements/_findings.md`, "
+                         "then fold the answer into the Contract or delete the bullet.",
 }
 
 # Bumped on any change to this engine. `check` warns a seeded repo when its
@@ -898,8 +904,10 @@ def cmd_map(reqs, members, reqs_dir):  # implements: REQ-MAP-007
             "deps": _as_list(m.get("depends_on")),
             "used_by": used_by.get(rid, []),
             "members": [{"role": x[0], "loc": f"{x[1]}:{x[2]}"} for x in members.get(rid, [])],
+            "test_exempt": m.get("test_exempt"),
             "risks": [{"signal": s, "advice": RISK_ADVICE[s]} for s in _risk_signals(
-                {"status": m.get("status", "draft"), "members": members.get(rid, [])},
+                {"status": m.get("status", "draft"), "members": members.get(rid, []),
+                 "verify": _bullets(r["body"], "verify"), "test_exempt": m.get("test_exempt")},
                 len(used_by.get(rid, [])))],
         })
     for rid, r in reqs.items():
@@ -1128,12 +1136,36 @@ def _mermaid_req_to_code(data):  # implements: REQ-MAP-007
     return "\n".join(lines)
 
 
+def _member_roles(members):
+    """Roles of a node's members, tolerant of both member shapes in play: the raw
+    scan tuples (role, file, line) used by cmd_scan/cmd_check and the {role, loc}
+    dicts attached to map data nodes."""
+    roles = []
+    for m in members or []:
+        if isinstance(m, dict):
+            roles.append(m.get("role"))
+        elif isinstance(m, (list, tuple)) and m:
+            roles.append(m[0])
+    return roles
+
+
 def _risk_signals(node, dependents_count):
     signals = []
     if node["status"] == "confirmed" and not node["members"]:
         signals.append("unimplemented")
     if node["status"] in ("draft", "baseline"):
         signals.append("unreviewed")
+    # implemented-but-untested: has hand-written code linked but no acceptance test.
+    # Gated on an implements member so not-yet-built drafts (already 'unreviewed')
+    # are not double-flagged. Opt out per requirement with `test_exempt: <reason>`.
+    roles = _member_roles(node.get("members"))
+    if "implements" in roles and "tested-by" not in roles and not node.get("test_exempt"):
+        signals.append("untested")
+    # open verify-intent questions reconstructed from code — surface them on the map,
+    # not just in the detail panel / _findings.md. Mirror collect_findings: a "None —"
+    # placeholder bullet is not an open finding.
+    if any(b and not b.lstrip("*_ ").lower().startswith("none") for b in (node.get("verify") or [])):
+        signals.append("unverified-intent")
     if dependents_count >= 3:
         signals.append("blast-radius")
     return signals
@@ -1190,13 +1222,14 @@ _LEGEND_HTML = [
     'requirements needing attention · '
     '<span class="sw" style="background:#fee;border-color:#c00"></span>unimplemented (confirmed, no code) · '
     '<span class="sw" style="background:#fff3cd;border-color:#a66"></span>unreviewed (promote after review) · '
-    '<span class="sw" style="background:#fff9c4;border-color:#aa0"></span>blast-radius (≥3 dependents)',
+    '<span class="sw" style="background:#fff9c4;border-color:#aa0"></span>blast-radius (≥3 dependents) · '
+    'untested (implemented, no tested-by) · unverified-intent (open verify-intent question)',
 ]
 _LEGEND_MD = [
     "Capabilities grouped by area; thick border = bus; arrows = `depends_on`. Edges into the bus/hubs are hidden (the Dependency Map shows area-level coupling).",
     "Each requirement → its code; arrow label = role (`implements` / `tested-by`). Red = confirmed but no code linked (a gap); grey = baseline/draft, not linked yet (expected).",
     "Area-level coupling: one box per area (N caps), arrow A->B = some capability in A depends on one in B. The System Map has the per-capability detail.",
-    "Requirements needing attention: red = unimplemented (confirmed, no code); orange = unreviewed (promote after review); yellow = blast-radius (≥3 dependents).",
+    "Requirements needing attention: red = unimplemented (confirmed, no code); orange = unreviewed (promote after review); yellow = blast-radius (≥3 dependents), untested (implemented but no tested-by — set `test_exempt` to silence), or unverified-intent (open verify-intent question).",
 ]
 
 
@@ -1320,25 +1353,49 @@ function switchTab(i){
     mermaid.run({nodes:pane.querySelectorAll('.mermaid')})
       .then(()=>pane.querySelectorAll('.mermaid').forEach(initPanZoom))
       .catch(()=>{rendered.delete(i);pane.querySelectorAll('.mermaid').forEach(mapFallback);});
+  }else{
+    pane.querySelectorAll('.mermaid').forEach(refit);   // re-fit an already-rendered pane on show
   }
 }
 function paneBox(i){return document.getElementById('pane'+i).querySelector('.mermaid');}
 // render failed (CDN blocked / parse error / no svg): restore a scrollable pane so content isn't silently clipped
 function mapFallback(box){box.style.overflow='auto';box.style.cursor='default';}
+// intrinsic SVG size from width/height attrs, falling back to the viewBox
+function _svgDims(svg){
+  let w=parseFloat(svg.getAttribute('width')||0),h=parseFloat(svg.getAttribute('height')||0);
+  const vb=svg.getAttribute('viewBox');
+  if(vb){const p=vb.trim().split(/[\s,]+/);w=+p[2]||w;h=+p[3]||h;}
+  return {w:w,h:h};
+}
+// fit-to-container scale: whole diagram visible, with a modest upscale cap so a
+// tiny diagram fills the pane without becoming a blurry giant. Returns null when
+// the box/svg has no measurable size yet (pane hidden / pre-layout).
+const FIT_MAX=1.4, FIT_PAD=24;
+function computeFit(box){
+  const svg=box.querySelector('svg');if(!svg)return null;
+  const d=_svgDims(svg),br=box.getBoundingClientRect();
+  if(!(br.width>0&&br.height>0&&d.w>0&&d.h>0))return null;
+  return Math.max(0.05,Math.min(FIT_MAX,(br.width-FIT_PAD)/d.w,(br.height-FIT_PAD)/d.h));
+}
+// re-fit + center, measured AFTER layout (double rAF) so a just-revealed pane
+// reports its true size instead of 0 — the over/under-zoom bug on tab switch.
+function refit(box){
+  if(!box._pz)return;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const f=computeFit(box);if(f==null)return;
+    const svg=box.querySelector('svg'),d=_svgDims(svg),br=box.getBoundingClientRect(),st=box._pz;
+    st.s=f;box._fitS=f;
+    st.x=Math.max(0,(br.width-d.w*f)/2);
+    st.y=Math.max(0,(br.height-d.h*f)/2);
+    box._apply();
+  }));
+}
 function initPanZoom(box){
   const svg=box.querySelector('svg');if(!svg){mapFallback(box);return;}if(box._pz)return;
   svg.style.maxWidth='none';
-  // fit-to-container: scale so the whole diagram is visible on first open;
-  // never zoom in beyond 1:1, only zoom out when the diagram is larger than the box.
-  const vb=svg.getAttribute('viewBox');
-  let svgW=parseFloat(svg.getAttribute('width')||0);
-  let svgH=parseFloat(svg.getAttribute('height')||0);
-  if(vb){const p=vb.trim().split(/[\s,]+/);svgW=+p[2]||svgW;svgH=+p[3]||svgH;}
-  const br=box.getBoundingClientRect();
-  const fitS=(svgW>0&&svgH>0)?Math.min(1,Math.min((br.width-16)/svgW,(br.height-16)/svgH)):1;
-  const st={s:fitS,x:0,y:0};box._pz=st;box._fitS=fitS;
+  const st={s:1,x:0,y:0};box._pz=st;box._fitS=1;
   const apply=()=>{svg.style.transform='translate('+st.x+'px,'+st.y+'px) scale('+st.s+')';};
-  apply();
+  box._apply=apply;apply();
   box.addEventListener('wheel',e=>{
     e.preventDefault();
     const r=box.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
@@ -1351,10 +1408,10 @@ function initPanZoom(box){
   window.addEventListener('pointerup',()=>{drag=false;});
   // suppress node-click only when an actual drag happened
   box.addEventListener('click',e=>{if(moved>4){e.stopPropagation();e.preventDefault();}},true);
-  box._apply=apply;
+  refit(box);   // initial fit, measured after layout
 }
 function pz(i,f){const b=paneBox(i),st=b._pz;if(!st)return;const r=b.getBoundingClientRect(),cx=r.width/2,cy=r.height/2;const ns=Math.min(8,Math.max(.15,st.s*f));st.x=cx-(cx-st.x)*(ns/st.s);st.y=cy-(cy-st.y)*(ns/st.s);st.s=ns;b._apply();}
-function pzReset(i){const b=paneBox(i),st=b._pz;if(!st)return;st.s=b._fitS||1;st.x=0;st.y=0;b._apply();}
+function pzReset(i){refit(paneBox(i));}
 const D=REQMAP_DATA;
 const byId=Object.fromEntries(D.nodes.map(n=>[n.id,n]));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
