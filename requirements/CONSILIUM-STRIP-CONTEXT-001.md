@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-STRIP-CONTEXT-001
 status: confirmed
 layer: feature

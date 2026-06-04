@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-VOTE-DEGENERACY-001
 status: confirmed
 layer: feature

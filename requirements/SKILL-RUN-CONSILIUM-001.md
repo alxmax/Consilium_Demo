@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "integration harness — acceptance validated by run-consilium smoke + pipeline commands, not unit tests"
 id: SKILL-RUN-CONSILIUM-001
 status: confirmed
