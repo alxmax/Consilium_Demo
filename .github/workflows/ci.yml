@@ -12,7 +12,7 @@ jobs:
   green-gate:
     runs-on: ubuntu-latest
     env:
-      PYTHONUTF8: "1"   # non-ASCII (→ arrows) in trace_graph / reports
+      PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,16 +23,10 @@ jobs:
         run: python scripts/test_round2.py
       - name: Feedback HTML round-trip tests
         run: python scripts/test_feedback_html.py
-      - name: Silent-audit counter decision tests
-        run: python scripts/test_audit_counter.py
       - name: Trias lens-bias contract tests
         run: python scripts/test_lens_bias.py
-      - name: Vote-pattern degeneracy tests
-        run: python scripts/test_vote_degeneracy.py
       - name: Meta-critic trim tests
         run: python scripts/test_meta_critic_trim.py
-      - name: Step-7 implement-mode routing tests
-        run: python scripts/test_implement_mode.py
       - name: Step-7 implement-pipeline (red-green) tests
         run: python scripts/test_implement_pipeline.py
       - name: probe_change path-decode (security-gate) tests
@@ -51,14 +45,10 @@ jobs:
         run: python scripts/test_strip_context.py
       - name: Utils pure-function tests
         run: python scripts/test_utils.py
-      - name: Trace-graph Mermaid tests
-        run: python scripts/test_trace_graph.py
       - name: Scope-gate decision tests
         run: python scripts/test_scope_gate.py
       - name: Retry-context plan tests
         run: python scripts/test_retry_context.py
-      - name: Usage telemetry-aggregation tests
-        run: python scripts/test_usage.py
       - name: Regression scenarios (run_evals)
         run: python scripts/run_evals.py
       - name: Mode-doc drift invariants (check_doc_drift)

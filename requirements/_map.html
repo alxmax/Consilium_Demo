@@ -65,101 +65,6 @@
       ]
     },
     {
-      "id": "CONSILIUM-AUDIT-COUNTER-001",
-      "layer": "feature",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "audit_counter",
-      "intent": "Tracks the \"every N sequential runs\" silent parallel cross-check state machine.",
-      "contract": [],
-      "verify": [
-        "The tightening rule says 'two or more divergences in the last five audits' — does the rolling window of five count all audits or only those at the current frequency? What happens if frequency already tightened and only 3 audits have been recorded at the new frequency?",
-        "The relaxation rule says 'five consecutive non-divergent audits while frequency=5' — does 'consecutive' mean no divergent entry anywhere in the window, or strictly in order with no gaps? Is the state reset if the system is reinstalled or the state file is deleted?",
-        "When `--increment` is called with `--mode` set to a non-sequential mode (e.g. trias), is the counter still bumped, and is the frequency logic applied the same way? The description says 'every N sequential runs' but the flag accepts arbitrary mode labels."
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "After exactly N sequential increments (where N equals the current frequency), `--check` returns `should_audit=true`; a subsequent `--check` before `--record-divergence` returns `should_audit=false` due to the `pending_audit_at` sentinel.",
-        "After recording 2 divergences in a 5-audit rolling window while `frequency=20`, a subsequent `--record-divergence` call sets frequency to 5.",
-        "After recording 5 consecutive non-divergent audits while `frequency=5`, the frequency reverts to 20.",
-        "When `CLAUDE_HEADLESS=1` is set and an audit would otherwise be due, `--check` returns `should_audit=false` and `headless_skipped=true`.",
-        "Concurrent calls to `--increment` do not corrupt the state file; each call increments the counter by exactly 1 due to the advisory file lock."
-      ],
-      "accept": "- After exactly N sequential increments (where N equals the current frequency), `--check` returns `should_audit=true`; a subsequent `--check` before `--record-divergence` returns `should_audit=false` due to the `pending_audit_at` sentinel.\n- After recording 2 divergences in a 5-audit rolling window while `frequency=20`, a subsequent `--record-divergence` call sets frequency to 5.\n- After recording 5 consecutive non-divergent audits while `frequency=5`, the frequency reverts to 20.\n- When `CLAUDE_HEADLESS=1` is set and an audit would otherwise be due, `--check` returns `should_audit=false` and `headless_skipped=true`.\n- Concurrent calls to `--increment` do not corrupt the state file; each call increments the counter by exactly 1 due to the advisory file lock.",
-      "input": "CLI flag `--increment`: bumps the sequential-run counter by 1 CLI flag `--check`: reads state and decides whether a silent parallel audit is due CLI flag `--record-divergence 0|1`: logs the outcome of a completed audit (0 = match, 1 = divergent) CLI flag `--status`: prints a human-readable summary of audit state CLI flag `--mode`: informational label for the mode that triggered an increment (default: `sequential`) CLI flags `--sequential-chosen` / `--parallel-chosen`: chosen-IDs logged with each divergence record CLI flag `--state-path`: override path to state file (used by tests) Environment variable `CLAUDE_HEADLESS`: when set to `1`, `--check` returns `should_audit=false` `.consilium/audit_state.json`: persistent state file (read and written atomically)",
-      "output": "`--increment` stdout: JSON with `sequential_count` and `mode_recorded` `--check` stdout: JSON with `should_audit`, `sequential_count`, `frequency`, `last_audit_run`, `headless_skipped`, `already_pending`, `recent_divergences` `--record-divergence` stdout: JSON with `divergence_recorded`, `audit_count`, `frequency_before`, `frequency_after`, `frequency_changed` `--status` stdout: multi-line human-readable summary of counts, frequency, rolling window, and last 5 audit records `.consilium/audit_state.json`: updated on `--increment`, `--check` (when audit signalled), and `--record-divergence` exit code 0 on success; exit code 2 on invalid `--record-divergence` value",
-      "desc": "Implements the \"every N sequential runs\" silent parallel cross-check mechanism described in SKILL.md section \"Silent parallel audit\". The orchestrator calls `--increment` after each sequential deliberation completes, `--check` before deciding whether to dispatch a parallel cross-run, and `--record-divergence` to log the outcome. When two or more divergences appear in the last five audits, the polling frequency automatically tightens from 1-in-20 to 1-in-5 runs; after a clean five-audit window at the hot frequency the interval relaxes back to 1-in-20. The state file is protected by a cross-platform advisory file lock (`msvcrt` on Windows, `fcntl` on POSIX) and written atomically via the shared utility to prevent concurrent-writer corruption. Idempotency is enforced via a `pending_audit_at` sentinel so repeated `--check` calls before `--record-divergence` cannot double-fire an audit.",
-      "deps": [
-        "CONSILIUM-UTILS-001"
-      ],
-      "used_by": [],
-      "members": [
-        {
-          "role": "implements",
-          "loc": "scripts/audit_counter.py:52"
-        },
-        {
-          "role": "tested-by",
-          "loc": "scripts/test_audit_counter.py:16"
-        }
-      ],
-      "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
-      "id": "CONSILIUM-AUDIT-FEEDBACK-001",
-      "layer": "feature",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "audit_feedback",
-      "intent": "Finds runs with no FEEDBACK.html row and optionally backfills PEND entries.",
-      "contract": [],
-      "verify": [
-        "The 'backfill' PEND row uses 'the same entry-building logic as `log_feedback.py`' — does that mean it also enforces the 0.70 confidence gate, or is that gate bypassed for backfill rows since no outcome is being claimed?",
-        "When multiple missing runs are backfilled in one pass, are they appended in a defined order (e.g., by run timestamp, alphabetically by filename), or is the order undefined?",
-        "What happens when `--check` is run and FEEDBACK.html does not exist at all — does it treat every run as missing and exit 1, or exit 0 because there are no rows to compare against?"
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "Given a runs/ directory containing a .json file with no matching row in FEEDBACK.html, the script without flags reports exactly that file and exits 0.",
-        "Given the same setup with `--backfill`, the script appends exactly one PEND row to FEEDBACK.html with a `; backfilled` suffix on the note, and the run is no longer reported as missing on subsequent invocations.",
-        "Given `--backfill --dry-run`, no file is written and the stdout plan lists each row that would be appended.",
-        "Given `--check` with at least one missing run, the script exits with code 1 and prints a FAIL message to stderr.",
-        "Given a run that already has a FEEDBACK.html row, `--backfill` does not append a duplicate row for that run."
-      ],
-      "accept": "- Given a runs/ directory containing a .json file with no matching row in FEEDBACK.html, the script without flags reports exactly that file and exits 0.\n- Given the same setup with `--backfill`, the script appends exactly one PEND row to FEEDBACK.html with a `; backfilled` suffix on the note, and the run is no longer reported as missing on subsequent invocations.\n- Given `--backfill --dry-run`, no file is written and the stdout plan lists each row that would be appended.\n- Given `--check` with at least one missing run, the script exits with code 1 and prints a FAIL message to stderr.\n- Given a run that already has a FEEDBACK.html row, `--backfill` does not append a duplicate row for that run.",
-      "input": "`.consilium/runs/*.json`: deliberation run files scanned for missing coverage `.consilium/FEEDBACK.html`: existing journal read to determine which runs already have rows CLI flag `--runs-dir`: override path to runs directory CLI flag `--feedback`: override path to FEEDBACK.html CLI flag `--backfill`: when present, appends PEND rows for all missing runs CLI flag `--dry-run`: with `--backfill`, prints planned rows without writing CLI flag `--check`: corpus-completeness gate; exits 1 if any run lacks a FEEDBACK row (read-only)",
-      "output": "stdout: list of missing run filenames with date and chosen fields with `--backfill`: atomically updated FEEDBACK.html with new PEND rows appended; updated fingerprint sidecar map with `--dry-run`: printed plan of rows that would be appended, no file writes with `--check`: exit code 1 if any missing rows found, exit code 0 if none exit code 0 on success; exit code 1 on `--check` failure",
-      "desc": "Identifies deliberation run files in `.consilium/runs/` that have no corresponding row in FEEDBACK.html, surfacing gaps that occur when the auto-log step at the end of a session is skipped due to crashes or abrupt termination. In list mode (default) it reports the missing runs without writing anything; with `--backfill` it appends a PEND-outcome row for each missing run using the same entry-building logic as `log_feedback.py`, so the next Step 0 priors check will surface them as stale pendings to be rated. The `--check` flag acts as a CI corpus-completeness gate, returning exit code 1 if any run lacks a feedback row. All backfill writes are performed in a single atomic pass over the accumulated Entry list to avoid O(N^2) read-render-write cycles, and existing rows are never overwritten.",
-      "deps": [
-        "CONSILIUM-UTILS-001",
-        "CONSILIUM-PRIORS-001",
-        "CONSILIUM-FEEDBACK-001",
-        "CONSILIUM-RENDER-FEEDBACK-HTML-001"
-      ],
-      "used_by": [],
-      "members": [
-        {
-          "role": "implements",
-          "loc": "scripts/audit_feedback.py:29"
-        }
-      ],
-      "test_exempt": "dynamic module loading and atomic file I/O — no isolated pure-function surface",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
       "id": "CONSILIUM-BUILD-REPORT-001",
       "layer": "feature",
       "status": "confirmed",
@@ -186,8 +91,7 @@
       "output": "stdout: canonical JSON report with fields: `success_criterion`, `verification`, `chosen_approach`, `reasoning`, `alternatives`, `voice_scores`, `confidence`, `pipeline_executed`, `deliberation_log`, `telemetry`, and optional Trias fields (`team`, `personalities`, `vote_pattern`, `dissent`, `abstained`, `personality_choices`) exit code 0 on success exit code 1 on missing required field exit code 2 on malformed JSON input",
       "desc": "Assembles the canonical deliberation report shape from the intermediate voice and aggregation outputs, eliminating the error-prone manual JSON construction that previously occurred in the orchestrator between pipeline steps. It extracts the chosen candidate's voice scores from the control verdict and conservator score lists, derives `why_not` summaries for each non-chosen alternative from control issues and conservator risk, and stamps version provenance (`consilium_version` and `consilium_ref`) into the telemetry block of every report it emits. Skipped reports (trivial-direct, prior-deliberation passthrough) are handled via a separate code path that requires only `skip_reason` and `signals` and sets `pipeline_executed: false`; full pipeline reports always set `pipeline_executed: true`. The output must pass `validate_report.py` to be written to `.consilium/runs/`.",
       "deps": [
-        "CONSILIUM-UTILS-001",
-        "CONSILIUM-VERSION-001"
+        "CONSILIUM-UTILS-001"
       ],
       "used_by": [],
       "members": [
@@ -343,51 +247,6 @@
       ]
     },
     {
-      "id": "CONSILIUM-EFFICIENCY-001",
-      "layer": "feature",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "efficiency",
-      "intent": "Computes a per-mode efficiency score (tokens per OK outcome) by joining telemetry with feedback.",
-      "contract": [],
-      "verify": [
-        "The metric is `total_tokens / ok_count` (lower is better) — but a Trias OK represents deeper deliberation than a Sequential OK; is there any normalization or weighting applied per mode, or is the raw metric always emitted as-is with only a caveat string?",
-        "`tokens_per_dispatch` is 'normalized by number of voice calls' — how is the voice-call count determined for skipped runs (which have 0 voice calls), and are skipped runs included or excluded from this sub-metric?",
-        "The `--since YYYY-MM-DD` filter 'filters out runs whose timestamp or filename stem sorts before the given date' — if the timestamp inside the run JSON and the filename stem disagree (e.g., a renamed file), which source takes precedence?"
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "With three or more runs all marked `OK`, `tokens_per_ok` is a non-null integer equal to `total_tokens / ok_count`.",
-        "Runs with outcomes `BAD`, `OVR`, or `PEND` increment `not_ok_count` and are excluded from `tokens_per_ok` numerator.",
-        "Modes with fewer than `MIN_RUNS` (3) telemetry runs emit `note: insufficient_data` and null `tokens_per_ok`.",
-        "`--self-test` runs against an inline fixture without reading the filesystem and exits 0 with `self-test PASS` on success.",
-        "`--since YYYY-MM-DD` filters out runs whose timestamp or filename stem sorts before the given date."
-      ],
-      "accept": "- With three or more runs all marked `OK`, `tokens_per_ok` is a non-null integer equal to `total_tokens / ok_count`.\n- Runs with outcomes `BAD`, `OVR`, or `PEND` increment `not_ok_count` and are excluded from `tokens_per_ok` numerator.\n- Modes with fewer than `MIN_RUNS` (3) telemetry runs emit `note: insufficient_data` and null `tokens_per_ok`.\n- `--self-test` runs against an inline fixture without reading the filesystem and exits 0 with `self-test PASS` on success.\n- `--since YYYY-MM-DD` filters out runs whose timestamp or filename stem sorts before the given date.",
-      "input": "`.consilium/runs/*.json`: deliberation run files with `telemetry` blocks (overridable via `--runs`) `.consilium/FEEDBACK.html`: user-outcome journal (overridable via `--feedback`) `.consilium/runs/.run_path_map.json`: sidecar fingerprint-to-run-path index written by `log_feedback.py` CLI flags: `--by-mode`, `--compare MODE...`, `--since YYYY-MM-DD`, `--json`, `--self-test`, `--feedback`, `--runs`",
-      "output": "stdout: JSON object with `modes` (per-mode stats), `ranking` (sorted by `tokens_per_ok`), and `caveat` string stderr: warning when the outcome map is empty or cannot be loaded exit code 0 on success, 1 if runs directory is not found",
-      "desc": "Computes a per-mode efficiency score defined as `total_tokens / ok_count` (lower is better), joining run telemetry with user-logged outcomes from FEEDBACK.html via a fingerprint sidecar map. Only outcomes marked `OK` count toward the numerator; `BAD`, `OVR`, and `PEND` outcomes are tracked separately and modes with fewer than three telemetry runs are flagged as `insufficient_data`. Alongside the raw `tokens_per_ok` metric it also emits `tokens_per_dispatch` (normalized by number of voice calls) and average latency, then ranks modes by efficiency. The script deliberately does not compare quality across modes - a Trias OK represents deeper deliberation than a Sequential OK - and states this caveat explicitly in its output.",
-      "deps": [
-        "CONSILIUM-FEEDBACK-001",
-        "CONSILIUM-UTILS-001"
-      ],
-      "used_by": [],
-      "members": [
-        {
-          "role": "implements",
-          "loc": "scripts/efficiency.py:28"
-        }
-      ],
-      "test_exempt": "reads runs/ JSON and FEEDBACK.html at test time — integration-only",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
       "id": "CONSILIUM-FEEDBACK-001",
       "layer": "bus",
       "status": "confirmed",
@@ -417,8 +276,6 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [
-        "CONSILIUM-AUDIT-FEEDBACK-001",
-        "CONSILIUM-EFFICIENCY-001",
         "CONSILIUM-LOG-FEEDBACK-001",
         "CONSILIUM-MARK-OUTCOME-001",
         "CONSILIUM-MEMORY-001",
@@ -480,54 +337,6 @@
         {
           "role": "tested-by",
           "loc": "scripts/test_implement_pipeline.py:6"
-        }
-      ],
-      "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
-      "id": "CONSILIUM-INFER-PIPELINE-001",
-      "layer": "feature",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "infer_pipeline",
-      "intent": "Infers the post-deliberation implementation steps from Conservator magnitude/reversibility.",
-      "contract": [],
-      "verify": [
-        "The lookup table maps every `(magnitude, reversibility)` pair to a step list — is this table fully enumerated in the implementation, and what happens for pairs not in the table (e.g., `magnitude=trivial` with `reversibility=complete`)? Does the fallback to voice_scores scalar cover all such gaps?",
-        "The description says the script 'never infers `irreversible` from the scalar because a floored net_concern is ambiguous' — is this constraint tested, and what step list is produced when the scalar is high but reversibility cannot be inferred?",
-        "User rejections are persisted as `pipeline_rejected.json` events — is there any downstream consumer of these events (e.g., priors.py, efficiency.py), and if not, is the persistence intentional or a placeholder for future use?"
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "For `chosen_approach` of `do_nothing` or `null`, `infer_steps` returns an empty list with a `reason` key in the rationale.",
-        "A report with `magnitude=high` and `reversibility=irreversible` in the Conservator deliberation log yields steps `[implement, compile, review, test]`.",
-        "When Conservator fields are missing, the script falls back to `voice_scores.conservator` scalar and never infers `irreversible` reversibility from it.",
-        "`--dry-run` prints steps and rationale JSON and exits 0 without prompting the user.",
-        "`--yes` skips the interactive confirmation prompt, enabling CI/headless use."
-      ],
-      "accept": "- For `chosen_approach` of `do_nothing` or `null`, `infer_steps` returns an empty list with a `reason` key in the rationale.\n- A report with `magnitude=high` and `reversibility=irreversible` in the Conservator deliberation log yields steps `[implement, compile, review, test]`.\n- When Conservator fields are missing, the script falls back to `voice_scores.conservator` scalar and never infers `irreversible` reversibility from it.\n- `--dry-run` prints steps and rationale JSON and exits 0 without prompting the user.\n- `--yes` skips the interactive confirmation prompt, enabling CI/headless use.",
-      "input": "Deliberation report JSON - via `--input <path>` or stdin CLI flags: `--dry-run`, `--yes`, `--debug`",
-      "output": "stdout: human-readable proposed pipeline and `{\"steps\": [...], \"rationale\": {...}}` JSON `.consilium/runs/<ts>_pipeline_rejected.json` written on user rejection (interactive mode only) exit code 0 on confirmation or dry-run, 1 on user decline or empty steps, 2 on malformed input",
-      "desc": "Infers and presents for confirmation the ordered post-deliberation implementation steps (implement, compile, review, test) based on the `magnitude` and `reversibility` fields from the Conservator voice in the deliberation log. A lookup table maps every `(magnitude, reversibility)` pair to a step list; when Conservator fields are absent or off-vocabulary the script falls back to deriving magnitude from `voice_scores.conservator` (a scalar net_concern) while carefully avoiding inferring `irreversible` from the scalar because a floored net_concern is ambiguous. The companion function `recommend_implement_mode` is also exported and used by the orchestrator to route Step 7 between `pipeline` and `single_shot` dispatch - the signal is the presence of a `review` step, which appears exactly in regression-prone quadrants. User rejections are persisted to `.consilium/runs/` as `pipeline_rejected.json` events.",
-      "deps": [
-        "CONSILIUM-UTILS-001"
-      ],
-      "used_by": [],
-      "members": [
-        {
-          "role": "implements",
-          "loc": "scripts/infer_pipeline.py:29"
-        },
-        {
-          "role": "tested-by",
-          "loc": "scripts/test_implement_mode.py:8"
         }
       ],
       "test_exempt": null,
@@ -1104,9 +913,7 @@
         "CONSILIUM-FEEDBACK-001",
         "CONSILIUM-UTILS-001"
       ],
-      "used_by": [
-        "CONSILIUM-AUDIT-FEEDBACK-001"
-      ],
+      "used_by": [],
       "members": [
         {
           "role": "implements",
@@ -1115,52 +922,6 @@
         {
           "role": "tested-by",
           "loc": "scripts/test_priors.py:10"
-        }
-      ],
-      "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
-      "id": "CONSILIUM-PROBE-CHANGE-001",
-      "layer": "feature",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "probe_change",
-      "intent": "Returns objective git diff metrics (files/lines changed, optional per-file churn) as JSON.",
-      "contract": [],
-      "verify": [
-        "The default mode 'diffs staged + unstaged changes against HEAD' — does this include untracked files, or only tracked modified files? The behavior for untracked files is relevant when a developer adds a new file without staging it.",
-        "`--ref` and `--range` are 'mutually exclusive' — what is the exact error output and exit code when both are supplied simultaneously?",
-        "The `--churn N` per-file commit frequency is computed 'over the last N days via `git log --since`' — is the commit count for each file the number of commits touching that file specifically, or total repo commits in the window?"
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "Running with no flags against a git repo with unstaged changes returns a JSON object with `files_changed >= 1` and correct `lines_added` / `lines_removed` counts matching `git diff --numstat HEAD` output.",
-        "Running with `--ref main` returns diff statistics for the range `main..HEAD`, not the working tree.",
-        "Running with `--churn 14` returns an additional `churn.commits_per_file` dict keyed by changed file paths, with non-negative integer values.",
-        "Running outside a git repository (or with a bad `--ref`) outputs `{\"error\": \"...\"}` to stdout and exits 1 without printing a Python traceback.",
-        "File paths containing non-ASCII characters or spaces are correctly decoded from git's C-quoted output and appear unescaped in the JSON result."
-      ],
-      "accept": "- Running with no flags against a git repo with unstaged changes returns a JSON object with `files_changed >= 1` and correct `lines_added` / `lines_removed` counts matching `git diff --numstat HEAD` output.\n- Running with `--ref main` returns diff statistics for the range `main..HEAD`, not the working tree.\n- Running with `--churn 14` returns an additional `churn.commits_per_file` dict keyed by changed file paths, with non-negative integer values.\n- Running outside a git repository (or with a bad `--ref`) outputs `{\"error\": \"...\"}` to stdout and exits 1 without printing a Python traceback.\n- File paths containing non-ASCII characters or spaces are correctly decoded from git's C-quoted output and appear unescaped in the JSON result.",
-      "input": "CLI flag `--ref REF`: diff `REF..HEAD` (e.g. `--ref main` or `--ref HEAD~3`); mutually exclusive with `--range` CLI flag `--range A..B`: explicit diff range; mutually exclusive with `--ref` CLI flag `--files ...`: restrict the diff to specific file paths CLI flag `--churn N`: also count commits per changed file over the last N days via `git log --since` Working-tree git state: default mode diffs staged + unstaged changes against HEAD `git` executable on PATH",
-      "output": "JSON object to stdout with `files_changed`, `lines_added`, `lines_removed` (integers) When `--churn N` is passed, the JSON object also contains a `churn` key with `window_days` and `commits_per_file` (dict of path -> commit count) JSON object `{\"error\": \"...\"}` to stdout and exit code 1 on any git error or invalid arguments exit code 0 on success",
-      "desc": "Anchors Conservator's `diff_size` risk factor in objective git data instead of intuition by running `git diff --numstat` and returning the count of changed files and lines added/removed as JSON. It exists because without ground-truth diff metrics Conservator must guess the magnitude of a change, which introduces systematic bias; with this output the aggregator can apply a calibrated `diff_size` score. The optional `--churn` flag adds per-file commit frequency over a configurable lookback window, giving Conservator a second ground-truth signal for `regression_risk`: a file touched eight times in fourteen days is fragile, while one untouched for two years is stable. The script deliberately excludes `modules_touched` and `shared_paths_hit` because those require per-project configuration that would force the script to crash or guess; scope_drift and regression judgment remain with Conservator. On any git error (missing executable, bad ref, non-repo) the script emits `{\"error\": \"...\"}` to stdout and exits 1 rather than raising a traceback.",
-      "deps": [],
-      "used_by": [],
-      "members": [
-        {
-          "role": "implements",
-          "loc": "scripts/probe_change.py:35"
-        },
-        {
-          "role": "tested-by",
-          "loc": "scripts/test_probe_change.py:16"
         }
       ],
       "test_exempt": null,
@@ -1201,7 +962,6 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [
-        "CONSILIUM-AUDIT-FEEDBACK-001",
         "CONSILIUM-LOG-FEEDBACK-001",
         "CONSILIUM-MARK-OUTCOME-001"
       ],
@@ -1220,10 +980,6 @@
         {
           "signal": "unverified-intent",
           "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        },
-        {
-          "signal": "blast-radius",
-          "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
       ]
     },
@@ -1364,50 +1120,6 @@
       ]
     },
     {
-      "id": "CONSILIUM-STABILITY-CHECK-001",
-      "layer": "feature",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "stability_check",
-      "intent": "Voice-score calibration analysis (retrospective / compare / pick) per the R2 audit Bug #1.",
-      "contract": [],
-      "verify": [
-        "The 0.80 veto boundary is hard-coded as the reference for the 'uncertain band' analysis — is this value the same as the `veto_threshold` in `aggregator.py`, and if aggregator's threshold is changed, does stability_check need to be updated in sync?",
-        "The Bug #1 verdict threshold of 0.10 mean pstdev is a fixed constant — is this threshold empirically derived or arbitrary? Should the requirement document who can change it and under what circumstances?",
-        "In compare mode, what constitutes a 'same input' constraint when comparing two runs? The description says 'two runs on the same input' but there is no enforcement or input-hash comparison — is this purely a human convention?"
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "Running `--runs-dir` against a populated runs directory prints per-voice statistics for generator, control, and conservator without error.",
-        "The `--compare` mode prints `Bug #1 CONFIRMED` when mean pstdev across voices exceeds 0.10 and `Bug #1 OK` when it does not.",
-        "The `--compare` mode detects and flags a magnitude or reversibility mismatch between the two runs as `*** FLIP`.",
-        "The `--pick` mode returns exactly N candidates sorted by proximity to the 0.8 veto boundary.",
-        "A runs directory with no files containing `voice_scores` prints a `No runs with voice_scores found` message to stderr without crashing."
-      ],
-      "accept": "- Running `--runs-dir` against a populated runs directory prints per-voice statistics for generator, control, and conservator without error.\n- The `--compare` mode prints `Bug #1 CONFIRMED` when mean pstdev across voices exceeds 0.10 and `Bug #1 OK` when it does not.\n- The `--compare` mode detects and flags a magnitude or reversibility mismatch between the two runs as `*** FLIP`.\n- The `--pick` mode returns exactly N candidates sorted by proximity to the 0.8 veto boundary.\n- A runs directory with no files containing `voice_scores` prints a `No runs with voice_scores found` message to stderr without crashing.",
-      "input": "`--runs-dir <path>`: directory of run JSON files (default: `.consilium/runs` from `CONSILIUM-UTILS-001 RUNS_DIR`, or `runs` as fallback) `--compare <RUN_A> <RUN_B>`: paths to two run JSON files for pairwise comparison `--pick <N>`: integer, number of candidate runs to select for the prospective experiment",
-      "output": "Retrospective: formatted calibration report and veto boundary analysis printed to stdout Compare: per-voice diff/pstdev table and Bug #1 verdict printed to stdout; exits 1 if `voice_scores` missing Pick: ranked list of N candidate runs with conservator scores and success criteria printed to stdout",
-      "desc": "Voice-score calibration analysis tool that implements the experiment protocol from the R2 audit (Bug #1: `voice_scores_uncalibrated_measurements`). In retrospective mode it scans an entire runs directory and prints per-voice statistics (mean, pstdev, quartiles) alongside a veto-boundary analysis highlighting runs whose conservator score falls in the uncertain band around the 0.8 veto threshold. In compare mode it takes two runs on the same input, computes pstdev per voice, flags high-variance voices, and checks categorical stability (magnitude and reversibility) to confirm or refute Bug #1 empirically. In pick mode it selects candidate runs closest to the veto boundary for use in a prospective re-run experiment.",
-      "deps": [
-        "CONSILIUM-UTILS-001"
-      ],
-      "used_by": [],
-      "members": [
-        {
-          "role": "implements",
-          "loc": "scripts/stability_check.py:24"
-        }
-      ],
-      "test_exempt": "reads runs/ directory at test time — integration-only analysis tool",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
       "id": "CONSILIUM-STRIP-CONTEXT-001",
       "layer": "feature",
       "status": "confirmed",
@@ -1456,102 +1168,6 @@
       ]
     },
     {
-      "id": "CONSILIUM-TRACE-GRAPH-001",
-      "layer": "feature",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "trace_graph",
-      "intent": "Renders a per-run Mermaid flowchart of what actually executed in the deliberation pipeline.",
-      "contract": [],
-      "verify": [
-        "A 'prior-deliberation passthrough run produces a two-node graph `PRIOR -> REP`' — but a passthrough run may still have metadata (confidence, chosen approach) worth showing; is the two-node minimal graph intentional, or should it show the passthrough's source run reference?",
-        "For a sequential run with a Skeptic, the graph shows 'an advisory edge from AGG to SKP and from SKP to REP' — but when the Skeptic overrides the chosen candidate (`--skeptic-can-override`), should the edge semantics change (e.g., a different edge label or a direct replacement edge)?",
-        "The output is described as 'valid Mermaid' — is there a validation step in the acceptance test, or is correctness only confirmed by visual inspection at mermaid.live?"
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "A run with `skipped=true` produces a flowchart containing only a SKIP node with the skip reason.",
-        "A Trias run produces a flowchart with ROOT, PIO, ARC, STE, and VOTE nodes with edges from ROOT to each personality and from each personality to VOTE.",
-        "A sequential run with a skeptic voice in the deliberation log produces an advisory edge from AGG to SKP and from SKP to REP.",
-        "A prior-deliberation passthrough run produces a two-node graph `PRIOR -> REP`.",
-        "Running with `--fence` wraps the Mermaid output in triple-backtick mermaid fences."
-      ],
-      "accept": "- A run with `skipped=true` produces a flowchart containing only a SKIP node with the skip reason.\n- A Trias run produces a flowchart with ROOT, PIO, ARC, STE, and VOTE nodes with edges from ROOT to each personality and from each personality to VOTE.\n- A sequential run with a skeptic voice in the deliberation log produces an advisory edge from AGG to SKP and from SKP to REP.\n- A prior-deliberation passthrough run produces a two-node graph `PRIOR -> REP`.\n- Running with `--fence` wraps the Mermaid output in triple-backtick mermaid fences.",
-      "input": "stdin (default) or `--input <path>`: a canonical run JSON file from `.consilium/runs/` `--fence`: boolean flag, wraps output in a ```mermaid code fence",
-      "output": "Mermaid flowchart text to stdout (plain or fenced in ```mermaid when `--fence` is set) exit code 0 on success; 2 on malformed JSON or missing/unreadable input",
-      "desc": "Renders a per-run view of the deliberation pipeline as a Mermaid flowchart. It reads a canonical run JSON and emits a mode-aware directed graph showing what actually executed for that run: scope-gate skips, prior-deliberation passthroughs, Conservator `scale_down` short-circuits, the Trias fan of three parallel personality sub-agents, or the standard sequential/dialectic voice chain with optional Skeptic advisory. This complements the static architecture diagram in `docs/architecture/src/pipeline.jsx` with a concrete, inspectable trace per run. The output is valid Mermaid and renders natively in GitHub markdown and at mermaid.live without any additional toolchain.",
-      "deps": [
-        "CONSILIUM-UTILS-001"
-      ],
-      "used_by": [],
-      "members": [
-        {
-          "role": "tested-by",
-          "loc": "scripts/test_trace_graph.py:10"
-        },
-        {
-          "role": "implements",
-          "loc": "scripts/trace_graph.py:20"
-        }
-      ],
-      "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
-      "id": "CONSILIUM-USAGE-001",
-      "layer": "feature",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "usage",
-      "intent": "Aggregates telemetry across runs into per-voice + per-mode token/latency stats.",
-      "contract": [],
-      "verify": [
-        "For Trias or parallel mode runs, latency reflects 'the maximum voice latency rather than the sum' — but Trias runs have 3 sub-agents each running 3 voices; is 'voice latency' the latency per sub-agent's full Sequential run, or per individual voice call within each sub-agent?",
-        "The latency spike detection flags 'any voice whose latency exceeds 2x the median of its peers' — are 'peers' defined as all voices in the same run, or the same named voice across all runs in the dataset?",
-        "`--last N` restricts to 'the most-recent N run files' — is 'most-recent' determined by file modification time, filename sort order (which encodes timestamps), or the `telemetry.timestamp` field inside the JSON?"
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "Running against a populated runs directory emits valid JSON with `runs_total` equal to the number of JSON files loaded.",
-        "Skipped runs (`skipped=true`) are counted in `skipped_runs` but excluded from voice token statistics.",
-        "For a Trias or parallel mode run, the mode's `latency_ms` reflects the maximum voice latency rather than the sum.",
-        "The `--mode` flag filters the breakdown so only runs matching that `telemetry.mode` value appear in the `modes` and `with_telemetry` counts.",
-        "A voice whose latency exceeds twice the median of its peers in a parallel run appears in the `warnings` array with `type='latency_spike'`."
-      ],
-      "accept": "- Running against a populated runs directory emits valid JSON with `runs_total` equal to the number of JSON files loaded.\n- Skipped runs (`skipped=true`) are counted in `skipped_runs` but excluded from voice token statistics.\n- For a Trias or parallel mode run, the mode's `latency_ms` reflects the maximum voice latency rather than the sum.\n- The `--mode` flag filters the breakdown so only runs matching that `telemetry.mode` value appear in the `modes` and `with_telemetry` counts.\n- A voice whose latency exceeds twice the median of its peers in a parallel run appears in the `warnings` array with `type='latency_spike'`.",
-      "input": "`--runs <path>`: optional path to runs directory (default: `.consilium/runs` from `CONSILIUM-UTILS-001 RUNS_DIR`) `--last <N>`: optional integer, restrict to the most-recent N run files `--mode <name>`: optional string filter on `telemetry.mode` (e.g. `trias`, `sequential`)",
-      "output": "JSON object to stdout with keys: `runs_total`, `with_telemetry`, `skipped_runs`, `voices` (per-voice percentile stats), `modes` (per-mode token/latency totals), `warnings` (latency spike list) exit code 0 on success; 1 if the runs directory does not exist",
-      "desc": "Aggregates telemetry across all run JSON files in the runs directory and emits a structured usage report with per-voice and per-mode breakdowns. For each voice it computes count, sum, mean, p50, and p95 over `tokens_in`, `tokens_out`, and `latency_ms`; for each mode it accumulates total tokens and latency, using max latency across voices for parallel/Trias modes to reflect wall-clock cost rather than summed sequential cost. It also detects latency spikes in parallel runs by flagging any voice whose latency exceeds 2x the median of its peers. The script exists to quantify the ROI of the scope gate (skipped runs cost no voice tokens) and to compare deliberation cost across modes.",
-      "deps": [
-        "CONSILIUM-UTILS-001"
-      ],
-      "used_by": [],
-      "members": [
-        {
-          "role": "tested-by",
-          "loc": "scripts/test_usage.py:10"
-        },
-        {
-          "role": "implements",
-          "loc": "scripts/usage.py:32"
-        }
-      ],
-      "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
       "id": "CONSILIUM-UTILS-001",
       "layer": "bus",
       "status": "confirmed",
@@ -1580,26 +1196,18 @@
       "deps": [],
       "used_by": [
         "CONSILIUM-AGGREGATOR-001",
-        "CONSILIUM-AUDIT-COUNTER-001",
-        "CONSILIUM-AUDIT-FEEDBACK-001",
         "CONSILIUM-BUILD-REPORT-001",
         "CONSILIUM-CONFIDENCE-001",
-        "CONSILIUM-EFFICIENCY-001",
         "CONSILIUM-FEEDBACK-001",
         "CONSILIUM-IMPLEMENT-PIPELINE-001",
-        "CONSILIUM-INFER-PIPELINE-001",
         "CONSILIUM-LOG-FEEDBACK-001",
         "CONSILIUM-MARK-OUTCOME-001",
         "CONSILIUM-MEMORY-001",
         "CONSILIUM-PRIORS-001",
         "CONSILIUM-RENDER-FEEDBACK-HTML-001",
         "CONSILIUM-RETRY-CONTEXT-001",
-        "CONSILIUM-STABILITY-CHECK-001",
         "CONSILIUM-STRIP-CONTEXT-001",
-        "CONSILIUM-TRACE-GRAPH-001",
-        "CONSILIUM-USAGE-001",
-        "CONSILIUM-VALIDATE-REPORT-001",
-        "CONSILIUM-VOTE-DEGENERACY-001"
+        "CONSILIUM-VALIDATE-REPORT-001"
       ],
       "members": [
         {
@@ -1664,54 +1272,6 @@
         {
           "role": "implements",
           "loc": "scripts/validate_report.py:49"
-        }
-      ],
-      "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
-      "id": "CONSILIUM-VERSION-001",
-      "layer": "bus",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "version",
-      "intent": "Git-derived version provenance: display stamp, bare committed ref, and prompt-change drift count.",
-      "contract": [],
-      "verify": [
-        "`consilium_ref()` returns `''` when the working tree has uncommitted tracked changes — does 'uncommitted tracked changes' include staged-but-not-committed changes, or only unstaged modifications? The distinction matters for CI environments that stage files during build.",
-        "`prompts_changed_since` returns 0 silently for unresolvable refs — but a caller that passes a stale ref (e.g., a deleted branch) would receive 0 and incorrectly conclude no prompts changed; is silent 0 the right behavior, or should there be an out-of-band signal indicating resolution failure?",
-        "The `--drift REF` flag diffs only `prompts/` and `modes/` — but `scripts/aggregator.py` and `scripts/confidence.py` also affect deliberation behavior; is restricting drift detection to prompts and modes intentional, or an omission?"
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "`consilium_version()` returns a non-empty string and never raises, even when git is absent or the repo has no tags.",
-        "`consilium_ref()` returns `''` (empty string) when the working tree has uncommitted tracked changes, and returns a 40-character hex sha when the tree is clean.",
-        "`prompts_changed_since` returns 0 without raising for any of: empty string ref, `unknown`, or a ref that does not exist in the repo.",
-        "`--drift REF` prints a human-readable diff `--stat` of `prompts/` and `modes/` for a valid ref, and prints a `does not resolve` message for an invalid ref.",
-        "`ref_resolves` returns `False` for empty string and `unknown`, and `True` only for a reachable commit sha or tag."
-      ],
-      "accept": "- `consilium_version()` returns a non-empty string and never raises, even when git is absent or the repo has no tags.\n- `consilium_ref()` returns `''` (empty string) when the working tree has uncommitted tracked changes, and returns a 40-character hex sha when the tree is clean.\n- `prompts_changed_since` returns 0 without raising for any of: empty string ref, `unknown`, or a ref that does not exist in the repo.\n- `--drift REF` prints a human-readable diff `--stat` of `prompts/` and `modes/` for a valid ref, and prints a `does not resolve` message for an invalid ref.\n- `ref_resolves` returns `False` for empty string and `unknown`, and `True` only for a reachable commit sha or tag.",
-      "input": "No files read; all data comes from `git` subprocess calls against the repo root CLI flags: (none) prints display stamp; `--ref` prints bare committed HEAD sha; `--drift REF` prints diff `--stat` of `prompts/` + `modes/` since REF",
-      "output": "stdout: display stamp, bare ref, or diff `--stat` depending on CLI flag exit code 0 in all cases (fails open); returns `''` or `'unknown'` when git is unavailable rather than erroring",
-      "desc": "Provides two distinct version provenance fields that the deliberation pipeline stamps onto every run record. `consilium_version()` returns a human-readable display string (`git describe --tags --always --dirty`, e.g. `v1.0.0-3-gabc123`) for display and provenance; `consilium_ref()` returns a bare committed HEAD sha usable as a `git diff` operand, or an empty string when the working tree is dirty or git is unavailable - because a dirty-tree sha cannot be reconstructed. `prompts_changed_since(ref)` counts how many `prompts/` and `modes/` files changed since a given ref, enabling Step-0 stale-prompt advisories without ever raising or shelling a malformed diff (it returns 0 silently when the ref is empty, `unknown`, or unresolvable). The module's design principle is that git is the version system: no bespoke per-prompt registry is needed because git already content-hashes, versions, and diffs everything.",
-      "deps": [],
-      "used_by": [
-        "CONSILIUM-BUILD-REPORT-001"
-      ],
-      "members": [
-        {
-          "role": "tested-by",
-          "loc": "scripts/test_version.py:14"
-        },
-        {
-          "role": "implements",
-          "loc": "scripts/version.py:27"
         }
       ],
       "test_exempt": null,
@@ -1966,54 +1526,6 @@
       ]
     },
     {
-      "id": "CONSILIUM-VOTE-DEGENERACY-001",
-      "layer": "feature",
-      "status": "deprecated",
-      "area": "CONSILIUM",
-      "title": "vote_degeneracy",
-      "intent": "Measures empirically whether the Trias 3-personality vote is statistically degenerate.",
-      "contract": [],
-      "verify": [
-        "The scan uses 'a text-based scan, not `json.loads`' to extract `vote_pattern` — what is the exact regex pattern used, and could it produce false positives from runs that contain the string `vote_pattern` in a note or rationale field but are not Trias runs?",
-        "The 2-0 veto pattern is tracked separately as `veto_rate` — but in CONSILIUM-MODE-TRIAS-001, 2-0 is listed as a confidence value (0.70); is a 2-0 vote pattern always a veto, or can it represent two personalities choosing one candidate and the third abstaining?",
-        "The threshold of 0.85 and minimum N of 20 are defaults but configurable — is there any guidance on what values are appropriate for different corpus sizes, or is the choice left entirely to the caller?"
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "Runs with `mode: trias` or `trias_split` are admitted; runs with any other mode that merely contains a `vote_pattern` in their body are excluded.",
-        "3-0 patterns count as unanimity; 2-0 patterns count only as `veto_rate` and are not folded into `unanimity_rate`.",
-        "With fewer than `--min-n` Trias runs, verdict is `insufficient` regardless of the observed 3-0 rate.",
-        "When 3-0 rate exceeds `--degenerate-threshold` with `n >= --min-n`, verdict is `vote_degenerate`; otherwise `vote_meaningful`.",
-        "`--json` flag produces valid JSON output with keys: `n`, `distribution`, `unanimity_rate`, `veto_rate`, `veto_count`, `degenerate_threshold`, `min_n`, `verdict`, `note`."
-      ],
-      "accept": "- Runs with `mode: trias` or `trias_split` are admitted; runs with any other mode that merely contains a `vote_pattern` in their body are excluded.\n- 3-0 patterns count as unanimity; 2-0 patterns count only as `veto_rate` and are not folded into `unanimity_rate`.\n- With fewer than `--min-n` Trias runs, verdict is `insufficient` regardless of the observed 3-0 rate.\n- When 3-0 rate exceeds `--degenerate-threshold` with `n >= --min-n`, verdict is `vote_degenerate`; otherwise `vote_meaningful`.\n- `--json` flag produces valid JSON output with keys: `n`, `distribution`, `unanimity_rate`, `veto_rate`, `veto_count`, `degenerate_threshold`, `min_n`, `verdict`, `note`.",
-      "input": "`--runs-dir`: path to `.consilium/runs/` (default: `.consilium/runs`) `--degenerate-threshold`: float threshold for 3-0 unanimity rate (default: 0.85) `--min-n`: minimum Trias run count to render a verdict (default: 20) `--json`: emit JSON report to stdout instead of human-readable text Reads `*.json` files from the runs directory (text-based scan, not `json.loads`)",
-      "output": "stdout: human-readable degeneracy report (n, distribution, unanimity/veto rates, verdict + note) or JSON when `--json` is passed exit code 0 on success, exit code 2 if the runs directory does not exist",
-      "desc": "Empirically measures whether the Trias mode's three-personality democratic vote is statistically degenerate - i.e., whether the Pioneer/Architect/Steward lenses always agree because they are correlated samples from the same model. The script scans the run corpus for genuine Trias runs (identified by a `mode: trias`/`trias_split` marker), extracts each run's `vote_pattern` field via regex, and tallies the distribution using a `Counter`. It then computes the 3-0 unanimity rate and compares it against a configurable threshold: above 0.85 with at least 20 runs is judged `vote_degenerate` (the vote adds no signal), at or below is `vote_meaningful`, and below the minimum sample size is `insufficient` (Deming gate). The 2-0 veto pattern is tracked separately as `veto_rate` because it represents a personality veto event, not three lenses agreeing, so folding it into unanimity would overstate decorrelation.",
-      "deps": [
-        "CONSILIUM-UTILS-001"
-      ],
-      "used_by": [],
-      "members": [
-        {
-          "role": "tested-by",
-          "loc": "scripts/test_vote_degeneracy.py:11"
-        },
-        {
-          "role": "implements",
-          "loc": "scripts/vote_degeneracy.py:32"
-        }
-      ],
-      "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
-    },
-    {
       "id": "SKILL-RUN-CONSILIUM-001",
       "layer": "feature",
       "status": "confirmed",
@@ -2066,43 +1578,11 @@
       "CONSILIUM-UTILS-001"
     ],
     [
-      "CONSILIUM-AUDIT-COUNTER-001",
-      "CONSILIUM-UTILS-001"
-    ],
-    [
-      "CONSILIUM-AUDIT-FEEDBACK-001",
-      "CONSILIUM-UTILS-001"
-    ],
-    [
-      "CONSILIUM-AUDIT-FEEDBACK-001",
-      "CONSILIUM-PRIORS-001"
-    ],
-    [
-      "CONSILIUM-AUDIT-FEEDBACK-001",
-      "CONSILIUM-FEEDBACK-001"
-    ],
-    [
-      "CONSILIUM-AUDIT-FEEDBACK-001",
-      "CONSILIUM-RENDER-FEEDBACK-HTML-001"
-    ],
-    [
       "CONSILIUM-BUILD-REPORT-001",
       "CONSILIUM-UTILS-001"
-    ],
-    [
-      "CONSILIUM-BUILD-REPORT-001",
-      "CONSILIUM-VERSION-001"
     ],
     [
       "CONSILIUM-CONFIDENCE-001",
-      "CONSILIUM-UTILS-001"
-    ],
-    [
-      "CONSILIUM-EFFICIENCY-001",
-      "CONSILIUM-FEEDBACK-001"
-    ],
-    [
-      "CONSILIUM-EFFICIENCY-001",
       "CONSILIUM-UTILS-001"
     ],
     [
@@ -2111,10 +1591,6 @@
     ],
     [
       "CONSILIUM-IMPLEMENT-PIPELINE-001",
-      "CONSILIUM-UTILS-001"
-    ],
-    [
-      "CONSILIUM-INFER-PIPELINE-001",
       "CONSILIUM-UTILS-001"
     ],
     [
@@ -2226,19 +1702,7 @@
       "CONSILIUM-UTILS-001"
     ],
     [
-      "CONSILIUM-STABILITY-CHECK-001",
-      "CONSILIUM-UTILS-001"
-    ],
-    [
       "CONSILIUM-STRIP-CONTEXT-001",
-      "CONSILIUM-UTILS-001"
-    ],
-    [
-      "CONSILIUM-TRACE-GRAPH-001",
-      "CONSILIUM-UTILS-001"
-    ],
-    [
-      "CONSILIUM-USAGE-001",
       "CONSILIUM-UTILS-001"
     ],
     [
@@ -2247,10 +1711,6 @@
     ],
     [
       "CONSILIUM-VALIDATE-REPORT-001",
-      "CONSILIUM-UTILS-001"
-    ],
-    [
-      "CONSILIUM-VOTE-DEGENERACY-001",
       "CONSILIUM-UTILS-001"
     ],
     [

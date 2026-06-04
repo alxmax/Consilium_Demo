@@ -85,11 +85,8 @@ def smoke():
     for suite in (
         "test_round2.py",
         "test_feedback_html.py",
-        "test_audit_counter.py",
         "test_lens_bias.py",
-        "test_vote_degeneracy.py",
         "test_meta_critic_trim.py",
-        "test_implement_mode.py",
         "test_implement_pipeline.py",
         "test_probe_change.py",
         "test_version.py",
@@ -99,10 +96,8 @@ def smoke():
         "test_log_feedback.py",
         "test_strip_context.py",
         "test_utils.py",
-        "test_trace_graph.py",
         "test_scope_gate.py",
         "test_retry_context.py",
-        "test_usage.py",
     ):
         failures += run(suite, script(suite)).returncode != 0
     failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0

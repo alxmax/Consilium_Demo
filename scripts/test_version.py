@@ -11,7 +11,6 @@ Senate-mandated coverage (2026-05-31_200016-versioning-provenance-design):
 - All THREE report producers carry the stamp (Socrate): build_report pipeline
   output + the two hand-built SKILL.md templates (scale_down, passthrough).
 """
-# tested-by: CONSILIUM-VERSION-001
 from __future__ import annotations
 
 import pathlib
