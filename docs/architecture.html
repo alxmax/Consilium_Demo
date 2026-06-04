@@ -4821,7 +4821,7 @@ function VoicesSection() {
               <li>Reads the diff and scores risk along 4 dimensions</li>
               <li>Sets <code>tokens_budget</code> for Generator + Control — low risk allows verbose output; high risk tightens it to force concision</li>
               <li>Can raise <code>irreversibility_flag</code> and block the pipeline</li>
-              <li>Holds a unilateral veto at <code>risk &gt; 0.8</code></li>
+              <li>Scores risk; the aggregator applies a unilateral veto when <code>net_concern &gt; 0.8</code></li>
             </ul>
             <div className="voice-card__io">
               <div><span className="io-tag">in</span> diff + context</div>
@@ -4956,7 +4956,7 @@ const CASCADE_ROWS = [
     sourceName: 'Conservator',
     outcome: 'ADAPT_SHORT',
     outcomeKind: 'adapt',
-    action: 'Short-circuit — skip Generator and Control; emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed: false).',
+    action: 'Short-circuit — skip Generator and Control; emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed absent).',
   },
   {
     trigger: 'meta_recommendation: scale_up',
@@ -5041,13 +5041,6 @@ function CascadeSection() {
         </Collapsible>
 
         <div className="note" style={{ marginTop: 24 }}>
-          <span className="note__label">Veto budget</span>
-          <span>
-            Five activations of <code>scale_up</code> or <code>scale_down</code> per month. Past that, soft warning only — the gate softens itself when overused. Once every twenty runs, parallel mode runs silently alongside sequential as an audit; systematic divergence raises the audit frequency to one in five.
-          </span>
-        </div>
-
-        <div className="note" style={{ marginTop: 16 }}>
           <span className="note__label">Headless invariants</span>
           <span>
             When <code>CLAUDE_HEADLESS=1</code> (set by an external orchestrator that invoked <code>claude -p</code>), four points in the workflow drop user-facing prompts and use documented defaults: stale_pendings/missing_feedback_runs are auto-suppressed at bootstrap, irreversibility_flag does not block (the orchestrator has assumed the stake), retry on low confidence is skipped, and unresolved verdicts log as <code>PEND_HEADLESS</code>.
@@ -5111,7 +5104,6 @@ function TwoLayerSection() {
             <div className="two-layer__bits">
               <div className="two-layer__bit">aggregate_sequential() with 8-component cascade</div>
               <div className="two-layer__bit">7 routing outcomes</div>
-              <div className="two-layer__bit">veto budget: 5 activations / month</div>
               <div className="two-layer__bit">default scheme: conservative_override</div>
             </div>
           </div>
@@ -5132,7 +5124,7 @@ const STEPS = [
   {
     id: '0', name: 'bootstrap',
     title: 'Bootstrap',
-    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (override_rate: fraction of runs where the chosen answer was later overridden; veto_rate: fraction where Conservator hard-vetoed all candidates; recurring_keywords: terms that appear repeatedly in chosen approaches). Two signals block until resolved: stale_pendings (PEND outcomes > 30 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 20% of recent runs still PEND), is a soft alert only.',
+    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (override_rate: fraction of runs where the chosen answer was later overridden; veto_rate: fraction where Conservator hard-vetoed all candidates; recurring_keywords: terms that appear repeatedly in chosen approaches). Two signals block until resolved: stale_pendings (PEND outcomes > 2 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 20% of recent runs still PEND), is a soft alert only.',
     plain: 'Wakes up. Reads each voice\'s job description and checks what worked last time — did Conservator keep vetoing? Did past runs tend to end up pending? That context shapes the upcoming deliberation.',
     inputs: ['prompts/voices/*.md', 'runs/*.json', 'FEEDBACK.html'],
     outputs: ['soft priors', 'stale_pendings prompt?'],
@@ -5150,8 +5142,8 @@ const STEPS = [
   {
     id: '1.5', name: 'scope gate',
     title: 'Scope gate',
-    desc: 'Auto-skip when the diff is trivial: ≤1 file, ≤15 lines, and no sensitive paths. The blocklist (auth/, security/, migrations/, .github/workflows/, secrets, .env, Dockerfile, *.tf) marks paths that always require deliberation — a one-liner in a secrets file is not trivial regardless of line count. "Fails open": if the diff is ambiguous or the probe fails, the gate defaults to running deliberation rather than silently skipping it.',
-    plain: 'If the change is tiny and low-risk, skip the full deliberation and go straight to reporting. Anything touching security, migrations, or CI always gets deliberated regardless of size.',
+    desc: 'Auto-skip when the diff is trivial: ≤1 file, ≤15 lines (configurable via scope_gate.json), and no sensitive paths. The blocklist (auth/, security/, migrations/, .github/workflows/, secrets, .env, Dockerfile, *.tf) marks paths that always require deliberation — a one-liner in a secrets file is not trivial regardless of line count. "Fails open": if the diff is ambiguous or the probe fails, the gate defaults to running deliberation rather than silently skipping it.',
+    plain: 'If the change is tiny and low-risk, skip the full deliberation. Anything touching security, migrations, or CI always gets deliberated regardless of size.',
     inputs: ['diff metrics', 'blocklist'],
     outputs: ['should_skip: true → step 6', 'or → continue'],
     scripts: ['scope_gate.py', 'probe_change.py'],
@@ -5210,7 +5202,7 @@ const STEPS = [
   {
     id: '6', name: 'report',
     title: 'Report',
-    desc: 'Telemetry mandate (before build_report): every voice/sub-agent dispatch must accumulate {tokens_in, tokens_out, latency_ms} into telemetry.voices.<name>. telemetry.mode and telemetry.dispatch_count are also required. Runs without telemetry return null from efficiency.py and pollute per-mode averages. validate_report.py enforces Principle #4. log_feedback.py appends a row to FEEDBACK.html.',
+    desc: 'Telemetry mandate (before build_report): every voice/sub-agent dispatch must accumulate {tokens_in, tokens_out, latency_ms} into telemetry.voices.<name>. telemetry.mode is also required. Runs without telemetry return null from efficiency.py and pollute per-mode averages. validate_report.py enforces Principle #4. log_feedback.py appends a row to FEEDBACK.html.',
     plain: 'Writes the final decision to disk. Telemetry per voice is mandatory — without it the run is invisible to cost analysis.',
     inputs: ['everything above', 'telemetry per voice'],
     outputs: ['runs/<ts>.json', 'FEEDBACK.html row'],
@@ -6366,7 +6358,7 @@ function TriasSection() {
 
         <h3 className="h-sub" style={{ marginTop: 40 }}>Cost-aware routing — when Trias auto-downgrades</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', marginBottom: 22 }}>
-          Trias costs 3× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), and only a <strong>critical</strong> change — a blocklist hit (auth, security, migrations, CI workflows, secrets) — proceeds to <strong>full Trias</strong> (3×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
+          Trias costs 3× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), <strong>critical</strong> (blocklist hit: auth, security, migrations, CI, secrets) → <strong>full Trias</strong> (3×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
         </p>
 
         <LazyRoutingDiagram />
@@ -6617,10 +6609,11 @@ function LoopSection() {
           <LoopDiagram />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 28 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginTop: 28 }}>
           <OutcomeChip code="OK" desc="auto-logged, confidence ≥ 0.7" />
           <OutcomeChip code="OVR" desc="user overrode the chosen candidate" />
           <OutcomeChip code="PEND" desc="deferred — retro-closed via stale_pendings" warn />
+          <OutcomeChip code="PEND_HEADLESS" desc="deferred in headless mode (--yes); no interactive prompt possible" warn />
           <OutcomeChip code="BAD" desc="set manually later if the decision failed" warn />
         </div>
 
@@ -6688,7 +6681,7 @@ function LoopDiagram() {
       {[
         { x: 30,  title: 'Deliberation', sub: 'voices · steps 1 → 5', code: '' },
         { x: 280, title: 'Report', sub: 'step 6 · canonical JSON', code: 'build_report.py · validate_report.py' },
-        { x: 530, title: 'FEEDBACK.html', sub: 'append-only outcome log', code: 'OK / OVR / PEND / BAD' },
+        { x: 530, title: 'FEEDBACK.html', sub: 'append-only outcome log', code: 'OK / OVR / PEND / PEND_HEADLESS / BAD' },
         { x: 780, title: 'Priors', sub: 'soft priors for next run', code: 'priors.py' },
       ].map((s, i) => (
         <g key={i}>

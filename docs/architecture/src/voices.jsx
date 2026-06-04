@@ -27,7 +27,7 @@ function VoicesSection() {
               <li>Reads the diff and scores risk along 4 dimensions</li>
               <li>Sets <code>tokens_budget</code> for Generator + Control — low risk allows verbose output; high risk tightens it to force concision</li>
               <li>Can raise <code>irreversibility_flag</code> and block the pipeline</li>
-              <li>Holds a unilateral veto at <code>risk &gt; 0.8</code></li>
+              <li>Scores risk; the aggregator applies a unilateral veto when <code>net_concern &gt; 0.8</code></li>
             </ul>
             <div className="voice-card__io">
               <div><span className="io-tag">in</span> diff + context</div>

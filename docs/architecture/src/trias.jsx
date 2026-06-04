@@ -63,7 +63,7 @@ function TriasSection() {
 
         <h3 className="h-sub" style={{ marginTop: 40 }}>Cost-aware routing — when Trias auto-downgrades</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', marginBottom: 22 }}>
-          Trias costs 3× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), and only a <strong>critical</strong> change — a blocklist hit (auth, security, migrations, CI workflows, secrets) — proceeds to <strong>full Trias</strong> (3×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
+          Trias costs 3× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), <strong>critical</strong> (blocklist hit: auth, security, migrations, CI, secrets) → <strong>full Trias</strong> (3×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
         </p>
 
         <LazyRoutingDiagram />
