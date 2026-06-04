@@ -32,8 +32,6 @@ CLI:
     python scripts/probe_change.py --files src/foo.py src/bar.py
     python scripts/probe_change.py --ref main --churn 30
 """
-# implements: CONSILIUM-PROBE-CHANGE-001
-
 from __future__ import annotations
 
 import argparse
