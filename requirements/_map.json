@@ -137,15 +137,12 @@
       "title": "check_public_leak",
       "intent": "Fails CI if any git-tracked file references the private repo or a local developer path.",
       "contract": [
-        "The source (`PATTERNS` constant + inline comments) is the sole specification for the regex patterns; there is no secondary config or spec file. Comments explain owner-qualified matching and the `_Demo` carve-out.",
+        "The `PATTERNS` constant and its inline comments are the sole specification for the regex patterns; there is no secondary config or spec file.",
         "The skip list (`SKIP_SUFFIX`) is a heuristic hardcoded tuple of 11 extensions. A binary file committed with a `.txt` extension is **not** skipped — it is read with `errors=\"ignore\"` and scanned like any text file.",
-        "When run outside a git repository (`git ls-files` fails), the unhandled `subprocess.CalledProcessError` produces exit code 1 with a Python traceback to stderr — same exit code as a leak find, but distinguishable by the traceback."
+        "When run outside a git repository (`git ls-files` fails), the script raises an unhandled `subprocess.CalledProcessError` and exits 1 with a Python traceback to stderr — same exit code as a leak find, but distinguishable by the traceback."
       ],
       "verify": [
-        "None - all questions resolved.",
-        "The source (`PATTERNS` constant + inline comments) is the sole specification for the regex patterns; there is no secondary config or spec file. Comments explain owner-qualified matching and the `_Demo` carve-out.",
-        "The skip list (`SKIP_SUFFIX`) is a heuristic hardcoded tuple of 11 extensions. A binary file committed with a `.txt` extension is **not** skipped — it is read with `errors=\"ignore\"` and scanned like any text file.",
-        "When run outside a git repository (`git ls-files` fails), the unhandled `subprocess.CalledProcessError` produces exit code 1 with a Python traceback to stderr — same exit code as a leak find, but distinguishable by the traceback."
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -169,12 +166,7 @@
         }
       ],
       "test_exempt": "subprocess git ls-files and filesystem scan — integration-only",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-CONFIDENCE-001",
