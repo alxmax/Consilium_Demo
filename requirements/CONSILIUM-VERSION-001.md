@@ -1,6 +1,6 @@
 ﻿---
 id: CONSILIUM-VERSION-001
-status: confirmed
+status: deprecated
 layer: bus
 owner: auto
 depends_on: []
@@ -23,7 +23,9 @@ Provides two distinct version provenance fields that the deliberation pipeline s
 - exit code 0 in all cases (fails open); returns `''` or `'unknown'` when git is unavailable rather than erroring
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- `consilium_ref()` returns `''` when the working tree has uncommitted tracked changes — does 'uncommitted tracked changes' include staged-but-not-committed changes, or only unstaged modifications? The distinction matters for CI environments that stage files during build.
+- `prompts_changed_since` returns 0 silently for unresolvable refs — but a caller that passes a stale ref (e.g., a deleted branch) would receive 0 and incorrectly conclude no prompts changed; is silent 0 the right behavior, or should there be an out-of-band signal indicating resolution failure?
+- The `--drift REF` flag diffs only `prompts/` and `modes/` — but `scripts/aggregator.py` and `scripts/confidence.py` also affect deliberation behavior; is restricting drift detection to prompts and modes intentional, or an omission?
 
 ## Acceptance (= tests)
 - `consilium_version()` returns a non-empty string and never raises, even when git is absent or the repo has no tags.

@@ -26,7 +26,9 @@ Reduces cross-voice context contamination in the sequential deliberation pipelin
 - exit code 0 on success; non-zero on argument or JSON parse errors
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- In `--for conservator` mode, 'valid Control verdicts' are intersected with Generator candidates — what happens when a Generator candidate has no matching Control verdict (e.g., Control was partial)? Is the candidate included (with no verdict data), excluded, or is this treated as an error?
+- The `--truncate-text` mode approximates tokens as '4 chars/token' — is this approximation documented as intentionally coarse, and is there a risk of over- or under-truncation for non-Latin scripts (e.g., Romanian diacritics or code with multi-byte chars)?
+- The truncation marker is 'appended when the text is cut' — what is the exact marker string, and is it defined in a shared constant or duplicated across scripts that consume the truncated output?
 
 ## Acceptance (= tests)
 - Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.

@@ -25,7 +25,9 @@ Implements five distinct aggregation schemes that merge the scored outputs of th
 - exit code non-zero on invalid input (raised `ValueError`)
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- When `conservative_override` is used and ALL candidates are vetoed with `auto_relax=False`, what is the expected output — `chosen: null` with no `retry_suggested`, or a different error shape?
+- The `sequential` scheme operates on 'raw voice output dicts rather than numeric scores' — is the input schema for sequential mode formally defined anywhere, and what happens when the input contains both numeric scores and raw dicts?
+- The veto cascade in `aggregate_sequential()` lists seven routing outcomes, but the acceptance tests only cover BLOCK (glossary_fail) and ESCALATE — is the behavior for REWORK, SHORT-CIRCUIT (scale_down), ADAPT_EXTENDED (scale_up), BLOCK (irreversibility), and plain AGGREGATE tested or specified anywhere?
 
 ## Acceptance (= tests)
 - Given a candidates list where the Conservator score of every candidate exceeds `veto_threshold` and `auto_relax=True`, the output contains `chosen: null` and a non-empty `retry_suggested` block.

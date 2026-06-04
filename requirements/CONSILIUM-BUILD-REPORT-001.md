@@ -26,7 +26,9 @@ Assembles the canonical deliberation report shape from the intermediate voice an
 - exit code 2 on malformed JSON input
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The description says skipped reports set `pipeline_executed: false`, but the acceptance test says `pipeline_executed` is 'absent or false' — which is the normative form? Does `validate_report.py` accept either, or only one?
+- For the `why_not` derivation for non-chosen candidates, is the source of the text defined (Control issues only, Conservator risk note, or both combined), and what is emitted when a non-chosen candidate has no Control issues and no Conservator risk note?
+- When both `--input` file and stdin carry data, which takes precedence? The description says 'stdin or `--input` file' without specifying conflict resolution.
 
 ## Acceptance (= tests)
 - Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.

@@ -34,7 +34,9 @@ Enforces parity between the authoritative behavior defined in SKILL.md and `scri
 - exit code 0 when all invariants pass; 1 when one or more are violated; 2 when a required input file is missing
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The test-suite coverage check requires every `scripts/test_*.py` to appear in both `ci.yml` and the run-consilium driver — what is the exact string-matching rule used (filename stem, full path, partial match), and does the check distinguish between a file being listed but commented-out versus not present at all?
+- The legacy MODE alias removal milestone check enforces 'dated removal comments accompany deprecated aliases' — what is the required date format and comment syntax? Is a future date accepted, or must the date have already passed?
+- When a check fails with exit code 1 and multiple invariants are violated simultaneously, does the script print all violations before exiting, or stop at the first failure?
 
 ## Acceptance (= tests)
 - When all invariant patterns hold and `confidence.py VOTE_PATTERN_CONFIDENCE` matches `trias.jsx TRIAS_OUTCOMES` for patterns 3-0, 2-1, and 2-0, the script exits 0 and prints the OK message.

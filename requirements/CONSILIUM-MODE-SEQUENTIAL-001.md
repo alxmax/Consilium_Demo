@@ -19,7 +19,9 @@ depends_on: [CONSILIUM-VOICE-GENERATOR-001, CONSILIUM-VOICE-CONTROL-001, CONSILI
 - The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as "WEAK" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`.
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The `confidence_floor: 0.70` is described as 'advisory' and 'NOT a hard gate' — but CONSILIUM-LOG-FEEDBACK-001 enforces a 0.70 confidence gate on `--outcome OK`; is this the same threshold operationally applied at two different points, and does below-floor confidence in Sequential prevent logging OK without `--force-override`?
+- The veto-budget for `meta_recommendation` is '5 activations per month; on exhaustion the gate becomes a soft warning only' — where is this budget tracked, and what resets it at month boundaries? This appears unimplemented; is it aspirational or enforced?
+- The auto-parallel cross-check triggered on `magnitude: critical AND reversibility: irreversible` — is this distinct from the 1-in-20 silent parallel audit, and if so, is there a separate state machine or counter for it?
 
 ## WHAT — Notes & known limitations (informative)
 - Role separation in Sequential is prompt-based, not architectural: `strip_context.py` removes the prior prompt but does not clear the model's in-context memory. True voice isolation requires Parallel sub-agents.

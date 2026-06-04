@@ -21,7 +21,9 @@ depends_on: []
 - The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors.
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The `adversarial_<short_id>` candidate is included when 'the change touches shared/core code or a function with more than 3 external callers' — how does the Generator voice determine the external caller count without file access? Is this a heuristic self-assessment, and if so, is the 3-caller threshold reliably applied?
+- The voice-score handicap of 0.5 applied to `adversarial_*` and `do_nothing` is applied 'downstream by `build_report.py`' — but could a Generator output that explicitly sets a score for these candidates override the downstream handicap?
+- The `unconventional_*` omission rule allows omission when 'the change is mechanically trivial' — is 'mechanically trivial' defined anywhere, and does it overlap with Conservator's `meta_recommendation: scale_down`?
 
 ## WHAT — Notes & known limitations (informative)
 
