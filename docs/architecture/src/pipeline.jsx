@@ -4,8 +4,8 @@ const STEPS = [
   {
     id: '0', name: 'bootstrap',
     title: 'Bootstrap',
-    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — override rate, veto rate, recurring keywords, pending entries. Two signals can block until resolved (stale_pendings, missing_feedback_runs); a third, pend_pressure, is only a soft alert — recorded, never blocking.',
-    plain: 'Wakes up. Reads each voice\'s job description and checks what worked last time.',
+    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (override_rate: fraction of runs where the chosen answer was later overridden; veto_rate: fraction where Conservator hard-vetoed all candidates; recurring_keywords: terms that appear repeatedly in chosen approaches). Two signals block until resolved: stale_pendings (PEND outcomes > 30 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 20% of recent runs still PEND), is a soft alert only.',
+    plain: 'Wakes up. Reads each voice\'s job description and checks what worked last time — did Conservator keep vetoing? Did past runs tend to end up pending? That context shapes the upcoming deliberation.',
     inputs: ['prompts/voices/*.md', 'runs/*.json', 'FEEDBACK.html'],
     outputs: ['soft priors', 'stale_pendings prompt?'],
     scripts: ['priors.py'],
@@ -22,8 +22,8 @@ const STEPS = [
   {
     id: '1.5', name: 'scope gate',
     title: 'Scope gate',
-    desc: 'Auto-skip when the diff is trivial: ≤1 file, ≤15 lines, no sensitive paths (auth/, security/, migrations/, .github/workflows/, secrets, .env, Dockerfile, *.tf). Fails open — non-diff tasks bypass entirely.',
-    plain: 'If the change is a typo or one-liner, skip the full deliberation.',
+    desc: 'Auto-skip when the diff is trivial: ≤1 file, ≤15 lines, and no sensitive paths. The blocklist (auth/, security/, migrations/, .github/workflows/, secrets, .env, Dockerfile, *.tf) marks paths that always require deliberation — a one-liner in a secrets file is not trivial regardless of line count. "Fails open": if the diff is ambiguous or the probe fails, the gate defaults to running deliberation rather than silently skipping it.',
+    plain: 'If the change is tiny and low-risk, skip the full deliberation and go straight to reporting. Anything touching security, migrations, or CI always gets deliberated regardless of size.',
     inputs: ['diff metrics', 'blocklist'],
     outputs: ['should_skip: true → step 6', 'or → continue'],
     scripts: ['scope_gate.py', 'probe_change.py'],
@@ -55,8 +55,8 @@ const STEPS = [
   {
     id: '5b', name: 'confidence',
     title: 'Confidence',
-    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. A run below floor signals the mode did not deliver value for the cost — logged as WEAK in FEEDBACK.html. ≥ 0.7 → continue. < 0.7 (i.e. ∈ [0.0, 0.7]) → auto-triggers the Skeptic (if the mode supports it) and runs the single retry-context pass (Step 5d); if still < 0.7, ask the user.',
-    plain: 'How sure are the voices? Each mode has a confidence floor it should clear — if it doesn\'t, that\'s a signal the mode was wrong for this task.',
+    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Separately, when confidence ∈ [0.0, 0.7] the skeptic_on_chosen mechanism auto-triggers (if composed) and retry_context runs at Step 5d — this threshold is fixed at 0.7 regardless of mode.',
+    plain: 'How confident are the voices in the winner? Each mode has a floor — if it falls below, that\'s a signal (not a hard stop). The more a mode costs, the higher its expected confidence bar.',
     inputs: ['ranking', 'voice variances', 'mode'],
     outputs: ['confidence ∈ [0, 1]', 'below_floor: bool'],
     scripts: ['confidence.py'],

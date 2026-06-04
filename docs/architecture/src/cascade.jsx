@@ -66,8 +66,8 @@ function CascadeSection() {
         <SectionHead
           num="05"
           eyebrow="Aggregation routing"
-          title="Before voting: an eight-component cascade."
-          lede="The aggregator first checks for triggers that should short-circuit the vote — irreversibility, fundamental disagreement, scope mismatches. Only when nothing fires does the actual aggregation run. The eight design components compile into the seven routing outcomes below — the table lists those outcomes, not the components."
+          title="Before voting: a seven-outcome safety check."
+          lede="Before computing any score, the aggregator runs through a priority-ordered checklist of seven conditions. Each maps to a routing outcome. The first condition that fires determines what happens — BLOCK, REWORK, ADAPT, ESCALATE, or normal AGGREGATE. Most runs reach the last row."
         />
 
         <div className="tldr">
