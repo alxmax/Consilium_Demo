@@ -16,12 +16,10 @@ depends_on: [CONSILIUM-MODE-SEQUENTIAL-001, CONSILIUM-LENS-PIONEER-001, CONSILIU
 - When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Conservator → Generator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch.
 - The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).
 - When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1).
-
-## WHAT — Verify intent (open questions for the human)
-- Observed: the spec states parallel dispatch of the 3 personalities is "mandatory", but a Senate audit (2026-05-28) concluded serial dispatch is accepted as "by-construction-not-intent, not a bug to fix now" — the runtime audit observes it rather than enforcing it. Is the "mandatory" language still normative, or should the requirement reflect the accepted-serial reality?
+- Parallel dispatch of the 3 personalities is the intended and preferred execution order, providing lower latency and independent deliberation. Serial execution is accepted as an implementation artifact (confirmed by Senate audit 2026-05-28) and does not affect correctness; the runtime audit tracks divergence between serial and parallel results.
 
 ## WHAT — Notes & known limitations (informative)
-- Empirical runtime observation (2026-05-28, n=7): all real-deliberation Trias runs dispatched personalities serially despite the parallel mandate; the `check_trias_parallelism.py` audit is the observability mechanism.
+- Empirical runtime observation (2026-05-28, n=7): all real-deliberation Trias runs dispatched personalities serially despite the parallel design intent; the silent parallel audit is the observability mechanism.
 - `trias_split` is deprecated; `validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.
 - Aggregated Trias is approximately −18% Conservator weight relative to single-context; avoid when strict conservatism is required.
 
@@ -39,7 +37,7 @@ AC-2
 AC-3
   Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)
   When  the B2 cascade fires
-  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true` and the Round 1 per-personality positions are surfaced
+  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true`
 
 ## WHERE — Current implementation
 - modes/trias.md

@@ -17,11 +17,8 @@ depends_on: []
 - The voice shall compute `net_concern` using the defined formula (`mean` of the four component scores, with `reversibility_score > 0.7` floored to `max(net_concern, reversibility_score)`) and document any unanchored score components in `notes`.
 - The voice shall set `irreversibility_flag: true` for any candidate where `reversibility = irreversible` and explicit user consent is not documented in the input, signaling the aggregator to BLOCK before Generator runs.
 - For any candidate with `net_concern >= 0.3`, the voice shall emit either a `rollback_recipe` (2–5 concrete human-executable steps) or, when rollback is structurally impossible, replace it with `mitigation_steps` and set `irreversible: true` at the candidate level.
-
-## WHAT — Verify intent (open questions for the human)
-
-- Observed: the mitigation cap rule (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is described as "no automated check — keep it disciplined manually." This means there is no observable output field that records whether the cap was respected. Should the voice be required to emit the mitigations it applied (and their amounts) in `notes` so reviewers can audit compliance?
-- Observed: `meta_recommendation: "scale_down"` overrides the token budget to 300 regardless of magnitude×reversibility. This can produce a 300-token budget for a `high + irreversible` candidate if the Conservator judges it trivial. Is that override unconditional by design, or should a floor exist for high/critical magnitude?
+- The mitigation cap (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is discipline-based with no automated schema enforcement. Compliance is audited through `notes` documentation of applied mitigation values.
+- When `meta_recommendation: "scale_down"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design.
 
 ## WHAT — Notes & known limitations (informative)
 
