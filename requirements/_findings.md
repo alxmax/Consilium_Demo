@@ -1,6 +1,6 @@
 # Open findings
 
-> 123 open verify-intent item(s) across 41 requirement(s), aggregated from each requirement's `## WHAT — Verify intent` section by `reqmap.py findings`.
+> 93 open verify-intent item(s) across 31 requirement(s), aggregated from each requirement's `## WHAT — Verify intent` section by `reqmap.py findings`.
 >
 > These are open questions raised while reconstructing intent from code - NOT confirmed bugs. Resolve each by fixing the code or promoting the behavior into a Contract line. Run the AI triage pass (see SKILL.md) and drop a `_findings_triage.json` beside this file for a verified, prioritized view.
 
@@ -11,18 +11,6 @@
 - When `conservative_override` is used and ALL candidates are vetoed with `auto_relax=False`, what is the expected output — `chosen: null` with no `retry_suggested`, or a different error shape?
 - The `sequential` scheme operates on 'raw voice output dicts rather than numeric scores' — is the input schema for sequential mode formally defined anywhere, and what happens when the input contains both numeric scores and raw dicts?
 - The veto cascade in `aggregate_sequential()` lists seven routing outcomes, but the acceptance tests only cover BLOCK (glossary_fail) and ESCALATE — is the behavior for REWORK, SHORT-CIRCUIT (scale_down), ADAPT_EXTENDED (scale_up), BLOCK (irreversibility), and plain AGGREGATE tested or specified anywhere?
-
-## CONSILIUM-AUDIT-COUNTER-001 - audit_counter  (3)
-
-- The tightening rule says 'two or more divergences in the last five audits' — does the rolling window of five count all audits or only those at the current frequency? What happens if frequency already tightened and only 3 audits have been recorded at the new frequency?
-- The relaxation rule says 'five consecutive non-divergent audits while frequency=5' — does 'consecutive' mean no divergent entry anywhere in the window, or strictly in order with no gaps? Is the state reset if the system is reinstalled or the state file is deleted?
-- When `--increment` is called with `--mode` set to a non-sequential mode (e.g. trias), is the counter still bumped, and is the frequency logic applied the same way? The description says 'every N sequential runs' but the flag accepts arbitrary mode labels.
-
-## CONSILIUM-AUDIT-FEEDBACK-001 - audit_feedback  (3)
-
-- The 'backfill' PEND row uses 'the same entry-building logic as `log_feedback.py`' — does that mean it also enforces the 0.70 confidence gate, or is that gate bypassed for backfill rows since no outcome is being claimed?
-- When multiple missing runs are backfilled in one pass, are they appended in a defined order (e.g., by run timestamp, alphabetically by filename), or is the order undefined?
-- What happens when `--check` is run and FEEDBACK.html does not exist at all — does it treat every run as missing and exit 1, or exit 0 because there are no rows to compare against?
 
 ## CONSILIUM-BUILD-REPORT-001 - build_report  (3)
 
@@ -48,12 +36,6 @@
 - The `check_mode_floor` helper exempts structurally decisive Trias vote patterns (3-0, 2-1, 2-0) from the WEAK flag — is 2-0 truly 'structurally decisive', given that it represents a personality veto and only 2 of 3 personalities chose a candidate? Is this exemption intentional?
 - The Steward dissent penalty is −0.10 and abstain penalty is −0.15 — are these penalties applied only for Steward, or for any dissenting/abstaining personality? The description specifies 'Steward-specific' but does not explain why Pioneer or Architect dissent carries no penalty.
 
-## CONSILIUM-EFFICIENCY-001 - efficiency  (3)
-
-- The metric is `total_tokens / ok_count` (lower is better) — but a Trias OK represents deeper deliberation than a Sequential OK; is there any normalization or weighting applied per mode, or is the raw metric always emitted as-is with only a caveat string?
-- `tokens_per_dispatch` is 'normalized by number of voice calls' — how is the voice-call count determined for skipped runs (which have 0 voice calls), and are skipped runs included or excluded from this sub-metric?
-- The `--since YYYY-MM-DD` filter 'filters out runs whose timestamp or filename stem sorts before the given date' — if the timestamp inside the run JSON and the filename stem disagree (e.g., a renamed file), which source takes precedence?
-
 ## CONSILIUM-FEEDBACK-001 - feedback  (3)
 
 - The parser supports three HTML row layouts for backward compatibility — when a row matches multiple layouts (e.g., an 8-cell row that also satisfies the 7-cell count rule), which layout takes priority, and is there a defined precedence order?
@@ -65,12 +47,6 @@
 - The stub-insertion heuristic 'inserts `raise NotImplementedError` after each `def`/`async def`' — what happens when the function already contains a `pass` or `...` body, or when there are nested functions? Is the original file always fully restored on error?
 - In plan mode the script 'emits a JSON plan for the orchestrating agent to consume' — is there a defined handoff schema between the plan JSON and the consilium-implement-subagent, and is that schema part of this requirement's contract?
 - The exit code for `do_nothing`/`skipped` chosen approaches is 1, the same as gate failure — how does the caller distinguish between 'no pipeline needed' and 'gate failed'? Is that distinction intentional or an unresolved ambiguity?
-
-## CONSILIUM-INFER-PIPELINE-001 - infer_pipeline  (3)
-
-- The lookup table maps every `(magnitude, reversibility)` pair to a step list — is this table fully enumerated in the implementation, and what happens for pairs not in the table (e.g., `magnitude=trivial` with `reversibility=complete`)? Does the fallback to voice_scores scalar cover all such gaps?
-- The description says the script 'never infers `irreversible` from the scalar because a floored net_concern is ambiguous' — is this constraint tested, and what step list is produced when the scalar is high but reversibility cannot be inferred?
-- User rejections are persisted as `pipeline_rejected.json` events — is there any downstream consumer of these events (e.g., priors.py, efficiency.py), and if not, is the persistence intentional or a placeholder for future use?
 
 ## CONSILIUM-LENS-ARCHITECT-001 - architect lens  (3)
 
@@ -138,12 +114,6 @@
 - `weighted_bad_rate` is listed in the signals but not defined — what is the weighting scheme (recency, outcome type, confirmed vs. unconfirmed rows), and how does it differ from plain `bad_rate`?
 - `STALE_PEND_DAYS` is referenced but not pinned in the requirement — what is the value, is it hardcoded or configurable, and does the requirement intend to pin it?
 
-## CONSILIUM-PROBE-CHANGE-001 - probe_change  (3)
-
-- The default mode 'diffs staged + unstaged changes against HEAD' — does this include untracked files, or only tracked modified files? The behavior for untracked files is relevant when a developer adds a new file without staging it.
-- `--ref` and `--range` are 'mutually exclusive' — what is the exact error output and exit code when both are supplied simultaneously?
-- The `--churn N` per-file commit frequency is computed 'over the last N days via `git log --since`' — is the commit count for each file the number of commits touching that file specifically, or total repo commits in the window?
-
 ## CONSILIUM-RENDER-FEEDBACK-HTML-001 - render_feedback_html  (3)
 
 - The `(calc)` token estimate uses 'the median tokens-per-candidate of peer runs' — how are 'peer runs' defined (same mode, same date range, all runs)? An undefined peer set makes the estimate non-reproducible.
@@ -168,29 +138,11 @@
 - When `--signals-stdin` is used, the `paths` field is accepted — but the blocklist check requires path matching; is the `paths` field compared against the blocklist the same way as git-diff paths, and what format are paths expected in (relative to repo root, absolute, etc.)?
 - The gate 'fails open' on probe failures — but `CONSILIUM_FORCE_FULL=1` also returns `should_skip=false`; do both paths produce identical JSON shapes, or does the forced-full path produce a different reason field?
 
-## CONSILIUM-STABILITY-CHECK-001 - stability_check  (3)
-
-- The 0.80 veto boundary is hard-coded as the reference for the 'uncertain band' analysis — is this value the same as the `veto_threshold` in `aggregator.py`, and if aggregator's threshold is changed, does stability_check need to be updated in sync?
-- The Bug #1 verdict threshold of 0.10 mean pstdev is a fixed constant — is this threshold empirically derived or arbitrary? Should the requirement document who can change it and under what circumstances?
-- In compare mode, what constitutes a 'same input' constraint when comparing two runs? The description says 'two runs on the same input' but there is no enforcement or input-hash comparison — is this purely a human convention?
-
 ## CONSILIUM-STRIP-CONTEXT-001 - strip_context  (3)
 
 - In `--for conservator` mode, 'valid Control verdicts' are intersected with Generator candidates — what happens when a Generator candidate has no matching Control verdict (e.g., Control was partial)? Is the candidate included (with no verdict data), excluded, or is this treated as an error?
 - The `--truncate-text` mode approximates tokens as '4 chars/token' — is this approximation documented as intentionally coarse, and is there a risk of over- or under-truncation for non-Latin scripts (e.g., Romanian diacritics or code with multi-byte chars)?
 - The truncation marker is 'appended when the text is cut' — what is the exact marker string, and is it defined in a shared constant or duplicated across scripts that consume the truncated output?
-
-## CONSILIUM-TRACE-GRAPH-001 - trace_graph  (3)
-
-- A 'prior-deliberation passthrough run produces a two-node graph `PRIOR -> REP`' — but a passthrough run may still have metadata (confidence, chosen approach) worth showing; is the two-node minimal graph intentional, or should it show the passthrough's source run reference?
-- For a sequential run with a Skeptic, the graph shows 'an advisory edge from AGG to SKP and from SKP to REP' — but when the Skeptic overrides the chosen candidate (`--skeptic-can-override`), should the edge semantics change (e.g., a different edge label or a direct replacement edge)?
-- The output is described as 'valid Mermaid' — is there a validation step in the acceptance test, or is correctness only confirmed by visual inspection at mermaid.live?
-
-## CONSILIUM-USAGE-001 - usage  (3)
-
-- For Trias or parallel mode runs, latency reflects 'the maximum voice latency rather than the sum' — but Trias runs have 3 sub-agents each running 3 voices; is 'voice latency' the latency per sub-agent's full Sequential run, or per individual voice call within each sub-agent?
-- The latency spike detection flags 'any voice whose latency exceeds 2x the median of its peers' — are 'peers' defined as all voices in the same run, or the same named voice across all runs in the dataset?
-- `--last N` restricts to 'the most-recent N run files' — is 'most-recent' determined by file modification time, filename sort order (which encodes timestamps), or the `telemetry.timestamp` field inside the JSON?
 
 ## CONSILIUM-UTILS-001 - utils  (3)
 
@@ -203,12 +155,6 @@
 - The requirement says `chosen_approach` may be 'null (conservative-override veto case)' — but are there other valid null cases (e.g., a BLOCK outcome from the glossary_fail path), and does the validator distinguish between intentional nulls and missing fields?
 - The check for `deliberation_log` requires 'an aggregate step whose `result` is a dict (not a string narrative)' — what other steps must be present in `deliberation_log` for a non-skipped report, and are missing steps (e.g., a report missing the `conservator` step) caught by the validator?
 - Telemetry 'counts (token/latency) are non-negative ints where present' — does the validator reject float values (e.g., `1500.0` instead of `1500`), and is the 'where present' qualifier precisely defined (which telemetry sub-fields are required vs. optional)?
-
-## CONSILIUM-VERSION-001 - version  (3)
-
-- `consilium_ref()` returns `''` when the working tree has uncommitted tracked changes — does 'uncommitted tracked changes' include staged-but-not-committed changes, or only unstaged modifications? The distinction matters for CI environments that stage files during build.
-- `prompts_changed_since` returns 0 silently for unresolvable refs — but a caller that passes a stale ref (e.g., a deleted branch) would receive 0 and incorrectly conclude no prompts changed; is silent 0 the right behavior, or should there be an out-of-band signal indicating resolution failure?
-- The `--drift REF` flag diffs only `prompts/` and `modes/` — but `scripts/aggregator.py` and `scripts/confidence.py` also affect deliberation behavior; is restricting drift detection to prompts and modes intentional, or an omission?
 
 ## CONSILIUM-VOCABULARY-MAP-001 - vocabulary_map  (3)
 
@@ -239,12 +185,6 @@
 - 'Validation failure results in silent discard' — is there any telemetry or log entry written when a Skeptic output is silently discarded, so that the development team can detect prompt regressions that cause systematic silent discard?
 - `meta_scope_mismatch` requires `addressable: unaddressable` — but the description says the failure mode is 'resolvable in under 10 seconds by a human'; does `unaddressable` make sense when the human can resolve it? Should this failure mode use a different `addressable` value?
 - When `can_object: true` but `concrete_concerns` has only 1 entry and `quoted_scenario` is null, the output is 'discarded silently' — does the orchestrator log the discard reason, or is the discard completely invisible to the pipeline report?
-
-## CONSILIUM-VOTE-DEGENERACY-001 - vote_degeneracy  (3)
-
-- The scan uses 'a text-based scan, not `json.loads`' to extract `vote_pattern` — what is the exact regex pattern used, and could it produce false positives from runs that contain the string `vote_pattern` in a note or rationale field but are not Trias runs?
-- The 2-0 veto pattern is tracked separately as `veto_rate` — but in CONSILIUM-MODE-TRIAS-001, 2-0 is listed as a confidence value (0.70); is a 2-0 vote pattern always a veto, or can it represent two personalities choosing one candidate and the third abstaining?
-- The threshold of 0.85 and minimum N of 20 are defaults but configurable — is there any guidance on what values are appropriate for different corpus sizes, or is the choice left entirely to the caller?
 
 ## SKILL-RUN-CONSILIUM-001 - run-consilium driver  (3)
 

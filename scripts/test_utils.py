@@ -104,7 +104,7 @@ class TestValidateKeys(unittest.TestCase):
 
     def test_non_dict_raises(self):
         with self.assertRaises((ValueError, SystemExit)):
-            validate_keys("not a dict", ["x"], "ctx")
+            validate_keys("not a dict", ["x"], "ctx")  # type: ignore[arg-type]
 
     def test_empty_required_passes_any_dict(self):
         validate_keys({"a": 1}, [], "ctx")

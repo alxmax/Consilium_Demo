@@ -142,6 +142,7 @@ class TestVoiceScores(unittest.TestCase):
         conservator = {"scores": [{"id": "A", "regression_risk": {"net_concern": 0.25}}]}
         scores = _voice_scores_for("A", control, conservator)
         self.assertIsNotNone(scores)
+        assert scores is not None
         self.assertIn("control", scores)
         self.assertIn("conservator", scores)
         self.assertIn("generator", scores)
@@ -155,24 +156,28 @@ class TestVoiceScores(unittest.TestCase):
         control = {"verdicts": [{"id": "A", "valid": False, "issues": []}]}
         conservator = {"scores": [{"id": "A"}]}
         scores = _voice_scores_for("A", control, conservator)
+        assert scores is not None
         self.assertEqual(scores["control"], 0.0)
 
     def test_generator_score_do_nothing(self):
         control = {"verdicts": [{"id": "do_nothing", "valid": True, "issues": []}]}
         conservator = {"scores": [{"id": "do_nothing"}]}
         scores = _voice_scores_for("do_nothing", control, conservator)
+        assert scores is not None
         self.assertEqual(scores["generator"], 0.5)
 
     def test_generator_score_normal(self):
         control = {"verdicts": [{"id": "A", "valid": True, "issues": []}]}
         conservator = {"scores": [{"id": "A"}]}
         scores = _voice_scores_for("A", control, conservator)
+        assert scores is not None
         self.assertEqual(scores["generator"], 1.0)
 
     def test_conservator_score_missing(self):
         control = {"verdicts": [{"id": "A", "valid": True, "issues": []}]}
         conservator = {"scores": [{"id": "A"}]}
         scores = _voice_scores_for("A", control, conservator)
+        assert scores is not None
         self.assertEqual(scores["conservator"], 0.5)
 
 
@@ -242,7 +247,9 @@ class TestConservatorRisk(unittest.TestCase):
 class TestCandidateById(unittest.TestCase):
     def test_find_candidate_by_id(self):
         items = [{"id": "A", "name": "Alice"}, {"id": "B", "name": "Bob"}]
-        self.assertEqual(_candidate_by_id(items, "A")["name"], "Alice")
+        result = _candidate_by_id(items, "A")
+        assert result is not None
+        self.assertEqual(result["name"], "Alice")
 
     def test_candidate_not_found_returns_none(self):
         self.assertIsNone(_candidate_by_id([{"id": "A"}], "Z"))
