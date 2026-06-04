@@ -1,7 +1,7 @@
 ---
 test_exempt: "integration harness — acceptance validated by run-consilium smoke + pipeline commands, not unit tests"
 id: SKILL-RUN-CONSILIUM-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 depends_on: [CONSILIUM-VALIDATE-REPORT-001, CONSILIUM-AGGREGATOR-001, CONSILIUM-CONFIDENCE-001]

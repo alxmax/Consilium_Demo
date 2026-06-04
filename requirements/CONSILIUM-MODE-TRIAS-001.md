@@ -1,7 +1,7 @@
 ---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-MODE-TRIAS-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 depends_on: [CONSILIUM-MODE-SEQUENTIAL-001, CONSILIUM-LENS-PIONEER-001, CONSILIUM-LENS-ARCHITECT-001, CONSILIUM-LENS-STEWARD-001, CONSILIUM-PERSONALITIES-001]

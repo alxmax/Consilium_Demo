@@ -1,7 +1,7 @@
 ---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-CONSERVATOR-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 depends_on: []

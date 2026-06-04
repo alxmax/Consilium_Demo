@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-EFFICIENCY-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 test_exempt: "reads runs/ JSON and FEEDBACK.html at test time — integration-only"

@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-CHECK-PUBLIC-LEAK-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 test_exempt: "subprocess git ls-files and filesystem scan — integration-only"
