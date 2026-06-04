@@ -1759,7 +1759,7 @@ def main():
     # `-X utf8`. Guarded: reconfigure() is Python 3.7+ and may be absent on exotic streams.
     for _stream in (sys.stdout, sys.stderr):
         try:
-            _stream.reconfigure(encoding="utf-8")
+            _stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
         except (AttributeError, ValueError, OSError):
             pass
     ap = argparse.ArgumentParser(prog="reqmap")
