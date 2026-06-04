@@ -17,11 +17,12 @@ depends_on: [CONSILIUM-MODE-SEQUENTIAL-001, CONSILIUM-VOICE-SKEPTIC-001]
 - In Dialectic, the Skeptic is always unconditional. The `confidence ∈ [0.0, 0.7]` auto-trigger conditions in `skeptic_on_chosen.md` apply only to `skeptic_on_chosen` as a composable flag over other base modes, not to Dialectic's hardwired Skeptic step. Dialectic defines a fixed pipeline where the Skeptic is mandatory regardless of confidence band.
 - The total cost shall be 1.33× Sequential (1× Sequential + 1 Skeptic sub-agent); telemetry shall record `mode: "dialectic"` and, when the Skeptic catches a constraint, `skeptic_caught_constraint: true` in the report.
 - The Skeptic's verdict is advisory by default and can override `chosen` only when `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`.
+- When dispatched on a `scale_down` trivial-direct chosen, the Skeptic receives only `chosen + success_criterion + code context` (same input shape as any Skeptic dispatch) — not the full voice bundle; Gen+Ctrl outputs are absent because they were skipped.
+- The `1.33× Sequential` cost multiplier is an informational estimate, not a contractual bound; it is not enforced by any gate.
+- When `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`, override means the orchestrator presents the report's existing alternatives to the user and asks whether to change the choice — `chosen` is not automatically replaced and no re-deliberation is triggered.
 
 ## WHAT — Verify intent (open questions for the human)
-- AC-2 says the Skeptic is dispatched 'on the trivial-direct chosen' when Sequential short-circuits via `scale_down` — but the trivial-direct path produces a minimal report without full voice outputs; does the Skeptic receive a full deliberation bundle or only the scale_down stub, and is the Skeptic's challenge meaningful in that case?
-- The cost is specified as '1.33× Sequential' — is this a contractual bound (implementation must not exceed it) or an informational estimate? What happens to cost accounting when the Skeptic sub-agent itself has a long context due to code-specific injection?
-- When `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign` — does override mean the `chosen` field in the report is replaced with a new candidate ID, or that the report is marked for re-deliberation? What is the exact output shape in the override case?
+- None - all questions resolved.
 
 ## WHAT — Notes & known limitations (informative)
 - The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched.

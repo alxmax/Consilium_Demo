@@ -18,16 +18,14 @@ risk: 1
 - CLI flags: `--recent N`, `--runs`
 
 ## Description
-Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats report over logged deliberation outcomes. The `parse_feedback` function is a shared utility imported by `priors.py`, `log_feedback.py`, `efficiency.py`, and deprecated scripts; it supports three HTML row layouts (attribute-based with `data-field`, and two legacy positional cell-count variants) for backward compatibility. When invoked as a CLI tool it prints total logged uses, per-outcome counts, overall success rate excluding pending entries, recent overrides, and optionally a breakdown of runs-on-disk by aggregation scheme. It exists to give the developer a fast, human-readable health check on the skill's real-world usefulness without opening the HTML journal manually.
+Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats report over logged deliberation outcomes. The `parse_feedback` function is a shared utility imported by `priors.py`, `log_feedback.py`, `efficiency.py`, and deprecated scripts; it supports three HTML row layouts (attribute-based with `data-field`, and two legacy positional cell-count variants) for backward compatibility. Layout precedence is strict: attribute-based (`data-field`) is tried first; positional fallback only applies when no `data-field` attributes are found, matched by exact cell count (8 → 7 → 6 → skip). Rows with an unrecognized `outcome` field are dropped entirely — they are excluded from both the total count and all outcome stats. The success-rate denominator is `OK + BAD + OVR` only; both `PEND` and `PEND_HEADLESS` are excluded. When invoked as a CLI tool it prints total logged uses, per-outcome counts, overall success rate excluding pending entries, recent overrides, and optionally a breakdown of runs-on-disk by aggregation scheme. It exists to give the developer a fast, human-readable health check on the skill's real-world usefulness without opening the HTML journal manually.
 
 ## Output
 - stdout: multi-line stats report (total uses, outcome breakdown, success rate, recent overrides, optional run scheme counts)
 - exit code 0 always
 
-## WHAT — Verify intent (open questions for the human)
-- The parser supports three HTML row layouts for backward compatibility — when a row matches multiple layouts (e.g., an 8-cell row that also satisfies the 7-cell count rule), which layout takes priority, and is there a defined precedence order?
-- Rows with an unrecognized `outcome` field are 'silently skipped' — does this mean they are dropped from all stats (including total count), or counted in total but excluded from outcome breakdown? The distinction affects the success-rate calculation.
-- The success rate excludes `PEND` entries — does it also exclude `PEND_HEADLESS`? The description only mentions excluding 'pending entries' but does not explicitly enumerate `PEND_HEADLESS`.
+## WHAT — Verify intent
+- None - all questions resolved.
 
 ## Acceptance (= tests)
 - `parse_feedback` returns an empty list without error when FEEDBACK.html does not exist.

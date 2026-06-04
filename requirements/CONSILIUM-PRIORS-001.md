@@ -34,10 +34,13 @@ Signals computed:
 ## Output
 JSON object to stdout with the signals above. Non-zero exit on parse error.
 
-## WHAT — Verify intent (open questions for the human)
-- `conservator_veto_rate` ignores sequential BLOCK/REWORK by design (only `conservative_override` counts as a veto) — should this constraint be stated explicitly in the requirement to prevent future 'fixes' that accidentally count sequential blocking outcomes?
-- `weighted_bad_rate` is listed in the signals but not defined — what is the weighting scheme (recency, outcome type, confirmed vs. unconfirmed rows), and how does it differ from plain `bad_rate`?
-- `STALE_PEND_DAYS` is referenced but not pinned in the requirement — what is the value, is it hardcoded or configurable, and does the requirement intend to pin it?
+## Contract
+- `conservator_veto_rate` counts only runs where `deliberation_log[step=aggregate].result.vetoed` is non-empty or `chosen` is `None`. Sequential BLOCK/REWORK outcomes are intentionally excluded — do not "fix" this.
+- `weighted_bad_rate`: same denominator as `bad_rate` (OK+BAD+OVR), but rows whose note contains `[confirmed]` receive weight 2.0 vs. 1.0 for unconfirmed rows, so production-verified outcomes dominate over subjective ratings.
+- `STALE_PEND_DAYS = 2` is hardcoded (reduced from 7; not CLI-configurable). A PEND entry older than 2 days is surfaced at step 0 for retrospective close.
+
+## WHAT — Verify intent
+- None - all questions resolved.
 
 ## Acceptance (= tests)
 - `python scripts/priors.py` runs without error given a valid FEEDBACK.html and runs/ dir

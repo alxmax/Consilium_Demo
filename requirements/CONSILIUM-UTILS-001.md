@@ -24,17 +24,15 @@ Shared stdlib-only utilities that every other Consilium script imports instead o
 
 ## Output
 - No files written or stdout produced by the module itself; side effects are produced by its callers
-- `atomic_write_text` writes atomically to the caller-supplied path using a sibling `.tmp` file
+- `atomic_write_text` writes atomically to the caller-supplied path using a sibling `.tmp` file; a read-only parent directory raises `OSError` (propagates to caller); the temp file is always deleted on any error, so no stale `.tmp` accumulates across crashes
 - `load_json_stdin` exits with code 2 on empty stdin or JSON parse failure
 - `validate_keys` raises `ValueError` on schema violation; callers map that to exit 1 or 2
 
 ## WHAT — Verify intent (open questions for the human)
-- `atomic_write_text` uses 'a sibling `.tmp` file' — what happens when the parent directory is read-only or the `.tmp` file already exists from a previous crashed write? Is there a defined cleanup behavior or stale-lock detection?
-- `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve 'relative to the repo root' — how is the repo root determined (e.g., by walking up from `__file__`, from `git rev-parse`, or from CWD)? If a script is invoked from outside the repo, does this break silently or raise a clear error?
-- `issue_penalty` returns `0.15` for 'medium or missing severity' — treating missing severity the same as medium is a silent normalization; is this intentional, and should callers be warned when severity is absent rather than silently defaulting?
+- None - all questions resolved.
 
 ## Acceptance (= tests)
-- `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root.
+- `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root; the repo root is derived from `Path(__file__).resolve().parent.parent` (two levels above `scripts/utils.py`), so paths are CWD-independent and never break silently when a script is invoked from outside the repo.
 - `atomic_write_text` leaves the original file intact when a write is interrupted mid-way (no truncated or stale `.tmp` files persist on error).
 - `is_headless` returns `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty returns `False`.
 - `load_json_stdin` prints a usage hint to stderr and exits 2 on empty stdin; exits 2 with an error message on invalid JSON.

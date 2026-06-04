@@ -24,10 +24,14 @@ Operationalizes the SKILL.md low-confidence recovery path by analyzing a complet
 - When `retry_recommended` is false (confidence at/above threshold, only one valid candidate, or null confidence), `top_candidates` is an empty array
 - exit code 0 on success; exit code 2 if stdin is not a JSON object
 
-## WHAT — Verify intent (open questions for the human)
-- The script is 'deliberately one-shot and does not execute the deliberation itself, capping the retry loop at one attempt' — but the requirement says the orchestrating agent 'dispatches one additional Generator/Control/Conservator pass'; is the cap enforced by the script itself, by the orchestrator, or only by convention?
-- The top-2 candidates are selected by 'a composite utility score (mean of generator pass, control validity, and inverted conservator risk)' — what happens when fewer than 2 candidates pass Control validation (valid=true)? The acceptance test covers 'only one valid candidate', but what about zero valid candidates?
-- The regex patterns extract 'file paths, symbol names, dotted attribute paths, and backtick-quoted tokens' — is there a documented limit on how many patterns are extracted per candidate before the 4-item cap is applied?
+## WHAT — Verify intent
+
+- None - all questions resolved.
+
+## Contract (additional)
+- The one-shot cap is enforced by the orchestrator (agent convention per SKILL.md), not by the script itself; the script has no state and will produce a plan on every invocation regardless.
+- Zero valid candidates: the pool falls back to `list(candidates)` (all candidates), so zero-valid-but-2+-total proceeds normally; zero-valid-zero-total triggers the `len(pool) < 2` early exit with reason `"too few valid candidates for retry to discriminate"`.
+- `_grep_patterns` slices `symbols[:4]` at the start of iteration — the 4-item cap is applied to the input symbols list, not to the generated pattern list after expansion.
 
 ## Acceptance (= tests)
 - Given a bundle with `confidence=0.61` and two or more valid candidates, the output has `retry_recommended=true`, a `reason` string containing `0.61`, and exactly 2 entries in `top_candidates`.

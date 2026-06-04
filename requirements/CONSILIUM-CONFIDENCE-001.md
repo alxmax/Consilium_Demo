@@ -26,9 +26,12 @@ Derives a calibrated confidence score for a deliberation result using two comple
 - exit code 0 on success; exit code 1 on invalid input shape
 
 ## WHAT — Verify intent (open questions for the human)
-- The blending formula is `0.7 * agreement + 0.3 * separation` — when there is only one candidate (no runner-up), what value is used for separation, and is this case explicitly tested?
-- The `check_mode_floor` helper exempts structurally decisive Trias vote patterns (3-0, 2-1, 2-0) from the WEAK flag — is 2-0 truly 'structurally decisive', given that it represents a personality veto and only 2 of 3 personalities chose a candidate? Is this exemption intentional?
-- The Steward dissent penalty is −0.10 and abstain penalty is −0.15 — are these penalties applied only for Steward, or for any dissenting/abstaining personality? The description specifies 'Steward-specific' but does not explain why Pioneer or Architect dissent carries no penalty.
+- None - all questions resolved.
+
+## Contract
+- When there is only one candidate (no runner-up), `separation` defaults to `1.0` (`derive()` line: `else: separation = 1.0`). The existing Acceptance bullet covers this case explicitly.
+- The 2-0 exemption from the WEAK floor flag is intentional. 2-0 means one personality had all candidates vetoed (a veto, not a deadlock) — a winner still emerged, so the run is structurally decisive. The lower base confidence (0.70 vs 0.75 for 2-1) already encodes the stronger risk signal; flagging it WEAK on top would be double-penalising.
+- The dissent (−0.10) and abstain (−0.15) penalties are applied only when the Steward personality is the dissenter/abstainer. Pioneer and Architect dissent/abstain carry no penalty because Steward (conservative-leaning, K=0.40) is the sole risk-anchor voice; its absence from the majority signals a materially higher risk that the base vote-pattern score does not capture.
 
 ## Acceptance (= tests)
 - Given a chosen candidate with `generator=0.8`, `control=0.9`, `conservator=0.1` (high utility, low risk, high agreement) and no runner-up, the output confidence is close to 0.99 (agreement near 1.0, separation defaults to 1.0).

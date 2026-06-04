@@ -16,11 +16,12 @@ depends_on: [CONSILIUM-PERSONALITIES-001]
 - The lens shall preserve each voice's standard structural role (Generator produces candidates, Control verifies correctness, Conservator assesses risk); it shifts perception and priority without suppressing the role's core output.
 - When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not directly alter the numerical  formula or its component scores (, , etc.).
 - The Conservator carve-out is sufficient by design. Pioneer's influence is on narrative tone and meta_recommendation framing, not on the numerical risk gate. The  formula remains governed by Conservator's own logic, preserving Trias balance through democratic aggregation across all three voices.
+- 'Magnitude calibration' means the `magnitude` label only (low/medium/high/critical); Pioneer shall not shift the `reversibility` component score or any other input to the `net_concern` formula.
+- The Pioneer lens adds no additional pressure on `unconventional_*` candidate selection beyond what the Generator voice contract already requires.
+- There is no defined minimum ambition gap for the lens to activate; when candidates differ in ambition, Pioneer always prefers the most ambitious one, even if the difference is marginal.
 
 ## WHAT — Verify intent (open questions for the human)
-- The contract says Pioneer 'shall affect only magnitude calibration and meta_recommendation' when applied to Conservator, but AC-2 says '`net_concern` numerical value reflects the standard formula unchanged' — does 'magnitude calibration' mean the label only (low/medium/high/critical), or can Pioneer also shift the reversibility assessment?
-- Does the Pioneer lens add any additional pressure to include or exclude the `unconventional_*` candidate, beyond what the Generator voice contract already requires?
-- AC-1 says Pioneer favors 'the novel/ambitious option rather than the safe/incremental one' — is there a defined minimum gap in ambition between candidates for the lens to activate, or does it always prefer the most ambitious candidate regardless of how marginal the difference is?
+- None - all questions resolved.
 
 ## HOW — Acceptance (= tests)
 AC-1

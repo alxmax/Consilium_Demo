@@ -26,10 +26,10 @@ Pure rendering engine that converts a list of Entry records into a single self-c
 - When invoked as CLI, the HTML string is written to stdout
 - exit code 0 always
 
-## WHAT — Verify intent (open questions for the human)
-- The `(calc)` token estimate uses 'the median tokens-per-candidate of peer runs' — how are 'peer runs' defined (same mode, same date range, all runs)? An undefined peer set makes the estimate non-reproducible.
-- The VETOED badge is sourced from the aggregate step's `vetoed` list — what if the run was produced by the `sequential` scheme, which does not produce a `vetoed` list in the same format? Is there a fallback, and is the Conservator drill-down panel suppressed or shown without vetoed badges?
-- The HTML is described as 'self-contained' with no external asset references — is this verified by the acceptance test, or only stated? A test that checks for the absence of `<link>` and `<script src>` tags would confirm it.
+## WHAT — Verify intent
+- None - `(calc)` peer runs are all entries in the current `render()` call that have measured telemetry (non-zero `tokens_in + tokens_out`); no filtering by mode or date. The median is the lower-median of the sorted per-candidate samples (`samples[len // 2]`). Reproducibility is therefore scoped to a single render invocation.
+- None - when the run was produced by the `sequential` scheme (no `vetoed` list in the aggregate step), `vetoed_ids` resolves to an empty set; the Conservator drill-down panel is shown normally but no VETOED badges appear. Under-showing is preferred over fabricating badges.
+- None - the self-contained property is stated as an Acceptance criterion but is not covered by any assertion in `scripts/test_feedback_html.py`; it remains a stated-only contract.
 
 ## Acceptance (= tests)
 - `render()` returns a string beginning with `<!doctype html>` that contains one `<tr class="entry">` row and one `<tr class="drill">` row for each Entry in the input list.

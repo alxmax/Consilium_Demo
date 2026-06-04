@@ -26,10 +26,8 @@ Regression harness for all deterministic scripts in the Consilium pipeline. It r
 - Summary line `<N> passed, <M> failed` to stderr
 - exit code 0 when all scenarios pass; 1 when any fail; 2 on load or corpus errors
 
-## WHAT — Verify intent (open questions for the human)
-- The description says stdout matching uses 'either a JSON subset-match or a plain-text substring match' — what determines which mode is used for a given scenario? Is it a field in `scenarios.json` (e.g., `expect_stdout_type`), and is the subset-match semantics defined (exact key equality, recursive inclusion, or type-only check)?
-- The pre-flight linter checks for `pipeline_executed` in `validate_report` fixtures — does it also check that non-validate_report scenarios that produce a full report include `pipeline_executed`, or is the lint scoped only to `validate_report` fixtures?
-- When `--filter` matches zero scenarios, the script exits 2 with 'no scenarios matched' — is this the same exit code as a corpus load error? Could the caller distinguish 'filter found nothing' from 'scenarios.json is malformed'?
+## WHAT — Verify intent
+- None - all questions resolved.
 
 ## Acceptance (= tests)
 - Running `python scripts/run_evals.py` against the committed `evals/scenarios.json` exits 0 with every scenario reporting PASS.

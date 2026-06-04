@@ -24,10 +24,13 @@ Guards the public release repository against accidentally referencing the privat
 - stderr: list of offending `file:line: description` strings on failure
 - exit code 0 on clean, 1 on any pattern match
 
-## WHAT — Verify intent (open questions for the human)
-- The exact regex patterns are deliberately omitted from the doc — is there a secondary specification (comments in source, a separate config file) that a reviewer can consult to confirm correctness without reading the implementation?
-- The guard 'skips binary and image file extensions' — is the skip list exhaustive and documented, or heuristic? What happens with a binary file that has a `.txt` extension (e.g., a compiled output accidentally committed as plain text)?
-- When the script is run outside of a git repository (e.g., in a CI container where `git ls-files` fails), does it exit 0 (clean), exit 1 (as if a leak were found), or exit with a different code and message?
+## WHAT — Verify intent
+- None - all questions resolved.
+
+## Contract additions (from verify-intent audit, 2026-06-04)
+- The source (`PATTERNS` constant + inline comments) is the sole specification for the regex patterns; there is no secondary config or spec file. Comments explain owner-qualified matching and the `_Demo` carve-out.
+- The skip list (`SKIP_SUFFIX`) is a heuristic hardcoded tuple of 11 extensions. A binary file committed with a `.txt` extension is **not** skipped — it is read with `errors="ignore"` and scanned like any text file.
+- When run outside a git repository (`git ls-files` fails), the unhandled `subprocess.CalledProcessError` produces exit code 1 with a Python traceback to stderr — same exit code as a leak find, but distinguishable by the traceback.
 
 ## Acceptance (= tests)
 - Running against a repo with no private-repo (non-Demo) or local-path references exits 0 and prints `clean`.

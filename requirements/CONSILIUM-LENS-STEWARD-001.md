@@ -18,9 +18,7 @@ depends_on: [CONSILIUM-PERSONALITIES-001]
 - "Prefer existing patterns over new ones unless the new one is clearly necessary" means: a new pattern is justified only when the existing pattern is INSUFFICIENT to meet the change requirements — not merely suboptimal or less elegant. "Suboptimal but workable" does NOT qualify as grounds for a new pattern.
 
 ## WHAT — Verify intent (open questions for the human)
-- The contract says Steward shall 'still produce the full required spread of candidates (3-5)' — but if all viable candidates are high blast-radius (e.g., a migration of a core system), what constitutes a 'minimal-blast-radius candidate' that Steward lists first when no genuinely minimal option exists?
-- 'A new pattern is justified only when the existing pattern is INSUFFICIENT to meet the change requirements' — who decides insufficiency: the Generator voice, the Control voice, or the deliberation outcome? Is there a structured output field that records this judgment?
-- When Steward is applied to Control or Conservator, does the 'order by smallest blast radius first' rule apply to their output ordering, or is the lens effect on non-Generator voices defined differently?
+- None - all questions resolved.
 
 ## HOW — Acceptance (= tests)
 AC-1

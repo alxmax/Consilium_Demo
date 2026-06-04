@@ -21,9 +21,7 @@ depends_on: []
 - `meta_scope_mismatch` is a self-assessed heuristic gate with no external oracle; all three conditions (correct answer, trivially-human-resolvable, cost exceeds decision value) are necessarily evaluated by the voice itself because they require contextual judgment that no deterministic external check can provide.
 
 ## WHAT — Verify intent (open questions for the human)
-- 'Validation failure results in silent discard' — is there any telemetry or log entry written when a Skeptic output is silently discarded, so that the development team can detect prompt regressions that cause systematic silent discard?
-- `meta_scope_mismatch` requires `addressable: unaddressable` — but the description says the failure mode is 'resolvable in under 10 seconds by a human'; does `unaddressable` make sense when the human can resolve it? Should this failure mode use a different `addressable` value?
-- When `can_object: true` but `concrete_concerns` has only 1 entry and `quoted_scenario` is null, the output is 'discarded silently' — does the orchestrator log the discard reason, or is the discard completely invisible to the pipeline report?
+- None - all questions resolved. Silent discard is completely invisible: no log, no telemetry, no pipeline report entry (covered by Contract: "no warning is emitted"). `meta_scope_mismatch` uses `addressable: unaddressable` because the concern is not fixable by redesigning the candidate — the deliberation tool was wrong for the problem, not the answer; `unaddressable` refers to the tool-application level, not the human's ability to resolve the original question directly.
 
 ## WHAT — Notes & known limitations (informative)
 

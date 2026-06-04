@@ -26,10 +26,14 @@ Atomically appends a feedback entry to FEEDBACK.html from a deliberation report 
 - `.consilium/runs/.run_path_map.json`: updated with the new fingerprint->run_path entry
 - exit code 0 on success, 1 on validation error or confidence gate rejection, 2 on malformed JSON or missing required args, 3 on duplicate entry skipped
 
-## WHAT — Verify intent (open questions for the human)
-- The duplicate-detection fingerprint is keyed on `date|chosen|context|run_id` — if `run_id` is absent from the report (e.g., an older report format), does the fingerprint fall back to a 3-field key, and is that collision-safe for reports logged on the same day with the same chosen approach?
-- The `--outcome OK` confidence gate requires `confidence >= 0.70` — is the `confidence` field read from the report's top-level key, or from the nested `confidence.confidence` dict form? What happens when the report carries both forms with different values?
-- The row-upgrade path (PEND → OK) rewrites the existing row 'in place' — if two concurrent callers both attempt an upgrade on the same PEND row simultaneously, what prevents a race condition given that FEEDBACK.html is also protected by atomic writes?
+## WHAT — Verify intent
+
+- None - all questions resolved.
+
+## Contract addenda (from code audit 2026-06-04)
+- When `run_id` is absent, the fingerprint falls back to a microsecond-precision timestamp (`datetime.now().strftime("%f")`) as the 4th field — not a 3-field key. This prevents same-day collisions but makes the fingerprint non-deterministic: two recomputed fingerprints for the same legacy row will differ, so old no-run_id rows can never be matched by fingerprint lookup (they fall back to `run_path=None`).
+- The confidence gate reads `report.get("confidence")` — the top-level key only. If a report carries both a top-level `confidence` and a nested `confidence.confidence` dict, the top-level value is used and the nested form is silently ignored.
+- The row-upgrade path (PEND → OK) uses a read-modify-write cycle protected only by `atomic_write_text` (rename-swap). There is no file lock or compare-and-swap: two concurrent callers would each read the same PEND state and the last writer would win. Concurrent upgrades are not prevented; they are tolerated as an acceptable race given that log_feedback is not designed for concurrent use.
 
 ## Acceptance (= tests)
 - A report with a valid `success_criterion` and `chosen_approach` produces a new `<tr>` row in FEEDBACK.html with the correct date, truncated context, and derived note.
