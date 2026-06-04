@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-PERSONALITIES-001
 status: confirmed
 layer: bus
@@ -22,6 +22,11 @@ Canonical registry of the three fixed Trias-mode personalities (Pioneer, Archite
 - JSON array of all three personality dicts emitted to stdout when called with no `--name` flag
 - JSON object for a single personality emitted to stdout when `--name` is provided
 - exit code 0 on success; exit code 2 when a legacy positional N argument is detected, with a human-readable migration message on stderr
+
+## WHAT — Verify intent (open questions for the human)
+- The weights for Pioneer are `generator 0.49` but the full weight tuple is not shown — what are the `control` and `conservator` weights for Pioneer, and do the three personalities' weight vectors differ in a way meaningful enough to document here?
+- `get_by_name()` returns 'a deep copy to prevent mutation' — is the deep-copy behavior tested, or only stated? If the registry is a module-level dict of dicts, a shallow copy could still allow nested mutation.
+- The legacy positional integer argument is rejected with exit code 2 — what was the old positional-N API, and is there a migration path documented anywhere for callers that still use the old form?
 
 ## Acceptance (= tests)
 - Running without arguments emits a JSON array of exactly 3 objects, each containing `name`, `weights` (with keys `generator`, `control`, `conservator` summing to 1.0), and `lens` (a path string).

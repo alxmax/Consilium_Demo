@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-CONSERVATOR-001
 status: confirmed
@@ -19,6 +19,11 @@ depends_on: []
 - For any candidate with `net_concern >= 0.3`, the voice shall emit either a `rollback_recipe` (2–5 concrete human-executable steps) or, when rollback is structurally impossible, replace it with `mitigation_steps` and set `irreversible: true` at the candidate level.
 - The mitigation cap (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is discipline-based with no automated schema enforcement. Compliance is audited through `notes` documentation of applied mitigation values.
 - When `meta_recommendation: "scale_down"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design.
+
+## WHAT — Verify intent (open questions for the human)
+- The mitigation cap is 'discipline-based with no automated schema enforcement' and 'audited through notes' — who performs this audit, when, and what action is taken if a Conservator output violates the cap? Should the requirement acknowledge this limitation explicitly?
+- The three irreversibility fields can 'coexist on the same candidate' — the requirement acknowledges this as 'a persistent source of confusion' but provides no resolution rule; should the requirement define which field takes precedence when they conflict?
+- When `meta_recommendation: scale_down` overrides the token budget to 300 'regardless of magnitude×reversibility', can Conservator still emit `magnitude: critical`? If yes, the Trias lazy-routing logic that triggers on `critical` magnitude may be at odds with the scale_down intent.
 
 ## WHAT — Notes & known limitations (informative)
 

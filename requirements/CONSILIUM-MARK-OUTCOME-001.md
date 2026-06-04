@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-MARK-OUTCOME-001
 status: confirmed
 layer: feature
@@ -32,6 +32,11 @@ Closes the feedback loop opened by `log_feedback.py` by allowing an outcome reco
 - stdout: `skip [i]: ...` lines when a row is already at the target outcome or when PEND_HEADLESS is applied to a non-PEND row
 - stdout: `(dry-run; no write)` when `--dry-run` is active
 - exit code 0 on success or when no rows needed updating; exit code 1 on missing feedback file, bad argument combinations, or no match found
+
+## WHAT — Verify intent (open questions for the human)
+- When matching by `--date` and `--chosen`, can multiple rows match (e.g., two runs on the same date with the same approach)? If so, are all matched rows updated, or only the first, and how is this communicated to the caller?
+- The `[confirmed]` annotation is added to the note — if `mark_outcome` is called multiple times on the same row (e.g., BAD → OVR → OK), does the note accumulate multiple `[confirmed]` tokens, or is the existing annotation replaced?
+- The `--outcome PEND_HEADLESS` path requires `--benchmark` as a guard — does the script verify that the row's current outcome is `PEND` before applying the transition, as implied by the 'non-PEND row' skip rule?
 
 ## Acceptance (= tests)
 - Given a valid `--run-path` pointing to a logged run, the corresponding FEEDBACK.html row's outcome field is updated to the specified value and the note gains `[confirmed]` (or `outcome_reason=...` if `--reason` is provided).

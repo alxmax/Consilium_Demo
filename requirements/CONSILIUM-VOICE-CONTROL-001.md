@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-CONTROL-001
 status: confirmed
@@ -19,6 +19,11 @@ depends_on: []
 - The voice shall emit a `disagreements` array classifying any substantive conflict between voices as `substantial` (different answer → REWORK) or `terminological` (same answer, different words → note and continue).
 - When the voice cannot verify a signature without reading a file and file access fails, the `unverifiable — file not accessible` marker in the verdict is the intended degradation signal. This is transparent and recorded in verdicts visible to the aggregator and report; no harder signal is required.
 - The 3-entry cap on `hidden_assumptions` and the self-assessed selection criterion are by design. Control is a deliberative voice, not a formal verifier; the design intentionally trusts the voice to surface the most consequential assumptions.
+
+## WHAT — Verify intent (open questions for the human)
+- `confidence_in_verdict: low` is 'advisory only — the aggregator does not automatically discount verdicts marked `low`' — this means a speculative `valid: true / low` verdict influences the final recommendation as strongly as a high-confidence one; is this intentional or a known limitation to eventually fix?
+- AC-2 says Control still emits verdicts even when `glossary_fail: true` — but the aggregator BLOCKs on glossary_fail before Generator runs; does Control run after Generator in Sequential mode, meaning a glossary_fail not caught before Generator ran will still have Control emit verdicts on Generator's candidates?
+- The 3-entry cap on `hidden_assumptions` 'trusts the voice to surface the most consequential assumptions' — is there any retrospective signal that lets the development team detect cases where the cap caused a critical assumption to be dropped?
 
 ## WHAT — Notes & known limitations (informative)
 

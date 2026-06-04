@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-CONFIDENCE-001
 status: confirmed
 layer: feature
@@ -24,6 +24,11 @@ Derives a calibrated confidence score for a deliberation result using two comple
 - stdout: JSON with `confidence` (float or null), `agreement` (float), `separation` (float or null), and optional `source` and `notes` fields
 - When `chosen` is null or absent from candidates: JSON with `confidence: null` and `reason` string
 - exit code 0 on success; exit code 1 on invalid input shape
+
+## WHAT — Verify intent (open questions for the human)
+- The blending formula is `0.7 * agreement + 0.3 * separation` — when there is only one candidate (no runner-up), what value is used for separation, and is this case explicitly tested?
+- The `check_mode_floor` helper exempts structurally decisive Trias vote patterns (3-0, 2-1, 2-0) from the WEAK flag — is 2-0 truly 'structurally decisive', given that it represents a personality veto and only 2 of 3 personalities chose a candidate? Is this exemption intentional?
+- The Steward dissent penalty is −0.10 and abstain penalty is −0.15 — are these penalties applied only for Steward, or for any dissenting/abstaining personality? The description specifies 'Steward-specific' but does not explain why Pioneer or Architect dissent carries no penalty.
 
 ## Acceptance (= tests)
 - Given a chosen candidate with `generator=0.8`, `control=0.9`, `conservator=0.1` (high utility, low risk, high agreement) and no runner-up, the output confidence is close to 0.99 (agreement near 1.0, separation defaults to 1.0).

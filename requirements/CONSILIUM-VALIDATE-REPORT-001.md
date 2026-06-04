@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-VALIDATE-REPORT-001
 status: confirmed
 layer: bus
@@ -33,6 +33,11 @@ catches shape drift (e.g. aggregate.result as a narrative string).
 - Exit 0 — report is valid
 - Exit 1 — validation failed; each problem printed to stderr
 - Exit 2 — malformed JSON input
+
+## WHAT — Verify intent (open questions for the human)
+- The requirement says `chosen_approach` may be 'null (conservative-override veto case)' — but are there other valid null cases (e.g., a BLOCK outcome from the glossary_fail path), and does the validator distinguish between intentional nulls and missing fields?
+- The check for `deliberation_log` requires 'an aggregate step whose `result` is a dict (not a string narrative)' — what other steps must be present in `deliberation_log` for a non-skipped report, and are missing steps (e.g., a report missing the `conservator` step) caught by the validator?
+- Telemetry 'counts (token/latency) are non-negative ints where present' — does the validator reject float values (e.g., `1500.0` instead of `1500`), and is the 'where present' qualifier precisely defined (which telemetry sub-fields are required vs. optional)?
 
 ## Acceptance (= tests)
 - Valid reports (from `.consilium/runs/*.json`) exit 0

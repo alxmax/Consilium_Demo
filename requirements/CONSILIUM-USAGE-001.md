@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-USAGE-001
 status: deprecated
 layer: feature
@@ -22,6 +22,11 @@ Aggregates telemetry across all run JSON files in the runs directory and emits a
 ## Output
 - JSON object to stdout with keys: `runs_total`, `with_telemetry`, `skipped_runs`, `voices` (per-voice percentile stats), `modes` (per-mode token/latency totals), `warnings` (latency spike list)
 - exit code 0 on success; 1 if the runs directory does not exist
+
+## WHAT — Verify intent (open questions for the human)
+- For Trias or parallel mode runs, latency reflects 'the maximum voice latency rather than the sum' — but Trias runs have 3 sub-agents each running 3 voices; is 'voice latency' the latency per sub-agent's full Sequential run, or per individual voice call within each sub-agent?
+- The latency spike detection flags 'any voice whose latency exceeds 2x the median of its peers' — are 'peers' defined as all voices in the same run, or the same named voice across all runs in the dataset?
+- `--last N` restricts to 'the most-recent N run files' — is 'most-recent' determined by file modification time, filename sort order (which encodes timestamps), or the `telemetry.timestamp` field inside the JSON?
 
 ## Acceptance (= tests)
 - Running against a populated runs directory emits valid JSON with `runs_total` equal to the number of JSON files loaded.

@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-MEMORY-001
 status: confirmed
 layer: feature
@@ -27,6 +27,11 @@ Provides a unified read API over Consilium's three memory tiers - short (current
 ## Output
 - JSON object emitted to stdout: for a single tier, a dict with `tier`, `entries`, and `total` keys; for `--tier all`, a dict with `short`, `medium`, and `long` sub-objects
 - exit code 0 always (no error paths beyond missing files, which return empty entry lists)
+
+## WHAT — Verify intent (open questions for the human)
+- The short tier is 'a descriptive stub because its content is only accessible inside the active agent context window' — is the stub's output format fixed (always `entries: []` with a note string), or could future implementations populate it from a session file? If fixed, should the requirement say 'permanently a stub'?
+- The `--query` flag applies a substring filter but the filter fields differ per tier — for medium it searches `success_criterion` + `chosen_approach`, for long it searches `context` + `chosen` + `note`; is case-insensitivity guaranteed for both tiers, and are the field names consistent with how those tiers store data?
+- The `--n` flag limits entries 'per tier' — for `--tier all`, does `--n` apply independently to each tier (potentially returning up to 3N entries total), or is there a global cap?
 
 ## Acceptance (= tests)
 - Running with `--tier medium` returns a JSON object whose `entries` array contains at most `--n` items, each with `run`, `date`, `success_criterion`, `chosen`, and `confidence` fields drawn from `runs/*.json` files.

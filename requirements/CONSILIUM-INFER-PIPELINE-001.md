@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-INFER-PIPELINE-001
 status: deprecated
 layer: feature
@@ -22,6 +22,11 @@ Infers and presents for confirmation the ordered post-deliberation implementatio
 - stdout: human-readable proposed pipeline and `{"steps": [...], "rationale": {...}}` JSON
 - `.consilium/runs/<ts>_pipeline_rejected.json` written on user rejection (interactive mode only)
 - exit code 0 on confirmation or dry-run, 1 on user decline or empty steps, 2 on malformed input
+
+## WHAT — Verify intent (open questions for the human)
+- The lookup table maps every `(magnitude, reversibility)` pair to a step list — is this table fully enumerated in the implementation, and what happens for pairs not in the table (e.g., `magnitude=trivial` with `reversibility=complete`)? Does the fallback to voice_scores scalar cover all such gaps?
+- The description says the script 'never infers `irreversible` from the scalar because a floored net_concern is ambiguous' — is this constraint tested, and what step list is produced when the scalar is high but reversibility cannot be inferred?
+- User rejections are persisted as `pipeline_rejected.json` events — is there any downstream consumer of these events (e.g., priors.py, efficiency.py), and if not, is the persistence intentional or a placeholder for future use?
 
 ## Acceptance (= tests)
 - For `chosen_approach` of `do_nothing` or `null`, `infer_steps` returns an empty list with a `reason` key in the rationale.

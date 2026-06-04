@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-IMPLEMENT-PIPELINE-001
 status: confirmed
 layer: feature
@@ -22,6 +22,11 @@ Turns a completed Consilium deliberation report into a structured implementation
 - stdout (plan mode): human-readable plan summary followed by `{"plan": ...}` JSON
 - stdout (gate mode): `{"red_ok": bool, "green_ok": bool, "gate_passed": bool}` JSON
 - exit code 0 on success/dry-run/gate passed, 1 on no-pipeline or gate failure, 2 on bad input
+
+## WHAT — Verify intent (open questions for the human)
+- The stub-insertion heuristic 'inserts `raise NotImplementedError` after each `def`/`async def`' — what happens when the function already contains a `pass` or `...` body, or when there are nested functions? Is the original file always fully restored on error?
+- In plan mode the script 'emits a JSON plan for the orchestrating agent to consume' — is there a defined handoff schema between the plan JSON and the consilium-implement-subagent, and is that schema part of this requirement's contract?
+- The exit code for `do_nothing`/`skipped` chosen approaches is 1, the same as gate failure — how does the caller distinguish between 'no pipeline needed' and 'gate failed'? Is that distinction intentional or an unresolved ambiguity?
 
 ## Acceptance (= tests)
 - Given a report with a non-empty `chosen_approach`, `build_plan` returns a dict with `spec`, `sequence`, `roles`, and `rules` keys, and each role lists whether its prompt file exists.

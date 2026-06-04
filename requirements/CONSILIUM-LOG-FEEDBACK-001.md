@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-LOG-FEEDBACK-001
 status: confirmed
 layer: feature
@@ -25,6 +25,11 @@ Atomically appends a feedback entry to FEEDBACK.html from a deliberation report 
 - `.consilium/FEEDBACK.html`: updated atomically with the new or upgraded row
 - `.consilium/runs/.run_path_map.json`: updated with the new fingerprint->run_path entry
 - exit code 0 on success, 1 on validation error or confidence gate rejection, 2 on malformed JSON or missing required args, 3 on duplicate entry skipped
+
+## WHAT — Verify intent (open questions for the human)
+- The duplicate-detection fingerprint is keyed on `date|chosen|context|run_id` — if `run_id` is absent from the report (e.g., an older report format), does the fingerprint fall back to a 3-field key, and is that collision-safe for reports logged on the same day with the same chosen approach?
+- The `--outcome OK` confidence gate requires `confidence >= 0.70` — is the `confidence` field read from the report's top-level key, or from the nested `confidence.confidence` dict form? What happens when the report carries both forms with different values?
+- The row-upgrade path (PEND → OK) rewrites the existing row 'in place' — if two concurrent callers both attempt an upgrade on the same PEND row simultaneously, what prevents a race condition given that FEEDBACK.html is also protected by atomic writes?
 
 ## Acceptance (= tests)
 - A report with a valid `success_criterion` and `chosen_approach` produces a new `<tr>` row in FEEDBACK.html with the correct date, truncated context, and derived note.

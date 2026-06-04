@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-MODE-TRIAS-001
 status: confirmed
@@ -17,6 +17,11 @@ depends_on: [CONSILIUM-MODE-SEQUENTIAL-001, CONSILIUM-LENS-PIONEER-001, CONSILIU
 - The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).
 - When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1).
 - The 3 personality sub-agents shall be dispatched in parallel; the runtime audit tracks divergence between parallel and serial results.
+
+## WHAT — Verify intent (open questions for the human)
+- The B2 deadlock cascade fires on '1-1-1 or 0-0-0' — what does 0-0-0 mean in the context of three personalities each choosing a candidate, and is 0-0-0 achievable only when a personality abstains?
+- Lazy routing downgrades to Dialectic for `high` magnitude — does the lazy-routed Dialectic run carry the `trias_lazy_routed: true` field all the way into the final persisted report, and does it affect how priors or efficiency metrics classify the run?
+- Context is 'truncated to ≈15 000 tokens before dispatch' — what is the exact truncation strategy (last N tokens, first N tokens, or smart summarization), and is the 15 000 token budget a hard limit or a target?
 
 ## WHAT — Notes & known limitations (informative)
 - Serial dispatch is an accepted implementation artifact that does not affect correctness; the silent parallel audit is the observability mechanism.

@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-PROBE-CHANGE-001
 status: deprecated
 layer: feature
@@ -27,6 +27,11 @@ Anchors Conservator's `diff_size` risk factor in objective git data instead of i
 - When `--churn N` is passed, the JSON object also contains a `churn` key with `window_days` and `commits_per_file` (dict of path -> commit count)
 - JSON object `{"error": "..."}` to stdout and exit code 1 on any git error or invalid arguments
 - exit code 0 on success
+
+## WHAT — Verify intent (open questions for the human)
+- The default mode 'diffs staged + unstaged changes against HEAD' — does this include untracked files, or only tracked modified files? The behavior for untracked files is relevant when a developer adds a new file without staging it.
+- `--ref` and `--range` are 'mutually exclusive' — what is the exact error output and exit code when both are supplied simultaneously?
+- The `--churn N` per-file commit frequency is computed 'over the last N days via `git log --since`' — is the commit count for each file the number of commits touching that file specifically, or total repo commits in the window?
 
 ## Acceptance (= tests)
 - Running with no flags against a git repo with unstaged changes returns a JSON object with `files_changed >= 1` and correct `lines_added` / `lines_removed` counts matching `git diff --numstat HEAD` output.

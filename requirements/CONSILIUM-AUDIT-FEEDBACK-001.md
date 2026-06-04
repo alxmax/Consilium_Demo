@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-AUDIT-FEEDBACK-001
 status: deprecated
 layer: feature
@@ -30,6 +30,11 @@ Identifies deliberation run files in `.consilium/runs/` that have no correspondi
 - with `--dry-run`: printed plan of rows that would be appended, no file writes
 - with `--check`: exit code 1 if any missing rows found, exit code 0 if none
 - exit code 0 on success; exit code 1 on `--check` failure
+
+## WHAT — Verify intent (open questions for the human)
+- The 'backfill' PEND row uses 'the same entry-building logic as `log_feedback.py`' — does that mean it also enforces the 0.70 confidence gate, or is that gate bypassed for backfill rows since no outcome is being claimed?
+- When multiple missing runs are backfilled in one pass, are they appended in a defined order (e.g., by run timestamp, alphabetically by filename), or is the order undefined?
+- What happens when `--check` is run and FEEDBACK.html does not exist at all — does it treat every run as missing and exit 1, or exit 0 because there are no rows to compare against?
 
 ## Acceptance (= tests)
 - Given a runs/ directory containing a .json file with no matching row in FEEDBACK.html, the script without flags reports exactly that file and exits 0.

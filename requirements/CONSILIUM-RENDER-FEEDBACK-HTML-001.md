@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-RENDER-FEEDBACK-HTML-001
 status: confirmed
 layer: bus
@@ -25,6 +25,11 @@ Pure rendering engine that converts a list of Entry records into a single self-c
 - Complete `<!doctype html>` string returned by `render()` (primary output, written by callers)
 - When invoked as CLI, the HTML string is written to stdout
 - exit code 0 always
+
+## WHAT — Verify intent (open questions for the human)
+- The `(calc)` token estimate uses 'the median tokens-per-candidate of peer runs' — how are 'peer runs' defined (same mode, same date range, all runs)? An undefined peer set makes the estimate non-reproducible.
+- The VETOED badge is sourced from the aggregate step's `vetoed` list — what if the run was produced by the `sequential` scheme, which does not produce a `vetoed` list in the same format? Is there a fallback, and is the Conservator drill-down panel suppressed or shown without vetoed badges?
+- The HTML is described as 'self-contained' with no external asset references — is this verified by the acceptance test, or only stated? A test that checks for the absence of `<link>` and `<script src>` tags would confirm it.
 
 ## Acceptance (= tests)
 - `render()` returns a string beginning with `<!doctype html>` that contains one `<tr class="entry">` row and one `<tr class="drill">` row for each Entry in the input list.

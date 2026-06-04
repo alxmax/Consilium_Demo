@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-VOCABULARY-MAP-001
 status: confirmed
 layer: bus
@@ -22,6 +22,11 @@ Single source of truth for all user-facing natural-language translations of stru
 - stdout: translated human-readable string when invoked via CLI
 - `compute_tokens_budget` returns a dict with `generator` and `control` keys
 - exit code 0 always
+
+## WHAT — Verify intent (open questions for the human)
+- `translate` returns `str(value)` for unknown category or value without raising — callers that silently receive the raw value string instead of a human-readable label may produce confusing output; is this the intended degradation behavior, or should unknown values at least be logged?
+- The output language is Romanian (e.g., `usor de anulat`) — is Romanian the only supported output language, or is there an internationalisation hook? If Romanian-only, is this a design decision that should be stated explicitly?
+- `compute_tokens_budget` with `meta='scale_up'` returns '+50% capped at 4000' — what is the base value before the 50% uplift, and for which `(magnitude, reversibility)` pairs does the cap actually bind?
 
 ## Acceptance (= tests)
 - `translate('reversibility', 'complete')` returns the Romanian string `usor de anulat`.
