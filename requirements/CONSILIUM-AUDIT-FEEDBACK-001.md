@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-AUDIT-FEEDBACK-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 test_exempt: "dynamic module loading and atomic file I/O — no isolated pure-function surface"

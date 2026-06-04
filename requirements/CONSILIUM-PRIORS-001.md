@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-PRIORS-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 depends_on: [CONSILIUM-FEEDBACK-001, CONSILIUM-UTILS-001]

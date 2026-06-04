@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-VALIDATE-REPORT-001
-status: baseline
+status: confirmed
 layer: bus
 owner: auto
 depends_on: [CONSILIUM-PERSONALITIES-001, CONSILIUM-UTILS-001]

@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-BUILD-REPORT-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 depends_on: [CONSILIUM-UTILS-001, CONSILIUM-VERSION-001]

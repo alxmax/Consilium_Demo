@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-MEMORY-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 test_exempt: "file I/O and integration layer with trivial pure stubs"

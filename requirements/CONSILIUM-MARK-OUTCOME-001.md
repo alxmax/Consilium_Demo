@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-MARK-OUTCOME-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 test_exempt: "importlib module loading and FEEDBACK.html mutation — integration-only"

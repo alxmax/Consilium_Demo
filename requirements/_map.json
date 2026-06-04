@@ -4,7 +4,7 @@
     {
       "id": "CONSILIUM-AGGREGATOR-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "aggregator",
       "intent": "Merges scored Generator/Control/Conservator outputs into a chosen candidate via one of five aggregation schemes.",
@@ -41,17 +41,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-AUDIT-COUNTER-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "audit_counter",
       "intent": "Tracks the \"every N sequential runs\" silent parallel cross-check state machine.",
@@ -85,17 +80,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-AUDIT-FEEDBACK-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "audit_feedback",
       "intent": "Finds runs with no FEEDBACK.html row and optionally backfills PEND entries.",
@@ -128,17 +118,12 @@
         }
       ],
       "test_exempt": "dynamic module loading and atomic file I/O — no isolated pure-function surface",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-BUILD-REPORT-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "build_report",
       "intent": "Assembles the canonical deliberation report shape from intermediate voice/aggregation outputs.",
@@ -173,17 +158,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-CHECK-DOC-DRIFT-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "check_doc_drift",
       "intent": "Enforces parity between authoritative behavior (SKILL.md, confidence.py) and the docs/diagrams.",
@@ -211,17 +191,12 @@
         }
       ],
       "test_exempt": "reads live source files and runs git — integration-only gate",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-CHECK-PUBLIC-LEAK-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "check_public_leak",
       "intent": "Fails CI if any git-tracked file references the private repo or a local developer path.",
@@ -249,17 +224,12 @@
         }
       ],
       "test_exempt": "subprocess git ls-files and filesystem scan — integration-only",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-CONFIDENCE-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "confidence",
       "intent": "Derives a calibrated confidence score from inter-voice agreement + runner-up separation (or Trias vote pattern).",
@@ -295,17 +265,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-EFFICIENCY-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "efficiency",
       "intent": "Computes a per-mode efficiency score (tokens per OK outcome) by joining telemetry with feedback.",
@@ -336,17 +301,12 @@
         }
       ],
       "test_exempt": "reads runs/ JSON and FEEDBACK.html at test time — integration-only",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-FEEDBACK-001",
       "layer": "bus",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "feedback",
       "intent": "Canonical FEEDBACK.html parser + a human-readable stats report over logged outcomes.",
@@ -385,10 +345,6 @@
       "test_exempt": "file I/O wrapper with no isolated pure-function surface",
       "risks": [
         {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
           "signal": "blast-radius",
           "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
@@ -397,7 +353,7 @@
     {
       "id": "CONSILIUM-IMPLEMENT-PIPELINE-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "implement_pipeline",
       "intent": "Turns a deliberation report into an implementation dispatch plan; optionally verifies the red->green gate.",
@@ -431,17 +387,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-INFER-PIPELINE-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "infer_pipeline",
       "intent": "Infers the post-deliberation implementation steps from Conservator magnitude/reversibility.",
@@ -475,17 +426,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-LENS-ARCHITECT-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "architect lens",
       "intent": "WHY: biases all three voices toward structural soundness, test coverage, and long-term maintainability over short-term speed or external novelty.",
@@ -518,17 +464,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-LENS-PIONEER-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "pioneer lens",
       "intent": "WHY: biases all three voices toward boldness and upside — tolerating moderate risk and favoring novel, forward-moving solutions over safe, conservative ones.",
@@ -561,17 +502,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-LENS-STEWARD-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "steward lens",
       "intent": "WHY: biases all three voices toward minimal-scope, reversible changes — prioritizing blast-radius reduction and protection of working systems over novelty or ambition.",
@@ -604,17 +540,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-LOG-FEEDBACK-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "log_feedback",
       "intent": "Atomically appends (or upgrades) a FEEDBACK.html row from a deliberation report.",
@@ -650,17 +581,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MARK-OUTCOME-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "mark_outcome",
       "intent": "Corrects a logged FEEDBACK.html outcome in place once production reality is known.",
@@ -692,17 +618,12 @@
         }
       ],
       "test_exempt": "importlib module loading and FEEDBACK.html mutation — integration-only",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MEMORY-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "memory",
       "intent": "Unified read API over Consilium's three memory tiers (short / medium / long).",
@@ -733,17 +654,12 @@
         }
       ],
       "test_exempt": "file I/O and integration layer with trivial pure stubs",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MODE-DIALECTIC-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "dialectic mode",
       "intent": "WHY: Add a focused post-hoc challenge on the chosen approach for code changes — Sequential deliberation plus code-context injection, followed unconditionally by a Skeptic sub-agent regardless of confidence band.",
@@ -778,17 +694,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MODE-SEQUENTIAL-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "sequential mode",
       "intent": "WHY: Run Conservator, Generator, and Control in a single shared context window — the cheapest deliberation path, used by default when no higher mode is warranted.",
@@ -829,17 +740,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "skeptic_on_chosen flag",
       "intent": "WHY: Compose a focused post-hoc Skeptic challenge on the chosen approach over any base mode — catching implicit constraints and high-concern discrepancies that the base deliberation may have missed.",
@@ -875,17 +781,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MODE-TRIAS-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "trias mode",
       "intent": "WHY: Apply three divergent personality lenses (Pioneer/Architect/Steward) each running a full Sequential deliberation, then resolve by democratic majority vote — providing genuine multi-perspective scrutiny for high-stakes, irreversible, or architecturally complex decisions.",
@@ -925,17 +826,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-PERSONALITIES-001",
       "layer": "bus",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "personalities",
       "intent": "Canonical registry of the three fixed Trias personalities (Pioneer/Architect/Steward) and their voice weights.",
@@ -975,10 +871,6 @@
       "test_exempt": null,
       "risks": [
         {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
           "signal": "blast-radius",
           "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
@@ -987,7 +879,7 @@
     {
       "id": "CONSILIUM-PRIORS-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "priors",
       "intent": "Describes observed behavior, verified against scripts/priors.py source.",
@@ -1023,17 +915,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-PROBE-CHANGE-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "probe_change",
       "intent": "Returns objective git diff metrics (files/lines changed, optional per-file churn) as JSON.",
@@ -1065,17 +952,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-RENDER-FEEDBACK-HTML-001",
       "layer": "bus",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "render_feedback_html",
       "intent": "Pure rendering engine: a list of Entry records -> one self-contained dark-themed FEEDBACK.html.",
@@ -1115,10 +997,6 @@
       "test_exempt": null,
       "risks": [
         {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
           "signal": "blast-radius",
           "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
@@ -1127,7 +1005,7 @@
     {
       "id": "CONSILIUM-RETRY-CONTEXT-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "retry_context",
       "intent": "On low confidence, proposes a concrete Read/Grep context-gathering plan for one extra deliberation pass.",
@@ -1161,17 +1039,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-RUN-EVALS-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "run_evals",
       "intent": "Subprocess-based regression harness over evals/scenarios.json; CI gate.",
@@ -1199,17 +1072,12 @@
         }
       ],
       "test_exempt": "subprocess-based eval harness — acceptance gated by run_evals.py itself in CI",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-SCOPE-GATE-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "scope_gate",
       "intent": "Decides whether a change is small enough to bypass full deliberation; fails open.",
@@ -1241,17 +1109,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-STABILITY-CHECK-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "stability_check",
       "intent": "Voice-score calibration analysis (retrospective / compare / pick) per the R2 audit Bug #1.",
@@ -1281,17 +1144,12 @@
         }
       ],
       "test_exempt": "reads runs/ directory at test time — integration-only analysis tool",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-STRIP-CONTEXT-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "strip_context",
       "intent": "Projects each voice's output down to the minimum fields the next voice needs (anti-contamination).",
@@ -1325,17 +1183,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-TRACE-GRAPH-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "trace_graph",
       "intent": "Renders a per-run Mermaid flowchart of what actually executed in the deliberation pipeline.",
@@ -1369,17 +1222,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-USAGE-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "usage",
       "intent": "Aggregates telemetry across runs into per-voice + per-mode token/latency stats.",
@@ -1413,17 +1261,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-UTILS-001",
       "layer": "bus",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "utils",
       "intent": "Shared stdlib-only utilities: canonical paths, atomic writes, stdin JSON, headless detection.",
@@ -1479,10 +1322,6 @@
       "test_exempt": null,
       "risks": [
         {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
           "signal": "blast-radius",
           "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
@@ -1491,7 +1330,7 @@
     {
       "id": "CONSILIUM-VALIDATE-REPORT-001",
       "layer": "bus",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "validate_report",
       "intent": "Describes observed behavior, verified against scripts/validate_report.py source.",
@@ -1528,17 +1367,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VERSION-001",
       "layer": "bus",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "version",
       "intent": "Git-derived version provenance: display stamp, bare committed ref, and prompt-change drift count.",
@@ -1572,17 +1406,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOCABULARY-MAP-001",
       "layer": "bus",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "vocabulary_map",
       "intent": "Single source of truth for field-value translations and the per-voice token budget table.",
@@ -1614,17 +1443,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOICE-CONSERVATOR-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "conservator voice",
       "intent": "WHY: The Conservator runs first in the pipeline, scoring risk and calibrating the token budget that Generator and Control will use — it is the scope gate for the entire deliberation.",
@@ -1659,17 +1483,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOICE-CONTROL-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "control voice",
       "intent": "WHY: The Control voice analytically validates every Generator candidate for correctness, type safety, and goal-fit, and surfaces hidden assumptions and glossary gaps that could cause the deliberation to produce a wrong answer.",
@@ -1704,17 +1523,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOICE-GENERATOR-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "generator voice",
       "intent": "WHY: The Generator produces a structured set of candidate approaches for the deliberation, running second in the pipeline after Conservator has calibrated scope.",
@@ -1749,17 +1563,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOICE-SKEPTIC-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "skeptic voice",
       "intent": "WHY: The Skeptic performs a focused post-selection challenge on the single chosen candidate, providing the last line of defense against a correct-looking but concretely-flawed winner before it ships.",
@@ -1795,17 +1604,12 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOTE-DEGENERACY-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "CONSILIUM",
       "title": "vote_degeneracy",
       "intent": "Measures empirically whether the Trias 3-personality vote is statistically degenerate.",
@@ -1839,17 +1643,12 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "SKILL-RUN-CONSILIUM-001",
       "layer": "feature",
-      "status": "baseline",
+      "status": "confirmed",
       "area": "SKILL",
       "title": "run-consilium driver",
       "intent": "Single entry point exercising Consilium's deterministic LLM-free surface (smoke / pipeline / shot).",
@@ -1881,12 +1680,7 @@
         }
       ],
       "test_exempt": "integration harness — acceptance validated by run-consilium smoke + pipeline commands, not unit tests",
-      "risks": [
-        {
-          "signal": "unreviewed",
-          "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        }
-      ]
+      "risks": []
     }
   ],
   "edges": [

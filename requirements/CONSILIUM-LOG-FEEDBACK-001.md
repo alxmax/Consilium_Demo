@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-LOG-FEEDBACK-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 depends_on: [CONSILIUM-FEEDBACK-001, CONSILIUM-RENDER-FEEDBACK-HTML-001, CONSILIUM-UTILS-001]

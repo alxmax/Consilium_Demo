@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-STABILITY-CHECK-001
-status: baseline
+status: confirmed
 layer: feature
 owner: auto
 test_exempt: "reads runs/ directory at test time — integration-only analysis tool"

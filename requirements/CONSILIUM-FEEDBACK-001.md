@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-FEEDBACK-001
-status: baseline
+status: confirmed
 layer: bus
 owner: auto
 test_exempt: "file I/O wrapper with no isolated pure-function surface"

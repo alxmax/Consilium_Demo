@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-VOCABULARY-MAP-001
-status: baseline
+status: confirmed
 layer: bus
 owner: auto
 depends_on: []
