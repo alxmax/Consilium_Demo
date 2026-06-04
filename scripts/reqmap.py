@@ -2,10 +2,14 @@
 """reqmap — requirement manager engine (stdlib only).
 
 Subcommands:
+  init              first-use bootstrap: scaffold requirements/ + .reqmapignore, draft
+                    requirements from existing code, build the lock + map, print next steps
   new AREA-NAME-NNN   scaffold a requirement from the built-in template
   scan              list code members (implements/generated-from/... tags) per capability
   check             the gate: link sync + drift; exit non-zero on error (use in pre-commit/CI)
-  map               generate requirements/_map.html (navigable graph)
+  map               generate requirements/_map.md (Mermaid) + _map.json (graph)
+  export            emit the registry graph as requirements/_map.json (for a front-end)
+  next              terminal 'what should I do next': counted, actionable risk buckets
   extract           draft requirements from legacy code (status: draft, risk-scored)
 
 Layout on disk (relative to repo root, override with --root / --reqs / --code):
@@ -21,6 +25,15 @@ TAG_RE = re.compile(r"(?<![\w-])(implements|generated-from|validated-against|tes
 CODE_EXTS = (".py", ".js", ".ts", ".tsx", ".jsx", ".c", ".cpp", ".h", ".hpp",
              ".cc", ".java", ".go", ".rs", ".html", ".css", ".sql", ".yaml", ".yml",
              ".md")  # .md scanned for tags so prose capabilities (prompts/specs) can be members
+
+# ---- prose auto-draft classification (cmd_extract) ----
+# These buckets govern AUTO behavior (drafting) ONLY. scan_members still honors an
+# explicit tag on ANY file, regardless of bucket — buckets never suppress a real tag.
+PROSE_EXTS = (".md", ".html")
+# Bucket 1 — meta/boilerplate: never auto-drafted, never sync-checked. Basename match.
+META_IGNORE_NAMES = {"CLAUDE.md", "AGENTS.md", "GEMINI.md", "CONTRIBUTING.md",
+                     "SKILL.md", "TODO.md", "CHANGELOG.md"}
+
 VALID_STATUS = {"draft", "baseline", "in-progress", "implemented", "confirmed", "deprecated"}
 VALID_LAYER = {"bus", "feature"}
 ENFORCED = {"in-progress", "implemented", "confirmed"}
@@ -51,9 +64,10 @@ RISK_ADVICE = {
 }
 
 # Bumped on any change to this engine. `check` warns a seeded repo when its
-# vendored copy is older than the installed plugin's. ISO date: lexicographic
-# order == chronological order, so a plain string compare is enough.
-MAP_ENGINE_VERSION = "2026-06-03"
+# vendored copy is older than the installed plugin's. ISO date with an optional
+# `.N` same-day revision suffix (YYYY-MM-DD[.N]): lexicographic order ==
+# chronological order, so a plain string compare is enough.
+MAP_ENGINE_VERSION = "2026-06-04.4"
 
 
 # ---------- parsing ----------
@@ -368,7 +382,7 @@ REQUIREMENT_TEMPLATE = """\
 id: AREA-NAME-NNN
 status: draft        # draft | baseline | in-progress | implemented | confirmed | deprecated
 layer: feature       # bus | feature
-owner: alex
+owner: Alex
 depends_on: []       # ids of bus/other capabilities this builds on
 superseded_by:       # <ID>, if replaced
 # area:              # optional: System Map grouping label (else the id prefix is used)
@@ -379,6 +393,8 @@ superseded_by:       # <ID>, if replaced
 > WHY: one line — what this is, in plain language.
 
 ## WHAT — Contract (normative)
+<!-- Audience: a developer new to THIS project. Define project-specific terms inline
+     on first use; attach roles to named components; keep "shall" phrasing. -->
 - The feature shall ... (one binding, testable behavior per line; "shall" phrasing;
   no function names; true regardless of how the code is implemented).
 - Output shape + allowed values; required vs optional inputs and how it degrades
@@ -393,6 +409,8 @@ superseded_by:       # <ID>, if replaced
 - A known fragility/footgun the implementer should know but which is NOT enforced.
 
 ## HOW — Acceptance (= tests)
+<!-- Audience: a developer new to THIS project. Keep Given/When/Then concrete and
+     self-explanatory; spell out any term the Contract introduced. -->
 AC-1
   Given  <precondition>
   When   <action>
@@ -426,6 +444,55 @@ def cmd_new(reqs_dir, tmpl_path, cap_id):  # implements: REQ-NEW-004
     return 0
 
 
+def _set_frontmatter_status(text, value):  # implements: REQ-PROMOTE-011
+    """Replace the value of the first `status:` line inside the leading frontmatter
+    block, preserving its indentation and any trailing inline comment. Returns
+    (new_text, n_replaced); n=0 when there is no frontmatter or no status line."""
+    body = text.lstrip("﻿")            # drop a BOM if present (rewritten without it)
+    if not body.startswith("---"):
+        return text, 0
+    end = body.find("\n---", 3)
+    if end == -1:
+        return text, 0
+    head, rest = body[:end], body[end:]     # only the frontmatter block, never the body
+    new_head, n = re.subn(r"(?m)^(\s*status\s*:\s*)(\S+)", r"\g<1>" + value, head, count=1)
+    return new_head + rest, n
+
+
+def cmd_promote(reqs, members, cap_id):  # implements: REQ-PROMOTE-011
+    """Flip a requirement's status to `confirmed` (the human-validation step) by a
+    single frontmatter edit. Refuses if the requirement has no `implements:` member
+    (a confirmed requirement must point to code — else the gate would error), and
+    warns when no `tested-by:` member is linked."""
+    r = reqs.get(cap_id)
+    if not r:
+        print(f"no requirement with id {cap_id} (expected requirements/{cap_id}.md)")
+        return 1
+    cur = r["meta"].get("status")
+    if cur == "confirmed":
+        print(f"{cap_id} is already confirmed.")
+        return 0
+    roles = [m[0] for m in members.get(cap_id, [])]
+    if "implements" not in roles:
+        print(f"refusing: {cap_id} has no `implements:` member — a confirmed requirement "
+              f"must point to code. Tag the implementing code `# implements: {cap_id}` first.")
+        return 1
+    with open(r["path"], encoding="utf-8-sig") as f:
+        text = f.read()
+    new_text, n = _set_frontmatter_status(text, "confirmed")
+    if n == 0:
+        print(f"could not find a `status:` line in {r['path']}")
+        return 1
+    with open(r["path"], "w", encoding="utf-8") as f:
+        f.write(new_text)
+    print(f"promoted {cap_id}: {cur or '(unset)'} -> confirmed")
+    if "tested-by" not in roles:
+        print(f"  note: no `tested-by:` member — wire an acceptance test (`# tested-by: {cap_id}`) "
+              f"or set `test_exempt: <reason>` to silence the untested signal.")
+    print("  next: reqmap.py check --update-lock  &&  reqmap.py map")
+    return 0
+
+
 def _draft_id(rel):  # implements: REQ-EXTRACT-008
     """Mint a draft capability id from a file's relative path. Path-aware so
     same-basename files in different dirs don't collide; falls back to FILE when
@@ -434,20 +501,80 @@ def _draft_id(rel):  # implements: REQ-EXTRACT-008
     return "DRAFT-" + (slug or "FILE")
 
 
+def classify_prose(rel):  # implements: REQ-EXTRACT-008
+    """Bucket a POSIX-relative .md/.html path for the auto-draft path. Returns
+    'ignore' (meta/boilerplate, invisible), 'sync_only' (README/docs/*.html — never
+    drafted, but a drift- and semantic-checked member when explicitly tagged), or
+    'capability' (prompt/spec prose — auto-drafted as a `draft` stub). Governs AUTO
+    behavior only: scan_members still honors an explicit tag on any file."""
+    base = os.path.basename(rel)
+    # Bucket 1 — meta/boilerplate.
+    if base in META_IGNORE_NAMES:
+        return "ignore"
+    if base == "LICENSE" or base.startswith("LICENSE."):
+        return "ignore"
+    if base.startswith("_"):                      # generated _map.*, _findings.md
+        return "ignore"
+    # Bucket 2 — sync-only.
+    if base == "README" or base.startswith("README."):
+        return "sync_only"
+    if rel == "docs" or rel.startswith("docs/"):
+        return "sync_only"
+    if rel.endswith(".html"):                      # all HTML is an overview/derived doc
+        return "sync_only"
+    # Bucket 3 — capability source (prompts/specs/modes and other prose .md).
+    return "capability"
+
+
+def _prose_facts(src):  # implements: REQ-EXTRACT-008
+    """(title, [headings]) from markdown/HTML prose, for a draft scaffold.
+    Title: markdown frontmatter `title:`, else first `# ` H1, else <title>/<h1>.
+    Headings: markdown `## ` H2 lines, else <h2>. Returns (None, []) when absent.
+    The scaffold lists headings as an authoring hint — never the contract."""
+    meta, body = parse_frontmatter(src)
+    title = meta.get("title") or None
+    headings = []
+    for line in body.splitlines():
+        s = line.strip()
+        if title is None:
+            m = re.match(r"#\s+(.+)", s)                      # markdown H1
+            if m:
+                title = m.group(1).strip()
+                continue
+            m = re.search(r"<(?:title|h1)[^>]*>(.*?)</(?:title|h1)>", s, re.I)
+            if m:
+                title = re.sub(r"<[^>]+>", "", m.group(1)).strip()
+                # no continue: a line may carry both <title> and <h2> (see test_html_title_and_h2)
+        m = re.match(r"##\s+(.+)", s)                         # markdown H2 (not H3)
+        if m:
+            headings.append(m.group(1).strip())
+            continue
+        for inner in re.findall(r"<h2[^>]*>(.*?)</h2>", s, re.I):  # html H2
+            headings.append(re.sub(r"<[^>]+>", "", inner).strip())
+    return title, headings
+
+
 def cmd_extract(reqs, members, code_root, reqs_dir):  # implements: REQ-EXTRACT-008
     """Propose DRAFT requirements for code files that have no member tag yet."""
     tagged = {fp for hits in members.values() for (_, fp, _) in hits}
+    ignore = load_ignore(code_root, reqs_dir)   # honor .reqmapignore, same as scan
     proposed, used = 0, set()
     os.makedirs(reqs_dir, exist_ok=True)
     for dirpath, dirs, files in os.walk(code_root):
         _prune_dirs(dirpath, dirs, reqs_dir)   # skip noise + the SSOT output dir
         dirs.sort()                            # deterministic id/suffix assignment
         for fn in sorted(files):
-            if not fn.endswith((".py", ".js", ".ts", ".cpp", ".c")):
+            is_code = fn.endswith((".py", ".js", ".ts", ".cpp", ".c"))
+            is_prose = fn.endswith(PROSE_EXTS)
+            if not (is_code or is_prose):
                 continue
             rel = os.path.relpath(os.path.join(dirpath, fn), code_root).replace(os.sep, "/")
+            if any(fnmatch.fnmatch(rel, pat) for pat in ignore):  # ignored -> never draft
+                continue
             if rel in tagged:
                 continue
+            if is_prose and classify_prose(rel) != "capability":
+                continue                           # bucket 1/2 -> never auto-drafted
             cap = base = _draft_id(rel)
             k = 2
             while cap in used:                 # residual collision (case/ext only)
@@ -458,25 +585,54 @@ def cmd_extract(reqs, members, code_root, reqs_dir):  # implements: REQ-EXTRACT-
                 continue
             with open(os.path.join(dirpath, fn), encoding="utf-8", errors="ignore") as f:
                 src = f.read()
-            risk = _risk(src)
-            review = "REVIEW" if risk >= 2 else "auto-baseline"
-            with open(dest, "w", encoding="utf-8") as f:
-                # new emission schema (Contract / Verify-intent / Acceptance / Current-impl),
-                # matching cmd_new so a promoted draft needs no reshaping
-                f.write(f"---\nid: {cap}\nstatus: draft\nlayer: feature\n"
-                        f"owner: auto\ndepends_on: []\n"
-                        f"risk: {risk}  # {review} — author triage hint, not read by the engine\n---\n\n"
-                        f"# {os.path.splitext(fn)[0]}\n\n"
-                        f"> DRAFT extracted from {rel}. Describes observed behavior, "
-                        f"not validated intent.\n\n"
-                        f"## WHAT — Contract (normative)\n"
-                        f"- TODO: the observed behavior (characterization — correctness UNVERIFIED).\n\n"
-                        f"## WHAT — Verify intent (open questions for the human)\n"
-                        f"- TODO: anything that looks like an accident (swallowed error, magic "
-                        f"constant, dead branch) — intended, or a bug to fix?\n\n"
-                        f"## HOW — Acceptance (= tests)\n"
-                        f"- characterization: current behavior captured, correctness UNVERIFIED\n\n"
-                        f"## WHERE — Current implementation\n- {rel}\n")
+            if is_prose:
+                title, headings = _prose_facts(src)
+                review = "REVIEW"   # intent is unrecoverable from prose — always author
+                hint = "\n".join("  - {}".format(h) for h in headings) \
+                    or "  - (no section headings detected)"
+                # str.format (not f-string): the template embeds literal {cap}/{rel} inside backticked instructions
+                with open(dest, "w", encoding="utf-8") as f:
+                    f.write("---\nid: {cap}\nstatus: draft\nlayer: feature\n"
+                            "owner: auto\ndepends_on: []\n"
+                            "risk: 2  # REVIEW — prose capability, author the contract "
+                            "before promoting\n---\n\n"
+                            "# {title}\n\n"
+                            "> DRAFT extracted from {rel} (prose capability). The source "
+                            "prose is NOT the contract — author the normative behavior "
+                            "below, then tag the source `# generated-from: {cap}` "
+                            "(HTML: `<!-- generated-from: {cap} -->`) and promote.\n\n"
+                            "## WHAT — Contract (normative)\n"
+                            "- TODO: the capability this prose defines (author from "
+                            "intent, do not copy the prose).\n\n"
+                            "## WHAT — Verify intent (open questions for the human)\n"
+                            "- TODO: which source sections are normative vs illustrative?\n\n"
+                            "Source sections detected (authoring hint, not the contract):\n"
+                            "{hint}\n\n"
+                            "## HOW — Acceptance (= tests)\n"
+                            "- TODO: Given/When/Then checks for the contract above.\n\n"
+                            "## WHERE — Current implementation\n- {rel}\n".format(
+                                cap=cap, title=(title or os.path.splitext(fn)[0]),
+                                rel=rel, hint=hint))
+            else:
+                risk = _risk(src)
+                review = "REVIEW" if risk >= 2 else "auto-baseline"
+                with open(dest, "w", encoding="utf-8") as f:
+                    # new emission schema (Contract / Verify-intent / Acceptance / Current-impl),
+                    # matching cmd_new so a promoted draft needs no reshaping
+                    f.write(f"---\nid: {cap}\nstatus: draft\nlayer: feature\n"
+                            f"owner: auto\ndepends_on: []\n"
+                            f"risk: {risk}  # {review} — author triage hint, not read by the engine\n---\n\n"
+                            f"# {os.path.splitext(fn)[0]}\n\n"
+                            f"> DRAFT extracted from {rel}. Describes observed behavior, "
+                            f"not validated intent.\n\n"
+                            f"## WHAT — Contract (normative)\n"
+                            f"- TODO: the observed behavior (characterization — correctness UNVERIFIED).\n\n"
+                            f"## WHAT — Verify intent (open questions for the human)\n"
+                            f"- TODO: anything that looks like an accident (swallowed error, magic "
+                            f"constant, dead branch) — intended, or a bug to fix?\n\n"
+                            f"## HOW — Acceptance (= tests)\n"
+                            f"- characterization: current behavior captured, correctness UNVERIFIED\n\n"
+                            f"## WHERE — Current implementation\n- {rel}\n")
             proposed += 1
             print(f"{review:14} {cap}  <- {rel}")
     print(f"\n{proposed} draft requirements proposed. Review the REVIEW ones before promoting.")
@@ -875,7 +1031,9 @@ def cmd_findings(reqs, reqs_dir, raw=False):  # implements: REQ-FINDINGS-010
 
 
 # ---------- map (HTML) ----------
-def cmd_map(reqs, members, reqs_dir, check=False):  # implements: REQ-MAP-007
+def _build_map_data(reqs, members):  # implements: REQ-MAP-007
+    """Assemble the {nodes, edges} registry graph that drives every rendered
+    surface (HTML map, Mermaid blocks, and the JSON export). Pure: no IO."""
     used_by = {rid: [] for rid in reqs}
     for rid, r in reqs.items():
         for dep in _as_list(r["meta"].get("depends_on")):
@@ -887,7 +1045,7 @@ def cmd_map(reqs, members, reqs_dir, check=False):  # implements: REQ-MAP-007
         data["nodes"].append({
             "id": rid, "layer": m.get("layer", "feature"),
             "status": m.get("status", "draft"),
-            "area": m.get("area", ""),
+            "area": (m.get("area") or "").strip() or _area_of(rid),
             "title": _title(r["body"]),
             "intent": _first_quote(r["body"]),
             # new emission schema (Contract / Verify-intent / Notes / Current-impl)
@@ -913,15 +1071,238 @@ def cmd_map(reqs, members, reqs_dir, check=False):  # implements: REQ-MAP-007
     for rid, r in reqs.items():
         for dep in _as_list(r["meta"].get("depends_on")):
             data["edges"].append([rid, dep])
+    return data
+
+
+def cmd_map(reqs, members, reqs_dir, check=False):  # implements: REQ-MAP-007
+    data = _build_map_data(reqs, members)
 
     if check:
         return _map_check(data, reqs_dir)
 
-    html_out = render_html(data, reqs_dir)
     md_out   = render_md(data, reqs_dir)
-    print("wrote {}".format(html_out))
+    json_out = render_json(data, reqs_dir)
+    html_out = render_html(data, reqs_dir)
     print("wrote {}".format(md_out))
+    print("wrote {}".format(json_out))
+    if html_out:
+        print("wrote {}".format(html_out))
     print("({} nodes, {} edges)".format(len(data["nodes"]), len(data["edges"])))
+    return 0
+
+
+def cmd_export(reqs, members, reqs_dir, out=None):  # implements: REQ-MAP-007
+    """Emit the registry graph as JSON for an external front-end to consume.
+    Same {nodes, edges} shape that drives the map; '-' = stdout, --out PATH, or
+    requirements/_map.json by default."""
+    data = _build_map_data(reqs, members)
+    text = _build_json_text(data)
+    target = out if out else os.path.join(reqs_dir, "_map.json")
+    if target == "-":
+        print(text)
+        return 0
+    os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+    with open(target, "w", encoding="utf-8") as f:
+        f.write(text)
+    print("wrote {} ({} nodes, {} edges)".format(target, len(data["nodes"]), len(data["edges"])))
+    return 0
+
+
+def _risk_score(meta):  # implements: REQ-NEXT-013
+    """Extract's per-file risk hint (0-3) from frontmatter, or 0 when absent /
+    unparseable. Used only to float REVIEW-flagged drafts to the top of a bucket —
+    never to gate. Hand-authored requirements have no `risk:` field -> 0."""
+    try:
+        return int(str(meta.get("risk")).strip())
+    except (TypeError, ValueError):
+        return 0
+
+
+def cmd_next(reqs, members, show_all=False, top_n=3):  # implements: REQ-NEXT-013
+    """Terminal 'what should I do next': a focused, counted worklist over the same
+    `_risk_signals` + `RISK_ADVICE` that drive the Risk tab. Prints a progress
+    header, leads with the most-urgent bucket, shows the top few per bucket (the
+    extract REVIEW-flagged ones first), and collapses the rest behind --all. Each
+    item names the requirement file to open. Read-only, always exit 0."""
+    total = len(reqs)
+    if total == 0:   # distinguish "nothing set up yet" from "all clean"
+        print("No requirements yet. Run `reqmap.py init` to bootstrap from existing "
+              "code, or `reqmap.py new AREA-NAME-NNN` to author one.")
+        return 0
+    confirmed = sum(1 for r in reqs.values() if r["meta"].get("status") == "confirmed")
+    tested = sum(1 for rid in reqs if any(role == "tested-by" for role, *_ in members.get(rid, [])))
+    drafts = sum(1 for r in reqs.values() if r["meta"].get("status", "draft") == "draft")
+    print("{} requirement(s) · {} confirmed · {} tested · {} draft(s)\n".format(
+        total, confirmed, tested, drafts))
+
+    dependents = {rid: 0 for rid in reqs}
+    for rid, r in reqs.items():
+        for dep in _as_list(r["meta"].get("depends_on")):
+            if dep in dependents:
+                dependents[dep] += 1
+    buckets = {}  # signal -> [(rid, risk_score)]
+    for rid, r in reqs.items():
+        m = r["meta"]
+        node = {"status": m.get("status", "draft"), "members": members.get(rid, []),
+                "verify": _bullets(r["body"], "verify"), "test_exempt": m.get("test_exempt")}
+        for sig in _risk_signals(node, dependents.get(rid, 0)):
+            buckets.setdefault(sig, []).append((rid, _risk_score(m)))
+    # Action buckets, MOST-URGENT FIRST: an unimplemented contract outranks an
+    # unreviewed draft. blast-radius is a caution (a property, not a task) so `next`
+    # omits it — it stays on the Risk tab. Each bucket is shown and truncated
+    # independently, so a high-priority bucket is never hidden below a long low one.
+    PLAN = [
+        ("unimplemented",     "Orphans (confirmed, no code)"),
+        ("untested",          "Needs tests"),
+        ("unverified-intent", "Needs intent review"),
+        ("unreviewed",        "Drafts to review"),
+    ]
+    pending = [(sig, label, sorted(buckets[sig], key=lambda x: (-x[1], x[0])))
+               for sig, label in PLAN if buckets.get(sig)]
+    if not pending:
+        print("Nothing pending — every confirmed requirement is implemented, tested and intent-checked.")
+        return 0
+    total_actions = sum(len(ids) for _, _, ids in pending)
+    print("{} item(s) need attention across {} {}:\n".format(
+        total_actions, len(pending), "category" if len(pending) == 1 else "categories"))
+    for sig, label, ids in pending:
+        print("{} ({})".format(label, len(ids)))
+        shown = ids if show_all else ids[:top_n]
+        for rid, score in shown:
+            flag = "  [REVIEW]" if score >= 2 else ""
+            print("  {}{}   requirements/{}.md".format(rid, flag, rid))
+        if not show_all and len(ids) > top_n:
+            print("  ... {} more — run `reqmap.py next --all`".format(len(ids) - top_n))
+        print("  -> {}\n".format(RISK_ADVICE[sig]))
+    return 0
+
+
+def _strip_line_tag(line):
+    """Remove a reqmap membership-tag comment from a source line.
+    Finds the comment marker (#, //, <!--) closest to the tag and cuts from
+    there to end-of-line, preserving the code before it.
+    Lines with no tag are returned unchanged."""
+    m = TAG_RE.search(line)
+    if m is None:
+        return line
+    pre = line[:m.start()]
+    nl = "\n" if line.endswith("\n") else ""
+    cut = -1
+    for marker in ("#", "//", "<!--"):
+        idx = pre.rfind(marker)
+        if idx > cut:
+            cut = idx
+    if cut >= 0:
+        return line[:cut].rstrip() + nl
+    return line  # no recognisable comment marker — leave unchanged
+
+
+def _wipe(reqs_dir, code_root):
+    """Hard-reset: delete non-generated requirement files (names not starting
+    with `_`) and strip membership tags from every scanned source file so that
+    `cmd_extract` can re-draft from a clean slate."""
+    deleted = 0
+    if os.path.isdir(reqs_dir):
+        for fn in os.listdir(reqs_dir):
+            if fn.endswith(".md") and not fn.startswith("_"):
+                try:
+                    os.remove(os.path.join(reqs_dir, fn))
+                    deleted += 1
+                except OSError:
+                    pass
+    stripped_files = 0
+    ignore = load_ignore(code_root, reqs_dir)
+    for dirpath, dirs, files in os.walk(code_root):
+        _prune_dirs(dirpath, dirs, reqs_dir)
+        for fn in files:
+            if not fn.endswith(CODE_EXTS):
+                continue
+            fp = os.path.join(dirpath, fn)
+            rel = os.path.relpath(fp, code_root).replace(os.sep, "/")
+            if any(fnmatch.fnmatch(rel, pat) for pat in ignore):
+                continue
+            try:
+                with open(fp, encoding="utf-8", errors="ignore") as f:
+                    lines = f.readlines()
+                new_lines = [_strip_line_tag(l) for l in lines]
+                if new_lines != lines:
+                    with open(fp, "w", encoding="utf-8") as f:
+                        f.writelines(new_lines)
+                    stripped_files += 1
+            except OSError:
+                continue
+    print("wipe: deleted {} requirement file(s), stripped tags from {} source file(s).".format(
+        deleted, stripped_files))
+
+
+def _reqmapignore_seed(code_root, reqs_dir):  # implements: REQ-INIT-012
+    """Content for a freshly-seeded `.reqmapignore`. Normally ignores the vendored
+    engine at `scripts/reqmap.py` — its `implements:` self-tags would otherwise read
+    as dangling refs in a consumer repo. EXCEPTION — a self-hosting repo: when that
+    file carries membership tags that resolve to requirements already present, the
+    engine IS the managed code and must stay scanned, so the line is omitted (a
+    comment explains why) to avoid orphaning those requirements."""
+    header = ("# Paths reqmap should not scan (one fnmatch glob per line, # comments ok).\n"
+              "# The bundled single-file viewer is a generated artifact, never a member.\n"
+              "scripts/_map_viewer.html\n")
+    engine = os.path.join(code_root, "scripts", "reqmap.py")
+    req_ids = set(load_requirements(reqs_dir))
+    if req_ids and os.path.isfile(engine):
+        try:
+            with open(engine, encoding="utf-8") as f:
+                tagged = {m.group(2) for m in TAG_RE.finditer(f.read())}
+        except OSError:
+            tagged = set()
+        if tagged & req_ids:   # self-hosting: the engine's tags point at local reqs
+            return (header +
+                    "# scripts/reqmap.py is intentionally NOT ignored: this repo hosts its own\n"
+                    "# requirements there (its membership tags resolve to local requirements), so\n"
+                    "# the engine must stay scanned. Add other vendored/generated paths below.\n")
+    return (header +
+            "# The engine carries its own `implements:` self-tags; ignore it so the\n"
+            "# gate does not flag them as dangling refs.\n"
+            "scripts/reqmap.py\n")
+
+
+def cmd_init(reqs_dir, code_root, wipe=False):  # implements: REQ-INIT-012
+    """First-use bootstrap for a fresh repo: create requirements/, seed a minimal
+    .reqmapignore (idempotent — never clobbers an existing one), draft requirements
+    from existing code, build the lock + map, then print guided next steps.
+    Pass wipe=True (--wipe flag) for a hard reset: all non-generated requirement
+    files are deleted and membership tags stripped from source before re-extracting."""
+    if wipe:
+        _wipe(reqs_dir, code_root)
+    created = []
+    if not os.path.isdir(reqs_dir):
+        os.makedirs(reqs_dir, exist_ok=True)
+        created.append(os.path.relpath(reqs_dir, code_root).replace(os.sep, "/") + "/")
+    ignore = os.path.join(code_root, ".reqmapignore")
+    if not os.path.exists(ignore):
+        with open(ignore, "w", encoding="utf-8") as f:
+            f.write(_reqmapignore_seed(code_root, reqs_dir))
+        created.append(".reqmapignore")
+    print("Bootstrapping draft requirements from existing code...\n")
+    reqs = load_requirements(reqs_dir)
+    members = scan_members(code_root, reqs_dir)
+    cmd_extract(reqs, members, code_root, reqs_dir)
+    # extract wrote new files -> reload before locking + mapping
+    reqs = load_requirements(reqs_dir)
+    members = scan_members(code_root, reqs_dir)
+    cmd_check(reqs, members, reqs_dir, update_lock=True)
+    cmd_map(reqs, members, reqs_dir)
+    print("\n" + "=" * 60)
+    if not reqs:   # nothing to extract — don't masquerade as "all clean"
+        print("reqmap initialized, but no requirements were extracted")
+        print("(no supported source files found, or all are ignored by .reqmapignore).")
+        if created:
+            print("created: " + ", ".join(created))
+        print("\nNext: author your first requirement with `reqmap.py new AREA-NAME-NNN`.")
+        return 0
+    print("reqmap initialized — {} requirement(s) tracked.".format(len(reqs)))
+    if created:
+        print("created: " + ", ".join(created))
+    print("\nNext: run `reqmap.py next` — it shows what to do, most important first.")
+    print("Then wire the gate: add `python scripts/reqmap.py check` to your pre-commit hook.")
     return 0
 
 
@@ -939,7 +1320,7 @@ def _map_check(data, reqs_dir):  # implements: REQ-MAP-007
     The `generated:` timestamp is ignored so an unchanged map never trips on time."""
     stale = []
     for name, fresh in (("_map.md", _build_md_text(data)),
-                        ("_map.html", _build_html_text(data))):
+                        ("_map.json", _build_json_text(data))):
         path = os.path.join(reqs_dir, name)
         if not os.path.exists(path):
             continue   # nothing committed to be stale against
@@ -1196,8 +1577,13 @@ def _risk_signals(node, dependents_count):
         signals.append("untested")
     # open verify-intent questions reconstructed from code — surface them on the map,
     # not just in the detail panel / _findings.md. Mirror collect_findings: a "None —"
-    # placeholder bullet is not an open finding.
-    if any(b and not b.lstrip("*_ ").lower().startswith("none") for b in (node.get("verify") or [])):
+    # placeholder bullet is not an open finding. A *draft* is suppressed here: its
+    # intent questions are subsumed by 'unreviewed' (the whole draft is unreviewed),
+    # and every auto-extracted draft carries a template verify TODO — flagging both
+    # would double-count every draft. Re-surfaces once promoted past draft. This
+    # rule lives in the shared signal source so `next` and the Risk tab agree.
+    if node["status"] != "draft" and any(
+            b and not b.lstrip("*_ ").lower().startswith("none") for b in (node.get("verify") or [])):
         signals.append("unverified-intent")
     if dependents_count >= 3:
         signals.append("blast-radius")
@@ -1244,20 +1630,6 @@ def _add_clicks(diagram, data):
 
 # Per-tab legends (parallel to the 4 diagrams, same order) so each view is
 # self-explanatory. HTML uses colored swatches; markdown uses words.
-_LEGEND_HTML = [
-    '<span class="sw" style="border-width:3px"></span>bus (shared foundation) · arrows = <b>depends_on</b> · '
-    '<i>edges into the bus/hubs are hidden (Dependencies tab shows area-level coupling) · '
-    'open a requirement (click a node / search) then press the ⌖ crosshair in its panel to center it here</i>',
-    'requirement → its code · arrow label = role (<b>implements</b> / <b>tested-by</b>) · '
-    '<span class="sw" style="background:#fee;border-color:#c66"></span>confirmed but no code (gap) · '
-    '<span class="sw" style="background:#eee;border-color:#bbb"></span>baseline/draft, not linked yet',
-    'area-level coupling: one box per area (<b>N caps</b>), arrow A→B = some capability in A depends on one in B · the System Map has the per-capability detail',
-    'requirements needing attention · '
-    '<span class="sw" style="background:#fee;border-color:#c00"></span>unimplemented (confirmed, no code) · '
-    '<span class="sw" style="background:#fff3cd;border-color:#a66"></span>unreviewed (promote after review) · '
-    '<span class="sw" style="background:#fff9c4;border-color:#aa0"></span>blast-radius (≥3 dependents) · '
-    'untested (implemented, no tested-by) · unverified-intent (open verify-intent question)',
-]
 _LEGEND_MD = [
     "Capabilities grouped by area; thick border = bus; arrows = `depends_on`. Edges into the bus/hubs are hidden (the Dependency Map shows area-level coupling).",
     "Each requirement → its code; arrow label = role (`implements` / `tested-by`). Red = confirmed but no code linked (a gap); grey = baseline/draft, not linked yet (expected).",
@@ -1325,276 +1697,57 @@ def render_md(data, reqs_dir):  # implements: REQ-MAP-007
     return out
 
 
-# mermaid is loaded from a CDN without Subresource Integrity (SRI) on purpose: the
-# src is pinned to a major range (@10) so a fixed integrity hash would break on every
-# patch release. The map is a local, developer-facing artifact (no secrets, opened
-# from disk), so the supply-chain exposure is accepted rather than pinned. To harden,
-# pin an exact version + add integrity="sha384-..." crossorigin="anonymous".
-MAP_HTML_TEMPLATE = r"""<!doctype html><meta charset=utf-8><title>Requirement map</title>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<style>
-:root{--bg:#fff;--fg:#1a1a18;--mut:#73726c;--sur:#f4f2ec;--bor:#d8d6cc;--acc:#534ab7;--ok:#3b6d11;--wip:#854f0b}
-@media(prefers-color-scheme:dark){:root{--bg:#1f1e1c;--fg:#e9e7df;--mut:#9c9a92;--sur:#2a2926;--bor:#3a3935;--acc:#afa9ec;--ok:#97c459;--wip:#fac775}}
-body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif;padding:24px}
-h1{font-size:18px;font-weight:500;margin:0 0 12px}
-.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
-.tab{padding:6px 14px;cursor:pointer;border-radius:6px;border:1px solid var(--bor);background:var(--sur);color:var(--fg);font:14px system-ui,sans-serif}
-.tab.active{background:var(--acc);color:#fff;border-color:var(--acc)}
-.pane{display:none}.pane.active{display:block}
-.mwrap{position:relative}
-.mermaid{background:var(--sur);border-radius:8px;height:72vh;overflow:hidden;cursor:grab;touch-action:none}
-.mermaid:active{cursor:grabbing}
-.mermaid svg{transform-origin:0 0}
-/* sharp rectangle nodes across every diagram (override the neutral theme's rounded corners) */
-.mermaid .node rect,.mermaid .node polygon{rx:0;ry:0}
-.mctrl{position:absolute;top:10px;right:10px;display:flex;gap:4px;z-index:5}
-.mctrl button{width:30px;height:30px;border:1px solid var(--bor);background:var(--bg);color:var(--fg);border-radius:6px;cursor:pointer;font:16px/1 system-ui;opacity:.85}
-.mctrl button:hover{opacity:1;border-color:var(--acc)}
-.mhint{position:absolute;bottom:8px;left:12px;font-size:11px;color:var(--mut);pointer-events:none}
-.legend{font-size:12px;color:var(--mut);margin:0 0 8px;line-height:1.7}
-.legend b{color:var(--fg);font-weight:600}
-.sw{display:inline-block;width:11px;height:11px;border:1px solid var(--bor);border-radius:2px;vertical-align:middle;margin:0 3px 0 2px}
-.search{position:relative;margin:0 0 12px;max-width:560px}
-#q{width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid var(--bor);border-radius:8px;background:var(--sur);color:var(--fg);font:14px system-ui}
-#qres{position:absolute;left:0;right:0;z-index:20;background:var(--bg);border:1px solid var(--bor);border-radius:8px;margin-top:4px;max-height:340px;overflow:auto;box-shadow:0 6px 20px rgba(0,0,0,.12)}
-#qres:empty{display:none}
-.qhit{padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--bor);font-size:13px}
-.qhit:last-child{border-bottom:none}.qhit:hover{background:var(--sur)}.qhit.nohit{cursor:default;color:var(--mut)}
-.ctr{display:inline-flex;align-items:center;justify-content:center;border:1px solid #e0a800;background:var(--bg);color:#caa000;border-radius:8px;cursor:pointer;padding:4px 8px;vertical-align:middle;margin-left:8px}
-.ctr:hover{background:#f5c518;color:#000;border-color:#e0a800}
-.ctr svg{display:block}
-.mermaid g.node.hl>rect,.mermaid g.node.hl>polygon{stroke:#e0a800 !important;stroke-width:4px !important;fill:#fff6cc !important;filter:drop-shadow(0 0 7px #ffcc00)}
-#p{margin-top:16px;border:1px solid var(--bor);border-radius:12px;padding:16px 20px;background:var(--bg)}
-#p h2{font-size:16px;margin:0 0 4px}.mono{font-family:ui-monospace,monospace;font-size:12px;color:var(--mut)}
-.pill{font-size:12px;padding:2px 10px;border-radius:8px;background:var(--sur);color:var(--mut);margin-left:6px}
-.io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
-.io div{background:var(--sur);border-radius:8px;padding:10px}.io .k{font-size:12px;color:var(--mut)}
-ul{margin:4px 0;padding-left:18px}.k{font-size:12px;color:var(--mut)}
-.lbl{font-size:11px;font-weight:600;color:var(--acc);text-transform:uppercase;letter-spacing:.05em;margin-top:10px}
-</style>
-<h1>Requirement map</h1>
-<div class="search"><input id="q" placeholder="Search requirements / keyword…  (then the ⌖ crosshair in the panel centers it)" oninput="search(this.value)" onkeydown="if(event.key==='Enter')searchEnter()" autocomplete="off"><div id="qres"></div></div>
-<div class="tabs">REQMAP_TABS</div>
-REQMAP_PANES
-<div id="p"><p style="color:var(--mut);font-style:italic">Click a node in any diagram to see details.</p></div>
-<script>
-mermaid.initialize({startOnLoad:false,securityLevel:'loose',theme:'neutral'});
-const rendered=new Set();
-function switchTab(i){
-  document.querySelectorAll('.tab,.pane').forEach(e=>e.classList.remove('active'));
-  document.querySelector('[data-tab="'+i+'"]').classList.add('active');
-  const pane=document.getElementById('pane'+i);
-  pane.classList.add('active');
-  if(!rendered.has(i)){
-    rendered.add(i);
-    mermaid.run({nodes:pane.querySelectorAll('.mermaid')})
-      .then(()=>pane.querySelectorAll('.mermaid').forEach(initPanZoom))
-      .catch(()=>{rendered.delete(i);pane.querySelectorAll('.mermaid').forEach(mapFallback);});
-  }else{
-    pane.querySelectorAll('.mermaid').forEach(refit);   // re-fit an already-rendered pane on show
-  }
-}
-function paneBox(i){return document.getElementById('pane'+i).querySelector('.mermaid');}
-// render failed (CDN blocked / parse error / no svg): restore a scrollable pane so content isn't silently clipped
-function mapFallback(box){box.style.overflow='auto';box.style.cursor='default';}
-// content size from the viewBox (mermaid's true drawn bounds), falling back to attrs
-function _svgDims(svg){
-  const vb=svg.getAttribute('viewBox');
-  if(vb){const p=vb.trim().split(/[\s,]+/);const w=+p[2],h=+p[3];if(w>0&&h>0)return {w:w,h:h};}
-  return {w:parseFloat(svg.getAttribute('width'))||0,h:parseFloat(svg.getAttribute('height'))||0};
-}
-// Pin the svg element's layout size to its viewBox so element-size == content-size.
-// Mermaid ships width="100%"; without this the element lays out at container width
-// and our scale/center (computed from the viewBox) fight the real box -> the
-// huge-offset / right-shifted diagram. Cached on the box as _vw/_vh.
-function _normalizeSvg(box){
-  const svg=box.querySelector('svg');if(!svg)return null;
-  const d=_svgDims(svg);
-  if(d.w>0&&d.h>0){svg.setAttribute('width',d.w);svg.setAttribute('height',d.h);}
-  svg.style.maxWidth='none';
-  box._vw=d.w;box._vh=d.h;
-  return svg;
-}
-// fit-to-container scale: whole diagram visible, modest upscale cap so a tiny
-// diagram fills the pane without becoming a blurry giant. null = not measurable yet.
-const FIT_MAX=1.4, FIT_PAD=24;
-function computeFit(box){
-  const br=box.getBoundingClientRect();
-  if(!(br.width>0&&br.height>0&&box._vw>0&&box._vh>0))return null;
-  return Math.max(0.05,Math.min(FIT_MAX,(br.width-FIT_PAD)/box._vw,(br.height-FIT_PAD)/box._vh));
-}
-// re-fit + center, measured AFTER layout (double rAF) so a just-revealed pane
-// reports its true size instead of 0 — the over/under-zoom bug on tab switch.
-function refit(box){
-  if(!box._pz)return;
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    const f=computeFit(box);if(f==null)return;
-    const br=box.getBoundingClientRect(),st=box._pz;
-    st.s=f;box._fitS=f;
-    st.x=Math.max(0,(br.width-box._vw*f)/2);
-    st.y=Math.max(0,(br.height-box._vh*f)/2);
-    box._apply();
-  }));
-}
-function initPanZoom(box){
-  const svg=_normalizeSvg(box);if(!svg){mapFallback(box);return;}if(box._pz)return;
-  const st={s:1,x:0,y:0};box._pz=st;box._fitS=1;
-  const apply=()=>{svg.style.transform='translate('+st.x+'px,'+st.y+'px) scale('+st.s+')';};
-  box._apply=apply;apply();
-  box.addEventListener('wheel',e=>{
-    e.preventDefault();
-    const r=box.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-    const ns=Math.min(8,Math.max(.15,st.s*(e.deltaY<0?1.1:1/1.1)));
-    st.x=mx-(mx-st.x)*(ns/st.s);st.y=my-(my-st.y)*(ns/st.s);st.s=ns;apply();
-  },{passive:false});
-  let drag=false,lx=0,ly=0,moved=0;
-  box.addEventListener('pointerdown',e=>{drag=true;moved=0;lx=e.clientX;ly=e.clientY;});
-  window.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-lx,dy=e.clientY-ly;moved+=Math.abs(dx)+Math.abs(dy);st.x+=dx;st.y+=dy;lx=e.clientX;ly=e.clientY;apply();});
-  window.addEventListener('pointerup',()=>{drag=false;});
-  // suppress node-click only when an actual drag happened
-  box.addEventListener('click',e=>{if(moved>4){e.stopPropagation();e.preventDefault();}},true);
-  refit(box);   // initial fit, measured after layout
-}
-function pz(i,f){const b=paneBox(i),st=b._pz;if(!st)return;const r=b.getBoundingClientRect(),cx=r.width/2,cy=r.height/2;const ns=Math.min(8,Math.max(.15,st.s*f));st.x=cx-(cx-st.x)*(ns/st.s);st.y=cy-(cy-st.y)*(ns/st.s);st.s=ns;b._apply();}
-function pzReset(i){refit(paneBox(i));}
-const D=REQMAP_DATA;
-const byId=Object.fromEntries(D.nodes.map(n=>[n.id,n]));
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function sel(id){
-  const n=byId[id];if(!n)return;
-  const li=a=>a.map(x=>'<li>'+esc(x)+'</li>').join('');
-  const mem=n.members.length?(()=>{const g={};n.members.forEach(m=>{const c=m.loc.lastIndexOf(':');const f=m.loc.slice(0,c),l=+m.loc.slice(c+1);const k=m.role+'|'+f;if(!g[k])g[k]={role:m.role,f,min:l,max:l};else{g[k].min=Math.min(g[k].min,l);g[k].max=Math.max(g[k].max,l)}});return Object.values(g).map(e=>`<div class=mono>${esc(e.role)}: ${esc(e.f)}:${e.min===e.max?e.min:e.min+'-'+e.max}</div>`).join('')})():'<div class=k>(no members found)</div>';
-  const sc=n.status==='confirmed'?'var(--ok)':n.status==='in-progress'?'var(--wip)':'var(--mut)';
-  document.getElementById('p').innerHTML=`
-    <h2>${esc(n.id)} <span class=pill style="color:${sc}">${esc(n.status)}</span><span class=pill>${esc(n.layer)}</span><button class=ctr id=ctrBtn title="center this requirement in the current diagram"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 0v6M12 18v6M0 12h6M18 12h6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg></button></h2>
-    <div class=lbl>WHY</div><p style="margin:2px 0 8px;font-style:italic">${esc(n.intent)||'—'}</p>
-    ${(n.contract&&n.contract.length)
-      ? `<div class=lbl>WHAT — Contract</div><ul>${li(n.contract)}</ul>`
-        + ((n.verify&&n.verify.length)?`<div class=lbl style="color:#b8860b">Verify intent</div><ul>${li(n.verify)}</ul>`:'')
-        + ((n.notes&&n.notes.length)?`<div class=k style="margin-top:6px">Notes &amp; limitations</div><ul>${li(n.notes)}</ul>`:'')
-      : `<div class=lbl>WHAT</div><div class=io><div><div class=k>Input</div>${esc(n.input)||'—'}</div><div><div class=k>Output</div>${esc(n.output)||'—'}</div></div><div class=k>Description</div><p style="margin:2px 0 10px">${esc(n.desc)||'—'}</p>`}
-    <div class=lbl>HOW — Acceptance</div>${(n.acc&&n.acc.length)?`<ul>${li(n.acc)}</ul>`:`<pre style="white-space:pre-wrap;font:12px/1.45 ui-monospace,monospace;background:var(--sur);border-radius:6px;padding:8px;margin:4px 0">${esc(n.accept)||'—'}</pre>`}
-    <div class=lbl>WHERE</div>${(n.current_impl&&n.current_impl.length)?`<div class=k>Current implementation</div><ul>${li(n.current_impl)}</ul>`:''}<div class=k>Members in code</div>${mem}
-    <div class=k style="margin-top:8px">Depends on</div><div class=mono>${esc(n.deps.join(' · '))||'— (bus)'}</div>
-    <div class=k>Used by</div><div class=mono>${esc(n.used_by.join(' · '))||'—'}</div>
-    ${(n.risks&&n.risks.length)?'<div class=lbl style="color:#b00;margin-top:10px">Risk — recommended action</div>'+n.risks.map(r=>`<div class=k style="margin:3px 0"><b>${esc(r.signal)}</b> — ${esc(r.advice)}</div>`).join(''):''}`;
-  // wire the center button in JS so the id stays a variable, never interpolated into
-  // markup (an id with a quote would otherwise break out of the onclick string).
-  const _cb=document.getElementById('ctrBtn');if(_cb)_cb.onclick=()=>centerNode(n.id);
-  highlight(id);   // selecting a requirement also yellow-highlights it in the current diagram
-}
-let _hits=[];
-function search(q){
-  q=(q||'').trim().toLowerCase();const box=document.getElementById('qres');
-  if(!q){box.innerHTML='';_hits=[];return;}
-  _hits=D.nodes.filter(n=>[n.id,n.title,n.area,n.layer,n.intent,(n.contract||[]).join(' '),(n.notes||[]).join(' '),n.desc,n.input,n.output].join(' ').toLowerCase().includes(q)).slice(0,15);
-  box.innerHTML=_hits.length
-    ? _hits.map(n=>`<div class="qhit" data-id="${esc(n.id)}">${esc(n.id)} — ${esc(n.title||'')} <span class=k>${esc(n.area||n.layer)}</span></div>`).join('')
-    : '<div class="qhit nohit">no match</div>';
-  // delegate the click off a data-id attribute (HTML-escaped) instead of an inline
-  // onclick with the raw id — dataset.id reaches pick() as a plain decoded string,
-  // never as interpolated code. Assigning .onclick is idempotent across re-renders.
-  box.onclick=e=>{const h=e.target.closest('.qhit');if(h&&h.dataset.id)pick(h.dataset.id);};
-}
-function pick(id){document.getElementById('qres').innerHTML='';document.getElementById('q').value='';sel(id);}
-function searchEnter(){ if(_hits.length) pick(_hits[0].id); }
-// center + highlight a node IN THE CURRENTLY-OPEN diagram — never switches tabs.
-// NB: named centerNode (not focus) — an inline onclick="focus(...)" on a <button>
-// would resolve to the element's built-in .focus(), shadowing a global focus().
-function _findNode(id){
-  const pane=document.querySelector('.pane.active');
-  const box=pane&&pane.querySelector('.mermaid');
-  const svg=box&&box.querySelector('svg');
-  if(!svg)return null;
-  svg.querySelectorAll('.hl').forEach(e=>e.classList.remove('hl'));
-  const safe=id.replace(/[^A-Za-z0-9]/g,'_');
-  let g=null;svg.querySelectorAll('g.node').forEach(el=>{if(!g&&(el.id||'').indexOf('-'+safe+'-')>=0)g=el;});
-  if(g)g.classList.add('hl');    // requirement may not be drawn in this view (e.g. Dependencies) -> g null
-  return {box:box,g:g};
-}
-function highlight(id){_findNode(id);}             // yellow-highlight in the current diagram
-function centerNode(id){
-  const r=_findNode(id);if(!r||!r.g)return;
-  const box=r.box,g=r.g,st=box._pz;if(!st)return;
-  try{
-    st.s=Math.max(st.s,1);box._apply&&box._apply();          // not zoomed out; apply before measuring
-    const gr=g.getBoundingClientRect(),br=box.getBoundingClientRect();    // current on-screen rects
-    st.x+=(br.left+br.width/2)-(gr.left+gr.width/2);         // shift pan by the pixel delta -> node to center
-    st.y+=(br.top+br.height/2)-(gr.top+gr.height/2);
-    box._apply&&box._apply();
-  }catch(e){}
-}
-document.addEventListener('click',e=>{if(!e.target.closest('.search'))document.getElementById('qres').innerHTML='';});
-REQMAP_CALLBACKS
-switchTab(0);
-</script>"""
+def _build_json_text(data):  # implements: REQ-MAP-007
+    """The registry graph as a JSON string: {engine_version, nodes, edges}.
+    json.dumps neutralizes any hostile id/title/body by construction — there is
+    no markup context to break out of — so no extra escaping is needed."""
+    payload = {"engine_version": MAP_ENGINE_VERSION,
+               "nodes": data["nodes"], "edges": data["edges"]}
+    return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
-def _js_str(value):
-    """JSON-encode `value` for safe embedding inside an inline <script>: escape
-    < > & to \\uXXXX so neither "</script>" (tag breakout) nor a quote (string
-    breakout) in the data can terminate the script or inject code. Used for both
-    the data payload and the per-node callbacks."""
-    return (json.dumps(value)
-            .replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026"))
+def render_json(data, reqs_dir):  # implements: REQ-MAP-007
+    out = os.path.join(reqs_dir, "_map.json")
+    os.makedirs(reqs_dir, exist_ok=True)
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(_build_json_text(data))
+    return out
 
 
-def _build_html_text(data):  # implements: REQ-MAP-007
-    diagrams = [
-        ("System Map",      _add_clicks(_mermaid_system(data),        data)),
-        ("Req→Code",   _add_clicks(_mermaid_req_to_code(data),   data)),
-        ("Dependencies",    _mermaid_deps(data)),   # area-level: nodes are areas, not requirements
-        ("Risk",            _add_clicks(_mermaid_risk(data),          data)),
-    ]
+# A pre-built, single-file React viewer ships next to this engine as
+# `_map_viewer.html`. It carries the marker `<!--REQMAP_DATA-->`; the engine
+# swaps that for a <script> assigning this repo's graph to window.__REQMAP_DATA__,
+# producing a self-contained `_map.html` that opens by double-click (no server).
+VIEWER_TEMPLATE = "_map_viewer.html"
+_REQMAP_DATA_MARKER = "<!--REQMAP_DATA-->"
 
-    tab_btns = "".join(
-        '<button class="tab{}" data-tab="{}" onclick="switchTab({})">{}</button>'.format(
-            " active" if i == 0 else "", i, i, title)
-        for i, (title, _) in enumerate(diagrams)
-    )
 
-    panes = "".join(
-        ('<div id="pane{0}" class="pane{1}">'
-         '<div class="legend">{3}</div>'
-         '<div class="mwrap">'
-         '<div class="mctrl"><button onclick="pz({0},1.25)">+</button>'
-         '<button onclick="pz({0},0.8)">−</button>'
-         '<button onclick="pzReset({0})" title="reset">↺</button></div>'
-         '<div class="mermaid">{2}</div>'
-         '<div class="mhint">scroll = zoom · drag = pan · ↺ = reset</div>'
-         '</div></div>').format(i, " active" if i == 0 else "", diagram,
-                                 _LEGEND_HTML[i] if i < len(_LEGEND_HTML) else "")
-        for i, (_, diagram) in enumerate(diagrams)
-    )
+def _viewer_template_path():  # implements: REQ-MAP-007
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), VIEWER_TEMPLATE)
 
-    # The function NAME is keyed by the sanitized _safe_id (alnum/underscore only);
-    # the id passed to sel() is JSON-encoded + <>&-escaped so an id containing a
-    # quote (string breakout) or "</script>" (tag breakout) cannot inject JS.
-    callbacks = "\n".join(
-        "window['sel_{}'] = function(){{sel({});}};".format(
-            _safe_id(n["id"]), _js_str(n["id"]))
-        for n in data["nodes"]
-    )
 
-    # Embed as JSON inside a <script>: escape < > & so a requirement title
-    # containing "</script>" (or "<!--") cannot break out of the data block.
-    # \uXXXX decodes back to the original char when the JSON is parsed.
-    payload = _js_str(data)
-
-    html = MAP_HTML_TEMPLATE
-    html = html.replace("REQMAP_DATA",      payload)
-    html = html.replace("REQMAP_TABS",      tab_btns)
-    html = html.replace("REQMAP_PANES",     panes)
-    html = html.replace("REQMAP_CALLBACKS", callbacks)
-    return html
+def _inject_viewer(template_text, data):  # implements: REQ-MAP-007
+    """Replace the data marker with an inline <script> assigning the graph to
+    window.__REQMAP_DATA__. `</` is escaped to `<\\/` so a requirement that
+    contains `</script>` cannot break out of the script element."""
+    blob = _build_json_text(data).replace("</", "<\\/")
+    script = "<script>window.__REQMAP_DATA__=" + blob + ";</script>"
+    return template_text.replace(_REQMAP_DATA_MARKER, script, 1)
 
 
 def render_html(data, reqs_dir):  # implements: REQ-MAP-007
-    html = _build_html_text(data)
+    """Write the self-contained viewer `_map.html` by injecting `data` into the
+    vendored template. Returns the path, or None when no template is present
+    (the engine still emits _map.md + _map.json — the viewer is optional)."""
+    tpl = _viewer_template_path()
+    if not os.path.exists(tpl):
+        return None
+    with open(tpl, encoding="utf-8") as f:
+        template_text = f.read()
     out = os.path.join(reqs_dir, "_map.html")
     os.makedirs(reqs_dir, exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(_inject_viewer(template_text, data))
     return out
 
 
@@ -1610,18 +1763,24 @@ def main():
         except (AttributeError, ValueError, OSError):
             pass
     ap = argparse.ArgumentParser(prog="reqmap")
-    ap.add_argument("cmd", choices=["new", "scan", "check", "map", "extract", "candidates", "findings"])
+    ap.add_argument("cmd", choices=["init", "new", "scan", "check", "map", "export", "next", "extract", "candidates", "findings", "promote"])
     ap.add_argument("arg", nargs="?")
     ap.add_argument("--root", default=".")
     ap.add_argument("--reqs", default=None)
     ap.add_argument("--code", default=None)
-    ap.add_argument("--out", default=None, help="candidates: write plan JSON here ('-' or omit = stdout)")
+    ap.add_argument("--out", default=None, help="candidates: write plan JSON here ('-' or omit = stdout); "
+                    "export: write graph JSON here ('-' = stdout, omit = requirements/_map.json)")
     ap.add_argument("--md-glob", action="append", default=None,
                     help="candidates: also discover .md files matching this glob (repeatable; "
                          "comma-separated ok). Off unless given. e.g. --md-glob 'prompts/**' --md-glob 'modes/**'")
     ap.add_argument("--raw", action="store_true",
                     help="findings: ignore the triage sidecar and emit the raw grouped list")
+    ap.add_argument("--all", dest="show_all", action="store_true",
+                    help="next: list every pending item instead of the top few per bucket")
     ap.add_argument("--update-lock", action="store_true")
+    ap.add_argument("--wipe", action="store_true",
+                    help="init: hard-reset — delete all non-generated requirements and strip "
+                         "membership tags from source files before re-extracting")
     ap.add_argument("--check", dest="check_fresh", action="store_true",
                     help="map: verify the committed _map.* is fresh (exit 1 if stale) instead of writing")
     a = ap.parse_args()
@@ -1638,15 +1797,21 @@ def main():
         if not a.arg:
             print("usage: reqmap new AREA-NAME-NNN"); return 2
         return cmd_new(reqs_dir, tmpl, a.arg)
+    if a.cmd == "init":
+        return cmd_init(reqs_dir, code_root, wipe=a.wipe)
 
     reqs = load_requirements(reqs_dir)
     members = scan_members(code_root, reqs_dir)
     if a.cmd == "scan":
         cmd_scan(reqs, members); return 0
+    if a.cmd == "next":
+        return cmd_next(reqs, members, a.show_all)
     if a.cmd == "check":
         return cmd_check(reqs, members, reqs_dir, a.update_lock)
     if a.cmd == "map":
         return cmd_map(reqs, members, reqs_dir, a.check_fresh)
+    if a.cmd == "export":
+        return cmd_export(reqs, members, reqs_dir, a.out)
     if a.cmd == "extract":
         return cmd_extract(reqs, members, code_root, reqs_dir)
     if a.cmd == "candidates":
@@ -1656,6 +1821,10 @@ def main():
         return cmd_candidates(reqs, members, code_root, reqs_dir, a.out, md_globs)
     if a.cmd == "findings":
         return cmd_findings(reqs, reqs_dir, a.raw)
+    if a.cmd == "promote":
+        if not a.arg:
+            print("usage: reqmap promote AREA-NAME-NNN"); return 2
+        return cmd_promote(reqs, members, a.arg)
 
 
 if __name__ == "__main__":
