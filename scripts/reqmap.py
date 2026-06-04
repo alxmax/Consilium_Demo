@@ -1807,7 +1807,10 @@ def main():
     if a.cmd == "next":
         return cmd_next(reqs, members, a.show_all)
     if a.cmd == "check":
-        return cmd_check(reqs, members, reqs_dir, a.update_lock)
+        rc = cmd_check(reqs, members, reqs_dir, a.update_lock)
+        if a.update_lock:
+            cmd_map(reqs, members, reqs_dir)
+        return rc
     if a.cmd == "map":
         return cmd_map(reqs, members, reqs_dir, a.check_fresh)
     if a.cmd == "export":
