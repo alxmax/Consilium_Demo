@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-VOTE-DEGENERACY-001
 status: confirmed
 layer: feature
@@ -24,6 +24,9 @@ Empirically measures whether the Trias mode's three-personality democratic vote 
 ## Output
 - stdout: human-readable degeneracy report (n, distribution, unanimity/veto rates, verdict + note) or JSON when `--json` is passed
 - exit code 0 on success, exit code 2 if the runs directory does not exist
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Runs with `mode: trias` or `trias_split` are admitted; runs with any other mode that merely contains a `vote_pattern` in their body are excluded.

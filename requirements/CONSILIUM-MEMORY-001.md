@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-MEMORY-001
 status: confirmed
 layer: feature
@@ -27,6 +27,9 @@ Provides a unified read API over Consilium's three memory tiers - short (current
 ## Output
 - JSON object emitted to stdout: for a single tier, a dict with `tier`, `entries`, and `total` keys; for `--tier all`, a dict with `short`, `medium`, and `long` sub-objects
 - exit code 0 always (no error paths beyond missing files, which return empty entry lists)
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Running with `--tier medium` returns a JSON object whose `entries` array contains at most `--n` items, each with `run`, `date`, `success_criterion`, `chosen`, and `confidence` fields drawn from `runs/*.json` files.

@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-PERSONALITIES-001
 status: confirmed
 layer: bus
@@ -22,6 +22,9 @@ Canonical registry of the three fixed Trias-mode personalities (Pioneer, Archite
 - JSON array of all three personality dicts emitted to stdout when called with no `--name` flag
 - JSON object for a single personality emitted to stdout when `--name` is provided
 - exit code 0 on success; exit code 2 when a legacy positional N argument is detected, with a human-readable migration message on stderr
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Running without arguments emits a JSON array of exactly 3 objects, each containing `name`, `weights` (with keys `generator`, `control`, `conservator` summing to 1.0), and `lens` (a path string).

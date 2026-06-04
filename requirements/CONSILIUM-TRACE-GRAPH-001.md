@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-TRACE-GRAPH-001
 status: confirmed
 layer: feature
@@ -21,6 +21,9 @@ Renders a per-run view of the deliberation pipeline as a Mermaid flowchart. It r
 ## Output
 - Mermaid flowchart text to stdout (plain or fenced in ```mermaid when `--fence` is set)
 - exit code 0 on success; 2 on malformed JSON or missing/unreadable input
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - A run with `skipped=true` produces a flowchart containing only a SKIP node with the skip reason.

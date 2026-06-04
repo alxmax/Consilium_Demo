@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-LENS-ARCHITECT-001
 status: confirmed
@@ -16,6 +16,9 @@ depends_on: [CONSILIUM-PERSONALITIES-001]
 - The lens shall preserve each voice's standard structural role; it shifts evaluation priorities without replacing the role's core output or inflating/deflating raw numerical scores directly.
 - When applied to Conservator, the lens shall affect only the quality-progress adjustment on ; it shall not inflate  solely on the basis of absent tests.
 - The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation.
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## HOW — Acceptance (= tests)
 AC-1

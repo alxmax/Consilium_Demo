@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-MODE-SEQUENTIAL-001
 status: confirmed
@@ -17,6 +17,9 @@ depends_on: [CONSILIUM-VOICE-GENERATOR-001, CONSILIUM-VOICE-CONTROL-001, CONSILI
 - The aggregator shall apply an 8-component veto cascade (`aggregate_sequential()`) producing one of seven routing outcomes: BLOCK (irreversibility), BLOCK (glossary_fail), REWORK, SHORT-CIRCUIT (scale_down), ADAPT_EXTENDED (scale_up), ESCALATE, or AGGREGATE; the resulting report shall carry a `confidence` value derived from the veto outcome.
 - When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, a non-user-selectable auto-parallel cross-check shall be triggered; a silent parallel audit shall fire at a default cadence of 1-in-20 sequential runs (bumping to 1-in-5 when ≥2 of the last 5 audits diverged).
 - The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as "WEAK" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`.
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## WHAT — Notes & known limitations (informative)
 - Role separation in Sequential is prompt-based, not architectural: `strip_context.py` removes the prior prompt but does not clear the model's in-context memory. True voice isolation requires Parallel sub-agents.

@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-RENDER-FEEDBACK-HTML-001
 status: confirmed
 layer: bus
@@ -25,6 +25,9 @@ Pure rendering engine that converts a list of Entry records into a single self-c
 - Complete `<!doctype html>` string returned by `render()` (primary output, written by callers)
 - When invoked as CLI, the HTML string is written to stdout
 - exit code 0 always
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - `render()` returns a string beginning with `<!doctype html>` that contains one `<tr class="entry">` row and one `<tr class="drill">` row for each Entry in the input list.

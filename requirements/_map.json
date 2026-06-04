@@ -9,7 +9,9 @@
       "title": "aggregator",
       "intent": "Merges scored Generator/Control/Conservator outputs into a chosen candidate via one of five aggregation schemes.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -51,7 +53,9 @@
       "title": "audit_counter",
       "intent": "Tracks the \"every N sequential runs\" silent parallel cross-check state machine.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -90,7 +94,9 @@
       "title": "audit_feedback",
       "intent": "Finds runs with no FEEDBACK.html row and optionally backfills PEND entries.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -128,7 +134,9 @@
       "title": "build_report",
       "intent": "Assembles the canonical deliberation report shape from intermediate voice/aggregation outputs.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -168,7 +176,9 @@
       "title": "check_doc_drift",
       "intent": "Enforces parity between authoritative behavior (SKILL.md, confidence.py) and the docs/diagrams.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -201,7 +211,9 @@
       "title": "check_public_leak",
       "intent": "Fails CI if any git-tracked file references the private repo or a local developer path.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -234,7 +246,9 @@
       "title": "confidence",
       "intent": "Derives a calibrated confidence score from inter-voice agreement + runner-up separation (or Trias vote pattern).",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -275,7 +289,9 @@
       "title": "efficiency",
       "intent": "Computes a per-mode efficiency score (tokens per OK outcome) by joining telemetry with feedback.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -311,7 +327,9 @@
       "title": "feedback",
       "intent": "Canonical FEEDBACK.html parser + a human-readable stats report over logged outcomes.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -358,7 +376,9 @@
       "title": "implement_pipeline",
       "intent": "Turns a deliberation report into an implementation dispatch plan; optionally verifies the red->green gate.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -397,7 +417,9 @@
       "title": "infer_pipeline",
       "intent": "Infers the post-deliberation implementation steps from Conservator magnitude/reversibility.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -441,7 +463,9 @@
         "When applied to Conservator, the lens shall affect only the quality-progress adjustment on ; it shall not inflate  solely on the basis of absent tests.",
         "The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [
         "prompts/voices/architect_lens.md"
@@ -479,7 +503,9 @@
         "When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not directly alter the numerical  formula or its component scores (, , etc.).",
         "The Conservator carve-out is sufficient by design. Pioneer's influence is on narrative tone and meta_recommendation framing, not on the numerical risk gate. The  formula remains governed by Conservator's own logic, preserving Trias balance through democratic aggregation across all three voices."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [
         "prompts/voices/pioneer_lens.md"
@@ -517,7 +543,9 @@
         "When applied to Generator, the lens shall order candidates by smallest blast radius first but shall still produce the full required spread of candidates (3-5); it shall not suppress high-blast-radius candidates from the output.",
         "\"Prefer existing patterns over new ones unless the new one is clearly necessary\" means: a new pattern is justified only when the existing pattern is INSUFFICIENT to meet the change requirements — not merely suboptimal or less elegant. \"Suboptimal but workable\" does NOT qualify as grounds for a new pattern."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [
         "prompts/voices/steward_lens.md"
@@ -550,7 +578,9 @@
       "title": "log_feedback",
       "intent": "Atomically appends (or upgrades) a FEEDBACK.html row from a deliberation report.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -591,7 +621,9 @@
       "title": "mark_outcome",
       "intent": "Corrects a logged FEEDBACK.html outcome in place once production reality is known.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -628,7 +660,9 @@
       "title": "memory",
       "intent": "Unified read API over Consilium's three memory tiers (short / medium / long).",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -670,7 +704,9 @@
         "The total cost shall be 1.33× Sequential (1× Sequential + 1 Skeptic sub-agent); telemetry shall record `mode: \"dialectic\"` and, when the Skeptic catches a constraint, `skeptic_caught_constraint: true` in the report.",
         "The Skeptic's verdict is advisory by default and can override `chosen` only when `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [
         "The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched."
       ],
@@ -710,7 +746,9 @@
         "When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, a non-user-selectable auto-parallel cross-check shall be triggered; a silent parallel audit shall fire at a default cadence of 1-in-20 sequential runs (bumping to 1-in-5 when ≥2 of the last 5 audits diverged).",
         "The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as \"WEAK\" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [
         "Role separation in Sequential is prompt-based, not architectural: `strip_context.py` removes the prior prompt but does not clear the model's in-context memory. True voice isolation requires Parallel sub-agents.",
         "The veto-budget for `meta_recommendation` (scale_up/scale_down) is 5 activations per month; on exhaustion the gate becomes a soft warning only."
@@ -797,7 +835,9 @@
         "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1).",
         "The 3 personality sub-agents shall be dispatched in parallel; the runtime audit tracks divergence between parallel and serial results."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [
         "Serial dispatch is an accepted implementation artifact that does not affect correctness; the silent parallel audit is the observability mechanism.",
         "`trias_split` is deprecated; `validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.",
@@ -836,7 +876,9 @@
       "title": "personalities",
       "intent": "Canonical registry of the three fixed Trias personalities (Pioneer/Architect/Steward) and their voice weights.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -884,7 +926,9 @@
       "title": "priors",
       "intent": "Describes observed behavior, verified against scripts/priors.py source.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -925,7 +969,9 @@
       "title": "probe_change",
       "intent": "Returns objective git diff metrics (files/lines changed, optional per-file churn) as JSON.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -962,7 +1008,9 @@
       "title": "render_feedback_html",
       "intent": "Pure rendering engine: a list of Entry records -> one self-contained dark-themed FEEDBACK.html.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1010,7 +1058,9 @@
       "title": "retry_context",
       "intent": "On low confidence, proposes a concrete Read/Grep context-gathering plan for one extra deliberation pass.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1049,7 +1099,9 @@
       "title": "run_evals",
       "intent": "Subprocess-based regression harness over evals/scenarios.json; CI gate.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1082,7 +1134,9 @@
       "title": "scope_gate",
       "intent": "Decides whether a change is small enough to bypass full deliberation; fails open.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1119,7 +1173,9 @@
       "title": "stability_check",
       "intent": "Voice-score calibration analysis (retrospective / compare / pick) per the R2 audit Bug #1.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1154,7 +1210,9 @@
       "title": "strip_context",
       "intent": "Projects each voice's output down to the minimum fields the next voice needs (anti-contamination).",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1193,7 +1251,9 @@
       "title": "trace_graph",
       "intent": "Renders a per-run Mermaid flowchart of what actually executed in the deliberation pipeline.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1232,7 +1292,9 @@
       "title": "usage",
       "intent": "Aggregates telemetry across runs into per-voice + per-mode token/latency stats.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1271,7 +1333,9 @@
       "title": "utils",
       "intent": "Shared stdlib-only utilities: canonical paths, atomic writes, stdin JSON, headless detection.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1335,7 +1399,9 @@
       "title": "validate_report",
       "intent": "Describes observed behavior, verified against scripts/validate_report.py source.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1377,7 +1443,9 @@
       "title": "version",
       "intent": "Git-derived version provenance: display stamp, bare committed ref, and prompt-change drift count.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1416,7 +1484,9 @@
       "title": "vocabulary_map",
       "intent": "Single source of truth for field-value translations and the per-voice token budget table.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1460,7 +1530,9 @@
         "The mitigation cap (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is discipline-based with no automated schema enforcement. Compliance is audited through `notes` documentation of applied mitigation values.",
         "When `meta_recommendation: \"scale_down\"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [
         "The three irreversibility-related fields (`irreversibility_flag`, `irreversible`, `regression_risk.reversibility`) can coexist on the same candidate and carry different semantics; the prompt documents the distinction, but the overlap is a persistent source of confusion for readers and voice models alike."
       ],
@@ -1500,7 +1572,9 @@
         "When the voice cannot verify a signature without reading a file and file access fails, the `unverifiable — file not accessible` marker in the verdict is the intended degradation signal. This is transparent and recorded in verdicts visible to the aggregator and report; no harder signal is required.",
         "The 3-entry cap on `hidden_assumptions` and the self-assessed selection criterion are by design. Control is a deliberative voice, not a formal verifier; the design intentionally trusts the voice to surface the most consequential assumptions."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [
         "`confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative."
       ],
@@ -1540,7 +1614,9 @@
         "The `unconventional_*` candidate shall be included unless `adversarial_*` varies on a non-scope axis (mechanism, timing, or abstraction level), or the change is mechanically trivial. Scope overlap alone does NOT justify omitting `unconventional_*`; this rule prevents silent candidate duplication and is normative.",
         "The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [
         "The voice self-limits output via `tokens_budget.generator` received from Conservator, but has no mechanical way to enforce it — over-generation is a real risk on `magnitude = critical` inputs where the model may ignore the budget signal."
       ],
@@ -1580,7 +1656,9 @@
         "Validation failure (output rejected by orchestrator gate) results in silent discard: the chosen candidate ships unchanged, no warning is emitted, and the system falls back to the base deliberation result as if the Skeptic had not run. This is a deliberate conservative fallback.",
         "`meta_scope_mismatch` is a self-assessed heuristic gate with no external oracle; all three conditions (correct answer, trivially-human-resolvable, cost exceeds decision value) are necessarily evaluated by the voice itself because they require contextual judgment that no deterministic external check can provide."
       ],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [
         "The validation gate is enforced by the orchestrator after the fact, not by the voice itself — a skeptic that emits invalid output does not know it was rejected."
       ],
@@ -1614,7 +1692,9 @@
       "title": "vote_degeneracy",
       "intent": "Measures empirically whether the Trias 3-personality vote is statistically degenerate.",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [
@@ -1653,7 +1733,9 @@
       "title": "run-consilium driver",
       "intent": "Single entry point exercising Consilium's deterministic LLM-free surface (smoke / pipeline / shot).",
       "contract": [],
-      "verify": [],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
       "notes": [],
       "current_impl": [],
       "acc": [

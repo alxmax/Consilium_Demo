@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-STRIP-CONTEXT-001
 status: confirmed
 layer: feature
@@ -24,6 +24,9 @@ Reduces cross-voice context contamination in the sequential deliberation pipelin
 - JSON object to stdout (`--for control` or `--for conservator`): stripped candidate or verdict list
 - Plain text to stdout (`--truncate-text`): possibly truncated text with optional marker appended
 - exit code 0 on success; non-zero on argument or JSON parse errors
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.

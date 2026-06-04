@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-PRIORS-001
 status: confirmed
 layer: feature
@@ -33,6 +33,9 @@ Signals computed:
 
 ## Output
 JSON object to stdout with the signals above. Non-zero exit on parse error.
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - `python scripts/priors.py` runs without error given a valid FEEDBACK.html and runs/ dir

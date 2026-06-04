@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-CHECK-DOC-DRIFT-001
 status: confirmed
 layer: feature
@@ -32,6 +32,9 @@ Enforces parity between the authoritative behavior defined in SKILL.md and `scri
 - stdout: `doc-drift OK: all invariants hold` when all checks pass
 - stderr: numbered list of violated invariants with pattern, source, and rationale for each failure
 - exit code 0 when all invariants pass; 1 when one or more are violated; 2 when a required input file is missing
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - When all invariant patterns hold and `confidence.py VOTE_PATTERN_CONFIDENCE` matches `trias.jsx TRIAS_OUTCOMES` for patterns 3-0, 2-1, and 2-0, the script exits 0 and prints the OK message.

@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-EFFICIENCY-001
 status: confirmed
 layer: feature
@@ -25,6 +25,9 @@ Computes a per-mode efficiency score defined as `total_tokens / ok_count` (lower
 - stdout: JSON object with `modes` (per-mode stats), `ranking` (sorted by `tokens_per_ok`), and `caveat` string
 - stderr: warning when the outcome map is empty or cannot be loaded
 - exit code 0 on success, 1 if runs directory is not found
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - With three or more runs all marked `OK`, `tokens_per_ok` is a non-null integer equal to `total_tokens / ok_count`.

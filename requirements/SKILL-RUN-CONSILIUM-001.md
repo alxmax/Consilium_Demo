@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "integration harness — acceptance validated by run-consilium smoke + pipeline commands, not unit tests"
 id: SKILL-RUN-CONSILIUM-001
 status: confirmed
@@ -26,6 +26,9 @@ The run-consilium skill driver exercises Consilium's entire deterministic, LLM-f
 - exit code 0 iff all steps passed (`smoke`/`pipeline`) or screenshot written (`shot`)
 - `shot` writes a PNG file to `.consilium/shots/architecture.png` or the caller-supplied path
 - `pipeline` prints aggregator JSON, confidence JSON, and validate_report result to stdout
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - `python .claude/skills/run-consilium/driver.py smoke` exits 0 against the current repo state with all suites PASS.

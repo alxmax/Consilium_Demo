@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-AGGREGATOR-001
 status: confirmed
 layer: feature
@@ -23,6 +23,9 @@ Implements five distinct aggregation schemes that merge the scored outputs of th
 - stdout: JSON object with `scheme`, `chosen`, `ranking`, and scheme-specific fields (`vetoed`, `vote_pattern`, `dissent`, `retry_suggested`, `low_separation`, `veto_uncertain`, etc.)
 - exit code 0 on success
 - exit code non-zero on invalid input (raised `ValueError`)
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Given a candidates list where the Conservator score of every candidate exceeds `veto_threshold` and `auto_relax=True`, the output contains `chosen: null` and a non-empty `retry_suggested` block.

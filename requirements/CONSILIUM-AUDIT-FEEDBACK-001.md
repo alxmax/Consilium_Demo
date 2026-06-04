@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-AUDIT-FEEDBACK-001
 status: confirmed
 layer: feature
@@ -30,6 +30,9 @@ Identifies deliberation run files in `.consilium/runs/` that have no correspondi
 - with `--dry-run`: printed plan of rows that would be appended, no file writes
 - with `--check`: exit code 1 if any missing rows found, exit code 0 if none
 - exit code 0 on success; exit code 1 on `--check` failure
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Given a runs/ directory containing a .json file with no matching row in FEEDBACK.html, the script without flags reports exactly that file and exits 0.

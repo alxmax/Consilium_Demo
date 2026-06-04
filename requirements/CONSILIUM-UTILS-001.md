@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-UTILS-001
 status: confirmed
 layer: bus
@@ -27,6 +27,9 @@ Shared stdlib-only utilities that every other Consilium script imports instead o
 - `atomic_write_text` writes atomically to the caller-supplied path using a sibling `.tmp` file
 - `load_json_stdin` exits with code 2 on empty stdin or JSON parse failure
 - `validate_keys` raises `ValueError` on schema violation; callers map that to exit 1 or 2
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root.

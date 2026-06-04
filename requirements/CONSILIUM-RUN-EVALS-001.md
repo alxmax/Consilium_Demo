@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-RUN-EVALS-001
 status: confirmed
 layer: feature
@@ -25,6 +25,9 @@ Regression harness for all deterministic scripts in the Consilium pipeline. It r
 - PASS/FAIL lines to stderr for each scenario
 - Summary line `<N> passed, <M> failed` to stderr
 - exit code 0 when all scenarios pass; 1 when any fail; 2 on load or corpus errors
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Running `python scripts/run_evals.py` against the committed `evals/scenarios.json` exits 0 with every scenario reporting PASS.

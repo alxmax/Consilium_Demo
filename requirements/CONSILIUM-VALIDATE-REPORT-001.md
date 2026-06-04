@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-VALIDATE-REPORT-001
 status: confirmed
 layer: bus
@@ -33,6 +33,9 @@ catches shape drift (e.g. aggregate.result as a narrative string).
 - Exit 0 — report is valid
 - Exit 1 — validation failed; each problem printed to stderr
 - Exit 2 — malformed JSON input
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Valid reports (from `.consilium/runs/*.json`) exit 0

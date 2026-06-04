@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-INFER-PIPELINE-001
 status: confirmed
 layer: feature
@@ -22,6 +22,9 @@ Infers and presents for confirmation the ordered post-deliberation implementatio
 - stdout: human-readable proposed pipeline and `{"steps": [...], "rationale": {...}}` JSON
 - `.consilium/runs/<ts>_pipeline_rejected.json` written on user rejection (interactive mode only)
 - exit code 0 on confirmation or dry-run, 1 on user decline or empty steps, 2 on malformed input
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - For `chosen_approach` of `do_nothing` or `null`, `infer_steps` returns an empty list with a `reason` key in the rationale.

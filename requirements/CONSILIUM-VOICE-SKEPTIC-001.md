@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-SKEPTIC-001
 status: confirmed
@@ -19,6 +19,9 @@ depends_on: []
 - The voice shall set `addressable` to `in_place`, `requires_redesign`, or `unaddressable`; `unaddressable` must be used only when no redesign can resolve the concern.
 - Validation failure (output rejected by orchestrator gate) results in silent discard: the chosen candidate ships unchanged, no warning is emitted, and the system falls back to the base deliberation result as if the Skeptic had not run. This is a deliberate conservative fallback.
 - `meta_scope_mismatch` is a self-assessed heuristic gate with no external oracle; all three conditions (correct answer, trivially-human-resolvable, cost exceeds decision value) are necessarily evaluated by the voice itself because they require contextual judgment that no deterministic external check can provide.
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## WHAT — Notes & known limitations (informative)
 

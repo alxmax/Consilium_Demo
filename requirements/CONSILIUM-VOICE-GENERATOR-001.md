@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-GENERATOR-001
 status: confirmed
@@ -19,6 +19,9 @@ depends_on: []
 - The voice shall emit `fallback_scenario` and `coverage_check`; if no fallback can be articulated after 2 attempts, it shall emit `abstain.triggered: true` with `reason: "goal_undefined"`.
 - The `unconventional_*` candidate shall be included unless `adversarial_*` varies on a non-scope axis (mechanism, timing, or abstraction level), or the change is mechanically trivial. Scope overlap alone does NOT justify omitting `unconventional_*`; this rule prevents silent candidate duplication and is normative.
 - The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors.
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## WHAT — Notes & known limitations (informative)
 

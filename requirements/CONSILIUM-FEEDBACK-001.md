@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-FEEDBACK-001
 status: confirmed
 layer: bus
@@ -23,6 +23,9 @@ Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats 
 ## Output
 - stdout: multi-line stats report (total uses, outcome breakdown, success rate, recent overrides, optional run scheme counts)
 - exit code 0 always
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - `parse_feedback` returns an empty list without error when FEEDBACK.html does not exist.

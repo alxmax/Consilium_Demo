@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-LOG-FEEDBACK-001
 status: confirmed
 layer: feature
@@ -25,6 +25,9 @@ Atomically appends a feedback entry to FEEDBACK.html from a deliberation report 
 - `.consilium/FEEDBACK.html`: updated atomically with the new or upgraded row
 - `.consilium/runs/.run_path_map.json`: updated with the new fingerprint->run_path entry
 - exit code 0 on success, 1 on validation error or confidence gate rejection, 2 on malformed JSON or missing required args, 3 on duplicate entry skipped
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - A report with a valid `success_criterion` and `chosen_approach` produces a new `<tr>` row in FEEDBACK.html with the correct date, truncated context, and derived note.

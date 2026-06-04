@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-MARK-OUTCOME-001
 status: confirmed
 layer: feature
@@ -32,6 +32,9 @@ Closes the feedback loop opened by `log_feedback.py` by allowing an outcome reco
 - stdout: `skip [i]: ...` lines when a row is already at the target outcome or when PEND_HEADLESS is applied to a non-PEND row
 - stdout: `(dry-run; no write)` when `--dry-run` is active
 - exit code 0 on success or when no rows needed updating; exit code 1 on missing feedback file, bad argument combinations, or no match found
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Given a valid `--run-path` pointing to a logged run, the corresponding FEEDBACK.html row's outcome field is updated to the specified value and the note gains `[confirmed]` (or `outcome_reason=...` if `--reason` is provided).

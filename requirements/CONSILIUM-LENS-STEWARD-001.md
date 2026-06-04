@@ -1,4 +1,4 @@
----
+﻿---
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-LENS-STEWARD-001
 status: confirmed
@@ -16,6 +16,9 @@ depends_on: [CONSILIUM-PERSONALITIES-001]
 - The lens shall preserve each voice's standard structural role; it shifts candidate ordering and priority without suppressing the full candidate set or altering the role's core output format.
 - When applied to Generator, the lens shall order candidates by smallest blast radius first but shall still produce the full required spread of candidates (3-5); it shall not suppress high-blast-radius candidates from the output.
 - "Prefer existing patterns over new ones unless the new one is clearly necessary" means: a new pattern is justified only when the existing pattern is INSUFFICIENT to meet the change requirements — not merely suboptimal or less elegant. "Suboptimal but workable" does NOT qualify as grounds for a new pattern.
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## HOW — Acceptance (= tests)
 AC-1

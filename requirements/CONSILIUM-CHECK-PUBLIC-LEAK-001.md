@@ -1,4 +1,4 @@
----
+﻿---
 id: CONSILIUM-CHECK-PUBLIC-LEAK-001
 status: confirmed
 layer: feature
@@ -23,6 +23,9 @@ Guards the public release repository against accidentally referencing the privat
 - stdout: `public-leak guard: clean` on success
 - stderr: list of offending `file:line: description` strings on failure
 - exit code 0 on clean, 1 on any pattern match
+
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
 
 ## Acceptance (= tests)
 - Running against a repo with no private-repo (non-Demo) or local-path references exits 0 and prints `clean`.
