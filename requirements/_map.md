@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-04 23:29
+generated: 2026-06-04 23:34
 nodes: 32
 edges: 38
 ---
@@ -220,12 +220,10 @@ _Requirements needing attention: red = unimplemented (confirmed, no code); orang
 ```mermaid
 graph LR
   subgraph sg_CONSILIUM["CONSILIUM"]
-    CONSILIUM_CHECK_PUBLIC_LEAK_001["check_public_leak<br><small>CONSILIUM-CHECK-PUBLIC-LEAK-001</small><br>unverified-intent"]
     CONSILIUM_FEEDBACK_001["feedback<br><small>CONSILIUM-FEEDBACK-001</small><br>blast-radius"]
     CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small><br>blast-radius"]
     CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small><br>blast-radius"]
   end
-  style CONSILIUM_CHECK_PUBLIC_LEAK_001 fill:#fff9c4,stroke:#aa0,color:#550
   style CONSILIUM_FEEDBACK_001 fill:#fff9c4,stroke:#aa0,color:#550
   style CONSILIUM_PERSONALITIES_001 fill:#fff9c4,stroke:#aa0,color:#550
   style CONSILIUM_UTILS_001 fill:#fff9c4,stroke:#aa0,color:#550
@@ -235,7 +233,6 @@ graph LR
 
 | ID | status | members | dependents | risks | recommendation |
 | --- | --- | --- | --- | --- | --- |
-| CONSILIUM-CHECK-PUBLIC-LEAK-001 | confirmed | 1 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
 | CONSILIUM-FEEDBACK-001 | confirmed | 1 | 4 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
 | CONSILIUM-PERSONALITIES-001 | confirmed | 2 | 5 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
 | CONSILIUM-UTILS-001 | confirmed | 2 | 13 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |

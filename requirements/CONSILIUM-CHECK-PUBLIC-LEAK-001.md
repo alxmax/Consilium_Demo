@@ -24,13 +24,13 @@ Guards the public release repository against accidentally referencing the privat
 - stderr: list of offending `file:line: description` strings on failure
 - exit code 0 on clean, 1 on any pattern match
 
+## WHAT — Contract (normative)
+- The `PATTERNS` constant and its inline comments are the sole specification for the regex patterns; there is no secondary config or spec file.
+- The skip list (`SKIP_SUFFIX`) is a heuristic hardcoded tuple of 11 extensions. A binary file committed with a `.txt` extension is **not** skipped — it is read with `errors="ignore"` and scanned like any text file.
+- When run outside a git repository (`git ls-files` fails), the script raises an unhandled `subprocess.CalledProcessError` and exits 1 with a Python traceback to stderr — same exit code as a leak find, but distinguishable by the traceback.
+
 ## WHAT — Verify intent
 - None - all questions resolved.
-
-## Contract additions (from verify-intent audit, 2026-06-04)
-- The source (`PATTERNS` constant + inline comments) is the sole specification for the regex patterns; there is no secondary config or spec file. Comments explain owner-qualified matching and the `_Demo` carve-out.
-- The skip list (`SKIP_SUFFIX`) is a heuristic hardcoded tuple of 11 extensions. A binary file committed with a `.txt` extension is **not** skipped — it is read with `errors="ignore"` and scanned like any text file.
-- When run outside a git repository (`git ls-files` fails), the unhandled `subprocess.CalledProcessError` produces exit code 1 with a Python traceback to stderr — same exit code as a leak find, but distinguishable by the traceback.
 
 ## Acceptance (= tests)
 - Running against a repo with no private-repo (non-Demo) or local-path references exits 0 and prints `clean`.
