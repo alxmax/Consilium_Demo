@@ -25,14 +25,12 @@ Reduces cross-voice context contamination in the sequential deliberation pipelin
 - Plain text to stdout (`--truncate-text`): possibly truncated text with optional marker appended
 - exit code 0 on success; non-zero on argument or JSON parse errors
 
-## WHAT — Verify intent (open questions for the human)
-- In `--for conservator` mode, 'valid Control verdicts' are intersected with Generator candidates — what happens when a Generator candidate has no matching Control verdict (e.g., Control was partial)? Is the candidate included (with no verdict data), excluded, or is this treated as an error?
-- The `--truncate-text` mode approximates tokens as '4 chars/token' — is this approximation documented as intentionally coarse, and is there a risk of over- or under-truncation for non-Latin scripts (e.g., Romanian diacritics or code with multi-byte chars)?
-- The truncation marker is 'appended when the text is cut' — what is the exact marker string, and is it defined in a shared constant or duplicated across scripts that consume the truncated output?
+## WHAT — Verify intent
+- None - all questions resolved.
 
 ## Acceptance (= tests)
 - Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.
-- Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false`.
+- Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false` or has no matching Control verdict at all (excluded, not an error).
 - Running `--for conservator` excludes Control's `issues` and `notes` fields from the output.
 - Running `--truncate-text 15000` on text shorter than 60000 characters returns the text unchanged with no marker.
-- Running `--truncate-text 15000` on text exceeding 60000 characters truncates at 60000 chars and appends the truncation marker.
+- Running `--truncate-text 15000` on text exceeding 60000 characters truncates at 60000 chars and appends the truncation marker `"\n\n[... context truncated to ~{tokens} tokens for Trias sub-agent ...]"` (defined as `_TRUNCATION_MARKER` in `strip_context.py`; not shared with other scripts).

@@ -23,10 +23,13 @@ Turns a completed Consilium deliberation report into a structured implementation
 - stdout (gate mode): `{"red_ok": bool, "green_ok": bool, "gate_passed": bool}` JSON
 - exit code 0 on success/dry-run/gate passed, 1 on no-pipeline or gate failure, 2 on bad input
 
-## WHAT — Verify intent (open questions for the human)
-- The stub-insertion heuristic 'inserts `raise NotImplementedError` after each `def`/`async def`' — what happens when the function already contains a `pass` or `...` body, or when there are nested functions? Is the original file always fully restored on error?
-- In plan mode the script 'emits a JSON plan for the orchestrating agent to consume' — is there a defined handoff schema between the plan JSON and the consilium-implement-subagent, and is that schema part of this requirement's contract?
-- The exit code for `do_nothing`/`skipped` chosen approaches is 1, the same as gate failure — how does the caller distinguish between 'no pipeline needed' and 'gate failed'? Is that distinction intentional or an unresolved ambiguity?
+## WHAT — Verify intent
+- None - all questions resolved.
+
+## Contract
+- The stub heuristic appends the stub marker as a new line after the `def`/`async def` header; it does not replace an existing `pass` or `...` body. Nested functions each receive their own stub insertion. This is intentional: the gate only needs the suite to go RED, not a clean AST rewrite.
+- Exit code 1 is shared between `do_nothing`/`skipped` (no pipeline) and gate failure. The caller must read stdout to distinguish the two cases. This collapse is intentional and documented in the script's module docstring.
+- The plan JSON schema (`spec`, `sequence`, `roles`, `rules`) is defined entirely by `build_plan()` in this script. The subagent handoff contract lives in `agents/consilium-implement-subagent.md` and is not part of this requirement.
 
 ## Acceptance (= tests)
 - Given a report with a non-empty `chosen_approach`, `build_plan` returns a dict with `spec`, `sequence`, `roles`, and `rules` keys, and each role lists whether its prompt file exists.

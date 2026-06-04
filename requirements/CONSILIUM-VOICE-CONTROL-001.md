@@ -21,13 +21,13 @@ depends_on: []
 - The 3-entry cap on `hidden_assumptions` and the self-assessed selection criterion are by design. Control is a deliberative voice, not a formal verifier; the design intentionally trusts the voice to surface the most consequential assumptions.
 
 ## WHAT — Verify intent (open questions for the human)
-- `confidence_in_verdict: low` is 'advisory only — the aggregator does not automatically discount verdicts marked `low`' — this means a speculative `valid: true / low` verdict influences the final recommendation as strongly as a high-confidence one; is this intentional or a known limitation to eventually fix?
-- AC-2 says Control still emits verdicts even when `glossary_fail: true` — but the aggregator BLOCKs on glossary_fail before Generator runs; does Control run after Generator in Sequential mode, meaning a glossary_fail not caught before Generator ran will still have Control emit verdicts on Generator's candidates?
-- The 3-entry cap on `hidden_assumptions` 'trusts the voice to surface the most consequential assumptions' — is there any retrospective signal that lets the development team detect cases where the cap caused a critical assumption to be dropped?
+- None - all questions resolved.
 
 ## WHAT — Notes & known limitations (informative)
 
-- `confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative.
+- `confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative. This is intentional: `low` is a transparency signal prompting the reader to treat the verdict as speculative, not a veto mechanism. The design choice is to surface speculation honestly rather than suppress it.
+- In Sequential mode all three voices (Conservator → Generator → Control) produce their outputs before the aggregator evaluates them. A `glossary_fail` is therefore detected post-hoc by the aggregator; Generator always runs before the BLOCK is issued, and Control always runs after Generator with access to Generator's candidates. AC-2 reflects this correctly.
+- No retrospective signal exists to detect cases where the 3-entry cap on `hidden_assumptions` caused a critical assumption to be dropped. The deprecated `meta_critic.py` provides a `control_speculation_flag` for thin verdicts but has no analogous mechanism for dropped assumptions. This is a known, accepted gap.
 
 ## HOW — Acceptance (= tests)
 

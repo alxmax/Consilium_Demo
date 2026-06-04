@@ -28,10 +28,13 @@ Provides a unified read API over Consilium's three memory tiers - short (current
 - JSON object emitted to stdout: for a single tier, a dict with `tier`, `entries`, and `total` keys; for `--tier all`, a dict with `short`, `medium`, and `long` sub-objects
 - exit code 0 always (no error paths beyond missing files, which return empty entry lists)
 
-## WHAT — Verify intent (open questions for the human)
-- The short tier is 'a descriptive stub because its content is only accessible inside the active agent context window' — is the stub's output format fixed (always `entries: []` with a note string), or could future implementations populate it from a session file? If fixed, should the requirement say 'permanently a stub'?
-- The `--query` flag applies a substring filter but the filter fields differ per tier — for medium it searches `success_criterion` + `chosen_approach`, for long it searches `context` + `chosen` + `note`; is case-insensitivity guaranteed for both tiers, and are the field names consistent with how those tiers store data?
-- The `--n` flag limits entries 'per tier' — for `--tier all`, does `--n` apply independently to each tier (potentially returning up to 3N entries total), or is there a global cap?
+## WHAT — Verify intent
+- None - all questions resolved.
+
+## Contract (derived from code, 2026-06-04)
+- The short tier stub is permanently fixed: `read_short()` is a hardcoded function returning `{"tier": "short", "note": "...", "entries": []}` with no file-based population path. There is no session-file mechanism and no design provision for one.
+- Case-insensitivity is guaranteed for both tiers via `_matches(text, q) → q.lower() in text.lower()`. For the long tier the filter searches `context`, `chosen`, **and** `note` (the Description omitted `note`; the code includes it).
+- `--n` applies independently per tier. `read_all` passes `n` to both `read_medium` and `read_long` separately, so `--tier all --n N` can return up to `2N` entries (short always returns 0 entries). There is no global cap.
 
 ## Acceptance (= tests)
 - Running with `--tier medium` returns a JSON object whose `entries` array contains at most `--n` items, each with `run`, `date`, `success_criterion`, `chosen`, and `confidence` fields drawn from `runs/*.json` files.

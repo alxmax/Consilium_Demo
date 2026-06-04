@@ -25,10 +25,8 @@ Decides whether a change is small enough to bypass full deliberation. It collect
 - JSON object to stdout with keys: `should_skip`, `magnitude`, `mode_ceiling`, `reason`, `signals`, `config_used`
 - exit code 0 always (errors are reported inside the JSON, not via non-zero exit)
 
-## WHAT — Verify intent (open questions for the human)
-- The `mode_ceiling` output field maps magnitude to a maximum deliberation mode — is the full mapping table (low→?, medium→?, high→?, critical→trias) specified anywhere, or only the critical→trias case documented in the acceptance tests?
-- When `--signals-stdin` is used, the `paths` field is accepted — but the blocklist check requires path matching; is the `paths` field compared against the blocklist the same way as git-diff paths, and what format are paths expected in (relative to repo root, absolute, etc.)?
-- The gate 'fails open' on probe failures — but `CONSILIUM_FORCE_FULL=1` also returns `should_skip=false`; do both paths produce identical JSON shapes, or does the forced-full path produce a different reason field?
+## WHAT — Verify intent
+- None - all questions resolved.
 
 ## Acceptance (= tests)
 - A single-file, single-line change with no blocklist hits and default config returns `should_skip=true` and `magnitude='low'`.

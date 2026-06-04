@@ -16,11 +16,12 @@ depends_on: [CONSILIUM-PERSONALITIES-001]
 - The lens shall preserve each voice's standard structural role; it shifts evaluation priorities without replacing the role's core output or inflating/deflating raw numerical scores directly.
 - When applied to Conservator, the lens shall affect only the quality-progress adjustment on ; it shall not inflate  solely on the basis of absent tests.
 - The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation.
+- The 'quality-progress path' is defined solely in the lens prompt (`architect_lens.md`), not in the Conservator voice contract; it refers to adjusting `regression_risk` upward when test coverage is weak relative to the change's scope.
+- 'Ranking higher' is achieved by the voice shifting its qualitative judgment of which candidate is structurally sounder; no raw numerical score is changed by the lens — aggregator re-weighting (via personality weights in `personalities.py`) translates that judgment into the final ranking.
+- When Architect is applied to Conservator, the lens can affect which candidate Conservator prefers (lower `regression_risk` on one candidate makes it preferred), but the mechanism is constrained to the quality-progress adjustment on `regression_risk` — not a direct `risk_score` inflation.
 
 ## WHAT — Verify intent (open questions for the human)
-- AC-2 says the Conservator's `net_concern` 'may be adjusted upward via the quality-progress path, but not inflated solely because tests are absent' — what exactly is the 'quality-progress path', and is it defined in the Conservator voice contract or only in the lens prompt?
-- The contract says the lens 'shall not inflate/deflate raw numerical scores directly' — but AC-1 says the voice 'ranks the well-structured candidate higher'; does 'ranking higher' imply a score difference, and if so, how is ranking without score change achieved?
-- 'Trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator' — when Architect is applied to Conservator, does the lens ever affect which candidate Conservator prefers, or only the risk weighting?
+- None - all questions resolved.
 
 ## HOW — Acceptance (= tests)
 AC-1

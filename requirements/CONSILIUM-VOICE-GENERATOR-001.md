@@ -18,12 +18,12 @@ depends_on: []
 - The voice shall emit `challenge_upward.triggered: true` (with a one-line reason) when Conservator has under-scaled the question — specifically when the input contains 3+ uneval'd risk terms or when `magnitude = trivial` but the fallback scenario implies more than 10% of capital or more than 1 month of recovery.
 - The voice shall emit `fallback_scenario` and `coverage_check`; if no fallback can be articulated after 2 attempts, it shall emit `abstain.triggered: true` with `reason: "goal_undefined"`.
 - The `unconventional_*` candidate shall be included unless `adversarial_*` varies on a non-scope axis (mechanism, timing, or abstraction level), or the change is mechanically trivial. Scope overlap alone does NOT justify omitting `unconventional_*`; this rule prevents silent candidate duplication and is normative.
-- The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors.
+- The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors. The Generator output schema has no per-candidate score field, so a Generator output cannot override this handicap.
+- The external-caller threshold (>3 callers) is a heuristic self-assessment from the input context; the Generator has no file access and cannot perform static analysis. The 3-caller rule is a prompt-level instruction, not a mechanically enforced count.
+- "Mechanically trivial" (the `unconventional_*` omission condition) is intentionally undefined; the Generator exercises discretion, with a one-line doc fix as the canonical example. It does not overlap with Conservator's `meta_recommendation: scale_down` — the Generator does not receive `meta_recommendation` as input.
 
 ## WHAT — Verify intent (open questions for the human)
-- The `adversarial_<short_id>` candidate is included when 'the change touches shared/core code or a function with more than 3 external callers' — how does the Generator voice determine the external caller count without file access? Is this a heuristic self-assessment, and if so, is the 3-caller threshold reliably applied?
-- The voice-score handicap of 0.5 applied to `adversarial_*` and `do_nothing` is applied 'downstream by `build_report.py`' — but could a Generator output that explicitly sets a score for these candidates override the downstream handicap?
-- The `unconventional_*` omission rule allows omission when 'the change is mechanically trivial' — is 'mechanically trivial' defined anywhere, and does it overlap with Conservator's `meta_recommendation: scale_down`?
+- None - all questions resolved.
 
 ## WHAT — Notes & known limitations (informative)
 

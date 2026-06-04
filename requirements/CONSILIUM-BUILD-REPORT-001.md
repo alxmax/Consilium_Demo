@@ -17,7 +17,11 @@ risk: 2
 - CLI flag `--input`: path to JSON bundle file (default: stdin)
 
 ## Description
-Assembles the canonical deliberation report shape from the intermediate voice and aggregation outputs, eliminating the error-prone manual JSON construction that previously occurred in the orchestrator between pipeline steps. It extracts the chosen candidate's voice scores from the control verdict and conservator score lists, derives `why_not` summaries for each non-chosen alternative from control issues and conservator risk, and stamps version provenance (`consilium_version` and `consilium_ref`) into the telemetry block of every report it emits. Skipped reports (trivial-direct, prior-deliberation passthrough) are handled via a separate code path that requires only `skip_reason` and `signals` and sets `pipeline_executed: false`; full pipeline reports always set `pipeline_executed: true`. The output must pass `validate_report.py` to be written to `.consilium/runs/`.
+Assembles the canonical deliberation report shape from the intermediate voice and aggregation outputs, eliminating the error-prone manual JSON construction that previously occurred in the orchestrator between pipeline steps. It extracts the chosen candidate's voice scores from the control verdict and conservator score lists, derives `why_not` summaries for each non-chosen alternative from control issues and conservator risk, and stamps version provenance (`consilium_version` and `consilium_ref`) into the telemetry block of every report it emits. Skipped reports (trivial-direct, prior-deliberation passthrough) are handled via a separate code path that requires only `skip_reason` and `signals`; `pipeline_executed` is absent (not set) on skipped reports — `validate_report.py` skips the field check entirely when `skipped: true`. Full pipeline reports always set `pipeline_executed: true`. The output must pass `validate_report.py` to be written to `.consilium/runs/`.
+
+`why_not` for non-chosen candidates combines both Control issues and Conservator risk: if the control verdict is invalid, it lists issue categories; if valid but issues exist, it uses the first issue's detail; if Conservator `net_concern >= 0.5`, it appends `risk=N.NN`. When neither source yields text, the fallback is `"ranked below chosen"` (or `"all candidates vetoed"` when `chosen` is null).
+
+`--input` and stdin are mutually exclusive by argparse design (`FileType` default is stdin; providing `--input` opens the file instead). No conflict resolution is needed — only one source is ever active.
 
 ## Output
 - stdout: canonical JSON report with fields: `success_criterion`, `verification`, `chosen_approach`, `reasoning`, `alternatives`, `voice_scores`, `confidence`, `pipeline_executed`, `deliberation_log`, `telemetry`, and optional Trias fields (`team`, `personalities`, `vote_pattern`, `dissent`, `abstained`, `personality_choices`)
@@ -26,9 +30,7 @@ Assembles the canonical deliberation report shape from the intermediate voice an
 - exit code 2 on malformed JSON input
 
 ## WHAT — Verify intent (open questions for the human)
-- The description says skipped reports set `pipeline_executed: false`, but the acceptance test says `pipeline_executed` is 'absent or false' — which is the normative form? Does `validate_report.py` accept either, or only one?
-- For the `why_not` derivation for non-chosen candidates, is the source of the text defined (Control issues only, Conservator risk note, or both combined), and what is emitted when a non-chosen candidate has no Control issues and no Conservator risk note?
-- When both `--input` file and stdin carry data, which takes precedence? The description says 'stdin or `--input` file' without specifying conflict resolution.
+- None - all questions resolved.
 
 ## Acceptance (= tests)
 - Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.
