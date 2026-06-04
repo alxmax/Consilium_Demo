@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-04 15:01
+generated: 2026-06-04 15:05
 nodes: 42
 edges: 51
 ---
@@ -83,7 +83,7 @@ graph LR
 
 ## Requirement-to-Code
 
-_Each requirement → its code; arrow label = role (`implements` / `tested-by`). Red = confirmed but no code linked (a gap); grey = baseline/draft, not linked yet (expected)._
+_Each requirement â†’ its code; arrow label = role (`implements` / `tested-by`). Red = confirmed but no code linked (a gap); grey = baseline/draft, not linked yet (expected)._
 
 ```mermaid
 graph LR
@@ -271,7 +271,7 @@ graph LR
 
 ## Risk & Unknowns
 
-_Requirements needing attention: red = unimplemented (confirmed, no code); orange = unreviewed (promote after review); yellow = blast-radius (≥3 dependents), untested (implemented but no tested-by — set `test_exempt` to silence), or unverified-intent (open verify-intent question)._
+_Requirements needing attention: red = unimplemented (confirmed, no code); orange = unreviewed (promote after review); yellow = blast-radius (â‰¥3 dependents), untested (implemented but no tested-by â€” set `test_exempt` to silence), or unverified-intent (open verify-intent question)._
 
 ```mermaid
 graph LR
@@ -291,7 +291,7 @@ graph LR
 
 | ID | status | members | dependents | risks | recommendation |
 | --- | --- | --- | --- | --- | --- |
-| CONSILIUM-FEEDBACK-001 | confirmed | 1 | 6 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
-| CONSILIUM-PERSONALITIES-001 | confirmed | 2 | 5 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
-| CONSILIUM-RENDER-FEEDBACK-HTML-001 | confirmed | 2 | 3 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
-| CONSILIUM-UTILS-001 | confirmed | 2 | 21 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
+| CONSILIUM-FEEDBACK-001 | confirmed | 1 | 6 | blast-radius | High fan-in â€” many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
+| CONSILIUM-PERSONALITIES-001 | confirmed | 2 | 5 | blast-radius | High fan-in â€” many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
+| CONSILIUM-RENDER-FEEDBACK-HTML-001 | confirmed | 2 | 3 | blast-radius | High fan-in â€” many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
+| CONSILIUM-UTILS-001 | confirmed | 2 | 21 | blast-radius | High fan-in â€” many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |

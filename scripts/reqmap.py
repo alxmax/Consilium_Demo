@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-"""reqmap — requirement manager engine (stdlib only).
+﻿#!/usr/bin/env python3
+"""reqmap â€” requirement manager engine (stdlib only).
 
 Subcommands:
   init              first-use bootstrap: scaffold requirements/ + .reqmapignore, draft
@@ -28,9 +28,9 @@ CODE_EXTS = (".py", ".js", ".ts", ".tsx", ".jsx", ".c", ".cpp", ".h", ".hpp",
 
 # ---- prose auto-draft classification (cmd_extract) ----
 # These buckets govern AUTO behavior (drafting) ONLY. scan_members still honors an
-# explicit tag on ANY file, regardless of bucket — buckets never suppress a real tag.
+# explicit tag on ANY file, regardless of bucket â€” buckets never suppress a real tag.
 PROSE_EXTS = (".md", ".html")
-# Bucket 1 — meta/boilerplate: never auto-drafted, never sync-checked. Basename match.
+# Bucket 1 â€” meta/boilerplate: never auto-drafted, never sync-checked. Basename match.
 META_IGNORE_NAMES = {"CLAUDE.md", "AGENTS.md", "GEMINI.md", "CONTRIBUTING.md",
                      "SKILL.md", "TODO.md", "CHANGELOG.md"}
 
@@ -38,11 +38,11 @@ VALID_STATUS = {"draft", "baseline", "in-progress", "implemented", "confirmed", 
 VALID_LAYER = {"bus", "feature"}
 ENFORCED = {"in-progress", "implemented", "confirmed"}
 # System Map declutter: hide depends_on edges into a node this many capabilities
-# depend on (a hub) — the bus is hidden regardless of count. Full graph stays in
+# depend on (a hub) â€” the bus is hidden regardless of count. Full graph stays in
 # the Dependency Map tab.
 SYSTEM_HUB_FANIN = 8
 
-# Scripted, deterministic guidance per risk signal — surfaced in the Risk tab,
+# Scripted, deterministic guidance per risk signal â€” surfaced in the Risk tab,
 # the detail panel, and the _map.md risk table so a flagged requirement comes
 # with a concrete next action, not just a color.
 RISK_ADVICE = {
@@ -52,13 +52,13 @@ RISK_ADVICE = {
     "unreviewed": "Draft/baseline, not yet validated: review the contract, wire its "
                   "`tested-by` tests, then promote to `confirmed`. Until then it is "
                   "tracked, not enforced.",
-    "blast-radius": "High fan-in — many capabilities depend on this. Change it only "
+    "blast-radius": "High fan-in â€” many capabilities depend on this. Change it only "
                     "behind its contract, run the full gate + dependents' tests, and "
                     "treat it as shared foundation (bus).",
     "untested": "Implemented but no `tested-by` member: write an acceptance test and tag "
                 "it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter "
                 "to acknowledge it intentionally and silence this signal.",
-    "unverified-intent": "Has open `## WHAT — Verify intent` question(s): run "
+    "unverified-intent": "Has open `## WHAT â€” Verify intent` question(s): run "
                          "`reqmap.py findings`, resolve each in `requirements/_findings.md`, "
                          "then fold the answer into the Contract or delete the bullet.",
 }
@@ -67,7 +67,7 @@ RISK_ADVICE = {
 # vendored copy is older than the installed plugin's. ISO date with an optional
 # `.N` same-day revision suffix (YYYY-MM-DD[.N]): lexicographic order ==
 # chronological order, so a plain string compare is enough.
-MAP_ENGINE_VERSION = "2026-06-04.4"
+MAP_ENGINE_VERSION = "2026-06-04.5"
 
 
 # ---------- parsing ----------
@@ -90,7 +90,7 @@ def parse_frontmatter(text):  # implements: CORE-PARSE-001
     """Return (meta_dict, body). Minimal YAML: scalars, inline [a, b] lists, and the
     block form (`key:` then indented `- item` lines). An inline list missing its
     closing `]` is parsed leniently rather than silently kept as a literal string."""
-    meta, body = {}, text.lstrip("﻿")  # tolerate a stray UTF-8 BOM
+    meta, body = {}, text.lstrip("ï»¿")  # tolerate a stray UTF-8 BOM
     if body.startswith("---"):
         end = body.find("\n---", 3)
         if end != -1:
@@ -106,7 +106,7 @@ def parse_frontmatter(text):  # implements: CORE-PARSE-001
                 k, v = line.split(":", 1)
                 k, v = k.strip(), v.strip()
                 if v.startswith("["):
-                    # inline list; tolerate a missing `]` (lenient) — a '#' inside
+                    # inline list; tolerate a missing `]` (lenient) â€” a '#' inside
                     # the brackets is data, a '#' after the close is a comment
                     inner = v[1:v.index("]")] if "]" in v else v[1:]
                     meta[k] = [x for x in (_clean_item(x) for x in inner.split(",")) if x]
@@ -146,7 +146,7 @@ def _prune_dirs(dirpath, dirs, reqs_dir):  # implements: CORE-SCAN-002
     """Drop noise dirs and the SSOT output dir from an os.walk in place.
 
     Excludes ONLY the actual requirements dir (by realpath), not every folder
-    that happens to be named 'requirements' — a source package named
+    that happens to be named 'requirements' â€” a source package named
     requirements/ must still be scanned."""
     reqs_real = os.path.realpath(reqs_dir) if reqs_dir else None
     keep = []
@@ -208,7 +208,7 @@ def scan_members(code_root, reqs_dir=None):  # implements: CORE-SCAN-002
 
 # ---------- hashing / drift ----------
 def binding_hash(body):  # implements: CORE-DRIFT-003
-    """Hash only the NORMATIVE sections — the Contract and the Acceptance criteria.
+    """Hash only the NORMATIVE sections â€” the Contract and the Acceptance criteria.
     Everything else (Verify-intent, Notes, Current-implementation, links) is
     commentary and may drift freely without tripping the gate. (Legacy docs used
     Input/Output/Acceptance; those headers are still honored for back-compat.)"""
@@ -247,8 +247,8 @@ def save_lock(reqs_dir, lock):  # implements: CORE-DRIFT-003
 # ---------- commands ----------
 def _has_section(body, name):  # implements: REQ-CHECK-006
     """True if the body has a `## ` heading whose text contains `name` (case-insensitive).
-    Used to detect legacy-schema requirements that lack a `## WHAT — Verify intent`
-    section — `findings` mines only that section, so its absence means findings is
+    Used to detect legacy-schema requirements that lack a `## WHAT â€” Verify intent`
+    section â€” `findings` mines only that section, so its absence means findings is
     silently inactive for that requirement."""
     name = name.lower()
     for line in body.splitlines():
@@ -273,7 +273,7 @@ def _engine_version_at(path):
         with open(path, encoding="utf-8") as f:
             m = re.search(r'MAP_ENGINE_VERSION\s*=\s*"([^"]+)"', f.read(4000))
         return m.group(1) if m else None
-    except Exception:  # fail open — never let the staleness probe break the gate
+    except Exception:  # fail open â€” never let the staleness probe break the gate
         return None
 
 
@@ -317,7 +317,7 @@ def cmd_check(reqs, members, reqs_dir, update_lock):  # implements: REQ-CHECK-00
             errors.append(f"{rid}: status {m['status']} but no implements: tag found in code")
         tests = [x for x in members.get(rid, []) if x[0] == "tested-by"]
         if m.get("status") == "confirmed" and not tests and not m.get("test_exempt"):
-            warns.append(f"{rid}: confirmed but no tested-by: tag — acceptance tests not linked")
+            warns.append(f"{rid}: confirmed but no tested-by: tag â€” acceptance tests not linked")
 
     lock = load_lock(reqs_dir)
     # load_lock fails open ({}) on an absent OR corrupt/merge-conflicted lock; the
@@ -330,7 +330,7 @@ def cmd_check(reqs, members, reqs_dir, update_lock):  # implements: REQ-CHECK-00
                 json.load(f)
         except (json.JSONDecodeError, OSError):
             warns.append("_reqlock.json present but unreadable (corrupt/merge-conflicted) "
-                         "— drift detection skipped this run; re-run with --update-lock")
+                         "â€” drift detection skipped this run; re-run with --update-lock")
     new_lock = {}
     for rid, r in reqs.items():
         h = binding_hash(r["body"])
@@ -339,8 +339,8 @@ def cmd_check(reqs, members, reqs_dir, update_lock):  # implements: REQ-CHECK-00
         if old and old != h and r["meta"].get("status") == "confirmed":
             # name the member locations so the warning is actionable, not "its members"
             locs = [f"{fp}:{ln}" for (_role, fp, ln) in members.get(rid, [])]
-            where = ", ".join(locs) if locs else "no members tagged — add an implements: tag"
-            warns.append(f"{rid}: DRIFT — contract changed since lock; "
+            where = ", ".join(locs) if locs else "no members tagged â€” add an implements: tag"
+            warns.append(f"{rid}: DRIFT â€” contract changed since lock; "
                          f"re-check {len(locs)} member(s): {where}")
 
     # Health signals (non-blocking): how much of the corpus is human-validated, and
@@ -351,8 +351,8 @@ def cmd_check(reqs, members, reqs_dir, update_lock):  # implements: REQ-CHECK-00
     legacy = [rid for rid in sorted(reqs)
               if not _has_section(reqs[rid]["body"], "verify intent")]
     if legacy:
-        warns.append("{}/{} requirement(s) use the legacy schema (no '## WHAT — Verify "
-                     "intent' section) — `findings` is inactive for them: {}"
+        warns.append("{}/{} requirement(s) use the legacy schema (no '## WHAT â€” Verify "
+                     "intent' section) â€” `findings` is inactive for them: {}"
                      .format(len(legacy), len(reqs), ", ".join(legacy)))
 
     for w in warns:
@@ -366,7 +366,7 @@ def cmd_check(reqs, members, reqs_dir, update_lock):  # implements: REQ-CHECK-00
 
     n_find = sum(len(items) for _rid, _t, items in collect_findings(reqs))
     if n_find:
-        print(f"info  {n_find} open verify-intent finding(s) — run `reqmap.py findings`")
+        print(f"info  {n_find} open verify-intent finding(s) â€” run `reqmap.py findings`")
 
     print(f"\n{len(reqs)} requirements ({n_confirmed} confirmed, {len(legacy)} legacy-schema), "
           f"{sum(len(v) for v in members.values())} members, "
@@ -374,7 +374,7 @@ def cmd_check(reqs, members, reqs_dir, update_lock):  # implements: REQ-CHECK-00
     return 1 if errors else 0
 
 
-# Built-in scaffold so `new` needs no separate templates/ dir — the engine is
+# Built-in scaffold so `new` needs no separate templates/ dir â€” the engine is
 # self-contained (one file). An on-disk templates/requirement.md still overrides
 # it when cmd_new is given a tmpl_path that exists.
 REQUIREMENT_TEMPLATE = """\
@@ -390,9 +390,9 @@ superseded_by:       # <ID>, if replaced
 
 # Short name
 
-> WHY: one line — what this is, in plain language.
+> WHY: one line â€” what this is, in plain language.
 
-## WHAT — Contract (normative)
+## WHAT â€” Contract (normative)
 <!-- Audience: a developer new to THIS project. Define project-specific terms inline
      on first use; attach roles to named components; keep "shall" phrasing. -->
 - The feature shall ... (one binding, testable behavior per line; "shall" phrasing;
@@ -401,14 +401,14 @@ superseded_by:       # <ID>, if replaced
   when an optional input is missing/invalid; the decision logic that selects each
   output (say so explicitly if it is delegated to a model/heuristic).
 
-## WHAT — Verify intent (open questions for the human)
-- Observed: <a behavior that may be an AI accident — swallowed error, empty-string
+## WHAT â€” Verify intent (open questions for the human)
+- Observed: <a behavior that may be an AI accident â€” swallowed error, empty-string
   fallback, magic constant, unreachable branch>. Intended, or a bug to fix?
 
-## WHAT — Notes & known limitations (informative)
+## WHAT â€” Notes & known limitations (informative)
 - A known fragility/footgun the implementer should know but which is NOT enforced.
 
-## HOW — Acceptance (= tests)
+## HOW â€” Acceptance (= tests)
 <!-- Audience: a developer new to THIS project. Keep Given/When/Then concrete and
      self-explanatory; spell out any term the Contract introduced. -->
 AC-1
@@ -416,10 +416,10 @@ AC-1
   When   <action>
   Then   <observable, pass/fail result>   (one test per AC; each maps to tested-by)
 
-## WHERE — Current implementation
-- How the code does it today (the volatile narrative — may drift from the contract).
+## WHERE â€” Current implementation
+- How the code does it today (the volatile narrative â€” may drift from the contract).
 
-## WHERE — Members in code (auto)
+## WHERE â€” Members in code (auto)
 """
 
 
@@ -448,7 +448,7 @@ def _set_frontmatter_status(text, value):  # implements: REQ-PROMOTE-011
     """Replace the value of the first `status:` line inside the leading frontmatter
     block, preserving its indentation and any trailing inline comment. Returns
     (new_text, n_replaced); n=0 when there is no frontmatter or no status line."""
-    body = text.lstrip("﻿")            # drop a BOM if present (rewritten without it)
+    body = text.lstrip("ï»¿")            # drop a BOM if present (rewritten without it)
     if not body.startswith("---"):
         return text, 0
     end = body.find("\n---", 3)
@@ -462,7 +462,7 @@ def _set_frontmatter_status(text, value):  # implements: REQ-PROMOTE-011
 def cmd_promote(reqs, members, cap_id):  # implements: REQ-PROMOTE-011
     """Flip a requirement's status to `confirmed` (the human-validation step) by a
     single frontmatter edit. Refuses if the requirement has no `implements:` member
-    (a confirmed requirement must point to code — else the gate would error), and
+    (a confirmed requirement must point to code â€” else the gate would error), and
     warns when no `tested-by:` member is linked."""
     r = reqs.get(cap_id)
     if not r:
@@ -474,7 +474,7 @@ def cmd_promote(reqs, members, cap_id):  # implements: REQ-PROMOTE-011
         return 0
     roles = [m[0] for m in members.get(cap_id, [])]
     if "implements" not in roles:
-        print(f"refusing: {cap_id} has no `implements:` member — a confirmed requirement "
+        print(f"refusing: {cap_id} has no `implements:` member â€” a confirmed requirement "
               f"must point to code. Tag the implementing code `# implements: {cap_id}` first.")
         return 1
     with open(r["path"], encoding="utf-8-sig") as f:
@@ -487,7 +487,7 @@ def cmd_promote(reqs, members, cap_id):  # implements: REQ-PROMOTE-011
         f.write(new_text)
     print(f"promoted {cap_id}: {cur or '(unset)'} -> confirmed")
     if "tested-by" not in roles:
-        print(f"  note: no `tested-by:` member — wire an acceptance test (`# tested-by: {cap_id}`) "
+        print(f"  note: no `tested-by:` member â€” wire an acceptance test (`# tested-by: {cap_id}`) "
               f"or set `test_exempt: <reason>` to silence the untested signal.")
     print("  next: reqmap.py check --update-lock  &&  reqmap.py map")
     return 0
@@ -503,26 +503,26 @@ def _draft_id(rel):  # implements: REQ-EXTRACT-008
 
 def classify_prose(rel):  # implements: REQ-EXTRACT-008
     """Bucket a POSIX-relative .md/.html path for the auto-draft path. Returns
-    'ignore' (meta/boilerplate, invisible), 'sync_only' (README/docs/*.html — never
+    'ignore' (meta/boilerplate, invisible), 'sync_only' (README/docs/*.html â€” never
     drafted, but a drift- and semantic-checked member when explicitly tagged), or
-    'capability' (prompt/spec prose — auto-drafted as a `draft` stub). Governs AUTO
+    'capability' (prompt/spec prose â€” auto-drafted as a `draft` stub). Governs AUTO
     behavior only: scan_members still honors an explicit tag on any file."""
     base = os.path.basename(rel)
-    # Bucket 1 — meta/boilerplate.
+    # Bucket 1 â€” meta/boilerplate.
     if base in META_IGNORE_NAMES:
         return "ignore"
     if base == "LICENSE" or base.startswith("LICENSE."):
         return "ignore"
     if base.startswith("_"):                      # generated _map.*, _findings.md
         return "ignore"
-    # Bucket 2 — sync-only.
+    # Bucket 2 â€” sync-only.
     if base == "README" or base.startswith("README."):
         return "sync_only"
     if rel == "docs" or rel.startswith("docs/"):
         return "sync_only"
     if rel.endswith(".html"):                      # all HTML is an overview/derived doc
         return "sync_only"
-    # Bucket 3 — capability source (prompts/specs/modes and other prose .md).
+    # Bucket 3 â€” capability source (prompts/specs/modes and other prose .md).
     return "capability"
 
 
@@ -530,7 +530,7 @@ def _prose_facts(src):  # implements: REQ-EXTRACT-008
     """(title, [headings]) from markdown/HTML prose, for a draft scaffold.
     Title: markdown frontmatter `title:`, else first `# ` H1, else <title>/<h1>.
     Headings: markdown `## ` H2 lines, else <h2>. Returns (None, []) when absent.
-    The scaffold lists headings as an authoring hint — never the contract."""
+    The scaffold lists headings as an authoring hint â€” never the contract."""
     meta, body = parse_frontmatter(src)
     title = meta.get("title") or None
     headings = []
@@ -587,30 +587,30 @@ def cmd_extract(reqs, members, code_root, reqs_dir):  # implements: REQ-EXTRACT-
                 src = f.read()
             if is_prose:
                 title, headings = _prose_facts(src)
-                review = "REVIEW"   # intent is unrecoverable from prose — always author
+                review = "REVIEW"   # intent is unrecoverable from prose â€” always author
                 hint = "\n".join("  - {}".format(h) for h in headings) \
                     or "  - (no section headings detected)"
                 # str.format (not f-string): the template embeds literal {cap}/{rel} inside backticked instructions
                 with open(dest, "w", encoding="utf-8") as f:
                     f.write("---\nid: {cap}\nstatus: draft\nlayer: feature\n"
                             "owner: auto\ndepends_on: []\n"
-                            "risk: 2  # REVIEW — prose capability, author the contract "
+                            "risk: 2  # REVIEW â€” prose capability, author the contract "
                             "before promoting\n---\n\n"
                             "# {title}\n\n"
                             "> DRAFT extracted from {rel} (prose capability). The source "
-                            "prose is NOT the contract — author the normative behavior "
+                            "prose is NOT the contract â€” author the normative behavior "
                             "below, then tag the source `# generated-from: {cap}` "
                             "(HTML: `<!-- generated-from: {cap} -->`) and promote.\n\n"
-                            "## WHAT — Contract (normative)\n"
+                            "## WHAT â€” Contract (normative)\n"
                             "- TODO: the capability this prose defines (author from "
                             "intent, do not copy the prose).\n\n"
-                            "## WHAT — Verify intent (open questions for the human)\n"
+                            "## WHAT â€” Verify intent (open questions for the human)\n"
                             "- TODO: which source sections are normative vs illustrative?\n\n"
                             "Source sections detected (authoring hint, not the contract):\n"
                             "{hint}\n\n"
-                            "## HOW — Acceptance (= tests)\n"
+                            "## HOW â€” Acceptance (= tests)\n"
                             "- TODO: Given/When/Then checks for the contract above.\n\n"
-                            "## WHERE — Current implementation\n- {rel}\n".format(
+                            "## WHERE â€” Current implementation\n- {rel}\n".format(
                                 cap=cap, title=(title or os.path.splitext(fn)[0]),
                                 rel=rel, hint=hint))
             else:
@@ -621,18 +621,18 @@ def cmd_extract(reqs, members, code_root, reqs_dir):  # implements: REQ-EXTRACT-
                     # matching cmd_new so a promoted draft needs no reshaping
                     f.write(f"---\nid: {cap}\nstatus: draft\nlayer: feature\n"
                             f"owner: auto\ndepends_on: []\n"
-                            f"risk: {risk}  # {review} — author triage hint, not read by the engine\n---\n\n"
+                            f"risk: {risk}  # {review} â€” author triage hint, not read by the engine\n---\n\n"
                             f"# {os.path.splitext(fn)[0]}\n\n"
                             f"> DRAFT extracted from {rel}. Describes observed behavior, "
                             f"not validated intent.\n\n"
-                            f"## WHAT — Contract (normative)\n"
-                            f"- TODO: the observed behavior (characterization — correctness UNVERIFIED).\n\n"
-                            f"## WHAT — Verify intent (open questions for the human)\n"
+                            f"## WHAT â€” Contract (normative)\n"
+                            f"- TODO: the observed behavior (characterization â€” correctness UNVERIFIED).\n\n"
+                            f"## WHAT â€” Verify intent (open questions for the human)\n"
                             f"- TODO: anything that looks like an accident (swallowed error, magic "
-                            f"constant, dead branch) — intended, or a bug to fix?\n\n"
-                            f"## HOW — Acceptance (= tests)\n"
+                            f"constant, dead branch) â€” intended, or a bug to fix?\n\n"
+                            f"## HOW â€” Acceptance (= tests)\n"
                             f"- characterization: current behavior captured, correctness UNVERIFIED\n\n"
-                            f"## WHERE — Current implementation\n- {rel}\n")
+                            f"## WHERE â€” Current implementation\n- {rel}\n")
             proposed += 1
             print(f"{review:14} {cap}  <- {rel}")
     print(f"\n{proposed} draft requirements proposed. Review the REVIEW ones before promoting.")
@@ -649,7 +649,7 @@ def _risk(src):  # implements: REQ-EXTRACT-008
 
 # ---------- candidates (capability extraction plan) ----------
 # Stage 1 of AI extraction: gather the raw material an authoring step (a human or
-# an LLM agent) needs to write a real, capability-level requirement. READ-ONLY —
+# an LLM agent) needs to write a real, capability-level requirement. READ-ONLY â€”
 # emits a JSON plan, writes NO .md, so it cannot repeat extract's empty-stub failure.
 CANDIDATE_EXTS = (".py", ".js", ".ts", ".tsx", ".jsx")
 BUS_FANIN_THRESHOLD = 5      # a module this many capabilities depend on is bus-like
@@ -695,7 +695,7 @@ def _js_facts(src):  # implements: REQ-CANDIDATES-009
     comment as the module doc, and top-level function/binding names. Imports are
     not resolved for JS in v1 (the agent and _capmap.json fill that gap)."""
     facts = {"signatures": [], "docstrings": {}, "imports": []}
-    # Leading block comment via plain string scan over a capped prefix — NOT a regex.
+    # Leading block comment via plain string scan over a capped prefix â€” NOT a regex.
     # The old `/\*+(.*?)\*/` backtracks O(n^2) on a file opening with a long run of
     # `*` (a DoS on `candidates`); str.find is linear and cannot backtrack. The
     # leading `*`s of `/***` are stripped by the per-line `.strip(" *")` below.
@@ -717,7 +717,7 @@ def _md_facts(src):  # implements: REQ-CANDIDATES-009
     """Best-effort capability facts from a Markdown prompt/spec file (no parser):
     the first H1 (`# `) is the title, the first blockquote (`>`) AFTER that H1 is the
     intent, and each `## ` H2 heading is a structural-signature line. Free prose is
-    never hashed — these facts only seed a human-authored requirement (Stage 2); the
+    never hashed â€” these facts only seed a human-authored requirement (Stage 2); the
     binding hash anchors on the authored Contract+Acceptance, like any code requirement."""
     facts = {"signatures": [], "docstrings": {}, "imports": []}
     title, intent, after_h1 = None, None, False
@@ -780,7 +780,7 @@ def _mint_cap_id(rel):  # implements: REQ-CANDIDATES-009
 
 def _collect_files(code_root, reqs_dir, md_globs=None):  # implements: REQ-CANDIDATES-009
     """Sorted rel paths of candidate source files, honoring _prune_dirs (noise +
-    the SSOT dir) and .reqmapignore — the same exclusions scan_members uses.
+    the SSOT dir) and .reqmapignore â€” the same exclusions scan_members uses.
 
     `md_globs` is the opt-in, scope-bounding allowlist for non-code discovery: a
     `.md` file is included ONLY when it matches one of these globs (and is not
@@ -807,7 +807,7 @@ def cmd_candidates(reqs, members, code_root, reqs_dir, out, md_globs=None):  # i
     """Emit a deterministic JSON capability-extraction plan and write NO .md.
     Grouping: authoritative `requirements/_capmap.json` when present, else one
     candidate per file (the Stage-2 agent merges/splits using judgment).
-    `md_globs` opts non-code `.md` files (prompts, specs) into discovery — advisory
+    `md_globs` opts non-code `.md` files (prompts, specs) into discovery â€” advisory
     only, never auto-written; a human authors + confirms each into the SSOT."""
     files = _collect_files(code_root, reqs_dir, md_globs)
     facts_by_file = {rel: _file_facts(os.path.join(code_root, rel), rel) for rel in files}
@@ -821,7 +821,7 @@ def cmd_candidates(reqs, members, code_root, reqs_dir, out, md_globs=None):  # i
     # depends_on is resolved by matching an import name to a file STEM. Known
     # limitation (Stage-1 heuristic): an import that shadows a stdlib/3rd-party name
     # (e.g. `import json` next to a local json.py) or collides with a same-basename
-    # file in another dir can yield a false edge — the Stage-2 author prunes these.
+    # file in another dir can yield a false edge â€” the Stage-2 author prunes these.
     stem_of = {os.path.splitext(os.path.basename(r))[0]: r for r in files}  # for depends_on
 
     # ----- grouping: _capmap.json wins; uncovered files fall back to one-per-file
@@ -910,7 +910,7 @@ def _req_title(body, rid):
 
 
 def collect_findings(reqs):  # implements: REQ-FINDINGS-010
-    """Per requirement, the open '## WHAT — Verify intent' bullets minus the
+    """Per requirement, the open '## WHAT â€” Verify intent' bullets minus the
     'None - ...' placeholder. Returns [(rid, title, [item, ...]), ...] for reqs
     that have >=1 real finding, in id order. Deterministic; reads only the md."""
     out = []
@@ -926,7 +926,7 @@ def collect_findings(reqs):  # implements: REQ-FINDINGS-010
 def _render_findings_raw(groups, total):
     L = ["# Open findings", "",
          "> {} open verify-intent item(s) across {} requirement(s), aggregated from each "
-         "requirement's `## WHAT — Verify intent` section by `reqmap.py findings`."
+         "requirement's `## WHAT â€” Verify intent` section by `reqmap.py findings`."
          .format(total, len(groups)),
          ">",
          "> These are open questions raised while reconstructing intent from code - NOT "
@@ -1055,7 +1055,7 @@ def _build_map_data(reqs, members):  # implements: REQ-MAP-007
             "current_impl": _bullets(r["body"], "current implementation"),
             "acc": _bullets(r["body"], "acceptan"),          # AC bullets if any
             "accept": _section_raw(r["body"], "acceptan"),    # raw acceptance (AC blocks, line breaks kept)
-            # legacy schema (Input / Description / Output) — kept so old docs still render
+            # legacy schema (Input / Description / Output) â€” kept so old docs still render
             "input": _section(r["body"], "input"),
             "output": _section(r["body"], "output"),
             "desc": _section(r["body"], "description"),
@@ -1110,7 +1110,7 @@ def cmd_export(reqs, members, reqs_dir, out=None):  # implements: REQ-MAP-007
 
 def _risk_score(meta):  # implements: REQ-NEXT-013
     """Extract's per-file risk hint (0-3) from frontmatter, or 0 when absent /
-    unparseable. Used only to float REVIEW-flagged drafts to the top of a bucket —
+    unparseable. Used only to float REVIEW-flagged drafts to the top of a bucket â€”
     never to gate. Hand-authored requirements have no `risk:` field -> 0."""
     try:
         return int(str(meta.get("risk")).strip())
@@ -1132,7 +1132,7 @@ def cmd_next(reqs, members, show_all=False, top_n=3):  # implements: REQ-NEXT-01
     confirmed = sum(1 for r in reqs.values() if r["meta"].get("status") == "confirmed")
     tested = sum(1 for rid in reqs if any(role == "tested-by" for role, *_ in members.get(rid, [])))
     drafts = sum(1 for r in reqs.values() if r["meta"].get("status", "draft") == "draft")
-    print("{} requirement(s) · {} confirmed · {} tested · {} draft(s)\n".format(
+    print("{} requirement(s) Â· {} confirmed Â· {} tested Â· {} draft(s)\n".format(
         total, confirmed, tested, drafts))
 
     dependents = {rid: 0 for rid in reqs}
@@ -1149,7 +1149,7 @@ def cmd_next(reqs, members, show_all=False, top_n=3):  # implements: REQ-NEXT-01
             buckets.setdefault(sig, []).append((rid, _risk_score(m)))
     # Action buckets, MOST-URGENT FIRST: an unimplemented contract outranks an
     # unreviewed draft. blast-radius is a caution (a property, not a task) so `next`
-    # omits it — it stays on the Risk tab. Each bucket is shown and truncated
+    # omits it â€” it stays on the Risk tab. Each bucket is shown and truncated
     # independently, so a high-priority bucket is never hidden below a long low one.
     PLAN = [
         ("unimplemented",     "Orphans (confirmed, no code)"),
@@ -1160,7 +1160,7 @@ def cmd_next(reqs, members, show_all=False, top_n=3):  # implements: REQ-NEXT-01
     pending = [(sig, label, sorted(buckets[sig], key=lambda x: (-x[1], x[0])))
                for sig, label in PLAN if buckets.get(sig)]
     if not pending:
-        print("Nothing pending — every confirmed requirement is implemented, tested and intent-checked.")
+        print("Nothing pending â€” every confirmed requirement is implemented, tested and intent-checked.")
         return 0
     total_actions = sum(len(ids) for _, _, ids in pending)
     print("{} item(s) need attention across {} {}:\n".format(
@@ -1172,7 +1172,7 @@ def cmd_next(reqs, members, show_all=False, top_n=3):  # implements: REQ-NEXT-01
             flag = "  [REVIEW]" if score >= 2 else ""
             print("  {}{}   requirements/{}.md".format(rid, flag, rid))
         if not show_all and len(ids) > top_n:
-            print("  ... {} more — run `reqmap.py next --all`".format(len(ids) - top_n))
+            print("  ... {} more â€” run `reqmap.py next --all`".format(len(ids) - top_n))
         print("  -> {}\n".format(RISK_ADVICE[sig]))
     return 0
 
@@ -1194,7 +1194,7 @@ def _strip_line_tag(line):
             cut = idx
     if cut >= 0:
         return line[:cut].rstrip() + nl
-    return line  # no recognisable comment marker — leave unchanged
+    return line  # no recognisable comment marker â€” leave unchanged
 
 
 def _wipe(reqs_dir, code_root):
@@ -1237,8 +1237,8 @@ def _wipe(reqs_dir, code_root):
 
 def _reqmapignore_seed(code_root, reqs_dir):  # implements: REQ-INIT-012
     """Content for a freshly-seeded `.reqmapignore`. Normally ignores the vendored
-    engine at `scripts/reqmap.py` — its `implements:` self-tags would otherwise read
-    as dangling refs in a consumer repo. EXCEPTION — a self-hosting repo: when that
+    engine at `scripts/reqmap.py` â€” its `implements:` self-tags would otherwise read
+    as dangling refs in a consumer repo. EXCEPTION â€” a self-hosting repo: when that
     file carries membership tags that resolve to requirements already present, the
     engine IS the managed code and must stay scanned, so the line is omitted (a
     comment explains why) to avoid orphaning those requirements."""
@@ -1266,7 +1266,7 @@ def _reqmapignore_seed(code_root, reqs_dir):  # implements: REQ-INIT-012
 
 def cmd_init(reqs_dir, code_root, wipe=False):  # implements: REQ-INIT-012
     """First-use bootstrap for a fresh repo: create requirements/, seed a minimal
-    .reqmapignore (idempotent — never clobbers an existing one), draft requirements
+    .reqmapignore (idempotent â€” never clobbers an existing one), draft requirements
     from existing code, build the lock + map, then print guided next steps.
     Pass wipe=True (--wipe flag) for a hard reset: all non-generated requirement
     files are deleted and membership tags stripped from source before re-extracting."""
@@ -1291,17 +1291,17 @@ def cmd_init(reqs_dir, code_root, wipe=False):  # implements: REQ-INIT-012
     cmd_check(reqs, members, reqs_dir, update_lock=True)
     cmd_map(reqs, members, reqs_dir)
     print("\n" + "=" * 60)
-    if not reqs:   # nothing to extract — don't masquerade as "all clean"
+    if not reqs:   # nothing to extract â€” don't masquerade as "all clean"
         print("reqmap initialized, but no requirements were extracted")
         print("(no supported source files found, or all are ignored by .reqmapignore).")
         if created:
             print("created: " + ", ".join(created))
         print("\nNext: author your first requirement with `reqmap.py new AREA-NAME-NNN`.")
         return 0
-    print("reqmap initialized — {} requirement(s) tracked.".format(len(reqs)))
+    print("reqmap initialized â€” {} requirement(s) tracked.".format(len(reqs)))
     if created:
         print("created: " + ", ".join(created))
-    print("\nNext: run `reqmap.py next` — it shows what to do, most important first.")
+    print("\nNext: run `reqmap.py next` â€” it shows what to do, most important first.")
     print("Then wire the gate: add `python scripts/reqmap.py check` to your pre-commit hook.")
     return 0
 
@@ -1316,7 +1316,7 @@ def _map_check(data, reqs_dir):  # implements: REQ-MAP-007
     """Freshness gate: regenerate the map in memory and compare to the committed
     files. Stale (committed != freshly-built) -> exit 1 so a code/requirement edit
     that shifts the map can't be committed without regenerating it. A map that was
-    never generated (file absent) is NOT stale — consumers who don't track maps pass.
+    never generated (file absent) is NOT stale â€” consumers who don't track maps pass.
     The `generated:` timestamp is ignored so an unchanged map never trips on time."""
     stale = []
     for name, fresh in (("_map.md", _build_md_text(data)),
@@ -1328,7 +1328,7 @@ def _map_check(data, reqs_dir):  # implements: REQ-MAP-007
         if _strip_generated(on_disk) != _strip_generated(fresh):
             stale.append(name)
     if stale:
-        print("FAIL  map is stale: {} — run `reqmap.py map` and commit the result."
+        print("FAIL  map is stale: {} â€” run `reqmap.py map` and commit the result."
               .format(", ".join(stale)))
         return 1
     print("OK  map is fresh.")
@@ -1363,7 +1363,7 @@ def _section(body, name):  # implements: REQ-MAP-007
 
 
 def _section_raw(body, name):  # implements: REQ-MAP-007
-    """Like _section but preserves line breaks + indentation — used for the
+    """Like _section but preserves line breaks + indentation â€” used for the
     multi-line Given/When/Then acceptance blocks so they read as written."""
     out, grab = [], False
     for line in body.splitlines():
@@ -1401,10 +1401,10 @@ def _mlabel(text):
     braces, pipes and backslashes; under securityLevel:loose, angle
     brackets would also be rendered as HTML. Neutralize all of them.
     """
-    text = text or "—"
+    text = text or "â€”"
     for a, b in (('"', "'"), ("`", "'"), ("[", "("), ("]", ")"),
                  ("{", "("), ("}", ")"), ("|", "/"), ("\\", "/"),
-                 ("<", "‹"), (">", "›")):
+                 ("<", "â€¹"), (">", "â€º")):
         text = text.replace(a, b)
     return text
 
@@ -1437,7 +1437,7 @@ def _grouped_areas(nodes):  # implements: REQ-MAP-007
     """Order nodes into [(area_label, [node,...]), ...]: multi-node areas first
     (sorted), then one 'misc' bucket of every single-node area. Shared by the
     System / Dependency / Risk diagrams so a 40+ node map stays navigable
-    (Miller 7+-2 / C4 levels — split a big diagram by meaningful boundary)."""
+    (Miller 7+-2 / C4 levels â€” split a big diagram by meaningful boundary)."""
     areas = {}
     for n in nodes:
         areas.setdefault(_node_area(n), []).append(n)
@@ -1575,11 +1575,11 @@ def _risk_signals(node, dependents_count):
     roles = _member_roles(node.get("members"))
     if "implements" in roles and "tested-by" not in roles and not node.get("test_exempt"):
         signals.append("untested")
-    # open verify-intent questions reconstructed from code — surface them on the map,
-    # not just in the detail panel / _findings.md. Mirror collect_findings: a "None —"
+    # open verify-intent questions reconstructed from code â€” surface them on the map,
+    # not just in the detail panel / _findings.md. Mirror collect_findings: a "None â€”"
     # placeholder bullet is not an open finding. A *draft* is suppressed here: its
     # intent questions are subsumed by 'unreviewed' (the whole draft is unreviewed),
-    # and every auto-extracted draft carries a template verify TODO — flagging both
+    # and every auto-extracted draft carries a template verify TODO â€” flagging both
     # would double-count every draft. Re-surfaces once promoted past draft. This
     # rule lives in the shared signal source so `next` and the Risk tab agree.
     if node["status"] != "draft" and any(
@@ -1603,7 +1603,7 @@ def _mermaid_risk(data):  # implements: REQ-MAP-007
         lines.append('  ok["No risk signals detected"]')
         return "\n".join(lines)
 
-    # Grouped by area, colored by signal, NO edges — Risk answers "which
+    # Grouped by area, colored by signal, NO edges â€” Risk answers "which
     # capabilities need attention", not topology (the Dependency Map has edges).
     sigs_by = {n["id"]: s for n, s in risky}
     _emit_area_subgraphs(lines, [n for n, _ in risky],
@@ -1632,9 +1632,9 @@ def _add_clicks(diagram, data):
 # self-explanatory. HTML uses colored swatches; markdown uses words.
 _LEGEND_MD = [
     "Capabilities grouped by area; thick border = bus; arrows = `depends_on`. Edges into the bus/hubs are hidden (the Dependency Map shows area-level coupling).",
-    "Each requirement → its code; arrow label = role (`implements` / `tested-by`). Red = confirmed but no code linked (a gap); grey = baseline/draft, not linked yet (expected).",
+    "Each requirement â†’ its code; arrow label = role (`implements` / `tested-by`). Red = confirmed but no code linked (a gap); grey = baseline/draft, not linked yet (expected).",
     "Area-level coupling: one box per area (N caps), arrow A->B = some capability in A depends on one in B. The System Map has the per-capability detail.",
-    "Requirements needing attention: red = unimplemented (confirmed, no code); orange = unreviewed (promote after review); yellow = blast-radius (≥3 dependents), untested (implemented but no tested-by — set `test_exempt` to silence), or unverified-intent (open verify-intent question).",
+    "Requirements needing attention: red = unimplemented (confirmed, no code); orange = unreviewed (promote after review); yellow = blast-radius (â‰¥3 dependents), untested (implemented but no tested-by â€” set `test_exempt` to silence), or unverified-intent (open verify-intent question).",
 ]
 
 
@@ -1667,7 +1667,7 @@ def _build_md_text(data):  # implements: REQ-MAP-007
         legend = _LEGEND_MD[i] if i < len(_LEGEND_MD) else ""
         lines += ["## {}".format(title), "", "_{}_".format(legend), "", "```mermaid", diagram, "```", ""]
 
-    # risk table — each flagged requirement with its scripted recommendation
+    # risk table â€” each flagged requirement with its scripted recommendation
     risk_rows = []
     for n in data["nodes"]:
         sigs = _risk_signals(n, dep_count.get(n["id"], 0))
@@ -1699,8 +1699,8 @@ def render_md(data, reqs_dir):  # implements: REQ-MAP-007
 
 def _build_json_text(data):  # implements: REQ-MAP-007
     """The registry graph as a JSON string: {engine_version, nodes, edges}.
-    json.dumps neutralizes any hostile id/title/body by construction — there is
-    no markup context to break out of — so no extra escaping is needed."""
+    json.dumps neutralizes any hostile id/title/body by construction â€” there is
+    no markup context to break out of â€” so no extra escaping is needed."""
     payload = {"engine_version": MAP_ENGINE_VERSION,
                "nodes": data["nodes"], "edges": data["edges"]}
     return json.dumps(payload, indent=2, ensure_ascii=False)
@@ -1738,7 +1738,7 @@ def _inject_viewer(template_text, data):  # implements: REQ-MAP-007
 def render_html(data, reqs_dir):  # implements: REQ-MAP-007
     """Write the self-contained viewer `_map.html` by injecting `data` into the
     vendored template. Returns the path, or None when no template is present
-    (the engine still emits _map.md + _map.json — the viewer is optional)."""
+    (the engine still emits _map.md + _map.json â€” the viewer is optional)."""
     tpl = _viewer_template_path()
     if not os.path.exists(tpl):
         return None
@@ -1779,7 +1779,7 @@ def main():
                     help="next: list every pending item instead of the top few per bucket")
     ap.add_argument("--update-lock", action="store_true")
     ap.add_argument("--wipe", action="store_true",
-                    help="init: hard-reset — delete all non-generated requirements and strip "
+                    help="init: hard-reset â€” delete all non-generated requirements and strip "
                          "membership tags from source files before re-extracting")
     ap.add_argument("--check", dest="check_fresh", action="store_true",
                     help="map: verify the committed _map.* is fresh (exit 1 if stale) instead of writing")
@@ -1787,7 +1787,7 @@ def main():
     reqs_dir = a.reqs or os.path.join(a.root, "requirements")
     code_root = a.code or a.root
     # prefer an on-disk templates/requirement.md if present (back-compat), else the
-    # built-in REQUIREMENT_TEMPLATE — so no templates/ dir is required.
+    # built-in REQUIREMENT_TEMPLATE â€” so no templates/ dir is required.
     here = os.path.dirname(os.path.abspath(__file__))
     tmpl = os.path.join(here, "..", "templates", "requirement.md")
     if not os.path.exists(tmpl):
@@ -1832,3 +1832,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main() or 0)
+
