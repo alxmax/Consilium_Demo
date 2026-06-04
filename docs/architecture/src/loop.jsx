@@ -15,10 +15,11 @@ function LoopSection() {
           <LoopDiagram />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 28 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginTop: 28 }}>
           <OutcomeChip code="OK" desc="auto-logged, confidence ≥ 0.7" />
           <OutcomeChip code="OVR" desc="user overrode the chosen candidate" />
           <OutcomeChip code="PEND" desc="deferred — retro-closed via stale_pendings" warn />
+          <OutcomeChip code="PEND_HEADLESS" desc="deferred in headless mode (--yes); no interactive prompt possible" warn />
           <OutcomeChip code="BAD" desc="set manually later if the decision failed" warn />
         </div>
 
@@ -86,7 +87,7 @@ function LoopDiagram() {
       {[
         { x: 30,  title: 'Deliberation', sub: 'voices · steps 1 → 5', code: '' },
         { x: 280, title: 'Report', sub: 'step 6 · canonical JSON', code: 'build_report.py · validate_report.py' },
-        { x: 530, title: 'FEEDBACK.html', sub: 'append-only outcome log', code: 'OK / OVR / PEND / BAD' },
+        { x: 530, title: 'FEEDBACK.html', sub: 'append-only outcome log', code: 'OK / OVR / PEND / PEND_HEADLESS / BAD' },
         { x: 780, title: 'Priors', sub: 'soft priors for next run', code: 'priors.py' },
       ].map((s, i) => (
         <g key={i}>

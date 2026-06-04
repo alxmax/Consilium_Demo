@@ -4,7 +4,7 @@ const STEPS = [
   {
     id: '0', name: 'bootstrap',
     title: 'Bootstrap',
-    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (override_rate: fraction of runs where the chosen answer was later overridden; veto_rate: fraction where Conservator hard-vetoed all candidates; recurring_keywords: terms that appear repeatedly in chosen approaches). Two signals block until resolved: stale_pendings (PEND outcomes > 30 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 20% of recent runs still PEND), is a soft alert only.',
+    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (override_rate: fraction of runs where the chosen answer was later overridden; veto_rate: fraction where Conservator hard-vetoed all candidates; recurring_keywords: terms that appear repeatedly in chosen approaches). Two signals block until resolved: stale_pendings (PEND outcomes > 2 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 20% of recent runs still PEND), is a soft alert only.',
     plain: 'Wakes up. Reads each voice\'s job description and checks what worked last time — did Conservator keep vetoing? Did past runs tend to end up pending? That context shapes the upcoming deliberation.',
     inputs: ['prompts/voices/*.md', 'runs/*.json', 'FEEDBACK.html'],
     outputs: ['soft priors', 'stale_pendings prompt?'],
@@ -22,8 +22,8 @@ const STEPS = [
   {
     id: '1.5', name: 'scope gate',
     title: 'Scope gate',
-    desc: 'Auto-skip when the diff is trivial: ≤1 file, ≤15 lines, and no sensitive paths. The blocklist (auth/, security/, migrations/, .github/workflows/, secrets, .env, Dockerfile, *.tf) marks paths that always require deliberation — a one-liner in a secrets file is not trivial regardless of line count. "Fails open": if the diff is ambiguous or the probe fails, the gate defaults to running deliberation rather than silently skipping it.',
-    plain: 'If the change is tiny and low-risk, skip the full deliberation and go straight to reporting. Anything touching security, migrations, or CI always gets deliberated regardless of size.',
+    desc: 'Auto-skip when the diff is trivial: ≤1 file, ≤15 lines (configurable via scope_gate.json), and no sensitive paths. The blocklist (auth/, security/, migrations/, .github/workflows/, secrets, .env, Dockerfile, *.tf) marks paths that always require deliberation — a one-liner in a secrets file is not trivial regardless of line count. "Fails open": if the diff is ambiguous or the probe fails, the gate defaults to running deliberation rather than silently skipping it.',
+    plain: 'If the change is tiny and low-risk, skip the full deliberation. Anything touching security, migrations, or CI always gets deliberated regardless of size.',
     inputs: ['diff metrics', 'blocklist'],
     outputs: ['should_skip: true → step 6', 'or → continue'],
     scripts: ['scope_gate.py', 'probe_change.py'],
@@ -82,7 +82,7 @@ const STEPS = [
   {
     id: '6', name: 'report',
     title: 'Report',
-    desc: 'Telemetry mandate (before build_report): every voice/sub-agent dispatch must accumulate {tokens_in, tokens_out, latency_ms} into telemetry.voices.<name>. telemetry.mode and telemetry.dispatch_count are also required. Runs without telemetry return null from efficiency.py and pollute per-mode averages. validate_report.py enforces Principle #4. log_feedback.py appends a row to FEEDBACK.html.',
+    desc: 'Telemetry mandate (before build_report): every voice/sub-agent dispatch must accumulate {tokens_in, tokens_out, latency_ms} into telemetry.voices.<name>. telemetry.mode is also required. Runs without telemetry return null from efficiency.py and pollute per-mode averages. validate_report.py enforces Principle #4. log_feedback.py appends a row to FEEDBACK.html.',
     plain: 'Writes the final decision to disk. Telemetry per voice is mandatory — without it the run is invisible to cost analysis.',
     inputs: ['everything above', 'telemetry per voice'],
     outputs: ['runs/<ts>.json', 'FEEDBACK.html row'],

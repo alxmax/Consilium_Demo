@@ -31,7 +31,7 @@ const CASCADE_ROWS = [
     sourceName: 'Conservator',
     outcome: 'ADAPT_SHORT',
     outcomeKind: 'adapt',
-    action: 'Short-circuit — skip Generator and Control; emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed: false).',
+    action: 'Short-circuit — skip Generator and Control; emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed absent).',
   },
   {
     trigger: 'meta_recommendation: scale_up',
@@ -116,13 +116,6 @@ function CascadeSection() {
         </Collapsible>
 
         <div className="note" style={{ marginTop: 24 }}>
-          <span className="note__label">Veto budget</span>
-          <span>
-            Five activations of <code>scale_up</code> or <code>scale_down</code> per month. Past that, soft warning only — the gate softens itself when overused. Once every twenty runs, parallel mode runs silently alongside sequential as an audit; systematic divergence raises the audit frequency to one in five.
-          </span>
-        </div>
-
-        <div className="note" style={{ marginTop: 16 }}>
           <span className="note__label">Headless invariants</span>
           <span>
             When <code>CLAUDE_HEADLESS=1</code> (set by an external orchestrator that invoked <code>claude -p</code>), four points in the workflow drop user-facing prompts and use documented defaults: stale_pendings/missing_feedback_runs are auto-suppressed at bootstrap, irreversibility_flag does not block (the orchestrator has assumed the stake), retry on low confidence is skipped, and unresolved verdicts log as <code>PEND_HEADLESS</code>.
@@ -186,7 +179,6 @@ function TwoLayerSection() {
             <div className="two-layer__bits">
               <div className="two-layer__bit">aggregate_sequential() with 8-component cascade</div>
               <div className="two-layer__bit">7 routing outcomes</div>
-              <div className="two-layer__bit">veto budget: 5 activations / month</div>
               <div className="two-layer__bit">default scheme: conservative_override</div>
             </div>
           </div>
