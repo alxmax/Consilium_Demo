@@ -25,6 +25,9 @@ Voice-score calibration analysis tool that implements the experiment protocol fr
 - Compare: per-voice diff/pstdev table and Bug #1 verdict printed to stdout; exits 1 if `voice_scores` missing
 - Pick: ranked list of N candidate runs with conservator scores and success criteria printed to stdout
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Running `--runs-dir` against a populated runs directory prints per-voice statistics for generator, control, and conservator without error.
 - The `--compare` mode prints `Bug #1 CONFIRMED` when mean pstdev across voices exceeds 0.10 and `Bug #1 OK` when it does not.

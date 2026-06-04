@@ -34,6 +34,9 @@ catches shape drift (e.g. aggregate.result as a narrative string).
 - Exit 1 — validation failed; each problem printed to stderr
 - Exit 2 — malformed JSON input
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Valid reports (from `.consilium/runs/*.json`) exit 0
 - Missing `success_criterion` causes exit 1 with a message naming the field

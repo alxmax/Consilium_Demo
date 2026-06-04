@@ -28,6 +28,9 @@ Shared stdlib-only utilities that every other Consilium script imports instead o
 - `load_json_stdin` exits with code 2 on empty stdin or JSON parse failure
 - `validate_keys` raises `ValueError` on schema violation; callers map that to exit 1 or 2
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root.
 - `atomic_write_text` leaves the original file intact when a write is interrupted mid-way (no truncated or stale `.tmp` files persist on error).

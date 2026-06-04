@@ -23,6 +23,9 @@ Single source of truth for all user-facing natural-language translations of stru
 - `compute_tokens_budget` returns a dict with `generator` and `control` keys
 - exit code 0 always
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - `translate('reversibility', 'complete')` returns the Romanian string `usor de anulat`.
 - `translate('verdict', 'GO')` returns `aprobat de majoritate`.

@@ -31,6 +31,9 @@ Identifies deliberation run files in `.consilium/runs/` that have no correspondi
 - with `--check`: exit code 1 if any missing rows found, exit code 0 if none
 - exit code 0 on success; exit code 1 on `--check` failure
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Given a runs/ directory containing a .json file with no matching row in FEEDBACK.html, the script without flags reports exactly that file and exits 0.
 - Given the same setup with `--backfill`, the script appends exactly one PEND row to FEEDBACK.html with a `; backfilled` suffix on the note, and the run is no longer reported as missing on subsequent invocations.

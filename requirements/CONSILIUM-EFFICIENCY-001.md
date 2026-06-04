@@ -26,6 +26,9 @@ Computes a per-mode efficiency score defined as `total_tokens / ok_count` (lower
 - stderr: warning when the outcome map is empty or cannot be loaded
 - exit code 0 on success, 1 if runs directory is not found
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - With three or more runs all marked `OK`, `tokens_per_ok` is a non-null integer equal to `total_tokens / ok_count`.
 - Runs with outcomes `BAD`, `OVR`, or `PEND` increment `not_ok_count` and are excluded from `tokens_per_ok` numerator.

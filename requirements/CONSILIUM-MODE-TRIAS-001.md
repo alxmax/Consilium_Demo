@@ -18,6 +18,9 @@ depends_on: [CONSILIUM-MODE-SEQUENTIAL-001, CONSILIUM-LENS-PIONEER-001, CONSILIU
 - When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1).
 - The 3 personality sub-agents shall be dispatched in parallel; the runtime audit tracks divergence between parallel and serial results.
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## WHAT — Notes & known limitations (informative)
 - Serial dispatch is an accepted implementation artifact that does not affect correctness; the silent parallel audit is the observability mechanism.
 - `trias_split` is deprecated; `validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.

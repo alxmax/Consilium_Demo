@@ -25,6 +25,9 @@ Decides whether a change is small enough to bypass full deliberation. It collect
 - JSON object to stdout with keys: `should_skip`, `magnitude`, `mode_ceiling`, `reason`, `signals`, `config_used`
 - exit code 0 always (errors are reported inside the JSON, not via non-zero exit)
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - A single-file, single-line change with no blocklist hits and default config returns `should_skip=true` and `magnitude='low'`.
 - Any path matching a blocklist pattern returns `should_skip=false`, `magnitude='critical'`, and `mode_ceiling='trias'` regardless of file/line counts.

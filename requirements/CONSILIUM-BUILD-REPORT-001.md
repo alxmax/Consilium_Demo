@@ -25,6 +25,9 @@ Assembles the canonical deliberation report shape from the intermediate voice an
 - exit code 1 on missing required field
 - exit code 2 on malformed JSON input
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.
 - Given a skipped bundle (`skipped: true`) with valid `skip_reason`, the output contains `chosen_approach: skipped`, `pipeline_executed` absent or false, and `deliberation_log: []`.

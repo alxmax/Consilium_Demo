@@ -25,6 +25,9 @@ Reduces cross-voice context contamination in the sequential deliberation pipelin
 - Plain text to stdout (`--truncate-text`): possibly truncated text with optional marker appended
 - exit code 0 on success; non-zero on argument or JSON parse errors
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.
 - Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false`.

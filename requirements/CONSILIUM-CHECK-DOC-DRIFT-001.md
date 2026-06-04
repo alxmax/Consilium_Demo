@@ -33,6 +33,9 @@ Enforces parity between the authoritative behavior defined in SKILL.md and `scri
 - stderr: numbered list of violated invariants with pattern, source, and rationale for each failure
 - exit code 0 when all invariants pass; 1 when one or more are violated; 2 when a required input file is missing
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - When all invariant patterns hold and `confidence.py VOTE_PATTERN_CONFIDENCE` matches `trias.jsx TRIAS_OUTCOMES` for patterns 3-0, 2-1, and 2-0, the script exits 0 and prints the OK message.
 - If `scripts/audit_counter.py` is removed from SKILL.md or a forbidden `pending` caveat phrase is re-introduced, the `silent_audit_implemented` invariant fails and the script exits 1.

@@ -27,6 +27,9 @@ The run-consilium skill driver exercises Consilium's entire deterministic, LLM-f
 - `shot` writes a PNG file to `.consilium/shots/architecture.png` or the caller-supplied path
 - `pipeline` prints aggregator JSON, confidence JSON, and validate_report result to stdout
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - `python .claude/skills/run-consilium/driver.py smoke` exits 0 against the current repo state with all suites PASS.
 - `python .claude/skills/run-consilium/driver.py pipeline` prints valid JSON for each of the four pipeline stages and exits 0.

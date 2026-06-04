@@ -18,6 +18,9 @@ depends_on: [CONSILIUM-MODE-SEQUENTIAL-001, CONSILIUM-VOICE-SKEPTIC-001]
 - The total cost shall be 1.33× Sequential (1× Sequential + 1 Skeptic sub-agent); telemetry shall record `mode: "dialectic"` and, when the Skeptic catches a constraint, `skeptic_caught_constraint: true` in the report.
 - The Skeptic's verdict is advisory by default and can override `chosen` only when `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`.
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## WHAT — Notes & known limitations (informative)
 - The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched.
 

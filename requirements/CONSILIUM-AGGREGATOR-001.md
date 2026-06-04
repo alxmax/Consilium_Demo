@@ -24,6 +24,9 @@ Implements five distinct aggregation schemes that merge the scored outputs of th
 - exit code 0 on success
 - exit code non-zero on invalid input (raised `ValueError`)
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Given a candidates list where the Conservator score of every candidate exceeds `veto_threshold` and `auto_relax=True`, the output contains `chosen: null` and a non-empty `retry_suggested` block.
 - Given two candidates with identical generator and control scores but different Conservator risk under `conservative_override`, the candidate with lower risk ranks first.

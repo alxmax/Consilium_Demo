@@ -34,6 +34,9 @@ Signals computed:
 ## Output
 JSON object to stdout with the signals above. Non-zero exit on parse error.
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - `python scripts/priors.py` runs without error given a valid FEEDBACK.html and runs/ dir
 - `--no-runs` flag suppresses conservator_veto_rate and missing_feedback_runs

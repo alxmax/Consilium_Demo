@@ -20,6 +20,9 @@ depends_on: []
 - Validation failure (output rejected by orchestrator gate) results in silent discard: the chosen candidate ships unchanged, no warning is emitted, and the system falls back to the base deliberation result as if the Skeptic had not run. This is a deliberate conservative fallback.
 - `meta_scope_mismatch` is a self-assessed heuristic gate with no external oracle; all three conditions (correct answer, trivially-human-resolvable, cost exceeds decision value) are necessarily evaluated by the voice itself because they require contextual judgment that no deterministic external check can provide.
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## WHAT — Notes & known limitations (informative)
 
 - The validation gate is enforced by the orchestrator after the fact, not by the voice itself — a skeptic that emits invalid output does not know it was rejected.

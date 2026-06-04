@@ -24,6 +24,9 @@ Operationalizes the SKILL.md low-confidence recovery path by analyzing a complet
 - When `retry_recommended` is false (confidence at/above threshold, only one valid candidate, or null confidence), `top_candidates` is an empty array
 - exit code 0 on success; exit code 2 if stdin is not a JSON object
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Given a bundle with `confidence=0.61` and two or more valid candidates, the output has `retry_recommended=true`, a `reason` string containing `0.61`, and exactly 2 entries in `top_candidates`.
 - Given a bundle with `confidence=0.85`, the output has `retry_recommended=false` and `top_candidates=[]`.

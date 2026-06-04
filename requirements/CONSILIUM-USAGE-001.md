@@ -23,6 +23,9 @@ Aggregates telemetry across all run JSON files in the runs directory and emits a
 - JSON object to stdout with keys: `runs_total`, `with_telemetry`, `skipped_runs`, `voices` (per-voice percentile stats), `modes` (per-mode token/latency totals), `warnings` (latency spike list)
 - exit code 0 on success; 1 if the runs directory does not exist
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Running against a populated runs directory emits valid JSON with `runs_total` equal to the number of JSON files loaded.
 - Skipped runs (`skipped=true`) are counted in `skipped_runs` but excluded from voice token statistics.

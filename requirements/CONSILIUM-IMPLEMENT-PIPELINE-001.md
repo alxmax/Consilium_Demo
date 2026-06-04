@@ -23,6 +23,9 @@ Turns a completed Consilium deliberation report into a structured implementation
 - stdout (gate mode): `{"red_ok": bool, "green_ok": bool, "gate_passed": bool}` JSON
 - exit code 0 on success/dry-run/gate passed, 1 on no-pipeline or gate failure, 2 on bad input
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Given a report with a non-empty `chosen_approach`, `build_plan` returns a dict with `spec`, `sequence`, `roles`, and `rules` keys, and each role lists whether its prompt file exists.
 - Given `chosen_approach` of `do_nothing` or `skipped`, the script prints a message and exits 1.

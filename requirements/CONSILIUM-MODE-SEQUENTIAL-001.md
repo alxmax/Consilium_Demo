@@ -18,6 +18,9 @@ depends_on: [CONSILIUM-VOICE-GENERATOR-001, CONSILIUM-VOICE-CONTROL-001, CONSILI
 - When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, a non-user-selectable auto-parallel cross-check shall be triggered; a silent parallel audit shall fire at a default cadence of 1-in-20 sequential runs (bumping to 1-in-5 when ≥2 of the last 5 audits diverged).
 - The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as "WEAK" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`.
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## WHAT — Notes & known limitations (informative)
 - Role separation in Sequential is prompt-based, not architectural: `strip_context.py` removes the prior prompt but does not clear the model's in-context memory. True voice isolation requires Parallel sub-agents.
 - The veto-budget for `meta_recommendation` (scale_up/scale_down) is 5 activations per month; on exhaustion the gate becomes a soft warning only.

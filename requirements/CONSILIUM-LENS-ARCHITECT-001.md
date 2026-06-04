@@ -17,6 +17,9 @@ depends_on: [CONSILIUM-PERSONALITIES-001]
 - When applied to Conservator, the lens shall affect only the quality-progress adjustment on ; it shall not inflate  solely on the basis of absent tests.
 - The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation.
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## HOW — Acceptance (= tests)
 AC-1
   Given  two candidates — one well-structured with full test coverage, one faster to ship but with weaker abstractions and no new tests

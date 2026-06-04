@@ -33,6 +33,9 @@ Implements the "every N sequential runs" silent parallel cross-check mechanism d
 - `.consilium/audit_state.json`: updated on `--increment`, `--check` (when audit signalled), and `--record-divergence`
 - exit code 0 on success; exit code 2 on invalid `--record-divergence` value
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - After exactly N sequential increments (where N equals the current frequency), `--check` returns `should_audit=true`; a subsequent `--check` before `--record-divergence` returns `should_audit=false` due to the `pending_audit_at` sentinel.
 - After recording 2 divergences in a 5-audit rolling window while `frequency=20`, a subsequent `--record-divergence` call sets frequency to 5.

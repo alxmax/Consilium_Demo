@@ -25,6 +25,9 @@ Derives a calibrated confidence score for a deliberation result using two comple
 - When `chosen` is null or absent from candidates: JSON with `confidence: null` and `reason` string
 - exit code 0 on success; exit code 1 on invalid input shape
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Given a chosen candidate with `generator=0.8`, `control=0.9`, `conservator=0.1` (high utility, low risk, high agreement) and no runner-up, the output confidence is close to 0.99 (agreement near 1.0, separation defaults to 1.0).
 - Given `chosen: null` in the input, the output is `{confidence: null, reason: "..."}` and the script exits 0.

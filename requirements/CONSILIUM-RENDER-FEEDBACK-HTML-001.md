@@ -26,6 +26,9 @@ Pure rendering engine that converts a list of Entry records into a single self-c
 - When invoked as CLI, the HTML string is written to stdout
 - exit code 0 always
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - `render()` returns a string beginning with `<!doctype html>` that contains one `<tr class="entry">` row and one `<tr class="drill">` row for each Entry in the input list.
 - For an Entry whose `run_path` points to an existing `runs/*.json` file with telemetry data, the rendered tokens cell shows the measured sum of `tokens_in + tokens_out` across all voices (formatted compactly as e.g. `14k`).

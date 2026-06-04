@@ -20,6 +20,9 @@ depends_on: []
 - When the voice cannot verify a signature without reading a file and file access fails, the `unverifiable — file not accessible` marker in the verdict is the intended degradation signal. This is transparent and recorded in verdicts visible to the aggregator and report; no harder signal is required.
 - The 3-entry cap on `hidden_assumptions` and the self-assessed selection criterion are by design. Control is a deliberative voice, not a formal verifier; the design intentionally trusts the voice to surface the most consequential assumptions.
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## WHAT — Notes & known limitations (informative)
 
 - `confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative.

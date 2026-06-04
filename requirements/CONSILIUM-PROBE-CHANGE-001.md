@@ -28,6 +28,9 @@ Anchors Conservator's `diff_size` risk factor in objective git data instead of i
 - JSON object `{"error": "..."}` to stdout and exit code 1 on any git error or invalid arguments
 - exit code 0 on success
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Running with no flags against a git repo with unstaged changes returns a JSON object with `files_changed >= 1` and correct `lines_added` / `lines_removed` counts matching `git diff --numstat HEAD` output.
 - Running with `--ref main` returns diff statistics for the range `main..HEAD`, not the working tree.

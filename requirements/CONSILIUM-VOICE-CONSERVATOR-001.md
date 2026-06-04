@@ -20,6 +20,9 @@ depends_on: []
 - The mitigation cap (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is discipline-based with no automated schema enforcement. Compliance is audited through `notes` documentation of applied mitigation values.
 - When `meta_recommendation: "scale_down"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design.
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## WHAT — Notes & known limitations (informative)
 
 - The three irreversibility-related fields (`irreversibility_flag`, `irreversible`, `regression_risk.reversibility`) can coexist on the same candidate and carry different semantics; the prompt documents the distinction, but the overlap is a persistent source of confusion for readers and voice models alike.

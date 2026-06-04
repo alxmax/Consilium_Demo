@@ -24,6 +24,9 @@ Guards the public release repository against accidentally referencing the privat
 - stderr: list of offending `file:line: description` strings on failure
 - exit code 0 on clean, 1 on any pattern match
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - Running against a repo with no private-repo (non-Demo) or local-path references exits 0 and prints `clean`.
 - A tracked file containing a non-Demo private-repo ref causes exit 1 with the file and line number printed to stderr.

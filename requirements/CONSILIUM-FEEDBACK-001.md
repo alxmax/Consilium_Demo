@@ -24,6 +24,9 @@ Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats 
 - stdout: multi-line stats report (total uses, outcome breakdown, success rate, recent overrides, optional run scheme counts)
 - exit code 0 always
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - `parse_feedback` returns an empty list without error when FEEDBACK.html does not exist.
 - `parse_feedback` correctly parses all three row layouts (8-cell Trias, 7-cell previous, 6-cell legacy) and attribute-based `data-field` rows.

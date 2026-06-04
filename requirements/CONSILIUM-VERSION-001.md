@@ -22,6 +22,9 @@ Provides two distinct version provenance fields that the deliberation pipeline s
 - stdout: display stamp, bare ref, or diff `--stat` depending on CLI flag
 - exit code 0 in all cases (fails open); returns `''` or `'unknown'` when git is unavailable rather than erroring
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## Acceptance (= tests)
 - `consilium_version()` returns a non-empty string and never raises, even when git is absent or the repo has no tags.
 - `consilium_ref()` returns `''` (empty string) when the working tree has uncommitted tracked changes, and returns a 40-character hex sha when the tree is clean.

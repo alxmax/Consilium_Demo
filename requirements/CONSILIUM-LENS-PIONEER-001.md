@@ -17,6 +17,9 @@ depends_on: [CONSILIUM-PERSONALITIES-001]
 - When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not directly alter the numerical  formula or its component scores (, , etc.).
 - The Conservator carve-out is sufficient by design. Pioneer's influence is on narrative tone and meta_recommendation framing, not on the numerical risk gate. The  formula remains governed by Conservator's own logic, preserving Trias balance through democratic aggregation across all three voices.
 
+## WHAT — Verify intent (open questions for the human)
+- None — doc is unambiguous.
+
 ## HOW — Acceptance (= tests)
 AC-1
   Given  a set of candidates evaluated under Trias, one clearly novel and higher-risk, one safe and incremental
