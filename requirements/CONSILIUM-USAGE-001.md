@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-USAGE-001
-status: confirmed
+status: deprecated
 layer: feature
 owner: auto
 depends_on: [CONSILIUM-UTILS-001]

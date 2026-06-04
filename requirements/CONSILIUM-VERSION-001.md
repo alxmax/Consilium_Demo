@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-VERSION-001
-status: confirmed
+status: deprecated
 layer: bus
 owner: auto
 depends_on: []

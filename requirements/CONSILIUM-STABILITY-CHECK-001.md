@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-STABILITY-CHECK-001
-status: confirmed
+status: deprecated
 layer: feature
 owner: auto
 test_exempt: "reads runs/ directory at test time — integration-only analysis tool"

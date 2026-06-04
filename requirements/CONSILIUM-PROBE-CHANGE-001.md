@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-PROBE-CHANGE-001
-status: confirmed
+status: deprecated
 layer: feature
 owner: auto
 depends_on: []

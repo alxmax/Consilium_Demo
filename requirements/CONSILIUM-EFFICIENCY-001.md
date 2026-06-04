@@ -1,6 +1,6 @@
 ---
 id: CONSILIUM-EFFICIENCY-001
-status: confirmed
+status: deprecated
 layer: feature
 owner: auto
 test_exempt: "reads runs/ JSON and FEEDBACK.html at test time — integration-only"
