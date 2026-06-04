@@ -22,13 +22,13 @@ const LENSES = [
 ];
 
 const TRIAS_OUTCOMES = [
-  { p: '3–0', label: 'Unanimous', desc: 'All three personalities picked the same.', conf: 0.95, outcome: 'OK auto' },
-  { p: '2–1', label: 'Majority + dissent', desc: 'One personality prefers a different candidate; dissent logged.', conf: 0.75, outcome: 'OK auto' },
-  { p: '2–0', label: 'Majority + abstention', desc: 'One personality abstained — its own chose=null (all its candidates vetoed); the two agreeing personalities still elect a winner.', conf: 0.70, outcome: 'OK auto' },
-  { p: '1–1–1', label: 'Fragmented', desc: 'Three distinct chosen results · no consensus → B2 deadlock cascade.', conf: null, outcome: 'Round 2 → Skeptic → PEND' },
-  { p: '1–1–0', label: 'Split + abstention', desc: 'Two distinct chosen results · one personality vetoed all. No majority.', conf: null, outcome: 'PEND' },
-  { p: '1–0–0', label: 'Lone vote + 2 abstentions', desc: 'One chosen result · two personalities vetoed all. No majority.', conf: null, outcome: 'PEND' },
-  { p: '0–0–0', label: 'Total veto', desc: 'All three personalities vetoed all candidates → B2 cascade, then PEND.', conf: null, outcome: 'Round 2 → PEND' },
+  { p: '3–0', label: 'Unanimous', desc: 'All three personalities picked the same candidate. Strongest signal possible.', conf: 0.95, outcome: 'OK auto' },
+  { p: '2–1', label: 'Majority + dissent', desc: 'Two personalities agree on a candidate; the third picks a different one. Dissent is logged. The majority wins.', conf: 0.75, outcome: 'OK auto' },
+  { p: '2–0', label: 'Majority + abstention', desc: 'Two personalities agree. The third had no valid choice — Conservator vetoed all its candidates (chose=null). The majority still elects a winner.', conf: 0.70, outcome: 'OK auto' },
+  { p: '1–1–1', label: 'Fragmented', desc: 'Each personality picked a different candidate — no consensus. Escalates to a second deliberation round with peer context (B2 cascade).', conf: null, outcome: 'Round 2 → Skeptic → PEND' },
+  { p: '1–1–0', label: 'Split + abstention', desc: 'Two different candidates got one vote each; one personality was vetoed out. No majority — goes to PEND for human decision.', conf: null, outcome: 'PEND' },
+  { p: '1–0–0', label: 'Lone vote + 2 abstentions', desc: 'Only one personality produced a valid choice; the other two were vetoed. Insufficient agreement to auto-proceed.', conf: null, outcome: 'PEND' },
+  { p: '0–0–0', label: 'Total veto', desc: 'All three personalities had every candidate vetoed by Conservator risk. No winner possible — escalates to B2 cascade, then PEND.', conf: null, outcome: 'Round 2 → PEND' },
 ];
 
 function TriasSection() {
@@ -61,9 +61,9 @@ function TriasSection() {
         </p>
         <LensHeatmap lenses={LENSES} />
 
-        <h3 className="h-sub" style={{ marginTop: 40 }}>Lazy routing — when Trias auto-downgrades</h3>
+        <h3 className="h-sub" style={{ marginTop: 40 }}>Cost-aware routing — when Trias auto-downgrades</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', marginBottom: 22 }}>
-          Trias costs 3× Sequential. To avoid the bill on changes that don't need it, the orchestrator checks magnitude via <code>scope_gate.py</code>, then routes down a graduated ladder: <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), and only a <strong>critical</strong> change — a blocklist hit (auth, security, migrations, CI workflows, secrets) — proceeds to <strong>full Trias</strong> (3×). At low/medium magnitude even Dialectic's one Skeptic isn't worth the cost. The user can override with an explicit flag.
+          Trias costs 3× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), and only a <strong>critical</strong> change — a blocklist hit (auth, security, migrations, CI workflows, secrets) — proceeds to <strong>full Trias</strong> (3×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
         </p>
 
         <LazyRoutingDiagram />
@@ -177,7 +177,7 @@ function LazyRoutingDiagram() {
       padding: '32px 28px 24px',
       marginBottom: 32,
     }}>
-      <svg viewBox="0 0 880 360" className="diagram" aria-label="Lazy routing decision flow">
+      <svg viewBox="0 0 880 360" className="diagram" aria-label="Cost-aware routing decision flow">
         <defs>
           <marker id="lr-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M0,0 L10,5 L0,10z" fill="var(--ink)" />
