@@ -14,10 +14,8 @@ depends_on: [CONSILIUM-PERSONALITIES-001]
 ## WHAT — Contract (normative)
 - The lens shall cause the voice it overlays to weight architectural cleanliness, type safety, clear abstractions, and test verifiability more heavily than it would by default, favoring candidates that strengthen invariants over those that loosen them.
 - The lens shall preserve each voice's standard structural role; it shifts evaluation priorities without replacing the role's core output or inflating/deflating raw numerical scores directly.
-- When applied to Conservator, the lens shall affect only the quality-progress adjustment on `regression_risk`; it shall not inflate `risk_score` solely on the basis of absent tests.
-
-## WHAT — Verify intent (open questions for the human)
-- Observed: "internal consistency > external speed" and "long-term maintainability > short-term win" are stated as absolute priorities, with no threshold for when a short-term win is large enough to justify a structural compromise. Is the intent that Architect always rejects pragmatic shortcuts, or only when the structural cost is non-trivial?
+- When applied to Conservator, the lens shall affect only the quality-progress adjustment on ; it shall not inflate  solely on the basis of absent tests.
+- The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation.
 
 ## HOW — Acceptance (= tests)
 AC-1
@@ -28,7 +26,7 @@ AC-1
 AC-2
   Given  the Architect lens applied to the Conservator voice and a candidate with no new tests
   When   the Conservator produces its risk assessment
-  Then   the `regression_risk` component may be adjusted upward via the quality-progress path, but `risk_score` is not inflated solely because tests are absent
+  Then   the  component may be adjusted upward via the quality-progress path, but  is not inflated solely because tests are absent
 
 ## WHERE — Current implementation
 - prompts/voices/architect_lens.md

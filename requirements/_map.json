@@ -492,17 +492,16 @@
       "contract": [
         "The lens shall cause the voice it overlays to weight architectural cleanliness, type safety, clear abstractions, and test verifiability more heavily than it would by default, favoring candidates that strengthen invariants over those that loosen them.",
         "The lens shall preserve each voice's standard structural role; it shifts evaluation priorities without replacing the role's core output or inflating/deflating raw numerical scores directly.",
-        "When applied to Conservator, the lens shall affect only the quality-progress adjustment on `regression_risk`; it shall not inflate `risk_score` solely on the basis of absent tests."
+        "When applied to Conservator, the lens shall affect only the quality-progress adjustment on ; it shall not inflate  solely on the basis of absent tests.",
+        "The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation."
       ],
-      "verify": [
-        "Observed: \"internal consistency > external speed\" and \"long-term maintainability > short-term win\" are stated as absolute priorities, with no threshold for when a short-term win is large enough to justify a structural compromise. Is the intent that Architect always rejects pragmatic shortcuts, or only when the structural cost is non-trivial?"
-      ],
+      "verify": [],
       "notes": [],
       "current_impl": [
         "prompts/voices/architect_lens.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given  two candidates — one well-structured with full test coverage, one faster to ship but with weaker abstractions and no new tests\n  When   the Architect lens is prepended to a core voice\n  Then   the voice ranks the well-structured, well-tested candidate higher regardless of implementation speed\n\nAC-2\n  Given  the Architect lens applied to the Conservator voice and a candidate with no new tests\n  When   the Conservator produces its risk assessment\n  Then   the `regression_risk` component may be adjusted upward via the quality-progress path, but `risk_score` is not inflated solely because tests are absent",
+      "accept": "AC-1\n  Given  two candidates — one well-structured with full test coverage, one faster to ship but with weaker abstractions and no new tests\n  When   the Architect lens is prepended to a core voice\n  Then   the voice ranks the well-structured, well-tested candidate higher regardless of implementation speed\n\nAC-2\n  Given  the Architect lens applied to the Conservator voice and a candidate with no new tests\n  When   the Conservator produces its risk assessment\n  Then   the  component may be adjusted upward via the quality-progress path, but  is not inflated solely because tests are absent",
       "input": "",
       "output": "",
       "desc": "",
@@ -523,10 +522,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },
@@ -540,17 +535,16 @@
       "contract": [
         "The lens shall cause the voice it overlays to weight creative potential and forward momentum more heavily than it would by default, preferring ambitious candidates over safe ones when the two are otherwise comparable.",
         "The lens shall preserve each voice's standard structural role (Generator produces candidates, Control verifies correctness, Conservator assesses risk); it shifts perception and priority without suppressing the role's core output.",
-        "When applied to Conservator, the lens shall affect only magnitude calibration and meta-recommendation; it shall not directly alter the numerical `net_concern` formula or its component scores (`risk_score`, `regression_risk`, etc.)."
+        "When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not directly alter the numerical  formula or its component scores (, , etc.).",
+        "The Conservator carve-out is sufficient by design. Pioneer's influence is on narrative tone and meta_recommendation framing, not on the numerical risk gate. The  formula remains governed by Conservator's own logic, preserving Trias balance through democratic aggregation across all three voices."
       ],
-      "verify": [
-        "Observed: the phrase \"when in doubt between safe and ambitious, prefer ambitious\" applies across all three voices uniformly, including Conservator, which is explicitly risk-focused. The Conservator carve-out partially limits this, but \"prefer ambitious\" may still affect Conservator's narrative and meta_recommendation in ways that undermine Trias balance. Intended, or should the carve-out be broadened?"
-      ],
+      "verify": [],
       "notes": [],
       "current_impl": [
         "prompts/voices/pioneer_lens.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given  a set of candidates evaluated under Trias, one clearly novel and higher-risk, one safe and incremental\n  When   the Pioneer lens is prepended to a core voice\n  Then   the voice's chosen or most-favored candidate is the novel/ambitious option rather than the safe/incremental one\n\nAC-2\n  Given  the Pioneer lens applied to the Conservator voice\n  When   the Conservator produces its risk assessment\n  Then   the `net_concern` numerical value reflects the standard formula unchanged, while the `meta_recommendation` or magnitude label may reflect a more tolerant stance toward the ambitious candidate",
+      "accept": "AC-1\n  Given  a set of candidates evaluated under Trias, one clearly novel and higher-risk, one safe and incremental\n  When   the Pioneer lens is prepended to a core voice\n  Then   the voice's chosen or most-favored candidate is the novel/ambitious option rather than the safe/incremental one\n\nAC-2\n  Given  the Pioneer lens applied to the Conservator voice\n  When   the Conservator produces its risk assessment\n  Then   the  numerical value reflects the standard formula unchanged, while the  or magnitude label may reflect a more tolerant stance toward the ambitious candidate",
       "input": "",
       "output": "",
       "desc": "",
@@ -571,10 +565,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },
@@ -588,11 +578,10 @@
       "contract": [
         "The lens shall cause the voice it overlays to weight reversibility, minimal scope, and regression safety more heavily than it would by default, preferring smaller safe changes over larger ambitious ones when both are viable.",
         "The lens shall preserve each voice's standard structural role; it shifts candidate ordering and priority without suppressing the full candidate set or altering the role's core output format.",
-        "When applied to Generator, the lens shall order candidates by smallest blast radius first but shall still produce the full required spread of candidates (3–5); it shall not suppress high-blast-radius candidates from the output."
+        "When applied to Generator, the lens shall order candidates by smallest blast radius first but shall still produce the full required spread of candidates (3-5); it shall not suppress high-blast-radius candidates from the output.",
+        "\"Prefer existing patterns over new ones unless the new one is clearly necessary\" means: a new pattern is justified only when the existing pattern is INSUFFICIENT to meet the change requirements — not merely suboptimal or less elegant. \"Suboptimal but workable\" does NOT qualify as grounds for a new pattern."
       ],
-      "verify": [
-        "Observed: \"prefer existing patterns over new ones unless the new one is clearly necessary\" leaves \"clearly necessary\" undefined, which may produce inconsistent behavior across different voices and evaluators. Is there a threshold (e.g., existing pattern is insufficient vs. merely suboptimal) that clarifies when a new pattern qualifies?"
-      ],
+      "verify": [],
       "notes": [],
       "current_impl": [
         "prompts/voices/steward_lens.md"
@@ -619,10 +608,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },
@@ -764,22 +749,20 @@
       "intent": "WHY: Add a focused post-hoc challenge on the chosen approach for code changes — Sequential deliberation plus code-context injection, followed unconditionally by a Skeptic sub-agent regardless of confidence band.",
       "contract": [
         "The mode shall inject code-specific context (`language`, `framework`, `build_command`, `files_touched[]`, `test_files[]`, `ci_gate`) into voice inputs (not into prompt files) before running the standard Sequential deliberation (Conservator → Generator → Control).",
-        "After Sequential produces `chosen`, the mode shall unconditionally dispatch 1 Skeptic sub-agent (`skeptic_on_chosen`) on the result — not gated on confidence band and not skipped when Sequential short-circuits via `scale_down`; skipping the Skeptic on scale_down would collapse Dialectic into bare Sequential.",
+        "After Sequential produces `chosen`, the mode shall unconditionally dispatch 1 Skeptic sub-agent (`skeptic_on_chosen`) on the result — not gated on confidence band and not skipped when Sequential short-circuits via `scale_down`.",
+        "In Dialectic, the Skeptic is always unconditional. The `confidence ∈ [0.0, 0.7]` auto-trigger conditions in `skeptic_on_chosen.md` apply only to `skeptic_on_chosen` as a composable flag over other base modes, not to Dialectic's hardwired Skeptic step. Dialectic defines a fixed pipeline where the Skeptic is mandatory regardless of confidence band.",
         "The total cost shall be 1.33× Sequential (1× Sequential + 1 Skeptic sub-agent); telemetry shall record `mode: \"dialectic\"` and, when the Skeptic catches a constraint, `skeptic_caught_constraint: true` in the report.",
-        "The Skeptic's verification claim shall be concrete (a named test, a build command, or a CI check); the Skeptic's verdict is advisory by default and can override `chosen` only when `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`."
+        "The Skeptic's verdict is advisory by default and can override `chosen` only when `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`."
       ],
-      "verify": [
-        "Observed: the spec states the Skeptic runs \"not conditional on confidence band\", yet `skeptic_on_chosen.md` describes auto-trigger conditions including `confidence ∈ [0.0, 0.7]`. In Dialectic, is the Skeptic always unconditional (ignoring the confidence band entirely), or does the same auto-trigger logic apply here too?"
-      ],
+      "verify": [],
       "notes": [
-        "The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched.",
-        "Historical runs with `mode: \"dialectic\"` from the old Pass1+Pass2 implementation are preserved and recognized by `validate_report.py` for backward-compat."
+        "The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched."
       ],
       "current_impl": [
         "modes/dialectic.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a deliberation request in dialectic mode with language/framework/files_touched provided\n  When  the mode runs\n  Then  Sequential completes (Conservator → Generator → Control) with code-context fields present in each voice input, followed by exactly 1 Skeptic sub-agent dispatch, and the report records `mode: \"dialectic\"`\n\nAC-2\n  Given a deliberation where Sequential's Step 2 short-circuits via `scale_down` (trivial-direct chosen)\n  When  the mode runs\n  Then  the Skeptic sub-agent is still dispatched on the trivial-direct chosen, and the report does not resemble a bare Sequential output\n\nAC-3\n  Given a Skeptic output with `can_object: true`, `concrete_concerns` ≥ 2, and `--skeptic-can-override` is NOT active\n  When  the mode finalizes the report\n  Then  `chosen` is unchanged from the Sequential result, `skeptic_caught_constraint: true` is set in the report, and the objection is visible to the user as advisory",
+      "accept": "AC-1\n  Given a deliberation request in dialectic mode with language/framework/files_touched provided\n  When  the mode runs\n  Then  Sequential completes with code-context fields present, followed by exactly 1 Skeptic sub-agent dispatch, and the report records `mode: \"dialectic\"`\n\nAC-2\n  Given a deliberation where Sequential short-circuits via `scale_down`\n  When  the mode runs\n  Then  the Skeptic sub-agent is still dispatched on the trivial-direct chosen\n\nAC-3\n  Given a Skeptic output with `can_object: true`, `concrete_concerns` ≥ 2, and `--skeptic-can-override` is NOT active\n  When  the mode finalizes the report\n  Then  `chosen` is unchanged from the Sequential result, `skeptic_caught_constraint: true` is set, and the objection is visible as advisory",
       "input": "",
       "output": "",
       "desc": "",
@@ -799,10 +782,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },
@@ -817,11 +796,10 @@
         "The mode shall dispatch exactly three voices — Conservator, then Generator, then Control — in that fixed order within a single context window, with no external sub-agent dispatch (0 sub-agents, 1× baseline cost).",
         "Before each voice runs (Steps 3–4), the prior voice's prompt shall be stripped from context via `strip_context.py`; model in-context memory is not cleared — this is a known deliberate limitation documented in the mode spec.",
         "The aggregator shall apply an 8-component veto cascade (`aggregate_sequential()`) producing one of seven routing outcomes: BLOCK (irreversibility), BLOCK (glossary_fail), REWORK, SHORT-CIRCUIT (scale_down), ADAPT_EXTENDED (scale_up), ESCALATE, or AGGREGATE; the resulting report shall carry a `confidence` value derived from the veto outcome.",
-        "When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, a non-user-selectable auto-parallel cross-check shall be triggered; a silent parallel audit shall fire at a default cadence of 1-in-20 sequential runs (bumping to 1-in-5 when ≥2 of the last 5 audits diverged)."
+        "When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, a non-user-selectable auto-parallel cross-check shall be triggered; a silent parallel audit shall fire at a default cadence of 1-in-20 sequential runs (bumping to 1-in-5 when ≥2 of the last 5 audits diverged).",
+        "The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as \"WEAK\" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`."
       ],
-      "verify": [
-        "Observed: the `confidence_floor: 0.70` in the frontmatter is not explicitly described as a post-aggregation gate in the prose — it is listed alongside the other mode metadata. Intended as a hard floor enforced before emitting the report, or purely informational?"
-      ],
+      "verify": [],
       "notes": [
         "Role separation in Sequential is prompt-based, not architectural: `strip_context.py` removes the prior prompt but does not clear the model's in-context memory. True voice isolation requires Parallel sub-agents.",
         "The veto-budget for `meta_recommendation` (scale_up/scale_down) is 5 activations per month; on exhaustion the gate becomes a soft warning only."
@@ -855,10 +833,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },
@@ -919,13 +893,12 @@
         "The mode shall classify magnitude via `scope_gate.py` on the original unstripped context before any context stripping; when lazy routing is enabled (default), it shall downgrade to Sequential (low/medium magnitude) or Dialectic (high magnitude) and emit a structured `trias_lazy_routed` notification — full Trias (3 sub-agents) runs only on `critical` magnitude or when the user explicitly requests it.",
         "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Conservator → Generator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch.",
         "The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).",
-        "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1)."
+        "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1).",
+        "Parallel dispatch of the 3 personalities is the intended and preferred execution order, providing lower latency and independent deliberation. Serial execution is accepted as an implementation artifact (confirmed by Senate audit 2026-05-28) and does not affect correctness; the runtime audit tracks divergence between serial and parallel results."
       ],
-      "verify": [
-        "Observed: the spec states parallel dispatch of the 3 personalities is \"mandatory\", but a Senate audit (2026-05-28) concluded serial dispatch is accepted as \"by-construction-not-intent, not a bug to fix now\" — the runtime audit observes it rather than enforcing it. Is the \"mandatory\" language still normative, or should the requirement reflect the accepted-serial reality?"
-      ],
+      "verify": [],
       "notes": [
-        "Empirical runtime observation (2026-05-28, n=7): all real-deliberation Trias runs dispatched personalities serially despite the parallel mandate; the `check_trias_parallelism.py` audit is the observability mechanism.",
+        "Empirical runtime observation (2026-05-28, n=7): all real-deliberation Trias runs dispatched personalities serially despite the parallel design intent; the silent parallel audit is the observability mechanism.",
         "`trias_split` is deprecated; `validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.",
         "Aggregated Trias is approximately −18% Conservator weight relative to single-context; avoid when strict conservatism is required."
       ],
@@ -933,7 +906,7 @@
         "modes/trias.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a deliberation request in trias mode with `magnitude: critical` (blocklist hit)\n  When  the mode runs\n  Then  3 personality sub-agents are dispatched (Pioneer, Architect, Steward), each producing a `chosen_approach`, the vote is aggregated via `team_vote`, and the report contains `vote_pattern`, `confidence`, and `personalities[]` with each personality's `chose`\n\nAC-2\n  Given a deliberation request in trias mode with `magnitude: high` and lazy routing enabled\n  When  the mode runs\n  Then  the mode downgrades to Dialectic, emits a `trias_lazy_routed: true` notification with `routed_to: \"dialectic\"`, and no Trias sub-agents are dispatched\n\nAC-3\n  Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)\n  When  the B2 cascade fires\n  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true` and the Round 1 per-personality positions are surfaced",
+      "accept": "AC-1\n  Given a deliberation request in trias mode with `magnitude: critical` (blocklist hit)\n  When  the mode runs\n  Then  3 personality sub-agents are dispatched (Pioneer, Architect, Steward), each producing a `chosen_approach`, the vote is aggregated via `team_vote`, and the report contains `vote_pattern`, `confidence`, and `personalities[]` with each personality's `chose`\n\nAC-2\n  Given a deliberation request in trias mode with `magnitude: high` and lazy routing enabled\n  When  the mode runs\n  Then  the mode downgrades to Dialectic, emits a `trias_lazy_routed: true` notification with `routed_to: \"dialectic\"`, and no Trias sub-agents are dispatched\n\nAC-3\n  Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)\n  When  the B2 cascade fires\n  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true`",
       "input": "",
       "output": "",
       "desc": "",
@@ -956,10 +929,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },
@@ -1663,12 +1632,11 @@
         "The voice shall emit a `scores` array where each entry carries `regression_risk` (with `reversibility`, `magnitude`, and `net_concern`), `counterparty_risks`, `bias_check`, `meta_recommendation`, and `tokens_budget` (with `generator` and `control` fields); the `id` field must be preserved verbatim from the input.",
         "The voice shall compute `net_concern` using the defined formula (`mean` of the four component scores, with `reversibility_score > 0.7` floored to `max(net_concern, reversibility_score)`) and document any unanchored score components in `notes`.",
         "The voice shall set `irreversibility_flag: true` for any candidate where `reversibility = irreversible` and explicit user consent is not documented in the input, signaling the aggregator to BLOCK before Generator runs.",
-        "For any candidate with `net_concern >= 0.3`, the voice shall emit either a `rollback_recipe` (2–5 concrete human-executable steps) or, when rollback is structurally impossible, replace it with `mitigation_steps` and set `irreversible: true` at the candidate level."
+        "For any candidate with `net_concern >= 0.3`, the voice shall emit either a `rollback_recipe` (2–5 concrete human-executable steps) or, when rollback is structurally impossible, replace it with `mitigation_steps` and set `irreversible: true` at the candidate level.",
+        "The mitigation cap (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is discipline-based with no automated schema enforcement. Compliance is audited through `notes` documentation of applied mitigation values.",
+        "When `meta_recommendation: \"scale_down\"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design."
       ],
-      "verify": [
-        "Observed: the mitigation cap rule (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is described as \"no automated check — keep it disciplined manually.\" This means there is no observable output field that records whether the cap was respected. Should the voice be required to emit the mitigations it applied (and their amounts) in `notes` so reviewers can audit compliance?",
-        "Observed: `meta_recommendation: \"scale_down\"` overrides the token budget to 300 regardless of magnitude×reversibility. This can produce a 300-token budget for a `high + irreversible` candidate if the Conservator judges it trivial. Is that override unconditional by design, or should a floor exist for high/critical magnitude?"
-      ],
+      "verify": [],
       "notes": [
         "The three irreversibility-related fields (`irreversibility_flag`, `irreversible`, `regression_risk.reversibility`) can coexist on the same candidate and carry different semantics; the prompt documents the distinction, but the overlap is a persistent source of confusion for readers and voice models alike."
       ],
@@ -1695,10 +1663,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },
@@ -1713,12 +1677,11 @@
         "The voice shall emit a `glossary` object with 2–5 operationally-defined terms specific to the current deliberation; if it cannot define a key term after 3 attempts it shall set `glossary_fail: true` and document all 3 attempts in `glossary_attempts`, which signals the aggregator to BLOCK and request reformulation.",
         "The voice shall emit a `verdicts` array containing one entry per candidate; each verdict must include `id`, `valid` (boolean), `confidence_in_verdict` (`high` | `medium` | `low`), `issues` (with `category`, `detail`, `severity` per entry), and `tests_to_write` (1–4 concrete test stubs for every `valid: true` candidate that is not `do_nothing`).",
         "The voice shall check goal-fit first and, if the candidate does not address `success_criterion`, mark `valid: false` with `category: \"logic\"` and skip all remaining checks for that candidate.",
-        "The voice shall emit a `disagreements` array classifying any substantive conflict between voices as `substantial` (different answer → REWORK) or `terminological` (same answer, different words → note and continue)."
+        "The voice shall emit a `disagreements` array classifying any substantive conflict between voices as `substantial` (different answer → REWORK) or `terminological` (same answer, different words → note and continue).",
+        "When the voice cannot verify a signature without reading a file and file access fails, the `unverifiable — file not accessible` marker in the verdict is the intended degradation signal. This is transparent and recorded in verdicts visible to the aggregator and report; no harder signal is required.",
+        "The 3-entry cap on `hidden_assumptions` and the self-assessed selection criterion are by design. Control is a deliberative voice, not a formal verifier; the design intentionally trusts the voice to surface the most consequential assumptions."
       ],
-      "verify": [
-        "Observed: the prompt instructs Control to read files when it cannot verify a signature, but Control runs inside a single-context pipeline where it may not have tool access. The fallback (`mark category: \"types\", detail: \"unverifiable — file not accessible\"`) silently degrades confidence. Intended behavior, or should there be a harder signal when file access fails systematically?",
-        "Observed: `hidden_assumptions` is capped at 3 entries, but the selection criterion (\"only include assumptions where if false the answer changes\") is self-assessed by the model. No external check exists on whether excluded assumptions actually were non-load-bearing. Is this intentional trust in the voice?"
-      ],
+      "verify": [],
       "notes": [
         "`confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative."
       ],
@@ -1745,10 +1708,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },
@@ -1763,12 +1722,11 @@
         "The voice shall emit a JSON object containing a `candidates` array of 3–5 entries, each with the fields `id`, `summary`, `sketch`, `rationale`, and `downside_estimate`; it shall always include a candidate with `id: \"do_nothing\"`.",
         "The voice shall include a candidate named `adversarial_<short_id>` when the change touches shared/core code or a function with more than 3 external callers, or emit `adversarial_skipped` with a reason when that condition is not met.",
         "The voice shall emit `challenge_upward.triggered: true` (with a one-line reason) when Conservator has under-scaled the question — specifically when the input contains 3+ uneval'd risk terms or when `magnitude = trivial` but the fallback scenario implies more than 10% of capital or more than 1 month of recovery.",
-        "The voice shall emit `fallback_scenario` (a concrete statement of what the user accepts if the preferred option fails) and `coverage_check` (a boolean confirming whether the proposed candidates collectively cover that fallback); if no fallback can be articulated after 2 attempts, it shall emit `abstain.triggered: true` with `reason: \"goal_undefined\"`."
+        "The voice shall emit `fallback_scenario` and `coverage_check`; if no fallback can be articulated after 2 attempts, it shall emit `abstain.triggered: true` with `reason: \"goal_undefined\"`.",
+        "The `unconventional_*` candidate shall be included unless `adversarial_*` varies on a non-scope axis (mechanism, timing, or abstraction level), or the change is mechanically trivial. Scope overlap alone does NOT justify omitting `unconventional_*`; this rule prevents silent candidate duplication and is normative.",
+        "The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors."
       ],
-      "verify": [
-        "Observed: the prompt states the `unconventional_*` candidate can be skipped ONLY when `adversarial_*` varies on a non-scope axis — overlap on scope alone is not sufficient. This is a relatively subtle rule that could easily be misapplied, producing silent omission. Intended rule, or should it be simplified?",
-        "Observed: the 0.5 generator-score handicap for `adversarial_*` and `do_nothing` is attributed to `build_report.py`, but the prompt lives in the voice file. This means the voice cannot self-verify whether the handicap will be applied. Is this cross-component dependency documented anywhere other than this prompt?"
-      ],
+      "verify": [],
       "notes": [
         "The voice self-limits output via `tokens_budget.generator` received from Conservator, but has no mechanical way to enforce it — over-generation is a real risk on `magnitude = critical` inputs where the model may ignore the budget signal."
       ],
@@ -1776,7 +1734,7 @@
         "prompts/voices/generator.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a proposed change that touches shared/core code\n  When  the Generator voice runs\n  Then  the output `candidates` array contains exactly one entry whose `id` starts with `adversarial_`, OR `adversarial_skipped` is present with a non-empty reason string\n\nAC-2\n  Given a proposed change where no fallback can be articulated (internal contradiction or no data domain)\n  When  the Generator voice runs\n  Then  the output contains `abstain.triggered: true` and `abstain.reason` is one of `\"goal_undefined\"` or a description of the domain-data gap; the `candidates` array may still be present\n\nAC-3\n  Given a proposed change with `magnitude = trivial` from Conservator but whose stated fallback implies > 10% capital loss\n  When  the Generator voice runs\n  Then  the output contains `challenge_upward.triggered: true` with a non-null `reason` string",
+      "accept": "AC-1\n  Given a proposed change that touches shared/core code\n  When  the Generator voice runs\n  Then  the output `candidates` array contains exactly one entry whose `id` starts with `adversarial_`, OR `adversarial_skipped` is present with a non-empty reason string\n\nAC-2\n  Given a proposed change where no fallback can be articulated\n  When  the Generator voice runs\n  Then  the output contains `abstain.triggered: true` and `abstain.reason` is `\"goal_undefined\"` or a description of the domain-data gap; the `candidates` array may still be present\n\nAC-3\n  Given a proposed change with `magnitude = trivial` from Conservator but whose stated fallback implies > 10% capital loss\n  When  the Generator voice runs\n  Then  the output contains `challenge_upward.triggered: true` with a non-null `reason` string",
       "input": "",
       "output": "",
       "desc": "",
@@ -1795,10 +1753,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },
@@ -1813,20 +1767,19 @@
         "The voice shall emit either `can_object: true` (with a populated `objection` object containing `concrete_concerns`, optional `quoted_scenario`, `failure_mode`, and `addressable`) or `can_object: false` (with `objection: null` and a one-sentence `notes` explaining the absence of objection); it shall never fabricate a concern that does not appear in `success_criterion` or stated context.",
         "When `can_object: true`, the voice shall supply at least 2 entries in `concrete_concerns` OR at least 1 non-null `quoted_scenario`; any output that meets neither threshold is rejected by the orchestrator's validation gate and discarded silently.",
         "The voice shall classify `failure_mode` as exactly one of `correctness`, `goal_fit`, `verification_inadequate`, or `meta_scope_mismatch`; if `failure_mode` is `goal_fit`, `concrete_concerns` must contain a direct quote or reference from `success_criterion`.",
-        "The voice shall set `addressable` to `in_place`, `requires_redesign`, or `unaddressable`; `unaddressable` must be used only when no redesign can resolve the concern, defaulting to `in_place` for fixable issues."
+        "The voice shall set `addressable` to `in_place`, `requires_redesign`, or `unaddressable`; `unaddressable` must be used only when no redesign can resolve the concern.",
+        "Validation failure (output rejected by orchestrator gate) results in silent discard: the chosen candidate ships unchanged, no warning is emitted, and the system falls back to the base deliberation result as if the Skeptic had not run. This is a deliberate conservative fallback.",
+        "`meta_scope_mismatch` is a self-assessed heuristic gate with no external oracle; all three conditions (correct answer, trivially-human-resolvable, cost exceeds decision value) are necessarily evaluated by the voice itself because they require contextual judgment that no deterministic external check can provide."
       ],
-      "verify": [
-        "Observed: when the validation gate fails, the skeptic output is \"discarded and the chosen ships unchallenged\" — there is no retry, no fallback, and no signal to the user that the skeptic was rejected. Is silent discard the intended behavior, or should a warning be surfaced in the final report?",
-        "Observed: `meta_scope_mismatch` requires all three conditions (correct answer, trivially-human-resolvable, cost exceeds decision value) to hold simultaneously, but the voice self-assesses all three. No external oracle checks \"resolvable in < 10 seconds.\" Is this trust in the voice by design?"
-      ],
+      "verify": [],
       "notes": [
-        "The validation gate is enforced by the orchestrator after the fact, not by the voice itself — a skeptic that emits invalid output does not know it was rejected, which makes it impossible for the voice prompt alone to guarantee compliant output without external enforcement."
+        "The validation gate is enforced by the orchestrator after the fact, not by the voice itself — a skeptic that emits invalid output does not know it was rejected."
       ],
       "current_impl": [
         "prompts/voices/skeptic.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given the Skeptic receives a chosen candidate and can identify 2 specific, named concerns grounded in `success_criterion` or stated context\n  When  the Skeptic voice runs\n  Then  the output has `can_object: true`, `objection.concrete_concerns` contains at least 2 entries, and `objection.failure_mode` is one of the four enumerated labels\n\nAC-2\n  Given the Skeptic receives a chosen candidate with no concrete verifiable flaw\n  When  the Skeptic voice runs\n  Then  the output has `can_object: false`, `objection` is null, and `notes` contains a non-empty sentence explaining the absence of objection\n\nAC-3\n  Given the chosen candidate is technically correct but the problem is resolvable in under 10 seconds by a human without deliberation tooling\n  When  the Skeptic voice runs\n  Then  the output has `failure_mode: \"meta_scope_mismatch\"`, `addressable: \"unaddressable\"`, and `concrete_concerns` contains at least 2 entries describing the cost/benefit inversion of running the deliberation",
+      "accept": "AC-1\n  Given the Skeptic receives a chosen candidate and can identify 2 specific, named concerns grounded in `success_criterion` or stated context\n  When  the Skeptic voice runs\n  Then  the output has `can_object: true`, `objection.concrete_concerns` contains at least 2 entries, and `objection.failure_mode` is one of the four enumerated labels\n\nAC-2\n  Given the Skeptic receives a chosen candidate with no concrete verifiable flaw\n  When  the Skeptic voice runs\n  Then  the output has `can_object: false`, `objection` is null, and `notes` contains a non-empty sentence explaining the absence of objection\n\nAC-3\n  Given the chosen candidate is technically correct but the problem is resolvable in under 10 seconds by a human without deliberation tooling\n  When  the Skeptic voice runs\n  Then  the output has `failure_mode: \"meta_scope_mismatch\"`, `addressable: \"unaddressable\"`, and `concrete_concerns` contains at least 2 entries describing the cost/benefit inversion",
       "input": "",
       "output": "",
       "desc": "",
@@ -1846,10 +1799,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
         }
       ]
     },

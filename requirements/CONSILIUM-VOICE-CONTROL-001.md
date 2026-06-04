@@ -17,11 +17,8 @@ depends_on: []
 - The voice shall emit a `verdicts` array containing one entry per candidate; each verdict must include `id`, `valid` (boolean), `confidence_in_verdict` (`high` | `medium` | `low`), `issues` (with `category`, `detail`, `severity` per entry), and `tests_to_write` (1–4 concrete test stubs for every `valid: true` candidate that is not `do_nothing`).
 - The voice shall check goal-fit first and, if the candidate does not address `success_criterion`, mark `valid: false` with `category: "logic"` and skip all remaining checks for that candidate.
 - The voice shall emit a `disagreements` array classifying any substantive conflict between voices as `substantial` (different answer → REWORK) or `terminological` (same answer, different words → note and continue).
-
-## WHAT — Verify intent (open questions for the human)
-
-- Observed: the prompt instructs Control to read files when it cannot verify a signature, but Control runs inside a single-context pipeline where it may not have tool access. The fallback (`mark category: "types", detail: "unverifiable — file not accessible"`) silently degrades confidence. Intended behavior, or should there be a harder signal when file access fails systematically?
-- Observed: `hidden_assumptions` is capped at 3 entries, but the selection criterion ("only include assumptions where if false the answer changes") is self-assessed by the model. No external check exists on whether excluded assumptions actually were non-load-bearing. Is this intentional trust in the voice?
+- When the voice cannot verify a signature without reading a file and file access fails, the `unverifiable — file not accessible` marker in the verdict is the intended degradation signal. This is transparent and recorded in verdicts visible to the aggregator and report; no harder signal is required.
+- The 3-entry cap on `hidden_assumptions` and the self-assessed selection criterion are by design. Control is a deliberative voice, not a formal verifier; the design intentionally trusts the voice to surface the most consequential assumptions.
 
 ## WHAT — Notes & known limitations (informative)
 
