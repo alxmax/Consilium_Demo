@@ -1,4 +1,5 @@
 ---
+test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-MODE-TRIAS-001
 status: baseline
 layer: feature

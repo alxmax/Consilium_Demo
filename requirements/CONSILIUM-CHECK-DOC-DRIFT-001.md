@@ -3,6 +3,7 @@ id: CONSILIUM-CHECK-DOC-DRIFT-001
 status: baseline
 layer: feature
 owner: auto
+test_exempt: "reads live source files and runs git — integration-only gate"
 depends_on: []
 risk: 1
 ---

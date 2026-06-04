@@ -3,6 +3,7 @@ id: CONSILIUM-FEEDBACK-001
 status: baseline
 layer: bus
 owner: auto
+test_exempt: "file I/O wrapper with no isolated pure-function surface"
 depends_on: [CONSILIUM-UTILS-001]
 risk: 1
 ---

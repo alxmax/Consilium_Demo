@@ -3,6 +3,7 @@ id: CONSILIUM-AUDIT-FEEDBACK-001
 status: baseline
 layer: feature
 owner: auto
+test_exempt: "dynamic module loading and atomic file I/O — no isolated pure-function surface"
 depends_on: [CONSILIUM-UTILS-001, CONSILIUM-PRIORS-001, CONSILIUM-FEEDBACK-001, CONSILIUM-RENDER-FEEDBACK-HTML-001]
 risk: 1
 ---

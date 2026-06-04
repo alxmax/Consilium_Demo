@@ -3,6 +3,7 @@ id: CONSILIUM-RUN-EVALS-001
 status: baseline
 layer: feature
 owner: auto
+test_exempt: "subprocess-based eval harness — acceptance gated by run_evals.py itself in CI"
 depends_on: []
 risk: 1
 ---

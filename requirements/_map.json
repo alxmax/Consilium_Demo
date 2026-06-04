@@ -34,6 +34,10 @@
         {
           "role": "implements",
           "loc": "scripts/aggregator.py:29"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_round2.py:7"
         }
       ],
       "test_exempt": null,
@@ -41,10 +45,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -127,15 +127,11 @@
           "loc": "scripts/audit_feedback.py:29"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "dynamic module loading and atomic file I/O — no isolated pure-function surface",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -170,6 +166,10 @@
         {
           "role": "implements",
           "loc": "scripts/build_report.py:42"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_build_report.py:11"
         }
       ],
       "test_exempt": null,
@@ -177,10 +177,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -214,15 +210,11 @@
           "loc": "scripts/check_doc_drift.py:25"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "reads live source files and runs git — integration-only gate",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -256,15 +248,11 @@
           "loc": "scripts/check_public_leak.py:15"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "subprocess git ls-files and filesystem scan — integration-only",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -300,6 +288,10 @@
         {
           "role": "implements",
           "loc": "scripts/confidence.py:57"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_confidence.py:11"
         }
       ],
       "test_exempt": null,
@@ -307,10 +299,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -347,15 +335,11 @@
           "loc": "scripts/efficiency.py:28"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "reads runs/ JSON and FEEDBACK.html at test time — integration-only",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -398,15 +382,11 @@
           "loc": "scripts/feedback.py:12"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "file I/O wrapper with no isolated pure-function surface",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "blast-radius",
@@ -538,15 +518,11 @@
           "loc": "prompts/voices/architect_lens.md:25"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -590,15 +566,11 @@
           "loc": "prompts/voices/pioneer_lens.md:25"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -642,15 +614,11 @@
           "loc": "prompts/voices/steward_lens.md:25"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -690,6 +658,10 @@
         {
           "role": "implements",
           "loc": "scripts/log_feedback.py:41"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_log_feedback.py:10"
         }
       ],
       "test_exempt": null,
@@ -697,10 +669,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -738,15 +706,11 @@
           "loc": "scripts/mark_outcome.py:33"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "importlib module loading and FEEDBACK.html mutation — integration-only",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -783,15 +747,11 @@
           "loc": "scripts/memory.py:35"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "file I/O and integration layer with trivial pure stubs",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -834,15 +794,11 @@
           "loc": "modes/dialectic.md:47"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -894,15 +850,11 @@
           "loc": "modes/sequential.md:67"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -948,15 +900,11 @@
           "loc": "modes/skeptic_on_chosen.md:68"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1003,15 +951,11 @@
           "loc": "modes/trias.md:174"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -1103,6 +1047,10 @@
         {
           "role": "implements",
           "loc": "scripts/priors.py:32"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_priors.py:10"
         }
       ],
       "test_exempt": null,
@@ -1110,10 +1058,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1241,6 +1185,10 @@
         {
           "role": "implements",
           "loc": "scripts/retry_context.py:48"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_retry_context.py:11"
         }
       ],
       "test_exempt": null,
@@ -1248,10 +1196,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1285,15 +1229,11 @@
           "loc": "scripts/run_evals.py:23"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "subprocess-based eval harness — acceptance gated by run_evals.py itself in CI",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1325,6 +1265,10 @@
         {
           "role": "implements",
           "loc": "scripts/scope_gate.py:61"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_scope_gate.py:11"
         }
       ],
       "test_exempt": null,
@@ -1332,10 +1276,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1371,15 +1311,11 @@
           "loc": "scripts/stability_check.py:24"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "reads runs/ directory at test time — integration-only analysis tool",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1413,6 +1349,10 @@
         {
           "role": "implements",
           "loc": "scripts/strip_context.py:46"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_strip_context.py:10"
         }
       ],
       "test_exempt": null,
@@ -1420,10 +1360,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1455,6 +1391,10 @@
       "used_by": [],
       "members": [
         {
+          "role": "tested-by",
+          "loc": "scripts/test_trace_graph.py:10"
+        },
+        {
           "role": "implements",
           "loc": "scripts/trace_graph.py:20"
         }
@@ -1464,10 +1404,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1499,6 +1435,10 @@
       "used_by": [],
       "members": [
         {
+          "role": "tested-by",
+          "loc": "scripts/test_usage.py:10"
+        },
+        {
           "role": "implements",
           "loc": "scripts/usage.py:32"
         }
@@ -1508,10 +1448,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1563,6 +1499,10 @@
       ],
       "members": [
         {
+          "role": "tested-by",
+          "loc": "scripts/test_utils.py:10"
+        },
+        {
           "role": "implements",
           "loc": "scripts/utils.py:6"
         }
@@ -1572,10 +1512,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "blast-radius",
@@ -1614,6 +1550,10 @@
       ],
       "members": [
         {
+          "role": "tested-by",
+          "loc": "scripts/test_round2.py:8"
+        },
+        {
           "role": "implements",
           "loc": "scripts/validate_report.py:49"
         }
@@ -1623,10 +1563,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1700,6 +1636,10 @@
       "used_by": [],
       "members": [
         {
+          "role": "tested-by",
+          "loc": "scripts/test_round2.py:9"
+        },
+        {
           "role": "implements",
           "loc": "scripts/vocabulary_map.py:10"
         }
@@ -1709,10 +1649,6 @@
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     },
@@ -1754,15 +1690,11 @@
           "loc": "prompts/voices/conservator.md:198"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -1808,15 +1740,11 @@
           "loc": "prompts/voices/control.md:113"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -1862,15 +1790,11 @@
           "loc": "prompts/voices/generator.md:134"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -1917,15 +1841,11 @@
           "loc": "prompts/voices/skeptic.md:123"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         },
         {
           "signal": "unverified-intent",
@@ -2011,15 +1931,11 @@
           "loc": ".claude/skills/run-consilium/driver.py:19"
         }
       ],
-      "test_exempt": null,
+      "test_exempt": "integration harness — acceptance validated by run-consilium smoke + pipeline commands, not unit tests",
       "risks": [
         {
           "signal": "unreviewed",
           "advice": "Draft/baseline, not yet validated: review the contract, wire its `tested-by` tests, then promote to `confirmed`. Until then it is tracked, not enforced."
-        },
-        {
-          "signal": "untested",
-          "advice": "Implemented but no `tested-by` member: write an acceptance test and tag it `# tested-by: <ID>`, or set `test_exempt: <reason>` in the frontmatter to acknowledge it intentionally and silence this signal."
         }
       ]
     }

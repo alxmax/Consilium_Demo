@@ -4,6 +4,9 @@ Run:
     python scripts/test_round2.py
     python -m pytest scripts/test_round2.py -v  (if pytest available)
 """
+# tested-by: CONSILIUM-AGGREGATOR-001
+# tested-by: CONSILIUM-VALIDATE-REPORT-001
+# tested-by: CONSILIUM-VOCABULARY-MAP-001
 import sys
 import unittest
 from pathlib import Path

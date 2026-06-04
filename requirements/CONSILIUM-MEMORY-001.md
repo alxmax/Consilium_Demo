@@ -3,6 +3,7 @@ id: CONSILIUM-MEMORY-001
 status: baseline
 layer: feature
 owner: auto
+test_exempt: "file I/O and integration layer with trivial pure stubs"
 depends_on: [CONSILIUM-FEEDBACK-001, CONSILIUM-UTILS-001]
 risk: 1
 ---
