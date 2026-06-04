@@ -25,7 +25,9 @@ Guards the public release repository against accidentally referencing the privat
 - exit code 0 on clean, 1 on any pattern match
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The exact regex patterns are deliberately omitted from the doc — is there a secondary specification (comments in source, a separate config file) that a reviewer can consult to confirm correctness without reading the implementation?
+- The guard 'skips binary and image file extensions' — is the skip list exhaustive and documented, or heuristic? What happens with a binary file that has a `.txt` extension (e.g., a compiled output accidentally committed as plain text)?
+- When the script is run outside of a git repository (e.g., in a CI container where `git ls-files` fails), does it exit 0 (clean), exit 1 (as if a leak were found), or exit with a different code and message?
 
 ## Acceptance (= tests)
 - Running against a repo with no private-repo (non-Demo) or local-path references exits 0 and prints `clean`.

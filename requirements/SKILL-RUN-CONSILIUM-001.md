@@ -28,7 +28,9 @@ The run-consilium skill driver exercises Consilium's entire deterministic, LLM-f
 - `pipeline` prints aggregator JSON, confidence JSON, and validate_report result to stdout
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- `smoke` mode 'exits non-zero only when failures exceed a documented baseline' — where is the baseline documented, and what is it? If some test suites are known-failing, are they excluded from the failure count or counted against the baseline?
+- In `shot` mode, the script 'checks for Chrome/Edge at known Windows paths' — what are those paths, and what happens on non-Windows platforms (Linux, macOS CI)? Is the `shot` command expected to work cross-platform, and if not, should it exit with a clear error rather than silently failing?
+- `pipeline` mode prints 'aggregator JSON, confidence JSON, and validate_report result' — but the description also mentions `build_report` as a pipeline stage; does `pipeline` mode run all four stages (aggregator → confidence → build_report → validate_report) or only three?
 
 ## Acceptance (= tests)
 - `python .claude/skills/run-consilium/driver.py smoke` exits 0 against the current repo state with all suites PASS.

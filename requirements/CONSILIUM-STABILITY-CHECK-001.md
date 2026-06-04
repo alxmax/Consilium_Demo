@@ -26,7 +26,9 @@ Voice-score calibration analysis tool that implements the experiment protocol fr
 - Pick: ranked list of N candidate runs with conservator scores and success criteria printed to stdout
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The 0.80 veto boundary is hard-coded as the reference for the 'uncertain band' analysis — is this value the same as the `veto_threshold` in `aggregator.py`, and if aggregator's threshold is changed, does stability_check need to be updated in sync?
+- The Bug #1 verdict threshold of 0.10 mean pstdev is a fixed constant — is this threshold empirically derived or arbitrary? Should the requirement document who can change it and under what circumstances?
+- In compare mode, what constitutes a 'same input' constraint when comparing two runs? The description says 'two runs on the same input' but there is no enforcement or input-hash comparison — is this purely a human convention?
 
 ## Acceptance (= tests)
 - Running `--runs-dir` against a populated runs directory prints per-voice statistics for generator, control, and conservator without error.

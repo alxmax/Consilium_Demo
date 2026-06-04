@@ -34,7 +34,9 @@ Implements the "every N sequential runs" silent parallel cross-check mechanism d
 - exit code 0 on success; exit code 2 on invalid `--record-divergence` value
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The tightening rule says 'two or more divergences in the last five audits' — does the rolling window of five count all audits or only those at the current frequency? What happens if frequency already tightened and only 3 audits have been recorded at the new frequency?
+- The relaxation rule says 'five consecutive non-divergent audits while frequency=5' — does 'consecutive' mean no divergent entry anywhere in the window, or strictly in order with no gaps? Is the state reset if the system is reinstalled or the state file is deleted?
+- When `--increment` is called with `--mode` set to a non-sequential mode (e.g. trias), is the counter still bumped, and is the frequency logic applied the same way? The description says 'every N sequential runs' but the flag accepts arbitrary mode labels.
 
 ## Acceptance (= tests)
 - After exactly N sequential increments (where N equals the current frequency), `--check` returns `should_audit=true`; a subsequent `--check` before `--record-divergence` returns `should_audit=false` due to the `pending_audit_at` sentinel.

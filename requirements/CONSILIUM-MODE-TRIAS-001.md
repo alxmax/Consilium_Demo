@@ -19,7 +19,9 @@ depends_on: [CONSILIUM-MODE-SEQUENTIAL-001, CONSILIUM-LENS-PIONEER-001, CONSILIU
 - The 3 personality sub-agents shall be dispatched in parallel; the runtime audit tracks divergence between parallel and serial results.
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The B2 deadlock cascade fires on '1-1-1 or 0-0-0' — what does 0-0-0 mean in the context of three personalities each choosing a candidate, and is 0-0-0 achievable only when a personality abstains?
+- Lazy routing downgrades to Dialectic for `high` magnitude — does the lazy-routed Dialectic run carry the `trias_lazy_routed: true` field all the way into the final persisted report, and does it affect how priors or efficiency metrics classify the run?
+- Context is 'truncated to ≈15 000 tokens before dispatch' — what is the exact truncation strategy (last N tokens, first N tokens, or smart summarization), and is the 15 000 token budget a hard limit or a target?
 
 ## WHAT — Notes & known limitations (informative)
 - Serial dispatch is an accepted implementation artifact that does not affect correctness; the silent parallel audit is the observability mechanism.

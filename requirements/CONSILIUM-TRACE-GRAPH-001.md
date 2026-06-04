@@ -23,7 +23,9 @@ Renders a per-run view of the deliberation pipeline as a Mermaid flowchart. It r
 - exit code 0 on success; 2 on malformed JSON or missing/unreadable input
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- A 'prior-deliberation passthrough run produces a two-node graph `PRIOR -> REP`' — but a passthrough run may still have metadata (confidence, chosen approach) worth showing; is the two-node minimal graph intentional, or should it show the passthrough's source run reference?
+- For a sequential run with a Skeptic, the graph shows 'an advisory edge from AGG to SKP and from SKP to REP' — but when the Skeptic overrides the chosen candidate (`--skeptic-can-override`), should the edge semantics change (e.g., a different edge label or a direct replacement edge)?
+- The output is described as 'valid Mermaid' — is there a validation step in the acceptance test, or is correctness only confirmed by visual inspection at mermaid.live?
 
 ## Acceptance (= tests)
 - A run with `skipped=true` produces a flowchart containing only a SKIP node with the skip reason.

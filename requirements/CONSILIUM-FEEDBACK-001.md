@@ -25,7 +25,9 @@ Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats 
 - exit code 0 always
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The parser supports three HTML row layouts for backward compatibility — when a row matches multiple layouts (e.g., an 8-cell row that also satisfies the 7-cell count rule), which layout takes priority, and is there a defined precedence order?
+- Rows with an unrecognized `outcome` field are 'silently skipped' — does this mean they are dropped from all stats (including total count), or counted in total but excluded from outcome breakdown? The distinction affects the success-rate calculation.
+- The success rate excludes `PEND` entries — does it also exclude `PEND_HEADLESS`? The description only mentions excluding 'pending entries' but does not explicitly enumerate `PEND_HEADLESS`.
 
 ## Acceptance (= tests)
 - `parse_feedback` returns an empty list without error when FEEDBACK.html does not exist.

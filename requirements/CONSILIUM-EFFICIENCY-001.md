@@ -27,7 +27,9 @@ Computes a per-mode efficiency score defined as `total_tokens / ok_count` (lower
 - exit code 0 on success, 1 if runs directory is not found
 
 ## WHAT — Verify intent (open questions for the human)
-- None — doc is unambiguous.
+- The metric is `total_tokens / ok_count` (lower is better) — but a Trias OK represents deeper deliberation than a Sequential OK; is there any normalization or weighting applied per mode, or is the raw metric always emitted as-is with only a caveat string?
+- `tokens_per_dispatch` is 'normalized by number of voice calls' — how is the voice-call count determined for skipped runs (which have 0 voice calls), and are skipped runs included or excluded from this sub-metric?
+- The `--since YYYY-MM-DD` filter 'filters out runs whose timestamp or filename stem sorts before the given date' — if the timestamp inside the run JSON and the filename stem disagree (e.g., a renamed file), which source takes precedence?
 
 ## Acceptance (= tests)
 - With three or more runs all marked `OK`, `tokens_per_ok` is a non-null integer equal to `total_tokens / ok_count`.
