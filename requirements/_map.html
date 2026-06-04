@@ -20,11 +20,13 @@
       "area": "CONSILIUM",
       "title": "aggregator",
       "intent": "Merges scored Generator/Control/Conservator outputs into a chosen candidate via one of five aggregation schemes.",
-      "contract": [],
+      "contract": [
+        "`conservative_override` with `auto_relax=False` and all candidates vetoed returns `{\"chosen\": null, \"reason\": \"all candidates vetoed by conservator\", \"vetoed\": [...]}` with no `retry_suggested` field.",
+        "`sequential` input schema is three top-level keys `generator`, `control`, `conservator` (raw voice output dicts). No mixed numeric-score input is defined; the function reads only the raw-dict keys (`glossary_fail`, `disagreements`, `scores[]`, `preferred`, `abstain`). Passing numeric scores alongside raw dicts is undefined behavior.",
+        "All seven sequential routing outcomes (BLOCK/glossary_fail, BLOCK/irreversibility_no_consent, ESCALATE, REWORK, ADAPT_SHORT, ADAPT_EXTENDED, AGGREGATE) are tested in `scripts/test_round2.py`."
+      ],
       "verify": [
-        "When `conservative_override` is used and ALL candidates are vetoed with `auto_relax=False`, what is the expected output — `chosen: null` with no `retry_suggested`, or a different error shape?",
-        "The `sequential` scheme operates on 'raw voice output dicts rather than numeric scores' — is the input schema for sequential mode formally defined anywhere, and what happens when the input contains both numeric scores and raw dicts?",
-        "The veto cascade in `aggregate_sequential()` lists seven routing outcomes, but the acceptance tests only cover BLOCK (glossary_fail) and ESCALATE — is the behavior for REWORK, SHORT-CIRCUIT (scale_down), ADAPT_EXTENDED (scale_up), BLOCK (irreversibility), and plain AGGREGATE tested or specified anywhere?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -57,12 +59,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-BUILD-REPORT-001",
@@ -73,9 +70,7 @@
       "intent": "Assembles the canonical deliberation report shape from intermediate voice/aggregation outputs.",
       "contract": [],
       "verify": [
-        "The description says skipped reports set `pipeline_executed: false`, but the acceptance test says `pipeline_executed` is 'absent or false' — which is the normative form? Does `validate_report.py` accept either, or only one?",
-        "For the `why_not` derivation for non-chosen candidates, is the source of the text defined (Control issues only, Conservator risk note, or both combined), and what is emitted when a non-chosen candidate has no Control issues and no Conservator risk note?",
-        "When both `--input` file and stdin carry data, which takes precedence? The description says 'stdin or `--input` file' without specifying conflict resolution."
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -89,7 +84,7 @@
       "accept": "- Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.\n- Given a skipped bundle (`skipped: true`) with valid `skip_reason`, the output contains `chosen_approach: skipped`, `pipeline_executed` absent or false, and `deliberation_log: []`.\n- Given a bundle where the chosen candidate has a control verdict with `valid=false` and issues, the output's `voice_scores.control` is less than 1.0 and alternatives list a `why_not` string derived from the issues.\n- Given any valid bundle, the telemetry block in the output contains non-empty `consilium_version` and `consilium_ref` fields stamped by the version module.\n- Given a bundle missing `success_criterion`, the script exits with code 1 and prints an error to stderr without writing any JSON to stdout.",
       "input": "stdin or `--input` file: JSON bundle with keys `success_criterion`, `verification`, `generator`, `control`, `conservator`, `aggregate`, `confidence`, and optional `telemetry`, `reasoning`, `alternatives_limit`, `team`, `personalities`, `vote_pattern`, `personality_choices`, `deliberation_quality`, `vote_skipped` For skipped bundles: `skipped: true` plus `skip_reason` and `signals` instead of voice outputs CLI flag `--input`: path to JSON bundle file (default: stdin)",
       "output": "stdout: canonical JSON report with fields: `success_criterion`, `verification`, `chosen_approach`, `reasoning`, `alternatives`, `voice_scores`, `confidence`, `pipeline_executed`, `deliberation_log`, `telemetry`, and optional Trias fields (`team`, `personalities`, `vote_pattern`, `dissent`, `abstained`, `personality_choices`) exit code 0 on success exit code 1 on missing required field exit code 2 on malformed JSON input",
-      "desc": "Assembles the canonical deliberation report shape from the intermediate voice and aggregation outputs, eliminating the error-prone manual JSON construction that previously occurred in the orchestrator between pipeline steps. It extracts the chosen candidate's voice scores from the control verdict and conservator score lists, derives `why_not` summaries for each non-chosen alternative from control issues and conservator risk, and stamps version provenance (`consilium_version` and `consilium_ref`) into the telemetry block of every report it emits. Skipped reports (trivial-direct, prior-deliberation passthrough) are handled via a separate code path that requires only `skip_reason` and `signals` and sets `pipeline_executed: false`; full pipeline reports always set `pipeline_executed: true`. The output must pass `validate_report.py` to be written to `.consilium/runs/`.",
+      "desc": "Assembles the canonical deliberation report shape from the intermediate voice and aggregation outputs, eliminating the error-prone manual JSON construction that previously occurred in the orchestrator between pipeline steps. It extracts the chosen candidate's voice scores from the control verdict and conservator score lists, derives `why_not` summaries for each non-chosen alternative from control issues and conservator risk, and stamps version provenance (`consilium_version` and `consilium_ref`) into the telemetry block of every report it emits. Skipped reports (trivial-direct, prior-deliberation passthrough) are handled via a separate code path that requires only `skip_reason` and `signals`; `pipeline_executed` is absent (not set) on skipped reports — `validate_report.py` skips the field check entirely when `skipped: true`. Full pipeline reports always set `pipeline_executed: true`. The output must pass `validate_report.py` to be written to `.consilium/runs/`. `why_not` for non-chosen candidates combines both Control issues and Conservator risk: if the control verdict is invalid, it lists issue categories; if valid but issues exist, it uses the first issue's detail; if Conservator `net_concern >= 0.5`, it appends `risk=N.NN`. When neither source yields text, the fallback is `\"ranked below chosen\"` (or `\"all candidates vetoed\"` when `chosen` is null). `--input` and stdin are mutually exclusive by argparse design (`FileType` default is stdin; providing `--input` opens the file instead). No conflict resolution is needed — only one source is ever active.",
       "deps": [
         "CONSILIUM-UTILS-001"
       ],
@@ -105,12 +100,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-CHECK-DOC-DRIFT-001",
@@ -119,11 +109,13 @@
       "area": "CONSILIUM",
       "title": "check_doc_drift",
       "intent": "Enforces parity between authoritative behavior (SKILL.md, confidence.py) and the docs/diagrams.",
-      "contract": [],
+      "contract": [
+        "Test-suite coverage uses plain substring match on the filename only (e.g., `test_round2.py`); a commented-out line that still contains the filename string passes the check — the script does not distinguish commented-out from active.",
+        "Legacy MODE alias removal milestone date must be ISO `YYYY-MM-DD`; the date string must appear within 200 characters of the alias literal in `validate_report.py`; any comment syntax is accepted as long as the date string is present; future dates are accepted — the check only skips if the alias has already been removed from the file entirely.",
+        "When multiple invariants are violated, all violations are collected across all four check families before any output; the script prints every violation (numbered) to stderr then exits 1 — it never stops at the first failure."
+      ],
       "verify": [
-        "The test-suite coverage check requires every `scripts/test_*.py` to appear in both `ci.yml` and the run-consilium driver — what is the exact string-matching rule used (filename stem, full path, partial match), and does the check distinguish between a file being listed but commented-out versus not present at all?",
-        "The legacy MODE alias removal milestone check enforces 'dated removal comments accompany deprecated aliases' — what is the required date format and comment syntax? Is a future date accepted, or must the date have already passed?",
-        "When a check fails with exit code 1 and multiple invariants are violated simultaneously, does the script print all violations before exiting, or stop at the first failure?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -147,12 +139,7 @@
         }
       ],
       "test_exempt": "reads live source files and runs git — integration-only gate",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-CHECK-PUBLIC-LEAK-001",
@@ -161,11 +148,16 @@
       "area": "CONSILIUM",
       "title": "check_public_leak",
       "intent": "Fails CI if any git-tracked file references the private repo or a local developer path.",
-      "contract": [],
+      "contract": [
+        "The source (`PATTERNS` constant + inline comments) is the sole specification for the regex patterns; there is no secondary config or spec file. Comments explain owner-qualified matching and the `_Demo` carve-out.",
+        "The skip list (`SKIP_SUFFIX`) is a heuristic hardcoded tuple of 11 extensions. A binary file committed with a `.txt` extension is **not** skipped — it is read with `errors=\"ignore\"` and scanned like any text file.",
+        "When run outside a git repository (`git ls-files` fails), the unhandled `subprocess.CalledProcessError` produces exit code 1 with a Python traceback to stderr — same exit code as a leak find, but distinguishable by the traceback."
+      ],
       "verify": [
-        "The exact regex patterns are deliberately omitted from the doc — is there a secondary specification (comments in source, a separate config file) that a reviewer can consult to confirm correctness without reading the implementation?",
-        "The guard 'skips binary and image file extensions' — is the skip list exhaustive and documented, or heuristic? What happens with a binary file that has a `.txt` extension (e.g., a compiled output accidentally committed as plain text)?",
-        "When the script is run outside of a git repository (e.g., in a CI container where `git ls-files` fails), does it exit 0 (clean), exit 1 (as if a leak were found), or exit with a different code and message?"
+        "None - all questions resolved.",
+        "The source (`PATTERNS` constant + inline comments) is the sole specification for the regex patterns; there is no secondary config or spec file. Comments explain owner-qualified matching and the `_Demo` carve-out.",
+        "The skip list (`SKIP_SUFFIX`) is a heuristic hardcoded tuple of 11 extensions. A binary file committed with a `.txt` extension is **not** skipped — it is read with `errors=\"ignore\"` and scanned like any text file.",
+        "When run outside a git repository (`git ls-files` fails), the unhandled `subprocess.CalledProcessError` produces exit code 1 with a Python traceback to stderr — same exit code as a leak find, but distinguishable by the traceback."
       ],
       "notes": [],
       "current_impl": [],
@@ -203,11 +195,13 @@
       "area": "CONSILIUM",
       "title": "confidence",
       "intent": "Derives a calibrated confidence score from inter-voice agreement + runner-up separation (or Trias vote pattern).",
-      "contract": [],
+      "contract": [
+        "When there is only one candidate (no runner-up), `separation` defaults to `1.0` (`derive()` line: `else: separation = 1.0`). The existing Acceptance bullet covers this case explicitly.",
+        "The 2-0 exemption from the WEAK floor flag is intentional. 2-0 means one personality had all candidates vetoed (a veto, not a deadlock) — a winner still emerged, so the run is structurally decisive. The lower base confidence (0.70 vs 0.75 for 2-1) already encodes the stronger risk signal; flagging it WEAK on top would be double-penalising.",
+        "The dissent (−0.10) and abstain (−0.15) penalties are applied only when the Steward personality is the dissenter/abstainer. Pioneer and Architect dissent/abstain carry no penalty because Steward (conservative-leaning, K=0.40) is the sole risk-anchor voice; its absence from the majority signals a materially higher risk that the base vote-pattern score does not capture."
+      ],
       "verify": [
-        "The blending formula is `0.7 * agreement + 0.3 * separation` — when there is only one candidate (no runner-up), what value is used for separation, and is this case explicitly tested?",
-        "The `check_mode_floor` helper exempts structurally decisive Trias vote patterns (3-0, 2-1, 2-0) from the WEAK flag — is 2-0 truly 'structurally decisive', given that it represents a personality veto and only 2 of 3 personalities chose a candidate? Is this exemption intentional?",
-        "The Steward dissent penalty is −0.10 and abstain penalty is −0.15 — are these penalties applied only for Steward, or for any dissenting/abstaining personality? The description specifies 'Steward-specific' but does not explain why Pioneer or Architect dissent carries no penalty."
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -239,12 +233,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-FEEDBACK-001",
@@ -255,9 +244,7 @@
       "intent": "Canonical FEEDBACK.html parser + a human-readable stats report over logged outcomes.",
       "contract": [],
       "verify": [
-        "The parser supports three HTML row layouts for backward compatibility — when a row matches multiple layouts (e.g., an 8-cell row that also satisfies the 7-cell count rule), which layout takes priority, and is there a defined precedence order?",
-        "Rows with an unrecognized `outcome` field are 'silently skipped' — does this mean they are dropped from all stats (including total count), or counted in total but excluded from outcome breakdown? The distinction affects the success-rate calculation.",
-        "The success rate excludes `PEND` entries — does it also exclude `PEND_HEADLESS`? The description only mentions excluding 'pending entries' but does not explicitly enumerate `PEND_HEADLESS`."
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -271,7 +258,7 @@
       "accept": "- `parse_feedback` returns an empty list without error when FEEDBACK.html does not exist.\n- `parse_feedback` correctly parses all three row layouts (8-cell Trias, 7-cell previous, 6-cell legacy) and attribute-based `data-field` rows.\n- Rows whose `outcome` field is not one of `OK`, `BAD`, `OVR`, `PEND`, `PEND_HEADLESS` are silently skipped.\n- With `--recent N`, only the last N entries are included in the report stats.\n- With `--runs`, the report includes a per-aggregation-scheme breakdown from `.consilium/runs/*.json`, tolerating both legacy `aggregation.scheme` and current `deliberation_log[step=aggregate].scheme` shapes.",
       "input": "`.consilium/FEEDBACK.html`: the append-only HTML journal of logged deliberation outcomes (path from `utils.FEEDBACK_PATH`) `.consilium/runs/*.json`: deliberation run files, read only when `--runs` flag is passed CLI flags: `--recent N`, `--runs`",
       "output": "stdout: multi-line stats report (total uses, outcome breakdown, success rate, recent overrides, optional run scheme counts) exit code 0 always",
-      "desc": "Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats report over logged deliberation outcomes. The `parse_feedback` function is a shared utility imported by `priors.py`, `log_feedback.py`, `efficiency.py`, and deprecated scripts; it supports three HTML row layouts (attribute-based with `data-field`, and two legacy positional cell-count variants) for backward compatibility. When invoked as a CLI tool it prints total logged uses, per-outcome counts, overall success rate excluding pending entries, recent overrides, and optionally a breakdown of runs-on-disk by aggregation scheme. It exists to give the developer a fast, human-readable health check on the skill's real-world usefulness without opening the HTML journal manually.",
+      "desc": "Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats report over logged deliberation outcomes. The `parse_feedback` function is a shared utility imported by `priors.py`, `log_feedback.py`, `efficiency.py`, and deprecated scripts; it supports three HTML row layouts (attribute-based with `data-field`, and two legacy positional cell-count variants) for backward compatibility. Layout precedence is strict: attribute-based (`data-field`) is tried first; positional fallback only applies when no `data-field` attributes are found, matched by exact cell count (8 → 7 → 6 → skip). Rows with an unrecognized `outcome` field are dropped entirely — they are excluded from both the total count and all outcome stats. The success-rate denominator is `OK + BAD + OVR` only; both `PEND` and `PEND_HEADLESS` are excluded. When invoked as a CLI tool it prints total logged uses, per-outcome counts, overall success rate excluding pending entries, recent overrides, and optionally a breakdown of runs-on-disk by aggregation scheme. It exists to give the developer a fast, human-readable health check on the skill's real-world usefulness without opening the HTML journal manually.",
       "deps": [
         "CONSILIUM-UTILS-001"
       ],
@@ -290,10 +277,6 @@
       "test_exempt": "file I/O wrapper with no isolated pure-function surface",
       "risks": [
         {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        },
-        {
           "signal": "blast-radius",
           "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
@@ -306,11 +289,13 @@
       "area": "CONSILIUM",
       "title": "implement_pipeline",
       "intent": "Turns a deliberation report into an implementation dispatch plan; optionally verifies the red->green gate.",
-      "contract": [],
+      "contract": [
+        "The stub heuristic appends the stub marker as a new line after the `def`/`async def` header; it does not replace an existing `pass` or `...` body. Nested functions each receive their own stub insertion. This is intentional: the gate only needs the suite to go RED, not a clean AST rewrite.",
+        "Exit code 1 is shared between `do_nothing`/`skipped` (no pipeline) and gate failure. The caller must read stdout to distinguish the two cases. This collapse is intentional and documented in the script's module docstring.",
+        "The plan JSON schema (`spec`, `sequence`, `roles`, `rules`) is defined entirely by `build_plan()` in this script. The subagent handoff contract lives in `agents/consilium-implement-subagent.md` and is not part of this requirement."
+      ],
       "verify": [
-        "The stub-insertion heuristic 'inserts `raise NotImplementedError` after each `def`/`async def`' — what happens when the function already contains a `pass` or `...` body, or when there are nested functions? Is the original file always fully restored on error?",
-        "In plan mode the script 'emits a JSON plan for the orchestrating agent to consume' — is there a defined handoff schema between the plan JSON and the consilium-implement-subagent, and is that schema part of this requirement's contract?",
-        "The exit code for `do_nothing`/`skipped` chosen approaches is 1, the same as gate failure — how does the caller distinguish between 'no pipeline needed' and 'gate failed'? Is that distinction intentional or an unresolved ambiguity?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -340,12 +325,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-LENS-ARCHITECT-001",
@@ -358,12 +338,13 @@
         "The lens shall cause the voice it overlays to weight architectural cleanliness, type safety, clear abstractions, and test verifiability more heavily than it would by default, favoring candidates that strengthen invariants over those that loosen them.",
         "The lens shall preserve each voice's standard structural role; it shifts evaluation priorities without replacing the role's core output or inflating/deflating raw numerical scores directly.",
         "When applied to Conservator, the lens shall affect only the quality-progress adjustment on ; it shall not inflate  solely on the basis of absent tests.",
-        "The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation."
+        "The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation.",
+        "The 'quality-progress path' is defined solely in the lens prompt (`architect_lens.md`), not in the Conservator voice contract; it refers to adjusting `regression_risk` upward when test coverage is weak relative to the change's scope.",
+        "'Ranking higher' is achieved by the voice shifting its qualitative judgment of which candidate is structurally sounder; no raw numerical score is changed by the lens — aggregator re-weighting (via personality weights in `personalities.py`) translates that judgment into the final ranking.",
+        "When Architect is applied to Conservator, the lens can affect which candidate Conservator prefers (lower `regression_risk` on one candidate makes it preferred), but the mechanism is constrained to the quality-progress adjustment on `regression_risk` — not a direct `risk_score` inflation."
       ],
       "verify": [
-        "AC-2 says the Conservator's `net_concern` 'may be adjusted upward via the quality-progress path, but not inflated solely because tests are absent' — what exactly is the 'quality-progress path', and is it defined in the Conservator voice contract or only in the lens prompt?",
-        "The contract says the lens 'shall not inflate/deflate raw numerical scores directly' — but AC-1 says the voice 'ranks the well-structured candidate higher'; does 'ranking higher' imply a score difference, and if so, how is ranking without score change achieved?",
-        "'Trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator' — when Architect is applied to Conservator, does the lens ever affect which candidate Conservator prefers, or only the risk weighting?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [
@@ -387,12 +368,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-LENS-PIONEER-001",
@@ -405,12 +381,13 @@
         "The lens shall cause the voice it overlays to weight creative potential and forward momentum more heavily than it would by default, preferring ambitious candidates over safe ones when the two are otherwise comparable.",
         "The lens shall preserve each voice's standard structural role (Generator produces candidates, Control verifies correctness, Conservator assesses risk); it shifts perception and priority without suppressing the role's core output.",
         "When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not directly alter the numerical  formula or its component scores (, , etc.).",
-        "The Conservator carve-out is sufficient by design. Pioneer's influence is on narrative tone and meta_recommendation framing, not on the numerical risk gate. The  formula remains governed by Conservator's own logic, preserving Trias balance through democratic aggregation across all three voices."
+        "The Conservator carve-out is sufficient by design. Pioneer's influence is on narrative tone and meta_recommendation framing, not on the numerical risk gate. The  formula remains governed by Conservator's own logic, preserving Trias balance through democratic aggregation across all three voices.",
+        "'Magnitude calibration' means the `magnitude` label only (low/medium/high/critical); Pioneer shall not shift the `reversibility` component score or any other input to the `net_concern` formula.",
+        "The Pioneer lens adds no additional pressure on `unconventional_*` candidate selection beyond what the Generator voice contract already requires.",
+        "There is no defined minimum ambition gap for the lens to activate; when candidates differ in ambition, Pioneer always prefers the most ambitious one, even if the difference is marginal."
       ],
       "verify": [
-        "The contract says Pioneer 'shall affect only magnitude calibration and meta_recommendation' when applied to Conservator, but AC-2 says '`net_concern` numerical value reflects the standard formula unchanged' — does 'magnitude calibration' mean the label only (low/medium/high/critical), or can Pioneer also shift the reversibility assessment?",
-        "Does the Pioneer lens add any additional pressure to include or exclude the `unconventional_*` candidate, beyond what the Generator voice contract already requires?",
-        "AC-1 says Pioneer favors 'the novel/ambitious option rather than the safe/incremental one' — is there a defined minimum gap in ambition between candidates for the lens to activate, or does it always prefer the most ambitious candidate regardless of how marginal the difference is?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [
@@ -434,12 +411,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-LENS-STEWARD-001",
@@ -455,9 +427,7 @@
         "\"Prefer existing patterns over new ones unless the new one is clearly necessary\" means: a new pattern is justified only when the existing pattern is INSUFFICIENT to meet the change requirements — not merely suboptimal or less elegant. \"Suboptimal but workable\" does NOT qualify as grounds for a new pattern."
       ],
       "verify": [
-        "The contract says Steward shall 'still produce the full required spread of candidates (3-5)' — but if all viable candidates are high blast-radius (e.g., a migration of a core system), what constitutes a 'minimal-blast-radius candidate' that Steward lists first when no genuinely minimal option exists?",
-        "'A new pattern is justified only when the existing pattern is INSUFFICIENT to meet the change requirements' — who decides insufficiency: the Generator voice, the Control voice, or the deliberation outcome? Is there a structured output field that records this judgment?",
-        "When Steward is applied to Control or Conservator, does the 'order by smallest blast radius first' rule apply to their output ordering, or is the lens effect on non-Generator voices defined differently?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [
@@ -481,12 +451,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-LOG-FEEDBACK-001",
@@ -495,11 +460,13 @@
       "area": "CONSILIUM",
       "title": "log_feedback",
       "intent": "Atomically appends (or upgrades) a FEEDBACK.html row from a deliberation report.",
-      "contract": [],
+      "contract": [
+        "When `run_id` is absent, the fingerprint falls back to a microsecond-precision timestamp (`datetime.now().strftime(\"%f\")`) as the 4th field — not a 3-field key. This prevents same-day collisions but makes the fingerprint non-deterministic: two recomputed fingerprints for the same legacy row will differ, so old no-run_id rows can never be matched by fingerprint lookup (they fall back to `run_path=None`).",
+        "The confidence gate reads `report.get(\"confidence\")` — the top-level key only. If a report carries both a top-level `confidence` and a nested `confidence.confidence` dict, the top-level value is used and the nested form is silently ignored.",
+        "The row-upgrade path (PEND → OK) uses a read-modify-write cycle protected only by `atomic_write_text` (rename-swap). There is no file lock or compare-and-swap: two concurrent callers would each read the same PEND state and the last writer would win. Concurrent upgrades are not prevented; they are tolerated as an acceptable race given that log_feedback is not designed for concurrent use."
+      ],
       "verify": [
-        "The duplicate-detection fingerprint is keyed on `date|chosen|context|run_id` — if `run_id` is absent from the report (e.g., an older report format), does the fingerprint fall back to a 3-field key, and is that collision-safe for reports logged on the same day with the same chosen approach?",
-        "The `--outcome OK` confidence gate requires `confidence >= 0.70` — is the `confidence` field read from the report's top-level key, or from the nested `confidence.confidence` dict form? What happens when the report carries both forms with different values?",
-        "The row-upgrade path (PEND → OK) rewrites the existing row 'in place' — if two concurrent callers both attempt an upgrade on the same PEND row simultaneously, what prevents a race condition given that FEEDBACK.html is also protected by atomic writes?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -531,12 +498,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MARK-OUTCOME-001",
@@ -545,11 +507,13 @@
       "area": "CONSILIUM",
       "title": "mark_outcome",
       "intent": "Corrects a logged FEEDBACK.html outcome in place once production reality is known.",
-      "contract": [],
+      "contract": [
+        "When matching by `--date` and `--chosen`, all rows that satisfy the predicate are updated (not only the first); each matched row produces a `matched [i]: ...` stdout line.",
+        "`[confirmed]` annotation is idempotent: `_annotate_note` checks for its presence before appending, so repeated calls never accumulate duplicate tokens. `outcome_reason=` is similarly replaced (old stripped, new inserted) rather than accumulated.",
+        "`--outcome PEND_HEADLESS` enforces a source-state guard: if the matched row's current outcome is not `PEND`, the row is skipped with a stderr diagnostic and exit 0 (not an error); only rows already at `PEND` are converted."
+      ],
       "verify": [
-        "When matching by `--date` and `--chosen`, can multiple rows match (e.g., two runs on the same date with the same approach)? If so, are all matched rows updated, or only the first, and how is this communicated to the caller?",
-        "The `[confirmed]` annotation is added to the note — if `mark_outcome` is called multiple times on the same row (e.g., BAD → OVR → OK), does the note accumulate multiple `[confirmed]` tokens, or is the existing annotation replaced?",
-        "The `--outcome PEND_HEADLESS` path requires `--benchmark` as a guard — does the script verify that the row's current outcome is `PEND` before applying the transition, as implied by the 'non-PEND row' skip rule?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -577,12 +541,7 @@
         }
       ],
       "test_exempt": "importlib module loading and FEEDBACK.html mutation — integration-only",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MEMORY-001",
@@ -591,11 +550,13 @@
       "area": "CONSILIUM",
       "title": "memory",
       "intent": "Unified read API over Consilium's three memory tiers (short / medium / long).",
-      "contract": [],
+      "contract": [
+        "The short tier stub is permanently fixed: `read_short()` is a hardcoded function returning `{\"tier\": \"short\", \"note\": \"...\", \"entries\": []}` with no file-based population path. There is no session-file mechanism and no design provision for one.",
+        "Case-insensitivity is guaranteed for both tiers via `_matches(text, q) → q.lower() in text.lower()`. For the long tier the filter searches `context`, `chosen`, **and** `note` (the Description omitted `note`; the code includes it).",
+        "`--n` applies independently per tier. `read_all` passes `n` to both `read_medium` and `read_long` separately, so `--tier all --n N` can return up to `2N` entries (short always returns 0 entries). There is no global cap."
+      ],
       "verify": [
-        "The short tier is 'a descriptive stub because its content is only accessible inside the active agent context window' — is the stub's output format fixed (always `entries: []` with a note string), or could future implementations populate it from a session file? If fixed, should the requirement say 'permanently a stub'?",
-        "The `--query` flag applies a substring filter but the filter fields differ per tier — for medium it searches `success_criterion` + `chosen_approach`, for long it searches `context` + `chosen` + `note`; is case-insensitivity guaranteed for both tiers, and are the field names consistent with how those tiers store data?",
-        "The `--n` flag limits entries 'per tier' — for `--tier all`, does `--n` apply independently to each tier (potentially returning up to 3N entries total), or is there a global cap?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -622,12 +583,7 @@
         }
       ],
       "test_exempt": "file I/O and integration layer with trivial pure stubs",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MODE-DIALECTIC-001",
@@ -641,12 +597,13 @@
         "After Sequential produces `chosen`, the mode shall unconditionally dispatch 1 Skeptic sub-agent (`skeptic_on_chosen`) on the result — not gated on confidence band and not skipped when Sequential short-circuits via `scale_down`.",
         "In Dialectic, the Skeptic is always unconditional. The `confidence ∈ [0.0, 0.7]` auto-trigger conditions in `skeptic_on_chosen.md` apply only to `skeptic_on_chosen` as a composable flag over other base modes, not to Dialectic's hardwired Skeptic step. Dialectic defines a fixed pipeline where the Skeptic is mandatory regardless of confidence band.",
         "The total cost shall be 1.33× Sequential (1× Sequential + 1 Skeptic sub-agent); telemetry shall record `mode: \"dialectic\"` and, when the Skeptic catches a constraint, `skeptic_caught_constraint: true` in the report.",
-        "The Skeptic's verdict is advisory by default and can override `chosen` only when `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`."
+        "The Skeptic's verdict is advisory by default and can override `chosen` only when `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`.",
+        "When dispatched on a `scale_down` trivial-direct chosen, the Skeptic receives only `chosen + success_criterion + code context` (same input shape as any Skeptic dispatch) — not the full voice bundle; Gen+Ctrl outputs are absent because they were skipped.",
+        "The `1.33× Sequential` cost multiplier is an informational estimate, not a contractual bound; it is not enforced by any gate.",
+        "When `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`, override means the orchestrator presents the report's existing alternatives to the user and asks whether to change the choice — `chosen` is not automatically replaced and no re-deliberation is triggered."
       ],
       "verify": [
-        "AC-2 says the Skeptic is dispatched 'on the trivial-direct chosen' when Sequential short-circuits via `scale_down` — but the trivial-direct path produces a minimal report without full voice outputs; does the Skeptic receive a full deliberation bundle or only the scale_down stub, and is the Skeptic's challenge meaningful in that case?",
-        "The cost is specified as '1.33× Sequential' — is this a contractual bound (implementation must not exceed it) or an informational estimate? What happens to cost accounting when the Skeptic sub-agent itself has a long context due to code-specific injection?",
-        "When `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign` — does override mean the `chosen` field in the report is replaced with a new candidate ID, or that the report is marked for re-deliberation? What is the exact output shape in the override case?"
+        "None - all questions resolved."
       ],
       "notes": [
         "The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched."
@@ -671,12 +628,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MODE-SEQUENTIAL-001",
@@ -693,13 +645,13 @@
         "The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as \"WEAK\" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`."
       ],
       "verify": [
-        "The `confidence_floor: 0.70` is described as 'advisory' and 'NOT a hard gate' — but CONSILIUM-LOG-FEEDBACK-001 enforces a 0.70 confidence gate on `--outcome OK`; is this the same threshold operationally applied at two different points, and does below-floor confidence in Sequential prevent logging OK without `--force-override`?",
-        "The veto-budget for `meta_recommendation` is '5 activations per month; on exhaustion the gate becomes a soft warning only' — where is this budget tracked, and what resets it at month boundaries? This appears unimplemented; is it aspirational or enforced?",
-        "The auto-parallel cross-check triggered on `magnitude: critical AND reversibility: irreversible` — is this distinct from the 1-in-20 silent parallel audit, and if so, is there a separate state machine or counter for it?"
+        "None - all questions resolved."
       ],
       "notes": [
         "Role separation in Sequential is prompt-based, not architectural: `strip_context.py` removes the prior prompt but does not clear the model's in-context memory. True voice isolation requires Parallel sub-agents.",
-        "The veto-budget for `meta_recommendation` (scale_up/scale_down) is 5 activations per month; on exhaustion the gate becomes a soft warning only."
+        "The veto-budget for `meta_recommendation` (scale_up/scale_down) is 5 activations per month; on exhaustion the gate becomes a soft warning only. This budget is **not implemented** — no script tracks activations or resets at month boundaries. It is aspirational policy documented in SKILL.md only.",
+        "The `confidence_floor: 0.70` and the `log_feedback.py` `--outcome OK` confidence gate are the same numeric threshold applied at two distinct points: the floor is checked at Step 5b by `check_mode_floor()` (advisory, flags run as WEAK) while the log_feedback gate is enforced at Step 6 (hard gate on `--outcome OK`, requires `--force-override` to bypass). A below-floor Sequential run does not block report emission but does require `--force-override` to log it as OK.",
+        "The auto-parallel cross-check (`magnitude: critical AND reversibility: irreversible`) and the 1-in-20 silent parallel audit are distinct mechanisms sharing the same 2-turn execution flow but with separate triggers: the cross-check fires per-run based on Conservator output (no counter), while the silent audit is driven by `scripts/audit_counter.py` and state in `.consilium/audit_state.json`."
       ],
       "current_impl": [
         "modes/sequential.md"
@@ -726,12 +678,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001",
@@ -785,13 +732,13 @@
         "The mode shall classify magnitude via `scope_gate.py` on the original unstripped context before any context stripping; when lazy routing is enabled (default), it shall downgrade to Sequential (low/medium magnitude) or Dialectic (high magnitude) and emit a structured `trias_lazy_routed` notification — full Trias (3 sub-agents) runs only on `critical` magnitude or when the user explicitly requests it.",
         "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Conservator → Generator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch.",
         "The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).",
-        "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1).",
+        "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1). `0-0-0` means all 3 personalities returned `chose: null` (each personality's internal Sequential ran `conservative_override` and vetoed every candidate); it is distinct from 1-1-1 (three different non-null choices) and is achievable without abstention — it occurs when every candidate exceeds the conservator veto threshold inside each sub-agent.",
+        "When lazy routing downgrades to Dialectic or Sequential, the `trias_lazy_routed: true` notification is emitted by the Trias orchestrator before the downgraded mode runs; the notification is not carried into the final persisted report produced by the downgraded mode's own pipeline. The persisted report reflects the actual mode that ran (`dialectic` or `sequential`), not `trias`.",
+        "Context truncation for Trias sub-agents is a hard first-N-characters limit: `strip_context.py --truncate-text 15000` takes the first `15000 × 4 = 60 000` characters of the raw context and appends a `[... context truncated ...]` marker when the budget is exceeded. The 15 000 token figure is a hard ceiling (not a target), using the approximation 1 token ≈ 4 chars.",
         "The 3 personality sub-agents shall be dispatched in parallel; the runtime audit tracks divergence between parallel and serial results."
       ],
       "verify": [
-        "The B2 deadlock cascade fires on '1-1-1 or 0-0-0' — what does 0-0-0 mean in the context of three personalities each choosing a candidate, and is 0-0-0 achievable only when a personality abstains?",
-        "Lazy routing downgrades to Dialectic for `high` magnitude — does the lazy-routed Dialectic run carry the `trias_lazy_routed: true` field all the way into the final persisted report, and does it affect how priors or efficiency metrics classify the run?",
-        "Context is 'truncated to ≈15 000 tokens before dispatch' — what is the exact truncation strategy (last N tokens, first N tokens, or smart summarization), and is the 15 000 token budget a hard limit or a target?"
+        "None - all questions resolved."
       ],
       "notes": [
         "Serial dispatch is an accepted implementation artifact that does not affect correctness; the silent parallel audit is the observability mechanism.",
@@ -821,12 +768,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-PERSONALITIES-001",
@@ -837,9 +779,7 @@
       "intent": "Canonical registry of the three fixed Trias personalities (Pioneer/Architect/Steward) and their voice weights.",
       "contract": [],
       "verify": [
-        "The weights for Pioneer are `generator 0.49` but the full weight tuple is not shown — what are the `control` and `conservator` weights for Pioneer, and do the three personalities' weight vectors differ in a way meaningful enough to document here?",
-        "`get_by_name()` returns 'a deep copy to prevent mutation' — is the deep-copy behavior tested, or only stated? If the registry is a module-level dict of dicts, a shallow copy could still allow nested mutation.",
-        "The legacy positional integer argument is rejected with exit code 2 — what was the old positional-N API, and is there a migration path documented anywhere for callers that still use the old form?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -853,7 +793,7 @@
       "accept": "- Running without arguments emits a JSON array of exactly 3 objects, each containing `name`, `weights` (with keys `generator`, `control`, `conservator` summing to 1.0), and `lens` (a path string).\n- Running with `--name pioneer` emits a single JSON object matching the Pioneer entry; the returned dict is a deep copy and mutations do not affect subsequent calls.\n- Running with a positional integer argument exits with code 2 and prints a migration message referencing the three valid personality names.\n- `get_by_name('unknown')` raises `KeyError` with a message listing valid names.\n- The weights for all three personalities each have `generator + control + conservator == 1.0` (within floating-point tolerance).",
       "input": "CLI flag `--name`: optional filter to emit a single personality by name (`pioneer | architect | steward`) Legacy positional argument N: rejected with exit code 2 and a migration message",
       "output": "JSON array of all three personality dicts emitted to stdout when called with no `--name` flag JSON object for a single personality emitted to stdout when `--name` is provided exit code 0 on success; exit code 2 when a legacy positional N argument is detected, with a human-readable migration message on stderr",
-      "desc": "Canonical registry of the three fixed Trias-mode personalities (Pioneer, Architect, Steward), each defined by a named set of voice-weighting coefficients and a path to a lens prompt file. It replaces the old random-sampling Ensemble approach with deterministic, named characters so that Trias deliberations are reproducible and auditable. Each personality biases the weighted aggregation of Generator, Control, and Conservator scores differently: Pioneer weights novelty (generator 0.49), Architect balances all three equally around Control (control 0.40), and Steward emphasizes risk-aversion (conservator 0.40). The script is also imported as a library by the Trias orchestration layer via `get_by_name()`, which returns a deep copy to prevent mutation of the module-level registry at runtime.",
+      "desc": "Canonical registry of the three fixed Trias-mode personalities (Pioneer, Architect, Steward), each defined by a named set of voice-weighting coefficients and a path to a lens prompt file. It replaces the old random-sampling Ensemble approach (legacy `personalities.py <N>`) with deterministic, named characters so that Trias deliberations are reproducible and auditable. Each personality biases the weighted aggregation of Generator, Control, and Conservator scores differently: **Pioneer**: `generator 0.49 / control 0.30 / conservator 0.21` — skews toward novelty **Architect**: `generator 0.30 / control 0.40 / conservator 0.30` — balances around Control **Steward**: `generator 0.30 / control 0.30 / conservator 0.40` — skews toward risk-aversion All three vectors sum to 1.0 and differ meaningfully across personalities. The script is also imported as a library by the Trias orchestration layer via `get_by_name()`, which uses `copy.deepcopy()` to prevent mutation of the module-level `PERSONALITIES` list at runtime (guards against nested-dict mutation, not just reference aliasing).",
       "deps": [],
       "used_by": [
         "CONSILIUM-LENS-ARCHITECT-001",
@@ -875,10 +815,6 @@
       "test_exempt": null,
       "risks": [
         {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        },
-        {
           "signal": "blast-radius",
           "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
@@ -891,11 +827,13 @@
       "area": "CONSILIUM",
       "title": "priors",
       "intent": "Describes observed behavior, verified against scripts/priors.py source.",
-      "contract": [],
+      "contract": [
+        "`conservator_veto_rate` counts only runs where `deliberation_log[step=aggregate].result.vetoed` is non-empty or `chosen` is `None`. Sequential BLOCK/REWORK outcomes are intentionally excluded — do not \"fix\" this.",
+        "`weighted_bad_rate`: same denominator as `bad_rate` (OK+BAD+OVR), but rows whose note contains `[confirmed]` receive weight 2.0 vs. 1.0 for unconfirmed rows, so production-verified outcomes dominate over subjective ratings.",
+        "`STALE_PEND_DAYS = 2` is hardcoded (reduced from 7; not CLI-configurable). A PEND entry older than 2 days is surfaced at step 0 for retrospective close."
+      ],
       "verify": [
-        "`conservator_veto_rate` ignores sequential BLOCK/REWORK by design (only `conservative_override` counts as a veto) — should this constraint be stated explicitly in the requirement to prevent future 'fixes' that accidentally count sequential blocking outcomes?",
-        "`weighted_bad_rate` is listed in the signals but not defined — what is the weighting scheme (recency, outcome type, confirmed vs. unconfirmed rows), and how does it differ from plain `bad_rate`?",
-        "`STALE_PEND_DAYS` is referenced but not pinned in the requirement — what is the value, is it hardcoded or configurable, and does the requirement intend to pin it?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -925,12 +863,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-RENDER-FEEDBACK-HTML-001",
@@ -941,9 +874,9 @@
       "intent": "Pure rendering engine: a list of Entry records -> one self-contained dark-themed FEEDBACK.html.",
       "contract": [],
       "verify": [
-        "The `(calc)` token estimate uses 'the median tokens-per-candidate of peer runs' — how are 'peer runs' defined (same mode, same date range, all runs)? An undefined peer set makes the estimate non-reproducible.",
-        "The VETOED badge is sourced from the aggregate step's `vetoed` list — what if the run was produced by the `sequential` scheme, which does not produce a `vetoed` list in the same format? Is there a fallback, and is the Conservator drill-down panel suppressed or shown without vetoed badges?",
-        "The HTML is described as 'self-contained' with no external asset references — is this verified by the acceptance test, or only stated? A test that checks for the absence of `<link>` and `<script src>` tags would confirm it."
+        "None - `(calc)` peer runs are all entries in the current `render()` call that have measured telemetry (non-zero `tokens_in + tokens_out`); no filtering by mode or date. The median is the lower-median of the sorted per-candidate samples (`samples[len // 2]`). Reproducibility is therefore scoped to a single render invocation.",
+        "None - when the run was produced by the `sequential` scheme (no `vetoed` list in the aggregate step), `vetoed_ids` resolves to an empty set; the Conservator drill-down panel is shown normally but no VETOED badges appear. Under-showing is preferred over fabricating badges.",
+        "None - the self-contained property is stated as an Acceptance criterion but is not covered by any assertion in `scripts/test_feedback_html.py`; it remains a stated-only contract."
       ],
       "notes": [],
       "current_impl": [],
@@ -976,12 +909,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-RETRY-CONTEXT-001",
@@ -990,11 +918,13 @@
       "area": "CONSILIUM",
       "title": "retry_context",
       "intent": "On low confidence, proposes a concrete Read/Grep context-gathering plan for one extra deliberation pass.",
-      "contract": [],
+      "contract": [
+        "The one-shot cap is enforced by the orchestrator (agent convention per SKILL.md), not by the script itself; the script has no state and will produce a plan on every invocation regardless.",
+        "Zero valid candidates: the pool falls back to `list(candidates)` (all candidates), so zero-valid-but-2+-total proceeds normally; zero-valid-zero-total triggers the `len(pool) < 2` early exit with reason `\"too few valid candidates for retry to discriminate\"`.",
+        "`_grep_patterns` slices `symbols[:4]` at the start of iteration — the 4-item cap is applied to the input symbols list, not to the generated pattern list after expansion."
+      ],
       "verify": [
-        "The script is 'deliberately one-shot and does not execute the deliberation itself, capping the retry loop at one attempt' — but the requirement says the orchestrating agent 'dispatches one additional Generator/Control/Conservator pass'; is the cap enforced by the script itself, by the orchestrator, or only by convention?",
-        "The top-2 candidates are selected by 'a composite utility score (mean of generator pass, control validity, and inverted conservator risk)' — what happens when fewer than 2 candidates pass Control validation (valid=true)? The acceptance test covers 'only one valid candidate', but what about zero valid candidates?",
-        "The regex patterns extract 'file paths, symbol names, dotted attribute paths, and backtick-quoted tokens' — is there a documented limit on how many patterns are extracted per candidate before the 4-item cap is applied?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -1024,12 +954,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-RUN-EVALS-001",
@@ -1040,9 +965,7 @@
       "intent": "Subprocess-based regression harness over evals/scenarios.json; CI gate.",
       "contract": [],
       "verify": [
-        "The description says stdout matching uses 'either a JSON subset-match or a plain-text substring match' — what determines which mode is used for a given scenario? Is it a field in `scenarios.json` (e.g., `expect_stdout_type`), and is the subset-match semantics defined (exact key equality, recursive inclusion, or type-only check)?",
-        "The pre-flight linter checks for `pipeline_executed` in `validate_report` fixtures — does it also check that non-validate_report scenarios that produce a full report include `pipeline_executed`, or is the lint scoped only to `validate_report` fixtures?",
-        "When `--filter` matches zero scenarios, the script exits 2 with 'no scenarios matched' — is this the same exit code as a corpus load error? Could the caller distinguish 'filter found nothing' from 'scenarios.json is malformed'?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -1066,12 +989,7 @@
         }
       ],
       "test_exempt": "subprocess-based eval harness — acceptance gated by run_evals.py itself in CI",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-SCOPE-GATE-001",
@@ -1082,9 +1000,7 @@
       "intent": "Decides whether a change is small enough to bypass full deliberation; fails open.",
       "contract": [],
       "verify": [
-        "The `mode_ceiling` output field maps magnitude to a maximum deliberation mode — is the full mapping table (low→?, medium→?, high→?, critical→trias) specified anywhere, or only the critical→trias case documented in the acceptance tests?",
-        "When `--signals-stdin` is used, the `paths` field is accepted — but the blocklist check requires path matching; is the `paths` field compared against the blocklist the same way as git-diff paths, and what format are paths expected in (relative to repo root, absolute, etc.)?",
-        "The gate 'fails open' on probe failures — but `CONSILIUM_FORCE_FULL=1` also returns `should_skip=false`; do both paths produce identical JSON shapes, or does the forced-full path produce a different reason field?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -1112,12 +1028,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-STRIP-CONTEXT-001",
@@ -1128,20 +1039,18 @@
       "intent": "Projects each voice's output down to the minimum fields the next voice needs (anti-contamination).",
       "contract": [],
       "verify": [
-        "In `--for conservator` mode, 'valid Control verdicts' are intersected with Generator candidates — what happens when a Generator candidate has no matching Control verdict (e.g., Control was partial)? Is the candidate included (with no verdict data), excluded, or is this treated as an error?",
-        "The `--truncate-text` mode approximates tokens as '4 chars/token' — is this approximation documented as intentionally coarse, and is there a risk of over- or under-truncation for non-Latin scripts (e.g., Romanian diacritics or code with multi-byte chars)?",
-        "The truncation marker is 'appended when the text is cut' — what is the exact marker string, and is it defined in a shared constant or duplicated across scripts that consume the truncated output?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
       "acc": [
         "Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.",
-        "Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false`.",
+        "Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false` or has no matching Control verdict at all (excluded, not an error).",
         "Running `--for conservator` excludes Control's `issues` and `notes` fields from the output.",
         "Running `--truncate-text 15000` on text shorter than 60000 characters returns the text unchanged with no marker.",
-        "Running `--truncate-text 15000` on text exceeding 60000 characters truncates at 60000 chars and appends the truncation marker."
+        "Running `--truncate-text 15000` on text exceeding 60000 characters truncates at 60000 chars and appends the truncation marker `\"\\n\\n[... context truncated to ~{tokens} tokens for Trias sub-agent ...]\"` (defined as `_TRUNCATION_MARKER` in `strip_context.py`; not shared with other scripts)."
       ],
-      "accept": "- Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.\n- Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false`.\n- Running `--for conservator` excludes Control's `issues` and `notes` fields from the output.\n- Running `--truncate-text 15000` on text shorter than 60000 characters returns the text unchanged with no marker.\n- Running `--truncate-text 15000` on text exceeding 60000 characters truncates at 60000 chars and appends the truncation marker.",
+      "accept": "- Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.\n- Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false` or has no matching Control verdict at all (excluded, not an error).\n- Running `--for conservator` excludes Control's `issues` and `notes` fields from the output.\n- Running `--truncate-text 15000` on text shorter than 60000 characters returns the text unchanged with no marker.\n- Running `--truncate-text 15000` on text exceeding 60000 characters truncates at 60000 chars and appends the truncation marker `\"\\n\\n[... context truncated to ~{tokens} tokens for Trias sub-agent ...]\"` (defined as `_TRUNCATION_MARKER` in `strip_context.py`; not shared with other scripts).",
       "input": "stdin (default) or `--input <file>`: JSON object for `--for control` or `--for conservator` modes; plain text for `--truncate-text` mode `--for control`: expects Generator output JSON with a `candidates` array `--for conservator`: expects combined JSON with `candidates` (Generator) and `verdicts` (Control) arrays `--truncate-text <MAX_TOKENS>`: maximum token budget (integer), approximated as 4 chars/token",
       "output": "JSON object to stdout (`--for control` or `--for conservator`): stripped candidate or verdict list Plain text to stdout (`--truncate-text`): possibly truncated text with optional marker appended exit code 0 on success; non-zero on argument or JSON parse errors",
       "desc": "Reduces cross-voice context contamination in the sequential deliberation pipeline by projecting each voice's output down to the minimum fields the next voice needs. In `--for control` mode it strips Generator candidates to only `id`, `summary`, and `sketch`, removing rationale fields that would rhetorically bias Control's technical validation. In `--for conservator` mode it intersects valid Control verdicts with Generator candidates, keeping only `id`/`summary`/`sketch` and discarding Control's issue descriptions that would bias Conservator's risk scoring. The `--truncate-text` mode is used by Trias orchestration to cap raw conversation context sent to each personality sub-agent to a configurable token budget, appending a truncation marker when the text is cut.",
@@ -1160,12 +1069,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-UTILS-001",
@@ -1176,22 +1080,20 @@
       "intent": "Shared stdlib-only utilities: canonical paths, atomic writes, stdin JSON, headless detection.",
       "contract": [],
       "verify": [
-        "`atomic_write_text` uses 'a sibling `.tmp` file' — what happens when the parent directory is read-only or the `.tmp` file already exists from a previous crashed write? Is there a defined cleanup behavior or stale-lock detection?",
-        "`DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve 'relative to the repo root' — how is the repo root determined (e.g., by walking up from `__file__`, from `git rev-parse`, or from CWD)? If a script is invoked from outside the repo, does this break silently or raise a clear error?",
-        "`issue_penalty` returns `0.15` for 'medium or missing severity' — treating missing severity the same as medium is a silent normalization; is this intentional, and should callers be warned when severity is absent rather than silently defaulting?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
       "acc": [
-        "`DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root.",
+        "`DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root; the repo root is derived from `Path(__file__).resolve().parent.parent` (two levels above `scripts/utils.py`), so paths are CWD-independent and never break silently when a script is invoked from outside the repo.",
         "`atomic_write_text` leaves the original file intact when a write is interrupted mid-way (no truncated or stale `.tmp` files persist on error).",
         "`is_headless` returns `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty returns `False`.",
         "`load_json_stdin` prints a usage hint to stderr and exits 2 on empty stdin; exits 2 with an error message on invalid JSON.",
         "`issue_penalty` returns `0.05` for severity `low`, `0.15` for `medium` or missing severity, and `0.30` for `high`."
       ],
-      "accept": "- `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root.\n- `atomic_write_text` leaves the original file intact when a write is interrupted mid-way (no truncated or stale `.tmp` files persist on error).\n- `is_headless` returns `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty returns `False`.\n- `load_json_stdin` prints a usage hint to stderr and exits 2 on empty stdin; exits 2 with an error message on invalid JSON.\n- `issue_penalty` returns `0.05` for severity `low`, `0.15` for `medium` or missing severity, and `0.30` for `high`.",
+      "accept": "- `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root; the repo root is derived from `Path(__file__).resolve().parent.parent` (two levels above `scripts/utils.py`), so paths are CWD-independent and never break silently when a script is invoked from outside the repo.\n- `atomic_write_text` leaves the original file intact when a write is interrupted mid-way (no truncated or stale `.tmp` files persist on error).\n- `is_headless` returns `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty returns `False`.\n- `load_json_stdin` prints a usage hint to stderr and exits 2 on empty stdin; exits 2 with an error message on invalid JSON.\n- `issue_penalty` returns `0.05` for severity `low`, `0.15` for `medium` or missing severity, and `0.30` for `high`.",
       "input": "No CLI input for the module itself; individual functions accept: `load_json_stdin`: reads from stdin `atomic_write_text(path, content)`: file path + string content `issue_penalty(severity)`: issue dict `validate_keys(data, keys)`: data dict + required-keys list Environment variable `CLAUDE_HEADLESS` (read by `is_headless`)",
-      "output": "No files written or stdout produced by the module itself; side effects are produced by its callers `atomic_write_text` writes atomically to the caller-supplied path using a sibling `.tmp` file `load_json_stdin` exits with code 2 on empty stdin or JSON parse failure `validate_keys` raises `ValueError` on schema violation; callers map that to exit 1 or 2",
+      "output": "No files written or stdout produced by the module itself; side effects are produced by its callers `atomic_write_text` writes atomically to the caller-supplied path using a sibling `.tmp` file; a read-only parent directory raises `OSError` (propagates to caller); the temp file is always deleted on any error, so no stale `.tmp` accumulates across crashes `load_json_stdin` exits with code 2 on empty stdin or JSON parse failure `validate_keys` raises `ValueError` on schema violation; callers map that to exit 1 or 2",
       "desc": "Shared stdlib-only utilities that every other Consilium script imports instead of defining its own copies. It centralises the three canonical filesystem paths (`DATA_DIR`, `RUNS_DIR`, `FEEDBACK_PATH`) so their definitions exist in exactly one place. Beyond path constants, it provides: `force_utf8_streams` (Windows cp1252 safety), `is_headless` (headless-orchestrator detection for Step-0 through Step-7 flow-control), `load_json_stdin` (stdin read + parse with a clear error on empty or malformed input), `atomic_write_text` (crash-safe write via same-filesystem rename + fsync, critical for the FEEDBACK journal), `issue_penalty` (severity -> float score penalty lookup for Control issues), and `validate_keys` (dict schema assertion). The module exists to eliminate copy-paste divergence across scripts and to give each script a clean, importable API surface.",
       "deps": [],
       "used_by": [
@@ -1222,10 +1124,6 @@
       "test_exempt": null,
       "risks": [
         {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        },
-        {
           "signal": "blast-radius",
           "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
@@ -1240,9 +1138,7 @@
       "intent": "Describes observed behavior, verified against scripts/validate_report.py source.",
       "contract": [],
       "verify": [
-        "The requirement says `chosen_approach` may be 'null (conservative-override veto case)' — but are there other valid null cases (e.g., a BLOCK outcome from the glossary_fail path), and does the validator distinguish between intentional nulls and missing fields?",
-        "The check for `deliberation_log` requires 'an aggregate step whose `result` is a dict (not a string narrative)' — what other steps must be present in `deliberation_log` for a non-skipped report, and are missing steps (e.g., a report missing the `conservator` step) caught by the validator?",
-        "Telemetry 'counts (token/latency) are non-negative ints where present' — does the validator reject float values (e.g., `1500.0` instead of `1500`), and is the 'where present' qualifier precisely defined (which telemetry sub-fields are required vs. optional)?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -1256,7 +1152,7 @@
       "accept": "- Valid reports (from `.consilium/runs/*.json`) exit 0\n- Missing `success_criterion` causes exit 1 with a message naming the field\n- `skipped: true` without `skip_reason` causes exit 1\n- Missing `telemetry.mode` on a non-skipped report causes exit 1\n- Malformed JSON exits 2",
       "input": "A deliberation report JSON on stdin (produced by `build_report.py`)",
       "output": "Exit 0 — report is valid Exit 1 — validation failed; each problem printed to stderr Exit 2 — malformed JSON input",
-      "desc": "Constitution Principle #4 gate. Validates report *shape*, not deliberation *substance* — confirms that required fields exist and are well-formed. Checks enforced: `success_criterion` and `verification` are non-empty strings `chosen_approach` is a non-empty string OR null (conservative-override veto case) if `skipped: true`, `skip_reason` is a non-empty string `deliberation_log` contains an aggregate step whose `result` is a dict (not a string narrative) `telemetry` is present for non-skipped reports and carries a non-empty `mode` string telemetry counts (token/latency) are non-negative ints where present Reports manually assembled outside `build_report.py` are rejected — this gate catches shape drift (e.g. aggregate.result as a narrative string).",
+      "desc": "Constitution Principle #4 gate. Validates report *shape*, not deliberation *substance* — confirms that required fields exist and are well-formed. Checks enforced: `success_criterion` and `verification` are non-empty strings `chosen_approach` is present and either a non-empty string or JSON null; missing field is an error, explicit null is accepted (occurs on conservative-override veto AND Trias null-vote-patterns); no distinction is made between intentional and unintentional nulls if `skipped: true`, `skip_reason` is a non-empty string `deliberation_log` contains an aggregate step whose `result` is a dict (not a string narrative); for non-bypassed reports, `generator` and `control` steps must also be present; `conservator` step presence is NOT enforced (only validated under `--strict-round2`) `telemetry` is present for non-skipped reports and carries a non-empty `mode` string telemetry counts (`tokens_in`, `tokens_out`, `latency_ms`) must be non-negative ints (strict: `isinstance(v, int)` — float values such as `1500.0` are rejected); each count field is optional per voice Reports manually assembled outside `build_report.py` are rejected — this gate catches shape drift (e.g. aggregate.result as a narrative string).",
       "deps": [
         "CONSILIUM-PERSONALITIES-001",
         "CONSILIUM-UTILS-001"
@@ -1275,12 +1171,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOCABULARY-MAP-001",
@@ -1289,11 +1180,13 @@
       "area": "CONSILIUM",
       "title": "vocabulary_map",
       "intent": "Single source of truth for field-value translations and the per-voice token budget table.",
-      "contract": [],
+      "contract": [
+        "`translate` silent fallback is intentional: unknown category or value returns `str(value)` with no logging. Callers must not assume a human-readable label is always returned.",
+        "Romanian-only output is a design decision: all VOCABULARY_MAP labels are hardcoded Romanian strings (exception: `meta_recommendation` values are English). No i18n hook exists or is planned.",
+        "`compute_tokens_budget` with `meta='scale_up'`: base is `TOKENS_BUDGET.get((magnitude, reversibility), 800)`; the 4000-cap only binds for `(\"critical\", \"irreversible\")` (base=4000 → 4000 after cap); all other pairs produce uncapped results (e.g., base=2000 → 3000, base=800 → 1200)."
+      ],
       "verify": [
-        "`translate` returns `str(value)` for unknown category or value without raising — callers that silently receive the raw value string instead of a human-readable label may produce confusing output; is this the intended degradation behavior, or should unknown values at least be logged?",
-        "The output language is Romanian (e.g., `usor de anulat`) — is Romanian the only supported output language, or is there an internationalisation hook? If Romanian-only, is this a design decision that should be stated explicitly?",
-        "`compute_tokens_budget` with `meta='scale_up'` returns '+50% capped at 4000' — what is the base value before the 50% uplift, and for which `(magnitude, reversibility)` pairs does the cap actually bind?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -1321,12 +1214,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOICE-CONSERVATOR-001",
@@ -1344,9 +1232,7 @@
         "When `meta_recommendation: \"scale_down\"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design."
       ],
       "verify": [
-        "The mitigation cap is 'discipline-based with no automated schema enforcement' and 'audited through notes' — who performs this audit, when, and what action is taken if a Conservator output violates the cap? Should the requirement acknowledge this limitation explicitly?",
-        "The three irreversibility fields can 'coexist on the same candidate' — the requirement acknowledges this as 'a persistent source of confusion' but provides no resolution rule; should the requirement define which field takes precedence when they conflict?",
-        "When `meta_recommendation: scale_down` overrides the token budget to 300 'regardless of magnitude×reversibility', can Conservator still emit `magnitude: critical`? If yes, the Trias lazy-routing logic that triggers on `critical` magnitude may be at odds with the scale_down intent."
+        "None - all questions resolved."
       ],
       "notes": [
         "The three irreversibility-related fields (`irreversibility_flag`, `irreversible`, `regression_risk.reversibility`) can coexist on the same candidate and carry different semantics; the prompt documents the distinction, but the overlap is a persistent source of confusion for readers and voice models alike."
@@ -1370,12 +1256,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOICE-CONTROL-001",
@@ -1393,12 +1274,12 @@
         "The 3-entry cap on `hidden_assumptions` and the self-assessed selection criterion are by design. Control is a deliberative voice, not a formal verifier; the design intentionally trusts the voice to surface the most consequential assumptions."
       ],
       "verify": [
-        "`confidence_in_verdict: low` is 'advisory only — the aggregator does not automatically discount verdicts marked `low`' — this means a speculative `valid: true / low` verdict influences the final recommendation as strongly as a high-confidence one; is this intentional or a known limitation to eventually fix?",
-        "AC-2 says Control still emits verdicts even when `glossary_fail: true` — but the aggregator BLOCKs on glossary_fail before Generator runs; does Control run after Generator in Sequential mode, meaning a glossary_fail not caught before Generator ran will still have Control emit verdicts on Generator's candidates?",
-        "The 3-entry cap on `hidden_assumptions` 'trusts the voice to surface the most consequential assumptions' — is there any retrospective signal that lets the development team detect cases where the cap caused a critical assumption to be dropped?"
+        "None - all questions resolved."
       ],
       "notes": [
-        "`confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative."
+        "`confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative. This is intentional: `low` is a transparency signal prompting the reader to treat the verdict as speculative, not a veto mechanism. The design choice is to surface speculation honestly rather than suppress it.",
+        "In Sequential mode all three voices (Conservator → Generator → Control) produce their outputs before the aggregator evaluates them. A `glossary_fail` is therefore detected post-hoc by the aggregator; Generator always runs before the BLOCK is issued, and Control always runs after Generator with access to Generator's candidates. AC-2 reflects this correctly.",
+        "No retrospective signal exists to detect cases where the 3-entry cap on `hidden_assumptions` caused a critical assumption to be dropped. The deprecated `meta_critic.py` provides a `control_speculation_flag` for thin verdicts but has no analogous mechanism for dropped assumptions. This is a known, accepted gap."
       ],
       "current_impl": [
         "prompts/voices/control.md"
@@ -1419,12 +1300,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOICE-GENERATOR-001",
@@ -1439,12 +1315,12 @@
         "The voice shall emit `challenge_upward.triggered: true` (with a one-line reason) when Conservator has under-scaled the question — specifically when the input contains 3+ uneval'd risk terms or when `magnitude = trivial` but the fallback scenario implies more than 10% of capital or more than 1 month of recovery.",
         "The voice shall emit `fallback_scenario` and `coverage_check`; if no fallback can be articulated after 2 attempts, it shall emit `abstain.triggered: true` with `reason: \"goal_undefined\"`.",
         "The `unconventional_*` candidate shall be included unless `adversarial_*` varies on a non-scope axis (mechanism, timing, or abstraction level), or the change is mechanically trivial. Scope overlap alone does NOT justify omitting `unconventional_*`; this rule prevents silent candidate duplication and is normative.",
-        "The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors."
+        "The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors. The Generator output schema has no per-candidate score field, so a Generator output cannot override this handicap.",
+        "The external-caller threshold (>3 callers) is a heuristic self-assessment from the input context; the Generator has no file access and cannot perform static analysis. The 3-caller rule is a prompt-level instruction, not a mechanically enforced count.",
+        "\"Mechanically trivial\" (the `unconventional_*` omission condition) is intentionally undefined; the Generator exercises discretion, with a one-line doc fix as the canonical example. It does not overlap with Conservator's `meta_recommendation: scale_down` — the Generator does not receive `meta_recommendation` as input."
       ],
       "verify": [
-        "The `adversarial_<short_id>` candidate is included when 'the change touches shared/core code or a function with more than 3 external callers' — how does the Generator voice determine the external caller count without file access? Is this a heuristic self-assessment, and if so, is the 3-caller threshold reliably applied?",
-        "The voice-score handicap of 0.5 applied to `adversarial_*` and `do_nothing` is applied 'downstream by `build_report.py`' — but could a Generator output that explicitly sets a score for these candidates override the downstream handicap?",
-        "The `unconventional_*` omission rule allows omission when 'the change is mechanically trivial' — is 'mechanically trivial' defined anywhere, and does it overlap with Conservator's `meta_recommendation: scale_down`?"
+        "None - all questions resolved."
       ],
       "notes": [
         "The voice self-limits output via `tokens_budget.generator` received from Conservator, but has no mechanical way to enforce it — over-generation is a real risk on `magnitude = critical` inputs where the model may ignore the budget signal."
@@ -1468,12 +1344,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VOICE-SKEPTIC-001",
@@ -1491,9 +1362,7 @@
         "`meta_scope_mismatch` is a self-assessed heuristic gate with no external oracle; all three conditions (correct answer, trivially-human-resolvable, cost exceeds decision value) are necessarily evaluated by the voice itself because they require contextual judgment that no deterministic external check can provide."
       ],
       "verify": [
-        "'Validation failure results in silent discard' — is there any telemetry or log entry written when a Skeptic output is silently discarded, so that the development team can detect prompt regressions that cause systematic silent discard?",
-        "`meta_scope_mismatch` requires `addressable: unaddressable` — but the description says the failure mode is 'resolvable in under 10 seconds by a human'; does `unaddressable` make sense when the human can resolve it? Should this failure mode use a different `addressable` value?",
-        "When `can_object: true` but `concrete_concerns` has only 1 entry and `quoted_scenario` is null, the output is 'discarded silently' — does the orchestrator log the discard reason, or is the discard completely invisible to the pipeline report?"
+        "None - all questions resolved. Silent discard is completely invisible: no log, no telemetry, no pipeline report entry (covered by Contract: \"no warning is emitted\"). `meta_scope_mismatch` uses `addressable: unaddressable` because the concern is not fixable by redesigning the candidate — the deliberation tool was wrong for the problem, not the answer; `unaddressable` refers to the tool-application level, not the human's ability to resolve the original question directly."
       ],
       "notes": [
         "The validation gate is enforced by the orchestrator after the fact, not by the voice itself — a skeptic that emits invalid output does not know it was rejected."
@@ -1518,12 +1387,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "SKILL-RUN-CONSILIUM-001",
@@ -1534,9 +1398,7 @@
       "intent": "Single entry point exercising Consilium's deterministic LLM-free surface (smoke / pipeline / shot).",
       "contract": [],
       "verify": [
-        "`smoke` mode 'exits non-zero only when failures exceed a documented baseline' — where is the baseline documented, and what is it? If some test suites are known-failing, are they excluded from the failure count or counted against the baseline?",
-        "In `shot` mode, the script 'checks for Chrome/Edge at known Windows paths' — what are those paths, and what happens on non-Windows platforms (Linux, macOS CI)? Is the `shot` command expected to work cross-platform, and if not, should it exit with a clear error rather than silently failing?",
-        "`pipeline` mode prints 'aggregator JSON, confidence JSON, and validate_report result' — but the description also mentions `build_report` as a pipeline stage; does `pipeline` mode run all four stages (aggregator → confidence → build_report → validate_report) or only three?"
+        "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [],
@@ -1549,7 +1411,7 @@
       ],
       "accept": "- `python .claude/skills/run-consilium/driver.py smoke` exits 0 against the current repo state with all suites PASS.\n- `python .claude/skills/run-consilium/driver.py pipeline` prints valid JSON for each of the four pipeline stages and exits 0.\n- `python .claude/skills/run-consilium/driver.py shot` writes a non-empty PNG to `.consilium/shots/architecture.png` when Chrome or Edge is available.\n- A failing test suite causes `smoke` to print the failure tail (up to 12 lines) and exit non-zero.\n- The driver injects `PYTHONUTF8=1` into all child process environments, ensuring non-ASCII output (e.g. arrows in trace_graph) does not cause codec errors on Windows.",
       "input": "CLI positional arg: `smoke` (default), `pipeline`, or `shot [OUT.png]` `smoke` and `pipeline` read `bundle_smoke_tests.json` from the repo root `shot` reads `docs/architecture.html` and checks for Chrome/Edge at known Windows paths `PYTHONUTF8=1` and `PYTHONIOENCODING=utf-8` are injected into all child processes",
-      "output": "stdout: per-step PASS/FAIL lines with exit codes and failure tails (up to 12 lines) exit code 0 iff all steps passed (`smoke`/`pipeline`) or screenshot written (`shot`) `shot` writes a PNG file to `.consilium/shots/architecture.png` or the caller-supplied path `pipeline` prints aggregator JSON, confidence JSON, and validate_report result to stdout",
+      "output": "stdout: per-step PASS/FAIL lines with exit codes and failure tails (up to 12 lines) exit code 0 iff all steps passed (`smoke`/`pipeline`) or screenshot written (`shot`) `shot` writes a PNG file to `.consilium/shots/architecture.png` or the caller-supplied path `pipeline` prints aggregator JSON, confidence JSON, build_report JSON, and validate_report result to stdout",
       "desc": "The run-consilium skill driver exercises Consilium's entire deterministic, LLM-free surface in one command. In `smoke` mode it runs all the `scripts/test_*.py` unit suites, the `check_doc_drift.py` invariant gate, the `docs/architecture` build `--check`, and the full bundle->build_report->validate_report pipeline, reporting PASS/FAIL per step and exiting non-zero only when failures exceed a documented baseline. In `pipeline` mode it demos the aggregator -> confidence -> build_report -> validate_report chain with inline synthetic input, printing each stage's JSON so the developer can see the data flowing through the pipeline. In `shot` mode it screenshots `docs/architecture.html` using headless Chrome or Edge, writing the PNG to `.consilium/shots/architecture.png` by default. The driver exists because Consilium has no single runnable app - this script is the single entry point that replaces \"run the app\" for a skill-based deliberation system.",
       "deps": [
         "CONSILIUM-VALIDATE-REPORT-001",
@@ -1564,12 +1426,7 @@
         }
       ],
       "test_exempt": "integration harness — acceptance validated by run-consilium smoke + pipeline commands, not unit tests",
-      "risks": [
-        {
-          "signal": "unverified-intent",
-          "advice": "Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet."
-        }
-      ]
+      "risks": []
     }
   ],
   "edges": [

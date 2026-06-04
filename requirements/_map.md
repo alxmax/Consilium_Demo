@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-04 19:00
+generated: 2026-06-04 23:00
 nodes: 32
 edges: 38
 ---
@@ -220,105 +220,22 @@ _Requirements needing attention: red = unimplemented (confirmed, no code); orang
 ```mermaid
 graph LR
   subgraph sg_CONSILIUM["CONSILIUM"]
-    CONSILIUM_AGGREGATOR_001["aggregator<br><small>CONSILIUM-AGGREGATOR-001</small><br>unverified-intent"]
-    CONSILIUM_BUILD_REPORT_001["build_report<br><small>CONSILIUM-BUILD-REPORT-001</small><br>unverified-intent"]
-    CONSILIUM_CHECK_DOC_DRIFT_001["check_doc_drift<br><small>CONSILIUM-CHECK-DOC-DRIFT-001</small><br>unverified-intent"]
     CONSILIUM_CHECK_PUBLIC_LEAK_001["check_public_leak<br><small>CONSILIUM-CHECK-PUBLIC-LEAK-001</small><br>unverified-intent"]
-    CONSILIUM_CONFIDENCE_001["confidence<br><small>CONSILIUM-CONFIDENCE-001</small><br>unverified-intent"]
-    CONSILIUM_FEEDBACK_001["feedback<br><small>CONSILIUM-FEEDBACK-001</small><br>unverified-intent, blast-radius"]
-    CONSILIUM_IMPLEMENT_PIPELINE_001["implement_pipeline<br><small>CONSILIUM-IMPLEMENT-PIPELINE-001</small><br>unverified-intent"]
-    CONSILIUM_LENS_ARCHITECT_001["architect lens<br><small>CONSILIUM-LENS-ARCHITECT-001</small><br>unverified-intent"]
-    CONSILIUM_LENS_PIONEER_001["pioneer lens<br><small>CONSILIUM-LENS-PIONEER-001</small><br>unverified-intent"]
-    CONSILIUM_LENS_STEWARD_001["steward lens<br><small>CONSILIUM-LENS-STEWARD-001</small><br>unverified-intent"]
-    CONSILIUM_LOG_FEEDBACK_001["log_feedback<br><small>CONSILIUM-LOG-FEEDBACK-001</small><br>unverified-intent"]
-    CONSILIUM_MARK_OUTCOME_001["mark_outcome<br><small>CONSILIUM-MARK-OUTCOME-001</small><br>unverified-intent"]
-    CONSILIUM_MEMORY_001["memory<br><small>CONSILIUM-MEMORY-001</small><br>unverified-intent"]
-    CONSILIUM_MODE_DIALECTIC_001["dialectic mode<br><small>CONSILIUM-MODE-DIALECTIC-001</small><br>unverified-intent"]
-    CONSILIUM_MODE_SEQUENTIAL_001["sequential mode<br><small>CONSILIUM-MODE-SEQUENTIAL-001</small><br>unverified-intent"]
-    CONSILIUM_MODE_TRIAS_001["trias mode<br><small>CONSILIUM-MODE-TRIAS-001</small><br>unverified-intent"]
-    CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small><br>unverified-intent, blast-radius"]
-    CONSILIUM_PRIORS_001["priors<br><small>CONSILIUM-PRIORS-001</small><br>unverified-intent"]
-    CONSILIUM_RENDER_FEEDBACK_HTML_001["render_feedback_html<br><small>CONSILIUM-RENDER-FEEDBACK-HTML-001</small><br>unverified-intent"]
-    CONSILIUM_RETRY_CONTEXT_001["retry_context<br><small>CONSILIUM-RETRY-CONTEXT-001</small><br>unverified-intent"]
-    CONSILIUM_RUN_EVALS_001["run_evals<br><small>CONSILIUM-RUN-EVALS-001</small><br>unverified-intent"]
-    CONSILIUM_SCOPE_GATE_001["scope_gate<br><small>CONSILIUM-SCOPE-GATE-001</small><br>unverified-intent"]
-    CONSILIUM_STRIP_CONTEXT_001["strip_context<br><small>CONSILIUM-STRIP-CONTEXT-001</small><br>unverified-intent"]
-    CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small><br>unverified-intent, blast-radius"]
-    CONSILIUM_VALIDATE_REPORT_001["validate_report<br><small>CONSILIUM-VALIDATE-REPORT-001</small><br>unverified-intent"]
-    CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small><br>unverified-intent"]
-    CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small><br>unverified-intent"]
-    CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small><br>unverified-intent"]
-    CONSILIUM_VOICE_GENERATOR_001["generator voice<br><small>CONSILIUM-VOICE-GENERATOR-001</small><br>unverified-intent"]
-    CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small><br>unverified-intent"]
+    CONSILIUM_FEEDBACK_001["feedback<br><small>CONSILIUM-FEEDBACK-001</small><br>blast-radius"]
+    CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small><br>blast-radius"]
+    CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small><br>blast-radius"]
   end
-  subgraph sg_misc["misc"]
-    SKILL_RUN_CONSILIUM_001["run-consilium driver<br><small>SKILL-RUN-CONSILIUM-001</small><br>unverified-intent"]
-  end
-  style CONSILIUM_AGGREGATOR_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_BUILD_REPORT_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_CHECK_DOC_DRIFT_001 fill:#fff9c4,stroke:#aa0,color:#550
   style CONSILIUM_CHECK_PUBLIC_LEAK_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_CONFIDENCE_001 fill:#fff9c4,stroke:#aa0,color:#550
   style CONSILIUM_FEEDBACK_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_IMPLEMENT_PIPELINE_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_LENS_ARCHITECT_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_LENS_PIONEER_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_LENS_STEWARD_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_LOG_FEEDBACK_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_MARK_OUTCOME_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_MEMORY_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_MODE_DIALECTIC_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_MODE_SEQUENTIAL_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_MODE_TRIAS_001 fill:#fff9c4,stroke:#aa0,color:#550
   style CONSILIUM_PERSONALITIES_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_PRIORS_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_RENDER_FEEDBACK_HTML_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_RETRY_CONTEXT_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_RUN_EVALS_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_SCOPE_GATE_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_STRIP_CONTEXT_001 fill:#fff9c4,stroke:#aa0,color:#550
   style CONSILIUM_UTILS_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_VALIDATE_REPORT_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_VOCABULARY_MAP_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_VOICE_CONSERVATOR_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_VOICE_CONTROL_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_VOICE_GENERATOR_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_VOICE_SKEPTIC_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style SKILL_RUN_CONSILIUM_001 fill:#fff9c4,stroke:#aa0,color:#550
 ```
 
 ### Risk Table
 
 | ID | status | members | dependents | risks | recommendation |
 | --- | --- | --- | --- | --- | --- |
-| CONSILIUM-AGGREGATOR-001 | confirmed | 2 | 2 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-BUILD-REPORT-001 | confirmed | 2 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-CHECK-DOC-DRIFT-001 | confirmed | 1 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
 | CONSILIUM-CHECK-PUBLIC-LEAK-001 | confirmed | 1 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-CONFIDENCE-001 | confirmed | 2 | 1 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-FEEDBACK-001 | confirmed | 1 | 4 | unverified-intent, blast-radius | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
-| CONSILIUM-IMPLEMENT-PIPELINE-001 | confirmed | 2 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-LENS-ARCHITECT-001 | confirmed | 1 | 1 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-LENS-PIONEER-001 | confirmed | 1 | 1 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-LENS-STEWARD-001 | confirmed | 1 | 1 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-LOG-FEEDBACK-001 | confirmed | 2 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-MARK-OUTCOME-001 | confirmed | 1 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-MEMORY-001 | confirmed | 1 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-MODE-DIALECTIC-001 | confirmed | 1 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-MODE-SEQUENTIAL-001 | confirmed | 1 | 2 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-MODE-TRIAS-001 | confirmed | 1 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-PERSONALITIES-001 | confirmed | 2 | 5 | unverified-intent, blast-radius | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
-| CONSILIUM-PRIORS-001 | confirmed | 2 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-RENDER-FEEDBACK-HTML-001 | confirmed | 2 | 2 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-RETRY-CONTEXT-001 | confirmed | 2 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-RUN-EVALS-001 | confirmed | 1 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-SCOPE-GATE-001 | confirmed | 2 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-STRIP-CONTEXT-001 | confirmed | 2 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-UTILS-001 | confirmed | 2 | 13 | unverified-intent, blast-radius | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
-| CONSILIUM-VALIDATE-REPORT-001 | confirmed | 2 | 1 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-VOCABULARY-MAP-001 | confirmed | 2 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-VOICE-CONSERVATOR-001 | confirmed | 1 | 1 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-VOICE-CONTROL-001 | confirmed | 1 | 1 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-VOICE-GENERATOR-001 | confirmed | 1 | 1 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| CONSILIUM-VOICE-SKEPTIC-001 | confirmed | 1 | 2 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
-| SKILL-RUN-CONSILIUM-001 | confirmed | 1 | 0 | unverified-intent | Has open `## WHAT — Verify intent` question(s): run `reqmap.py findings`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |
+| CONSILIUM-FEEDBACK-001 | confirmed | 1 | 4 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
+| CONSILIUM-PERSONALITIES-001 | confirmed | 2 | 5 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
+| CONSILIUM-UTILS-001 | confirmed | 2 | 13 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
