@@ -795,11 +795,11 @@
         "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Conservator → Generator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch.",
         "The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).",
         "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1).",
-        "Parallel dispatch of the 3 personalities is the intended and preferred execution order, providing lower latency and independent deliberation. Serial execution is accepted as an implementation artifact (confirmed by Senate audit 2026-05-28) and does not affect correctness; the runtime audit tracks divergence between serial and parallel results."
+        "The 3 personality sub-agents shall be dispatched in parallel; the runtime audit tracks divergence between parallel and serial results."
       ],
       "verify": [],
       "notes": [
-        "Empirical runtime observation (2026-05-28, n=7): all real-deliberation Trias runs dispatched personalities serially despite the parallel design intent; the silent parallel audit is the observability mechanism.",
+        "Serial dispatch is an accepted implementation artifact that does not affect correctness; the silent parallel audit is the observability mechanism.",
         "`trias_split` is deprecated; `validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.",
         "Aggregated Trias is approximately −18% Conservator weight relative to single-context; avoid when strict conservatism is required."
       ],
