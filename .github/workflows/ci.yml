@@ -39,6 +39,26 @@ jobs:
         run: python scripts/test_probe_change.py
       - name: Version-provenance tests
         run: python scripts/test_version.py
+      - name: Build-report assembly tests
+        run: python scripts/test_build_report.py
+      - name: Confidence-derivation tests
+        run: python scripts/test_confidence.py
+      - name: Priors signal-computation tests
+        run: python scripts/test_priors.py
+      - name: Log-feedback pure-function tests
+        run: python scripts/test_log_feedback.py
+      - name: Strip-context projection tests
+        run: python scripts/test_strip_context.py
+      - name: Utils pure-function tests
+        run: python scripts/test_utils.py
+      - name: Trace-graph Mermaid tests
+        run: python scripts/test_trace_graph.py
+      - name: Scope-gate decision tests
+        run: python scripts/test_scope_gate.py
+      - name: Retry-context plan tests
+        run: python scripts/test_retry_context.py
+      - name: Usage telemetry-aggregation tests
+        run: python scripts/test_usage.py
       - name: Regression scenarios (run_evals)
         run: python scripts/run_evals.py
       - name: Mode-doc drift invariants (check_doc_drift)
