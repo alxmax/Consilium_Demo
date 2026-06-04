@@ -19,14 +19,17 @@ from log_feedback import _fingerprint, _clean, truncate, derive_note, build_entr
 
 class TestFingerprint(unittest.TestCase):
     def test_deterministic(self):
-        fp1 = _fingerprint("2026-05-12", "approach_a", "test context")
-        fp2 = _fingerprint("2026-05-12", "approach_a", "test context")
+        # Without run_id, _fingerprint uses microseconds → intentionally non-deterministic.
+        # With run_id it is sha256-based and stable across calls.
+        fp1 = _fingerprint("2026-05-12", "approach_a", "test context", run_id="2026-05-12_r.json")
+        fp2 = _fingerprint("2026-05-12", "approach_a", "test context", run_id="2026-05-12_r.json")
         self.assertEqual(fp1, fp2)
 
     def test_changes_with_run_id(self):
-        fp_no_id = _fingerprint("2026-05-12", "approach_a", "context")
-        fp_with_id = _fingerprint("2026-05-12", "approach_a", "context", run_id="2026-05-12_foo.json")
-        self.assertNotEqual(fp_no_id, fp_with_id)
+        # Different run_ids must produce different fingerprints.
+        fp1 = _fingerprint("2026-05-12", "approach_a", "context", run_id="2026-05-12_a.json")
+        fp2 = _fingerprint("2026-05-12", "approach_a", "context", run_id="2026-05-12_b.json")
+        self.assertNotEqual(fp1, fp2)
 
     def test_length_is_16(self):
         fp = _fingerprint("2026-05-12", "a", "b")
