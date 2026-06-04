@@ -346,7 +346,7 @@
       "risks": [
         {
           "signal": "blast-radius",
-          "advice": "High fan-in â€” many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
+          "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
       ]
     },
@@ -872,7 +872,7 @@
       "risks": [
         {
           "signal": "blast-radius",
-          "advice": "High fan-in â€” many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
+          "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
       ]
     },
@@ -998,7 +998,7 @@
       "risks": [
         {
           "signal": "blast-radius",
-          "advice": "High fan-in â€” many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
+          "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
       ]
     },
@@ -1323,7 +1323,7 @@
       "risks": [
         {
           "signal": "blast-radius",
-          "advice": "High fan-in â€” many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
+          "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
         }
       ]
     },
