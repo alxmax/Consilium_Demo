@@ -1,6 +1,6 @@
 {
-  "engine_version": "2026-06-05",
-  "repo": "alxmax/consilium-dev",
+  "engine_version": "2026-06-05.2",
+  "repo": "alxmax/Consilium_Demo",
   "nodes": [
     {
       "id": "CONSILIUM-AGGREGATOR-001",
@@ -48,6 +48,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -89,6 +90,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -128,6 +130,7 @@
         }
       ],
       "test_exempt": "reads live source files and runs git — integration-only gate",
+      "milestone": null,
       "risks": []
     },
     {
@@ -167,6 +170,7 @@
         }
       ],
       "test_exempt": "subprocess git ls-files and filesystem scan — integration-only",
+      "milestone": null,
       "risks": []
     },
     {
@@ -214,6 +218,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -256,6 +261,7 @@
         }
       ],
       "test_exempt": "file I/O wrapper with no isolated pure-function surface",
+      "milestone": null,
       "risks": []
     },
     {
@@ -301,6 +307,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -344,6 +351,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -387,6 +395,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -427,6 +436,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -474,6 +484,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -517,6 +528,7 @@
         }
       ],
       "test_exempt": "importlib module loading and FEEDBACK.html mutation — integration-only",
+      "milestone": null,
       "risks": []
     },
     {
@@ -559,6 +571,7 @@
         }
       ],
       "test_exempt": "file I/O and integration layer with trivial pure stubs",
+      "milestone": null,
       "risks": []
     },
     {
@@ -604,6 +617,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -654,6 +668,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -695,6 +710,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -744,6 +760,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -789,6 +806,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -834,6 +852,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -880,6 +899,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -925,6 +945,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -960,6 +981,7 @@
         }
       ],
       "test_exempt": "subprocess-based eval harness — acceptance gated by run_evals.py itself in CI",
+      "milestone": null,
       "risks": []
     },
     {
@@ -999,6 +1021,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -1040,6 +1063,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -1093,6 +1117,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -1137,6 +1162,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -1180,6 +1206,7 @@
         }
       ],
       "test_exempt": null,
+      "milestone": null,
       "risks": []
     },
     {
@@ -1222,6 +1249,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -1266,6 +1294,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -1310,6 +1339,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -1353,6 +1383,7 @@
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": null,
       "risks": []
     },
     {
@@ -1392,6 +1423,7 @@
         }
       ],
       "test_exempt": "integration harness — acceptance validated by run-consilium smoke + pipeline commands, not unit tests",
+      "milestone": null,
       "risks": []
     }
   ],
@@ -1548,5 +1580,6 @@
       "SKILL-RUN-CONSILIUM-001",
       "CONSILIUM-CONFIDENCE-001"
     ]
-  ]
+  ],
+  "todos": []
 }

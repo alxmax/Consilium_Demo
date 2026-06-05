@@ -64,7 +64,7 @@ RISK_ADVICE = {
 # vendored copy is older than the installed plugin's. ISO date with an optional
 # `.N` same-day revision suffix (YYYY-MM-DD[.N]): lexicographic order ==
 # chronological order, so a plain string compare is enough.
-MAP_ENGINE_VERSION = "2026-06-05"
+MAP_ENGINE_VERSION = "2026-06-05.2"
 
 
 # ---------- parsing ----------
@@ -315,6 +315,17 @@ def cmd_check(reqs, members, reqs_dir, update_lock):  # implements: REQ-CHECK-00
         tests = [x for x in members.get(rid, []) if x[0] == "tested-by"]
         if m.get("status") == "confirmed" and not tests and not m.get("test_exempt"):
             warns.append(f"{rid}: confirmed but no tested-by: tag — acceptance tests not linked")
+        if m.get("status") == "confirmed":
+            if not _has_section(r["body"], "contract"):
+                warns.append(
+                    f"{rid}: confirmed but missing '## WHAT — Contract' section — "
+                    "add the normative contract or drop status back to in-progress"
+                )
+            if not _has_section(r["body"], "acceptan"):
+                warns.append(
+                    f"{rid}: confirmed but missing '## HOW — Acceptance' section — "
+                    "add acceptance criteria or drop status back to in-progress"
+                )
 
     lock = load_lock(reqs_dir)
     # load_lock fails open ({}) on an absent OR corrupt/merge-conflicted lock; the
@@ -1060,6 +1071,7 @@ def _build_map_data(reqs, members):  # implements: REQ-MAP-007
             "used_by": used_by.get(rid, []),
             "members": [{"role": x[0], "loc": f"{x[1]}:{x[2]}"} for x in members.get(rid, [])],
             "test_exempt": m.get("test_exempt"),
+            "milestone": m.get("milestone"),
             "risks": [{"signal": s, "advice": RISK_ADVICE[s]} for s in _risk_signals(
                 {"status": m.get("status", "draft"), "members": members.get(rid, []),
                  "verify": _bullets(r["body"], "verify"), "test_exempt": m.get("test_exempt")})],
@@ -1070,9 +1082,47 @@ def _build_map_data(reqs, members):  # implements: REQ-MAP-007
     return data
 
 
+def _parse_todos_from_text(text):
+    """Parse TODO.md content → list of {name, lane, milestone, done} dicts. Pure.
+    Items before the first ## vX.Y heading are silently ignored (milestone is required)."""
+    todos, current_ms = [], None
+    for line in text.splitlines():
+        ms_m = re.match(r"^##\s+(v\d[\d.]*)\s*$", line.strip())
+        if ms_m:
+            current_ms = ms_m.group(1)
+            continue
+        item_m = re.match(r"^-\s+\[([ xX])\]\s+(.+)$", line.strip())
+        if item_m and current_ms:
+            done = item_m.group(1).lower() == "x"
+            rest = item_m.group(2)
+            if "|" in rest:
+                name_part, meta = rest.rsplit("|", 1)
+                name = name_part.strip()
+                lane_m = re.search(r"lane:\s*(\w+)", meta)  # lane must be a single word (bus|feature|ops)
+                lane = lane_m.group(1) if lane_m else "feature"
+            else:
+                name, lane = rest.strip(), "feature"
+            todos.append({"name": name, "lane": lane, "milestone": current_ms, "done": done})
+    return todos
+
+
+def _parse_todos(root):
+    """Read TODO.md; tries root first, then one level up (covers plugin/ dogfood layout).
+    Returns list of todo dicts; empty list if absent in both locations."""
+    for base in dict.fromkeys([root, os.path.dirname(os.path.abspath(root))]):
+        path = os.path.join(base, "TODO.md")
+        try:
+            with open(path, encoding="utf-8") as f:
+                return _parse_todos_from_text(f.read())
+        except OSError:
+            continue
+    return []
+
+
 def cmd_map(reqs, members, reqs_dir, root=".", check=False):  # implements: REQ-MAP-007
     data = _build_map_data(reqs, members)
     data["repo"] = _repo_name(root)
+    data["todos"] = _parse_todos(root)
 
     if check:
         return _map_check(data, reqs_dir)
@@ -1084,6 +1134,11 @@ def cmd_map(reqs, members, reqs_dir, root=".", check=False):  # implements: REQ-
     print("wrote {}".format(json_out))
     if html_out:
         print("wrote {}".format(html_out))
+        docs_out = _docs_publish_path(root)
+        if docs_out:
+            with open(html_out, "rb") as src, open(docs_out, "wb") as dst:
+                dst.write(src.read())
+            print("wrote {}".format(docs_out))
     print("({} nodes, {} edges)".format(len(data["nodes"]), len(data["edges"])))
     return 0
 
@@ -1171,6 +1226,23 @@ def cmd_next(reqs, members, show_all=False, top_n=3):  # implements: REQ-NEXT-01
         if not show_all and len(ids) > top_n:
             print("  ... {} more — run `reqmap.py next --all`".format(len(ids) - top_n))
         print("  -> {}\n".format(RISK_ADVICE[sig]))
+    # Granularity advisory: requirements with many ACs covering disjoint behaviors
+    AC_SPLIT_THRESHOLD = 5
+    oversize = sorted(
+        [(rid, len(_bullets(r["body"], "acceptan")))
+         for rid, r in reqs.items()
+         if len(_bullets(r["body"], "acceptan")) >= AC_SPLIT_THRESHOLD],
+        key=lambda x: (-x[1], x[0])
+    )
+    if oversize:
+        print("Granularity ({})".format(len(oversize)))
+        for rid, n in oversize:
+            print("  {}   ({} ACs) — consider splitting   requirements/{}.md".format(rid, n, rid))
+        print(
+            "  -> A requirement with >={} acceptance criteria covering disjoint behaviors "
+            "is a split candidate. Author two requirements, each with its own contract.\n"
+            .format(AC_SPLIT_THRESHOLD)
+        )
     return 0
 
 
@@ -1703,7 +1775,14 @@ def _repo_name(root):  # implements: REQ-MAP-007
     resolves. Never raises and never blocks map generation — git may be absent or
     the tree may not be a checkout. Environment-derived (it differs across forks
     and clones), so it is excluded from the `map --check` freshness diff (see
-    `_strip_generated`)."""
+    `_strip_generated`).
+
+    `REQMAP_REPO` env var overrides the derived value: set it to a public-facing
+    slug (e.g. on a private dev repo that publishes elsewhere, so the inlined
+    `repo` never leaks the dev remote), or to "" to emit no repo at all."""
+    override = os.environ.get("REQMAP_REPO")
+    if override is not None:
+        return override or None
     url = ""
     try:
         r = subprocess.run(["git", "-C", root, "config", "--get", "remote.origin.url"],
@@ -1725,7 +1804,8 @@ def _build_json_text(data):  # implements: REQ-MAP-007
     json.dumps neutralizes any hostile id/title/body by construction — there is
     no markup context to break out of — so no extra escaping is needed."""
     payload = {"engine_version": MAP_ENGINE_VERSION, "repo": data.get("repo"),
-               "nodes": data["nodes"], "edges": data["edges"]}
+               "nodes": data["nodes"], "edges": data["edges"],
+               "todos": data.get("todos", [])}
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
@@ -1743,6 +1823,30 @@ def render_json(data, reqs_dir):  # implements: REQ-MAP-007
 # producing a self-contained `_map.html` that opens by double-click (no server).
 VIEWER_TEMPLATE = "_map_viewer.html"
 _REQMAP_DATA_MARKER = "<!--REQMAP_DATA-->"
+
+
+def _docs_publish_path(root):  # implements: REQ-MAP-007
+    """Return docs/map.html path when docs/ carries a GitHub Pages signal
+    (.nojekyll or index.html present), else None. Opt-in by folder contents —
+    repos without the signal are unaffected.
+
+    Uses the git root so repos where reqmap runs from a sub-directory (e.g.
+    plugin/) still find docs/ at the project root. Falls back to root itself
+    when git is absent or the tree is not a checkout."""
+    try:
+        git_root = subprocess.check_output(
+            ["git", "-C", root, "rev-parse", "--show-toplevel"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
+    except Exception:
+        git_root = root
+    docs = os.path.join(git_root, "docs")
+    if not os.path.isdir(docs):
+        return None
+    if (os.path.exists(os.path.join(docs, ".nojekyll")) or
+            os.path.exists(os.path.join(docs, "index.html"))):
+        return os.path.join(docs, "map.html")
+    return None
 
 
 def _viewer_template_path():  # implements: REQ-MAP-007
