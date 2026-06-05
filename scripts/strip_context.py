@@ -43,6 +43,7 @@ CLI:
     cat combined.json      | python scripts/strip_context.py --for conservator
     cat context.txt        | python scripts/strip_context.py --truncate-text 15000
 """
+# implements: CONSILIUM-STRIP-CONTEXT-001
 
 from __future__ import annotations
 

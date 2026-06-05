@@ -10,6 +10,7 @@ CLI:
     python personalities.py --name pioneer   # emit single personality
     python personalities.py <N>              # legacy form — rejected with exit 2
 """
+# implements: CONSILIUM-PERSONALITIES-001
 
 from __future__ import annotations
 

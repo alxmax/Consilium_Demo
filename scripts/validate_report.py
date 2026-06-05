@@ -46,6 +46,7 @@ CLI:
     cat runs/2026-05-11_1500_foo.json | python scripts/validate_report.py
     python scripts/validate_report.py < report.json
 """
+# implements: CONSILIUM-VALIDATE-REPORT-001
 
 from __future__ import annotations
 

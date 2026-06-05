@@ -12,6 +12,7 @@ reference becomes un-shippable rather than a silent leak (e.g. the explainer's
 Stdlib only. Wired into CI (.github/workflows/ci.yml). Patterns are written
 with character classes so this guard file does not match its own source.
 """
+# implements: CONSILIUM-CHECK-PUBLIC-LEAK-001
 
 from __future__ import annotations
 

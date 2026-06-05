@@ -57,9 +57,16 @@ Veto budget for `meta_recommendation`: 5 activations of `scale_up` or `scale_dow
 - **Missing mandatory fields (e.g. `candidates` empty):** raise a warning in the terminal, skip the aggregator and emit a skipped report with `skip_reason: "voice output incomplete after retry"`.
 - **Strip_context**: necessary only in Sequential mode (Steps 3-4); in Parallel each voice runs in isolation and does not need `strip_context.py`.
 
+## Low-confidence auto-escalation
+
+When `confidence < 0.6` after Sequential completes, the orchestrator automatically re-runs with `--mode dialectic` — no user action required. The Dialectic result is the final output; the Sequential run is discarded. The report carries `auto_escalated: true` (passed in the bundle before `build_report.py`). One escalation level: if Dialectic also < 0.6, no further escalation fires. See SKILL.md §Step 5b for the full contract.
+
 ## When to use
 
 - Default for all deliberations unless a higher mode is warranted
 - Bugfix or <20-line diff — scope_gate will often skip automatically
 - Low-stakes exploratory changes where isolation between voices is not needed
 - Any deliberation where the user has not explicitly requested a higher mode
+
+<!-- implements: CONSILIUM-MODE-SEQUENTIAL-001 -->
+

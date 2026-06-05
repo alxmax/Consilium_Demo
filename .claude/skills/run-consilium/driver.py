@@ -16,6 +16,7 @@ Usage (run from the repo root; paths below are relative to it):
 
 Exit 0 iff every step it ran succeeded. On Windows, all child Pythons run with -X utf8.
 """
+# implements: SKILL-RUN-CONSILIUM-001
 import json
 import os
 import subprocess
@@ -84,14 +85,22 @@ def smoke():
     for suite in (
         "test_round2.py",
         "test_feedback_html.py",
-        "test_audit_counter.py",
         "test_lens_bias.py",
-        "test_vote_degeneracy.py",
         "test_meta_critic_trim.py",
-        "test_implement_mode.py",
         "test_implement_pipeline.py",
         "test_probe_change.py",
         "test_version.py",
+        "test_build_report.py",
+        "test_confidence.py",
+        "test_priors.py",
+        "test_log_feedback.py",
+        "test_strip_context.py",
+        "test_utils.py",
+        "test_scope_gate.py",
+        "test_retry_context.py",
+        "test_implement_mode.py",
+        "test_audit_counter.py",
+        "test_vote_degeneracy.py",
     ):
         failures += run(suite, script(suite)).returncode != 0
     failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0

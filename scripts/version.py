@@ -24,7 +24,6 @@ CLI:
     python scripts/version.py --ref      # print the bare committed ref ("" if dirty/unknown)
     python scripts/version.py --drift REF # show prompts/ + modes/ changed since REF
 """
-
 from __future__ import annotations
 
 import argparse
