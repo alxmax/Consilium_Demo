@@ -42,3 +42,7 @@ Provides a unified read API over Consilium's three memory tiers - short (current
 - Running with `--tier short` returns a stub dict with `entries: []` and a descriptive `note` explaining session-local scope.
 - Running with `--tier all` returns a dict with exactly three keys (`short`, `medium`, `long`), each containing valid tier output.
 - Passing `--feedback-file` and `--runs-dir` overrides the default `.consilium/` paths so the script can operate on arbitrary copies of the data.
+
+## Why test_exempt
+
+`memory.py` is a thin integration layer over two data sources already tested elsewhere: the medium tier reads `runs/*.json` files (format tested by `test_build_report.py`), and the long tier delegates to `feedback.py` (format tested by `test_feedback_html.py` and `test_priors.py`). The `read_short()` stub is hardcoded and trivially correct. A unit test for `memory.py` would create a fixture `.consilium/` tree and assert counts — adding test-infrastructure cost without catching bugs that the upstream tests would already surface.

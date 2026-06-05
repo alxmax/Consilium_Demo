@@ -45,3 +45,7 @@ AC-3
 
 ## WHERE — Current implementation
 - modes/dialectic.md
+
+## Why test_exempt
+
+This file is a mode specification document — it defines workflow rules, dispatch config (YAML frontmatter), and machine-readable invariants read by the orchestrator and sub-agents at runtime. It contains no executable Python logic. Structural parity between this document and the implemented behavior is enforced by `check_doc_drift.py` invariants; end-to-end conformance is validated through deliberation integration runs.
