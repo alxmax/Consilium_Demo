@@ -1,4 +1,5 @@
-﻿---
+---
+milestone: v1.0
 id: CONSILIUM-SCOPE-GATE-001
 status: confirmed
 layer: feature

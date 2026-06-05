@@ -1,4 +1,5 @@
-﻿---
+---
+milestone: v1.0
 id: CONSILIUM-MEMORY-001
 status: confirmed
 layer: feature

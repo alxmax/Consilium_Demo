@@ -1,4 +1,5 @@
-﻿---
+---
+milestone: v1.0
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-SKEPTIC-001
 status: confirmed
