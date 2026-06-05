@@ -47,3 +47,7 @@ Closes the feedback loop opened by `log_feedback.py` by allowing an outcome reco
 - Given `--outcome PEND_HEADLESS` without `--benchmark`, the script exits 1 with a descriptive error and does not modify FEEDBACK.html.
 - Given neither `--run-path` nor both `--date` and `--chosen`, the script exits 1 with a usage error.
 - Given a query that matches no rows, the script exits 1 and prints the last 5 rows to stderr as disambiguation candidates.
+
+## Why test_exempt
+
+`mark_outcome.py` mutates `FEEDBACK.html` rows in-place, using a path resolved from a sidecar map (`runs/.run_path_map.json`). The mutation logic is tightly coupled to a live HTML file with real prior rows. The HTML read/write format is already covered by `test_feedback_html.py`; the row-matching and outcome-update behavior specific to `mark_outcome.py` is exercised through that shared infrastructure. A separate unit test would require a multi-row FEEDBACK fixture and path-map setup that duplicates what those existing tests already provide.

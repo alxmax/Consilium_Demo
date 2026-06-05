@@ -33,3 +33,7 @@ Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats 
 - Rows whose `outcome` field is not one of `OK`, `BAD`, `OVR`, `PEND`, `PEND_HEADLESS` are silently skipped.
 - With `--recent N`, only the last N entries are included in the report stats.
 - With `--runs`, the report includes a per-aggregation-scheme breakdown from `.consilium/runs/*.json`, tolerating both legacy `aggregation.scheme` and current `deliberation_log[step=aggregate].scheme` shapes.
+
+## Why test_exempt
+
+`feedback.py` is a thin read-only wrapper over `FEEDBACK.html` — its only logic is HTML row parsing and outcome counting. Both are exercised indirectly by `test_feedback_html.py` (which tests the HTML round-trip format) and by `test_priors.py` (which calls the same HTML-parsing path to derive priors signals). A dedicated `test_feedback.py` would duplicate fixture setup already done in those two files without adding independent signal.

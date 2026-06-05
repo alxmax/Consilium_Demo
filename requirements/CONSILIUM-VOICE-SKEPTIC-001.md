@@ -47,3 +47,7 @@ AC-3
 ## WHERE — Current implementation
 
 - prompts/voices/skeptic.md
+
+## Why test_exempt
+
+This file is a prompt document — plain text read by the deliberation orchestrator or a sub-agent at runtime. It contains no executable Python logic; its "behavior" is the model's response to the text, which is non-deterministic and cannot be asserted in a repeatable unit test. Correctness is validated through deliberation integration runs stored in `.consilium/runs/` and manual review of real outputs, not by a stable `expected == actual` assertion.

@@ -35,3 +35,7 @@ Regression harness for all deterministic scripts in the Consilium pipeline. It r
 - A scenario with a bypass-chosen `chosen_approach` and `pipeline_executed=true` triggers the corpus pre-flight and exits 2.
 - The `--filter` flag restricts execution to only matching scenario names, and an empty match set exits 2 with `no scenarios matched`.
 - A scenario that fails its `expect_stdout_subset` check prints a human-readable mismatch message to stderr and exits 1.
+
+## Why test_exempt
+
+`run_evals.py` is a subprocess orchestrator — it runs multiple Python scripts as child processes against fixture JSON and collects exit codes. Unit-testing it would require mocking every subprocess call, which tests the mock harness rather than the actual harness behavior. The harness is self-validating: running `python scripts/run_evals.py` in CI IS the acceptance test — all scenarios from `evals/scenarios.json` must pass, and the script itself exits non-zero if any fail.
