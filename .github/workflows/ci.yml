@@ -59,5 +59,4 @@ jobs:
       - name: No private-repo / local-path leaks (public-leak guard)
         run: python scripts/check_public_leak.py
       - name: Requirement map gate (reqmap check)
-        working-directory: plugin
         run: python -X utf8 scripts/reqmap.py check
