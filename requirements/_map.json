@@ -633,7 +633,7 @@
         "modes/sequential.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a deliberation request with no explicit mode flag and no critical/irreversible trigger\n  When  the mode runs\n  Then  exactly three voices are invoked in the order Conservator → Generator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade\n\nAC-2\n  Given a deliberation request where Conservator emits `meta_recommendation: scale_down`\n  When  the mode runs\n  Then  Generator and Control are skipped, the report contains `chosen_approach: \"trivial-direct\"`, `confidence: 0.85`, and `pipeline_executed: false`\n\nAC-3\n  Given a deliberation request where Control emits `glossary_fail: true`\n  When  the aggregator runs\n  Then  the routing outcome is BLOCK (glossary_fail) and the user is asked to reformulate with operational terms before any chosen approach is emitted",
+      "accept": "AC-1\n  Given a deliberation request with no explicit mode flag and no critical/irreversible trigger\n  When  the mode runs\n  Then  exactly three voices are invoked in the order Conservator → Generator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade\n\nAC-2\n  Given a deliberation request where Conservator emits `meta_recommendation: scale_down`\n  When  the mode runs\n  Then  Generator and Control are skipped, the report contains `chosen_approach: \"trivial-direct\"`, `confidence: 0.85`, and `pipeline_executed: false`\n\nAC-3\n  Given a deliberation request where Control emits `glossary_fail: true`\n  When  the aggregator runs\n  Then  the routing outcome is BLOCK (glossary_fail) and the user is asked to reformulate with operational terms before any chosen approach is emitted\n\nAC-4\n  Given a completed Sequential deliberation where `confidence < 0.6`\n  When  the orchestrator checks confidence at Step 5b\n  Then  it automatically re-runs the full pipeline with `--mode dialectic`; the Dialectic result (with `auto_escalated: true` in the report) is the final output; no further auto-escalation fires if Dialectic confidence is also < 0.6",
       "input": "",
       "output": "",
       "desc": "",
@@ -650,7 +650,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "modes/sequential.md:67"
+          "loc": "modes/sequential.md:71"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",

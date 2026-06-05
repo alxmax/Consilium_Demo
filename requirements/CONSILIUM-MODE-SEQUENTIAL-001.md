@@ -43,6 +43,11 @@ AC-3
   When  the aggregator runs
   Then  the routing outcome is BLOCK (glossary_fail) and the user is asked to reformulate with operational terms before any chosen approach is emitted
 
+AC-4
+  Given a completed Sequential deliberation where `confidence < 0.6`
+  When  the orchestrator checks confidence at Step 5b
+  Then  it automatically re-runs the full pipeline with `--mode dialectic`; the Dialectic result (with `auto_escalated: true` in the report) is the final output; no further auto-escalation fires if Dialectic confidence is also < 0.6
+
 ## WHERE — Current implementation
 - modes/sequential.md
 

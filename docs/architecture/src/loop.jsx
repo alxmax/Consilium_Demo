@@ -48,7 +48,7 @@ function LoopSection() {
         <div className="note" style={{ marginTop: 24 }}>
           <span className="note__label">Confidence floors — the per-mode self-check</span>
           <span>
-            The other half of calibration runs <em>inside</em> a single deliberation. Each mode has a confidence floor it is expected to clear — <strong>Sequential 0.70 · Dialectic 0.75 · Trias 0.80</strong>. A run that lands below its floor is logged <code>WEAK</code>: a recorded signal that the mode didn't earn its cost on that task. No single WEAK run changes behaviour; the value is the accumulated rate, which becomes meaningful after ~10 runs per mode and tells you whether a pricier mode is actually buying confidence.
+            The other half of calibration runs <em>inside</em> a single deliberation. Each mode has a confidence floor it is expected to clear — <strong>Sequential 0.70 · Dialectic 0.75 · Trias 0.80</strong>. A run that lands below its floor is logged <code>WEAK</code>: a recorded signal that the mode didn't earn its cost on that task. No single WEAK run changes behaviour; the value is the accumulated rate, which becomes meaningful after ~10 runs per mode and tells you whether a pricier mode is actually buying confidence. Sequential also auto-escalates to Dialectic when confidence &lt; 0.60 — distinct from the 0.70 floor: the floor flags a weak-but-kept result; the &lt; 0.60 threshold fires a full mode re-run before the report is written.
           </span>
         </div>
 

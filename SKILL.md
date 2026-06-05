@@ -209,6 +209,8 @@ result = check_mode_floor(telemetry_mode, confidence_value, vote_pattern)  # vot
 ```
 Floors: `sequential=0.70`, `dialectic=0.75`, `trias=0.80`. A run below floor signals the mode did not deliver value for the cost. **Trias exemption:** a decisive vote pattern (`3-0`/`2-1`/`2-0`) is exempt from the WEAK flag — `2-1` (0.75) and `2-0` (0.70) sit *structurally* below the 0.80 floor by design, not because the deliberation was weak; pass `vote_pattern` so the floor flags only genuinely weak runs. The data accumulates in `FEEDBACK.html` — the pattern becomes visible after ≥10 runs per mode.
 
+**Low-confidence auto-escalation (Sequential only).** When `confidence < 0.6` and `mode=sequential`, the orchestrator **automatically re-runs the full pipeline (Steps 1–5) with `--mode dialectic`** — no user action required, no confirmation prompt. The Dialectic result is the final output; the Sequential run is discarded. Pass `auto_escalated: true` in the bundle before calling `build_report.py` so the final report carries the marker (observability + retroactive outcome tracing). One escalation level only — if Dialectic also yields `confidence < 0.6`, no further escalation fires. Threshold distinction: `skeptic_on_chosen` auto-triggers at `confidence ∈ [0.0, 0.7]`; this fires only at `< 0.6` — the genuinely weak band where a higher mode is likely to produce materially different results.
+
 ### 5c. Meta-critic (auto, advisory) — *retired 2026-05-25*
 ```bash
 cat bundle.json | python scripts/deprecated/meta_critic.py

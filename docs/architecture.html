@@ -5632,8 +5632,8 @@ const MODES = [
     id: 'seq_blind',
     name: 'Sequential — blind',
     tag: 'DEFAULT',
-    plain: 'One Claude turn plays all three voices in order, in the same context. A small script strips each voice\'s output before passing it to the next — so each voice sees only what it needs.',
-    desc: 'A single Claude turn plays Conservator → Generator → Control sequentially. Between voices, scripts/strip_context.py trims each handoff to what the next voice needs — e.g. Control receives Generator\'s candidates without their rationale. (The Generator\'s narrower view of Conservator — magnitude, counterparty_risks, tokens_budget — is a manual handoff by the orchestrator; strip_context.py itself implements only the Gen→Control and Control→Conservator projections.)',
+    plain: 'One Claude turn plays all three voices in order, in the same context. A small script strips each voice\'s output before passing it to the next — so each voice sees only what it needs. If confidence < 0.60 after the pipeline, the orchestrator automatically re-runs with Dialectic.',
+    desc: 'A single Claude turn plays Conservator → Generator → Control sequentially. Between voices, scripts/strip_context.py trims each handoff to what the next voice needs — e.g. Control receives Generator\'s candidates without their rationale. (The Generator\'s narrower view of Conservator — magnitude, counterparty_risks, tokens_budget — is a manual handoff by the orchestrator; strip_context.py itself implements only the Gen→Control and Control→Conservator projections.) Auto-escalation: if confidence < 0.60 at Step 5b, the orchestrator re-runs the full pipeline with --mode dialectic — no user action required. The Dialectic result is the final output; the report carries auto_escalated: true. If Dialectic also < 0.60, no further escalation fires.',
     use: 'most deliberations — fast, with a chinese wall via context stripping',
     cost: '1× (baseline)',
     isolation: 'context strip',
@@ -5713,7 +5713,7 @@ const WALKTHROUGHS = {
         nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'active', agg: 'idle' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl'] },
       { id: '7', name: 'aggregate', caption: 'Aggregator applies conservative_override. Veto if Conservator scored risk > 0.8.',
         nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl', 'ctl_agg', 'cons_agg', 'gen_agg'] },
-      { id: '8', name: 'done', caption: 'Winner chosen. Report written to runs/. Outcome logged to FEEDBACK.html.',
+      { id: '8', name: 'done', caption: 'Winner chosen. Report written to runs/. Outcome logged to FEEDBACK.html. (If confidence < 0.60, the orchestrator re-runs the full pipeline with Dialectic automatically.)',
         nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl', 'ctl_agg', 'cons_agg', 'gen_agg', 'agg_out'] },
     ],
   },
@@ -6642,7 +6642,7 @@ function LoopSection() {
         <div className="note" style={{ marginTop: 24 }}>
           <span className="note__label">Confidence floors — the per-mode self-check</span>
           <span>
-            The other half of calibration runs <em>inside</em> a single deliberation. Each mode has a confidence floor it is expected to clear — <strong>Sequential 0.70 · Dialectic 0.75 · Trias 0.80</strong>. A run that lands below its floor is logged <code>WEAK</code>: a recorded signal that the mode didn't earn its cost on that task. No single WEAK run changes behaviour; the value is the accumulated rate, which becomes meaningful after ~10 runs per mode and tells you whether a pricier mode is actually buying confidence.
+            The other half of calibration runs <em>inside</em> a single deliberation. Each mode has a confidence floor it is expected to clear — <strong>Sequential 0.70 · Dialectic 0.75 · Trias 0.80</strong>. A run that lands below its floor is logged <code>WEAK</code>: a recorded signal that the mode didn't earn its cost on that task. No single WEAK run changes behaviour; the value is the accumulated rate, which becomes meaningful after ~10 runs per mode and tells you whether a pricier mode is actually buying confidence. Sequential also auto-escalates to Dialectic when confidence &lt; 0.60 — distinct from the 0.70 floor: the floor flags a weak-but-kept result; the &lt; 0.60 threshold fires a full mode re-run before the report is written.
           </span>
         </div>
 
