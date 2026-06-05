@@ -258,5 +258,38 @@ class TestCandidateById(unittest.TestCase):
         self.assertIsNone(_candidate_by_id([], "A"))
 
 
+class TestAutoEscalated(unittest.TestCase):
+    def _bundle(self, auto_escalated=None):
+        b = {
+            "success_criterion": "test",
+            "verification": "verify",
+            "generator": {"candidates": [{"id": "A", "summary": "s"}]},
+            "control": {"verdicts": [{"id": "A", "valid": True, "issues": []}]},
+            "conservator": {"scores": [{"id": "A", "regression_risk": {"net_concern": 0.2}}]},
+            "aggregate": {"chosen": "A", "scheme": "sequential"},
+            "confidence": {"confidence": 0.80},
+            "telemetry": {"mode": "dialectic"},
+        }
+        if auto_escalated is not None:
+            b["auto_escalated"] = auto_escalated
+        return b
+
+    def test_auto_escalated_true_passes_through(self):
+        report = build(self._bundle(auto_escalated=True))
+        self.assertTrue(report.get("auto_escalated"))
+
+    def test_auto_escalated_absent_when_not_in_bundle(self):
+        report = build(self._bundle())
+        self.assertNotIn("auto_escalated", report)
+
+    def test_low_confidence_suggestion_never_emitted(self):
+        # Regression: old advisory hint must not appear for any confidence/mode
+        b = self._bundle()
+        b["confidence"] = {"confidence": 0.40}
+        b["telemetry"] = {"mode": "sequential"}
+        report = build(b)
+        self.assertNotIn("low_confidence_suggestion", report)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

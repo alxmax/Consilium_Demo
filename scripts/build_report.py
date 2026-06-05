@@ -258,6 +258,10 @@ def build(bundle: dict) -> dict:
             report["dissent"] = aggregate["dissent"]
         if "abstained" in aggregate:
             report["abstained"] = aggregate["abstained"]
+    # Pass through auto_escalated flag when orchestrator triggered a Dialectic re-run
+    # because Sequential confidence dropped below 0.6 (SKILL.md §Step 5b).
+    if bundle.get("auto_escalated") is True:
+        report["auto_escalated"] = True
     return _stamp_provenance(report)
 
 
