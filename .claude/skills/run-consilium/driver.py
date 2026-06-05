@@ -98,6 +98,7 @@ def smoke():
         "test_utils.py",
         "test_scope_gate.py",
         "test_retry_context.py",
+        "test_implement_mode.py",
         "test_audit_counter.py",
         "test_vote_degeneracy.py",
     ):
