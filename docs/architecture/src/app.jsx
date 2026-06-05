@@ -145,7 +145,7 @@ function Topbar() {
       <div className="topbar__actions">
         <a
           className="topbar__repo"
-          href="../requirements/_map.html"
+          href="requirements-map.html"
           target="_blank"
           rel="noopener noreferrer"
         >
