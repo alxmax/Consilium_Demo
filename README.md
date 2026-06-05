@@ -69,7 +69,7 @@ and writes a canonical JSON report to disk (string fields trimmed for length, al
 }
 ```
 
-The chosen approach beat `do_nothing` and a plausible-but-weaker alternative — and the rejected options stay on record *with the reason they lost*. Confidence `0.57` is below the Sequential floor (`0.70`), so a Skeptic sub-agent auto-fires on the chosen answer before the result is trusted. Every run lands in `.consilium/runs/` (local, gitignored) and feeds the priors of the next deliberation.
+The chosen approach beat `do_nothing` and a plausible-but-weaker alternative — and the rejected options stay on record *with the reason they lost*. Confidence `0.57` is below the auto-escalation threshold (`0.60`): the orchestrator would silently re-run with Dialectic and return the stronger result. It is also below the Sequential floor (`0.70`), which auto-fires a Skeptic sub-agent on the chosen answer. Every run lands in `.consilium/runs/` (local, gitignored) and feeds the priors of the next deliberation.
 
 ## Pipeline trace
 
@@ -117,7 +117,7 @@ consilium/
 
 | Mode | Cost | What it adds |
 |------|------|--------------|
-| **Sequential** (default) | 1× | Conservator → Generator → Control in one context |
+| **Sequential** (default) | 1× | Conservator → Generator → Control in one context. Auto-escalates to Dialectic when confidence < 0.60 |
 | **Dialectic** | 1.33× | Sequential + a Skeptic sub-agent on the chosen answer, with code-context injection |
 | **Trias** | 3× | 3 personalities (Pioneer / Architect / Steward), each running its own Sequential pass as a sub-agent, then a majority vote |
 | **`skeptic_on_chosen`** | base +1 | Composable flag over any mode — a focal Skeptic challenges the chosen answer. Auto-triggers when `confidence ∈ [0.0, 0.7]` |
