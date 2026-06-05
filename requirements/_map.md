@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-04 23:34
+generated: 2026-06-05 16:10
 nodes: 32
 edges: 38
 ---
@@ -215,24 +215,9 @@ graph LR
 
 ## Risk & Unknowns
 
-_Requirements needing attention: red = unimplemented (confirmed, no code); orange = unreviewed (promote after review); yellow = blast-radius (≥3 dependents), untested (implemented but no tested-by — set `test_exempt` to silence), or unverified-intent (open verify-intent question)._
+_Requirements needing attention: red = unimplemented (confirmed, no code); orange = unreviewed (promote after review); yellow = untested (implemented but no tested-by — set `test_exempt` to silence), or unverified-intent (open verify-intent question)._
 
 ```mermaid
 graph LR
-  subgraph sg_CONSILIUM["CONSILIUM"]
-    CONSILIUM_FEEDBACK_001["feedback<br><small>CONSILIUM-FEEDBACK-001</small><br>blast-radius"]
-    CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small><br>blast-radius"]
-    CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small><br>blast-radius"]
-  end
-  style CONSILIUM_FEEDBACK_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_PERSONALITIES_001 fill:#fff9c4,stroke:#aa0,color:#550
-  style CONSILIUM_UTILS_001 fill:#fff9c4,stroke:#aa0,color:#550
+  ok["No risk signals detected"]
 ```
-
-### Risk Table
-
-| ID | status | members | dependents | risks | recommendation |
-| --- | --- | --- | --- | --- | --- |
-| CONSILIUM-FEEDBACK-001 | confirmed | 1 | 4 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
-| CONSILIUM-PERSONALITIES-001 | confirmed | 2 | 5 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |
-| CONSILIUM-UTILS-001 | confirmed | 2 | 13 | blast-radius | High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus). |

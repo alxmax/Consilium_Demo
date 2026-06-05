@@ -1,5 +1,6 @@
 {
-  "engine_version": "2026-06-04.5",
+  "engine_version": "2026-06-05",
+  "repo": "alxmax/consilium-dev",
   "nodes": [
     {
       "id": "CONSILIUM-AGGREGATOR-001",
@@ -255,12 +256,7 @@
         }
       ],
       "test_exempt": "file I/O wrapper with no isolated pure-function surface",
-      "risks": [
-        {
-          "signal": "blast-radius",
-          "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-IMPLEMENT-PIPELINE-001",
@@ -793,12 +789,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "blast-radius",
-          "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-PRIORS-001",
@@ -1102,12 +1093,7 @@
         }
       ],
       "test_exempt": null,
-      "risks": [
-        {
-          "signal": "blast-radius",
-          "advice": "High fan-in — many capabilities depend on this. Change it only behind its contract, run the full gate + dependents' tests, and treat it as shared foundation (bus)."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "CONSILIUM-VALIDATE-REPORT-001",
