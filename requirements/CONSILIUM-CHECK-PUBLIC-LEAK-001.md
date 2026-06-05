@@ -38,3 +38,7 @@ Guards the public release repository against accidentally referencing the privat
 - A tracked file containing an absolute local developer path causes exit 1 with the offending location reported.
 - Binary and image files (`.png`, `.woff`, etc.) are skipped even if they match the patterns byte-for-byte.
 - The guard script itself (`check_public_leak.py`) is excluded from its own scan and never self-reports.
+
+## Why test_exempt
+
+`check_public_leak.py` shells out to `git ls-files` and scans all tracked file paths for local-path strings and private-repo references. Reproducing the scan in a unit test requires a real git repository with a known tracked file set. The CI run against the actual repo serves as the acceptance test — the script is meaningless outside a real git working tree.

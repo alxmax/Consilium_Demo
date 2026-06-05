@@ -33,3 +33,7 @@ AC-2
 
 ## WHERE — Current implementation
 - prompts/voices/steward_lens.md
+
+## Why test_exempt
+
+This file is a personality-lens overlay — plain text prepended to a core voice prompt at runtime by `personalities.py` for Trias mode. It contains no executable Python logic. The lens content cannot be unit-tested because its effect is the model's contextual shift in reasoning, which is non-deterministic. Conformance is validated through Trias deliberation integration runs.

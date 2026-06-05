@@ -47,3 +47,7 @@ Enforces parity between the authoritative behavior defined in SKILL.md and `scri
 - If `confidence.py VOTE_PATTERN_CONFIDENCE['2-1']` is changed to a value that differs from the `conf` field of the `2-1` row in `trias.jsx TRIAS_OUTCOMES`, the trias confidence parity check reports a failure.
 - If a new `scripts/test_*.py` file is added without a corresponding entry in `ci.yml`, the `test_suite_coverage` check fails and exits 1.
 - If a required file listed in an invariant's `file` key is missing from disk, the script exits 2 immediately.
+
+## Why test_exempt
+
+`check_doc_drift.py` reads live source files and runs `git` commands — its correctness depends on the actual repo tree having specific file states (mode docs, architecture JSX, `confidence.py` constants, CI config). Simulating that tree faithfully in a fixture would be more complex and brittle than the script itself. The CI step against the actual repo IS the acceptance test: it runs on every push and exits non-zero when drift is detected.

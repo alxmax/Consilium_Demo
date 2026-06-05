@@ -36,3 +36,7 @@ The run-consilium skill driver exercises Consilium's entire deterministic, LLM-f
 - `python .claude/skills/run-consilium/driver.py shot` writes a non-empty PNG to `.consilium/shots/architecture.png` when Chrome or Edge is available.
 - A failing test suite causes `smoke` to print the failure tail (up to 12 lines) and exit non-zero.
 - The driver injects `PYTHONUTF8=1` into all child process environments, ensuring non-ASCII output (e.g. arrows in trace_graph) does not cause codec errors on Windows.
+
+## Why test_exempt
+
+`driver.py` IS the test runner: its `smoke` command invokes every `scripts/test_*.py` unit suite, the `check_doc_drift.py` invariant gate, and the full build_report → validate_report pipeline. Writing a unit test for a script whose purpose is to run other tests would be circular — the driver's acceptance is the `smoke` run itself. Running `python .claude/skills/run-consilium/driver.py smoke` against the actual repo IS the authoritative acceptance check.
