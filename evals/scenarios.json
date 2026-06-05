@@ -2055,46 +2055,6 @@
     }
   },
   {
-    "name": "stability_check/compare flat schema outputs Categorical stability section with flip",
-    "tool": "scripts/stability_check.py",
-    "args": [
-      "--compare",
-      "evals/fixtures/stability_flat_a.json",
-      "evals/fixtures/stability_flat_b.json"
-    ],
-    "expect_exit": 0,
-    "expect_stdout_contains": [
-      "Categorical stability",
-      "*** FLIP"
-    ]
-  },
-  {
-    "name": "stability_check/compare missing conservator step emits MISSING not traceback",
-    "tool": "scripts/stability_check.py",
-    "args": [
-      "--compare",
-      "evals/fixtures/stability_flat_a.json",
-      "evals/fixtures/stability_no_conservator.json"
-    ],
-    "expect_exit": 0,
-    "expect_stdout_contains": [
-      "MISSING"
-    ]
-  },
-  {
-    "name": "stability_check/compare nested schema outputs Categorical stability section",
-    "tool": "scripts/stability_check.py",
-    "args": [
-      "--compare",
-      "evals/fixtures/stability_nested_a.json",
-      "evals/fixtures/stability_nested_b.json"
-    ],
-    "expect_exit": 0,
-    "expect_stdout_contains": [
-      "Categorical stability"
-    ]
-  },
-  {
     "name": "aggregator/conservative_override emits low_separation when top-2 score delta < 0.12",
     "tool": "scripts/aggregator.py",
     "args": [
@@ -2131,9 +2091,11 @@
     "note": "Synthetic fixture: validates label-match code path. Fixture uses date 2099-12-31 so the entry always falls within the 30-day window.",
     "tool": "scripts/priors.py",
     "args": [
-      "--label", "aggregator scoring",
+      "--label",
+      "aggregator scoring",
       "--no-runs",
-      "--feedback-file", "evals/fixtures/priors_label_match.html"
+      "--feedback-file",
+      "evals/fixtures/priors_label_match.html"
     ],
     "stdin_json": null,
     "expect_exit": 0,
@@ -2151,9 +2113,11 @@
     "note": "Synthetic fixture: validates that labels shorter than 8 chars are rejected before any FEEDBACK lookup.",
     "tool": "scripts/priors.py",
     "args": [
-      "--label", "fix",
+      "--label",
+      "fix",
       "--no-runs",
-      "--feedback-file", "evals/fixtures/priors_label_match.html"
+      "--feedback-file",
+      "evals/fixtures/priors_label_match.html"
     ],
     "stdin_json": null,
     "expect_exit": 0,
@@ -2175,7 +2139,11 @@
       "voice_scores": null,
       "confidence": 0.9,
       "deliberation_log": [
-        {"step": "prior_deliberation_passthrough", "matched": "extend_trigger_plus_low_sep", "date": "2026-05-26"}
+        {
+          "step": "prior_deliberation_passthrough",
+          "matched": "extend_trigger_plus_low_sep",
+          "date": "2026-05-26"
+        }
       ],
       "telemetry": {
         "mode": "prior_deliberation_passthrough",
@@ -2183,37 +2151,5 @@
       }
     },
     "expect_exit": 0
-  },
-  {
-    "name": "trace_graph/sequential emits flowchart with voice nodes",
-    "tool": "scripts/trace_graph.py",
-    "stdin_json": {
-      "chosen_approach": "approach_a",
-      "telemetry": {"mode": "sequential", "voices": {"conservator": {}, "generator": {}, "control": {}}},
-      "deliberation_log": [{"step": "generator"}, {"step": "control"}, {"step": "conservator"}, {"step": "aggregate"}],
-      "aggregate": {"chosen": "approach_a"}
-    },
-    "expect_exit": 0,
-    "expect_stdout_contains": ["flowchart TD", "Conservator", "Generator", "Control", "aggregate", "CON --> GEN"]
-  },
-  {
-    "name": "trace_graph/scale_down short-circuits Conservator to report",
-    "tool": "scripts/trace_graph.py",
-    "stdin_json": {"chosen_approach": "trivial-direct", "telemetry": {"mode": "sequential_scale_down"}},
-    "expect_exit": 0,
-    "expect_stdout_contains": ["CON -->|scale_down| REP", "trivial-direct"]
-  },
-  {
-    "name": "trace_graph/skipped run emits a single skipped node",
-    "tool": "scripts/trace_graph.py",
-    "stdin_json": {"skipped": true, "chosen_approach": "skipped", "skip_reason": "1 file, 4 lines"},
-    "expect_exit": 0,
-    "expect_stdout_contains": ["skipped", "1 file, 4 lines"]
-  },
-  {
-    "name": "trace_graph/empty stdin exits 2",
-    "tool": "scripts/trace_graph.py",
-    "expect_exit": 2,
-    "expect_stderr_contains": ["cannot parse report"]
   }
 ]

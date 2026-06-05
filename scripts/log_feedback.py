@@ -38,6 +38,7 @@ CLI:
     python scripts/log_feedback.py --feedback path/to/FEEDBACK.html < report.json
     python scripts/log_feedback.py --dry-run < report.json
 """
+# implements: CONSILIUM-LOG-FEEDBACK-001
 
 from __future__ import annotations
 

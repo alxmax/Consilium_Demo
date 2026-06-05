@@ -3,6 +3,7 @@
 All functions are stdlib-only. Scripts import from this module instead of
 defining their own copies. Each script remains a stand-alone executable.
 """
+# implements: CONSILIUM-UTILS-001
 from __future__ import annotations
 
 import json
@@ -42,7 +43,7 @@ def canonical_run_path(run_path: str) -> str:
     keys stable regardless of how the orchestrator spelled the path, and is
     backward-compatible with the historical ``runs/<f>.json`` convention.
     """
-    return f"runs/{Path(run_path).name}"
+    return f"runs/{Path(run_path.replace(chr(92), '/')).name}"
 
 
 def force_utf8_streams() -> None:

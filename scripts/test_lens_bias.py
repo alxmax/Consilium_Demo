@@ -28,6 +28,7 @@ on every commit touching prompts/voices/*_lens.md.
 Companion: 3 weight-invariant scenarios in evals/scenarios.json
 (personalities/* family) exercise `personalities.py` output shape.
 """
+# tested-by: CONSILIUM-PERSONALITIES-001
 from __future__ import annotations
 
 import argparse

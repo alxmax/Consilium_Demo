@@ -1,0 +1,12 @@
+scripts/reqmap.py
+.claude/worktrees/**
+benchmark/**
+experiments/**
+evals/**
+scripts/deprecated/**
+# test_meta_critic_trim.py covers a deprecated module with no live requirement.
+scripts/test_meta_critic_trim.py
+scripts/fix_benchmark_pendings.py
+.consilium/**
+docs/architecture/src/**
+docs/architecture/build.py

@@ -170,3 +170,6 @@ Rationale: Senate audit 2026-05-26 (Dimon) flagged that the 6th/7th cascade disp
 `trias_split` is no longer a user-selectable mode. With Trias reduced from 9 to 3 sub-agents (3× Sequential), `trias_split`'s 3.3× cost advantage over the old 9× Trias no longer exists — both are now effectively the same cost tier. Use standard `trias` instead.
 
 `validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.
+
+<!-- implements: CONSILIUM-MODE-TRIAS-001 -->
+
