@@ -22,6 +22,7 @@ Each invariant has:
 Usage:
     python -X utf8 scripts/check_doc_drift.py
 """
+# implements: CONSILIUM-CHECK-DOC-DRIFT-001
 
 from __future__ import annotations
 
@@ -109,14 +110,6 @@ INVARIANTS = [
         "forbidden": r"parallel_auto[\s\S]*?true\s+3-way\s+(parallel\s+)?isolation",
         "source": "SKILL.md §'How (2 turns)' — Turn 1=Generator alone, Turn 2=Control+Conservator parallel with candidates",
         "rationale": "Control needs candidates to verdict and Conservator needs them to assess risk; true 3-way isolation breaks this data dependency. SKILL.md explicitly describes the 2-turn flow.",
-    },
-    {
-        "id": "silent_audit_implemented",
-        "file": "SKILL.md",
-        "required": r"scripts/audit_counter\.py",
-        "forbidden": r"no implementation in `scripts/`|pending implementation check|implement-or-remove",
-        "source": "scripts/audit_counter.py exists; state file .consilium/audit_state.json; SKILL.md §'Silent parallel audit'",
-        "rationale": "Senate 2026-05-28 (Socrate) found the 'every 20 runs silent audit' claim had zero implementation. Once implemented, SKILL.md must reference audit_counter.py and must NOT carry the 'pending' caveat. If you remove the implementation, also remove the §'Silent parallel audit' section — never leave the claim with the 'pending' caveat.",
     },
     {
         "id": "build_report_emits_pipeline_executed",

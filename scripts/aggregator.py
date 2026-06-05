@@ -26,6 +26,7 @@ Input format on stdin (JSON):
 CLI:
     cat input.json | python aggregator.py --scheme conservative_override
 """
+# implements: CONSILIUM-AGGREGATOR-001
 
 from __future__ import annotations
 

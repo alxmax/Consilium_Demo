@@ -130,3 +130,6 @@ When adversarial and unconventional are both omitted, the output looks like:
 - Editorializing about risk in `rationale` — that's Conservator's job.
 - Exceeding `tokens_budget.generator` significantly — Conservator set that limit deliberately.
 - Proposing options whose `downside_estimate` exceeds the declared `fallback_scenario` without flagging it.
+
+<!-- implements: CONSILIUM-VOICE-GENERATOR-001 -->
+

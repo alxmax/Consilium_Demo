@@ -8,6 +8,7 @@ CLI:
     python scripts/render_feedback_html.py < entries.json
     python scripts/render_feedback_html.py --feedback path/to/FEEDBACK.html < entries.json
 """
+# implements: CONSILIUM-RENDER-FEEDBACK-HTML-001
 from __future__ import annotations
 
 import argparse

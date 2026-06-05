@@ -54,6 +54,7 @@ without a winner. Callers should fall back to their own heuristic.
 CLI:
     cat aggregation.json | python scripts/confidence.py
 """
+# implements: CONSILIUM-CONFIDENCE-001
 
 from __future__ import annotations
 

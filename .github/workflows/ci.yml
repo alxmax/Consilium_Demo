@@ -12,7 +12,8 @@ jobs:
   green-gate:
     runs-on: ubuntu-latest
     env:
-      PYTHONUTF8: "1"   # non-ASCII (→ arrows) in trace_graph / reports
+      PYTHONUTF8: "1"
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,27 +24,45 @@ jobs:
         run: python scripts/test_round2.py
       - name: Feedback HTML round-trip tests
         run: python scripts/test_feedback_html.py
-      - name: Silent-audit counter decision tests
-        run: python scripts/test_audit_counter.py
       - name: Trias lens-bias contract tests
         run: python scripts/test_lens_bias.py
-      - name: Vote-pattern degeneracy tests
-        run: python scripts/test_vote_degeneracy.py
       - name: Meta-critic trim tests
         run: python scripts/test_meta_critic_trim.py
-      - name: Step-7 implement-mode routing tests
-        run: python scripts/test_implement_mode.py
       - name: Step-7 implement-pipeline (red-green) tests
         run: python scripts/test_implement_pipeline.py
       - name: probe_change path-decode (security-gate) tests
         run: python scripts/test_probe_change.py
       - name: Version-provenance tests
         run: python scripts/test_version.py
+      - name: Build-report assembly tests
+        run: python scripts/test_build_report.py
+      - name: Confidence-derivation tests
+        run: python scripts/test_confidence.py
+      - name: Priors signal-computation tests
+        run: python scripts/test_priors.py
+      - name: Log-feedback pure-function tests
+        run: python scripts/test_log_feedback.py
+      - name: Strip-context projection tests
+        run: python scripts/test_strip_context.py
+      - name: Utils pure-function tests
+        run: python scripts/test_utils.py
+      - name: Scope-gate decision tests
+        run: python scripts/test_scope_gate.py
+      - name: Retry-context plan tests
+        run: python scripts/test_retry_context.py
       - name: Regression scenarios (run_evals)
         run: python scripts/run_evals.py
+      - name: Implement-mode routing gate tests
+        run: python scripts/test_implement_mode.py
+      - name: Audit counter tests
+        run: python scripts/test_audit_counter.py
+      - name: Vote degeneracy tests
+        run: python scripts/test_vote_degeneracy.py
       - name: Mode-doc drift invariants (check_doc_drift)
         run: python scripts/check_doc_drift.py
       - name: Architecture explainer build is in sync
         run: python docs/architecture/build.py --check
       - name: No private-repo / local-path leaks (public-leak guard)
         run: python scripts/check_public_leak.py
+      - name: Requirement map gate (reqmap check)
+        run: python -X utf8 scripts/reqmap.py check

@@ -1,0 +1,1585 @@
+{
+  "engine_version": "2026-06-05.2",
+  "repo": "alxmax/Consilium_Demo",
+  "nodes": [
+    {
+      "id": "CONSILIUM-AGGREGATOR-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "aggregator",
+      "intent": "Merges scored Generator/Control/Conservator outputs into a chosen candidate via one of five aggregation schemes.",
+      "contract": [
+        "`conservative_override` with `auto_relax=False` and all candidates vetoed returns `{\"chosen\": null, \"reason\": \"all candidates vetoed by conservator\", \"vetoed\": [...]}` with no `retry_suggested` field.",
+        "`sequential` input schema is three top-level keys `generator`, `control`, `conservator` (raw voice output dicts). No mixed numeric-score input is defined; the function reads only the raw-dict keys (`glossary_fail`, `disagreements`, `scores[]`, `preferred`, `abstain`). Passing numeric scores alongside raw dicts is undefined behavior.",
+        "All seven sequential routing outcomes (BLOCK/glossary_fail, BLOCK/irreversibility_no_consent, ESCALATE, REWORK, ADAPT_SHORT, ADAPT_EXTENDED, AGGREGATE) are tested in `scripts/test_round2.py`."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Given a candidates list where the Conservator score of every candidate exceeds `veto_threshold` and `auto_relax=True`, the output contains `chosen: null` and a non-empty `retry_suggested` block.",
+        "Given two candidates with identical generator and control scores but different Conservator risk under `conservative_override`, the candidate with lower risk ranks first.",
+        "Given `vote_pattern='2-1'` with three personalities and two of them choosing the same candidate, `team_vote` returns `chosen` equal to the majority candidate and a non-empty `dissent` list.",
+        "Given sequential input where `control_out['glossary_fail']` is `True`, the output has `result: BLOCK` and `reason: glossary_fail`, regardless of other signals.",
+        "Given three or more simultaneous triggers in sequential mode, the output has `result: ESCALATE` with a `triggers` list of length >= 3."
+      ],
+      "accept": "- Given a candidates list where the Conservator score of every candidate exceeds `veto_threshold` and `auto_relax=True`, the output contains `chosen: null` and a non-empty `retry_suggested` block.\n- Given two candidates with identical generator and control scores but different Conservator risk under `conservative_override`, the candidate with lower risk ranks first.\n- Given `vote_pattern='2-1'` with three personalities and two of them choosing the same candidate, `team_vote` returns `chosen` equal to the majority candidate and a non-empty `dissent` list.\n- Given sequential input where `control_out['glossary_fail']` is `True`, the output has `result: BLOCK` and `reason: glossary_fail`, regardless of other signals.\n- Given three or more simultaneous triggers in sequential mode, the output has `result: ESCALATE` with a `triggers` list of length >= 3.",
+      "input": "stdin or `--input` file: JSON object with `candidates` array and optional `weights`, `veto_threshold`, `personalities` keys (schema varies by scheme) CLI flag `--scheme`: one of `majority | conservative_override | risk_adjusted_utility | team_vote | sequential` (default: `conservative_override`) CLI flag `--input`: path to JSON file (default: stdin)",
+      "output": "stdout: JSON object with `scheme`, `chosen`, `ranking`, and scheme-specific fields (`vetoed`, `vote_pattern`, `dissent`, `retry_suggested`, `low_separation`, `veto_uncertain`, etc.) exit code 0 on success exit code non-zero on invalid input (raised `ValueError`)",
+      "desc": "Implements five distinct aggregation schemes that merge the scored outputs of the Generator, Control, and Conservator voices into a single chosen candidate and ranking. The `majority` scheme picks the candidate with the highest mean voice score; `conservative_override` vetoes any candidate whose Conservator risk exceeds a configurable threshold and ranks survivors by a weighted utility that flips Conservator into a safety signal; `risk_adjusted_utility` applies a smooth sigmoid penalty instead of a hard veto so clustered candidates near the threshold are ranked gracefully. The `team_vote` scheme implements the democratic majority-vote logic used in Trias mode, deriving a vote pattern (3-0, 2-1, 2-0, etc.) from three personality sub-agents' chosen-IDs. The `sequential` scheme is the authoritative single-context aggregation path: it applies a priority-ordered veto cascade (glossary_fail -> irreversibility_flag -> escalate -> rework -> adapt_short/extend -> aggregate) over raw voice output dicts rather than numeric scores.",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [
+        "CONSILIUM-MODE-SEQUENTIAL-001",
+        "SKILL-RUN-CONSILIUM-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/aggregator.py:29"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_round2.py:7"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-BUILD-REPORT-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "build_report",
+      "intent": "Assembles the canonical deliberation report shape from intermediate voice/aggregation outputs.",
+      "contract": [],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.",
+        "Given a skipped bundle (`skipped: true`) with valid `skip_reason`, the output contains `chosen_approach: skipped`, `pipeline_executed` absent or false, and `deliberation_log: []`.",
+        "Given a bundle where the chosen candidate has a control verdict with `valid=false` and issues, the output's `voice_scores.control` is less than 1.0 and alternatives list a `why_not` string derived from the issues.",
+        "Given any valid bundle, the telemetry block in the output contains non-empty `consilium_version` and `consilium_ref` fields stamped by the version module.",
+        "Given a bundle missing `success_criterion`, the script exits with code 1 and prints an error to stderr without writing any JSON to stdout."
+      ],
+      "accept": "- Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.\n- Given a skipped bundle (`skipped: true`) with valid `skip_reason`, the output contains `chosen_approach: skipped`, `pipeline_executed` absent or false, and `deliberation_log: []`.\n- Given a bundle where the chosen candidate has a control verdict with `valid=false` and issues, the output's `voice_scores.control` is less than 1.0 and alternatives list a `why_not` string derived from the issues.\n- Given any valid bundle, the telemetry block in the output contains non-empty `consilium_version` and `consilium_ref` fields stamped by the version module.\n- Given a bundle missing `success_criterion`, the script exits with code 1 and prints an error to stderr without writing any JSON to stdout.",
+      "input": "stdin or `--input` file: JSON bundle with keys `success_criterion`, `verification`, `generator`, `control`, `conservator`, `aggregate`, `confidence`, and optional `telemetry`, `reasoning`, `alternatives_limit`, `team`, `personalities`, `vote_pattern`, `personality_choices`, `deliberation_quality`, `vote_skipped` For skipped bundles: `skipped: true` plus `skip_reason` and `signals` instead of voice outputs CLI flag `--input`: path to JSON bundle file (default: stdin)",
+      "output": "stdout: canonical JSON report with fields: `success_criterion`, `verification`, `chosen_approach`, `reasoning`, `alternatives`, `voice_scores`, `confidence`, `pipeline_executed`, `deliberation_log`, `telemetry`, and optional Trias fields (`team`, `personalities`, `vote_pattern`, `dissent`, `abstained`, `personality_choices`) exit code 0 on success exit code 1 on missing required field exit code 2 on malformed JSON input",
+      "desc": "Assembles the canonical deliberation report shape from the intermediate voice and aggregation outputs, eliminating the error-prone manual JSON construction that previously occurred in the orchestrator between pipeline steps. It extracts the chosen candidate's voice scores from the control verdict and conservator score lists, derives `why_not` summaries for each non-chosen alternative from control issues and conservator risk, and stamps version provenance (`consilium_version` and `consilium_ref`) into the telemetry block of every report it emits. Skipped reports (trivial-direct, prior-deliberation passthrough) are handled via a separate code path that requires only `skip_reason` and `signals`; `pipeline_executed` is absent (not set) on skipped reports — `validate_report.py` skips the field check entirely when `skipped: true`. Full pipeline reports always set `pipeline_executed: true`. The output must pass `validate_report.py` to be written to `.consilium/runs/`. `why_not` for non-chosen candidates combines both Control issues and Conservator risk: if the control verdict is invalid, it lists issue categories; if valid but issues exist, it uses the first issue's detail; if Conservator `net_concern >= 0.5`, it appends `risk=N.NN`. When neither source yields text, the fallback is `\"ranked below chosen\"` (or `\"all candidates vetoed\"` when `chosen` is null). `--input` and stdin are mutually exclusive by argparse design (`FileType` default is stdin; providing `--input` opens the file instead). No conflict resolution is needed — only one source is ever active.",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/build_report.py:42"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_build_report.py:11"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-CHECK-DOC-DRIFT-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "check_doc_drift",
+      "intent": "Enforces parity between authoritative behavior (SKILL.md, confidence.py) and the docs/diagrams.",
+      "contract": [
+        "Test-suite coverage uses plain substring match on the filename only (e.g., `test_round2.py`); a commented-out line that still contains the filename string passes the check — the script does not distinguish commented-out from active.",
+        "Legacy MODE alias removal milestone date must be ISO `YYYY-MM-DD`; the date string must appear within 200 characters of the alias literal in `validate_report.py`; any comment syntax is accepted as long as the date string is present; future dates are accepted — the check only skips if the alias has already been removed from the file entirely.",
+        "When multiple invariants are violated, all violations are collected across all four check families before any output; the script prints every violation (numbered) to stderr then exits 1 — it never stops at the first failure."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "When all invariant patterns hold and `confidence.py VOTE_PATTERN_CONFIDENCE` matches `trias.jsx TRIAS_OUTCOMES` for patterns 3-0, 2-1, and 2-0, the script exits 0 and prints the OK message.",
+        "If `scripts/audit_counter.py` is removed from SKILL.md or a forbidden `pending` caveat phrase is re-introduced, the `silent_audit_implemented` invariant fails and the script exits 1.",
+        "If `confidence.py VOTE_PATTERN_CONFIDENCE['2-1']` is changed to a value that differs from the `conf` field of the `2-1` row in `trias.jsx TRIAS_OUTCOMES`, the trias confidence parity check reports a failure.",
+        "If a new `scripts/test_*.py` file is added without a corresponding entry in `ci.yml`, the `test_suite_coverage` check fails and exits 1.",
+        "If a required file listed in an invariant's `file` key is missing from disk, the script exits 2 immediately."
+      ],
+      "accept": "- When all invariant patterns hold and `confidence.py VOTE_PATTERN_CONFIDENCE` matches `trias.jsx TRIAS_OUTCOMES` for patterns 3-0, 2-1, and 2-0, the script exits 0 and prints the OK message.\n- If `scripts/audit_counter.py` is removed from SKILL.md or a forbidden `pending` caveat phrase is re-introduced, the `silent_audit_implemented` invariant fails and the script exits 1.\n- If `confidence.py VOTE_PATTERN_CONFIDENCE['2-1']` is changed to a value that differs from the `conf` field of the `2-1` row in `trias.jsx TRIAS_OUTCOMES`, the trias confidence parity check reports a failure.\n- If a new `scripts/test_*.py` file is added without a corresponding entry in `ci.yml`, the `test_suite_coverage` check fails and exits 1.\n- If a required file listed in an invariant's `file` key is missing from disk, the script exits 2 immediately.",
+      "input": "`modes/trias.md`: read for `trias_parallel_dispatch` and `trias_parallelism_runtime_audit` invariants `modes/sequential.md`: read for `sequential_scale_down_skips_pipeline` invariant `docs/architecture/src/modes.jsx`: read for `parallel_auto_is_two_turn`, `trias_tally_caption_confidence`, and `parallel_auto_gen_dependency_edges` invariants `docs/architecture/src/trias.jsx`: read for `TRIAS_OUTCOMES` confidence parity check `docs/architecture/src/extras.jsx`: read for `costscatter_parallel_cost_parity` invariant `SKILL.md`: read for `silent_audit_implemented` and `skill_templates_have_pipeline_executed` invariants `scripts/build_report.py`: read for `build_report_emits_pipeline_executed` invariant `scripts/confidence.py`: AST-parsed for `VOTE_PATTERN_CONFIDENCE` dict values `scripts/validate_report.py`: read for legacy MODE alias removal milestone check `.github/workflows/ci.yml` and `.claude/skills/run-consilium/driver.py`: read for test-suite coverage check `scripts/test_*.py`: globbed to enumerate all test suites requiring coverage",
+      "output": "stdout: `doc-drift OK: all invariants hold` when all checks pass stderr: numbered list of violated invariants with pattern, source, and rationale for each failure exit code 0 when all invariants pass; 1 when one or more are violated; 2 when a required input file is missing",
+      "desc": "Enforces parity between the authoritative behavior defined in SKILL.md and `scripts/confidence.py` and the human-readable documentation in `modes/*.md` and `docs/architecture/src/*.jsx`, preventing the class of silent drift found in the Senate audit of 2026-05-28 where four discrepancies had accumulated undetected. It runs four independent check families: text-based regex invariants (required/forbidden patterns in specific files), Trias confidence parity between `confidence.py`'s `VOTE_PATTERN_CONFIDENCE` dict and the `TRIAS_OUTCOMES` table in `trias.jsx` (parsed via AST and regex respectively), legacy MODE alias removal milestone enforcement (ensures dated removal comments accompany deprecated aliases in `validate_report.py`), and test-suite coverage (every `scripts/test_*.py` must appear in both `ci.yml` and the run-consilium driver). The script is intended to run before any commit that touches `modes/`, `docs/architecture/src/`, `scripts/confidence.py`, or `scripts/test_*.py`.",
+      "deps": [],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/check_doc_drift.py:25"
+        }
+      ],
+      "test_exempt": "reads live source files and runs git — integration-only gate",
+      "milestone": "v1.1",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-CHECK-PUBLIC-LEAK-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "check_public_leak",
+      "intent": "Fails CI if any git-tracked file references the private repo or a local developer path.",
+      "contract": [
+        "The `PATTERNS` constant and its inline comments are the sole specification for the regex patterns; there is no secondary config or spec file.",
+        "The skip list (`SKIP_SUFFIX`) is a heuristic hardcoded tuple of 11 extensions. A binary file committed with a `.txt` extension is **not** skipped — it is read with `errors=\"ignore\"` and scanned like any text file.",
+        "When run outside a git repository (`git ls-files` fails), the script raises an unhandled `subprocess.CalledProcessError` and exits 1 with a Python traceback to stderr — same exit code as a leak find, but distinguishable by the traceback."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Running against a repo with no private-repo (non-Demo) or local-path references exits 0 and prints `clean`.",
+        "A tracked file containing a non-Demo private-repo ref causes exit 1 with the file and line number printed to stderr.",
+        "A tracked file containing an absolute local developer path causes exit 1 with the offending location reported.",
+        "Binary and image files (`.png`, `.woff`, etc.) are skipped even if they match the patterns byte-for-byte.",
+        "The guard script itself (`check_public_leak.py`) is excluded from its own scan and never self-reports."
+      ],
+      "accept": "- Running against a repo with no private-repo (non-Demo) or local-path references exits 0 and prints `clean`.\n- A tracked file containing a non-Demo private-repo ref causes exit 1 with the file and line number printed to stderr.\n- A tracked file containing an absolute local developer path causes exit 1 with the offending location reported.\n- Binary and image files (`.png`, `.woff`, etc.) are skipped even if they match the patterns byte-for-byte.\n- The guard script itself (`check_public_leak.py`) is excluded from its own scan and never self-reports.",
+      "input": "All files tracked by `git ls-files` in the current working directory No CLI flags (runs unconditionally)",
+      "output": "stdout: `public-leak guard: clean` on success stderr: list of offending `file:line: description` strings on failure exit code 0 on clean, 1 on any pattern match",
+      "desc": "Guards the public release repository against accidentally referencing the private development repository or leaking local developer paths. It scans every git-tracked text file for two compiled regex patterns: a reference to the private dev repo (the owner/name slug, excluding the public `_Demo` mirror) and an absolute local path under the author's working tree. The exact patterns live in the source — this doc deliberately does not quote them, because doing so would itself trip the guard. Binary and image file extensions are skipped, and the guard file itself is excluded from its own scan. The check is wired into CI and fails with exit 1, printing the offending `file:line: description: match` tuples to stderr, making private-repo references un-shippable rather than a silent leak.",
+      "deps": [],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/check_public_leak.py:15"
+        }
+      ],
+      "test_exempt": "subprocess git ls-files and filesystem scan — integration-only",
+      "milestone": "v1.2",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-CONFIDENCE-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "confidence",
+      "intent": "Derives a calibrated confidence score from inter-voice agreement + runner-up separation (or Trias vote pattern).",
+      "contract": [
+        "When there is only one candidate (no runner-up), `separation` defaults to `1.0` (`derive()` line: `else: separation = 1.0`). The existing Acceptance bullet covers this case explicitly.",
+        "The 2-0 exemption from the WEAK floor flag is intentional. 2-0 means one personality had all candidates vetoed (a veto, not a deadlock) — a winner still emerged, so the run is structurally decisive. The lower base confidence (0.70 vs 0.75 for 2-1) already encodes the stronger risk signal; flagging it WEAK on top would be double-penalising.",
+        "The dissent (−0.10) and abstain (−0.15) penalties are applied only when the Steward personality is the dissenter/abstainer. Pioneer and Architect dissent/abstain carry no penalty because Steward (conservative-leaning, K=0.40) is the sole risk-anchor voice; its absence from the majority signals a materially higher risk that the base vote-pattern score does not capture."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Given a chosen candidate with `generator=0.8`, `control=0.9`, `conservator=0.1` (high utility, low risk, high agreement) and no runner-up, the output confidence is close to 0.99 (agreement near 1.0, separation defaults to 1.0).",
+        "Given `chosen: null` in the input, the output is `{confidence: null, reason: \"...\"}` and the script exits 0.",
+        "Given `vote_pattern='2-1'` with a dissent list containing the Steward personality, the output confidence equals `VOTE_PATTERN_CONFIDENCE['2-1']` minus the `STEWARD_DISSENT_PENALTY` (0.10), rounded to 3 decimal places.",
+        "Given `vote_pattern='3-0'`, `check_mode_floor` with `mode='trias'` returns `below_floor=false` regardless of the numeric floor, because 3-0 is in the decisive exempt set.",
+        "Given a candidates list where one candidate is missing the `scores` key, the script exits 1 and prints a descriptive error to stderr before producing any output."
+      ],
+      "accept": "- Given a chosen candidate with `generator=0.8`, `control=0.9`, `conservator=0.1` (high utility, low risk, high agreement) and no runner-up, the output confidence is close to 0.99 (agreement near 1.0, separation defaults to 1.0).\n- Given `chosen: null` in the input, the output is `{confidence: null, reason: \"...\"}` and the script exits 0.\n- Given `vote_pattern='2-1'` with a dissent list containing the Steward personality, the output confidence equals `VOTE_PATTERN_CONFIDENCE['2-1']` minus the `STEWARD_DISSENT_PENALTY` (0.10), rounded to 3 decimal places.\n- Given `vote_pattern='3-0'`, `check_mode_floor` with `mode='trias'` returns `below_floor=false` regardless of the numeric floor, because 3-0 is in the decisive exempt set.\n- Given a candidates list where one candidate is missing the `scores` key, the script exits 1 and prints a descriptive error to stderr before producing any output.",
+      "input": "stdin or `--input` file: JSON object with `candidates` (list of `{id, scores: {generator, control, conservator}}`) and `chosen` (string or null) for score-based mode For Trias mode: JSON object with `vote_pattern` (e.g. `3-0`, `2-1`) and optional `dissent` and `abstained` lists instead of candidates/chosen CLI flag `--input`: path to JSON input file (default: stdin) `modes/*.md` frontmatter: read at import time to populate per-mode confidence floors (`confidence_floor` key)",
+      "output": "stdout: JSON with `confidence` (float or null), `agreement` (float), `separation` (float or null), and optional `source` and `notes` fields When `chosen` is null or absent from candidates: JSON with `confidence: null` and `reason` string exit code 0 on success; exit code 1 on invalid input shape",
+      "desc": "Derives a calibrated confidence score for a deliberation result using two complementary signals: inter-voice agreement on the chosen candidate (measured as 1 minus the population stdev of the three voices after flipping Conservator from risk to safety, normalized against the theoretical maximum stdev) and separation from the runner-up candidate (difference in mean utility). The two signals are blended as `0.7 * agreement + 0.3 * separation` and clamped to `[0.05, 0.99]`. For Trias mode it bypasses voice-score arithmetic entirely and derives confidence from the democratic vote pattern via a hardcoded lookup table (`VOTE_PATTERN_CONFIDENCE`), applying Steward-specific penalties when the conservative personality dissents (-0.10) or abstains (-0.15). The `check_mode_floor` helper lets callers determine whether the derived confidence falls below the mode-specific floor loaded from `modes/*.md` frontmatter, exempting structurally decisive Trias vote patterns (3-0, 2-1, 2-0) from the WEAK flag.",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [
+        "SKILL-RUN-CONSILIUM-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/confidence.py:57"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_confidence.py:11"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-FEEDBACK-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "feedback",
+      "intent": "Canonical FEEDBACK.html parser + a human-readable stats report over logged outcomes.",
+      "contract": [],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "`parse_feedback` returns an empty list without error when FEEDBACK.html does not exist.",
+        "`parse_feedback` correctly parses all three row layouts (8-cell Trias, 7-cell previous, 6-cell legacy) and attribute-based `data-field` rows.",
+        "Rows whose `outcome` field is not one of `OK`, `BAD`, `OVR`, `PEND`, `PEND_HEADLESS` are silently skipped.",
+        "With `--recent N`, only the last N entries are included in the report stats.",
+        "With `--runs`, the report includes a per-aggregation-scheme breakdown from `.consilium/runs/*.json`, tolerating both legacy `aggregation.scheme` and current `deliberation_log[step=aggregate].scheme` shapes."
+      ],
+      "accept": "- `parse_feedback` returns an empty list without error when FEEDBACK.html does not exist.\n- `parse_feedback` correctly parses all three row layouts (8-cell Trias, 7-cell previous, 6-cell legacy) and attribute-based `data-field` rows.\n- Rows whose `outcome` field is not one of `OK`, `BAD`, `OVR`, `PEND`, `PEND_HEADLESS` are silently skipped.\n- With `--recent N`, only the last N entries are included in the report stats.\n- With `--runs`, the report includes a per-aggregation-scheme breakdown from `.consilium/runs/*.json`, tolerating both legacy `aggregation.scheme` and current `deliberation_log[step=aggregate].scheme` shapes.",
+      "input": "`.consilium/FEEDBACK.html`: the append-only HTML journal of logged deliberation outcomes (path from `utils.FEEDBACK_PATH`) `.consilium/runs/*.json`: deliberation run files, read only when `--runs` flag is passed CLI flags: `--recent N`, `--runs`",
+      "output": "stdout: multi-line stats report (total uses, outcome breakdown, success rate, recent overrides, optional run scheme counts) exit code 0 always",
+      "desc": "Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats report over logged deliberation outcomes. The `parse_feedback` function is a shared utility imported by `priors.py`, `log_feedback.py`, `efficiency.py`, and deprecated scripts; it supports three HTML row layouts (attribute-based with `data-field`, and two legacy positional cell-count variants) for backward compatibility. Layout precedence is strict: attribute-based (`data-field`) is tried first; positional fallback only applies when no `data-field` attributes are found, matched by exact cell count (8 → 7 → 6 → skip). Rows with an unrecognized `outcome` field are dropped entirely — they are excluded from both the total count and all outcome stats. The success-rate denominator is `OK + BAD + OVR` only; both `PEND` and `PEND_HEADLESS` are excluded. When invoked as a CLI tool it prints total logged uses, per-outcome counts, overall success rate excluding pending entries, recent overrides, and optionally a breakdown of runs-on-disk by aggregation scheme. It exists to give the developer a fast, human-readable health check on the skill's real-world usefulness without opening the HTML journal manually.",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [
+        "CONSILIUM-LOG-FEEDBACK-001",
+        "CONSILIUM-MARK-OUTCOME-001",
+        "CONSILIUM-MEMORY-001",
+        "CONSILIUM-PRIORS-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/feedback.py:12"
+        }
+      ],
+      "test_exempt": "file I/O wrapper with no isolated pure-function surface",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-IMPLEMENT-PIPELINE-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "implement_pipeline",
+      "intent": "Turns a deliberation report into an implementation dispatch plan; optionally verifies the red->green gate.",
+      "contract": [
+        "The stub heuristic appends the stub marker as a new line after the `def`/`async def` header; it does not replace an existing `pass` or `...` body. Nested functions each receive their own stub insertion. This is intentional: the gate only needs the suite to go RED, not a clean AST rewrite.",
+        "Exit code 1 is shared between `do_nothing`/`skipped` (no pipeline) and gate failure. The caller must read stdout to distinguish the two cases. This collapse is intentional and documented in the script's module docstring.",
+        "The plan JSON schema (`spec`, `sequence`, `roles`, `rules`) is defined entirely by `build_plan()` in this script. The subagent handoff contract lives in `agents/consilium-implement-subagent.md` and is not part of this requirement."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Given a report with a non-empty `chosen_approach`, `build_plan` returns a dict with `spec`, `sequence`, `roles`, and `rules` keys, and each role lists whether its prompt file exists.",
+        "Given `chosen_approach` of `do_nothing` or `skipped`, the script prints a message and exits 1.",
+        "In `--verify-gate` mode, `gate_passed` is `true` only when the real suite passes (exit 0) AND the stubbed suite fails (exit non-0).",
+        "The `verify_red_green` function always restores the original target file content, even when the test command raises or the stubbed run crashes.",
+        "Omitting `--test-cmd` or `--target` with `--verify-gate` causes exit 2 with an error message to stderr."
+      ],
+      "accept": "- Given a report with a non-empty `chosen_approach`, `build_plan` returns a dict with `spec`, `sequence`, `roles`, and `rules` keys, and each role lists whether its prompt file exists.\n- Given `chosen_approach` of `do_nothing` or `skipped`, the script prints a message and exits 1.\n- In `--verify-gate` mode, `gate_passed` is `true` only when the real suite passes (exit 0) AND the stubbed suite fails (exit non-0).\n- The `verify_red_green` function always restores the original target file content, even when the test command raises or the stubbed run crashes.\n- Omitting `--test-cmd` or `--target` with `--verify-gate` causes exit 2 with an error message to stderr.",
+      "input": "Deliberation report JSON - via `--input <path>` or stdin CLI flags: `--dry-run`, `--verify-gate`, `--test-cmd`, `--target`, `--stub-marker`",
+      "output": "stdout (plan mode): human-readable plan summary followed by `{\"plan\": ...}` JSON stdout (gate mode): `{\"red_ok\": bool, \"green_ok\": bool, \"gate_passed\": bool}` JSON exit code 0 on success/dry-run/gate passed, 1 on no-pipeline or gate failure, 2 on bad input",
+      "desc": "Turns a completed Consilium deliberation report into a structured implementation dispatch plan (Coder -> Test Writer || Reviewer) and optionally verifies the red->green test gate. In planning mode it extracts `chosen_approach`, `success_criterion`, and `verification` from the report, maps the three roles to their prompt files, and emits a JSON plan for the orchestrating agent to consume; it is a planner, not a dispatcher - the `consilium-implement-subagent.md` agent performs actual sub-agent calls. In gate-verification mode it runs the real test suite (expect GREEN / exit 0) and then rewrites the target file with stub bodies (a heuristic line-scanner that inserts `raise NotImplementedError` after each `def`/`async def`) to confirm the suite fails RED, restoring the original in a `finally` block regardless of outcome. The script exits 1 for `do_nothing`/`skipped` chosen approaches and 2 for malformed input.",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/implement_pipeline.py:32"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_implement_pipeline.py:6"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-LENS-ARCHITECT-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "architect lens",
+      "intent": "WHY: biases all three voices toward structural soundness, test coverage, and long-term maintainability over short-term speed or external novelty.",
+      "contract": [
+        "The lens shall cause the voice it overlays to weight architectural cleanliness, type safety, clear abstractions, and test verifiability more heavily than it would by default, favoring candidates that strengthen invariants over those that loosen them.",
+        "The lens shall preserve each voice's standard structural role; it shifts evaluation priorities without replacing the role's core output or inflating/deflating raw numerical scores directly.",
+        "When applied to Conservator, the lens shall affect only the quality-progress adjustment on ; it shall not inflate  solely on the basis of absent tests.",
+        "The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation.",
+        "The 'quality-progress path' is defined solely in the lens prompt (`architect_lens.md`), not in the Conservator voice contract; it refers to adjusting `regression_risk` upward when test coverage is weak relative to the change's scope.",
+        "'Ranking higher' is achieved by the voice shifting its qualitative judgment of which candidate is structurally sounder; no raw numerical score is changed by the lens — aggregator re-weighting (via personality weights in `personalities.py`) translates that judgment into the final ranking.",
+        "When Architect is applied to Conservator, the lens can affect which candidate Conservator prefers (lower `regression_risk` on one candidate makes it preferred), but the mechanism is constrained to the quality-progress adjustment on `regression_risk` — not a direct `risk_score` inflation."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [
+        "prompts/voices/architect_lens.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given  two candidates — one well-structured with full test coverage, one faster to ship but with weaker abstractions and no new tests\n  When   the Architect lens is prepended to a core voice\n  Then   the voice ranks the well-structured, well-tested candidate higher regardless of implementation speed\n\nAC-2\n  Given  the Architect lens applied to the Conservator voice and a candidate with no new tests\n  When   the Conservator produces its risk assessment\n  Then   the  component may be adjusted upward via the quality-progress path, but  is not inflated solely because tests are absent",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-PERSONALITIES-001"
+      ],
+      "used_by": [
+        "CONSILIUM-MODE-TRIAS-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/voices/architect_lens.md:25"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-LENS-PIONEER-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "pioneer lens",
+      "intent": "WHY: biases all three voices toward boldness and upside — tolerating moderate risk and favoring novel, forward-moving solutions over safe, conservative ones.",
+      "contract": [
+        "The lens shall cause the voice it overlays to weight creative potential and forward momentum more heavily than it would by default, preferring ambitious candidates over safe ones when the two are otherwise comparable.",
+        "The lens shall preserve each voice's standard structural role (Generator produces candidates, Control verifies correctness, Conservator assesses risk); it shifts perception and priority without suppressing the role's core output.",
+        "When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not directly alter the numerical  formula or its component scores (, , etc.).",
+        "The Conservator carve-out is sufficient by design. Pioneer's influence is on narrative tone and meta_recommendation framing, not on the numerical risk gate. The  formula remains governed by Conservator's own logic, preserving Trias balance through democratic aggregation across all three voices.",
+        "'Magnitude calibration' means the `magnitude` label only (low/medium/high/critical); Pioneer shall not shift the `reversibility` component score or any other input to the `net_concern` formula.",
+        "The Pioneer lens adds no additional pressure on `unconventional_*` candidate selection beyond what the Generator voice contract already requires.",
+        "There is no defined minimum ambition gap for the lens to activate; when candidates differ in ambition, Pioneer always prefers the most ambitious one, even if the difference is marginal."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [
+        "prompts/voices/pioneer_lens.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given  a set of candidates evaluated under Trias, one clearly novel and higher-risk, one safe and incremental\n  When   the Pioneer lens is prepended to a core voice\n  Then   the voice's chosen or most-favored candidate is the novel/ambitious option rather than the safe/incremental one\n\nAC-2\n  Given  the Pioneer lens applied to the Conservator voice\n  When   the Conservator produces its risk assessment\n  Then   the  numerical value reflects the standard formula unchanged, while the  or magnitude label may reflect a more tolerant stance toward the ambitious candidate",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-PERSONALITIES-001"
+      ],
+      "used_by": [
+        "CONSILIUM-MODE-TRIAS-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/voices/pioneer_lens.md:25"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-LENS-STEWARD-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "steward lens",
+      "intent": "WHY: biases all three voices toward minimal-scope, reversible changes — prioritizing blast-radius reduction and protection of working systems over novelty or ambition.",
+      "contract": [
+        "The lens shall cause the voice it overlays to weight reversibility, minimal scope, and regression safety more heavily than it would by default, preferring smaller safe changes over larger ambitious ones when both are viable.",
+        "The lens shall preserve each voice's standard structural role; it shifts candidate ordering and priority without suppressing the full candidate set or altering the role's core output format.",
+        "When applied to Generator, the lens shall order candidates by smallest blast radius first but shall still produce the full required spread of candidates (3-5); it shall not suppress high-blast-radius candidates from the output.",
+        "\"Prefer existing patterns over new ones unless the new one is clearly necessary\" means: a new pattern is justified only when the existing pattern is INSUFFICIENT to meet the change requirements — not merely suboptimal or less elegant. \"Suboptimal but workable\" does NOT qualify as grounds for a new pattern."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [
+        "prompts/voices/steward_lens.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given  two candidates — one minimal-scope and easily reversible, one larger in blast radius and harder to roll back\n  When   the Steward lens is prepended to a core voice\n  Then   the voice ranks or selects the minimal-scope, reversible candidate as preferred\n\nAC-2\n  Given  the Steward lens applied to the Generator voice\n  When   Generator produces its candidate list\n  Then   the list contains the full required number of candidates (no suppression of ambitious options), with minimal-blast-radius candidates listed first",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-PERSONALITIES-001"
+      ],
+      "used_by": [
+        "CONSILIUM-MODE-TRIAS-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/voices/steward_lens.md:25"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-LOG-FEEDBACK-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "log_feedback",
+      "intent": "Atomically appends (or upgrades) a FEEDBACK.html row from a deliberation report.",
+      "contract": [
+        "When `run_id` is absent, the fingerprint falls back to a microsecond-precision timestamp (`datetime.now().strftime(\"%f\")`) as the 4th field — not a 3-field key. This prevents same-day collisions but makes the fingerprint non-deterministic: two recomputed fingerprints for the same legacy row will differ, so old no-run_id rows can never be matched by fingerprint lookup (they fall back to `run_path=None`).",
+        "The confidence gate reads `report.get(\"confidence\")` — the top-level key only. If a report carries both a top-level `confidence` and a nested `confidence.confidence` dict, the top-level value is used and the nested form is silently ignored.",
+        "The row-upgrade path (PEND → OK) uses a read-modify-write cycle protected only by `atomic_write_text` (rename-swap). There is no file lock or compare-and-swap: two concurrent callers would each read the same PEND state and the last writer would win. Concurrent upgrades are not prevented; they are tolerated as an acceptable race given that log_feedback is not designed for concurrent use."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "A report with a valid `success_criterion` and `chosen_approach` produces a new `<tr>` row in FEEDBACK.html with the correct date, truncated context, and derived note.",
+        "Appending the same report twice with the same `--run-path` and same `--outcome` exits 3 and does not add a duplicate row.",
+        "Appending the same report twice with the same `--run-path` but a different outcome (e.g., PEND then OK) upgrades the existing row in place and exits 0.",
+        "`--outcome OK` with a report whose `confidence` is below 0.70 exits 1 with an error message, unless `--force-override` is passed.",
+        "`--outcome OVR` without `--override-target` exits 2 with an error message to stderr."
+      ],
+      "accept": "- A report with a valid `success_criterion` and `chosen_approach` produces a new `<tr>` row in FEEDBACK.html with the correct date, truncated context, and derived note.\n- Appending the same report twice with the same `--run-path` and same `--outcome` exits 3 and does not add a duplicate row.\n- Appending the same report twice with the same `--run-path` but a different outcome (e.g., PEND then OK) upgrades the existing row in place and exits 0.\n- `--outcome OK` with a report whose `confidence` is below 0.70 exits 1 with an error message, unless `--force-override` is passed.\n- `--outcome OVR` without `--override-target` exits 2 with an error message to stderr.",
+      "input": "Deliberation report JSON via stdin (required) `.consilium/FEEDBACK.html`: existing journal, created if absent (overridable via `--feedback`) `.consilium/runs/.run_path_map.json`: fingerprint-to-run-path sidecar (read and updated) CLI flags: `--outcome OK|BAD|OVR|PEND|PEND_HEADLESS`, `--override-target`, `--user-note`, `--run-path`, `--dry-run`, `--force-override`",
+      "output": "stdout: `date | context | chosen | outcome | note` summary line (or `skipped (duplicate): ...` on exit 3) `.consilium/FEEDBACK.html`: updated atomically with the new or upgraded row `.consilium/runs/.run_path_map.json`: updated with the new fingerprint->run_path entry exit code 0 on success, 1 on validation error or confidence gate rejection, 2 on malformed JSON or missing required args, 3 on duplicate entry skipped",
+      "desc": "Atomically appends a feedback entry to FEEDBACK.html from a deliberation report JSON, removing the manual friction of Step 6 outcome logging. It derives `date` (today), `context` (first 60 chars of `success_criterion`), `chosen` (from `chosen_approach`), an auto-generated `note` (candidate count, veto count, confidence, mode), and records the caller-supplied `outcome`. Before appending it checks for duplicates using a 16-character SHA-256 fingerprint keyed on `date|chosen|context|run_id`; if the existing row has the same `run_path` but a different outcome (e.g., PEND->OK), the row is upgraded in place rather than duplicated. The sidecar `.run_path_map.json` is updated on every real write so `efficiency.py` and `audit_feedback.py` can later join outcomes to telemetry by run path. The `--outcome OK` path enforces a 0.70 confidence threshold gate, requiring `--force-override` to bypass.",
+      "deps": [
+        "CONSILIUM-FEEDBACK-001",
+        "CONSILIUM-RENDER-FEEDBACK-HTML-001",
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/log_feedback.py:41"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_log_feedback.py:10"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-MARK-OUTCOME-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "mark_outcome",
+      "intent": "Corrects a logged FEEDBACK.html outcome in place once production reality is known.",
+      "contract": [
+        "When matching by `--date` and `--chosen`, all rows that satisfy the predicate are updated (not only the first); each matched row produces a `matched [i]: ...` stdout line.",
+        "`[confirmed]` annotation is idempotent: `_annotate_note` checks for its presence before appending, so repeated calls never accumulate duplicate tokens. `outcome_reason=` is similarly replaced (old stripped, new inserted) rather than accumulated.",
+        "`--outcome PEND_HEADLESS` enforces a source-state guard: if the matched row's current outcome is not `PEND`, the row is skipped with a stderr diagnostic and exit 0 (not an error); only rows already at `PEND` are converted."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Given a valid `--run-path` pointing to a logged run, the corresponding FEEDBACK.html row's outcome field is updated to the specified value and the note gains `[confirmed]` (or `outcome_reason=...` if `--reason` is provided).",
+        "Given `--dry-run`, no file is written and stdout reports the matched rows with their pending transition.",
+        "Given `--outcome PEND_HEADLESS` without `--benchmark`, the script exits 1 with a descriptive error and does not modify FEEDBACK.html.",
+        "Given neither `--run-path` nor both `--date` and `--chosen`, the script exits 1 with a usage error.",
+        "Given a query that matches no rows, the script exits 1 and prints the last 5 rows to stderr as disambiguation candidates."
+      ],
+      "accept": "- Given a valid `--run-path` pointing to a logged run, the corresponding FEEDBACK.html row's outcome field is updated to the specified value and the note gains `[confirmed]` (or `outcome_reason=...` if `--reason` is provided).\n- Given `--dry-run`, no file is written and stdout reports the matched rows with their pending transition.\n- Given `--outcome PEND_HEADLESS` without `--benchmark`, the script exits 1 with a descriptive error and does not modify FEEDBACK.html.\n- Given neither `--run-path` nor both `--date` and `--chosen`, the script exits 1 with a usage error.\n- Given a query that matches no rows, the script exits 1 and prints the last 5 rows to stderr as disambiguation candidates.",
+      "input": "CLI flag `--run-path`: relative or absolute path to a `runs/*.json` file used as a lookup key CLI flags `--date YYYY-MM-DD` and `--chosen <id>`: alternative direct-match strategy when `--run-path` is unavailable CLI flag `--outcome`: one of `OK | BAD | OVR | PEND | PEND_HEADLESS` (required) CLI flag `--reason`: optional short string appended to the note as `outcome_reason=...` CLI flag `--dry-run`: print matched rows without writing CLI flag `--benchmark`: required guard when `--outcome PEND_HEADLESS` is used CLI flag `--feedback`: optional override path to FEEDBACK.html `.consilium/FEEDBACK.html`: existing feedback journal read and rewritten in place `.consilium/runs/.run_path_map.json`: sidecar fingerprint map populated by `log_feedback.py`",
+      "output": "Overwrites `.consilium/FEEDBACK.html` atomically with updated outcome and annotated note for each matched row stdout: per-matched-row lines of the form `matched [i]: date | chosen | old_outcome -> new_outcome` stdout: `skip [i]: ...` lines when a row is already at the target outcome or when PEND_HEADLESS is applied to a non-PEND row stdout: `(dry-run; no write)` when `--dry-run` is active exit code 0 on success or when no rows needed updating; exit code 1 on missing feedback file, bad argument combinations, or no match found",
+      "desc": "Closes the feedback loop opened by `log_feedback.py` by allowing an outcome recorded at deliberation time to be corrected based on what happened in production. Because the initial outcome logged at Step 6 is a subjective gut-feel, production reality can contradict it days later (a chosen approach may break production, or a risky override may prove correct). The script rewrites the matched FEEDBACK.html row in place, updating the outcome cell and annotating the note with `[confirmed]` so `priors.py` can weight confirmed-outcome rows higher than purely subjective ones. Rows are located via a fingerprint sidecar map (`--run-path`) or by a direct date+chosen pair, with a fallback diagnostic listing the five most recent entries when no match is found. A `--dry-run` flag allows inspection of which rows would be updated without modifying any file.",
+      "deps": [
+        "CONSILIUM-FEEDBACK-001",
+        "CONSILIUM-RENDER-FEEDBACK-HTML-001",
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/mark_outcome.py:33"
+        }
+      ],
+      "test_exempt": "importlib module loading and FEEDBACK.html mutation — integration-only",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-MEMORY-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "memory",
+      "intent": "Unified read API over Consilium's three memory tiers (short / medium / long).",
+      "contract": [
+        "The short tier stub is permanently fixed: `read_short()` is a hardcoded function returning `{\"tier\": \"short\", \"note\": \"...\", \"entries\": []}` with no file-based population path. There is no session-file mechanism and no design provision for one.",
+        "Case-insensitivity is guaranteed for both tiers via `_matches(text, q) → q.lower() in text.lower()`. For the long tier the filter searches `context`, `chosen`, **and** `note` (the Description omitted `note`; the code includes it).",
+        "`--n` applies independently per tier. `read_all` passes `n` to both `read_medium` and `read_long` separately, so `--tier all --n N` can return up to `2N` entries (short always returns 0 entries). There is no global cap."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Running with `--tier medium` returns a JSON object whose `entries` array contains at most `--n` items, each with `run`, `date`, `success_criterion`, `chosen`, and `confidence` fields drawn from `runs/*.json` files.",
+        "Running with `--tier long --query <term>` returns only rows whose `context`, `chosen`, or `note` contains the query term (case-insensitive), and each entry includes a `confirmed` boolean reflecting presence of `[confirmed]` in the note.",
+        "Running with `--tier short` returns a stub dict with `entries: []` and a descriptive `note` explaining session-local scope.",
+        "Running with `--tier all` returns a dict with exactly three keys (`short`, `medium`, `long`), each containing valid tier output.",
+        "Passing `--feedback-file` and `--runs-dir` overrides the default `.consilium/` paths so the script can operate on arbitrary copies of the data."
+      ],
+      "accept": "- Running with `--tier medium` returns a JSON object whose `entries` array contains at most `--n` items, each with `run`, `date`, `success_criterion`, `chosen`, and `confidence` fields drawn from `runs/*.json` files.\n- Running with `--tier long --query <term>` returns only rows whose `context`, `chosen`, or `note` contains the query term (case-insensitive), and each entry includes a `confirmed` boolean reflecting presence of `[confirmed]` in the note.\n- Running with `--tier short` returns a stub dict with `entries: []` and a descriptive `note` explaining session-local scope.\n- Running with `--tier all` returns a dict with exactly three keys (`short`, `medium`, `long`), each containing valid tier output.\n- Passing `--feedback-file` and `--runs-dir` overrides the default `.consilium/` paths so the script can operate on arbitrary copies of the data.",
+      "input": "CLI flag `--tier`: one of `short | medium | long | all` (default: `all`) CLI flag `--n`: maximum number of entries returned per tier (default: 10) CLI flag `--query`: optional substring filter applied to medium (`success_criterion` + `chosen_approach`) and long (`context` + `chosen` + `note`) tiers CLI flag `--feedback-file`: optional override path to FEEDBACK.html CLI flag `--runs-dir`: optional override path to the `runs/` directory `.consilium/runs/*.json`: episodic deliberation records read for the medium tier `.consilium/FEEDBACK.html`: aggregated feedback journal read for the long tier",
+      "output": "JSON object emitted to stdout: for a single tier, a dict with `tier`, `entries`, and `total` keys; for `--tier all`, a dict with `short`, `medium`, and `long` sub-objects exit code 0 always (no error paths beyond missing files, which return empty entry lists)",
+      "desc": "Provides a unified read API over Consilium's three memory tiers - short (current session, stub only), medium (per-run episodic JSON files in `runs/`), and long (aggregate FEEDBACK.html parsed via `feedback.py`) - through a single CLI and importable surface. It exists so that an orchestrating agent can ask \"what does Consilium remember about X\" without knowing which tier holds the relevant data; the `--query` flag applies a substring filter uniformly across medium and long tiers. The short tier is represented by a descriptive stub because its content (the deliberation bundle being assembled) is only accessible inside the active agent context window. Confirmed-outcome rows (those carrying `[confirmed]` in their note, written by `mark_outcome.py`) are flagged in long-tier output so callers can apply higher trust weights to them.",
+      "deps": [
+        "CONSILIUM-FEEDBACK-001",
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/memory.py:35"
+        }
+      ],
+      "test_exempt": "file I/O and integration layer with trivial pure stubs",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-MODE-DIALECTIC-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "dialectic mode",
+      "intent": "WHY: Add a focused post-hoc challenge on the chosen approach for code changes — Sequential deliberation plus code-context injection, followed unconditionally by a Skeptic sub-agent regardless of confidence band.",
+      "contract": [
+        "The mode shall inject code-specific context (`language`, `framework`, `build_command`, `files_touched[]`, `test_files[]`, `ci_gate`) into voice inputs (not into prompt files) before running the standard Sequential deliberation (Conservator → Generator → Control).",
+        "After Sequential produces `chosen`, the mode shall unconditionally dispatch 1 Skeptic sub-agent (`skeptic_on_chosen`) on the result — not gated on confidence band and not skipped when Sequential short-circuits via `scale_down`.",
+        "In Dialectic, the Skeptic is always unconditional. The `confidence ∈ [0.0, 0.7]` auto-trigger conditions in `skeptic_on_chosen.md` apply only to `skeptic_on_chosen` as a composable flag over other base modes, not to Dialectic's hardwired Skeptic step. Dialectic defines a fixed pipeline where the Skeptic is mandatory regardless of confidence band.",
+        "The total cost shall be 1.33× Sequential (1× Sequential + 1 Skeptic sub-agent); telemetry shall record `mode: \"dialectic\"` and, when the Skeptic catches a constraint, `skeptic_caught_constraint: true` in the report.",
+        "The Skeptic's verdict is advisory by default and can override `chosen` only when `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`.",
+        "When dispatched on a `scale_down` trivial-direct chosen, the Skeptic receives only `chosen + success_criterion + code context` (same input shape as any Skeptic dispatch) — not the full voice bundle; Gen+Ctrl outputs are absent because they were skipped.",
+        "The `1.33× Sequential` cost multiplier is an informational estimate, not a contractual bound; it is not enforced by any gate.",
+        "When `--skeptic-can-override` is active and Skeptic produces `addressable: requires_redesign`, override means the orchestrator presents the report's existing alternatives to the user and asks whether to change the choice — `chosen` is not automatically replaced and no re-deliberation is triggered."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [
+        "The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched."
+      ],
+      "current_impl": [
+        "modes/dialectic.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a deliberation request in dialectic mode with language/framework/files_touched provided\n  When  the mode runs\n  Then  Sequential completes with code-context fields present, followed by exactly 1 Skeptic sub-agent dispatch, and the report records `mode: \"dialectic\"`\n\nAC-2\n  Given a deliberation where Sequential short-circuits via `scale_down`\n  When  the mode runs\n  Then  the Skeptic sub-agent is still dispatched on the trivial-direct chosen\n\nAC-3\n  Given a Skeptic output with `can_object: true`, `concrete_concerns` ≥ 2, and `--skeptic-can-override` is NOT active\n  When  the mode finalizes the report\n  Then  `chosen` is unchanged from the Sequential result, `skeptic_caught_constraint: true` is set, and the objection is visible as advisory",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-MODE-SEQUENTIAL-001",
+        "CONSILIUM-VOICE-SKEPTIC-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "modes/dialectic.md:47"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-MODE-SEQUENTIAL-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "sequential mode",
+      "intent": "WHY: Run Conservator, Generator, and Control in a single shared context window — the cheapest deliberation path, used by default when no higher mode is warranted.",
+      "contract": [
+        "The mode shall dispatch exactly three voices — Conservator, then Generator, then Control — in that fixed order within a single context window, with no external sub-agent dispatch (0 sub-agents, 1× baseline cost).",
+        "Before each voice runs (Steps 3–4), the prior voice's prompt shall be stripped from context via `strip_context.py`; model in-context memory is not cleared — this is a known deliberate limitation documented in the mode spec.",
+        "The aggregator shall apply an 8-component veto cascade (`aggregate_sequential()`) producing one of seven routing outcomes: BLOCK (irreversibility), BLOCK (glossary_fail), REWORK, SHORT-CIRCUIT (scale_down), ADAPT_EXTENDED (scale_up), ESCALATE, or AGGREGATE; the resulting report shall carry a `confidence` value derived from the veto outcome.",
+        "When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, a non-user-selectable auto-parallel cross-check shall be triggered; a silent parallel audit shall fire at a default cadence of 1-in-20 sequential runs (bumping to 1-in-5 when ≥2 of the last 5 audits diverged).",
+        "The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as \"WEAK\" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [
+        "Role separation in Sequential is prompt-based, not architectural: `strip_context.py` removes the prior prompt but does not clear the model's in-context memory. True voice isolation requires Parallel sub-agents.",
+        "The veto-budget for `meta_recommendation` (scale_up/scale_down) is 5 activations per month; on exhaustion the gate becomes a soft warning only. This budget is **not implemented** — no script tracks activations or resets at month boundaries. It is aspirational policy documented in SKILL.md only.",
+        "The `confidence_floor: 0.70` and the `log_feedback.py` `--outcome OK` confidence gate are the same numeric threshold applied at two distinct points: the floor is checked at Step 5b by `check_mode_floor()` (advisory, flags run as WEAK) while the log_feedback gate is enforced at Step 6 (hard gate on `--outcome OK`, requires `--force-override` to bypass). A below-floor Sequential run does not block report emission but does require `--force-override` to log it as OK.",
+        "The auto-parallel cross-check (`magnitude: critical AND reversibility: irreversible`) and the 1-in-20 silent parallel audit are distinct mechanisms sharing the same 2-turn execution flow but with separate triggers: the cross-check fires per-run based on Conservator output (no counter), while the silent audit is driven by `scripts/audit_counter.py` and state in `.consilium/audit_state.json`."
+      ],
+      "current_impl": [
+        "modes/sequential.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a deliberation request with no explicit mode flag and no critical/irreversible trigger\n  When  the mode runs\n  Then  exactly three voices are invoked in the order Conservator → Generator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade\n\nAC-2\n  Given a deliberation request where Conservator emits `meta_recommendation: scale_down`\n  When  the mode runs\n  Then  Generator and Control are skipped, the report contains `chosen_approach: \"trivial-direct\"`, `confidence: 0.85`, and `pipeline_executed: false`\n\nAC-3\n  Given a deliberation request where Control emits `glossary_fail: true`\n  When  the aggregator runs\n  Then  the routing outcome is BLOCK (glossary_fail) and the user is asked to reformulate with operational terms before any chosen approach is emitted\n\nAC-4\n  Given a completed Sequential deliberation where `confidence < 0.6`\n  When  the orchestrator checks confidence at Step 5b\n  Then  it automatically re-runs the full pipeline with `--mode dialectic`; the Dialectic result (with `auto_escalated: true` in the report) is the final output; no further auto-escalation fires if Dialectic confidence is also < 0.6",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-VOICE-GENERATOR-001",
+        "CONSILIUM-VOICE-CONTROL-001",
+        "CONSILIUM-VOICE-CONSERVATOR-001",
+        "CONSILIUM-AGGREGATOR-001"
+      ],
+      "used_by": [
+        "CONSILIUM-MODE-DIALECTIC-001",
+        "CONSILIUM-MODE-TRIAS-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "modes/sequential.md:71"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "skeptic_on_chosen flag",
+      "intent": "WHY: Compose a focused post-hoc Skeptic challenge on the chosen approach over any base mode — catching implicit constraints and high-concern discrepancies that the base deliberation may have missed.",
+      "contract": [
+        "The flag shall dispatch exactly 1 Skeptic sub-agent (using `prompts/voices/skeptic.md`) after the base mode produces `chosen` and `confidence`; it is composable over any base mode (Sequential, Dialectic, Trias) and adds +1 sub-agent to whichever base was used.",
+        "The flag shall auto-trigger when any of the following are true: `confidence ∈ [0.0, 0.7]`; `confidence > 0.7` AND `Conservator.net_concern > 0.7` (`trigger_reason: \"high_conf_high_concern\"`); `chosen_approach` matches a BAD outcome from FEEDBACK.html in the last 30 days (`trigger_reason: \"similar_to_recent_bad\"`); or `irreversibility_flag: true` (`trigger_reason: \"irreversibility_gate\"`). It may also be activated manually via `--skeptic-on-chosen`.",
+        "The Skeptic sub-agent shall receive only `chosen` (id, summary, sketch, rationale), `success_criterion`, and `verification`; it shall NOT receive other candidates, scores, or deliberation logs. A valid objection requires `can_object: true` with either `concrete_concerns ≥ 2` or a non-null `quoted_scenario`; `can_object: true` without evidence shall be rejected and the original chosen shipped.",
+        "The Skeptic's verdict shall be advisory by default (`chosen` is not replaced); `chosen` is replaced only when `--skeptic-can-override` is active AND the Skeptic produces `addressable: requires_redesign`. The result shall be logged in `deliberation_log` with step `\"skeptic_on_chosen\"` and `skeptic_caught_constraint: true|false` set in the report."
+      ],
+      "verify": [
+        "None — doc is unambiguous."
+      ],
+      "notes": [
+        "The legacy fixed modes `parallel_skeptic` and `dialectic_skeptic` were collapsed into this composable flag on 2026-05-17; the legacy names remain in `validate_report.py` MODE enum for backward-compat with historical runs.",
+        "Empirical origin (n=1, P3 problem): the equivalent `chosen_confirmation_pass` reached 4/7 catch-rate in real reruns; generalizability to other problems is unconfirmed until ≥3 distinct problems are tested."
+      ],
+      "current_impl": [
+        "modes/skeptic_on_chosen.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a deliberation in Sequential mode where the base mode produces `confidence: 0.65`\n  When  the flag auto-triggers\n  Then  exactly 1 Skeptic sub-agent is dispatched with only `chosen`, `success_criterion`, and `verification` in its input; the report records `skeptic_caught_constraint: true|false` and `chosen` remains the Sequential result (advisory)\n\nAC-2\n  Given a deliberation where the Skeptic produces `can_object: true` with no `concrete_concerns` and no `quoted_scenario`\n  When  the flag validates the Skeptic output\n  Then  the objection is rejected as a schema fail, the original chosen is shipped unchanged, and the rejection is recorded in `deliberation_log`\n\nAC-3\n  Given a deliberation with `--skeptic-can-override` active and the Skeptic produces `addressable: requires_redesign`\n  When  the flag applies override semantics\n  Then  the orchestrator presents the report's alternatives to the user and asks whether to change the choice, rather than shipping the original chosen",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-VOICE-SKEPTIC-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "modes/skeptic_on_chosen.md:68"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-MODE-TRIAS-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "trias mode",
+      "intent": "WHY: Apply three divergent personality lenses (Pioneer/Architect/Steward) each running a full Sequential deliberation, then resolve by democratic majority vote — providing genuine multi-perspective scrutiny for high-stakes, irreversible, or architecturally complex decisions.",
+      "contract": [
+        "The mode shall classify magnitude via `scope_gate.py` on the original unstripped context before any context stripping; when lazy routing is enabled (default), it shall downgrade to Sequential (low/medium magnitude) or Dialectic (high magnitude) and emit a structured `trias_lazy_routed` notification — full Trias (3 sub-agents) runs only on `critical` magnitude or when the user explicitly requests it.",
+        "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Conservator → Generator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch.",
+        "The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).",
+        "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1). `0-0-0` means all 3 personalities returned `chose: null` (each personality's internal Sequential ran `conservative_override` and vetoed every candidate); it is distinct from 1-1-1 (three different non-null choices) and is achievable without abstention — it occurs when every candidate exceeds the conservator veto threshold inside each sub-agent.",
+        "When lazy routing downgrades to Dialectic or Sequential, the `trias_lazy_routed: true` notification is emitted by the Trias orchestrator before the downgraded mode runs; the notification is not carried into the final persisted report produced by the downgraded mode's own pipeline. The persisted report reflects the actual mode that ran (`dialectic` or `sequential`), not `trias`.",
+        "Context truncation for Trias sub-agents is a hard first-N-characters limit: `strip_context.py --truncate-text 15000` takes the first `15000 × 4 = 60 000` characters of the raw context and appends a `[... context truncated ...]` marker when the budget is exceeded. The 15 000 token figure is a hard ceiling (not a target), using the approximation 1 token ≈ 4 chars.",
+        "The 3 personality sub-agents shall be dispatched in parallel; the runtime audit tracks divergence between parallel and serial results."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [
+        "Serial dispatch is an accepted implementation artifact that does not affect correctness; the silent parallel audit is the observability mechanism.",
+        "`trias_split` is deprecated; `validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.",
+        "Aggregated Trias is approximately −18% Conservator weight relative to single-context; avoid when strict conservatism is required."
+      ],
+      "current_impl": [
+        "modes/trias.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a deliberation request in trias mode with `magnitude: critical` (blocklist hit)\n  When  the mode runs\n  Then  3 personality sub-agents are dispatched (Pioneer, Architect, Steward), each producing a `chosen_approach`, the vote is aggregated via `team_vote`, and the report contains `vote_pattern`, `confidence`, and `personalities[]` with each personality's `chose`\n\nAC-2\n  Given a deliberation request in trias mode with `magnitude: high` and lazy routing enabled\n  When  the mode runs\n  Then  the mode downgrades to Dialectic, emits a `trias_lazy_routed: true` notification with `routed_to: \"dialectic\"`, and no Trias sub-agents are dispatched\n\nAC-3\n  Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)\n  When  the B2 cascade fires\n  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true`",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-MODE-SEQUENTIAL-001",
+        "CONSILIUM-LENS-PIONEER-001",
+        "CONSILIUM-LENS-ARCHITECT-001",
+        "CONSILIUM-LENS-STEWARD-001",
+        "CONSILIUM-PERSONALITIES-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "modes/trias.md:174"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-PERSONALITIES-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "personalities",
+      "intent": "Canonical registry of the three fixed Trias personalities (Pioneer/Architect/Steward) and their voice weights.",
+      "contract": [],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Running without arguments emits a JSON array of exactly 3 objects, each containing `name`, `weights` (with keys `generator`, `control`, `conservator` summing to 1.0), and `lens` (a path string).",
+        "Running with `--name pioneer` emits a single JSON object matching the Pioneer entry; the returned dict is a deep copy and mutations do not affect subsequent calls.",
+        "Running with a positional integer argument exits with code 2 and prints a migration message referencing the three valid personality names.",
+        "`get_by_name('unknown')` raises `KeyError` with a message listing valid names.",
+        "The weights for all three personalities each have `generator + control + conservator == 1.0` (within floating-point tolerance)."
+      ],
+      "accept": "- Running without arguments emits a JSON array of exactly 3 objects, each containing `name`, `weights` (with keys `generator`, `control`, `conservator` summing to 1.0), and `lens` (a path string).\n- Running with `--name pioneer` emits a single JSON object matching the Pioneer entry; the returned dict is a deep copy and mutations do not affect subsequent calls.\n- Running with a positional integer argument exits with code 2 and prints a migration message referencing the three valid personality names.\n- `get_by_name('unknown')` raises `KeyError` with a message listing valid names.\n- The weights for all three personalities each have `generator + control + conservator == 1.0` (within floating-point tolerance).",
+      "input": "CLI flag `--name`: optional filter to emit a single personality by name (`pioneer | architect | steward`) Legacy positional argument N: rejected with exit code 2 and a migration message",
+      "output": "JSON array of all three personality dicts emitted to stdout when called with no `--name` flag JSON object for a single personality emitted to stdout when `--name` is provided exit code 0 on success; exit code 2 when a legacy positional N argument is detected, with a human-readable migration message on stderr",
+      "desc": "Canonical registry of the three fixed Trias-mode personalities (Pioneer, Architect, Steward), each defined by a named set of voice-weighting coefficients and a path to a lens prompt file. It replaces the old random-sampling Ensemble approach (legacy `personalities.py <N>`) with deterministic, named characters so that Trias deliberations are reproducible and auditable. Each personality biases the weighted aggregation of Generator, Control, and Conservator scores differently: **Pioneer**: `generator 0.49 / control 0.30 / conservator 0.21` — skews toward novelty **Architect**: `generator 0.30 / control 0.40 / conservator 0.30` — balances around Control **Steward**: `generator 0.30 / control 0.30 / conservator 0.40` — skews toward risk-aversion All three vectors sum to 1.0 and differ meaningfully across personalities. The script is also imported as a library by the Trias orchestration layer via `get_by_name()`, which uses `copy.deepcopy()` to prevent mutation of the module-level `PERSONALITIES` list at runtime (guards against nested-dict mutation, not just reference aliasing).",
+      "deps": [],
+      "used_by": [
+        "CONSILIUM-LENS-ARCHITECT-001",
+        "CONSILIUM-LENS-PIONEER-001",
+        "CONSILIUM-LENS-STEWARD-001",
+        "CONSILIUM-MODE-TRIAS-001",
+        "CONSILIUM-VALIDATE-REPORT-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/personalities.py:13"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_lens_bias.py:31"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-PRIORS-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "priors",
+      "intent": "Describes observed behavior, verified against scripts/priors.py source.",
+      "contract": [
+        "`conservator_veto_rate` counts only runs where `deliberation_log[step=aggregate].result.vetoed` is non-empty or `chosen` is `None`. Sequential BLOCK/REWORK outcomes are intentionally excluded — do not \"fix\" this.",
+        "`weighted_bad_rate`: same denominator as `bad_rate` (OK+BAD+OVR), but rows whose note contains `[confirmed]` receive weight 2.0 vs. 1.0 for unconfirmed rows, so production-verified outcomes dominate over subjective ratings.",
+        "`STALE_PEND_DAYS = 2` is hardcoded (reduced from 7; not CLI-configurable). A PEND entry older than 2 days is surfaced at step 0 for retrospective close."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "`python scripts/priors.py` runs without error given a valid FEEDBACK.html and runs/ dir",
+        "`--no-runs` flag suppresses conservator_veto_rate and missing_feedback_runs",
+        "stale_pendings surfaces entries older than STALE_PEND_DAYS with outcome PEND",
+        "missing_feedback_runs lists runs/ files with no FEEDBACK match"
+      ],
+      "accept": "- `python scripts/priors.py` runs without error given a valid FEEDBACK.html and runs/ dir\n- `--no-runs` flag suppresses conservator_veto_rate and missing_feedback_runs\n- stale_pendings surfaces entries older than STALE_PEND_DAYS with outcome PEND\n- missing_feedback_runs lists runs/ files with no FEEDBACK match",
+      "input": "`.consilium/FEEDBACK.html` — usage journal (parsed via `feedback.py`) `.consilium/runs/*.json` — past deliberation reports CLI flags: `--n N` (recent slice size, default 10), `--no-runs`, `--feedback-file`, `--runs-dir`",
+      "output": "JSON object to stdout with the signals above. Non-zero exit on parse error.",
+      "desc": "Computes advisory soft-prior signals from past deliberation history and emits them as a JSON block to stdout. The block is pasted into the deliberation at step 0 so voices can calibrate toward patterns that have caused past problems. Signals are advisory only — prompts in `prompts/*.md` remain authoritative. Signals computed: `recent` — last N FEEDBACK entries (newest first) `counts` — outcome tally (OK / BAD / OVR / PEND) over the recent slice `override_rate`, `bad_rate`, `weighted_bad_rate` — risk indicators `conservator_veto_rate` — fraction of runs with at least one vetoed candidate `top_note_keywords` — top-5 alpha tokens (len ≥ 4) from recent notes `stale_pendings` — FEEDBACK rows still PEND older than `STALE_PEND_DAYS` `missing_feedback_runs` — runs/ files with no matching FEEDBACK row",
+      "deps": [
+        "CONSILIUM-FEEDBACK-001",
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/priors.py:32"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_priors.py:10"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-RENDER-FEEDBACK-HTML-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "render_feedback_html",
+      "intent": "Pure rendering engine: a list of Entry records -> one self-contained dark-themed FEEDBACK.html.",
+      "contract": [],
+      "verify": [
+        "None - `(calc)` peer runs are all entries in the current `render()` call that have measured telemetry (non-zero `tokens_in + tokens_out`); no filtering by mode or date. The median is the lower-median of the sorted per-candidate samples (`samples[len // 2]`). Reproducibility is therefore scoped to a single render invocation.",
+        "None - when the run was produced by the `sequential` scheme (no `vetoed` list in the aggregate step), `vetoed_ids` resolves to an empty set; the Conservator drill-down panel is shown normally but no VETOED badges appear. Under-showing is preferred over fabricating badges.",
+        "None - the self-contained property is stated as an Acceptance criterion but is not covered by any assertion in `scripts/test_feedback_html.py`; it remains a stated-only contract."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "`render()` returns a string beginning with `<!doctype html>` that contains one `<tr class=\"entry\">` row and one `<tr class=\"drill\">` row for each Entry in the input list.",
+        "For an Entry whose `run_path` points to an existing `runs/*.json` file with telemetry data, the rendered tokens cell shows the measured sum of `tokens_in + tokens_out` across all voices (formatted compactly as e.g. `14k`).",
+        "For an Entry whose `run_path` points to a run file with a `vetoed` list in the aggregate step, the Conservator drill-down panel shows a VETOED badge only for candidates whose id appears in that list, not for any candidate exceeding a hard-coded risk threshold.",
+        "For an Entry with no linked run file (`run_path` is None), the drill-down cell contains the legacy stub message and no Generator/Control/Conservator panels.",
+        "The rendered HTML is self-contained: no `<link>`, `<script src>`, or `<img src>` tags reference external URLs."
+      ],
+      "accept": "- `render()` returns a string beginning with `<!doctype html>` that contains one `<tr class=\"entry\">` row and one `<tr class=\"drill\">` row for each Entry in the input list.\n- For an Entry whose `run_path` points to an existing `runs/*.json` file with telemetry data, the rendered tokens cell shows the measured sum of `tokens_in + tokens_out` across all voices (formatted compactly as e.g. `14k`).\n- For an Entry whose `run_path` points to a run file with a `vetoed` list in the aggregate step, the Conservator drill-down panel shows a VETOED badge only for candidates whose id appears in that list, not for any candidate exceeding a hard-coded risk threshold.\n- For an Entry with no linked run file (`run_path` is None), the drill-down cell contains the legacy stub message and no Generator/Control/Conservator panels.\n- The rendered HTML is self-contained: no `<link>`, `<script src>`, or `<img src>` tags reference external URLs.",
+      "input": "List of `Entry` dataclass instances passed programmatically (primary import surface) Path to the `runs/` directory passed to `render()` so linked run JSON files can be loaded for drill-down panels CLI stdin: JSON object with an `entries` array (when invoked as a script) CLI flag `--runs-dir`: optional override for the `runs/` directory path `.consilium/runs/*.json` files: loaded per-entry for telemetry (`tokens_in`, `tokens_out`) and `deliberation_log` (generator candidates, control verdicts, conservator scores)",
+      "output": "Complete `<!doctype html>` string returned by `render()` (primary output, written by callers) When invoked as CLI, the HTML string is written to stdout exit code 0 always",
+      "desc": "Pure rendering engine that converts a list of Entry records into a single self-contained dark-themed HTML file (inline CSS and JavaScript, no external assets). It exists as a separate bus-layer module so that both `log_feedback.py` and `mark_outcome.py` can rewrite FEEDBACK.html without duplicating HTML generation logic. For each entry it generates a collapsed table row with date, context, chosen approach, outcome badge, token count, note, and vote pattern, plus an expandable drill-down panel that loads Generator candidates, Control verdicts, and Conservator risk scores from the linked `runs/*.json` file. Token counts are shown as measured totals when telemetry is present, or as a `(calc)` estimate derived from the median tokens-per-candidate of peer runs when telemetry is absent; legacy entries with no run data show an em-dash. The vetoed badge in the Conservator panel is sourced from the aggregate step's `vetoed` list (not re-derived from a risk threshold) to avoid lying about candidates in the `[0.7, 0.8]` band.",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [
+        "CONSILIUM-LOG-FEEDBACK-001",
+        "CONSILIUM-MARK-OUTCOME-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/render_feedback_html.py:11"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_feedback_html.py:6"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-RETRY-CONTEXT-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "retry_context",
+      "intent": "On low confidence, proposes a concrete Read/Grep context-gathering plan for one extra deliberation pass.",
+      "contract": [
+        "The one-shot cap is enforced by the orchestrator (agent convention per SKILL.md), not by the script itself; the script has no state and will produce a plan on every invocation regardless.",
+        "Zero valid candidates: the pool falls back to `list(candidates)` (all candidates), so zero-valid-but-2+-total proceeds normally; zero-valid-zero-total triggers the `len(pool) < 2` early exit with reason `\"too few valid candidates for retry to discriminate\"`.",
+        "`_grep_patterns` slices `symbols[:4]` at the start of iteration — the 4-item cap is applied to the input symbols list, not to the generated pattern list after expansion."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Given a bundle with `confidence=0.61` and two or more valid candidates, the output has `retry_recommended=true`, a `reason` string containing `0.61`, and exactly 2 entries in `top_candidates`.",
+        "Given a bundle with `confidence=0.85`, the output has `retry_recommended=false` and `top_candidates=[]`.",
+        "Each `top_candidates` entry's `suggested_greps` list contains escaped regex patterns, with plain function names suffixed by `\\(` and dotted attribute paths left unsuffixed.",
+        "Given a bundle with only one Control-valid candidate, the output has `retry_recommended=false` with reason `too few valid candidates for retry to discriminate`.",
+        "Given a bundle where `confidence` is a dict (`{\"confidence\": 0.55, ...}`), the script correctly unwraps the nested value and evaluates it against the threshold."
+      ],
+      "accept": "- Given a bundle with `confidence=0.61` and two or more valid candidates, the output has `retry_recommended=true`, a `reason` string containing `0.61`, and exactly 2 entries in `top_candidates`.\n- Given a bundle with `confidence=0.85`, the output has `retry_recommended=false` and `top_candidates=[]`.\n- Each `top_candidates` entry's `suggested_greps` list contains escaped regex patterns, with plain function names suffixed by `\\(` and dotted attribute paths left unsuffixed.\n- Given a bundle with only one Control-valid candidate, the output has `retry_recommended=false` with reason `too few valid candidates for retry to discriminate`.\n- Given a bundle where `confidence` is a dict (`{\"confidence\": 0.55, ...}`), the script correctly unwraps the nested value and evaluates it against the threshold.",
+      "input": "stdin: JSON deliberation bundle containing `confidence` (scalar or dict with `confidence` key), `generator.candidates`, `control.verdicts`, and `conservator.scores` CLI flag `--threshold`: confidence threshold below which a retry is recommended (default: 0.7)",
+      "output": "JSON object to stdout with `retry_recommended` (bool), `reason` (string), and `top_candidates` array Each `top_candidates` entry contains `id`, utility score, `files`, `symbols`, `suggested_reads` (up to 4 file paths), and `suggested_greps` (up to 4 regex patterns) When `retry_recommended` is false (confidence at/above threshold, only one valid candidate, or null confidence), `top_candidates` is an empty array exit code 0 on success; exit code 2 if stdin is not a JSON object",
+      "desc": "Operationalizes the SKILL.md low-confidence recovery path by analyzing a completed deliberation bundle and producing a concrete context-gathering plan rather than immediately escalating to the user. When confidence is below threshold, it identifies the top-2 candidates by a composite utility score (mean of generator pass, control validity, and inverted conservator risk) and extracts file paths, symbol names, dotted attribute paths, and backtick-quoted tokens from their summaries and sketches using targeted regex patterns. The output is a JSON plan with suggested Read targets and Grep patterns per candidate; the orchestrating agent runs those commands, attaches results as `retry_context` to the bundle, and dispatches one additional Generator/Control/Conservator pass with the enriched input. The script is deliberately one-shot and does not execute the deliberation itself, capping the retry loop at one attempt before falling back to the existing user-ask flow.",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/retry_context.py:48"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_retry_context.py:11"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-RUN-EVALS-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "run_evals",
+      "intent": "Subprocess-based regression harness over evals/scenarios.json; CI gate.",
+      "contract": [],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Running `python scripts/run_evals.py` against the committed `evals/scenarios.json` exits 0 with every scenario reporting PASS.",
+        "Introducing a scenario with `expect_exit=0` but without `pipeline_executed` in `stdin_json` causes the script to exit 2 with a descriptive corpus error before running any scenario.",
+        "A scenario with a bypass-chosen `chosen_approach` and `pipeline_executed=true` triggers the corpus pre-flight and exits 2.",
+        "The `--filter` flag restricts execution to only matching scenario names, and an empty match set exits 2 with `no scenarios matched`.",
+        "A scenario that fails its `expect_stdout_subset` check prints a human-readable mismatch message to stderr and exits 1."
+      ],
+      "accept": "- Running `python scripts/run_evals.py` against the committed `evals/scenarios.json` exits 0 with every scenario reporting PASS.\n- Introducing a scenario with `expect_exit=0` but without `pipeline_executed` in `stdin_json` causes the script to exit 2 with a descriptive corpus error before running any scenario.\n- A scenario with a bypass-chosen `chosen_approach` and `pipeline_executed=true` triggers the corpus pre-flight and exits 2.\n- The `--filter` flag restricts execution to only matching scenario names, and an empty match set exits 2 with `no scenarios matched`.\n- A scenario that fails its `expect_stdout_subset` check prints a human-readable mismatch message to stderr and exits 1.",
+      "input": "`evals/scenarios.json` (default) or a custom path via `--scenarios` `--filter <substring>`: optional name filter applied to scenario list Each scenario's `stdin_json` field is serialised and piped to the target script Each scenario's `env` field is merged into the subprocess environment",
+      "output": "PASS/FAIL lines to stderr for each scenario Summary line `<N> passed, <M> failed` to stderr exit code 0 when all scenarios pass; 1 when any fail; 2 on load or corpus errors",
+      "desc": "Regression harness for all deterministic scripts in the Consilium pipeline. It reads a `scenarios.json` corpus, spawns each scenario's named tool as a subprocess, and verifies exit code, stdout (either as a JSON subset-match or a plain-text substring match), and stderr substrings against declared expectations. A pre-flight linter (`lint_validate_report_fixtures`) checks every `validate_report` fixture for the required `pipeline_executed` field and ensures bypass-chosen fixtures set it to `false`, catching fixture/validator drift at corpus level before any scenario runs. The script exits non-zero if any scenario fails, making it suitable as a CI gate.",
+      "deps": [],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/run_evals.py:23"
+        }
+      ],
+      "test_exempt": "subprocess-based eval harness — acceptance gated by run_evals.py itself in CI",
+      "milestone": "v1.1",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-SCOPE-GATE-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "scope_gate",
+      "intent": "Decides whether a change is small enough to bypass full deliberation; fails open.",
+      "contract": [],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "A single-file, single-line change with no blocklist hits and default config returns `should_skip=true` and `magnitude='low'`.",
+        "Any path matching a blocklist pattern returns `should_skip=false`, `magnitude='critical'`, and `mode_ceiling='trias'` regardless of file/line counts.",
+        "Setting `CONSILIUM_FORCE_FULL=1` returns `should_skip=false` and `magnitude='critical'` without reading the diff.",
+        "Using `--signals-stdin` with a pre-computed payload bypasses git and classifies magnitude purely from the payload values.",
+        "A probe failure (e.g. not a git repo) returns `should_skip=false` with the error text in the `reason` field and exits 0."
+      ],
+      "accept": "- A single-file, single-line change with no blocklist hits and default config returns `should_skip=true` and `magnitude='low'`.\n- Any path matching a blocklist pattern returns `should_skip=false`, `magnitude='critical'`, and `mode_ceiling='trias'` regardless of file/line counts.\n- Setting `CONSILIUM_FORCE_FULL=1` returns `should_skip=false` and `magnitude='critical'` without reading the diff.\n- Using `--signals-stdin` with a pre-computed payload bypasses git and classifies magnitude purely from the payload values.\n- A probe failure (e.g. not a git repo) returns `should_skip=false` with the error text in the `reason` field and exits 0.",
+      "input": "Git working tree diff via `probe_change.py` (default: HEAD, or `--ref <ref>..HEAD`, or `--range <A>..<B>`) `--files`: optional path restriction for the git diff `--config`: optional path to a `scope_gate.json` overriding `max_files`, `max_lines`, and `blocklist` stdin JSON when `--signals-stdin` is set: `{files_changed, lines_added, lines_removed, paths}` `CONSILIUM_FORCE_FULL` env variable: if `1`, always returns `should_skip=false`",
+      "output": "JSON object to stdout with keys: `should_skip`, `magnitude`, `mode_ceiling`, `reason`, `signals`, `config_used` exit code 0 always (errors are reported inside the JSON, not via non-zero exit)",
+      "desc": "Decides whether a change is small enough to bypass full deliberation. It collects diff signals either from git via `probe_change.py` or from pre-computed stdin JSON, checks file and line counts against configurable thresholds, and scans changed paths against a sensitive-path blocklist. Based on those signals it classifies the change's magnitude (`low/medium/high/critical`) and derives a `mode_ceiling` (the maximum appropriate deliberation mode), then outputs a JSON decision the orchestrator uses to short-circuit or proceed. The gate fails open: probe failures, missing git repos, or config load errors all produce `should_skip=false` so that uncertain situations always trigger deliberation rather than silently skipping it.",
+      "deps": [],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/scope_gate.py:61"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_scope_gate.py:11"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-STRIP-CONTEXT-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "strip_context",
+      "intent": "Projects each voice's output down to the minimum fields the next voice needs (anti-contamination).",
+      "contract": [],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.",
+        "Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false` or has no matching Control verdict at all (excluded, not an error).",
+        "Running `--for conservator` excludes Control's `issues` and `notes` fields from the output.",
+        "Running `--truncate-text 15000` on text shorter than 60000 characters returns the text unchanged with no marker.",
+        "Running `--truncate-text 15000` on text exceeding 60000 characters truncates at 60000 chars and appends the truncation marker `\"\\n\\n[... context truncated to ~{tokens} tokens for Trias sub-agent ...]\"` (defined as `_TRUNCATION_MARKER` in `strip_context.py`; not shared with other scripts)."
+      ],
+      "accept": "- Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.\n- Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false` or has no matching Control verdict at all (excluded, not an error).\n- Running `--for conservator` excludes Control's `issues` and `notes` fields from the output.\n- Running `--truncate-text 15000` on text shorter than 60000 characters returns the text unchanged with no marker.\n- Running `--truncate-text 15000` on text exceeding 60000 characters truncates at 60000 chars and appends the truncation marker `\"\\n\\n[... context truncated to ~{tokens} tokens for Trias sub-agent ...]\"` (defined as `_TRUNCATION_MARKER` in `strip_context.py`; not shared with other scripts).",
+      "input": "stdin (default) or `--input <file>`: JSON object for `--for control` or `--for conservator` modes; plain text for `--truncate-text` mode `--for control`: expects Generator output JSON with a `candidates` array `--for conservator`: expects combined JSON with `candidates` (Generator) and `verdicts` (Control) arrays `--truncate-text <MAX_TOKENS>`: maximum token budget (integer), approximated as 4 chars/token",
+      "output": "JSON object to stdout (`--for control` or `--for conservator`): stripped candidate or verdict list Plain text to stdout (`--truncate-text`): possibly truncated text with optional marker appended exit code 0 on success; non-zero on argument or JSON parse errors",
+      "desc": "Reduces cross-voice context contamination in the sequential deliberation pipeline by projecting each voice's output down to the minimum fields the next voice needs. In `--for control` mode it strips Generator candidates to only `id`, `summary`, and `sketch`, removing rationale fields that would rhetorically bias Control's technical validation. In `--for conservator` mode it intersects valid Control verdicts with Generator candidates, keeping only `id`/`summary`/`sketch` and discarding Control's issue descriptions that would bias Conservator's risk scoring. The `--truncate-text` mode is used by Trias orchestration to cap raw conversation context sent to each personality sub-agent to a configurable token budget, appending a truncation marker when the text is cut.",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/strip_context.py:46"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_strip_context.py:10"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-UTILS-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "utils",
+      "intent": "Shared stdlib-only utilities: canonical paths, atomic writes, stdin JSON, headless detection.",
+      "contract": [],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "`DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root; the repo root is derived from `Path(__file__).resolve().parent.parent` (two levels above `scripts/utils.py`), so paths are CWD-independent and never break silently when a script is invoked from outside the repo.",
+        "`atomic_write_text` leaves the original file intact when a write is interrupted mid-way (no truncated or stale `.tmp` files persist on error).",
+        "`is_headless` returns `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty returns `False`.",
+        "`load_json_stdin` prints a usage hint to stderr and exits 2 on empty stdin; exits 2 with an error message on invalid JSON.",
+        "`issue_penalty` returns `0.05` for severity `low`, `0.15` for `medium` or missing severity, and `0.30` for `high`."
+      ],
+      "accept": "- `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root; the repo root is derived from `Path(__file__).resolve().parent.parent` (two levels above `scripts/utils.py`), so paths are CWD-independent and never break silently when a script is invoked from outside the repo.\n- `atomic_write_text` leaves the original file intact when a write is interrupted mid-way (no truncated or stale `.tmp` files persist on error).\n- `is_headless` returns `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty returns `False`.\n- `load_json_stdin` prints a usage hint to stderr and exits 2 on empty stdin; exits 2 with an error message on invalid JSON.\n- `issue_penalty` returns `0.05` for severity `low`, `0.15` for `medium` or missing severity, and `0.30` for `high`.",
+      "input": "No CLI input for the module itself; individual functions accept: `load_json_stdin`: reads from stdin `atomic_write_text(path, content)`: file path + string content `issue_penalty(severity)`: issue dict `validate_keys(data, keys)`: data dict + required-keys list Environment variable `CLAUDE_HEADLESS` (read by `is_headless`)",
+      "output": "No files written or stdout produced by the module itself; side effects are produced by its callers `atomic_write_text` writes atomically to the caller-supplied path using a sibling `.tmp` file; a read-only parent directory raises `OSError` (propagates to caller); the temp file is always deleted on any error, so no stale `.tmp` accumulates across crashes `load_json_stdin` exits with code 2 on empty stdin or JSON parse failure `validate_keys` raises `ValueError` on schema violation; callers map that to exit 1 or 2",
+      "desc": "Shared stdlib-only utilities that every other Consilium script imports instead of defining its own copies. It centralises the three canonical filesystem paths (`DATA_DIR`, `RUNS_DIR`, `FEEDBACK_PATH`) so their definitions exist in exactly one place. Beyond path constants, it provides: `force_utf8_streams` (Windows cp1252 safety), `is_headless` (headless-orchestrator detection for Step-0 through Step-7 flow-control), `load_json_stdin` (stdin read + parse with a clear error on empty or malformed input), `atomic_write_text` (crash-safe write via same-filesystem rename + fsync, critical for the FEEDBACK journal), `issue_penalty` (severity -> float score penalty lookup for Control issues), and `validate_keys` (dict schema assertion). The module exists to eliminate copy-paste divergence across scripts and to give each script a clean, importable API surface.",
+      "deps": [],
+      "used_by": [
+        "CONSILIUM-AGGREGATOR-001",
+        "CONSILIUM-BUILD-REPORT-001",
+        "CONSILIUM-CONFIDENCE-001",
+        "CONSILIUM-FEEDBACK-001",
+        "CONSILIUM-IMPLEMENT-PIPELINE-001",
+        "CONSILIUM-LOG-FEEDBACK-001",
+        "CONSILIUM-MARK-OUTCOME-001",
+        "CONSILIUM-MEMORY-001",
+        "CONSILIUM-PRIORS-001",
+        "CONSILIUM-RENDER-FEEDBACK-HTML-001",
+        "CONSILIUM-RETRY-CONTEXT-001",
+        "CONSILIUM-STRIP-CONTEXT-001",
+        "CONSILIUM-VALIDATE-REPORT-001"
+      ],
+      "members": [
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_utils.py:10"
+        },
+        {
+          "role": "implements",
+          "loc": "scripts/utils.py:6"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-VALIDATE-REPORT-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "validate_report",
+      "intent": "Describes observed behavior, verified against scripts/validate_report.py source.",
+      "contract": [],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Valid reports (from `.consilium/runs/*.json`) exit 0",
+        "Missing `success_criterion` causes exit 1 with a message naming the field",
+        "`skipped: true` without `skip_reason` causes exit 1",
+        "Missing `telemetry.mode` on a non-skipped report causes exit 1",
+        "Malformed JSON exits 2"
+      ],
+      "accept": "- Valid reports (from `.consilium/runs/*.json`) exit 0\n- Missing `success_criterion` causes exit 1 with a message naming the field\n- `skipped: true` without `skip_reason` causes exit 1\n- Missing `telemetry.mode` on a non-skipped report causes exit 1\n- Malformed JSON exits 2",
+      "input": "A deliberation report JSON on stdin (produced by `build_report.py`)",
+      "output": "Exit 0 — report is valid Exit 1 — validation failed; each problem printed to stderr Exit 2 — malformed JSON input",
+      "desc": "Constitution Principle #4 gate. Validates report *shape*, not deliberation *substance* — confirms that required fields exist and are well-formed. Checks enforced: `success_criterion` and `verification` are non-empty strings `chosen_approach` is present and either a non-empty string or JSON null; missing field is an error, explicit null is accepted (occurs on conservative-override veto AND Trias null-vote-patterns); no distinction is made between intentional and unintentional nulls if `skipped: true`, `skip_reason` is a non-empty string `deliberation_log` contains an aggregate step whose `result` is a dict (not a string narrative); for non-bypassed reports, `generator` and `control` steps must also be present; `conservator` step presence is NOT enforced (only validated under `--strict-round2`) `telemetry` is present for non-skipped reports and carries a non-empty `mode` string telemetry counts (`tokens_in`, `tokens_out`, `latency_ms`) must be non-negative ints (strict: `isinstance(v, int)` — float values such as `1500.0` are rejected); each count field is optional per voice Reports manually assembled outside `build_report.py` are rejected — this gate catches shape drift (e.g. aggregate.result as a narrative string).",
+      "deps": [
+        "CONSILIUM-PERSONALITIES-001",
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [
+        "SKILL-RUN-CONSILIUM-001"
+      ],
+      "members": [
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_round2.py:8"
+        },
+        {
+          "role": "implements",
+          "loc": "scripts/validate_report.py:49"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-VOCABULARY-MAP-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "vocabulary_map",
+      "intent": "Single source of truth for field-value translations and the per-voice token budget table.",
+      "contract": [
+        "`translate` silent fallback is intentional: unknown category or value returns `str(value)` with no logging. Callers must not assume a human-readable label is always returned.",
+        "Romanian-only output is a design decision: all VOCABULARY_MAP labels are hardcoded Romanian strings (exception: `meta_recommendation` values are English). No i18n hook exists or is planned.",
+        "`compute_tokens_budget` with `meta='scale_up'`: base is `TOKENS_BUDGET.get((magnitude, reversibility), 800)`; the 4000-cap only binds for `(\"critical\", \"irreversible\")` (base=4000 → 4000 after cap); all other pairs produce uncapped results (e.g., base=2000 → 3000, base=800 → 1200)."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "`translate('reversibility', 'complete')` returns the Romanian string `usor de anulat`.",
+        "`translate('verdict', 'GO')` returns `aprobat de majoritate`.",
+        "`compute_tokens_budget('critical', 'irreversible')` returns `{'generator': 4000, 'control': 4000}`.",
+        "`compute_tokens_budget` with `meta='scale_down'` always returns `{'generator': 300, 'control': 300}` regardless of magnitude/reversibility.",
+        "`translate` for an unknown category or value returns `str(value)` without raising."
+      ],
+      "accept": "- `translate('reversibility', 'complete')` returns the Romanian string `usor de anulat`.\n- `translate('verdict', 'GO')` returns `aprobat de majoritate`.\n- `compute_tokens_budget('critical', 'irreversible')` returns `{'generator': 4000, 'control': 4000}`.\n- `compute_tokens_budget` with `meta='scale_down'` always returns `{'generator': 300, 'control': 300}` regardless of magnitude/reversibility.\n- `translate` for an unknown category or value returns `str(value)` without raising.",
+      "input": "CLI positional args: category (e.g. `reversibility`, `magnitude`, `verdict`) and optional value (e.g. `complete`, `critical`) `compute_tokens_budget` called programmatically with `magnitude`, `reversibility`, and optional `meta` strings",
+      "output": "stdout: translated human-readable string when invoked via CLI `compute_tokens_budget` returns a dict with `generator` and `control` keys exit code 0 always",
+      "desc": "Single source of truth for all user-facing natural-language translations of structured deliberation field values, and for the per-voice token budget table. `VOCABULARY_MAP` maps categories (`reversibility`, `magnitude`, `meta_recommendation`, `verdict`) to their human-readable labels, which are used by the renderer and aggregator to produce consistent output strings. `compute_tokens_budget` derives a per-voice token allocation from the Conservator's Q1 (magnitude) and Q2 (reversibility) outputs, scaling down to 300 for trivial questions and applying `meta_recommendation` modifiers (`scale_down` -> 300, `scale_up` -> +50% capped at 4000). The module is bus-layer because it carries no pipeline logic - it is a pure lookup table consumed by feature scripts.",
+      "deps": [],
+      "used_by": [],
+      "members": [
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_round2.py:9"
+        },
+        {
+          "role": "implements",
+          "loc": "scripts/vocabulary_map.py:10"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-VOICE-CONSERVATOR-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "conservator voice",
+      "intent": "WHY: The Conservator runs first in the pipeline, scoring risk and calibrating the token budget that Generator and Control will use — it is the scope gate for the entire deliberation.",
+      "contract": [
+        "The voice shall emit a `scores` array where each entry carries `regression_risk` (with `reversibility`, `magnitude`, and `net_concern`), `counterparty_risks`, `bias_check`, `meta_recommendation`, and `tokens_budget` (with `generator` and `control` fields); the `id` field must be preserved verbatim from the input.",
+        "The voice shall compute `net_concern` using the defined formula (`mean` of the four component scores, with `reversibility_score > 0.7` floored to `max(net_concern, reversibility_score)`) and document any unanchored score components in `notes`.",
+        "The voice shall set `irreversibility_flag: true` for any candidate where `reversibility = irreversible` and explicit user consent is not documented in the input, signaling the aggregator to BLOCK before Generator runs.",
+        "For any candidate with `net_concern >= 0.3`, the voice shall emit either a `rollback_recipe` (2–5 concrete human-executable steps) or, when rollback is structurally impossible, replace it with `mitigation_steps` and set `irreversible: true` at the candidate level.",
+        "The mitigation cap (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is discipline-based with no automated schema enforcement. Compliance is audited through `notes` documentation of applied mitigation values.",
+        "When `meta_recommendation: \"scale_down\"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [
+        "The three irreversibility-related fields (`irreversibility_flag`, `irreversible`, `regression_risk.reversibility`) can coexist on the same candidate and carry different semantics; the prompt documents the distinction, but the overlap is a persistent source of confusion for readers and voice models alike."
+      ],
+      "current_impl": [
+        "prompts/voices/conservator.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a proposed change where `reversibility = irreversible` and no explicit user consent appears in the input\n  When  the Conservator voice runs\n  Then  the candidate's score entry has `irreversibility_flag: true`, and the aggregator-facing signal causes a BLOCK before Generator runs\n\nAC-2\n  Given a candidate scored with `net_concern >= 0.3` and a structurally possible rollback\n  When  the Conservator voice runs\n  Then  the candidate's score entry contains a `rollback_recipe` array with 2–5 non-abstract, human-executable steps; `irreversible` is absent or `false`\n\nAC-3\n  Given a candidate scored with `meta_recommendation: \"scale_down\"`\n  When  the Conservator voice runs\n  Then  `tokens_budget.generator` and `tokens_budget.control` are both 300, regardless of the magnitude×reversibility table value",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [],
+      "used_by": [
+        "CONSILIUM-MODE-SEQUENTIAL-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/voices/conservator.md:198"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-VOICE-CONTROL-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "control voice",
+      "intent": "WHY: The Control voice analytically validates every Generator candidate for correctness, type safety, and goal-fit, and surfaces hidden assumptions and glossary gaps that could cause the deliberation to produce a wrong answer.",
+      "contract": [
+        "The voice shall emit a `glossary` object with 2–5 operationally-defined terms specific to the current deliberation; if it cannot define a key term after 3 attempts it shall set `glossary_fail: true` and document all 3 attempts in `glossary_attempts`, which signals the aggregator to BLOCK and request reformulation.",
+        "The voice shall emit a `verdicts` array containing one entry per candidate; each verdict must include `id`, `valid` (boolean), `confidence_in_verdict` (`high` | `medium` | `low`), `issues` (with `category`, `detail`, `severity` per entry), and `tests_to_write` (1–4 concrete test stubs for every `valid: true` candidate that is not `do_nothing`).",
+        "The voice shall check goal-fit first and, if the candidate does not address `success_criterion`, mark `valid: false` with `category: \"logic\"` and skip all remaining checks for that candidate.",
+        "The voice shall emit a `disagreements` array classifying any substantive conflict between voices as `substantial` (different answer → REWORK) or `terminological` (same answer, different words → note and continue).",
+        "When the voice cannot verify a signature without reading a file and file access fails, the `unverifiable — file not accessible` marker in the verdict is the intended degradation signal. This is transparent and recorded in verdicts visible to the aggregator and report; no harder signal is required.",
+        "The 3-entry cap on `hidden_assumptions` and the self-assessed selection criterion are by design. Control is a deliberative voice, not a formal verifier; the design intentionally trusts the voice to surface the most consequential assumptions."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [
+        "`confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative. This is intentional: `low` is a transparency signal prompting the reader to treat the verdict as speculative, not a veto mechanism. The design choice is to surface speculation honestly rather than suppress it.",
+        "In Sequential mode all three voices (Conservator → Generator → Control) produce their outputs before the aggregator evaluates them. A `glossary_fail` is therefore detected post-hoc by the aggregator; Generator always runs before the BLOCK is issued, and Control always runs after Generator with access to Generator's candidates. AC-2 reflects this correctly.",
+        "No retrospective signal exists to detect cases where the 3-entry cap on `hidden_assumptions` caused a critical assumption to be dropped. The deprecated `meta_critic.py` provides a `control_speculation_flag` for thin verdicts but has no analogous mechanism for dropped assumptions. This is a known, accepted gap."
+      ],
+      "current_impl": [
+        "prompts/voices/control.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a Generator candidate whose `sketch` does not address the stated `success_criterion`\n  When  the Control voice runs\n  Then  the verdict for that candidate has `valid: false`, `issues` contains exactly one entry with `category: \"logic\"`, and no `tests_to_write` entries are present for that candidate\n\nAC-2\n  Given a deliberation where a key term cannot be operationally defined within 3 attempts\n  When  the Control voice runs\n  Then  the output has `glossary_fail: true`, `glossary_attempts` is an array of exactly 3 entries, and no other mandatory processing is skipped (verdicts are still emitted)\n\nAC-3\n  Given a valid, non-`do_nothing` candidate that passes all checks\n  When  the Control voice runs\n  Then  the verdict has `valid: true`, `confidence_in_verdict` is one of `high|medium|low`, and `tests_to_write` contains at least 1 entry with both `name` and `assert` fields populated",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [],
+      "used_by": [
+        "CONSILIUM-MODE-SEQUENTIAL-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/voices/control.md:113"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-VOICE-GENERATOR-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "generator voice",
+      "intent": "WHY: The Generator produces a structured set of candidate approaches for the deliberation, running second in the pipeline after Conservator has calibrated scope.",
+      "contract": [
+        "The voice shall emit a JSON object containing a `candidates` array of 3–5 entries, each with the fields `id`, `summary`, `sketch`, `rationale`, and `downside_estimate`; it shall always include a candidate with `id: \"do_nothing\"`.",
+        "The voice shall include a candidate named `adversarial_<short_id>` when the change touches shared/core code or a function with more than 3 external callers, or emit `adversarial_skipped` with a reason when that condition is not met.",
+        "The voice shall emit `challenge_upward.triggered: true` (with a one-line reason) when Conservator has under-scaled the question — specifically when the input contains 3+ uneval'd risk terms or when `magnitude = trivial` but the fallback scenario implies more than 10% of capital or more than 1 month of recovery.",
+        "The voice shall emit `fallback_scenario` and `coverage_check`; if no fallback can be articulated after 2 attempts, it shall emit `abstain.triggered: true` with `reason: \"goal_undefined\"`.",
+        "The `unconventional_*` candidate shall be included unless `adversarial_*` varies on a non-scope axis (mechanism, timing, or abstraction level), or the change is mechanically trivial. Scope overlap alone does NOT justify omitting `unconventional_*`; this rule prevents silent candidate duplication and is normative.",
+        "The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors. The Generator output schema has no per-candidate score field, so a Generator output cannot override this handicap.",
+        "The external-caller threshold (>3 callers) is a heuristic self-assessment from the input context; the Generator has no file access and cannot perform static analysis. The 3-caller rule is a prompt-level instruction, not a mechanically enforced count.",
+        "\"Mechanically trivial\" (the `unconventional_*` omission condition) is intentionally undefined; the Generator exercises discretion, with a one-line doc fix as the canonical example. It does not overlap with Conservator's `meta_recommendation: scale_down` — the Generator does not receive `meta_recommendation` as input."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [
+        "The voice self-limits output via `tokens_budget.generator` received from Conservator, but has no mechanical way to enforce it — over-generation is a real risk on `magnitude = critical` inputs where the model may ignore the budget signal."
+      ],
+      "current_impl": [
+        "prompts/voices/generator.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a proposed change that touches shared/core code\n  When  the Generator voice runs\n  Then  the output `candidates` array contains exactly one entry whose `id` starts with `adversarial_`, OR `adversarial_skipped` is present with a non-empty reason string\n\nAC-2\n  Given a proposed change where no fallback can be articulated\n  When  the Generator voice runs\n  Then  the output contains `abstain.triggered: true` and `abstain.reason` is `\"goal_undefined\"` or a description of the domain-data gap; the `candidates` array may still be present\n\nAC-3\n  Given a proposed change with `magnitude = trivial` from Conservator but whose stated fallback implies > 10% capital loss\n  When  the Generator voice runs\n  Then  the output contains `challenge_upward.triggered: true` with a non-null `reason` string",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [],
+      "used_by": [
+        "CONSILIUM-MODE-SEQUENTIAL-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/voices/generator.md:134"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-VOICE-SKEPTIC-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "skeptic voice",
+      "intent": "WHY: The Skeptic performs a focused post-selection challenge on the single chosen candidate, providing the last line of defense against a correct-looking but concretely-flawed winner before it ships.",
+      "contract": [
+        "The voice shall emit either `can_object: true` (with a populated `objection` object containing `concrete_concerns`, optional `quoted_scenario`, `failure_mode`, and `addressable`) or `can_object: false` (with `objection: null` and a one-sentence `notes` explaining the absence of objection); it shall never fabricate a concern that does not appear in `success_criterion` or stated context.",
+        "When `can_object: true`, the voice shall supply at least 2 entries in `concrete_concerns` OR at least 1 non-null `quoted_scenario`; any output that meets neither threshold is rejected by the orchestrator's validation gate and discarded silently.",
+        "The voice shall classify `failure_mode` as exactly one of `correctness`, `goal_fit`, `verification_inadequate`, or `meta_scope_mismatch`; if `failure_mode` is `goal_fit`, `concrete_concerns` must contain a direct quote or reference from `success_criterion`.",
+        "The voice shall set `addressable` to `in_place`, `requires_redesign`, or `unaddressable`; `unaddressable` must be used only when no redesign can resolve the concern.",
+        "Validation failure (output rejected by orchestrator gate) results in silent discard: the chosen candidate ships unchanged, no warning is emitted, and the system falls back to the base deliberation result as if the Skeptic had not run. This is a deliberate conservative fallback.",
+        "`meta_scope_mismatch` is a self-assessed heuristic gate with no external oracle; all three conditions (correct answer, trivially-human-resolvable, cost exceeds decision value) are necessarily evaluated by the voice itself because they require contextual judgment that no deterministic external check can provide."
+      ],
+      "verify": [
+        "None - all questions resolved. Silent discard is completely invisible: no log, no telemetry, no pipeline report entry (covered by Contract: \"no warning is emitted\"). `meta_scope_mismatch` uses `addressable: unaddressable` because the concern is not fixable by redesigning the candidate — the deliberation tool was wrong for the problem, not the answer; `unaddressable` refers to the tool-application level, not the human's ability to resolve the original question directly."
+      ],
+      "notes": [
+        "The validation gate is enforced by the orchestrator after the fact, not by the voice itself — a skeptic that emits invalid output does not know it was rejected."
+      ],
+      "current_impl": [
+        "prompts/voices/skeptic.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given the Skeptic receives a chosen candidate and can identify 2 specific, named concerns grounded in `success_criterion` or stated context\n  When  the Skeptic voice runs\n  Then  the output has `can_object: true`, `objection.concrete_concerns` contains at least 2 entries, and `objection.failure_mode` is one of the four enumerated labels\n\nAC-2\n  Given the Skeptic receives a chosen candidate with no concrete verifiable flaw\n  When  the Skeptic voice runs\n  Then  the output has `can_object: false`, `objection` is null, and `notes` contains a non-empty sentence explaining the absence of objection\n\nAC-3\n  Given the chosen candidate is technically correct but the problem is resolvable in under 10 seconds by a human without deliberation tooling\n  When  the Skeptic voice runs\n  Then  the output has `failure_mode: \"meta_scope_mismatch\"`, `addressable: \"unaddressable\"`, and `concrete_concerns` contains at least 2 entries describing the cost/benefit inversion",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [],
+      "used_by": [
+        "CONSILIUM-MODE-DIALECTIC-001",
+        "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001"
+      ],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/voices/skeptic.md:123"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "risks": []
+    },
+    {
+      "id": "SKILL-RUN-CONSILIUM-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "SKILL",
+      "title": "run-consilium driver",
+      "intent": "Single entry point exercising Consilium's deterministic LLM-free surface (smoke / pipeline / shot).",
+      "contract": [],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "`python .claude/skills/run-consilium/driver.py smoke` exits 0 against the current repo state with all suites PASS.",
+        "`python .claude/skills/run-consilium/driver.py pipeline` prints valid JSON for each of the four pipeline stages and exits 0.",
+        "`python .claude/skills/run-consilium/driver.py shot` writes a non-empty PNG to `.consilium/shots/architecture.png` when Chrome or Edge is available.",
+        "A failing test suite causes `smoke` to print the failure tail (up to 12 lines) and exit non-zero.",
+        "The driver injects `PYTHONUTF8=1` into all child process environments, ensuring non-ASCII output (e.g. arrows in trace_graph) does not cause codec errors on Windows."
+      ],
+      "accept": "- `python .claude/skills/run-consilium/driver.py smoke` exits 0 against the current repo state with all suites PASS.\n- `python .claude/skills/run-consilium/driver.py pipeline` prints valid JSON for each of the four pipeline stages and exits 0.\n- `python .claude/skills/run-consilium/driver.py shot` writes a non-empty PNG to `.consilium/shots/architecture.png` when Chrome or Edge is available.\n- A failing test suite causes `smoke` to print the failure tail (up to 12 lines) and exit non-zero.\n- The driver injects `PYTHONUTF8=1` into all child process environments, ensuring non-ASCII output (e.g. arrows in trace_graph) does not cause codec errors on Windows.",
+      "input": "CLI positional arg: `smoke` (default), `pipeline`, or `shot [OUT.png]` `smoke` and `pipeline` read `bundle_smoke_tests.json` from the repo root `shot` reads `docs/architecture.html` and checks for Chrome/Edge at known Windows paths `PYTHONUTF8=1` and `PYTHONIOENCODING=utf-8` are injected into all child processes",
+      "output": "stdout: per-step PASS/FAIL lines with exit codes and failure tails (up to 12 lines) exit code 0 iff all steps passed (`smoke`/`pipeline`) or screenshot written (`shot`) `shot` writes a PNG file to `.consilium/shots/architecture.png` or the caller-supplied path `pipeline` prints aggregator JSON, confidence JSON, build_report JSON, and validate_report result to stdout",
+      "desc": "The run-consilium skill driver exercises Consilium's entire deterministic, LLM-free surface in one command. In `smoke` mode it runs all the `scripts/test_*.py` unit suites, the `check_doc_drift.py` invariant gate, the `docs/architecture` build `--check`, and the full bundle->build_report->validate_report pipeline, reporting PASS/FAIL per step and exiting non-zero only when failures exceed a documented baseline. In `pipeline` mode it demos the aggregator -> confidence -> build_report -> validate_report chain with inline synthetic input, printing each stage's JSON so the developer can see the data flowing through the pipeline. In `shot` mode it screenshots `docs/architecture.html` using headless Chrome or Edge, writing the PNG to `.consilium/shots/architecture.png` by default. The driver exists because Consilium has no single runnable app - this script is the single entry point that replaces \"run the app\" for a skill-based deliberation system.",
+      "deps": [
+        "CONSILIUM-VALIDATE-REPORT-001",
+        "CONSILIUM-AGGREGATOR-001",
+        "CONSILIUM-CONFIDENCE-001"
+      ],
+      "used_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": ".claude/skills/run-consilium/driver.py:19"
+        }
+      ],
+      "test_exempt": "integration harness — acceptance validated by run-consilium smoke + pipeline commands, not unit tests",
+      "milestone": "v1.1",
+      "risks": []
+    }
+  ],
+  "edges": [
+    [
+      "CONSILIUM-AGGREGATOR-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-BUILD-REPORT-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-CONFIDENCE-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-FEEDBACK-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-IMPLEMENT-PIPELINE-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-LENS-ARCHITECT-001",
+      "CONSILIUM-PERSONALITIES-001"
+    ],
+    [
+      "CONSILIUM-LENS-PIONEER-001",
+      "CONSILIUM-PERSONALITIES-001"
+    ],
+    [
+      "CONSILIUM-LENS-STEWARD-001",
+      "CONSILIUM-PERSONALITIES-001"
+    ],
+    [
+      "CONSILIUM-LOG-FEEDBACK-001",
+      "CONSILIUM-FEEDBACK-001"
+    ],
+    [
+      "CONSILIUM-LOG-FEEDBACK-001",
+      "CONSILIUM-RENDER-FEEDBACK-HTML-001"
+    ],
+    [
+      "CONSILIUM-LOG-FEEDBACK-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-MARK-OUTCOME-001",
+      "CONSILIUM-FEEDBACK-001"
+    ],
+    [
+      "CONSILIUM-MARK-OUTCOME-001",
+      "CONSILIUM-RENDER-FEEDBACK-HTML-001"
+    ],
+    [
+      "CONSILIUM-MARK-OUTCOME-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-MEMORY-001",
+      "CONSILIUM-FEEDBACK-001"
+    ],
+    [
+      "CONSILIUM-MEMORY-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-MODE-DIALECTIC-001",
+      "CONSILIUM-MODE-SEQUENTIAL-001"
+    ],
+    [
+      "CONSILIUM-MODE-DIALECTIC-001",
+      "CONSILIUM-VOICE-SKEPTIC-001"
+    ],
+    [
+      "CONSILIUM-MODE-SEQUENTIAL-001",
+      "CONSILIUM-VOICE-GENERATOR-001"
+    ],
+    [
+      "CONSILIUM-MODE-SEQUENTIAL-001",
+      "CONSILIUM-VOICE-CONTROL-001"
+    ],
+    [
+      "CONSILIUM-MODE-SEQUENTIAL-001",
+      "CONSILIUM-VOICE-CONSERVATOR-001"
+    ],
+    [
+      "CONSILIUM-MODE-SEQUENTIAL-001",
+      "CONSILIUM-AGGREGATOR-001"
+    ],
+    [
+      "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001",
+      "CONSILIUM-VOICE-SKEPTIC-001"
+    ],
+    [
+      "CONSILIUM-MODE-TRIAS-001",
+      "CONSILIUM-MODE-SEQUENTIAL-001"
+    ],
+    [
+      "CONSILIUM-MODE-TRIAS-001",
+      "CONSILIUM-LENS-PIONEER-001"
+    ],
+    [
+      "CONSILIUM-MODE-TRIAS-001",
+      "CONSILIUM-LENS-ARCHITECT-001"
+    ],
+    [
+      "CONSILIUM-MODE-TRIAS-001",
+      "CONSILIUM-LENS-STEWARD-001"
+    ],
+    [
+      "CONSILIUM-MODE-TRIAS-001",
+      "CONSILIUM-PERSONALITIES-001"
+    ],
+    [
+      "CONSILIUM-PRIORS-001",
+      "CONSILIUM-FEEDBACK-001"
+    ],
+    [
+      "CONSILIUM-PRIORS-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-RENDER-FEEDBACK-HTML-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-RETRY-CONTEXT-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-STRIP-CONTEXT-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-VALIDATE-REPORT-001",
+      "CONSILIUM-PERSONALITIES-001"
+    ],
+    [
+      "CONSILIUM-VALIDATE-REPORT-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "SKILL-RUN-CONSILIUM-001",
+      "CONSILIUM-VALIDATE-REPORT-001"
+    ],
+    [
+      "SKILL-RUN-CONSILIUM-001",
+      "CONSILIUM-AGGREGATOR-001"
+    ],
+    [
+      "SKILL-RUN-CONSILIUM-001",
+      "CONSILIUM-CONFIDENCE-001"
+    ]
+  ],
+  "todos": []
+}

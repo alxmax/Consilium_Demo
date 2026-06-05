@@ -119,3 +119,6 @@ Example output for a meta_scope_mismatch case:
   "notes": "The mode is not wrong about the answer, it is wrong about the problem being worth the mode."
 }
 ```
+
+<!-- implements: CONSILIUM-VOICE-SKEPTIC-001 -->
+

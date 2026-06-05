@@ -25,9 +25,9 @@ function VoicesSection() {
             <p className="voice-card__mantra">"Reversibility over cleverness. Blast radius matters. Scope discipline."</p>
             <ul className="voice-card__list">
               <li>Reads the diff and scores risk along 4 dimensions</li>
-              <li>Sets <code>tokens_budget</code> for the Generator + Control</li>
+              <li>Sets <code>tokens_budget</code> for Generator + Control — low risk allows verbose output; high risk tightens it to force concision</li>
               <li>Can raise <code>irreversibility_flag</code> and block the pipeline</li>
-              <li>Holds a unilateral veto at <code>risk &gt; 0.8</code></li>
+              <li>Scores risk; the aggregator applies a unilateral veto when <code>net_concern &gt; 0.8</code></li>
             </ul>
             <div className="voice-card__io">
               <div><span className="io-tag">in</span> diff + context</div>
@@ -88,7 +88,7 @@ function VoicesSection() {
               </div>
             </div>
             <p className="skeptic-card__desc">
-              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.0, 0.7]</code>. Sees <strong>only the chosen answer</strong> — never the candidates, never the verdicts — and tries to find a concrete failure scenario.
+              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.0, 0.7]</code>. Sees <strong>only the chosen answer</strong> — never the other candidates, never the verdicts — and tries to find a concrete failure scenario: a missing test case, a crash on an edge input, a performance cliff. If it can't find one, <code>can_object: false</code>. Advisory by default; can change the chosen answer only with <code>--skeptic-can-override</code>.
             </p>
             <div className="skeptic-card__io">
               <div><span className="io-tag">in</span> chosen approach + context</div>

@@ -20,6 +20,7 @@ CLI:
     python scripts/run_evals.py --filter aggregator
     python scripts/run_evals.py --scenarios path/to/file.json
 """
+# implements: CONSILIUM-RUN-EVALS-001
 
 from __future__ import annotations
 

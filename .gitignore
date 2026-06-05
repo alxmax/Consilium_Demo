@@ -80,6 +80,8 @@ Arhitecture.zip
 # Personal / scratch files — never publish. Broad class patterns so newly-named
 # scratch can't slip in via `git add -A` (verified: no tracked file matches these).
 *.pdf
+*.pptx
+*.ppt
 tmp_*
 *_tmp.*
 scratch/
