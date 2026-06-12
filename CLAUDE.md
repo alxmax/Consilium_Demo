@@ -35,7 +35,7 @@ Mode-specific scripts:
 - `dialectic_merge.py` — two-pass merge for Dialectic
 - `personalities.py` — Trias lens injection (Pioneer/Architect/Steward)
 
-Sub-agent dispatch (Trias, Skeptic): see `agents/consilium-subagent.md`. Sub-agents use `model: "sonnet"` by default — do not inherit Opus. **Trias exception**: each personality uses the `model` from `scripts/personalities.py` (pioneer → `haiku`, architect → `sonnet`, steward → `opus`). Steward dispatches schema-less (fenced JSON) due to Opus+StructuredOutput flakiness.
+Sub-agent dispatch (Trias, Skeptic): see `agents/consilium-subagent.md`. Sub-agents use `model: "sonnet"` by default — do not inherit Opus. **Trias**: each personality uses the `model` from `scripts/personalities.py` (all three → `sonnet`).
 
 Architecture visualization: `docs/architecture.html` (open locally). Benchmarks on real problems: `experiments/` (benchmarking discipline: `experiments/oracle-discipline.md`).
 

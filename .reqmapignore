@@ -3,8 +3,6 @@ scripts/reqmap.py
 scripts/_map_viewer.html
 # Plugin demo/reference map — contains foreign requirement IDs that cause dangling-ref errors
 docs/requirements-map.html
-# Generated viewer with inlined map data (contains foreign requirement IDs)
-docs/map.html
 .claude/worktrees/**
 benchmark/**
 experiments/**
@@ -17,3 +15,5 @@ scripts/fix_benchmark_pendings.py
 .consilium/**
 docs/architecture/src/**
 docs/architecture/build.py
+# Legacy map viewer from Consilium_Demo public repo — generated artifact with stale tags
+docs/map.html

@@ -108,7 +108,7 @@ function CostScatter() {
     { id: 'SEQ',  x: 0.20, y: 1.00, label: 'Sequential', cost: '1× · $0.189', model: 'Sonnet 4.6', sub: 'default · 0 sub-agents', color: 'var(--con)' },
     { id: 'DIAL', x: 0.40, y: 1.33, label: 'Dialectic', cost: '1.33×', model: 'Sonnet 4.6', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
     { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet 4.6', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
-    { id: 'TRI',  x: 0.90, y: 4.00, label: 'Trias', cost: '4×', model: 'Haiku · Sonnet · Opus', sub: '6 sub-agents · 3 personality + 3 Skeptic', color: 'oklch(0.55 0.16 320)' },
+    { id: 'TRI',  x: 0.90, y: 4.00, label: 'Trias', cost: '4×', model: 'Sonnet (all 3)', sub: '6 sub-agents · 3 personality + 3 Skeptic', color: 'oklch(0.55 0.16 320)' },
   ];
 
   const W = 720, H = 360;
@@ -123,7 +123,7 @@ function CostScatter() {
     <div style={{ margin: '24px 0' }}>
       <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6 }}>Cost vs voice independence</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 720 }}>
-        Where each mode lands on the cost / isolation map. <code>BARE</code> (<code>sonnet_bare</code>, no Consilium) is the measured baseline — it sits below 1×; the deliberation modes cost more for the auditable process they add. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 4× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. Dispatched voices are pinned to <strong>Sonnet 4.6</strong> — except the Trias personalities, which run on <strong>Haiku / Sonnet / Opus</strong> (one each, per <code>personalities.py</code>); the orchestrator runs on <strong>your session model</strong>, with an opt-in <strong>Opus</strong> override on the Generator for high-stakes changes.
+        Where each mode lands on the cost / isolation map. <code>BARE</code> (<code>sonnet_bare</code>, no Consilium) is the measured baseline — it sits below 1×; the deliberation modes cost more for the auditable process they add. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 4× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. Dispatched voices are pinned to <strong>Sonnet 4.6</strong> — including all three Trias personalities (per <code>personalities.py</code>); divergence comes from lens re-weighting, not model tier. The orchestrator runs on <strong>your session model</strong>, with an opt-in <strong>Opus</strong> override on the Generator for high-stakes changes.
       </p>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="diagram">

@@ -1,17 +1,15 @@
-"""Smoke test: Trias model-diversity assignment in personalities.py.
+"""Smoke test: Trias model assignment in personalities.py.
 
 Validates that:
 1. All 3 personalities emit a `model` field.
-2. Model assignments are pioneer=haiku, architect=sonnet, steward=opus.
-3. Steward carries schema_less=True (Opus+StructuredOutput dispatch rule).
-4. Pioneer circuit-breaker: a helper returns the fallback model when the
-   primary model is haiku (ensures the substitution logic is testable without
-   a live API call).
+2. All model assignments are sonnet.
+3. No personality carries schema_less.
+4. CLI emits valid JSON with model fields.
 
-CLI: python -X utf8 scripts/test_trias_haiku_schema.py
+CLI: python -X utf8 scripts/test_trias_model_schema.py
 Exit 0 = all assertions passed.
 """
-# tested-by: CONSILIUM-TRIAS-HAIKU-SCHEMA-001
+# tested-by: CONSILIUM-TRIAS-MODEL-SCHEMA-001
 
 from __future__ import annotations
 
@@ -25,9 +23,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PERSONALITIES_PATH = REPO_ROOT / "scripts" / "personalities.py"
 
 EXPECTED = {
-    "pioneer": {"model": "haiku", "schema_less": False},
+    "pioneer": {"model": "sonnet", "schema_less": False},
     "architect": {"model": "sonnet", "schema_less": False},
-    "steward": {"model": "opus", "schema_less": True},
+    "steward": {"model": "sonnet", "schema_less": False},
 }
 
 
@@ -37,18 +35,6 @@ def _load_personalities() -> list[dict]:
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)  # type: ignore[attr-defined]
     return mod.PERSONALITIES  # type: ignore[attr-defined]
-
-
-def pioneer_circuit_breaker_model(personality: dict) -> str:
-    """Return the fallback model when the primary dispatch fails.
-
-    Pioneer (Haiku) is the only personality with a circuit-breaker: on malformed
-    or empty JSON, the orchestrator substitutes sonnet and re-dispatches once.
-    All other personalities have no fallback (non-vote on failure).
-    """
-    if personality.get("model") == "haiku":
-        return "sonnet"
-    return personality["model"]
 
 
 def test_model_fields_present(personalities: list[dict]) -> None:
@@ -66,33 +52,14 @@ def test_model_assignments(personalities: list[dict]) -> None:
         )
 
 
-def test_steward_schema_less(personalities: list[dict]) -> None:
-    steward = next(p for p in personalities if p["name"] == "steward")
-    assert steward.get("schema_less") is True, (
-        "steward must have schema_less=True (Opus+StructuredOutput dispatch rule)"
-    )
-
-
-def test_pioneer_and_architect_not_schema_less(personalities: list[dict]) -> None:
+def test_all_models_sonnet(personalities: list[dict]) -> None:
     for p in personalities:
-        if p["name"] in ("pioneer", "architect"):
-            assert not p.get("schema_less"), (
-                f"{p['name']}: schema_less should be absent/False"
-            )
+        assert p.get("model") == "sonnet", f"{p['name']}: expected model='sonnet', got {p.get('model')!r}"
 
 
-def test_circuit_breaker(personalities: list[dict]) -> None:
-    pioneer = next(p for p in personalities if p["name"] == "pioneer")
-    fallback = pioneer_circuit_breaker_model(pioneer)
-    assert fallback == "sonnet", (
-        f"Pioneer circuit-breaker must fall back to sonnet, got {fallback!r}"
-    )
-    # Architect and Steward have no fallback — their circuit-breaker returns their own model.
-    for name in ("architect", "steward"):
-        p = next(x for x in personalities if x["name"] == name)
-        assert pioneer_circuit_breaker_model(p) == p["model"], (
-            f"{name}: non-pioneer personalities must not change model on circuit-breaker"
-        )
+def test_no_schema_less_any_personality(personalities: list[dict]) -> None:
+    for p in personalities:
+        assert not p.get("schema_less"), f"{p['name']}: schema_less should be absent/False"
 
 
 def test_cli_output_valid_json() -> None:
@@ -114,9 +81,8 @@ def main() -> int:
     tests = [
         test_model_fields_present,
         test_model_assignments,
-        test_steward_schema_less,
-        test_pioneer_and_architect_not_schema_less,
-        test_circuit_breaker,
+        test_all_models_sonnet,
+        test_no_schema_less_any_personality,
         test_cli_output_valid_json,
     ]
     failed = 0

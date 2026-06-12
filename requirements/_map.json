@@ -208,6 +208,10 @@
         {
           "role": "tested-by",
           "loc": "scripts/test_version.py:103"
+        },
+        {
+          "role": "implements",
+          "loc": "scripts/version.py:121"
         }
       ],
       "test_exempt": null,
@@ -1133,7 +1137,7 @@
         "CONSILIUM-PERSONALITIES-001"
       ],
       "used_by": [
-        "CONSILIUM-TRIAS-HAIKU-SCHEMA-001"
+        "CONSILIUM-TRIAS-MODEL-SCHEMA-001"
       ],
       "satisfies": [],
       "satisfied_by": [],
@@ -1182,7 +1186,7 @@
         "CONSILIUM-LENS-PIONEER-001",
         "CONSILIUM-LENS-STEWARD-001",
         "CONSILIUM-MODE-TRIAS-001",
-        "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+        "CONSILIUM-TRIAS-MODEL-SCHEMA-001",
         "CONSILIUM-VALIDATE-REPORT-001"
       ],
       "satisfies": [],
@@ -1500,17 +1504,16 @@
       "risks": []
     },
     {
-      "id": "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+      "id": "CONSILIUM-TRIAS-MODEL-SCHEMA-001",
       "layer": "bus",
       "status": "confirmed",
       "area": "CONSILIUM",
-      "title": "trias-haiku-schema",
-      "intent": "Trias model-diversity assignment: per-personality model fields (pioneer=haiku, architect=sonnet, steward=opus) with schema-less Steward dispatch and Pioneer circuit-breaker.",
+      "title": "trias-model-assignment",
+      "intent": "Trias uniform model assignment: all 3 personalities (pioneer, architect, steward) use sonnet. No per-personality schema workarounds needed.",
       "contract": [
         "`scripts/personalities.py` shall expose a `PERSONALITIES` list where every entry carries a `model` field whose value controls which Claude model tier the Trias orchestrator dispatches for that sub-agent.",
-        "Model assignments shall be fixed: pioneer → `haiku`, architect → `sonnet`, steward → `opus`.",
-        "The Steward entry shall carry `schema_less: True`. Pioneer and Architect shall not carry this field (or carry it as falsy). This flag signals to the orchestrator that Steward must be dispatched without a StructuredOutput schema; Steward returns fenced JSON and the orchestrator parses it with `json.loads()`. Rationale: Opus+StructuredOutput tool calls are unreliable and may silently skip the call.",
-        "Pioneer shall have an implicit circuit-breaker: when Pioneer (Haiku) returns malformed or empty JSON, the orchestrator substitutes `model: sonnet` and re-dispatches that personality once. On second failure, Pioneer is treated as a non-vote per B2 timeout rules. Non-pioneer personalities have no fallback — they are counted as a non-vote on first failure.",
+        "Model assignments shall be uniform: pioneer → `sonnet`, architect → `sonnet`, steward → `sonnet`.",
+        "No personality entry shall carry `schema_less: True`. All personalities use standard StructuredOutput dispatch.",
         "The `personalities.py` CLI shall emit a valid JSON array of exactly 3 objects, each with at minimum a `model` field, for use by the Trias orchestrator at runtime."
       ],
       "verify": [
@@ -1520,12 +1523,11 @@
       "current_impl": [],
       "acc": [
         "All three personalities emit a `model` field (test_model_fields_present).",
-        "Assignments are exactly pioneer=haiku, architect=sonnet, steward=opus (test_model_assignments).",
-        "Steward has `schema_less=True`; Pioneer and Architect do not (test_steward_schema_less, test_pioneer_and_architect_not_schema_less).",
-        "Pioneer circuit-breaker returns `\"sonnet\"` as fallback; non-pioneer personalities return their own model unchanged (test_circuit_breaker).",
+        "All assignments are sonnet (test_model_assignments, test_all_models_sonnet).",
+        "No personality carries `schema_less` (test_no_schema_less_any_personality).",
         "CLI emits valid JSON array with `model` field on each entry (test_cli_output_valid_json)."
       ],
-      "accept": "- All three personalities emit a `model` field (test_model_fields_present).\n- Assignments are exactly pioneer=haiku, architect=sonnet, steward=opus (test_model_assignments).\n- Steward has `schema_less=True`; Pioneer and Architect do not (test_steward_schema_less, test_pioneer_and_architect_not_schema_less).\n- Pioneer circuit-breaker returns `\"sonnet\"` as fallback; non-pioneer personalities return their own model unchanged (test_circuit_breaker).\n- CLI emits valid JSON array with `model` field on each entry (test_cli_output_valid_json).",
+      "accept": "- All three personalities emit a `model` field (test_model_fields_present).\n- All assignments are sonnet (test_model_assignments, test_all_models_sonnet).\n- No personality carries `schema_less` (test_no_schema_less_any_personality).\n- CLI emits valid JSON array with `model` field on each entry (test_cli_output_valid_json).",
       "input": "",
       "output": "",
       "desc": "",
@@ -1543,7 +1545,7 @@
         },
         {
           "role": "tested-by",
-          "loc": "scripts/test_trias_haiku_schema.py:14"
+          "loc": "scripts/test_trias_model_schema.py:12"
         }
       ],
       "test_exempt": null,
@@ -1943,16 +1945,20 @@
       "used_by": [],
       "satisfies": [],
       "satisfied_by": [],
-      "members": [],
+      "members": [
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_vote_degeneracy.py:11"
+        },
+        {
+          "role": "implements",
+          "loc": "scripts/vote_degeneracy.py:32"
+        }
+      ],
       "test_exempt": null,
       "milestone": null,
       "priority": "",
-      "risks": [
-        {
-          "signal": "unimplemented",
-          "advice": "Confirmed but no code linked: tag the implementing code `# implements: <ID>`, or drop status back to in-progress/draft until it is built. A confirmed requirement must point to code."
-        }
-      ]
+      "risks": []
     },
     {
       "id": "SKILL-RUN-CONSILIUM-001",
@@ -2177,11 +2183,11 @@
       "CONSILIUM-MODE-SEQUENTIAL-001"
     ],
     [
-      "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+      "CONSILIUM-TRIAS-MODEL-SCHEMA-001",
       "CONSILIUM-PERSONALITIES-001"
     ],
     [
-      "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+      "CONSILIUM-TRIAS-MODEL-SCHEMA-001",
       "CONSILIUM-MODE-TRIAS-001"
     ],
     [

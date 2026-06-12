@@ -11,7 +11,7 @@ CLI:
     python personalities.py <N>              # legacy form — rejected with exit 2
 """
 # implements: CONSILIUM-PERSONALITIES-001
-# implements: CONSILIUM-TRIAS-HAIKU-SCHEMA-001
+# implements: CONSILIUM-TRIAS-MODEL-SCHEMA-001
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ import sys
 PERSONALITIES = [
     {
         "name": "pioneer",
-        "model": "haiku",
+        "model": "sonnet",
         "weights": {"generator": 0.49, "control": 0.30, "conservator": 0.21},
         "lens": "prompts/voices/pioneer_lens.md",
     },
@@ -35,8 +35,7 @@ PERSONALITIES = [
     },
     {
         "name": "steward",
-        "model": "opus",
-        "schema_less": True,  # Opus+StructuredOutput is flaky; dispatch without schema, parse fenced JSON
+        "model": "sonnet",
         "weights": {"generator": 0.30, "control": 0.30, "conservator": 0.40},
         "lens": "prompts/voices/steward_lens.md",
     },

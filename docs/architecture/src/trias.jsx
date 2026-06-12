@@ -4,7 +4,7 @@ const LENSES = [
   {
     name: 'Pioneer',
     tag: 'bold',
-    model: 'Haiku',
+    model: 'Sonnet',
     g: 0.49, c: 0.30, k: 0.21,
     desc: 'Values bold, high-reward approaches that push the codebase forward. Tolerates moderate risk for genuinely new solutions. Prefers new patterns over existing ones when the new pattern offers a clear gain.',
   },
@@ -18,7 +18,7 @@ const LENSES = [
   {
     name: 'Steward',
     tag: 'protective',
-    model: 'Opus',
+    model: 'Sonnet',
     g: 0.30, c: 0.30, k: 0.40,
     desc: 'Values reversibility, minimal scope, and protection of systems that already work. Prefers existing patterns over novel ones unless the new is clearly necessary. Blast radius is the dominant concern.',
   },
@@ -48,7 +48,7 @@ function TriasSection() {
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Three Claudes each run the full pipeline — one is told to be bold, one structural, one cautious. Each personality also runs on a <strong>different model</strong>: Pioneer on Haiku, Architect on Sonnet, Steward on Opus — so the three disagree for two independent reasons (lens <em>and</em> model temperament), while the per-token price averages out to roughly three Sonnet dispatches. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
+            <p>Three Claudes each run the full pipeline — one is told to be bold, one structural, one cautious. All three run on <strong>Sonnet</strong> — divergence comes purely from the lens re-weighting (Pioneer up-weights Generator, Steward up-weights Conservator, Architect balances). Empirical baseline: ≈52% non-unanimity at n=25. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
           </div>
         </div>
 

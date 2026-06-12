@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-12 20:27
+generated: 2026-06-12 23:01
 nodes: 40
 edges: 50
 ---
@@ -43,7 +43,7 @@ graph LR
     CONSILIUM_SCOPE_GATE_001["scope_gate<br><small>CONSILIUM-SCOPE-GATE-001</small>"]
     CONSILIUM_STRIP_CONTEXT_001["strip_context<br><small>CONSILIUM-STRIP-CONTEXT-001</small>"]
     CONSILIUM_SUBAGENT_001["consilium-subagent<br><small>CONSILIUM-SUBAGENT-001</small>"]
-    CONSILIUM_TRIAS_HAIKU_SCHEMA_001["trias-haiku-schema<br><small>CONSILIUM-TRIAS-HAIKU-SCHEMA-001</small>"]
+    CONSILIUM_TRIAS_MODEL_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-MODEL-SCHEMA-001</small>"]
     CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small>"]
     CONSILIUM_VALIDATE_REPORT_001["validate_report<br><small>CONSILIUM-VALIDATE-REPORT-001</small>"]
     CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
@@ -73,14 +73,14 @@ graph LR
   CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_ARCHITECT_001
   CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_STEWARD_001
   CONSILIUM_SUBAGENT_001 --> CONSILIUM_MODE_SEQUENTIAL_001
-  CONSILIUM_TRIAS_HAIKU_SCHEMA_001 --> CONSILIUM_MODE_TRIAS_001
+  CONSILIUM_TRIAS_MODEL_SCHEMA_001 --> CONSILIUM_MODE_TRIAS_001
   SKILL_RUN_CONSILIUM_001 --> CONSILIUM_AGGREGATOR_001
   SKILL_RUN_CONSILIUM_001 --> CONSILIUM_CONFIDENCE_001
   style CONSILIUM_FEEDBACK_001 stroke-width:3px
   style CONSILIUM_PERSONALITIES_001 stroke-width:3px
   style CONSILIUM_RENDER_FEEDBACK_HTML_001 stroke-width:3px
   style CONSILIUM_SUBAGENT_001 stroke-width:3px
-  style CONSILIUM_TRIAS_HAIKU_SCHEMA_001 stroke-width:3px
+  style CONSILIUM_TRIAS_MODEL_SCHEMA_001 stroke-width:3px
   style CONSILIUM_UTILS_001 stroke-width:3px
   style CONSILIUM_VALIDATE_REPORT_001 stroke-width:3px
   style CONSILIUM_VOCABULARY_MAP_001 stroke-width:3px
@@ -114,6 +114,8 @@ graph LR
   CONSILIUM_BUILD_REPORT_001 -->|tested-by| f_scripts_test_build_report_py_11
   f_scripts_test_version_py_103["scripts/test_version.py:103"]
   CONSILIUM_BUILD_REPORT_001 -->|tested-by| f_scripts_test_version_py_103
+  f_scripts_version_py_121["scripts/version.py:121"]
+  CONSILIUM_BUILD_REPORT_001 -->|implements| f_scripts_version_py_121
   CONSILIUM_CHECK_DOC_DRIFT_001["check_doc_drift<br><small>CONSILIUM-CHECK-DOC-DRIFT-001</small>"]
   f_scripts_check_doc_drift_py_25["scripts/check_doc_drift.py:25"]
   CONSILIUM_CHECK_DOC_DRIFT_001 -->|implements| f_scripts_check_doc_drift_py_25
@@ -222,11 +224,11 @@ graph LR
   CONSILIUM_SUBAGENT_001["consilium-subagent<br><small>CONSILIUM-SUBAGENT-001</small>"]
   f_agents_consilium_subagent_md_111["agents/consilium-subagent.md:111"]
   CONSILIUM_SUBAGENT_001 -->|implements| f_agents_consilium_subagent_md_111
-  CONSILIUM_TRIAS_HAIKU_SCHEMA_001["trias-haiku-schema<br><small>CONSILIUM-TRIAS-HAIKU-SCHEMA-001</small>"]
+  CONSILIUM_TRIAS_MODEL_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-MODEL-SCHEMA-001</small>"]
   f_scripts_personalities_py_14["scripts/personalities.py:14"]
-  CONSILIUM_TRIAS_HAIKU_SCHEMA_001 -->|implements| f_scripts_personalities_py_14
-  f_scripts_test_trias_haiku_schema_py_14["scripts/test_trias_haiku_schema.py:14"]
-  CONSILIUM_TRIAS_HAIKU_SCHEMA_001 -->|tested-by| f_scripts_test_trias_haiku_schema_py_14
+  CONSILIUM_TRIAS_MODEL_SCHEMA_001 -->|implements| f_scripts_personalities_py_14
+  f_scripts_test_trias_model_schema_py_12["scripts/test_trias_model_schema.py:12"]
+  CONSILIUM_TRIAS_MODEL_SCHEMA_001 -->|tested-by| f_scripts_test_trias_model_schema_py_12
   CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small>"]
   f_scripts_test_utils_py_10["scripts/test_utils.py:10"]
   CONSILIUM_UTILS_001 -->|tested-by| f_scripts_test_utils_py_10
@@ -255,7 +257,10 @@ graph LR
   f_prompts_voices_skeptic_md_123["prompts/voices/skeptic.md:123"]
   CONSILIUM_VOICE_SKEPTIC_001 -->|implements| f_prompts_voices_skeptic_md_123
   CONSILIUM_VOTE_DEGENERACY_001["Trias vote degeneracy measurement<br><small>CONSILIUM-VOTE-DEGENERACY-001</small>"]
-  style CONSILIUM_VOTE_DEGENERACY_001 fill:#fee,stroke:#c66
+  f_scripts_test_vote_degeneracy_py_11["scripts/test_vote_degeneracy.py:11"]
+  CONSILIUM_VOTE_DEGENERACY_001 -->|tested-by| f_scripts_test_vote_degeneracy_py_11
+  f_scripts_vote_degeneracy_py_32["scripts/vote_degeneracy.py:32"]
+  CONSILIUM_VOTE_DEGENERACY_001 -->|implements| f_scripts_vote_degeneracy_py_32
   SKILL_RUN_CONSILIUM_001["run-consilium driver<br><small>SKILL-RUN-CONSILIUM-001</small>"]
   f__claude_skills_run_consilium_driver_py_19[".claude/skills/run-consilium/driver.py:19"]
   SKILL_RUN_CONSILIUM_001 -->|implements| f__claude_skills_run_consilium_driver_py_19
@@ -279,14 +284,5 @@ _Requirements needing attention: red = unimplemented (confirmed, no code); orang
 
 ```mermaid
 graph LR
-  subgraph sg_misc["misc"]
-    CONSILIUM_VOTE_DEGENERACY_001["Trias vote degeneracy measurement<br><small>CONSILIUM-VOTE-DEGENERACY-001</small><br>unimplemented"]
-  end
-  style CONSILIUM_VOTE_DEGENERACY_001 fill:#fee,stroke:#c00,color:#900
+  ok["No risk signals detected"]
 ```
-
-### Risk Table
-
-| ID | status | members | dependents | risks | recommendation |
-| --- | --- | --- | --- | --- | --- |
-| CONSILIUM-VOTE-DEGENERACY-001 | confirmed | 0 | 0 | unimplemented | Confirmed but no code linked: tag the implementing code `# implements: <ID>`, or drop status back to in-progress/draft until it is built. A confirmed requirement must point to code. |

@@ -100,7 +100,7 @@ def smoke():
         "test_implement_mode.py",
         "test_audit_counter.py",
         "test_vote_degeneracy.py",
-        "test_trias_haiku_schema.py",
+        "test_trias_model_schema.py",
     ):
         failures += run(suite, script(suite)).returncode != 0
     failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0

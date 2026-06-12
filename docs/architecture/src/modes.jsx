@@ -230,7 +230,7 @@ function ModesSection() {
             ['Obvious bugfix, or diff < 20 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
             ['Any other PR-level review', 'Sequential', 'auto Parallel cross-check fires on critical + irreversible'],
             ['A chosen answer came back shaky (confidence ≤ 0.7) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
-            ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three personalities on three models, settled by vote'],
+            ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three Sonnet personalities with different lens weights, settled by vote'],
           ].map(([when, mode, why]) => (
             <div key={mode + when} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(150px, 0.8fr) 1.2fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--rule)', fontSize: 13, alignItems: 'baseline' }}>
               <span style={{ color: 'var(--ink)' }}>{when}</span>
