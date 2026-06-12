@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-12 22:56
+generated: 2026-06-12 23:01
 nodes: 40
 edges: 50
 ---
@@ -43,7 +43,7 @@ graph LR
     CONSILIUM_SCOPE_GATE_001["scope_gate<br><small>CONSILIUM-SCOPE-GATE-001</small>"]
     CONSILIUM_STRIP_CONTEXT_001["strip_context<br><small>CONSILIUM-STRIP-CONTEXT-001</small>"]
     CONSILIUM_SUBAGENT_001["consilium-subagent<br><small>CONSILIUM-SUBAGENT-001</small>"]
-    CONSILIUM_TRIAS_HAIKU_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-HAIKU-SCHEMA-001</small>"]
+    CONSILIUM_TRIAS_MODEL_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-MODEL-SCHEMA-001</small>"]
     CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small>"]
     CONSILIUM_VALIDATE_REPORT_001["validate_report<br><small>CONSILIUM-VALIDATE-REPORT-001</small>"]
     CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
@@ -73,14 +73,14 @@ graph LR
   CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_ARCHITECT_001
   CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_STEWARD_001
   CONSILIUM_SUBAGENT_001 --> CONSILIUM_MODE_SEQUENTIAL_001
-  CONSILIUM_TRIAS_HAIKU_SCHEMA_001 --> CONSILIUM_MODE_TRIAS_001
+  CONSILIUM_TRIAS_MODEL_SCHEMA_001 --> CONSILIUM_MODE_TRIAS_001
   SKILL_RUN_CONSILIUM_001 --> CONSILIUM_AGGREGATOR_001
   SKILL_RUN_CONSILIUM_001 --> CONSILIUM_CONFIDENCE_001
   style CONSILIUM_FEEDBACK_001 stroke-width:3px
   style CONSILIUM_PERSONALITIES_001 stroke-width:3px
   style CONSILIUM_RENDER_FEEDBACK_HTML_001 stroke-width:3px
   style CONSILIUM_SUBAGENT_001 stroke-width:3px
-  style CONSILIUM_TRIAS_HAIKU_SCHEMA_001 stroke-width:3px
+  style CONSILIUM_TRIAS_MODEL_SCHEMA_001 stroke-width:3px
   style CONSILIUM_UTILS_001 stroke-width:3px
   style CONSILIUM_VALIDATE_REPORT_001 stroke-width:3px
   style CONSILIUM_VOCABULARY_MAP_001 stroke-width:3px
@@ -224,11 +224,11 @@ graph LR
   CONSILIUM_SUBAGENT_001["consilium-subagent<br><small>CONSILIUM-SUBAGENT-001</small>"]
   f_agents_consilium_subagent_md_111["agents/consilium-subagent.md:111"]
   CONSILIUM_SUBAGENT_001 -->|implements| f_agents_consilium_subagent_md_111
-  CONSILIUM_TRIAS_HAIKU_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-HAIKU-SCHEMA-001</small>"]
+  CONSILIUM_TRIAS_MODEL_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-MODEL-SCHEMA-001</small>"]
   f_scripts_personalities_py_14["scripts/personalities.py:14"]
-  CONSILIUM_TRIAS_HAIKU_SCHEMA_001 -->|implements| f_scripts_personalities_py_14
+  CONSILIUM_TRIAS_MODEL_SCHEMA_001 -->|implements| f_scripts_personalities_py_14
   f_scripts_test_trias_model_schema_py_12["scripts/test_trias_model_schema.py:12"]
-  CONSILIUM_TRIAS_HAIKU_SCHEMA_001 -->|tested-by| f_scripts_test_trias_model_schema_py_12
+  CONSILIUM_TRIAS_MODEL_SCHEMA_001 -->|tested-by| f_scripts_test_trias_model_schema_py_12
   CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small>"]
   f_scripts_test_utils_py_10["scripts/test_utils.py:10"]
   CONSILIUM_UTILS_001 -->|tested-by| f_scripts_test_utils_py_10

@@ -11,7 +11,7 @@ CLI:
     python personalities.py <N>              # legacy form — rejected with exit 2
 """
 # implements: CONSILIUM-PERSONALITIES-001
-# implements: CONSILIUM-TRIAS-HAIKU-SCHEMA-001
+# implements: CONSILIUM-TRIAS-MODEL-SCHEMA-001
 
 from __future__ import annotations
 

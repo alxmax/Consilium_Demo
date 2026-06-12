@@ -9,7 +9,7 @@ Validates that:
 CLI: python -X utf8 scripts/test_trias_model_schema.py
 Exit 0 = all assertions passed.
 """
-# tested-by: CONSILIUM-TRIAS-HAIKU-SCHEMA-001
+# tested-by: CONSILIUM-TRIAS-MODEL-SCHEMA-001
 
 from __future__ import annotations
 

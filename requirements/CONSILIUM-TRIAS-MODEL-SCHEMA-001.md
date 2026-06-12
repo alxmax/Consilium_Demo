@@ -1,6 +1,6 @@
 ---
 milestone: v1.1
-id: CONSILIUM-TRIAS-HAIKU-SCHEMA-001
+id: CONSILIUM-TRIAS-MODEL-SCHEMA-001
 status: confirmed
 layer: bus
 owner: auto

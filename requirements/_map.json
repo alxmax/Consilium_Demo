@@ -1137,7 +1137,7 @@
         "CONSILIUM-PERSONALITIES-001"
       ],
       "used_by": [
-        "CONSILIUM-TRIAS-HAIKU-SCHEMA-001"
+        "CONSILIUM-TRIAS-MODEL-SCHEMA-001"
       ],
       "satisfies": [],
       "satisfied_by": [],
@@ -1186,7 +1186,7 @@
         "CONSILIUM-LENS-PIONEER-001",
         "CONSILIUM-LENS-STEWARD-001",
         "CONSILIUM-MODE-TRIAS-001",
-        "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+        "CONSILIUM-TRIAS-MODEL-SCHEMA-001",
         "CONSILIUM-VALIDATE-REPORT-001"
       ],
       "satisfies": [],
@@ -1504,7 +1504,7 @@
       "risks": []
     },
     {
-      "id": "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+      "id": "CONSILIUM-TRIAS-MODEL-SCHEMA-001",
       "layer": "bus",
       "status": "confirmed",
       "area": "CONSILIUM",
@@ -2183,11 +2183,11 @@
       "CONSILIUM-MODE-SEQUENTIAL-001"
     ],
     [
-      "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+      "CONSILIUM-TRIAS-MODEL-SCHEMA-001",
       "CONSILIUM-PERSONALITIES-001"
     ],
     [
-      "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+      "CONSILIUM-TRIAS-MODEL-SCHEMA-001",
       "CONSILIUM-MODE-TRIAS-001"
     ],
     [
