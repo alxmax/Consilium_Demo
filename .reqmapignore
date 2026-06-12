@@ -15,3 +15,5 @@ scripts/fix_benchmark_pendings.py
 .consilium/**
 docs/architecture/src/**
 docs/architecture/build.py
+# Legacy map viewer from Consilium_Demo public repo — generated artifact with stale tags
+docs/map.html
