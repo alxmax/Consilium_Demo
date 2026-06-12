@@ -4207,7 +4207,7 @@ function CostScatter() {
     { id: 'SEQ',  x: 0.20, y: 1.00, label: 'Sequential', cost: '1× · $0.189', model: 'Sonnet 4.6', sub: 'default · 0 sub-agents', color: 'var(--con)' },
     { id: 'DIAL', x: 0.40, y: 1.33, label: 'Dialectic', cost: '1.33×', model: 'Sonnet 4.6', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
     { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet 4.6', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
-    { id: 'TRI',  x: 0.90, y: 4.00, label: 'Trias', cost: '4×', model: 'Haiku · Sonnet · Opus', sub: '6 sub-agents · 3 personality + 3 Skeptic', color: 'oklch(0.55 0.16 320)' },
+    { id: 'TRI',  x: 0.90, y: 4.00, label: 'Trias', cost: '4×', model: 'Sonnet (all 3)', sub: '6 sub-agents · 3 personality + 3 Skeptic', color: 'oklch(0.55 0.16 320)' },
   ];
 
   const W = 720, H = 360;
@@ -4222,7 +4222,7 @@ function CostScatter() {
     <div style={{ margin: '24px 0' }}>
       <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6 }}>Cost vs voice independence</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 720 }}>
-        Where each mode lands on the cost / isolation map. <code>BARE</code> (<code>sonnet_bare</code>, no Consilium) is the measured baseline — it sits below 1×; the deliberation modes cost more for the auditable process they add. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 4× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. Dispatched voices are pinned to <strong>Sonnet 4.6</strong> — except the Trias personalities, which run on <strong>Haiku / Sonnet / Opus</strong> (one each, per <code>personalities.py</code>); the orchestrator runs on <strong>your session model</strong>, with an opt-in <strong>Opus</strong> override on the Generator for high-stakes changes.
+        Where each mode lands on the cost / isolation map. <code>BARE</code> (<code>sonnet_bare</code>, no Consilium) is the measured baseline — it sits below 1×; the deliberation modes cost more for the auditable process they add. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 4× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. Dispatched voices are pinned to <strong>Sonnet 4.6</strong> — including all three Trias personalities (per <code>personalities.py</code>); divergence comes from lens re-weighting, not model tier. The orchestrator runs on <strong>your session model</strong>, with an opt-in <strong>Opus</strong> override on the Generator for high-stakes changes.
       </p>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="diagram">
@@ -6023,7 +6023,7 @@ function ModesSection() {
             ['Obvious bugfix, or diff < 20 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
             ['Any other PR-level review', 'Sequential', 'auto Parallel cross-check fires on critical + irreversible'],
             ['A chosen answer came back shaky (confidence ≤ 0.7) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
-            ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three personalities on three models, settled by vote'],
+            ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three Sonnet personalities with different lens weights, settled by vote'],
           ].map(([when, mode, why]) => (
             <div key={mode + when} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(150px, 0.8fr) 1.2fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--rule)', fontSize: 13, alignItems: 'baseline' }}>
               <span style={{ color: 'var(--ink)' }}>{when}</span>
@@ -6486,7 +6486,7 @@ const LENSES = [
   {
     name: 'Pioneer',
     tag: 'bold',
-    model: 'Haiku',
+    model: 'Sonnet',
     g: 0.49, c: 0.30, k: 0.21,
     desc: 'Values bold, high-reward approaches that push the codebase forward. Tolerates moderate risk for genuinely new solutions. Prefers new patterns over existing ones when the new pattern offers a clear gain.',
   },
@@ -6500,7 +6500,7 @@ const LENSES = [
   {
     name: 'Steward',
     tag: 'protective',
-    model: 'Opus',
+    model: 'Sonnet',
     g: 0.30, c: 0.30, k: 0.40,
     desc: 'Values reversibility, minimal scope, and protection of systems that already work. Prefers existing patterns over novel ones unless the new is clearly necessary. Blast radius is the dominant concern.',
   },
@@ -6530,7 +6530,7 @@ function TriasSection() {
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Three Claudes each run the full pipeline — one is told to be bold, one structural, one cautious. Each personality also runs on a <strong>different model</strong>: Pioneer on Haiku, Architect on Sonnet, Steward on Opus — so the three disagree for two independent reasons (lens <em>and</em> model temperament), while the per-token price averages out to roughly three Sonnet dispatches. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
+            <p>Three Claudes each run the full pipeline — one is told to be bold, one structural, one cautious. All three run on <strong>Sonnet</strong> — divergence comes purely from the lens re-weighting (Pioneer up-weights Generator, Steward up-weights Conservator, Architect balances). Empirical baseline: ≈52% non-unanimity at n=25. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
           </div>
         </div>
 
