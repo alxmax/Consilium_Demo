@@ -6,7 +6,7 @@ Validates that:
 3. No personality carries schema_less.
 4. CLI emits valid JSON with model fields.
 
-CLI: python -X utf8 scripts/test_trias_haiku_schema.py
+CLI: python -X utf8 scripts/test_trias_model_schema.py
 Exit 0 = all assertions passed.
 """
 # tested-by: CONSILIUM-TRIAS-HAIKU-SCHEMA-001

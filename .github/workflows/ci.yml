@@ -56,8 +56,8 @@ jobs:
         run: python scripts/test_audit_counter.py
       - name: Vote degeneracy tests
         run: python scripts/test_vote_degeneracy.py
-      - name: Trias Haiku schema and model-diversity tests
-        run: python scripts/test_trias_haiku_schema.py
+      - name: Trias model schema tests
+        run: python scripts/test_trias_model_schema.py
       - name: Mode-doc drift invariants (check_doc_drift)
         run: python scripts/check_doc_drift.py
       - name: Architecture explainer build is in sync

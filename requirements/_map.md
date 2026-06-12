@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-12 22:42
+generated: 2026-06-12 22:56
 nodes: 40
 edges: 50
 ---
@@ -227,8 +227,8 @@ graph LR
   CONSILIUM_TRIAS_HAIKU_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-HAIKU-SCHEMA-001</small>"]
   f_scripts_personalities_py_14["scripts/personalities.py:14"]
   CONSILIUM_TRIAS_HAIKU_SCHEMA_001 -->|implements| f_scripts_personalities_py_14
-  f_scripts_test_trias_haiku_schema_py_12["scripts/test_trias_haiku_schema.py:12"]
-  CONSILIUM_TRIAS_HAIKU_SCHEMA_001 -->|tested-by| f_scripts_test_trias_haiku_schema_py_12
+  f_scripts_test_trias_model_schema_py_12["scripts/test_trias_model_schema.py:12"]
+  CONSILIUM_TRIAS_HAIKU_SCHEMA_001 -->|tested-by| f_scripts_test_trias_model_schema_py_12
   CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small>"]
   f_scripts_test_utils_py_10["scripts/test_utils.py:10"]
   CONSILIUM_UTILS_001 -->|tested-by| f_scripts_test_utils_py_10
