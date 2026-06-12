@@ -97,10 +97,10 @@ def smoke():
         "test_strip_context.py",
         "test_utils.py",
         "test_scope_gate.py",
-        "test_retry_context.py",
         "test_implement_mode.py",
         "test_audit_counter.py",
         "test_vote_degeneracy.py",
+        "test_trias_haiku_schema.py",
     ):
         failures += run(suite, script(suite)).returncode != 0
     failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0

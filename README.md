@@ -73,13 +73,7 @@ The chosen approach beat `do_nothing` and a plausible-but-weaker alternative —
 
 ## Pipeline trace
 
-Every run records its executed path. `trace_graph.py` reads a `.consilium/runs/` report and emits a Mermaid flowchart of what actually fired — which steps ran, which short-circuited, and how sub-agents were dispatched:
-
-```bash
-python scripts/trace_graph.py --input .consilium/runs/<file>.json --fence
-```
-
-Here is the trace for the run shown above (`fix_canonical`, Sequential mode):
+Every run records its executed path in `deliberation_log` — which steps ran, which short-circuited, and how sub-agents were dispatched. Here is the executed path for the run shown above (`fix_canonical`, Sequential mode), rendered as a flowchart:
 
 ```mermaid
 flowchart TD
@@ -135,10 +129,10 @@ What this project concretely shows, in Agentic-AI / LLMOps terms. Rated **Full**
 | Multi-agent orchestration | Full | 3 voices + 3 Trias personalities + Skeptic, dispatched as isolated sub-agents (`agents/`, `scripts/personalities.py`) |
 | Planner / executor split | Full | orchestrator selects the mode and scope-gates, then dispatches voice executors |
 | Deterministic orchestration | Full | `scope_gate → voices → aggregator → validate_report → implementation pipeline`, all stdlib scripts |
-| Retry / reflection / self-healing | Full | `retry_context.py` (low-confidence re-deliberation), sub-agent-crash fallback, malformed-JSON retry, red→green test gate |
+| Retry / reflection / self-healing | Full | Step 5d low-confidence retry (the orchestrator gathers discriminating evidence and re-runs the voices once), sub-agent-crash fallback, malformed-JSON retry, red→green test gate |
 | Agent execution visualization | Full | the interactive architecture explainer (`docs/architecture/`) |
 | Agent memory | **Partial** | 3 tiers via `memory.py` — session context, `.consilium/runs/*.json` episodic logs, `.consilium/FEEDBACK.html` outcome journal. This is **journaling + run logs, not vector / retrieval-augmented memory** |
-| Token-cost telemetry | Full (instrumentation) | per-dispatch telemetry → `efficiency.py` / `usage.py`. The explainer's tokens-per-dispatch figures are **measured** from real run telemetry; the stricter `tokens_per_OK` metric is implemented but withheld until enough runs carry a confirmed OK/BAD label |
+| Token-cost telemetry | Full (instrumentation) | per-dispatch telemetry (`telemetry.voices.<name>`) recorded in every run. The explainer's tokens-per-dispatch figures are **measured** from real run telemetry (frozen snapshot, 2026-05-30 — the rollup script was retired in the 2026-06-04 dead-code triage) |
 | Regression testing | Full | `evals/scenarios.json` + `run_evals.py` — deterministic subprocess tests of the scripts (not LLM-output evals) |
 | Benchmarking vs baselines | Full | `benchmark/` compares each mode against bare-model baselines with a hidden oracle kept out-of-tree |
 | Fabrication / hallucination discipline | **Partial** | a documented independent-oracle rule for any quantitative claim (`experiments/README.md`) — a review process, not an automated metric |
@@ -152,7 +146,7 @@ What this project concretely shows, in Agentic-AI / LLMOps terms. Rated **Full**
 > - **Vocabulary / diagrams only, no dependency** — rejected as cargo-culting: it borrows LangGraph's mental model with zero runtime benefit.
 > - **Isolated post-hoc sidecar** (`experiments/langgraph_replay/` rendering `runs/*.json`) — the closest to viable, rejected because it would need a hard, fragile contract that `experiments/` is *never* imported by `scripts/`, to keep the dependency strictly off the runtime path.
 >
-> The deterministic glue (aggregator veto cascade, confidence, scope gate, `validate_report`) is already pure stdlib functions over JSON — independently runnable and testable as CLIs. State and resume are already file-based: every run persists as canonical JSON in `.consilium/runs/`, which *doubles* as episodic memory, the priors source, and the audit trail (globbed by `priors.py` / `usage.py` / `memory.py`). A framework checkpointer would duplicate or displace that contract; a dependency tree would add supply-chain and version surface plus indirection through the authoritative `prompts/voices/*.md` — net more surface, no new capability. The deliberations are recorded in `.consilium/runs/` (local, gitignored).
+> The deterministic glue (aggregator veto cascade, confidence, scope gate, `validate_report`) is already pure stdlib functions over JSON — independently runnable and testable as CLIs. State and resume are already file-based: every run persists as canonical JSON in `.consilium/runs/`, which *doubles* as episodic memory, the priors source, and the audit trail (globbed by `priors.py` / `feedback.py` / `memory.py`). A framework checkpointer would duplicate or displace that contract; a dependency tree would add supply-chain and version surface plus indirection through the authoritative `prompts/voices/*.md` — net more surface, no new capability. The deliberations are recorded in `.consilium/runs/` (local, gitignored).
 
 > **Why not RAG / vector memory?** The retrieval surface is small and *structured*, not a corpus: priors come from globbing `.consilium/runs/*.json` and parsing `FEEDBACK.html` — tens to low-hundreds of records — and selection is by recency, `--label` substring, and OK/BAD outcome. That lookup is exact, cheap to scan in full, and fully explainable. Embeddings + an ANN index would add a vector store and an embedding-model dependency to *approximately* match over a set small enough to read exhaustively — trading a deterministic, auditable query for a fuzzy one with no recall it couldn't already get. The precondition for RAG (a large unstructured corpus) isn't present, so it stays out of scope.
 

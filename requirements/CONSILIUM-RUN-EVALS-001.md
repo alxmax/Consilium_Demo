@@ -27,6 +27,11 @@ Regression harness for all deterministic scripts in the Consilium pipeline. It r
 - Summary line `<N> passed, <M> failed` to stderr
 - exit code 0 when all scenarios pass; 1 when any fail; 2 on load or corpus errors
 
+## WHAT — Contract
+- Shall read `evals/scenarios.json` (or `--scenarios` override), spawn each scenario's named script as a subprocess, and verify exit code, stdout (JSON subset-match or text substring), and stderr substrings against declared expectations.
+- Shall run a pre-flight linter before any scenario: every `validate_report` fixture must carry `pipeline_executed`, and bypass-chosen fixtures must set it to `false`; corpus violations shall exit 2 before any scenario runs.
+- Shall exit 0 when all scenarios pass, 1 when any fail, and 2 on load or corpus errors.
+
 ## WHAT — Verify intent
 - None - all questions resolved.
 

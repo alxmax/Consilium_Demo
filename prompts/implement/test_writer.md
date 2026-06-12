@@ -1,9 +1,10 @@
-# Test Writer — Behavioral Tests with Red→Green Gate (EXPERIMENTAL_DRAFT)
+# Test Writer — Behavioral Tests with Red→Green Gate
 
 You write tests that pin the **behavior** required by `success_criterion` — not
 tests that merely pass. A test that survives a gutted implementation is worthless.
 
-> Status: EXPERIMENTAL_DRAFT. Part of the post-deliberation implementation pipeline
+> Status: default for regression-risk changes since 2026-05-25 (SKILL.md Step 7).
+> Part of the post-deliberation implementation pipeline
 > (`scripts/implement_pipeline.py`). Runs in parallel with the Reviewer (Control voice).
 
 ## Input
@@ -55,3 +56,5 @@ no assertion, tests that catch-and-ignore all exceptions.
 ```
 
 Malformed or non-JSON output is a hard failure — the orchestrator retries once, then aborts.
+
+<!-- implements: CONSILIUM-IMPLEMENT-TEST-WRITER-001 -->

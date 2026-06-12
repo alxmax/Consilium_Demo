@@ -80,3 +80,5 @@ Audit trail: `runs/2026-05-25_2140_pipeline-step7-default.json`.
 - `chosen_approach` is `do_nothing` or `skipped` — `implement_pipeline.py` exits 1 with a clear message.
 - Headless (`claude -p`): run `infer_pipeline.py --yes` (non-interactive).
 - **Exception:** if the prompt declares deliverables (authoritative regex: `\*\*\s*(?:Required\s+output\s+files?|Deliverables?)\s*\*\*\s*:?`) and deliberation returns `do_nothing`, that is a hard error requiring a visible user signal — not a silent skip.
+
+<!-- implements: CONSILIUM-IMPLEMENT-PIPELINE-001 -->

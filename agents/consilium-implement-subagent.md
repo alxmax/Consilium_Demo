@@ -21,21 +21,35 @@ deliberation that produced the report; this file specifies the *implementation* 
 ## Working directory
 
 Your CWD on dispatch is the orchestrator's project, **not** the skill install directory. Before
-any script call or `Read prompts/*.md`, set the skill path:
+any script call or `Read prompts/*.md`, resolve the skill path. Try, in order: an already-set
+`CONSILIUM_PATH`, the manual skill install, the newest plugin-cache version, and finally the
+CWD itself (when dispatched inside the Consilium repo):
 
 ```bash
 # Unix / Git Bash on Windows
-export CONSILIUM_PATH="$HOME/.claude/skills/consilium"
-test -f "$CONSILIUM_PATH/SKILL.md" || { echo "consilium skill not found at $CONSILIUM_PATH" >&2; exit 1; }
+if [ -z "$CONSILIUM_PATH" ] || [ ! -f "$CONSILIUM_PATH/SKILL.md" ]; then
+  for c in "$HOME/.claude/skills/consilium" \
+           "$(ls -d "$HOME"/.claude/plugins/cache/consilium/consilium/*/ 2>/dev/null | sort -V | tail -1)" \
+           "$PWD"; do
+    if [ -n "$c" ] && [ -f "$c/SKILL.md" ]; then export CONSILIUM_PATH="${c%/}"; break; fi
+  done
+fi
+test -f "$CONSILIUM_PATH/SKILL.md" || { echo "consilium skill not found (tried skills dir, plugin cache, CWD)" >&2; exit 1; }
 ```
 
 ```powershell
 # Windows — PowerShell native
-$env:CONSILIUM_PATH = "$env:USERPROFILE\.claude\skills\consilium"
-if (-not (Test-Path "$env:CONSILIUM_PATH\SKILL.md")) { throw "consilium skill not found at $env:CONSILIUM_PATH" }
+if (-not $env:CONSILIUM_PATH -or -not (Test-Path "$env:CONSILIUM_PATH\SKILL.md")) {
+  $candidates = @("$env:USERPROFILE\.claude\skills\consilium")
+  $cache = Get-ChildItem "$env:USERPROFILE\.claude\plugins\cache\consilium\consilium" -Directory -ErrorAction SilentlyContinue | Sort-Object { [version]($_.Name) } | Select-Object -Last 1
+  if ($cache) { $candidates += $cache.FullName }
+  $candidates += (Get-Location).Path
+  $env:CONSILIUM_PATH = $candidates | Where-Object { Test-Path "$_\SKILL.md" } | Select-Object -First 1
+}
+if (-not $env:CONSILIUM_PATH) { throw "consilium skill not found (tried skills dir, plugin cache, CWD)" }
 ```
 
-If `CONSILIUM_PATH/SKILL.md` is missing, return `{"error": "consilium skill not installed at expected path", "expected": "<path>"}` and stop — do not fabricate output.
+If no candidate has a `SKILL.md`, return `{"error": "consilium skill not installed at any expected path", "tried": ["skills dir", "plugin cache", "cwd"]}` and stop — do not fabricate output.
 
 ## Pipeline sequence
 
@@ -133,15 +147,19 @@ Pass criteria:
 
 ## Install
 
-Part of the `consilium` repo. To make it discoverable by Claude Code, symlink into your user agents dir:
+Part of the `consilium` repo. Installing the plugin ships this agent automatically
+(`consilium:consilium-implement-subagent`). For a user-level copy (resolved by the unprefixed
+name), copy the file — note that NTFS junctions do **not** work on files, so re-copy after
+editing the source (the 2026-06-10 audit found a stale copy still advertising draft status):
 
 ```powershell
-# Windows (PowerShell, junction — no admin needed)
-New-Item -ItemType Junction -Path $HOME\.claude\agents\consilium-implement-subagent.md `
-                            -Target $HOME\dev\consilium\agents\consilium-implement-subagent.md
+# Windows (PowerShell) — re-run after any change to the source file
+Copy-Item <repo>\agents\consilium-implement-subagent.md $HOME\.claude\agents\ -Force
 ```
 
 ```bash
-# Unix
-ln -s ~/dev/consilium/agents/consilium-implement-subagent.md ~/.claude/agents/consilium-implement-subagent.md
+# Unix — symlink stays in sync automatically
+ln -s <repo>/agents/consilium-implement-subagent.md ~/.claude/agents/consilium-implement-subagent.md
 ```
+
+<!-- implements: CONSILIUM-IMPLEMENT-SUBAGENT-001 -->

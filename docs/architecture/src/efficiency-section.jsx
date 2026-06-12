@@ -4,7 +4,7 @@
 const MODES_DATA = [
   { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  note: 'in-context baseline' },
   { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
-  { mode: 'trias',       costMultiplier: '3×',    dispatches: 3,  note: '3 personality sub-agents (9 voice runs)' },
+  { mode: 'trias',       costMultiplier: '4×',    dispatches: 6,  note: '3 personality + 3 Skeptic sub-agents' },
   { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, note: 'composable flag over any base' },
 ];
 
@@ -17,7 +17,7 @@ const MEASURED_COST = [
   { mode: 'superpowers',          usd: '$0.124', vsBare: '0.8×', note: 'generic agent-skill harness' },
   { mode: 'consilium_sequential', usd: '$0.189', vsBare: '1.3×', note: 'Consilium default' },
   { mode: 'consilium_dialectic',  usd: '$0.398', vsBare: '2.7×', note: '+ Skeptic + code context' },
-  { mode: 'consilium_trias',      usd: '$0.612', vsBare: '4.1×', note: '3 personality sub-agents' },
+  { mode: 'consilium_trias',      usd: '$0.612', vsBare: '4.1×', note: '3 personality sub-agents (measured pre-Skeptic config)' },
 ];
 
 function BarChart({ data }) {
@@ -98,8 +98,9 @@ function MeasuredCostTable() {
 
 function EfficiencySection() {
   // Measured by scripts/efficiency.py over runs/*.json telemetry (2026-05-30).
-  // tokens_per_dispatch is outcome-independent (no labelling needed), unlike
-  // tokens_per_OK which is still gated on more confirmed-OK labels.
+  // The rollup tool was retired in the 2026-06-04 dead-code triage — this is a
+  // frozen snapshot, not a live feed. tokens_per_dispatch is outcome-independent
+  // (no labelling needed), unlike tokens_per_OK which stayed gated on labels.
   const measured = [
     { mode: 'sequential', value: 1565, label: '1 565 tok · n=131', model: 'Sonnet 4.6' },
     { mode: 'dialectic',  value: 2313, label: '2 313 tok · n=20',  model: 'Sonnet 4.6' },
@@ -114,7 +115,7 @@ function EfficiencySection() {
           num="12"
           eyebrow="Usage & Efficiency"
           title="How much does each mode actually cost?"
-          lede="scripts/efficiency.py rolls up per-dispatch telemetry from every run. The chart below is a frozen snapshot of measured tokens-per-dispatch, captured 2026-05-30 — re-run the command in the panel below for current numbers. The stricter tokens_per_OK metric also exists but is held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."
+          lede="The chart below is a frozen snapshot of measured tokens-per-dispatch, captured 2026-05-30 with scripts/efficiency.py — a rollup tool retired in the 2026-06-04 dead-code triage, so these are dated historical measurements, not a live feed. Per-run telemetry still accumulates in each repo's .consilium/runs/*.json. The stricter tokens_per_OK metric was held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 32, alignItems: 'start' }}>
@@ -138,7 +139,7 @@ function EfficiencySection() {
 
           <div>
             <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>tokens / dispatch (measured)</h3>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>frozen snapshot · <strong style={{ color: 'var(--ctl-ink)' }}>Sonnet 4.6</strong> · efficiency.py over runs/*.json · captured 2026-05-30</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginBottom: 16 }}>frozen snapshot · <strong style={{ color: 'var(--ctl-ink)' }}>Sonnet 4.6</strong> · captured 2026-05-30 · rollup tool retired 2026-06-04</p>
             <BarChart data={measured} />
           </div>
         </div>
@@ -160,21 +161,18 @@ function EfficiencySection() {
         </div>
 
         <div style={{ marginTop: 20, padding: '20px 24px', background: 'var(--paper-2)', border: '1px solid var(--rule)', borderRadius: 4 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 12 }}>Reproduce / live data</div>
-          <code style={{ display: 'block', fontSize: 12, fontFamily: 'var(--font-mono)', lineHeight: 1.8, color: 'var(--ink)' }}>
-            python scripts/efficiency.py --by-mode<br />
-            python scripts/efficiency.py --self-test<br />
-            python scripts/efficiency.py --compare trias sequential --since 2026-05-01
-          </code>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 12 }}>Provenance</div>
+          <p style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.7, margin: 0 }}>
+            These numbers were produced by <code style={{ fontFamily: 'var(--font-mono)' }}>scripts/efficiency.py --by-mode</code> on 2026-05-30. The rollup script was retired in the 2026-06-04 dead-code triage, so the snapshot above is preserved as a dated measurement rather than recomputed. Per-run telemetry still accumulates in each repo's <code style={{ fontFamily: 'var(--font-mono)' }}>.consilium/runs/*.json</code>; live outcome statistics (OK/BAD/override rates — a different metric than tokens/dispatch) are available via <code style={{ fontFamily: 'var(--font-mono)' }}>python scripts/feedback.py --recent 10 --runs</code>.
+          </p>
         </div>
 
         <div style={{ marginTop: 20, padding: '16px 24px', background: 'color-mix(in oklch, var(--con) 6%, var(--paper))', border: '1px solid color-mix(in oklch, var(--con) 20%, var(--rule))', borderRadius: 4 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--con)', marginBottom: 8 }}>Caveats</div>
           <ul style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.7, paddingLeft: 20 }}>
             <li>Token estimates use chars/4 (±10–20% error band), consistent across modes.</li>
-            <li>This is cost <em>per dispatch</em>, not per run — total run cost ≈ dispatches × this, which the cost-multiplier column on the left captures (Sequential 1×, Trias 3×).</li>
-            <li>`tokens_per_OK` (cost per confirmed-good outcome) is the stricter metric but is withheld until enough runs carry an OK/BAD label — most current runs are unlabeled, which would inflate it.</li>
-            <li>Modes with fewer than 3 runs with telemetry show <code style={{ fontFamily: 'var(--font-mono)' }}>insufficient_data</code>.</li>
+            <li>This is cost <em>per dispatch</em>, not per run — total run cost ≈ dispatches × this, which the cost-multiplier column on the left captures (Sequential 1×, Trias 4×).</li>
+            <li>`tokens_per_OK` (cost per confirmed-good outcome) is the stricter metric but was withheld from the snapshot — most runs at capture time were unlabeled, which would have inflated it.</li>
           </ul>
         </div>
       </div>

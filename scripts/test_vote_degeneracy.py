@@ -8,6 +8,7 @@ Locks the two corrections from Senate 2026-05-27:
   - only exact `"mode": "trias"` / `"trias_split"` runs are counted (no contamination
     from composite-mode runs that merely cite a vote_pattern)
 """
+# tested-by: CONSILIUM-VOTE-DEGENERACY-001
 
 from __future__ import annotations
 

@@ -226,14 +226,21 @@ def _ctrl_panel(run: dict) -> str:
             f'<div class="cand"><div><span class="cid">{cid}</span> '
             f'<span class="badge {badge_cls}">{badge_txt}</span></div>'
         )
+        # Older runs carry issues/tests as bare strings, not dicts — render both.
         for issue in v.get("issues") or []:
-            cat = _esc(issue.get("category", ""))
-            detail = _esc(issue.get("detail", ""))
-            parts.append(f'<div class="issue">{cat}: {detail}</div>')
+            if isinstance(issue, dict):
+                cat = _esc(issue.get("category", ""))
+                detail = _esc(issue.get("detail", ""))
+                parts.append(f'<div class="issue">{cat}: {detail}</div>')
+            else:
+                parts.append(f'<div class="issue">{_esc(str(issue))}</div>')
         for t in v.get("tests_to_write") or []:
-            name = _esc(t.get("name", ""))
-            assertion = _esc(t.get("assert", ""))
-            parts.append(f'<div class="test">{name}: {assertion}</div>')
+            if isinstance(t, dict):
+                name = _esc(t.get("name", ""))
+                assertion = _esc(t.get("assert", ""))
+                parts.append(f'<div class="test">{name}: {assertion}</div>')
+            else:
+                parts.append(f'<div class="test">{_esc(str(t))}</div>')
         parts.append("</div>")
     parts.append("</div>")
     return "".join(parts)

@@ -42,10 +42,13 @@ When confidence is at/above threshold, or when the bundle has only one
 candidate, ``retry_recommended`` is false and ``top_candidates`` is empty.
 
 CLI:
-    cat bundle.json | python scripts/retry_context.py
-    cat bundle.json | python scripts/retry_context.py --threshold 0.7
+    cat bundle.json | python scripts/deprecated/retry_context.py
+    cat bundle.json | python scripts/deprecated/retry_context.py --threshold 0.7
 """
-# implements: CONSILIUM-RETRY-CONTEXT-001
+# Retired 2026-06-10 — zero hint usage in the runs/ corpus while the Step 5d retry
+# itself succeeded orchestrator-driven (run 2026-06-10_2310). The retry step stays in
+# SKILL.md; only this hint generator is retired. Reqmap tag stripped with the
+# requirement (CONSILIUM-RETRY-CONTEXT-001 deleted in the same commit).
 
 from __future__ import annotations
 

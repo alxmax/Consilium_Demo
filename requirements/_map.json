@@ -1,5 +1,5 @@
 {
-  "engine_version": "2026-06-05.2",
+  "engine_version": "2026-06-12.4",
   "repo": "alxmax/Consilium_Demo",
   "nodes": [
     {
@@ -37,7 +37,13 @@
         "CONSILIUM-MODE-SEQUENTIAL-001",
         "SKILL-RUN-CONSILIUM-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
+        {
+          "role": "implements",
+          "loc": "modes/aggregator_schemes.md:55"
+        },
         {
           "role": "implements",
           "loc": "scripts/aggregator.py:29"
@@ -49,6 +55,109 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-AUDIT-COUNTER-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "Silent parallel audit counter",
+      "intent": "Tracks sequential deliberation runs and determines when a silent parallel cross-check is due, implementing the adaptive-cadence claim from SKILL.md §\"Silent parallel audit\".",
+      "contract": [
+        "Shall increment a persistent counter (`--increment`) after each sequential deliberation step 6 completes.",
+        "Shall report whether the current run is due for a silent parallel cross-check (`--check`), returning `{\"should_audit\": bool, \"sequential_count\": int, \"frequency\": int, ...}`.",
+        "Shall accept a divergence result (`--record-divergence 0|1`) and update the rolling 5-audit window; adapt frequency: if ≥2 divergences in the window and frequency=20, set frequency=5; if 0 divergences in a full window of 5 audits and frequency=5, restore to frequency=20.",
+        "`--check` shall return `should_audit: false` in headless contexts (`CLAUDE_HEADLESS=1`) even if the run is numerically due.",
+        "Prior-deliberation passthrough runs shall NOT increment the counter (they bypass both pipelines).",
+        "State shall be stored in `.consilium/audit_state.json` (gitignored).",
+        "The rolling window of 5 audits is intentionally fixed (not configurable) to maintain calibration stability across the follow-up audit cycle (SKILL.md §\"Silent parallel audit\")."
+      ],
+      "verify": [
+        "None — contract matches docstring and SKILL.md §\"Silent parallel audit\" exactly."
+      ],
+      "notes": [],
+      "current_impl": [
+        "scripts/audit_counter.py"
+      ],
+      "acc": [
+        "Given a fresh state, after 20 `--increment` calls, `--check` returns `should_audit: true`.",
+        "Given `should_audit: true` and `--record-divergence 1` twice (plus 3 zeros), frequency stays at 20 (needs ≥2 in window); given two more divergences, frequency flips to 5.",
+        "Given `CLAUDE_HEADLESS=1`, `--check` returns `should_audit: false` regardless of count.",
+        "Given `--status`, output contains `sequential_count`, `frequency`, `audit_count`, and `recent_divergences`."
+      ],
+      "accept": "- Given a fresh state, after 20 `--increment` calls, `--check` returns `should_audit: true`.\n- Given `should_audit: true` and `--record-divergence 1` twice (plus 3 zeros), frequency stays at 20 (needs ≥2 in window); given two more divergences, frequency flips to 5.\n- Given `CLAUDE_HEADLESS=1`, `--check` returns `should_audit: false` regardless of count.\n- Given `--status`, output contains `sequential_count`, `frequency`, `audit_count`, and `recent_divergences`.",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/audit_counter.py:52"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_audit_counter.py:16"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": null,
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-AUDIT-FEEDBACK-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "Orphan run detection and PEND backfill",
+      "intent": "Finds `.consilium/runs/*.json` files that have no matching row in `FEEDBACK.html` (orphans created when step 6 log is skipped) and optionally backfills them with default PEND rows so `priors.py` can surface them.",
+      "contract": [
+        "Without flags, shall list orphan runs (runs with no FEEDBACK.html row) and exit 0.",
+        "With `--backfill`, shall append one PEND row per orphan to `FEEDBACK.html` using the same note-derivation as `log_feedback.py`.",
+        "Shall never overwrite an existing row — a run is considered matched if any row shares the same date AND chosen_approach prefix.",
+        "With `--dry-run`, shall print the rows that would be appended without writing.",
+        "Backfill outcome shall always be PEND (never retroactively OK); the user closes them via the standard PEND→OK/BAD prompt at the next step 0."
+      ],
+      "verify": [
+        "None — contract matches docstring and SKILL.md Step 0 prose exactly."
+      ],
+      "notes": [],
+      "current_impl": [
+        "scripts/audit_feedback.py"
+      ],
+      "acc": [
+        "Given a run file with no FEEDBACK row, `audit_feedback.py` lists it; `--backfill` appends a PEND row; re-run lists nothing (idempotent).",
+        "Given a run file with an existing row, `--backfill` does not duplicate it.",
+        "Given `--dry-run`, no write occurs to FEEDBACK.html."
+      ],
+      "accept": "- Given a run file with no FEEDBACK row, `audit_feedback.py` lists it; `--backfill` appends a PEND row; re-run lists nothing (idempotent).\n- Given a run file with an existing row, `--backfill` does not duplicate it.\n- Given `--dry-run`, no write occurs to FEEDBACK.html.",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-FEEDBACK-001",
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/audit_feedback.py:29"
+        }
+      ],
+      "test_exempt": "integration-only — depends on live FEEDBACK.html + runs/; acceptance-tested via --dry-run and manual backfill",
+      "milestone": null,
+      "priority": "",
       "risks": []
     },
     {
@@ -58,7 +167,13 @@
       "area": "CONSILIUM",
       "title": "build_report",
       "intent": "Assembles the canonical deliberation report shape from intermediate voice/aggregation outputs.",
-      "contract": [],
+      "contract": [
+        "Shall assemble the canonical deliberation report shape from a JSON bundle containing `success_criterion`, `verification`, `generator`, `control`, `conservator`, `aggregate`, and `confidence`; missing any required key exits with code 1.",
+        "Shall extract `voice_scores` from the Control verdict and Conservator score lists for the chosen candidate.",
+        "Shall derive `why_not` summaries for non-chosen alternatives by combining Control issues and Conservator risk; falls back to `\"ranked below chosen\"` when neither source yields text, or `\"all candidates vetoed\"` when `chosen` is null.",
+        "Shall stamp `consilium_version` and `consilium_ref` from the version module into the telemetry block of every non-skipped report.",
+        "Skipped bundles (`skipped: true`) shall be handled via a separate code path requiring only `skip_reason` and `signals`; `pipeline_executed` shall be absent on skipped reports and `true` on all full-pipeline reports."
+      ],
       "verify": [
         "None - all questions resolved."
       ],
@@ -79,6 +194,8 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -87,10 +204,15 @@
         {
           "role": "tested-by",
           "loc": "scripts/test_build_report.py:11"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_version.py:103"
         }
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -123,6 +245,8 @@
       "desc": "Enforces parity between the authoritative behavior defined in SKILL.md and `scripts/confidence.py` and the human-readable documentation in `modes/*.md` and `docs/architecture/src/*.jsx`, preventing the class of silent drift found in the Senate audit of 2026-05-28 where four discrepancies had accumulated undetected. It runs four independent check families: text-based regex invariants (required/forbidden patterns in specific files), Trias confidence parity between `confidence.py`'s `VOTE_PATTERN_CONFIDENCE` dict and the `TRIAS_OUTCOMES` table in `trias.jsx` (parsed via AST and regex respectively), legacy MODE alias removal milestone enforcement (ensures dated removal comments accompany deprecated aliases in `validate_report.py`), and test-suite coverage (every `scripts/test_*.py` must appear in both `ci.yml` and the run-consilium driver). The script is intended to run before any commit that touches `modes/`, `docs/architecture/src/`, `scripts/confidence.py`, or `scripts/test_*.py`.",
       "deps": [],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -131,6 +255,7 @@
       ],
       "test_exempt": "reads live source files and runs git — integration-only gate",
       "milestone": "v1.1",
+      "priority": "",
       "risks": []
     },
     {
@@ -163,6 +288,8 @@
       "desc": "Guards the public release repository against accidentally referencing the private development repository or leaking local developer paths. It scans every git-tracked text file for two compiled regex patterns: a reference to the private dev repo (the owner/name slug, excluding the public `_Demo` mirror) and an absolute local path under the author's working tree. The exact patterns live in the source — this doc deliberately does not quote them, because doing so would itself trip the guard. Binary and image file extensions are skipped, and the guard file itself is excluded from its own scan. The check is wired into CI and fails with exit 1, printing the offending `file:line: description: match` tuples to stderr, making private-repo references un-shippable rather than a silent leak.",
       "deps": [],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -171,6 +298,7 @@
       ],
       "test_exempt": "subprocess git ls-files and filesystem scan — integration-only",
       "milestone": "v1.2",
+      "priority": "",
       "risks": []
     },
     {
@@ -207,7 +335,13 @@
       "used_by": [
         "SKILL-RUN-CONSILIUM-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
+        {
+          "role": "implements",
+          "loc": "modes/confidence.md:60"
+        },
         {
           "role": "implements",
           "loc": "scripts/confidence.py:57"
@@ -219,6 +353,7 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -228,7 +363,11 @@
       "area": "CONSILIUM",
       "title": "feedback",
       "intent": "Canonical FEEDBACK.html parser + a human-readable stats report over logged outcomes.",
-      "contract": [],
+      "contract": [
+        "`parse_feedback` shall parse `.consilium/FEEDBACK.html` supporting three row layouts in strict precedence order: attribute-based (`data-field`) first, then 8-cell positional (Trias), 7-cell positional (previous), 6-cell positional (legacy); rows with unrecognized `outcome` values shall be silently dropped.",
+        "Shall return an empty list without error when FEEDBACK.html does not exist.",
+        "The success-rate denominator shall be `OK + BAD + OVR` only; `PEND` and `PEND_HEADLESS` shall be excluded from the rate calculation."
+      ],
       "verify": [
         "None - all questions resolved."
       ],
@@ -249,11 +388,14 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [
+        "CONSILIUM-AUDIT-FEEDBACK-001",
         "CONSILIUM-LOG-FEEDBACK-001",
         "CONSILIUM-MARK-OUTCOME-001",
         "CONSILIUM-MEMORY-001",
         "CONSILIUM-PRIORS-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -262,6 +404,54 @@
       ],
       "test_exempt": "file I/O wrapper with no isolated pure-function surface",
       "milestone": "v1.0",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-IMPLEMENT-CODER-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "implement-coder",
+      "intent": "WHY: Isolates implementation from test-writing so the two roles can run in parallel without file conflicts and so the Red→Green gate has a clean stub to test against. The Coder owns all implementation paths and never touches test files.",
+      "contract": [
+        "The Coder voice shall write the minimum code satisfying `chosen_approach + success_criterion`, using only the Write tool; it shall not write test files (disjoint-path rule — `test_*` paths belong to the Test Writer).",
+        "Coder output shall be strict JSON containing `files_written[]` (each entry has `path`, `purpose`, `symbols[]`) and `maps_to_criterion` (one sentence describing how the written code satisfies the success criterion).",
+        "If `chosen_approach.sketch` is insufficient to implement without guessing a missing decision, the Coder shall set `blocked: true` with a non-null `blocked_reason` describing the specific missing decision; it shall not fabricate intent.",
+        "Any file that the Coder would touch outside the paths specified by `chosen_approach` / `files_touched` shall be reported in `scope_escapes[]` and the Coder shall not edit that file.",
+        "Malformed or non-JSON output is a hard failure; the implement-subagent retries the dispatch once, then aborts."
+      ],
+      "verify": [
+        "None — all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [
+        "prompts/implement/coder.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a well-formed chosen_approach and success_criterion\n  When  the Coder completes\n  Then  output parses as JSON with non-empty files_written, non-empty maps_to_criterion, and blocked = false\n\nAC-2\n  Given a chosen_approach with an incomplete sketch (insufficient to implement without guessing)\n  When  the Coder processes the input\n  Then  blocked = true and blocked_reason is a non-null, non-empty string; no files are written\n\nAC-3\n  Given a task that would require touching a path outside files_touched\n  When  the Coder detects the scope escape\n  Then  the out-of-scope path appears in scope_escapes[], the Coder stops before writing it, and the path does not appear in files_written",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-IMPLEMENT-PIPELINE-001"
+      ],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/implement/coder.md:54"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_implement_pipeline.py:7"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.1",
+      "priority": "",
       "risks": []
     },
     {
@@ -295,8 +485,19 @@
       "deps": [
         "CONSILIUM-UTILS-001"
       ],
-      "used_by": [],
+      "used_by": [
+        "CONSILIUM-IMPLEMENT-CODER-001",
+        "CONSILIUM-IMPLEMENT-SUBAGENT-001",
+        "CONSILIUM-IMPLEMENT-TEST-WRITER-001",
+        "CONSILIUM-INFER-PIPELINE-001"
+      ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
+        {
+          "role": "implements",
+          "loc": "modes/implement_pipeline.md:84"
+        },
         {
           "role": "implements",
           "loc": "scripts/implement_pipeline.py:32"
@@ -308,6 +509,154 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-IMPLEMENT-SUBAGENT-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "consilium-implement-subagent",
+      "intent": "WHY: Post-deliberation implementation vehicle that translates a GO Consilium report into written code + tests. Keeps implementation work out of the orchestrator context, enforces disjoint-path ownership between Coder and Test Writer, and gates output with Red→Green test verification.",
+      "contract": [
+        "The system shall provide a `consilium-implement-subagent` agent that, given a GO Consilium deliberation report, executes the Coder → (Test Writer ∥ Reviewer) pipeline and returns a JSON file manifest — NOT a `.consilium/runs/` deliberation report.",
+        "Pipeline sequence: (1) Coder writes implementation files; (2) Test Writer and Reviewer are dispatched in parallel on the written code; (3) Red→Green gate verifies tests are RED against a stub and GREEN against the real implementation.",
+        "The subagent shall enforce disjoint-path ownership: Coder writes implementation files; Test Writer writes `test_*` files only; Reviewer writes nothing.",
+        "If the Coder or Test Writer returns malformed or non-JSON output, the subagent shall retry that dispatch once; on second failure it shall abort and return `{\"error\": \"subagent_json_invalid\", \"role\": \"<coder|test_writer>\"}`. It shall never proceed on an empty or fabricated manifest.",
+        "The subagent shall not re-run the deliberation; `chosen_approach` from the input report is the fixed spec.",
+        "Output contract: strict JSON with `files_written`, `test_files_written`, `gate` (red_ok, green_ok, gate_passed), `gate_rejected`, `review`, `blocked`, `blocked_reason`."
+      ],
+      "verify": [
+        "None — all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [
+        "agents/consilium-implement-subagent.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a GO report with non-empty chosen_approach and success_criterion\n  When  the subagent runs\n  Then  the final message parses as JSON matching the output contract, files_written exist on disk, test_files_written are test_* only, and no runs/<file>.json was created\n\nAC-2\n  Given a GO report where chosen_approach is do_nothing or skipped\n  When  the subagent processes the input\n  Then  it exits early (dry-run indicates skip) without writing any files\n\nAC-3\n  Given a Coder or Test Writer that returns malformed JSON\n  When  the retry fires and also fails\n  Then  the subagent returns the error JSON and does not proceed to the gate or manifest assembly",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-IMPLEMENT-PIPELINE-001",
+        "CONSILIUM-SUBAGENT-001"
+      ],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "agents/consilium-implement-subagent.md:165"
+        }
+      ],
+      "test_exempt": "agent spec document — behavioral contract validated by Step 7 auto-dispatch integration and implement-subagent smoke tests",
+      "milestone": "v1.1",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-IMPLEMENT-TEST-WRITER-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "implement-test-writer",
+      "intent": "WHY: Separates test authorship from implementation to enable parallel execution and to enforce the Red→Green gate independently. The Test Writer owns test_* files exclusively; implementation files are never touched by this role.",
+      "contract": [
+        "The Test Writer voice shall write `test_*` files only (disjoint-path rule); it shall never write or edit implementation files.",
+        "Every test emitted shall satisfy the Red→Green gate: `fails_on_empty_impl` shall be true for each test — meaning the test must fail against a `raise NotImplementedError` stub and pass against the real implementation. A test that passes against the stub is not pinning behavior and is rejected.",
+        "Test Writer output shall be strict JSON containing `test_files_written[]` (each entry has `path` and `covers`), `tests[]` (each entry has `name`, `targets_symbol`, `behavior_pinned`, `fails_on_empty_impl`, `why`), and `uncoverable[]`.",
+        "Malformed or non-JSON output is a hard failure; the implement-subagent retries once, then aborts."
+      ],
+      "verify": [
+        "None — all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [
+        "prompts/implement/test_writer.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a well-formed success_criterion and files_written from the Coder\n  When  the Test Writer completes\n  Then  output parses as JSON, test_files_written is non-empty (every path starts with test_), and every test in tests[] has fails_on_empty_impl = true\n\nAC-2\n  Given a test emitted by the Test Writer\n  When  the implement-subagent runs the Red→Green gate\n  Then  the test is RED against a stub implementation and GREEN against the real one; any test that is green under the stub appears in gate_rejected\n\nAC-3\n  Given a behavior that cannot be covered by automated tests\n  When  the Test Writer identifies it\n  Then  it appears in uncoverable[] with a reason and no test is emitted for it",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-IMPLEMENT-PIPELINE-001"
+      ],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/implement/test_writer.md:60"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_implement_pipeline.py:8"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.1",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-INFER-PIPELINE-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "Infer implementation pipeline steps",
+      "intent": "Reads a deliberation report (from `build_report.py`) and determines which implementation steps apply — using a lookup table keyed on magnitude × reversibility — then presents them for confirmation before execution (SKILL.md Step 7).",
+      "contract": [
+        "Shall read a deliberation JSON (from `--input` or stdin) and look up `(magnitude, reversibility)` in the step table to return an ordered list from `{implement, compile, review, test}`.",
+        "With `--dry-run`, shall print inferred steps and exit 0 without confirmation or execution.",
+        "With `--yes`, shall skip the confirmation prompt (CI/headless mode).",
+        "Shall exit 1 when the user declines or the inference produces no steps.",
+        "Shall exit 2 on invalid JSON or missing required fields.",
+        "When `chosen_approach` is `do_nothing` or `skipped`, shall exit 1 with a clear message (no steps to infer).",
+        "Shall also expose `recommend_implement_mode(report)` — returns `\"pipeline\"` for regression-risk quadrants (`moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), else `\"single_shot\"`."
+      ],
+      "verify": [
+        "None — contract matches SKILL.md Step 7 routing table and script docstring."
+      ],
+      "notes": [],
+      "current_impl": [
+        "scripts/infer_pipeline.py"
+      ],
+      "acc": [
+        "Given a report with `magnitude=moderate, reversibility=irreversible`, inferred steps are `[implement, compile, review, test]`.",
+        "Given `chosen_approach=do_nothing`, exits 1.",
+        "Given `--dry-run`, prints steps and exits 0 without writing any file.",
+        "Given invalid JSON input, exits 2.",
+        "`recommend_implement_mode` returns `\"pipeline\"` for `moderate×irreversible`; `\"single_shot\"` for `trivial×complete`."
+      ],
+      "accept": "- Given a report with `magnitude=moderate, reversibility=irreversible`, inferred steps are `[implement, compile, review, test]`.\n- Given `chosen_approach=do_nothing`, exits 1.\n- Given `--dry-run`, prints steps and exits 0 without writing any file.\n- Given invalid JSON input, exits 2.\n- `recommend_implement_mode` returns `\"pipeline\"` for `moderate×irreversible`; `\"single_shot\"` for `trivial×complete`.",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-IMPLEMENT-PIPELINE-001",
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/infer_pipeline.py:29"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_implement_mode.py:8"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": null,
+      "priority": "",
       "risks": []
     },
     {
@@ -344,6 +693,8 @@
       "used_by": [
         "CONSILIUM-MODE-TRIAS-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -352,6 +703,7 @@
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -388,6 +740,8 @@
       "used_by": [
         "CONSILIUM-MODE-TRIAS-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -396,6 +750,7 @@
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -429,6 +784,8 @@
       "used_by": [
         "CONSILIUM-MODE-TRIAS-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -437,6 +794,7 @@
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -473,6 +831,8 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -485,6 +845,7 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -521,6 +882,8 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -529,6 +892,7 @@
       ],
       "test_exempt": "importlib module loading and FEEDBACK.html mutation — integration-only",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -564,6 +928,8 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -572,6 +938,7 @@
       ],
       "test_exempt": "file I/O and integration layer with trivial pure stubs",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -595,7 +962,7 @@
         "None - all questions resolved."
       ],
       "notes": [
-        "The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; `prompts/voices/*_pass2.md` remain on disk for reference but are not dispatched."
+        "The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; the `*_pass2.md` prompts live in `prompts/deprecated/` for reference and are not dispatched."
       ],
       "current_impl": [
         "modes/dialectic.md"
@@ -610,6 +977,8 @@
         "CONSILIUM-VOICE-SKEPTIC-001"
       ],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -618,6 +987,7 @@
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -659,16 +1029,20 @@
       ],
       "used_by": [
         "CONSILIUM-MODE-DIALECTIC-001",
-        "CONSILIUM-MODE-TRIAS-001"
+        "CONSILIUM-MODE-TRIAS-001",
+        "CONSILIUM-SUBAGENT-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
-          "loc": "modes/sequential.md:71"
+          "loc": "modes/sequential.md:69"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -702,7 +1076,11 @@
       "deps": [
         "CONSILIUM-VOICE-SKEPTIC-001"
       ],
-      "used_by": [],
+      "used_by": [
+        "CONSILIUM-MODE-TRIAS-001"
+      ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -711,6 +1089,7 @@
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -719,10 +1098,10 @@
       "status": "confirmed",
       "area": "CONSILIUM",
       "title": "trias mode",
-      "intent": "WHY: Apply three divergent personality lenses (Pioneer/Architect/Steward) each running a full Sequential deliberation, then resolve by democratic majority vote — providing genuine multi-perspective scrutiny for high-stakes, irreversible, or architecturally complex decisions.",
+      "intent": "WHY: Apply three divergent personality lenses (Pioneer/Architect/Steward) each running a full dialectic deliberation, then resolve by democratic majority vote — providing genuine multi-perspective scrutiny for high-stakes, irreversible, or architecturally complex decisions.",
       "contract": [
         "The mode shall classify magnitude via `scope_gate.py` on the original unstripped context before any context stripping; when lazy routing is enabled (default), it shall downgrade to Sequential (low/medium magnitude) or Dialectic (high magnitude) and emit a structured `trias_lazy_routed` notification — full Trias (3 sub-agents) runs only on `critical` magnitude or when the user explicitly requests it.",
-        "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Conservator → Generator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch.",
+        "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Conservator → Generator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch. After the 3 personalities return their chosens, the orchestrator shall dispatch 3 Skeptic sub-agents in parallel (one per personality chosen) per `prompts/voices/skeptic.md`; if a Skeptic returns `can_object: true` with `addressable: \"in_place\"`, the personality's chosen is revised before `team_vote` (advisory by default).",
         "The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).",
         "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1). `0-0-0` means all 3 personalities returned `chose: null` (each personality's internal Sequential ran `conservative_override` and vetoed every candidate); it is distinct from 1-1-1 (three different non-null choices) and is achievable without abstention — it occurs when every candidate exceeds the conservator veto threshold inside each sub-agent.",
         "When lazy routing downgrades to Dialectic or Sequential, the `trias_lazy_routed: true` notification is emitted by the Trias orchestrator before the downgraded mode runs; the notification is not carried into the final persisted report produced by the downgraded mode's own pipeline. The persisted report reflects the actual mode that ran (`dialectic` or `sequential`), not `trias`.",
@@ -741,26 +1120,32 @@
         "modes/trias.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a deliberation request in trias mode with `magnitude: critical` (blocklist hit)\n  When  the mode runs\n  Then  3 personality sub-agents are dispatched (Pioneer, Architect, Steward), each producing a `chosen_approach`, the vote is aggregated via `team_vote`, and the report contains `vote_pattern`, `confidence`, and `personalities[]` with each personality's `chose`\n\nAC-2\n  Given a deliberation request in trias mode with `magnitude: high` and lazy routing enabled\n  When  the mode runs\n  Then  the mode downgrades to Dialectic, emits a `trias_lazy_routed: true` notification with `routed_to: \"dialectic\"`, and no Trias sub-agents are dispatched\n\nAC-3\n  Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)\n  When  the B2 cascade fires\n  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true`",
+      "accept": "AC-1\n  Given a deliberation request in trias mode with `magnitude: critical` (blocklist hit)\n  When  the mode runs\n  Then  3 personality sub-agents are dispatched (Pioneer, Architect, Steward), each producing a `chosen_approach`; then 3 Skeptic sub-agents are dispatched in parallel (one per personality chosen); the vote is aggregated via `team_vote` on the (possibly revised) chosens; and the report contains `vote_pattern`, `confidence`, and `personalities[]` with each personality's `chose`\n\nAC-2\n  Given a deliberation request in trias mode with `magnitude: high` and lazy routing enabled\n  When  the mode runs\n  Then  the mode downgrades to Dialectic, emits a `trias_lazy_routed: true` notification with `routed_to: \"dialectic\"`, and no Trias sub-agents are dispatched\n\nAC-3\n  Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)\n  When  the B2 cascade fires\n  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true`",
       "input": "",
       "output": "",
       "desc": "",
       "deps": [
         "CONSILIUM-MODE-SEQUENTIAL-001",
+        "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001",
         "CONSILIUM-LENS-PIONEER-001",
         "CONSILIUM-LENS-ARCHITECT-001",
         "CONSILIUM-LENS-STEWARD-001",
         "CONSILIUM-PERSONALITIES-001"
       ],
-      "used_by": [],
+      "used_by": [
+        "CONSILIUM-TRIAS-HAIKU-SCHEMA-001"
+      ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
-          "loc": "modes/trias.md:174"
+          "loc": "modes/trias.md:182"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -770,7 +1155,11 @@
       "area": "CONSILIUM",
       "title": "personalities",
       "intent": "Canonical registry of the three fixed Trias personalities (Pioneer/Architect/Steward) and their voice weights.",
-      "contract": [],
+      "contract": [
+        "Shall provide a deterministic registry of exactly three Trias personalities — Pioneer, Architect, Steward — each with a `name`, a `weights` dict (`generator`, `control`, `conservator` summing to 1.0), and a `lens` path.",
+        "`get_by_name()` shall return a deep copy of the personality dict so that runtime mutations do not affect subsequent calls.",
+        "A legacy positional integer argument shall exit with code 2 and a migration message naming the three valid personality names."
+      ],
       "verify": [
         "None - all questions resolved."
       ],
@@ -793,8 +1182,11 @@
         "CONSILIUM-LENS-PIONEER-001",
         "CONSILIUM-LENS-STEWARD-001",
         "CONSILIUM-MODE-TRIAS-001",
+        "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
         "CONSILIUM-VALIDATE-REPORT-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -807,6 +1199,7 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -841,6 +1234,8 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -853,6 +1248,7 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -862,7 +1258,12 @@
       "area": "CONSILIUM",
       "title": "render_feedback_html",
       "intent": "Pure rendering engine: a list of Entry records -> one self-contained dark-themed FEEDBACK.html.",
-      "contract": [],
+      "contract": [
+        "Shall convert a list of Entry records into a single self-contained HTML file (inline CSS and JavaScript only); the output shall contain no `<link>`, `<script src>`, or `<img src>` references to external URLs.",
+        "Shall generate one `<tr class=\"entry\">` row and one `<tr class=\"drill\">` row for each Entry.",
+        "Token counts shall be shown as measured `tokens_in + tokens_out` when telemetry is present; shall fall back to a `(calc)` estimate derived from the lower-median of per-candidate samples across peer entries in the same render invocation when telemetry is absent.",
+        "VETOED badges in the Conservator panel shall be sourced from the aggregate step's `vetoed` list — not re-derived from a risk threshold."
+      ],
       "verify": [
         "None - `(calc)` peer runs are all entries in the current `render()` call that have measured telemetry (non-zero `tokens_in + tokens_out`); no filtering by mode or date. The median is the lower-median of the sorted per-candidate samples (`samples[len // 2]`). Reproducibility is therefore scoped to a single render invocation.",
         "None - when the run was produced by the `sequential` scheme (no `vetoed` list in the aggregate step), `vetoed_ids` resolves to an empty set; the Conservator drill-down panel is shown normally but no VETOED badges appear. Under-showing is preferred over fabricating badges.",
@@ -888,6 +1289,8 @@
         "CONSILIUM-LOG-FEEDBACK-001",
         "CONSILIUM-MARK-OUTCOME-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -900,52 +1303,7 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
-      "risks": []
-    },
-    {
-      "id": "CONSILIUM-RETRY-CONTEXT-001",
-      "layer": "feature",
-      "status": "confirmed",
-      "area": "CONSILIUM",
-      "title": "retry_context",
-      "intent": "On low confidence, proposes a concrete Read/Grep context-gathering plan for one extra deliberation pass.",
-      "contract": [
-        "The one-shot cap is enforced by the orchestrator (agent convention per SKILL.md), not by the script itself; the script has no state and will produce a plan on every invocation regardless.",
-        "Zero valid candidates: the pool falls back to `list(candidates)` (all candidates), so zero-valid-but-2+-total proceeds normally; zero-valid-zero-total triggers the `len(pool) < 2` early exit with reason `\"too few valid candidates for retry to discriminate\"`.",
-        "`_grep_patterns` slices `symbols[:4]` at the start of iteration — the 4-item cap is applied to the input symbols list, not to the generated pattern list after expansion."
-      ],
-      "verify": [
-        "None - all questions resolved."
-      ],
-      "notes": [],
-      "current_impl": [],
-      "acc": [
-        "Given a bundle with `confidence=0.61` and two or more valid candidates, the output has `retry_recommended=true`, a `reason` string containing `0.61`, and exactly 2 entries in `top_candidates`.",
-        "Given a bundle with `confidence=0.85`, the output has `retry_recommended=false` and `top_candidates=[]`.",
-        "Each `top_candidates` entry's `suggested_greps` list contains escaped regex patterns, with plain function names suffixed by `\\(` and dotted attribute paths left unsuffixed.",
-        "Given a bundle with only one Control-valid candidate, the output has `retry_recommended=false` with reason `too few valid candidates for retry to discriminate`.",
-        "Given a bundle where `confidence` is a dict (`{\"confidence\": 0.55, ...}`), the script correctly unwraps the nested value and evaluates it against the threshold."
-      ],
-      "accept": "- Given a bundle with `confidence=0.61` and two or more valid candidates, the output has `retry_recommended=true`, a `reason` string containing `0.61`, and exactly 2 entries in `top_candidates`.\n- Given a bundle with `confidence=0.85`, the output has `retry_recommended=false` and `top_candidates=[]`.\n- Each `top_candidates` entry's `suggested_greps` list contains escaped regex patterns, with plain function names suffixed by `\\(` and dotted attribute paths left unsuffixed.\n- Given a bundle with only one Control-valid candidate, the output has `retry_recommended=false` with reason `too few valid candidates for retry to discriminate`.\n- Given a bundle where `confidence` is a dict (`{\"confidence\": 0.55, ...}`), the script correctly unwraps the nested value and evaluates it against the threshold.",
-      "input": "stdin: JSON deliberation bundle containing `confidence` (scalar or dict with `confidence` key), `generator.candidates`, `control.verdicts`, and `conservator.scores` CLI flag `--threshold`: confidence threshold below which a retry is recommended (default: 0.7)",
-      "output": "JSON object to stdout with `retry_recommended` (bool), `reason` (string), and `top_candidates` array Each `top_candidates` entry contains `id`, utility score, `files`, `symbols`, `suggested_reads` (up to 4 file paths), and `suggested_greps` (up to 4 regex patterns) When `retry_recommended` is false (confidence at/above threshold, only one valid candidate, or null confidence), `top_candidates` is an empty array exit code 0 on success; exit code 2 if stdin is not a JSON object",
-      "desc": "Operationalizes the SKILL.md low-confidence recovery path by analyzing a completed deliberation bundle and producing a concrete context-gathering plan rather than immediately escalating to the user. When confidence is below threshold, it identifies the top-2 candidates by a composite utility score (mean of generator pass, control validity, and inverted conservator risk) and extracts file paths, symbol names, dotted attribute paths, and backtick-quoted tokens from their summaries and sketches using targeted regex patterns. The output is a JSON plan with suggested Read targets and Grep patterns per candidate; the orchestrating agent runs those commands, attaches results as `retry_context` to the bundle, and dispatches one additional Generator/Control/Conservator pass with the enriched input. The script is deliberately one-shot and does not execute the deliberation itself, capping the retry loop at one attempt before falling back to the existing user-ask flow.",
-      "deps": [
-        "CONSILIUM-UTILS-001"
-      ],
-      "used_by": [],
-      "members": [
-        {
-          "role": "implements",
-          "loc": "scripts/retry_context.py:48"
-        },
-        {
-          "role": "tested-by",
-          "loc": "scripts/test_retry_context.py:11"
-        }
-      ],
-      "test_exempt": null,
-      "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -955,7 +1313,11 @@
       "area": "CONSILIUM",
       "title": "run_evals",
       "intent": "Subprocess-based regression harness over evals/scenarios.json; CI gate.",
-      "contract": [],
+      "contract": [
+        "Shall read `evals/scenarios.json` (or `--scenarios` override), spawn each scenario's named script as a subprocess, and verify exit code, stdout (JSON subset-match or text substring), and stderr substrings against declared expectations.",
+        "Shall run a pre-flight linter before any scenario: every `validate_report` fixture must carry `pipeline_executed`, and bypass-chosen fixtures must set it to `false`; corpus violations shall exit 2 before any scenario runs.",
+        "Shall exit 0 when all scenarios pass, 1 when any fail, and 2 on load or corpus errors."
+      ],
       "verify": [
         "None - all questions resolved."
       ],
@@ -974,6 +1336,8 @@
       "desc": "Regression harness for all deterministic scripts in the Consilium pipeline. It reads a `scenarios.json` corpus, spawns each scenario's named tool as a subprocess, and verifies exit code, stdout (either as a JSON subset-match or a plain-text substring match), and stderr substrings against declared expectations. A pre-flight linter (`lint_validate_report_fixtures`) checks every `validate_report` fixture for the required `pipeline_executed` field and ensures bypass-chosen fixtures set it to `false`, catching fixture/validator drift at corpus level before any scenario runs. The script exits non-zero if any scenario fails, making it suitable as a CI gate.",
       "deps": [],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -982,6 +1346,7 @@
       ],
       "test_exempt": "subprocess-based eval harness — acceptance gated by run_evals.py itself in CI",
       "milestone": "v1.1",
+      "priority": "",
       "risks": []
     },
     {
@@ -991,7 +1356,12 @@
       "area": "CONSILIUM",
       "title": "scope_gate",
       "intent": "Decides whether a change is small enough to bypass full deliberation; fails open.",
-      "contract": [],
+      "contract": [
+        "Shall classify the change's magnitude (`low/medium/high/critical`) and derive a `mode_ceiling` from diff signals collected via `probe_change.py` (git) or pre-computed stdin JSON (`--signals-stdin`).",
+        "Any path matching a blocklist entry shall force `should_skip=false`, `magnitude='critical'`, and `mode_ceiling='trias'` regardless of file or line counts.",
+        "`CONSILIUM_FORCE_FULL=1` shall force `should_skip=false` and `magnitude='critical'` without reading the diff.",
+        "Shall fail open: probe failures, missing git repos, and config load errors shall all produce `should_skip=false`; exit code shall always be 0."
+      ],
       "verify": [
         "None - all questions resolved."
       ],
@@ -1010,10 +1380,20 @@
       "desc": "Decides whether a change is small enough to bypass full deliberation. It collects diff signals either from git via `probe_change.py` or from pre-computed stdin JSON, checks file and line counts against configurable thresholds, and scans changed paths against a sensitive-path blocklist. Based on those signals it classifies the change's magnitude (`low/medium/high/critical`) and derives a `mode_ceiling` (the maximum appropriate deliberation mode), then outputs a JSON decision the orchestrator uses to short-circuit or proceed. The gate fails open: probe failures, missing git repos, or config load errors all produce `should_skip=false` so that uncertain situations always trigger deliberation rather than silently skipping it.",
       "deps": [],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
+          "loc": "scripts/probe_change.py:187"
+        },
+        {
+          "role": "implements",
           "loc": "scripts/scope_gate.py:61"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_probe_change.py:75"
         },
         {
           "role": "tested-by",
@@ -1022,6 +1402,7 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -1031,7 +1412,11 @@
       "area": "CONSILIUM",
       "title": "strip_context",
       "intent": "Projects each voice's output down to the minimum fields the next voice needs (anti-contamination).",
-      "contract": [],
+      "contract": [
+        "`--for control`: shall strip Generator candidates to `id`, `summary`, and `sketch` only, removing all fields that would rhetorically bias Control's technical validation.",
+        "`--for conservator`: shall intersect valid Control verdicts with Generator candidates, dropping candidates with no valid Control verdict; output shall contain only `id`, `summary`, and `sketch` — Control `issues` and `notes` shall be excluded.",
+        "`--truncate-text MAX_TOKENS`: shall truncate text to `MAX_TOKENS × 4` characters and append the truncation marker `_TRUNCATION_MARKER` when cut; shall return the text unchanged when under budget."
+      ],
       "verify": [
         "None - all questions resolved."
       ],
@@ -1052,6 +1437,8 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -1064,6 +1451,104 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-SUBAGENT-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "consilium-subagent",
+      "intent": "WHY: Isolated-context deliberation wrapper that lets any orchestrator (Trias, Dialectic, Step 7) spawn a fresh Consilium run without polluting its own context with intermediate voice output. Sequential-only — no recursive Agent calls.",
+      "contract": [
+        "The system shall provide a `consilium-subagent` agent that runs the full Sequential deliberation workflow (Steps 0–6 from SKILL.md) in an isolated context and returns a canonical `.consilium/runs/<ts>_<slug>.json` report as its final assistant message (no prose, no fences — raw JSON only).",
+        "The subagent shall operate in Sequential mode only; if the dispatch input includes a `mode: parallel|dialectic` hint, the subagent shall log it as ignored in `subagent_notes` and proceed with Sequential.",
+        "The subagent shall never prompt the user (non-interactive): stale PENDs are passed through as `subagent_notes.stale_pendings`; clarity branches are emitted as Generator candidates with `interp_a_*`/`interp_b_*` id prefixes; blocking gates produce `chosen_approach: null` with `subagent_notes.blocked_reason`.",
+        "Final message contract: after `validate_report.py` exits 0 on the persisted report, the subagent shall emit exactly that file's contents as its final assistant message.",
+        "Tool allowlist: `Read, Write, Bash, Grep, Glob`. No `Edit`, no `Agent` (nested dispatch is prohibited by rule)."
+      ],
+      "verify": [
+        "None — all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [
+        "agents/consilium-subagent.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given a dispatch prompt with a diff and a success_criterion\n  When  the subagent runs\n  Then  the final message parses as valid JSON, `python scripts/validate_report.py < <output>` exits 0, and exactly one new file appears under `.consilium/runs/`\n\nAC-2\n  Given a dispatch with `mode: dialectic` hint in the prompt\n  When  the subagent processes the input\n  Then  it logs the mode hint as ignored in `subagent_notes` and completes as Sequential\n\nAC-3\n  Given a low-confidence deliberation (3+ close candidates)\n  When  the subagent completes\n  Then  it does not stall — completes within a bounded turn count with outcome=PEND in FEEDBACK.html",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-MODE-SEQUENTIAL-001"
+      ],
+      "used_by": [
+        "CONSILIUM-IMPLEMENT-SUBAGENT-001"
+      ],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "agents/consilium-subagent.md:111"
+        }
+      ],
+      "test_exempt": "agent spec document — behavioral contract validated by consilium-subagent smoke tests and Trias/Dialectic integration runs",
+      "milestone": "v1.1",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "trias-haiku-schema",
+      "intent": "Trias model-diversity assignment: per-personality model fields (pioneer=haiku, architect=sonnet, steward=opus) with schema-less Steward dispatch and Pioneer circuit-breaker.",
+      "contract": [
+        "`scripts/personalities.py` shall expose a `PERSONALITIES` list where every entry carries a `model` field whose value controls which Claude model tier the Trias orchestrator dispatches for that sub-agent.",
+        "Model assignments shall be fixed: pioneer → `haiku`, architect → `sonnet`, steward → `opus`.",
+        "The Steward entry shall carry `schema_less: True`. Pioneer and Architect shall not carry this field (or carry it as falsy). This flag signals to the orchestrator that Steward must be dispatched without a StructuredOutput schema; Steward returns fenced JSON and the orchestrator parses it with `json.loads()`. Rationale: Opus+StructuredOutput tool calls are unreliable and may silently skip the call.",
+        "Pioneer shall have an implicit circuit-breaker: when Pioneer (Haiku) returns malformed or empty JSON, the orchestrator substitutes `model: sonnet` and re-dispatches that personality once. On second failure, Pioneer is treated as a non-vote per B2 timeout rules. Non-pioneer personalities have no fallback — they are counted as a non-vote on first failure.",
+        "The `personalities.py` CLI shall emit a valid JSON array of exactly 3 objects, each with at minimum a `model` field, for use by the Trias orchestrator at runtime."
+      ],
+      "verify": [
+        "None — all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "All three personalities emit a `model` field (test_model_fields_present).",
+        "Assignments are exactly pioneer=haiku, architect=sonnet, steward=opus (test_model_assignments).",
+        "Steward has `schema_less=True`; Pioneer and Architect do not (test_steward_schema_less, test_pioneer_and_architect_not_schema_less).",
+        "Pioneer circuit-breaker returns `\"sonnet\"` as fallback; non-pioneer personalities return their own model unchanged (test_circuit_breaker).",
+        "CLI emits valid JSON array with `model` field on each entry (test_cli_output_valid_json)."
+      ],
+      "accept": "- All three personalities emit a `model` field (test_model_fields_present).\n- Assignments are exactly pioneer=haiku, architect=sonnet, steward=opus (test_model_assignments).\n- Steward has `schema_less=True`; Pioneer and Architect do not (test_steward_schema_less, test_pioneer_and_architect_not_schema_less).\n- Pioneer circuit-breaker returns `\"sonnet\"` as fallback; non-pioneer personalities return their own model unchanged (test_circuit_breaker).\n- CLI emits valid JSON array with `model` field on each entry (test_cli_output_valid_json).",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-PERSONALITIES-001",
+        "CONSILIUM-MODE-TRIAS-001"
+      ],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/personalities.py:14"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_trias_haiku_schema.py:14"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.1",
+      "priority": "",
       "risks": []
     },
     {
@@ -1073,7 +1558,13 @@
       "area": "CONSILIUM",
       "title": "utils",
       "intent": "Shared stdlib-only utilities: canonical paths, atomic writes, stdin JSON, headless detection.",
-      "contract": [],
+      "contract": [
+        "Shall provide canonical path constants `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolved relative to the repo root (not CWD), two levels above `scripts/utils.py`.",
+        "`atomic_write_text` shall write via a sibling `.tmp` file with fsync and rename; stale `.tmp` files shall not persist on any error path.",
+        "`is_headless` shall return `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty shall return `False`.",
+        "`load_json_stdin` shall exit code 2 on empty stdin or invalid JSON.",
+        "`issue_penalty` shall return `0.05` for `low`, `0.15` for `medium` (or missing severity), and `0.30` for `high`."
+      ],
       "verify": [
         "None - all questions resolved."
       ],
@@ -1093,19 +1584,23 @@
       "deps": [],
       "used_by": [
         "CONSILIUM-AGGREGATOR-001",
+        "CONSILIUM-AUDIT-COUNTER-001",
+        "CONSILIUM-AUDIT-FEEDBACK-001",
         "CONSILIUM-BUILD-REPORT-001",
         "CONSILIUM-CONFIDENCE-001",
         "CONSILIUM-FEEDBACK-001",
         "CONSILIUM-IMPLEMENT-PIPELINE-001",
+        "CONSILIUM-INFER-PIPELINE-001",
         "CONSILIUM-LOG-FEEDBACK-001",
         "CONSILIUM-MARK-OUTCOME-001",
         "CONSILIUM-MEMORY-001",
         "CONSILIUM-PRIORS-001",
         "CONSILIUM-RENDER-FEEDBACK-HTML-001",
-        "CONSILIUM-RETRY-CONTEXT-001",
         "CONSILIUM-STRIP-CONTEXT-001",
         "CONSILIUM-VALIDATE-REPORT-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "tested-by",
@@ -1118,6 +1613,7 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -1127,7 +1623,12 @@
       "area": "CONSILIUM",
       "title": "validate_report",
       "intent": "Describes observed behavior, verified against scripts/validate_report.py source.",
-      "contract": [],
+      "contract": [
+        "Shall validate report shape only (not deliberation substance): `success_criterion` and `verification` are non-empty strings; `chosen_approach` is present (explicit null accepted, missing field is an error); `telemetry` carries a non-empty `mode` for non-skipped reports.",
+        "`deliberation_log` shall contain `generator`, `control`, and an aggregate step with `result` as a dict (not a string) for non-bypassed reports; `conservator` step presence is not enforced unless `--strict-round2` is set.",
+        "Telemetry count fields (`tokens_in`, `tokens_out`, `latency_ms`) shall be non-negative `int`; float values such as `1500.0` shall be rejected.",
+        "Shall exit 0 on valid, 1 on validation failure (each problem printed to stderr), 2 on malformed JSON."
+      ],
       "verify": [
         "None - all questions resolved."
       ],
@@ -1151,6 +1652,8 @@
       "used_by": [
         "SKILL-RUN-CONSILIUM-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "tested-by",
@@ -1163,6 +1666,7 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -1195,6 +1699,8 @@
       "desc": "Single source of truth for all user-facing natural-language translations of structured deliberation field values, and for the per-voice token budget table. `VOCABULARY_MAP` maps categories (`reversibility`, `magnitude`, `meta_recommendation`, `verdict`) to their human-readable labels, which are used by the renderer and aggregator to produce consistent output strings. `compute_tokens_budget` derives a per-voice token allocation from the Conservator's Q1 (magnitude) and Q2 (reversibility) outputs, scaling down to 300 for trivial questions and applying `meta_recommendation` modifiers (`scale_down` -> 300, `scale_up` -> +50% capped at 4000). The module is bus-layer because it carries no pipeline logic - it is a pure lookup table consumed by feature scripts.",
       "deps": [],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "tested-by",
@@ -1207,6 +1713,7 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -1242,6 +1749,8 @@
       "used_by": [
         "CONSILIUM-MODE-SEQUENTIAL-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -1250,6 +1759,7 @@
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -1287,6 +1797,8 @@
       "used_by": [
         "CONSILIUM-MODE-SEQUENTIAL-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -1295,6 +1807,7 @@
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -1332,6 +1845,8 @@
       "used_by": [
         "CONSILIUM-MODE-SEQUENTIAL-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -1340,6 +1855,7 @@
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
     },
     {
@@ -1376,6 +1892,8 @@
         "CONSILIUM-MODE-DIALECTIC-001",
         "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001"
       ],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -1384,7 +1902,57 @@
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
       "milestone": "v1.0",
+      "priority": "",
       "risks": []
+    },
+    {
+      "id": "CONSILIUM-VOTE-DEGENERACY-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "Trias vote degeneracy measurement",
+      "intent": "Empirically measures whether the Trias \"democratic vote\" carries signal by computing the 3-0 unanimity rate across Trias runs in the corpus — testing the hypothesis that 3 personality lenses on the same model are correlated and always agree (Senate audit 2026-05-26).",
+      "contract": [
+        "Shall scan `.consilium/runs/*.json` for genuine Trias runs (mode field = `\"trias\"` or `\"trias_split\"` exactly) and tally vote-pattern distribution.",
+        "Shall report `vote_degenerate: true` if 3-0 unanimity rate > threshold (default 0.85) and n ≥ min-n (default 20); `\"insufficient\"` when n < min-n; `false` otherwise.",
+        "A 2-0 pattern (one personality all-vetoed) shall be counted as `veto_rate`, not folded into unanimity.",
+        "Shall be read-only — no modification to runs, prompts, or pipeline.",
+        "With `--json`, shall emit machine-readable output.",
+        "`--runs-dir` overrides the default corpus directory; `--min-n` and `--degenerate-threshold` are configurable.",
+        "The default threshold of 0.85 is calibration-provisional; it shall be revisited once n ≥ min-n genuine Trias runs exist. The `insufficient` verdict already defers judgment until that corpus exists."
+      ],
+      "verify": [
+        "None — contract matches script docstring and Senate audit 2026-05-26 intent exactly."
+      ],
+      "notes": [],
+      "current_impl": [
+        "scripts/vote_degeneracy.py"
+      ],
+      "acc": [
+        "Given 20+ Trias runs all with 3-0, `vote_degenerate: true` is returned.",
+        "Given 20+ Trias runs with 50% 3-0, `vote_degenerate: false`.",
+        "Given fewer than min-n Trias runs, result is `\"insufficient\"`.",
+        "Given `--json`, output parses as valid JSON with `vote_degenerate`, `three_zero_rate`, `n` fields.",
+        "Non-Trias runs are excluded even if they reference `vote_pattern` in their body."
+      ],
+      "accept": "- Given 20+ Trias runs all with 3-0, `vote_degenerate: true` is returned.\n- Given 20+ Trias runs with 50% 3-0, `vote_degenerate: false`.\n- Given fewer than min-n Trias runs, result is `\"insufficient\"`.\n- Given `--json`, output parses as valid JSON with `vote_degenerate`, `three_zero_rate`, `n` fields.\n- Non-Trias runs are excluded even if they reference `vote_pattern` in their body.",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [],
+      "test_exempt": null,
+      "milestone": null,
+      "priority": "",
+      "risks": [
+        {
+          "signal": "unimplemented",
+          "advice": "Confirmed but no code linked: tag the implementing code `# implements: <ID>`, or drop status back to in-progress/draft until it is built. A confirmed requirement must point to code."
+        }
+      ]
     },
     {
       "id": "SKILL-RUN-CONSILIUM-001",
@@ -1393,7 +1961,12 @@
       "area": "SKILL",
       "title": "run-consilium driver",
       "intent": "Single entry point exercising Consilium's deterministic LLM-free surface (smoke / pipeline / shot).",
-      "contract": [],
+      "contract": [
+        "`smoke` shall run all `scripts/test_*.py` unit suites, the `check_doc_drift.py` invariant gate, the `docs/architecture` build `--check`, and the full bundle→build_report→validate_report pipeline; shall report PASS/FAIL per step and exit non-zero only when failures exceed a documented baseline.",
+        "`pipeline` shall run the aggregator→confidence→build_report→validate_report chain on synthetic input, printing each stage's JSON to stdout, and exit 0.",
+        "`shot` shall screenshot `docs/architecture.html` using headless Chrome or Edge and write a PNG to `.consilium/shots/architecture.png` (or the caller-supplied path).",
+        "Shall inject `PYTHONUTF8=1` and `PYTHONIOENCODING=utf-8` into all child process environments."
+      ],
       "verify": [
         "None - all questions resolved."
       ],
@@ -1416,6 +1989,8 @@
         "CONSILIUM-CONFIDENCE-001"
       ],
       "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
       "members": [
         {
           "role": "implements",
@@ -1424,12 +1999,25 @@
       ],
       "test_exempt": "integration harness — acceptance validated by run-consilium smoke + pipeline commands, not unit tests",
       "milestone": "v1.1",
+      "priority": "",
       "risks": []
     }
   ],
   "edges": [
     [
       "CONSILIUM-AGGREGATOR-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-AUDIT-COUNTER-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-AUDIT-FEEDBACK-001",
+      "CONSILIUM-FEEDBACK-001"
+    ],
+    [
+      "CONSILIUM-AUDIT-FEEDBACK-001",
       "CONSILIUM-UTILS-001"
     ],
     [
@@ -1445,7 +2033,31 @@
       "CONSILIUM-UTILS-001"
     ],
     [
+      "CONSILIUM-IMPLEMENT-CODER-001",
+      "CONSILIUM-IMPLEMENT-PIPELINE-001"
+    ],
+    [
       "CONSILIUM-IMPLEMENT-PIPELINE-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-IMPLEMENT-SUBAGENT-001",
+      "CONSILIUM-IMPLEMENT-PIPELINE-001"
+    ],
+    [
+      "CONSILIUM-IMPLEMENT-SUBAGENT-001",
+      "CONSILIUM-SUBAGENT-001"
+    ],
+    [
+      "CONSILIUM-IMPLEMENT-TEST-WRITER-001",
+      "CONSILIUM-IMPLEMENT-PIPELINE-001"
+    ],
+    [
+      "CONSILIUM-INFER-PIPELINE-001",
+      "CONSILIUM-IMPLEMENT-PIPELINE-001"
+    ],
+    [
+      "CONSILIUM-INFER-PIPELINE-001",
       "CONSILIUM-UTILS-001"
     ],
     [
@@ -1526,6 +2138,10 @@
     ],
     [
       "CONSILIUM-MODE-TRIAS-001",
+      "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001"
+    ],
+    [
+      "CONSILIUM-MODE-TRIAS-001",
       "CONSILIUM-LENS-PIONEER-001"
     ],
     [
@@ -1553,12 +2169,20 @@
       "CONSILIUM-UTILS-001"
     ],
     [
-      "CONSILIUM-RETRY-CONTEXT-001",
+      "CONSILIUM-STRIP-CONTEXT-001",
       "CONSILIUM-UTILS-001"
     ],
     [
-      "CONSILIUM-STRIP-CONTEXT-001",
-      "CONSILIUM-UTILS-001"
+      "CONSILIUM-SUBAGENT-001",
+      "CONSILIUM-MODE-SEQUENTIAL-001"
+    ],
+    [
+      "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+      "CONSILIUM-PERSONALITIES-001"
+    ],
+    [
+      "CONSILIUM-TRIAS-HAIKU-SCHEMA-001",
+      "CONSILIUM-MODE-TRIAS-001"
     ],
     [
       "CONSILIUM-VALIDATE-REPORT-001",

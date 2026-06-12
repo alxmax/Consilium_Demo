@@ -27,6 +27,12 @@ Pure rendering engine that converts a list of Entry records into a single self-c
 - When invoked as CLI, the HTML string is written to stdout
 - exit code 0 always
 
+## WHAT — Contract
+- Shall convert a list of Entry records into a single self-contained HTML file (inline CSS and JavaScript only); the output shall contain no `<link>`, `<script src>`, or `<img src>` references to external URLs.
+- Shall generate one `<tr class="entry">` row and one `<tr class="drill">` row for each Entry.
+- Token counts shall be shown as measured `tokens_in + tokens_out` when telemetry is present; shall fall back to a `(calc)` estimate derived from the lower-median of per-candidate samples across peer entries in the same render invocation when telemetry is absent.
+- VETOED badges in the Conservator panel shall be sourced from the aggregate step's `vetoed` list — not re-derived from a risk threshold.
+
 ## WHAT — Verify intent
 - None - `(calc)` peer runs are all entries in the current `render()` call that have measured telemetry (non-zero `tokens_in + tokens_out`); no filtering by mode or date. The median is the lower-median of the sorted per-candidate samples (`samples[len // 2]`). Reproducibility is therefore scoped to a single render invocation.
 - None - when the run was produced by the `sequential` scheme (no `vetoed` list in the aggregate step), `vetoed_ids` resolves to an empty set; the Conservator drill-down panel is shown normally but no VETOED badges appear. Under-showing is preferred over fabricating badges.

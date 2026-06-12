@@ -51,3 +51,5 @@ Operates on voice **outputs**, not candidate scores. Priority-ordered veto casca
 4. substantial disagreement → **REWORK**
 5. `scale_down` meta → **ADAPT_SHORT**; `scale_up` → **ADAPT_EXTENDED**
 6. default → **AGGREGATE** (picks Generator's `preferred`, derives `confidence_per_option` from `net_concern`)
+
+<!-- implements: CONSILIUM-AGGREGATOR-001 -->

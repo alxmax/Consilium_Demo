@@ -108,14 +108,14 @@ function CostScatter() {
     { id: 'SEQ',  x: 0.20, y: 1.00, label: 'Sequential', cost: '1× · $0.189', model: 'Sonnet 4.6', sub: 'default · 0 sub-agents', color: 'var(--con)' },
     { id: 'DIAL', x: 0.40, y: 1.33, label: 'Dialectic', cost: '1.33×', model: 'Sonnet 4.6', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
     { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet 4.6', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
-    { id: 'TRI',  x: 0.90, y: 3.00, label: 'Trias', cost: '3×', model: 'Sonnet 4.6', sub: '3 sub-agents · 1 per personality', color: 'oklch(0.55 0.16 320)' },
+    { id: 'TRI',  x: 0.90, y: 4.00, label: 'Trias', cost: '4×', model: 'Haiku · Sonnet · Opus', sub: '6 sub-agents · 3 personality + 3 Skeptic', color: 'oklch(0.55 0.16 320)' },
   ];
 
   const W = 720, H = 360;
   const padL = 70, padR = 50, padT = 30, padB = 60;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
-  const maxY = 3.5;
+  const maxY = 4.5;
   const xScale = (v) => padL + v * plotW;
   const yScale = (v) => padT + plotH - (v / maxY) * plotH;
 
@@ -123,12 +123,12 @@ function CostScatter() {
     <div style={{ margin: '24px 0' }}>
       <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6 }}>Cost vs voice independence</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 720 }}>
-        Where each mode lands on the cost / isolation map. <code>BARE</code> (<code>sonnet_bare</code>, no Consilium) is the measured baseline — it sits below 1×; the deliberation modes cost more for the auditable process they add. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 3× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. All dispatched voices are pinned to <strong>Sonnet 4.6</strong>; the orchestrator runs on <strong>your session model</strong>, with an opt-in <strong>Opus</strong> override on the Generator for high-stakes changes.
+        Where each mode lands on the cost / isolation map. <code>BARE</code> (<code>sonnet_bare</code>, no Consilium) is the measured baseline — it sits below 1×; the deliberation modes cost more for the auditable process they add. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 4× for fully isolated sub-agents. Parallel (<code>PAR</code>) is auto-only on critical + irreversible changes. Dispatched voices are pinned to <strong>Sonnet 4.6</strong> — except the Trias personalities, which run on <strong>Haiku / Sonnet / Opus</strong> (one each, per <code>personalities.py</code>); the orchestrator runs on <strong>your session model</strong>, with an opt-in <strong>Opus</strong> override on the Generator for high-stakes changes.
       </p>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="diagram">
         {/* Y-axis grid */}
-        {[1, 2, 3].map((v) => (
+        {[1, 2, 3, 4].map((v) => (
           <g key={v}>
             <line x1={padL} y1={yScale(v)} x2={W - padR} y2={yScale(v)} stroke="var(--rule)" strokeWidth="0.5" strokeDasharray="2 4" />
             <text x={padL - 10} y={yScale(v) + 4} textAnchor="end" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'var(--ink-3)' }}>{v}×</text>
@@ -188,7 +188,7 @@ function CostBars() {
     { name: 'sequential', cost: 1.0, label: '1×', sub: 'default', color: 'var(--con)', subagents: 0 },
     { name: 'dialectic', cost: 1.33, label: '1.33×', sub: 'seq + skeptic', color: 'var(--ctl)', subagents: 1 },
     { name: 'parallel', cost: 3.0, label: '3× (auto)', sub: 'auto-only', color: 'var(--gen)', subagents: 3 },
-    { name: 'trias', cost: 3.0, label: '3×', sub: '3 sub-agents', color: 'oklch(0.55 0.16 320)', subagents: 3 },
+    { name: 'trias', cost: 4.0, label: '4×', sub: '6 sub-agents', color: 'oklch(0.55 0.16 320)', subagents: 6 },
   ];
 
   const maxCost = 3.5;
@@ -298,7 +298,7 @@ const MODES_TESTED = [
   { id: 'superpowers',   name: 'superpowers',        tag: 'baseline', desc: 'Sonnet + tool harness, no Consilium.' },
   { id: 'seq',           name: 'consilium_sequential', tag: 'consilium', desc: 'Default mode — 3 voices in single context.' },
   { id: 'dial',          name: 'consilium_dialectic', tag: 'consilium', desc: 'Sequential + Skeptic sub-agent on chosen.' },
-  { id: 'tri',           name: 'consilium_trias',    tag: 'consilium', desc: '3 personalities, each runs Sequential = 3 sub-agents.' },
+  { id: 'tri',           name: 'consilium_trias',    tag: 'consilium', desc: '3 personalities, each runs Sequential = 3 sub-agents (benchmark predates the per-personality Skeptic; current Trias dispatches 6).' },
 ];
 
 function BenchmarkSection() {
@@ -606,7 +606,7 @@ success_criterion: "safe_divide(a, b)
   returns None when b == 0 instead of
   raising; normal division unchanged"
 verification: "pytest tests/test_math.py"
-magnitude: moderate · reversibility: complete
+magnitude: moderate · reversibility: irreversible
   → routes to the 3-role pipeline`}</pre>
           </div>
           <div style={{ border: '1px solid var(--rule)', borderTop: '3px solid var(--gen)', borderRadius: 4, background: 'var(--paper)', padding: '14px 16px' }}>

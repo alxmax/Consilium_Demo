@@ -30,6 +30,11 @@ All three vectors sum to 1.0 and differ meaningfully across personalities. The s
 - JSON object for a single personality emitted to stdout when `--name` is provided
 - exit code 0 on success; exit code 2 when a legacy positional N argument is detected, with a human-readable migration message on stderr
 
+## WHAT — Contract
+- Shall provide a deterministic registry of exactly three Trias personalities — Pioneer, Architect, Steward — each with a `name`, a `weights` dict (`generator`, `control`, `conservator` summing to 1.0), and a `lens` path.
+- `get_by_name()` shall return a deep copy of the personality dict so that runtime mutations do not affect subsequent calls.
+- A legacy positional integer argument shall exit with code 2 and a migration message naming the three valid personality names.
+
 ## WHAT — Verify intent
 - None - all questions resolved.
 

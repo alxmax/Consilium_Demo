@@ -95,7 +95,7 @@ fields are marked **REQUIRED**; the rest are recommended but not blocking.
 
 - **`telemetry`** is optional. Fill what you can measure (parallel/dialectic
   give per-voice latencies; sequential mode often can't isolate per-voice
-  tokens) and omit the rest. `scripts/usage.py` aggregates whatever it finds.
+  tokens) and omit the rest. Downstream readers tolerate missing blocks.
 - **`chosen_approach`** can be `null` legitimately when `aggregator.py`
   with `conservative_override` vetoes every candidate. In that case
   `deliberation_log[aggregate].result` should carry `retry_suggested`.
@@ -108,8 +108,8 @@ fields are marked **REQUIRED**; the rest are recommended but not blocking.
 - **`scripts/priors.py`** — at start of each new deliberation, summarizes
   recent runs to surface patterns (override rate, veto rate, repeating
   keywords).
-- **`scripts/usage.py`** — periodic rollup of `telemetry` blocks.
 - **`scripts/feedback.py`** — counts schemes used across runs (reads from
   `deliberation_log[aggregate].scheme`).
+- **`scripts/memory.py`** — uniform read API over runs (medium tier).
 - **`scripts/validate_report.py`** — shape-check before persisting a
   report; fails fast if `success_criterion`/`verification` are missing.

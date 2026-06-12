@@ -26,6 +26,11 @@ Reduces cross-voice context contamination in the sequential deliberation pipelin
 - Plain text to stdout (`--truncate-text`): possibly truncated text with optional marker appended
 - exit code 0 on success; non-zero on argument or JSON parse errors
 
+## WHAT — Contract
+- `--for control`: shall strip Generator candidates to `id`, `summary`, and `sketch` only, removing all fields that would rhetorically bias Control's technical validation.
+- `--for conservator`: shall intersect valid Control verdicts with Generator candidates, dropping candidates with no valid Control verdict; output shall contain only `id`, `summary`, and `sketch` — Control `issues` and `notes` shall be excluded.
+- `--truncate-text MAX_TOKENS`: shall truncate text to `MAX_TOKENS × 4` characters and append the truncation marker `_TRUNCATION_MARKER` when cut; shall return the text unchanged when under budget.
+
 ## WHAT — Verify intent
 - None - all questions resolved.
 

@@ -147,6 +147,49 @@ def test_render_drill_from_real_run_file():
     assert "no detailed run data" not in html_out
 
 
+def test_render_drill_tolerates_string_issues():
+    # Regression: 2026-06-10 — a run with control issues/tests_to_write as bare
+    # strings (not dicts) crashed _ctrl_panel with AttributeError and blocked
+    # every subsequent log_feedback append. Found when a BOM-corrupted run was
+    # repaired and its drill-down rendered for the first time.
+    synthetic_run = {
+        "success_criterion": "x",
+        "chosen_approach": "a",
+        "confidence": 0.5,
+        "deliberation_log": [
+            {
+                "step": "control",
+                "verdicts": [
+                    {
+                        "id": "a",
+                        "valid": False,
+                        "issues": ["plain string issue"],
+                        "tests_to_write": ["plain string test"],
+                    },
+                ],
+            },
+        ],
+    }
+    with tempfile.TemporaryDirectory() as td:
+        td_path = Path(td)
+        runs_subdir = td_path / "runs"
+        runs_subdir.mkdir()
+        (runs_subdir / "string_issues.json").write_text(
+            json.dumps(synthetic_run), encoding="utf-8"
+        )
+        e = rfh.Entry(
+            date="2026-06-10",
+            context="x",
+            chosen="a",
+            outcome="PEND",
+            note="",
+            run_path="runs/string_issues.json",
+        )
+        html_out = rfh.render([e], runs_dir=runs_subdir)
+    assert "plain string issue" in html_out
+    assert "plain string test" in html_out
+
+
 def test_render_drill_missing_run_file_falls_back_to_stub():
     e = rfh.Entry(
         date="2026-05-11",

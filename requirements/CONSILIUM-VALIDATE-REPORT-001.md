@@ -35,6 +35,12 @@ catches shape drift (e.g. aggregate.result as a narrative string).
 - Exit 1 — validation failed; each problem printed to stderr
 - Exit 2 — malformed JSON input
 
+## WHAT — Contract
+- Shall validate report shape only (not deliberation substance): `success_criterion` and `verification` are non-empty strings; `chosen_approach` is present (explicit null accepted, missing field is an error); `telemetry` carries a non-empty `mode` for non-skipped reports.
+- `deliberation_log` shall contain `generator`, `control`, and an aggregate step with `result` as a dict (not a string) for non-bypassed reports; `conservator` step presence is not enforced unless `--strict-round2` is set.
+- Telemetry count fields (`tokens_in`, `tokens_out`, `latency_ms`) shall be non-negative `int`; float values such as `1500.0` shall be rejected.
+- Shall exit 0 on valid, 1 on validation failure (each problem printed to stderr), 2 on malformed JSON.
+
 ## WHAT — Verify intent
 - None - all questions resolved.
 

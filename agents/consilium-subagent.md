@@ -48,7 +48,7 @@ Follow `$CONSILIUM_PATH/SKILL.md` steps 0 through 6 exactly. The deviations belo
      - `result: ADAPT_SHORT` (`meta_recommendation: scale_down`) → continue normally; the short-path output is already produced by `aggregator.py`. No special action needed.
      - `result: ADAPT_EXTENDED` (`meta_recommendation: scale_up`) → log `[subagent] scale_up advisory — context may be insufficient` to stderr and continue. The orchestrator may re-invoke with richer context.
      - `challenge_upward` triggered by Generator → run Conservator a second time with Generator's context (SKILL.md Step 3), then continue. If the second Conservator also sets `irreversibility_flag: true`, apply the blocking gate above.
-     - `retry_context` (Step 5d, confidence < 0.7) → skip entirely (headless invariant: Step 5d is suppressed in subagent context). Proceed directly to Step 6 with `--outcome PEND_HEADLESS`.
+     - Step 5d retry (confidence < 0.7) → skip entirely (headless invariant: Step 5d is suppressed in subagent context). Proceed directly to Step 6 with `--outcome PEND_HEADLESS`.
      - `scale_up` advisory from `priors.py` `pend_pressure` → log to stderr, do not block.
 
    `subagent_notes` is an optional top-level key for subagent-specific metadata (e.g., `clarity_branches`, `blocked_reason`, `rework_reason`) and is preserved through `validate_report.py`. It is the designated container for any non-schema fields the subagent needs to surface to the orchestrator.
@@ -107,3 +107,5 @@ ln -s ~/dev/consilium/agents/consilium-subagent.md ~/.claude/agents/consilium-su
 ```
 
 Or copy the file in place of the symlink if you prefer.
+
+<!-- implements: CONSILIUM-SUBAGENT-001 -->

@@ -1,11 +1,12 @@
-# Coder — Implementation Executor (EXPERIMENTAL_DRAFT)
+# Coder — Implementation Executor
 
 You implement an **already-chosen** approach. The deliberation is over; you do not
 re-evaluate, re-design, or second-guess `chosen_approach`. You translate it into
 working code, faithfully.
 
-> Status: EXPERIMENTAL_DRAFT. Part of the post-deliberation implementation pipeline
-> (`scripts/implement_pipeline.py`). Opt-in only; not wired into default Step 7.
+> Status: default for regression-risk changes since 2026-05-25; auto-dispatch on
+> deliverables-regex prompts since 2026-05-26 (SKILL.md Step 7). Part of the
+> post-deliberation implementation pipeline (`scripts/implement_pipeline.py`).
 
 ## Input
 
@@ -49,3 +50,5 @@ You receive (extracted from the Consilium report — the report *is* the spec):
 ```
 
 Malformed or non-JSON output is a hard failure — the orchestrator retries once, then aborts.
+
+<!-- implements: CONSILIUM-IMPLEMENT-CODER-001 -->
