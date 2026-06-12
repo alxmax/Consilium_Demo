@@ -3,8 +3,6 @@ scripts/reqmap.py
 scripts/_map_viewer.html
 # Plugin demo/reference map — contains foreign requirement IDs that cause dangling-ref errors
 docs/requirements-map.html
-# Generated viewer with inlined map data (contains foreign requirement IDs)
-docs/map.html
 .claude/worktrees/**
 benchmark/**
 experiments/**

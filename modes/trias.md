@@ -3,7 +3,7 @@ name: trias
 subagents: 6
 cost_multiplier: 4.0
 confidence_floor: 0.80
-models: haiku(pioneer),sonnet(architect),opus(steward)
+models: sonnet(pioneer),sonnet(architect),sonnet(steward)
 dispatch_count_worst_case: 10
 lazy_routing: true
 description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally then challenged by a Skeptic sub-agent at orchestrator level before voting. Lazy routing downgrades by magnitude tier — low/medium → Sequential, high → Dialectic, critical → full Trias (blocklist hits only).
@@ -13,7 +13,7 @@ description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential i
 
 **Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward), each dispatched as **one Sequential sub-agent** (Conservator→Generator→Control internally) with the personality lens prepended, then challenged by a **Skeptic sub-agent** dispatched by the orchestrator before the team vote. Democratic majority vote over the (possibly revised) 3 chosen results. Cost: 4× Sequential (6 sub-agents vs 1).
 
-**Why the vote diverges (D4).** The three sub-agents use distinct models (Pioneer → Haiku, Architect → Sonnet, Steward → Opus) and distinct lenses. Divergence has two independent sources: (1) **lens re-weighting** — Pioneer up-weights Generator (upside), Steward up-weights Conservator (risk), Architect balances; (2) **model-level reasoning** — Haiku is fast and decisive, Opus is thorough and conservative, Sonnet is the calibrated middle. Neither source alone is sufficient: lens re-weighting explains *which* candidate each personality selects; model characteristics explain *how confidently* and *at what depth* it reasons about that selection. Divergence is measured by `vote_degeneracy.py` — historical baseline ~52% non-unanimous at n=25 (uniform Sonnet). Post-change target: non-unanimity ≥ baseline; revert signal: < 40% non-unanimity over ≥15 runs.
+**Why the vote diverges (D4).** All three sub-agents use the same model (Sonnet) but distinct lenses. Divergence source: **lens re-weighting** — Pioneer up-weights Generator (upside), Steward up-weights Conservator (risk), Architect balances. Divergence is measured by `vote_degeneracy.py` — empirical baseline ~52% non-unanimity at n=25 (uniform Sonnet). Revert signal: < 40% non-unanimity over ≥15 runs.
 
 The weights act **within** each personality only — they decide that personality's own `chose`. **Between** personalities there is no precedence ordering: `aggregator.py --scheme team_vote` is a flat majority over the three `chose` values, and no lens outranks another. A true tie (1-1-1) does not resolve to a "senior" personality — it routes to the B2 deadlock cascade (Round 2 → Skeptic → PEND). So there is no authority hierarchy among the three; the only re-ranking is internal to each sub-agent.
 
@@ -79,11 +79,11 @@ For any downgrade, emit the structured notification:
    Use `$stripped` (not `$raw_context`) in each personality sub-agent prompt. This runs **per sub-agent** so each gets the same budget-capped context. The truncation marker `[... context truncated ...]` signals to the sub-agent that context was cut; it should proceed normally.
 3. **Dispatch all 3 personalities in parallel** (3 `consilium-subagent` Agent calls in the **same** orchestrator message), each with `prompts/<personality>_lens.md` prepended over the task context (using stripped context from Step 2). Each sub-agent runs a full Sequential deliberation (Conservator→Generator→Control) internally with its personality lens applied, and returns `{chosen_approach, rationale, confidence}`. Parallel dispatch is mandatory — sequential dispatch triples wall-clock for no quality gain, and is the root cause of the task-08 timeout pattern observed in benchmark n=10 (2026-05-27).
 
-   **Model dispatch.** Each personality sub-agent is dispatched with `model: <personality.model>` from `personalities.py` output (pioneer → `haiku`, architect → `sonnet`, steward → `opus`). **Steward (Opus) is dispatched schema-less** — do not pass a StructuredOutput schema; Steward returns fenced JSON which the orchestrator parses with `json.loads()`. This is required because Opus+schema StructuredOutput is unreliable and may silently skip the tool call (see project memory `reference_opus_schema_structuredoutput_flaky.md`).
+   **Model dispatch.** Each personality sub-agent is dispatched with `model: <personality.model>` from `personalities.py` output (all three → `sonnet`). All personalities use standard StructuredOutput schema dispatch.
 
-   **Pioneer circuit-breaker.** If Pioneer (Haiku) returns malformed or empty JSON → substitute `model: sonnet` and re-dispatch that personality once. If the substitution also fails, treat Pioneer as a non-vote and continue per B2 timeout rules (≥2 valid votes from the remaining two personalities yield a clear majority; < 2 valid votes → PEND immediately).
+   **Failure handling.** If any personality returns malformed or empty JSON, treat it as a non-vote and continue per B2 timeout rules (≥2 valid votes from the remaining personalities yield a clear majority; < 2 valid votes → PEND immediately).
 
-   **Token cost.** The 3 personality sub-agents (Haiku+Sonnet+Opus) average ≈ $3/$15 per 1M in/out — break-even with 3× Sonnet. The 3 Skeptic sub-agents (Step 3.5, each on Sonnet) add ≈ 1× Sequential each, raising the total to `cost_multiplier: 4.0` (vs Sequential).
+   **Token cost.** The 3 personality sub-agents (all Sonnet) plus the 3 Skeptic sub-agents (Step 3.5, each Sonnet) give `cost_multiplier: 4.0` (vs Sequential).
 
    **Runtime audit (Senate 2026-05-28, [trias-parallelism-enforcement](../runs/senate/2026-05-28_220338-trias-parallelism-enforcement.json), MODIFY 6-3-0):** `benchmark/scripts/check_trias_parallelism.py` reads the Claude CLI session JSONL transcript after each Trias run and writes `trias_dispatch_pattern: "serial"|"parallel"|"mixed"|"scale_down"` into `pipeline_audit.json`. Empirical observation as of 2026-05-28: 7/7 real-deliberation Trias runs were SERIAL despite this mandate. A spec-rewrite attempt (imperative phrasing + worked example + anti-pattern) also produced SERIAL — voice-prompt rewrites do not enforce orchestrator dispatch order (Tacitus retrospective, 0/6 clean-GO). The mandate stays as guidance; the runtime audit is the observability mechanism. Full evidence: [experiments/trias-parallelism-2026-05-28.md](../experiments/trias-parallelism-2026-05-28.md).
 
