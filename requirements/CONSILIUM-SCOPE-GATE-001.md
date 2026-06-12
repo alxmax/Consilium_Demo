@@ -26,6 +26,12 @@ Decides whether a change is small enough to bypass full deliberation. It collect
 - JSON object to stdout with keys: `should_skip`, `magnitude`, `mode_ceiling`, `reason`, `signals`, `config_used`
 - exit code 0 always (errors are reported inside the JSON, not via non-zero exit)
 
+## WHAT — Contract
+- Shall classify the change's magnitude (`low/medium/high/critical`) and derive a `mode_ceiling` from diff signals collected via `probe_change.py` (git) or pre-computed stdin JSON (`--signals-stdin`).
+- Any path matching a blocklist entry shall force `should_skip=false`, `magnitude='critical'`, and `mode_ceiling='trias'` regardless of file or line counts.
+- `CONSILIUM_FORCE_FULL=1` shall force `should_skip=false` and `magnitude='critical'` without reading the diff.
+- Shall fail open: probe failures, missing git repos, and config load errors shall all produce `should_skip=false`; exit code shall always be 0.
+
 ## WHAT — Verify intent
 - None - all questions resolved.
 

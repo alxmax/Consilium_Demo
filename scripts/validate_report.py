@@ -183,9 +183,9 @@ def _validate_telemetry(telemetry: object) -> list[str]:
 
 
 # Reports whose pipeline was bypassed by design — voice-step presence is not required
-# because Generator/Control never ran. See SKILL.md Step 2 (scale_down) and
-# §"Prior-deliberation passthrough".
-_PIPELINE_BYPASS_CHOSEN = frozenset({"trivial-direct", "prior-deliberation"})
+# because Generator/Control never ran. See SKILL.md Step 2 (scale_down),
+# §"Prior-deliberation passthrough" and §"User-spec passthrough".
+_PIPELINE_BYPASS_CHOSEN = frozenset({"trivial-direct", "prior-deliberation", "user-spec"})
 
 
 def _validate_deliberation_log(log: object, skipped: bool, chosen: object = None) -> list[str]:
@@ -215,7 +215,7 @@ def _validate_deliberation_log(log: object, skipped: bool, chosen: object = None
                 problems.append(
                     f"deliberation_log missing '{required_step}' step "
                     f"(required for chosen_approach={chosen!r}; exempt only for "
-                    f"trivial-direct/prior-deliberation reports)"
+                    f"trivial-direct/prior-deliberation/user-spec reports)"
                 )
         if problems:
             return problems
@@ -236,7 +236,7 @@ def _validate_pipeline_executed(report: dict) -> list[str]:
         return [
             "pipeline_executed required (bool) for non-skipped reports; "
             "build_report.py emits True by default — set False explicitly for "
-            "trivial-direct / prior-deliberation passthrough templates"
+            "trivial-direct / prior-deliberation / user-spec passthrough templates"
         ]
     if not isinstance(pe, bool):
         return [f"pipeline_executed must be bool, got {type(pe).__name__}"]
@@ -304,8 +304,8 @@ def _validate_telemetry_required(report: dict) -> list[str]:
         if not isinstance(voices, dict) or len(voices) == 0:
             return [
                 f"telemetry.voices required (non-empty dict) for {mode!r} mode; "
-                "capture per-voice tokens/latency at dispatch for usage rollup "
-                "(scripts/usage.py would skip this run)"
+                "capture per-voice tokens/latency at dispatch — a run without "
+                "per-voice telemetry is invisible to cost analysis"
             ]
     return []
 
@@ -412,7 +412,9 @@ def validate(report: dict) -> list[str]:
         problems.extend(_validate_telemetry(report["telemetry"]))
 
     is_trias = report.get("team") == "trias"
-    is_passthrough = report.get("chosen_approach") == "prior-deliberation"
+    # Bypass-by-design reports (trivial-direct scale_down, prior-deliberation and
+    # user-spec passthroughs) carry only their marker step — no aggregate, no voices.
+    is_passthrough = report.get("chosen_approach") in _PIPELINE_BYPASS_CHOSEN
     problems.extend(_validate_deliberation_log(
         report.get("deliberation_log"),
         report.get("skipped") is True or is_trias or is_passthrough,

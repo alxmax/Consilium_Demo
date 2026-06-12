@@ -56,3 +56,5 @@ After deriving confidence, `check_mode_floor(mode, confidence)` compares against
 ## Calibration caveat
 
 `agreement` measures role-prompt divergence **within one run**, not inter-run stability. Conservator scores are anchored by a categorical formula; Generator/Control scores are self-assigned unanchored floats. A second run on the same input may differ (predicted pstdev 0.12–0.18 on risk_score). The `confidence` value is an internal-consistency signal, **not a calibrated probability**.
+
+<!-- implements: CONSILIUM-CONFIDENCE-001 -->

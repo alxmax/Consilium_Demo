@@ -25,6 +25,11 @@ Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats 
 - stdout: multi-line stats report (total uses, outcome breakdown, success rate, recent overrides, optional run scheme counts)
 - exit code 0 always
 
+## WHAT — Contract
+- `parse_feedback` shall parse `.consilium/FEEDBACK.html` supporting three row layouts in strict precedence order: attribute-based (`data-field`) first, then 8-cell positional (Trias), 7-cell positional (previous), 6-cell positional (legacy); rows with unrecognized `outcome` values shall be silently dropped.
+- Shall return an empty list without error when FEEDBACK.html does not exist.
+- The success-rate denominator shall be `OK + BAD + OVR` only; `PEND` and `PEND_HEADLESS` shall be excluded from the rate calculation.
+
 ## WHAT — Verify intent
 - None - all questions resolved.
 

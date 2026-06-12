@@ -275,6 +275,180 @@ def check_test_suite_coverage() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Referenced-script existence (audit 2026-06-10)
+# ---------------------------------------------------------------------------
+
+# Normative docs: files whose scripts/<name>.py references are contracts the
+# orchestrator executes, not historical mentions. CHANGELOG.md and docs/archive/
+# are deliberately excluded (historical context may cite retired scripts).
+SCRIPT_REF_DOCS = [
+    "SKILL.md",
+    "CLAUDE.md",
+    "README.md",
+    "docs/runs-schema.md",
+    ".claude/skills/run-consilium/SKILL.md",
+]
+
+# Literal scripts/<name>.py paths (subdirs like deprecated/ allowed). The
+# lookbehind rejects benchmark/scripts/... and other prefixed paths; wildcard
+# patterns like scripts/test_*.py never match because '*' is outside the class.
+_SCRIPT_REF_RE = re.compile(r"(?<![\w/\-.])scripts/[A-Za-z0-9_/]+\.py")
+
+
+def check_referenced_scripts_exist() -> list[str]:
+    """Every literal scripts/<name>.py referenced in a normative doc must exist.
+
+    Origin: the 2026-06-04 dead-code triage (commit 84632db) deleted 13 scripts
+    flagged "dead" by static reference analysis — blind to scripts invoked via
+    SKILL.md prose. SKILL.md kept mandating audit_feedback.py/usage.py/
+    efficiency.py/trace_graph.py for 6 days (audit 2026-06-10). This invariant
+    makes any future deletion-vs-contract divergence fail CI immediately.
+    """
+    failures: list[str] = []
+    doc_files = list(SCRIPT_REF_DOCS) + sorted(
+        str(p.relative_to(REPO_ROOT)).replace("\\", "/")
+        for p in (REPO_ROOT / "modes").glob("*.md")
+    )
+    for rel in doc_files:
+        content = _read(rel)
+        for ref in sorted(set(_SCRIPT_REF_RE.findall(content))):
+            if not (REPO_ROOT / ref).exists():
+                failures.append(
+                    f"[referenced_script_exists] {rel}: references {ref} which does not exist\n"
+                    f"  fix: restore the script, or rewrite/remove the reference — a normative\n"
+                    f"  doc must not instruct the orchestrator to run a deleted script"
+                )
+    return failures
+
+
+# ---------------------------------------------------------------------------
+# Trias spec alignment (cost_multiplier / subagents parity)
+# ---------------------------------------------------------------------------
+
+# Explicit format-mapping: do not use f'{v}×' — avoids silent float→str bugs.
+_COST_FMT: dict[float, str] = {4.0: '4×', 3.0: '3×', 1.33: '1.33×', 1.0: '1×'}
+
+
+def _parse_trias_frontmatter() -> dict[str, float | int]:
+    """Return {cost_multiplier, subagents, dispatch_count_worst_case} from modes/trias.md YAML."""
+    src = _read("modes/trias.md")
+    fm = re.search(r'^---\n(.*?)\n---', src, re.DOTALL | re.MULTILINE)
+    if not fm:
+        print("check_doc_drift: modes/trias.md has no YAML frontmatter", file=sys.stderr)
+        sys.exit(2)
+    text = fm.group(1)
+    out: dict[str, float | int] = {}
+    for key, cast in (("cost_multiplier", float), ("subagents", int), ("dispatch_count_worst_case", int)):
+        m = re.search(rf'^{key}:\s*([0-9.]+)', text, re.MULTILINE)
+        if not m:
+            print(f"check_doc_drift: modes/trias.md frontmatter missing '{key}'", file=sys.stderr)
+            sys.exit(2)
+        out[key] = cast(m.group(1))  # type: ignore[operator]
+    return out
+
+
+def check_trias_spec_alignment() -> list[str]:
+    """Trias cost/sub-agent counts must match modes/trias.md frontmatter (the SSOT).
+
+    Each file is checked independently so the failure message names exactly which
+    file drifted. Format mapping uses _COST_FMT (explicit dict, not string coercion).
+
+    Origin: Trias deliberation 2026-06-12 (fix_all_plus_invariant, confidence 0.75).
+    """
+    failures: list[str] = []
+    fm = _parse_trias_frontmatter()
+    cost_multiplier: float = fm["cost_multiplier"]  # type: ignore[assignment]
+    subagents: int = fm["subagents"]  # type: ignore[assignment]
+    worst_case: int = fm["dispatch_count_worst_case"]  # type: ignore[assignment]
+    cost_fmt = _COST_FMT.get(cost_multiplier)
+    if cost_fmt is None:
+        failures.append(
+            f"[trias_spec_alignment] modes/trias.md cost_multiplier={cost_multiplier} "
+            f"has no entry in _COST_FMT — add it before updating"
+        )
+        return failures
+
+    # -- efficiency-section.jsx: MODES_DATA trias row --
+    eff = _read("docs/architecture/src/efficiency-section.jsx")
+    if f"costMultiplier: '{cost_fmt}'" not in eff:
+        failures.append(
+            f"[trias_spec_alignment] efficiency-section.jsx MODES_DATA trias row: "
+            f"costMultiplier must be '{cost_fmt}' (modes/trias.md cost_multiplier={cost_multiplier})\n"
+            f"  fix: update the trias MODES_DATA entry and run docs/architecture/build.py"
+        )
+    if f"dispatches: {subagents}" not in eff:
+        failures.append(
+            f"[trias_spec_alignment] efficiency-section.jsx MODES_DATA trias row: "
+            f"dispatches must be {subagents} (modes/trias.md subagents={subagents})\n"
+            f"  fix: update the trias MODES_DATA entry and run docs/architecture/build.py"
+        )
+
+    # -- extras.jsx CostScatter TRI entry --
+    ext = _read("docs/architecture/src/extras.jsx")
+    # TRI entry must carry the correct cost label
+    tri_match = re.search(r"id:\s*'TRI'[^}]*?cost:\s*'([^']+)'", ext, re.DOTALL)
+    if not tri_match or tri_match.group(1) != cost_fmt:
+        found = tri_match.group(1) if tri_match else "not found"
+        failures.append(
+            f"[trias_spec_alignment] extras.jsx CostScatter TRI: "
+            f"cost must be '{cost_fmt}', got '{found}'\n"
+            f"  fix: update MODES_PLOT TRI entry and run docs/architecture/build.py"
+        )
+
+    # -- extras.jsx CostBars trias row: label and subagents --
+    cbars_match = re.search(r"name:\s*'trias'[^}]*?label:\s*'([^']+)'", ext, re.DOTALL)
+    if not cbars_match or cbars_match.group(1) != cost_fmt:
+        found = cbars_match.group(1) if cbars_match else "not found"
+        failures.append(
+            f"[trias_spec_alignment] extras.jsx CostBars trias row: "
+            f"label must be '{cost_fmt}', got '{found}'\n"
+            f"  fix: update ROWS trias entry and run docs/architecture/build.py"
+        )
+    cbars_sub = re.search(r"name:\s*'trias'[^}]*?subagents:\s*([0-9]+)", ext, re.DOTALL)
+    if not cbars_sub or int(cbars_sub.group(1)) != subagents:
+        found = cbars_sub.group(1) if cbars_sub else "not found"
+        failures.append(
+            f"[trias_spec_alignment] extras.jsx CostBars trias row: "
+            f"subagents must be {subagents}, got {found}\n"
+            f"  fix: update ROWS trias entry and run docs/architecture/build.py"
+        )
+
+    # -- modes.jsx trias cost and worst-case sub-agent count --
+    modes_jsx = _read("docs/architecture/src/modes.jsx")
+    modes_trias_cost = re.search(
+        r"id:\s*'trias'[\s\S]*?cost:\s*'([^']+)'", modes_jsx, re.DOTALL
+    )
+    if not modes_trias_cost or not modes_trias_cost.group(1).startswith(cost_fmt):
+        found = modes_trias_cost.group(1) if modes_trias_cost else "not found"
+        failures.append(
+            f"[trias_spec_alignment] modes.jsx trias cost entry: "
+            f"must start with '{cost_fmt}', got '{found}'\n"
+            f"  fix: update MODES trias cost field and run docs/architecture/build.py"
+        )
+    if f"{worst_case} sub-agents" not in modes_jsx:
+        failures.append(
+            f"[trias_spec_alignment] modes.jsx: worst-case '{worst_case} sub-agents' not found\n"
+            f"  fix: update MODES trias cost field (worst case) and run docs/architecture/build.py"
+        )
+
+    # -- CLAUDE.md: Trias entry must not carry the pre-Skeptic sub-agent count --
+    # When cost_multiplier is 4.0 (Skeptics added), the old count was 3 sub-agents.
+    stale_count_by_cost: dict[float, str] = {4.0: '3', 3.0: '9'}
+    stale_count = stale_count_by_cost.get(cost_multiplier)
+    if stale_count:
+        claude = _read("CLAUDE.md")
+        trias_line = re.search(r'\*\*Trias\*\*.*', claude)
+        if trias_line and f'({stale_count} sub-agents)' in trias_line.group(0):
+            failures.append(
+                f"[trias_spec_alignment] CLAUDE.md: Trias entry has stale "
+                f"'({stale_count} sub-agents)' — must reflect {subagents} sub-agents\n"
+                f"  fix: update the Trias bullet in the 'Available modes' section"
+            )
+
+    return failures
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -283,8 +457,10 @@ def main() -> int:
     all_failures: list[str] = []
     all_failures.extend(check_text_invariants())
     all_failures.extend(check_trias_confidence_parity())
+    all_failures.extend(check_trias_spec_alignment())
     all_failures.extend(check_legacy_mode_milestone())
     all_failures.extend(check_test_suite_coverage())
+    all_failures.extend(check_referenced_scripts_exist())
 
     if not all_failures:
         print("doc-drift OK: all invariants hold", flush=True)

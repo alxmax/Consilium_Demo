@@ -29,6 +29,7 @@ CLI:
     python scripts/vote_degeneracy.py --runs-dir .consilium/runs --min-n 20
     python scripts/vote_degeneracy.py --json
 """
+# implements: CONSILIUM-VOTE-DEGENERACY-001
 
 from __future__ import annotations
 

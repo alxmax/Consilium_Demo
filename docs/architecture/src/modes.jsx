@@ -29,13 +29,13 @@ const MODES = [
     id: 'trias',
     name: 'Trias',
     tag: 'OPT-IN',
-    plain: 'Three independent Claude sub-agents each run the full Sequential pipeline. Each has a different personality (bold / structural / protective). Their three answers go to a democratic vote.',
-    desc: 'Three sub-agents, one per personality lens (Pioneer / Architect / Steward). Each runs Sequential internally with its lens prepended to the system prompt. Each returns a chosen answer. A simple majority vote decides the winner — 3-0 / 2-1 / 2-0. (Spec mandates parallel dispatch; in practice the runtime dispatches them serially — see the Trias parallelism audit, check_trias_parallelism.py.)',
+    plain: 'Three independent Claude sub-agents each run the full Sequential pipeline. Each has a different personality (bold / structural / protective). Each answer is then challenged by its own Skeptic sub-agent before the three (possibly revised) answers go to a democratic vote.',
+    desc: 'Six sub-agents — three personalities (Pioneer / Architect / Steward), each running Sequential internally, then each personality\'s chosen is challenged by a dedicated Skeptic sub-agent at orchestrator level before the team vote. A simple majority vote decides the winner — 3-0 / 2-1 / 2-0. (Spec mandates parallel dispatch; in practice the runtime dispatches them serially — see the Trias parallelism audit, check_trias_parallelism.py.)',
     use: 'highest-stakes — DB migrations, security, large refactors',
-    cost: '3× · worst case 7 sub-agents (1-1-1 → Round 2 → Skeptic)',
+    cost: '4× · worst case 10 sub-agents (1-1-1 → Round 2 → Skeptic)',
     isolation: 'sub-agent per personality + strip per voice inside',
     voices: '3× (Cons · Gen · Ctrl)',
-    subagents: '3 (1 per personality)',
+    subagents: '6 (3 personality + 3 Skeptic; worst 10)',
   },
   {
     id: 'skeptic_flag',
@@ -119,8 +119,10 @@ const WALKTHROUGHS = {
       { id: '3', name: 'inside', caption: 'Inside each personality, the full Sequential pipeline runs: Conservator → Generator → Control with strips.',
         nodes: { orch: 'done', p1: 'active', p2: 'active', p3: 'active', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
       { id: '4', name: 'chosen', caption: 'Each personality returns its own chosen answer.',
-        nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'active' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote'] },
-      { id: '5', name: 'tally', caption: 'Democratic vote tally. 3-0 → confidence 0.95. 2-1 → 0.75. 2-0 → 0.70. 1-1-1 → PEND + escalate.',
+        nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
+      { id: '4b', name: 'skeptic ×3', caption: 'Three Skeptic sub-agents dispatched in parallel — one per chosen answer. An in_place objection revises that personality\'s pick before the vote.',
+        nodes: { orch: 'done', p1: 'active', p2: 'active', p3: 'active', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
+      { id: '5', name: 'tally', caption: 'Democratic vote tally over the (possibly revised) answers. 3-0 → confidence 0.95. 2-1 → 0.75. 2-0 → 0.70. 1-1-1 → PEND + escalate.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'active' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote'] },
       { id: '6', name: 'done', caption: 'Winner declared. Dissent (if any) logged for human review.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'done' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote', 'vote_out'] },
@@ -217,6 +219,25 @@ function ModesSection() {
           <div>
             <p>Same three voices, different staging. The default mode runs everything in one Claude turn with information filtered between voices. Other modes spin up isolated sub-agents — three different "personalities" in <strong>Trias</strong>, or a single challenger in <strong>Dialectic</strong> and <strong>Skeptic-on-chosen</strong>. <strong>Parallel</strong> is no longer user-selectable — the system fires it automatically on critical, irreversible changes.</p>
           </div>
+        </div>
+
+        {/* Which mode when? — routing boundary from SKILL.md */}
+        <div style={{ margin: '0 0 28px', border: '1px solid var(--rule)', borderRadius: 4, background: 'var(--paper)', overflow: 'hidden' }}>
+          <div style={{ padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)', borderBottom: '1px solid var(--rule)' }}>
+            Which mode, when — the routing boundary
+          </div>
+          {[
+            ['Obvious bugfix, or diff < 20 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
+            ['Any other PR-level review', 'Sequential', 'auto Parallel cross-check fires on critical + irreversible'],
+            ['A chosen answer came back shaky (confidence ≤ 0.7) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
+            ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three personalities on three models, settled by vote'],
+          ].map(([when, mode, why]) => (
+            <div key={mode + when} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(150px, 0.8fr) 1.2fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--rule)', fontSize: 13, alignItems: 'baseline' }}>
+              <span style={{ color: 'var(--ink)' }}>{when}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--ink)' }}>{mode}</span>
+              <span style={{ color: 'var(--ink-2)' }}>{why}</span>
+            </div>
+          ))}
         </div>
 
         <div className="mode-panel">

@@ -26,6 +26,10 @@ CLI:
     python scripts/audit_feedback.py --backfill       # append PEND rows
     python scripts/audit_feedback.py --backfill --dry-run
 """
+# implements: CONSILIUM-AUDIT-FEEDBACK-001
+# Restored 2026-06-10 from 84632db^ — deleted as "dead" by static triage, but it is
+# invoked via SKILL.md prose (Step 0 missing_feedback_runs remedy, Step 6 final
+# actions, headless invariants), which static reference analysis cannot see.
 
 from __future__ import annotations
 

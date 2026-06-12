@@ -5,6 +5,7 @@ Run: python scripts/test_implement_mode.py   (exit 0 = all pass, 1 = a failure)
 Gate contract: pipeline iff the change warrants a `review` step (regression-prone
 quadrants); single_shot otherwise. Keyed on reversibility/magnitude, NOT size.
 """
+# tested-by: CONSILIUM-INFER-PIPELINE-001
 from __future__ import annotations
 
 import pathlib

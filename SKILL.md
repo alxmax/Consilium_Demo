@@ -64,7 +64,7 @@ Steps **5b, 5c, 5d** are sub-steps within Stage 4: **5b** (confidence) is mandat
 ### 0. Bootstrap (before any grep / Read on the codebase)
 Two actions in order:
 
-1. **Read the contracts required by the mode** — minimum 3 core voices: `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Dialectic also reads `*_pass2.md` (`generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md`); Trias also reads `<personality>_lens.md` (`pioneer_lens.md`, `architect_lens.md`, `steward_lens.md`); skeptic modes also read `prompts/voices/skeptic.md`. They define the exact fields produced by each voice. **Parallel/dialectic note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough. **Also:** if running a non-default mode, read `modes/<mode>.md` for the full mode workflow and machine-readable config (subagents, cost_multiplier, confidence_floor).
+1. **Read the contracts required by the mode** — minimum 3 core voices: `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Dialectic also reads `prompts/voices/skeptic.md` (its Skeptic stage); Trias also reads `<personality>_lens.md` (`pioneer_lens.md`, `architect_lens.md`, `steward_lens.md`); skeptic modes also read `prompts/voices/skeptic.md`. They define the exact fields produced by each voice. **Parallel/dialectic note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough. **Also:** if running a non-default mode, read `modes/<mode>.md` for the full mode workflow and machine-readable config (subagents, cost_multiplier, confidence_floor).
 2. **Run `python scripts/priors.py --label "<short task label>"`** — returns soft priors from `FEEDBACK.html` + `runs/`. The `--label` flag also checks for a prior authoritative run matching this task (see **Prior-deliberation passthrough** below). Three fields can block the current deliberation until resolved:
    - `stale_pendings` non-empty (PEND older than 2 days): ask *"You have N old PEND entries: [date | chosen] × N. Want me to close them (OK/BAD/skip)?"* — update via `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferred) or via `Edit` directly on `FEEDBACK.html`. **Do not** use `log_feedback.py` — it duplicates the row. **Headless** (`is_headless()`): log `[priors] stale_pendings: N entries — skipping prompt` to stderr and continue without asking.
    - `missing_feedback_runs` non-empty: run `python scripts/audit_feedback.py --backfill` to create PEND entries for orphan runs, then resolve them as above. If the list is larger than 3, prefer to resolve the gap *before* starting a new deliberation. **Headless**: run `audit_feedback.py --backfill` automatically and continue.
@@ -94,6 +94,25 @@ Two actions in order:
    - **Headless:** skip the prompt; continue with the full pipeline (do not auto-passthrough headlessly).
    - **`CONSILIUM_FORCE_FULL=1`:** always run the full pipeline regardless of match.
    - **Falsification criterion:** if passthrough fires on a case that later gets outcome=BAD, tighten the `--label` value used or add specificity to the task description.
+
+   **User-spec passthrough (explicit fiat only).** If the user *explicitly* supplies the approach AND asks to skip deliberation — all three of `chosen_approach` (what to build, concretely), `success_criterion`, and `verification` stated or directly derivable from their message, plus an unambiguous skip instruction ("skip deliberation", "implement exactly this, no deliberation") — build a passthrough report and go straight to Step 7. Never infer the fiat: a detailed request without the explicit skip instruction still gets the full pipeline.
+     ```json
+     {
+       "success_criterion": "<user's criterion>",
+       "chosen_approach": "user-spec",
+       "verification": "<user's verification>",
+       "alternatives": [],
+       "voice_scores": null,
+       "confidence": 0.90,
+       "pipeline_executed": false,
+       "deliberation_log": [{"step": "user_spec_passthrough", "spec": "<one-line summary of the user's declared approach>"}],
+       "telemetry": {"mode": "user_spec_passthrough", "dispatch_count": 0, "consilium_version": "<python scripts/version.py>", "consilium_ref": "<python scripts/version.py --ref>"}
+     }
+     ```
+   - Step 7 runs **with all gates intact** — implement-mode routing, red→green gate, Reviewer. The fiat skips the deliberation, not the safety net.
+   - Persist + log to FEEDBACK like any run (Step 6 final actions) — the `user_spec_passthrough` mode label keeps these runs visible to priors and outcome tracking. Does NOT increment the silent-audit counter (nothing to cross-check).
+   - **Headless:** works identically — the explicit instruction in the prompt *is* the consent; no confirmation needed.
+   - **Falsification criterion:** if `user_spec_passthrough` runs accumulate BAD outcomes, tighten this trigger (e.g. require restating the skip instruction verbatim) — the valve is a convenience, not a right.
 
 ### 1. Gather context & state the goal
 Read the proposed change. Identify scope (files, modules, lines), type (bugfix/feature/refactor/cleanup), blast radius. Formulate `success_criterion` — a testable sentence.
@@ -195,7 +214,7 @@ Default: **conservative_override** — veto at `risk_score > 0.8` (strictly grea
 ```bash
 echo '{"candidates": [...], "chosen": "approach_id"}' | python scripts/confidence.py
 ```
-Returns `{confidence, agreement, separation}`. If `chosen` is `null` (all candidates vetoed), the `confidence` field in the response is `null`. Step 5d is skipped in this case — `retry_context.py` is not run when no candidate survived aggregation. **Formula, vote-pattern path, mode floors, calibration caveat: [modes/confidence.md](modes/confidence.md).**
+Returns `{confidence, agreement, separation}`. If `chosen` is `null` (all candidates vetoed), the `confidence` field in the response is `null`. Step 5d is skipped in this case — there is no retry when no candidate survived aggregation. **Formula, vote-pattern path, mode floors, calibration caveat: [modes/confidence.md](modes/confidence.md).**
 
 > **Calibration (R2 audit 2026-05-17):** `agreement` measures divergence between roles within ONE run — not inter-run stability. Conservator scores are anchored by categorical formula (see `conservator.md`); Generator/Control scores are unanchored self-assigned floats. A second run with the same input may produce different scores (pstdev estimated 0.12–0.18 on `risk_score`). The `confidence` value is not a calibrated probability — it is an internal-consistency signal.
 
@@ -218,13 +237,11 @@ cat bundle.json | python scripts/deprecated/meta_critic.py
 Scores **deliberation quality** (not choice correctness). Retained metric: `conservator_spread` (shrug?). Dead metrics `generator_divergence` and `control_concreteness` removed (0/163 fires). Emits `deliberation_quality.flags` — attach to the bundle before Step 6 (build_report passes it through to the report). Non-empty `flags` do not block. Senate verdict: MODIFY (GO 5 · MODIFY 3 · STOP 1, 2026-05-24 `kill-meta-critic-r2`) — trimmed to conservator_spread only, moved to deprecated/. Substance-validation gap accepted as a known limitation (see TODO.md).
 
 ### 5d. Retry on low confidence (optional, single pass)
-If `confidence < 0.7`, **before** asking the user:
-```bash
-cat bundle.json | python scripts/retry_context.py
-```
-Returns the top-2 candidates with files/symbols to read/grep. Use the hints → gather context (Read + Grep) → re-run Generator/Control/Conservator **once** with enriched input. If confidence is still < 0.7, only then ask the user (Step 6).
+If `confidence < 0.7`, **before** asking the user: identify the single question whose answer would discriminate the top-2 candidates (an unverified assumption, a file you haven't read, an empirical check you can run). Gather that evidence yourself (Read + Grep + smoke-run), then re-run Generator/Control/Conservator **once** with the enriched input. If confidence is still < 0.7, only then ask the user (Step 6).
 
-**Headless** (`is_headless()`): skip Step 5d entirely — go directly to Step 6 where `PEND_HEADLESS` is logged. Empirical note: `retry_context.py` has zero labeled usage in the `runs/` corpus (see senate audit `2026-05-16_220025-flow-and-modes-audit-r2`); skipping in headless is aligned with that deletion-vote and does not lose an active mechanism.
+The retry is orchestrator-driven — derive the discriminating evidence from the deliberation itself. (`retry_context.py`, the old hint generator, was retired to `scripts/deprecated/` on 2026-06-10: its hints had zero usage in the corpus, while two same-day orchestrator-driven retries succeeded — 0.697→0.726 and 0.662→0.679.)
+
+**Headless** (`is_headless()`): skip Step 5d entirely — go directly to Step 6 where `PEND_HEADLESS` is logged.
 
 ## Stage 5 — Output
 
@@ -240,7 +257,7 @@ At each dispatch (voice), immediately after return, accumulate in the bundle:
 - `telemetry.dispatch_count` ← total dispatches (including retries).
 - `telemetry.consilium_version` / `telemetry.consilium_ref` ← repo version provenance, stamped automatically by `build_report.py` (and by the two hand-built templates above). `consilium_version` = `git describe --tags --always --dirty` (display); `consilium_ref` = the committed HEAD sha or `""` on a dirty/unknown tree (the resolvable diff operand). Lets any run be reproduced via `git checkout` — see `scripts/version.py`.
 
-Why mandatory: `scripts/efficiency.py` returns `null` for any run without telemetry, polluting per-mode averages — a run without telemetry is invisible in efficiency comparisons.
+Why mandatory: a run without telemetry is invisible to cost analysis and per-mode comparisons (the measured tokens-per-dispatch snapshot in the architecture explainer was built from this telemetry).
 
 ```bash
 cat bundle.json | python scripts/build_report.py | python scripts/validate_report.py
@@ -367,56 +384,7 @@ Dispatch via `Agent(subagent_type="consilium-implement-subagent", ...)` (see `ag
 
 ### Observe → Think → Act → Learn (descriptive framing)
 
-**This section is descriptive only.** It does not create new behavioral contracts; Steps 0–7 above remain the authoritative workflow. The mapping below is a reading aid for contributors who arrive expecting an Observe–Think–Act–Learn shape — it names what is already present without prescribing anything new.
-
-| OTAL phase | Alias | Step(s) | Script(s) that implement the phase |
-|---|---|---|---|
-| **Observe** | **EXPLORE** | Step 0 + Step 1 | `priors.py` (reads `FEEDBACK.html` + `runs/*.json`); orchestrator gathers context from the codebase |
-| **Think**   | — | Steps 2–5     | `aggregator.py`, `confidence.py`, `meta_critic.py`; Conservator → Generator → Control voices |
-| **Act**     | **COMMIT** | Step 6 + Step 7 | `validate_report.py`, `build_report.py` (write `.consilium/runs/<file>.json`); `infer_pipeline.py` (write code) |
-| **Learn**   | — | Step 6 final action + retroactive | `log_feedback.py` (append to `FEEDBACK.html`); `mark_outcome.py` (retroactive `[confirmed]` weighting) |
-
-```
-         ┌────────────────────────────────────────────┐
-    ┌───▶│  OBSERVE    (Step 0 + Step 1)              │
-    │    │  priors.py · gather context                │
-    │    └────────────────────┬───────────────────────┘
-    │                         │
-    │    ┌────────────────────▼───────────────────────┐
-    │    │  THINK      (Steps 2 → 5)                  │
-    │    │  Conservator → Generator → Control         │
-    │    │  → aggregator.py · meta_critic.py          │
-    │    │                                            │
-    │    │  ↻ retry_context.py — Step 5d: one in-run  │
-    │    │    sub-iteration if confidence < 0.7       │
-    │    └────────────────────┬───────────────────────┘
-    │                         │
-    │    ┌────────────────────▼───────────────────────┐
-    │    │  ACT        (Step 6 + Step 7)              │
-    │    │  validate_report.py · build_report.py      │
-    │    │  → .consilium/runs/<file>.json             │
-    │    │  infer_pipeline.py → code written          │
-    │    └────────────────────┬───────────────────────┘
-    │                         │
-    │    ┌────────────────────▼───────────────────────┐
-    │    │  LEARN      (Step 6 final + retroactive)   │
-    │    │  log_feedback.py → FEEDBACK.html           │
-    │    │  mark_outcome.py — 2× weight when          │
-    │    │  [confirmed] by production reality         │
-    │    └────────────────────┬───────────────────────┘
-    │                         │
-    └─────────────────────────┘
-         priors.py reads FEEDBACK.html at the next
-         deliberation — this is the closing edge
-```
-
-A small in-run sub-iteration exists: at `confidence < 0.7`, Step 5d invokes `retry_context.py` to enrich input and re-run the voices once (`↻` in the diagram). This is the only formal iteration mechanism; there is no meta-controller.
-
-**Calibration note (Learn phase).** The Learn phase is presently *partial* in a structural sense: `log_feedback.py` writes outcomes into `.consilium/FEEDBACK.html` (HTML rows), but `.consilium/runs/<file>.json` does not carry a structured `outcome` field. Consequently `priors.py` reads outcomes from the HTML journal, not from a typed JSON field. The loop closes via the journal — naming the gap explicitly so future readers don't assume an unwired feedback channel exists.
-
-**What this framing is not.** This section does not introduce iteration triggers beyond Step 5d's `retry_context.py`, does not name a meta-controller, and does not authorize voices or aggregator to cite "OTAL step X" as ground for new behavior. If a future proposal seeks behavioral iteration triggers (e.g. firing a second pass on `meta_critic.generator_divergence < 0.4`), that requires its own Senate audit with empirical pilot data — `generator_divergence` currently has zero labeled triggering events in `runs/`, so any threshold would be uncalibrated. A dynamic meta-controller is explicitly out of scope: its TODO precondition (item #16) was dropped in triage, and recursive routing contradicts Constitution Principle 2 (Simplicity first).
-
-> **TODO #18 closure rationale** (2026-05-19 Senate audit, `runs/senate/2026-05-19_214850-todo-18-otal-formalization.json`, MODIFY 0-8-1): 8 of 9 senators converged on docs-only framing. Level 2 (iteration triggers) deferred until ≥3 PEND rows in `FEEDBACK.html` demonstrate the current `confidence<0.7` retry underperforms. Level 3 (meta-controller) closed pending #16's revival.
+Descriptive reading aid only — no behavioral contract. Moved to [docs/otal-framing.md](docs/otal-framing.md) (2026-06-10) to keep this contract lean.
 
 ## Skill maintenance
 
@@ -426,8 +394,6 @@ Apply only when editing the skill (`scripts/*.py`, `prompts/*.md`, `SKILL.md`), 
 ```bash
 python scripts/run_evals.py
 ```
-
-**Usage rollup** (when you have 10+ runs with telemetry): `python scripts/usage.py [--last 50]`
 
 **Periodic feedback audit**: `python scripts/feedback.py [--recent 10 --runs]` (stats), `python scripts/audit_feedback.py [--backfill]` (runs without FB row).
 
@@ -444,7 +410,7 @@ python scripts/run_evals.py
 | `scripts/aggregator.py` | 5 aggregation schemes + auto-relax on total veto (Step 5); reference: `modes/aggregator_schemes.md` |
 | `scripts/confidence.py` | Derives confidence from variance + separation (Step 5b); reference: `modes/confidence.md` |
 | `scripts/deprecated/meta_critic.py` | Deliberation quality score (conservator_spread only) — Step 5c retired 2026-05-25 |
-| `scripts/retry_context.py` | Hint for single retry when confidence < 0.7 — Step 5d |
+| `scripts/deprecated/retry_context.py` | *(Retired 2026-06-10 — hint generator for the Step 5d retry; zero hint usage in corpus. The retry itself is orchestrator-driven.)* |
 | `scripts/build_report.py` | Assemble the canonical report from the bundle (Step 6) |
 | `scripts/validate_report.py` | Principle #4 gate: success_criterion + verification + chosen_approach |
 | `scripts/log_feedback.py` | Auto-append to FEEDBACK.html at the end of Step 6 |
@@ -461,43 +427,24 @@ python scripts/run_evals.py
 | `scripts/personalities.py` | Trias mode — 3 fixed personalities with weights + lens paths |
 | `prompts/voices/skeptic.md` | Focal voice for the `skeptic_on_chosen` flag (composable over any mode) — receives only the chosen, produces a concrete objection or `meta_scope_mismatch` |
 | `scripts/run_evals.py` + `evals/scenarios.json` | Regression suite for deterministic scripts |
-| `scripts/usage.py` | Telemetry rollup from runs/ |
-| `scripts/trace_graph.py` | Pipeline trace — reads a `runs/<file>.json` and emits a Mermaid flowchart of the executed path; `--fence` for GitHub rendering |
 | `agents/consilium-subagent.md` | Subagent for isolated invocation via `Agent(subagent_type="consilium-subagent", ...)` |
 | `scripts/vocabulary_map.py` | User-facing translations (reversibility/magnitude/meta_recommendation/verdict) + `compute_tokens_budget(magnitude, reversibility, meta)` |
 
-## COMMIT workflow (post-implementation, descriptive)
+## COMMIT workflow (post-implementation)
 
-**Descriptive only** — no new behavioral contract in Steps 0–7. The authoritative git rules are in `CLAUDE.md` (branch naming, one-commit-per-branch, auto-push, Conventional Commits format).
-
-Standard 5-step sequence: `git checkout main && git pull` → `git checkout -b feat/<slug>` → implement → `git add` → `git commit -m "feat(scope): description"` → `git push -u origin <branch>`.
-
-Automation: `.claude/settings.json` `Stop` hook detects uncommitted changes on `feat/*`/`fix/*` branches after each turn and prompts Claude to complete the workflow. `scripts/commit.ps1 -Message "..."` handles Steps 3–5 (stage → commit → push); `-Amend` flag for subsequent changes on the same branch.
+The authoritative git rules live in `CLAUDE.md` §Git workflow (branch naming, one-commit-per-branch, auto-push, Conventional Commits, `commit.ps1` helper, Stop-hook automation).
 
 ## Feedback loop
 
 All deliberation state lives under **`.consilium/`** at the repo root (gitignored; the single data directory). Paths are centralized in `scripts/utils.py` (`DATA_DIR`/`RUNS_DIR`/`FEEDBACK_PATH`) — scripts import them as defaults, `--runs-dir`/`--feedback` still override.
 
-- **`.consilium/runs/`** — JSON per deliberation in `.consilium/runs/YYYY-MM-DD_HHMM_<label>.json` (schema in `docs/runs-schema.md`). Read by `priors.py` (Step 0), `usage.py`, `feedback.py`. Run-paths are stored relative to `.consilium/` (key `runs/<file>.json`); `--run-path` accepts any spelling (`.consilium/runs/<f>.json`, `runs/<f>.json`, absolute) and `utils.canonical_run_path` normalizes it to that key.
+- **`.consilium/runs/`** — JSON per deliberation in `.consilium/runs/YYYY-MM-DD_HHMM_<label>.json` (schema in `docs/runs-schema.md`). Read by `priors.py` (Step 0), `feedback.py`, `memory.py`. Run-paths are stored relative to `.consilium/` (key `runs/<file>.json`); `--run-path` accepts any spelling (`.consilium/runs/<f>.json`, `runs/<f>.json`, absolute) and `utils.canonical_run_path` normalizes it to that key.
 - **`.consilium/FEEDBACK.html`** — one line per use: `date | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR`, `PEND`. **Drill-down:** when `log_feedback.py` appends, existing rows lose drill-down; use `scripts/deprecated/migrate_feedback_md_to_html.py` for bulk re-population (retired one-shot tool, see scripts/deprecated/).
 - **Confirmed outcome.** `mark_outcome.py` adds the `[confirmed]` marker in note. `priors.py` weights these rows 2x in `weighted_bad_rate`. Use when production reality contradicts the subjective outcome from Step 6.
 
 ## Memory tiers
 
-Consilium has 3 memory layers with different lifecycles. `scripts/memory.py` provides a uniform read API over all three.
-
-| Tier | Location | Lifetime | Content | Read by |
-|---|---|---|---|---|
-| **Short** | conversation window | session | bundle under construction (Steps 1–5b), clarity gate, current success_criterion | agent only (not persisted) |
-| **Medium** | `.consilium/runs/*.json` | indefinite (gitignored) | one file per deliberation; episodic | `priors.py`, `usage.py`, `memory.py`, `audit_feedback.py` |
-| **Long** | `.consilium/FEEDBACK.html` + signals from `priors.py` | indefinite | one row per use; aggregated over time | `priors.py`, `feedback.py`, `memory.py`, `mark_outcome.py` |
-
-Uniform CLI:
-```bash
-python scripts/memory.py --tier medium --n 5             # last 5 runs
-python scripts/memory.py --tier long --query auth        # substring filter
-python scripts/memory.py --tier all --query feedback     # union across 3 tiers
-```
+3 memory layers (short = conversation window; medium = `.consilium/runs/*.json`; long = `.consilium/FEEDBACK.html`), uniform read API via `scripts/memory.py --tier <short|medium|long|all> [--query <substr>] [--n <N>]`. Full table + lifecycles: [docs/memory-tiers.md](docs/memory-tiers.md).
 
 ## Headless invariants
 
@@ -526,9 +473,9 @@ Every `/consilium` invocation MUST terminate by writing a report to `.consilium/
 
 ## Dispatch defaults (per voice)
 
-Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. Mode sections declare per-invocation overrides (e.g. `opus` Generator for high-stakes) — single source of truth per mode, descriptive not enforced.
+Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. **Trias exception**: each personality uses the model declared in `scripts/personalities.py` — pioneer → `haiku`, architect → `sonnet`, steward → `opus`. Steward dispatches schema-less (fenced JSON) due to Opus+StructuredOutput flakiness; orchestrator parses with `json.loads()`. Mode sections declare per-invocation overrides — single source of truth per mode, descriptive not enforced.
 
-Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× · Trias 3×. The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×, Parallel+flag = 1.33× Parallel).
+Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× · Trias 4×. The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×, Parallel+flag = 1.33× Parallel).
 
 ## Parallel voices mode
 
@@ -611,7 +558,7 @@ Each mode has its own `.md` file in `modes/` with YAML frontmatter (`name`, `sub
 |---|---|---|---|---|
 | Sequential (default) | [modes/sequential.md](modes/sequential.md) | 0 | 1× | 0.70 |
 | Dialectic | [modes/dialectic.md](modes/dialectic.md) | 1 | 1.33× | 0.75 |
-| Trias | [modes/trias.md](modes/trias.md) | 3 (worst: 7) | 3× | 0.80 |
+| Trias | [modes/trias.md](modes/trias.md) | 6 (worst: 10) | 4× | 0.80 |
 | skeptic_on_chosen (flag) | [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md) | +1 over base | base+1 | N/A |
 
 `modes/` also holds reference docs for sub-components (not selectable modes): [implement_pipeline.md](modes/implement_pipeline.md) (Step 7), [aggregator_schemes.md](modes/aggregator_schemes.md) (Step 5), [confidence.md](modes/confidence.md) (Step 5b).
@@ -622,7 +569,7 @@ Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI 
 
 ## Trias mode (high-stakes opt-in)
 
-3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally. Lazy routing graduates by magnitude: low/medium → Sequential, high → Dialectic — only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. **Cost: 3× Sequential** (worst-case 7× on 1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
+3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally then is challenged by a dedicated Skeptic sub-agent at orchestrator level before the team vote. Lazy routing graduates by magnitude: low/medium → Sequential, high → Dialectic — only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. **Cost: 4× Sequential** (worst-case 10 sub-agents on 1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
@@ -653,5 +600,3 @@ Key veto triggers (inline for quick reference during Steps 2–5):
 | `meta_recommendation: scale_down` | Conservator | ADAPT_SHORT | Short-circuit: skip Generator + Control, emit trivial-direct report (`pipeline_executed: false`) |
 | `meta_recommendation: scale_up` | Conservator | ADAPT_EXTENDED | Warn user, add context before Generator |
 | 3+ of above simultaneously | Aggregator | ESCALATE | Present trigger table to user, request decision |
-
-Veto budget for `meta_recommendation`: 5 activations of `scale_up` or `scale_down` per month. On exhaustion → soft warning only, not blocking.

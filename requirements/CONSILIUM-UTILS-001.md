@@ -29,6 +29,13 @@ Shared stdlib-only utilities that every other Consilium script imports instead o
 - `load_json_stdin` exits with code 2 on empty stdin or JSON parse failure
 - `validate_keys` raises `ValueError` on schema violation; callers map that to exit 1 or 2
 
+## WHAT — Contract
+- Shall provide canonical path constants `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolved relative to the repo root (not CWD), two levels above `scripts/utils.py`.
+- `atomic_write_text` shall write via a sibling `.tmp` file with fsync and rename; stale `.tmp` files shall not persist on any error path.
+- `is_headless` shall return `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty shall return `False`.
+- `load_json_stdin` shall exit code 2 on empty stdin or invalid JSON.
+- `issue_penalty` shall return `0.05` for `low`, `0.15` for `medium` (or missing severity), and `0.30` for `high`.
+
 ## WHAT — Verify intent (open questions for the human)
 - None - all questions resolved.
 

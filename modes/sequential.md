@@ -48,8 +48,6 @@ The 8 design components (per spec): vocabulary_map, length_targets, priority_vet
 | `meta_recommendation: scale_up` | Conservator | ADAPT_EXTENDED | Warn user, add context before Generator |
 | 3+ of above simultaneously | Aggregator | ESCALATE | Present trigger table to user, request decision |
 
-Veto budget for `meta_recommendation`: 5 activations of `scale_up` or `scale_down` per month. On exhaustion → soft warning only, not blocking.
-
 ## Failure-mode recovery
 
 - **Sub-agent crash / timeout:** retry that Agent call once; on a second failure, fall back to Sequential for that voice.

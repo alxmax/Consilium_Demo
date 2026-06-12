@@ -4,7 +4,7 @@ const STEPS = [
   {
     id: '0', name: 'bootstrap',
     title: 'Bootstrap',
-    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (override_rate: fraction of runs where the chosen answer was later overridden; veto_rate: fraction where Conservator hard-vetoed all candidates; recurring_keywords: terms that appear repeatedly in chosen approaches). Two signals block until resolved: stale_pendings (PEND outcomes > 2 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 20% of recent runs still PEND), is a soft alert only.',
+    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (override_rate: fraction of runs where the chosen answer was later overridden; veto_rate: fraction where Conservator hard-vetoed all candidates; recurring_keywords: terms that appear repeatedly in chosen approaches). Two signals block until resolved: stale_pendings (PEND outcomes > 2 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 30% of recent runs still PEND), is a soft alert only.',
     plain: 'Wakes up. Reads each voice\'s job description and checks what worked last time — did Conservator keep vetoing? Did past runs tend to end up pending? That context shapes the upcoming deliberation.',
     inputs: ['prompts/voices/*.md', 'runs/*.json', 'FEEDBACK.html'],
     outputs: ['soft priors', 'stale_pendings prompt?'],
@@ -40,7 +40,7 @@ const STEPS = [
     dispatch: [
       ['Sequential', 'Cons → Gen → Ctrl in one context, strip_context.py between them'],
       ['Parallel (auto)', 'Gen alone, then Control ∥ Conservator on its candidates'],
-      ['Trias', '3 personality sub-agents, each a full Sequential pass, then a vote'],
+      ['Trias', '3 personality sub-agents (each a full Sequential pass) + 3 Skeptic challenges, then a vote'],
     ],
   },
   {
@@ -55,7 +55,7 @@ const STEPS = [
   {
     id: '5b', name: 'confidence',
     title: 'Confidence',
-    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Separately, when confidence ∈ [0.0, 0.7] the skeptic_on_chosen mechanism auto-triggers (if composed) and retry_context runs at Step 5d — this threshold is fixed at 0.7 regardless of mode.',
+    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Separately, when confidence ∈ [0.0, 0.7] the skeptic_on_chosen mechanism auto-triggers (if composed) and the Step 5d retry fires — this threshold is fixed at 0.7 regardless of mode.',
     plain: 'How confident are the voices in the winner? Each mode has a floor — if it falls below, that\'s a signal (not a hard stop). The more a mode costs, the higher its expected confidence bar.',
     inputs: ['ranking', 'voice variances', 'mode'],
     outputs: ['confidence ∈ [0, 1]', 'below_floor: bool'],
@@ -73,16 +73,16 @@ const STEPS = [
   {
     id: '5d', name: 'retry',
     title: 'Retry on low confidence',
-    desc: 'Single pass only. If confidence < 0.7, retry_context.py returns the top-2 candidates with files/symbols to read or grep. The orchestrator gathers extra context and re-runs Generator/Control/Conservator once with enriched input. Headless mode skips this step.',
+    desc: 'Single pass only. If confidence < 0.7, the orchestrator identifies the question that discriminates the top-2 candidates, gathers that evidence itself (Read/Grep/smoke-run), and re-runs Generator/Control/Conservator once with enriched input. Headless mode skips this step. (The retry_context.py hint generator was retired 2026-06-10 — zero hint usage in the corpus; the retry step itself stays.)',
     plain: 'If still uncertain after one round, gather more context and re-deliberate exactly once.',
     inputs: ['top-2 candidates', 'codebase signals'],
     outputs: ['enriched bundle → step 2 again'],
-    scripts: ['retry_context.py'],
+    scripts: [],
   },
   {
     id: '6', name: 'report',
     title: 'Report',
-    desc: 'Telemetry mandate (before build_report): every voice/sub-agent dispatch must accumulate {tokens_in, tokens_out, latency_ms} into telemetry.voices.<name>. telemetry.mode is also required. Runs without telemetry return null from efficiency.py and pollute per-mode averages. validate_report.py enforces Principle #4. log_feedback.py appends a row to FEEDBACK.html.',
+    desc: 'Telemetry mandate (before build_report): every voice/sub-agent dispatch must accumulate {tokens_in, tokens_out, latency_ms} into telemetry.voices.<name>. telemetry.mode is also required. Runs without telemetry are invisible to cost analysis and per-mode comparisons. validate_report.py enforces Principle #4. log_feedback.py appends a row to FEEDBACK.html.',
     plain: 'Writes the final decision to disk. Telemetry per voice is mandatory — without it the run is invisible to cost analysis.',
     inputs: ['everything above', 'telemetry per voice'],
     outputs: ['runs/<ts>.json', 'FEEDBACK.html row'],

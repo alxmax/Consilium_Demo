@@ -14,7 +14,7 @@ Stdlib-only, no test runner. Smoke tests run manually via CLI:
 
 - `python scripts/test_round2.py` — sequential architecture (skeptic_on_chosen, MODE enum, validate_report extras)
 - `python scripts/test_feedback_html.py` — `render_feedback_html` + parser round-trip
-- `python scripts/test_audit_counter.py`, `test_lens_bias.py`, `test_vote_degeneracy.py`, `test_meta_critic_trim.py`, `test_implement_mode.py`, `test_implement_pipeline.py` — the remaining unit suites. All 8 `scripts/test_*.py` are gated in CI (`.github/workflows/ci.yml`) and the run-consilium `driver.py smoke`.
+- `python scripts/test_audit_counter.py`, `test_lens_bias.py`, `test_vote_degeneracy.py`, `test_meta_critic_trim.py`, `test_implement_mode.py`, `test_implement_pipeline.py` — the remaining unit suites. Every `scripts/test_*.py` is gated in CI (`.github/workflows/ci.yml`) and the run-consilium `driver.py smoke` (enforced by `check_doc_drift.py`).
 - `python scripts/run_evals.py` — regression scenarios from `evals/scenarios.json` (subprocess-based, deterministic; all scenarios run, non-zero exit if any fails)
 - `python scripts/validate_report.py < .consilium/runs/<file>.json` — Constitution Principle #4 gate; minimum required before any commit touching `prompts/voices/` or `aggregator.py`
 - `python scripts/check_doc_drift.py` — enforces parity between `modes/*.md`, `docs/architecture/src/*.jsx`, and `scripts/confidence.py` (5 invariants: Trias parallel dispatch, Trias 2-1/2-0 confidence values, sequential scale_down behavior, parallel-auto 2-turn structure, silent-audit-is-implemented) + dated removal milestones for legacy MODE aliases + test-suite coverage (every `scripts/test_*.py` must be gated in both `ci.yml` and the run-consilium driver — prevents the test-drift that hid a RED suite). Run before any commit touching `modes/`, `docs/architecture/src/`, `scripts/confidence.py`, or `scripts/test_*.py`. Origin: Senate audit `runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`.
@@ -35,7 +35,7 @@ Mode-specific scripts:
 - `dialectic_merge.py` — two-pass merge for Dialectic
 - `personalities.py` — Trias lens injection (Pioneer/Architect/Steward)
 
-Sub-agent dispatch (Trias, Skeptic): see `agents/consilium-subagent.md`. All sub-agents use `model: "sonnet"` explicitly — do not inherit Opus.
+Sub-agent dispatch (Trias, Skeptic): see `agents/consilium-subagent.md`. Sub-agents use `model: "sonnet"` by default — do not inherit Opus. **Trias exception**: each personality uses the `model` from `scripts/personalities.py` (pioneer → `haiku`, architect → `sonnet`, steward → `opus`). Steward dispatches schema-less (fenced JSON) due to Opus+StructuredOutput flakiness.
 
 Architecture visualization: `docs/architecture.html` (open locally). Benchmarks on real problems: `experiments/` (benchmarking discipline: `experiments/oracle-discipline.md`).
 
@@ -49,7 +49,7 @@ Architecture visualization: `docs/architecture.html` (open locally). Benchmarks 
 
 - **`prompts/voices/*.md`** — read by each voice at runtime. A change here affects all future deliberations → high `regression_risk` in Conservator. Prefer injecting extra context into the voice's input rather than into the prompt.
   - Core voices: `generator.md`, `control.md`, `conservator.md` — run in any mode
-  - Pass-2: `generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md` — legacy; on disk but no longer dispatched (Dialectic moved to Sequential + Skeptic)
+  - Pass-2: `generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md` — legacy, moved to `prompts/deprecated/`; no longer dispatched (Dialectic moved to Sequential + Skeptic)
   - `skeptic.md` — focal challenger, run in `skeptic_on_chosen` (composable flag over any base mode)
   - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended over core voices in `trias`
 - **`SKILL.md` Constitution + workflow** — changing steps 0–7 breaks the JSON format expected by `aggregator.py` and `validate_report.py`. Modify both at the same time.
@@ -60,7 +60,7 @@ User-selectable modes (SKILL.md documents them in detail):
 
 - **Sequential** (default) — Conservator → Generator → Control single-context.
 - **Dialectic** — Sequential + Skeptic sub-agent on the chosen answer (`scripts/deprecated/dialectic_merge.py` retired; Dialectic no longer uses Pass-2).
-- **Trias** — 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally; democratic vote over the 3 results (3 sub-agents).
+- **Trias** — 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally, then challenged by a dedicated Skeptic sub-agent; democratic vote over the 3 (possibly revised) results (6 sub-agents nominal, worst-case 10, 4× Sequential).
 - **`trias_split`** — deprecated; use standard `trias` (cost is now equivalent).
 - **`skeptic_on_chosen`** — composable flag over any base mode (+1 sub-agent overhead). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-triggers when `confidence ∈ [0.0, 0.7]`. Replaces the fixed modes `parallel_skeptic` (= `parallel + skeptic_on_chosen`) and `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — collapsed on 2026-05-17, legacy names remain in `validate_report.py` MODE enum for backward-compat.
 
@@ -89,3 +89,5 @@ Rules for any non-trivial change made by Claude in this repo:
 5. **The user creates the PR manually.** Do not run `gh pr create`. At the end, just report the pushed branch.
 6. **Exception: typos / 1-line fixes** can go directly to `main` if the user explicitly requests it. Everything else follows the workflow above.
 7. **Commit messages** stay in Conventional Commits format (`feat(scope): ...`, `fix(scope): ...`), aligned with the branch prefix.
+
+Automation: `scripts/commit.ps1 -Message "..."` handles stage → commit → push (`-Amend` for subsequent changes on the same branch). The `.claude/settings.json` `Stop` hook detects uncommitted changes on `feat/*`/`fix/*` branches after each turn and prompts Claude to complete the workflow.

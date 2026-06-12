@@ -4,18 +4,21 @@ const LENSES = [
   {
     name: 'Pioneer',
     tag: 'bold',
+    model: 'Haiku',
     g: 0.49, c: 0.30, k: 0.21,
     desc: 'Values bold, high-reward approaches that push the codebase forward. Tolerates moderate risk for genuinely new solutions. Prefers new patterns over existing ones when the new pattern offers a clear gain.',
   },
   {
     name: 'Architect',
     tag: 'structural',
+    model: 'Sonnet',
     g: 0.30, c: 0.40, k: 0.30,
     desc: 'Values internal consistency, type safety, clean abstractions. Long-term maintainability over short-term wins. Prefers changes that strengthen invariants over those that work around them.',
   },
   {
     name: 'Steward',
     tag: 'protective',
+    model: 'Opus',
     g: 0.30, c: 0.30, k: 0.40,
     desc: 'Values reversibility, minimal scope, and protection of systems that already work. Prefers existing patterns over novel ones unless the new is clearly necessary. Blast radius is the dominant concern.',
   },
@@ -45,7 +48,7 @@ function TriasSection() {
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Three Claudes each run the full pipeline — one is told to be bold, one structural, one cautious. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
+            <p>Three Claudes each run the full pipeline — one is told to be bold, one structural, one cautious. Each personality also runs on a <strong>different model</strong>: Pioneer on Haiku, Architect on Sonnet, Steward on Opus — so the three disagree for two independent reasons (lens <em>and</em> model temperament), while the per-token price averages out to roughly three Sonnet dispatches. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
           </div>
         </div>
 
@@ -63,7 +66,7 @@ function TriasSection() {
 
         <h3 className="h-sub" style={{ marginTop: 40 }}>Cost-aware routing — when Trias auto-downgrades</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', marginBottom: 22 }}>
-          Trias costs 3× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), <strong>critical</strong> (blocklist hit: auth, security, migrations, CI, secrets) → <strong>full Trias</strong> (3×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
+          Trias costs 4× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), <strong>critical</strong> (blocklist hit: auth, security, migrations, CI, secrets) → <strong>full Trias</strong> (4×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
         </p>
 
         <LazyRoutingDiagram />
@@ -80,14 +83,14 @@ function TriasSection() {
         <div className="note" style={{ marginTop: 28 }}>
           <span className="note__label">Deadlock cascade — 1-1-1 / 0-0-0</span>
           <span>
-            A true tie doesn't resolve to a "senior" personality — it escalates. <strong>Round 2</strong> re-dispatches all three personalities (+3 sub-agents), each now seeing the other two's Round-1 pick and reasoning. If they still split 1-1-1, a single <strong>Skeptic</strong> tiebreaker (+1 sub-agent) selects the winner; <code>0-0-0</code> — everyone vetoed everything — falls straight through to <strong>PEND</strong>. That path is the worst-case cost of <strong>7 sub-agents</strong> (3 + Round 2's 3 + 1 Skeptic). In practice it is rare: <strong>4 of 37</strong> Trias runs reached a 1-1-1 deadlock (≈11%), and ≈51% were non-unanimous — measured by <code>scripts/vote_degeneracy.py</code>.
+            A true tie doesn't resolve to a "senior" personality — it escalates. <strong>Round 2</strong> re-dispatches all three personalities (+3 sub-agents), each now seeing the other two's Round-1 pick and reasoning. If they still split 1-1-1, a single <strong>Skeptic</strong> tiebreaker (+1 sub-agent) selects the winner; <code>0-0-0</code> — everyone vetoed everything — falls straight through to <strong>PEND</strong>. That path is the worst-case cost of <strong>10 sub-agents</strong> (6 + Round 2's 3 + 1 Skeptic). In practice it is rare: <strong>4 of 37</strong> Trias runs reached a 1-1-1 deadlock (≈11%), and ≈51% were non-unanimous — measured by <code>scripts/vote_degeneracy.py</code>.
           </span>
         </div>
 
         <div className="note" style={{ marginTop: 16 }}>
           <span className="note__label">Aggregate bias</span>
           <span>
-            Mean weights across the three personalities: <VToken v="gen">Generator 0.363</VToken>, <VToken v="ctl">Control 0.333</VToken>, <VToken v="con">Conservator 0.303</VToken>. Compared to a balanced 0.333, the team tilts <strong>slightly toward exploration</strong>. Trias costs 3× Sequential — use only when the cost of a wrong decision dominates the cost of running 9 voice invocations.
+            Mean weights across the three personalities: <VToken v="gen">Generator 0.363</VToken>, <VToken v="ctl">Control 0.333</VToken>, <VToken v="con">Conservator 0.303</VToken>. Compared to a balanced 0.333, the team tilts <strong>slightly toward exploration</strong>. Trias costs 4× Sequential — use only when the cost of a wrong decision dominates the cost of running 6 sub-agents (3 personalities + 3 Skeptics).
           </span>
         </div>
       </div>
@@ -95,11 +98,11 @@ function TriasSection() {
   );
 }
 
-function PersonaCard({ name, tag, g, c, k, desc }) {
+function PersonaCard({ name, tag, model, g, c, k, desc }) {
   return (
     <article className="persona">
       <h3 className="persona__name">{name}</h3>
-      <div className="persona__lean">{tag}-leaning</div>
+      <div className="persona__lean">{tag}-leaning{model && <> · runs on <strong>{model}</strong></>}</div>
       <div className="persona__bars">
         <PersonaBar v="gen" label="Generator" w={g} />
         <PersonaBar v="ctl" label="Control" w={c} />
@@ -239,8 +242,8 @@ function LazyRoutingDiagram() {
             fill="color-mix(in oklch, oklch(0.55 0.16 320) 8%, var(--paper))"
             stroke="oklch(0.55 0.16 320)" strokeWidth="1.4" />
           <text x="760" y="64" textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, fill: 'var(--ink)' }}>Trias — full</text>
-          <text x="760" y="82" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'oklch(0.4 0.16 320)' }}>3 personalities · 3× cost</text>
-          <text x="760" y="97" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>9 voice runs total</text>
+          <text x="760" y="82" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'oklch(0.4 0.16 320)' }}>6 sub-agents · 4× cost</text>
+          <text x="760" y="97" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>3 personalities + 3 Skeptics</text>
         </g>
 
         {/* Dialectic */}

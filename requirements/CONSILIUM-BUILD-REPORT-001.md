@@ -30,6 +30,13 @@ Assembles the canonical deliberation report shape from the intermediate voice an
 - exit code 1 on missing required field
 - exit code 2 on malformed JSON input
 
+## WHAT — Contract
+- Shall assemble the canonical deliberation report shape from a JSON bundle containing `success_criterion`, `verification`, `generator`, `control`, `conservator`, `aggregate`, and `confidence`; missing any required key exits with code 1.
+- Shall extract `voice_scores` from the Control verdict and Conservator score lists for the chosen candidate.
+- Shall derive `why_not` summaries for non-chosen alternatives by combining Control issues and Conservator risk; falls back to `"ranked below chosen"` when neither source yields text, or `"all candidates vetoed"` when `chosen` is null.
+- Shall stamp `consilium_version` and `consilium_ref` from the version module into the telemetry block of every non-skipped report.
+- Skipped bundles (`skipped: true`) shall be handled via a separate code path requiring only `skip_reason` and `signals`; `pipeline_executed` shall be absent on skipped reports and `true` on all full-pipeline reports.
+
 ## WHAT — Verify intent (open questions for the human)
 - None - all questions resolved.
 

@@ -28,6 +28,12 @@ The run-consilium skill driver exercises Consilium's entire deterministic, LLM-f
 - `shot` writes a PNG file to `.consilium/shots/architecture.png` or the caller-supplied path
 - `pipeline` prints aggregator JSON, confidence JSON, build_report JSON, and validate_report result to stdout
 
+## WHAT — Contract
+- `smoke` shall run all `scripts/test_*.py` unit suites, the `check_doc_drift.py` invariant gate, the `docs/architecture` build `--check`, and the full bundle→build_report→validate_report pipeline; shall report PASS/FAIL per step and exit non-zero only when failures exceed a documented baseline.
+- `pipeline` shall run the aggregator→confidence→build_report→validate_report chain on synthetic input, printing each stage's JSON to stdout, and exit 0.
+- `shot` shall screenshot `docs/architecture.html` using headless Chrome or Edge and write a PNG to `.consilium/shots/architecture.png` (or the caller-supplied path).
+- Shall inject `PYTHONUTF8=1` and `PYTHONIOENCODING=utf-8` into all child process environments.
+
 ## WHAT — Verify intent (open questions for the human)
 - None - all questions resolved.
 

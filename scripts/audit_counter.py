@@ -49,6 +49,7 @@ State schema (.consilium/audit_state.json):
       ]
     }
 """
+# implements: CONSILIUM-AUDIT-COUNTER-001
 
 from __future__ import annotations
 

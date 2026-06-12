@@ -1,9 +1,16 @@
 scripts/reqmap.py
+# Bundled viewer template — generated artifact, never a member (see reqmap.py init default)
+scripts/_map_viewer.html
+# Plugin demo/reference map — contains foreign requirement IDs that cause dangling-ref errors
+docs/requirements-map.html
+# Generated viewer with inlined map data (contains foreign requirement IDs)
+docs/map.html
 .claude/worktrees/**
 benchmark/**
 experiments/**
 evals/**
 scripts/deprecated/**
+prompts/deprecated/**
 # test_meta_critic_trim.py covers a deprecated module with no live requirement.
 scripts/test_meta_critic_trim.py
 scripts/fix_benchmark_pendings.py
