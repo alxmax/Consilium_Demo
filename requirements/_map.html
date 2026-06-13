@@ -965,7 +965,7 @@
       "title": "dialectic mode",
       "intent": "WHY: Add a focused post-hoc challenge on the chosen approach for code changes — Sequential deliberation plus code-context injection, followed unconditionally by a Skeptic sub-agent regardless of confidence band.",
       "contract": [
-        "The mode shall inject code-specific context (`language`, `framework`, `build_command`, `files_touched[]`, `test_files[]`, `ci_gate`) into voice inputs (not into prompt files) before running the standard Sequential deliberation (Conservator → Generator → Control).",
+        "The mode shall inject code-specific context (`language`, `framework`, `build_command`, `files_touched[]`, `test_files[]`, `ci_gate`) into voice inputs (not into prompt files) before running the standard Sequential deliberation (Generator → Conservator → Control).",
         "After Sequential produces `chosen`, the mode shall unconditionally dispatch 1 Skeptic sub-agent (`skeptic_on_chosen`) on the result — not gated on confidence band and not skipped when Sequential short-circuits via `scale_down`.",
         "In Dialectic, the Skeptic is always unconditional. The `confidence ∈ [0.0, 0.7]` auto-trigger conditions in `skeptic_on_chosen.md` apply only to `skeptic_on_chosen` as a composable flag over other base modes, not to Dialectic's hardwired Skeptic step. Dialectic defines a fixed pipeline where the Skeptic is mandatory regardless of confidence band.",
         "The total cost shall be 1.33× Sequential (1× Sequential + 1 Skeptic sub-agent); telemetry shall record `mode: \"dialectic\"` and, when the Skeptic catches a constraint, `skeptic_caught_constraint: true` in the report.",
@@ -1012,11 +1012,12 @@
       "status": "confirmed",
       "area": "CONSILIUM",
       "title": "sequential mode",
-      "intent": "WHY: Run Conservator, Generator, and Control in a single shared context window — the cheapest deliberation path, used by default when no higher mode is warranted.",
+      "intent": "WHY: Run Generator, Conservator, and Control in a single shared context window — the cheapest deliberation path, used by default when no higher mode is warranted.",
       "contract": [
-        "The mode shall dispatch exactly three voices — Conservator, then Generator, then Control — in that fixed order within a single context window, with no external sub-agent dispatch (0 sub-agents, 1× baseline cost).",
-        "Before each voice runs (Steps 3–4), the prior voice's prompt shall be stripped from context via `strip_context.py`; model in-context memory is not cleared — this is a known deliberate limitation documented in the mode spec.",
-        "The aggregator shall apply an 8-component veto cascade (`aggregate_sequential()`) producing one of seven routing outcomes: BLOCK (irreversibility), BLOCK (glossary_fail), REWORK, SHORT-CIRCUIT (scale_down), ADAPT_EXTENDED (scale_up), ESCALATE, or AGGREGATE; the resulting report shall carry a `confidence` value derived from the veto outcome.",
+        "The mode shall dispatch exactly three voices — Generator, then Conservator, then Control — in that fixed order within a single context window, with no external sub-agent dispatch (0 sub-agents, 1× baseline cost). Generator runs first, blind to risk framing (anti-anchoring), and self-scales its depth from the change's blast radius.",
+        "The irreversibility consent gate shall run **pre-dispatch** (Step 1.6), before Generator, keyed on `scope_gate.consent_required` (a sensitive/irreversible path or an undeterminable change; fail-safe — uncertainty requires consent). Conservator's `irreversibility_flag` is the backstop for what a path/text pre-check cannot see.",
+        "Before each voice runs (Steps 2–4), the prior voice's prompt shall be stripped from context via `strip_context.py`; model in-context memory is not cleared — this is a known deliberate limitation documented in the mode spec.",
+        "The aggregator shall apply an 8-component veto cascade (`aggregate_sequential()`) producing one of seven routing outcomes: BLOCK (irreversibility), BLOCK (glossary_fail), REWORK, SHORT-CIRCUIT (scale_down — skips Control only, Generator already ran), ADAPT_EXTENDED (scale_up), ESCALATE, or AGGREGATE; the resulting report shall carry a `confidence` value derived from the veto outcome.",
         "When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, a non-user-selectable auto-parallel cross-check shall be triggered; a silent parallel audit shall fire at a default cadence of 1-in-20 sequential runs (bumping to 1-in-5 when ≥2 of the last 5 audits diverged).",
         "The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as \"WEAK\" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`."
       ],
@@ -1033,7 +1034,7 @@
         "modes/sequential.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a deliberation request with no explicit mode flag and no critical/irreversible trigger\n  When  the mode runs\n  Then  exactly three voices are invoked in the order Conservator → Generator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade\n\nAC-2\n  Given a deliberation request where Conservator emits `meta_recommendation: scale_down`\n  When  the mode runs\n  Then  Generator and Control are skipped, the report contains `chosen_approach: \"trivial-direct\"`, `confidence: 0.85`, and `pipeline_executed: false`\n\nAC-3\n  Given a deliberation request where Control emits `glossary_fail: true`\n  When  the aggregator runs\n  Then  the routing outcome is BLOCK (glossary_fail) and the user is asked to reformulate with operational terms before any chosen approach is emitted\n\nAC-4\n  Given a completed Sequential deliberation where `confidence < 0.6`\n  When  the orchestrator checks confidence at Step 5b\n  Then  it automatically re-runs the full pipeline with `--mode dialectic`; the Dialectic result (with `auto_escalated: true` in the report) is the final output; no further auto-escalation fires if Dialectic confidence is also < 0.6",
+      "accept": "AC-1\n  Given a deliberation request with no explicit mode flag and no critical/irreversible trigger\n  When  the mode runs\n  Then  exactly three voices are invoked in the order Generator → Conservator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade\n\nAC-2\n  Given a deliberation request where Conservator (running second) emits `meta_recommendation: scale_down`\n  When  the mode runs\n  Then  Control is skipped (Generator has already run), the report contains `chosen_approach: \"trivial-direct\"`, `confidence: 0.85`, and `pipeline_executed: false`\n\nAC-3\n  Given a deliberation request where Control emits `glossary_fail: true`\n  When  the aggregator runs\n  Then  the routing outcome is BLOCK (glossary_fail) and the user is asked to reformulate with operational terms before any chosen approach is emitted\n\nAC-4\n  Given a completed Sequential deliberation where `confidence < 0.6`\n  When  the orchestrator checks confidence at Step 5b\n  Then  it automatically re-runs the full pipeline with `--mode dialectic`; the Dialectic result (with `auto_escalated: true` in the report) is the final output; no further auto-escalation fires if Dialectic confidence is also < 0.6\n\nAC-5\n  Given a deliberation request whose diff touches a sensitive/irreversible path (scope_gate `consent_required: true`)\n  When  the mode runs in an interactive (non-headless) context\n  Then  the orchestrator requests explicit user consent BEFORE dispatching Generator; no voice output exists in context when consent is requested (the consent gate is pre-dispatch, not post-generation)",
       "input": "",
       "output": "",
       "desc": "",
@@ -1053,7 +1054,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "modes/sequential.md:69"
+          "loc": "modes/sequential.md:72"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1117,7 +1118,7 @@
       "intent": "WHY: Apply three divergent personality lenses (Pioneer/Architect/Steward) each running a full dialectic deliberation, then resolve by democratic majority vote — providing genuine multi-perspective scrutiny for high-stakes, irreversible, or architecturally complex decisions.",
       "contract": [
         "The mode shall classify magnitude via `scope_gate.py` on the original unstripped context before any context stripping; when lazy routing is enabled (default), it shall downgrade to Sequential (low/medium magnitude) or Dialectic (high magnitude) and emit a structured `trias_lazy_routed` notification — full Trias (3 sub-agents) runs only on `critical` magnitude or when the user explicitly requests it.",
-        "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Conservator → Generator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch. After the 3 personalities return their chosens, the orchestrator shall dispatch 3 Skeptic sub-agents in parallel (one per personality chosen) per `prompts/voices/skeptic.md`; if a Skeptic returns `can_object: true` with `addressable: \"in_place\"`, the personality's chosen is revised before `team_vote` (advisory by default).",
+        "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Generator → Conservator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch. After the 3 personalities return their chosens, the orchestrator shall dispatch 3 Skeptic sub-agents in parallel (one per personality chosen) per `prompts/voices/skeptic.md`; if a Skeptic returns `can_object: true` with `addressable: \"in_place\"`, the personality's chosen is revised before `team_vote` (advisory by default).",
         "The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).",
         "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1). `0-0-0` means all 3 personalities returned `chose: null` (each personality's internal Sequential ran `conservative_override` and vetoed every candidate); it is distinct from 1-1-1 (three different non-null choices) and is achievable without abstention — it occurs when every candidate exceeds the conservator veto threshold inside each sub-agent.",
         "When lazy routing downgrades to Dialectic or Sequential, the `trias_lazy_routed: true` notification is emitted by the Trias orchestrator before the downgraded mode runs; the notification is not carried into the final persisted report produced by the downgraded mode's own pipeline. The persisted report reflects the actual mode that ran (`dialectic` or `sequential`), not `trias`.",
@@ -1156,7 +1157,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "modes/trias.md:182"
+          "loc": "modes/trias.md:184"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1371,12 +1372,13 @@
       "status": "confirmed",
       "area": "CONSILIUM",
       "title": "scope_gate",
-      "intent": "Decides whether a change is small enough to bypass full deliberation; fails open.",
+      "intent": "Decides whether a change is small enough to bypass full deliberation (fails open), and whether it needs explicit consent before any voice runs (fails safe).",
       "contract": [
         "Shall classify the change's magnitude (`low/medium/high/critical`) and derive a `mode_ceiling` from diff signals collected via `probe_change.py` (git) or pre-computed stdin JSON (`--signals-stdin`).",
         "Any path matching a blocklist entry shall force `should_skip=false`, `magnitude='critical'`, and `mode_ceiling='trias'` regardless of file or line counts.",
         "`CONSILIUM_FORCE_FULL=1` shall force `should_skip=false` and `magnitude='critical'` without reading the diff.",
-        "Shall fail open: probe failures, missing git repos, and config load errors shall all produce `should_skip=false`; exit code shall always be 0."
+        "Shall fail open on the cost gate: probe failures, missing git repos, and config load errors shall all produce `should_skip=false`; exit code shall always be 0.",
+        "Shall emit `consent_required` — the pre-dispatch irreversibility consent gate the orchestrator uses to request explicit user consent before any voice runs. It shall be `true` on any blocklist (sensitive/irreversible path) hit and `false` on an ordinary non-sensitive change. Unlike `should_skip`, it shall fail **safe**: a probe or config failure shall return `consent_required=true` so an undeterminable change never silently bypasses consent."
       ],
       "verify": [
         "None - all questions resolved."
@@ -1388,12 +1390,13 @@
         "Any path matching a blocklist pattern returns `should_skip=false`, `magnitude='critical'`, and `mode_ceiling='trias'` regardless of file/line counts.",
         "Setting `CONSILIUM_FORCE_FULL=1` returns `should_skip=false` and `magnitude='critical'` without reading the diff.",
         "Using `--signals-stdin` with a pre-computed payload bypasses git and classifies magnitude purely from the payload values.",
-        "A probe failure (e.g. not a git repo) returns `should_skip=false` with the error text in the `reason` field and exits 0."
+        "A probe failure (e.g. not a git repo) returns `should_skip=false` with the error text in the `reason` field and exits 0.",
+        "A blocklist (sensitive/irreversible) path returns `consent_required=true`; an ordinary non-sensitive change returns `consent_required=false`; a probe failure returns `consent_required=true` (fails safe, the opposite direction from `should_skip`). (`scripts/test_consent_gate.py`)"
       ],
-      "accept": "- A single-file, single-line change with no blocklist hits and default config returns `should_skip=true` and `magnitude='low'`.\n- Any path matching a blocklist pattern returns `should_skip=false`, `magnitude='critical'`, and `mode_ceiling='trias'` regardless of file/line counts.\n- Setting `CONSILIUM_FORCE_FULL=1` returns `should_skip=false` and `magnitude='critical'` without reading the diff.\n- Using `--signals-stdin` with a pre-computed payload bypasses git and classifies magnitude purely from the payload values.\n- A probe failure (e.g. not a git repo) returns `should_skip=false` with the error text in the `reason` field and exits 0.",
+      "accept": "- A single-file, single-line change with no blocklist hits and default config returns `should_skip=true` and `magnitude='low'`.\n- Any path matching a blocklist pattern returns `should_skip=false`, `magnitude='critical'`, and `mode_ceiling='trias'` regardless of file/line counts.\n- Setting `CONSILIUM_FORCE_FULL=1` returns `should_skip=false` and `magnitude='critical'` without reading the diff.\n- Using `--signals-stdin` with a pre-computed payload bypasses git and classifies magnitude purely from the payload values.\n- A probe failure (e.g. not a git repo) returns `should_skip=false` with the error text in the `reason` field and exits 0.\n- A blocklist (sensitive/irreversible) path returns `consent_required=true`; an ordinary non-sensitive change returns `consent_required=false`; a probe failure returns `consent_required=true` (fails safe, the opposite direction from `should_skip`). (`scripts/test_consent_gate.py`)",
       "input": "Git working tree diff via `probe_change.py` (default: HEAD, or `--ref <ref>..HEAD`, or `--range <A>..<B>`) `--files`: optional path restriction for the git diff `--config`: optional path to a `scope_gate.json` overriding `max_files`, `max_lines`, and `blocklist` stdin JSON when `--signals-stdin` is set: `{files_changed, lines_added, lines_removed, paths}` `CONSILIUM_FORCE_FULL` env variable: if `1`, always returns `should_skip=false`",
-      "output": "JSON object to stdout with keys: `should_skip`, `magnitude`, `mode_ceiling`, `reason`, `signals`, `config_used` exit code 0 always (errors are reported inside the JSON, not via non-zero exit)",
-      "desc": "Decides whether a change is small enough to bypass full deliberation. It collects diff signals either from git via `probe_change.py` or from pre-computed stdin JSON, checks file and line counts against configurable thresholds, and scans changed paths against a sensitive-path blocklist. Based on those signals it classifies the change's magnitude (`low/medium/high/critical`) and derives a `mode_ceiling` (the maximum appropriate deliberation mode), then outputs a JSON decision the orchestrator uses to short-circuit or proceed. The gate fails open: probe failures, missing git repos, or config load errors all produce `should_skip=false` so that uncertain situations always trigger deliberation rather than silently skipping it.",
+      "output": "JSON object to stdout with keys: `should_skip`, `consent_required`, `magnitude`, `mode_ceiling`, `reason`, `signals`, `config_used` exit code 0 always (errors are reported inside the JSON, not via non-zero exit)",
+      "desc": "Decides whether a change is small enough to bypass full deliberation. It collects diff signals either from git via `probe_change.py` or from pre-computed stdin JSON, checks file and line counts against configurable thresholds, and scans changed paths against a sensitive-path blocklist. Based on those signals it classifies the change's magnitude (`low/medium/high/critical`) and derives a `mode_ceiling` (the maximum appropriate deliberation mode), then outputs a JSON decision the orchestrator uses to short-circuit or proceed. The gate fails open: probe failures, missing git repos, or config load errors all produce `should_skip=false` so that uncertain situations always trigger deliberation rather than silently skipping it. The same probe also derives `consent_required` — a pre-dispatch irreversibility consent gate. Because the Generator voice now runs first, this gate lets the orchestrator request explicit user consent BEFORE any voice runs (so generation effort is never spent on a change the user might abort). It is true for sensitive/irreversible (blocklist) paths and, unlike `should_skip`, fails **safe**: an undeterminable change returns `consent_required=true` rather than silently bypassing consent.",
       "deps": [],
       "used_by": [],
       "satisfies": [],
@@ -1405,7 +1408,11 @@
         },
         {
           "role": "implements",
-          "loc": "scripts/scope_gate.py:61"
+          "loc": "scripts/scope_gate.py:70"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_consent_gate.py:18"
         },
         {
           "role": "tested-by",
@@ -1736,11 +1743,11 @@
       "status": "confirmed",
       "area": "CONSILIUM",
       "title": "conservator voice",
-      "intent": "WHY: The Conservator runs first in the pipeline, scoring risk and calibrating the token budget that Generator and Control will use — it is the scope gate for the entire deliberation.",
+      "intent": "WHY: The Conservator runs second, after Generator, scoring the risk of each candidate Generator produced and calibrating the token budget that Control will use.",
       "contract": [
         "The voice shall emit a `scores` array where each entry carries `regression_risk` (with `reversibility`, `magnitude`, and `net_concern`), `counterparty_risks`, `bias_check`, `meta_recommendation`, and `tokens_budget` (with `generator` and `control` fields); the `id` field must be preserved verbatim from the input.",
         "The voice shall compute `net_concern` using the defined formula (`mean` of the four component scores, with `reversibility_score > 0.7` floored to `max(net_concern, reversibility_score)`) and document any unanchored score components in `notes`.",
-        "The voice shall set `irreversibility_flag: true` for any candidate where `reversibility = irreversible` and explicit user consent is not documented in the input, signaling the aggregator to BLOCK before Generator runs.",
+        "The voice shall set `irreversibility_flag: true` for any candidate where `reversibility = irreversible` and explicit user consent is not documented in the input, signaling the aggregator to BLOCK before finalizing. This is the backstop behind the pre-dispatch consent gate (`scope_gate.consent_required`, Step 1.6) — it catches irreversible commitments visible only in the candidates, which a path/text pre-check cannot see.",
         "For any candidate with `net_concern >= 0.3`, the voice shall emit either a `rollback_recipe` (2–5 concrete human-executable steps) or, when rollback is structurally impossible, replace it with `mitigation_steps` and set `irreversible: true` at the candidate level.",
         "The mitigation cap (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is discipline-based with no automated schema enforcement. Compliance is audited through `notes` documentation of applied mitigation values.",
         "When `meta_recommendation: \"scale_down\"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design."
@@ -1755,7 +1762,7 @@
         "prompts/voices/conservator.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a proposed change where `reversibility = irreversible` and no explicit user consent appears in the input\n  When  the Conservator voice runs\n  Then  the candidate's score entry has `irreversibility_flag: true`, and the aggregator-facing signal causes a BLOCK before Generator runs\n\nAC-2\n  Given a candidate scored with `net_concern >= 0.3` and a structurally possible rollback\n  When  the Conservator voice runs\n  Then  the candidate's score entry contains a `rollback_recipe` array with 2–5 non-abstract, human-executable steps; `irreversible` is absent or `false`\n\nAC-3\n  Given a candidate scored with `meta_recommendation: \"scale_down\"`\n  When  the Conservator voice runs\n  Then  `tokens_budget.generator` and `tokens_budget.control` are both 300, regardless of the magnitude×reversibility table value",
+      "accept": "AC-1\n  Given a proposed change where `reversibility = irreversible` and no explicit user consent appears in the input\n  When  the Conservator voice runs\n  Then  the candidate's score entry has `irreversibility_flag: true`, and the aggregator-facing signal causes a BLOCK before finalizing (backstop behind the pre-dispatch consent gate)\n\nAC-2\n  Given a candidate scored with `net_concern >= 0.3` and a structurally possible rollback\n  When  the Conservator voice runs\n  Then  the candidate's score entry contains a `rollback_recipe` array with 2–5 non-abstract, human-executable steps; `irreversible` is absent or `false`\n\nAC-3\n  Given a candidate scored with `meta_recommendation: \"scale_down\"`\n  When  the Conservator voice runs\n  Then  `tokens_budget.generator` and `tokens_budget.control` are both 300, regardless of the magnitude×reversibility table value",
       "input": "",
       "output": "",
       "desc": "",
@@ -1768,7 +1775,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/conservator.md:198"
+          "loc": "prompts/voices/conservator.md:204"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1796,7 +1803,7 @@
       ],
       "notes": [
         "`confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative. This is intentional: `low` is a transparency signal prompting the reader to treat the verdict as speculative, not a veto mechanism. The design choice is to surface speculation honestly rather than suppress it.",
-        "In Sequential mode all three voices (Conservator → Generator → Control) produce their outputs before the aggregator evaluates them. A `glossary_fail` is therefore detected post-hoc by the aggregator; Generator always runs before the BLOCK is issued, and Control always runs after Generator with access to Generator's candidates. AC-2 reflects this correctly.",
+        "In Sequential mode all three voices (Generator → Conservator → Control) produce their outputs before the aggregator evaluates them. A `glossary_fail` is therefore detected post-hoc by the aggregator; Control always runs last (after Generator and Conservator) with access to Generator's candidates. (The irreversibility consent BLOCK, by contrast, fires pre-dispatch at Step 1.6, before Generator.) AC-2 reflects this correctly.",
         "No retrospective signal exists to detect cases where the 3-entry cap on `hidden_assumptions` caused a critical assumption to be dropped. The deprecated `meta_critic.py` provides a `control_speculation_flag` for thin verdicts but has no analogous mechanism for dropped assumptions. This is a known, accepted gap."
       ],
       "current_impl": [
@@ -1830,11 +1837,11 @@
       "status": "confirmed",
       "area": "CONSILIUM",
       "title": "generator voice",
-      "intent": "WHY: The Generator produces a structured set of candidate approaches for the deliberation, running second in the pipeline after Conservator has calibrated scope.",
+      "intent": "WHY: The Generator produces a structured set of candidate approaches for the deliberation, running first in the pipeline — blind to risk framing (anti-anchoring) and self-scaling its depth from the change's blast radius.",
       "contract": [
         "The voice shall emit a JSON object containing a `candidates` array of 3–5 entries, each with the fields `id`, `summary`, `sketch`, `rationale`, and `downside_estimate`; it shall always include a candidate with `id: \"do_nothing\"`.",
         "The voice shall include a candidate named `adversarial_<short_id>` when the change touches shared/core code or a function with more than 3 external callers, or emit `adversarial_skipped` with a reason when that condition is not met.",
-        "The voice shall emit `challenge_upward.triggered: true` (with a one-line reason) when Conservator has under-scaled the question — specifically when the input contains 3+ uneval'd risk terms or when `magnitude = trivial` but the fallback scenario implies more than 10% of capital or more than 1 month of recovery.",
+        "The voice shall emit `challenge_upward.triggered: true` (with a one-line reason) when the input itself carries heavy risk markers — specifically when it contains 3+ risk terms (e.g. \"irreversible\", \"permanent\", \"drop\", \"migration\") or when the fallback scenario implies more than 10% of capital or more than 1 month of recovery while reading as routine. The flag is forwarded into Conservator's input (Conservator runs next) to raise its scrutiny — a one-way signal forward, not a re-run.",
         "The voice shall emit `fallback_scenario` and `coverage_check`; if no fallback can be articulated after 2 attempts, it shall emit `abstain.triggered: true` with `reason: \"goal_undefined\"`.",
         "The `unconventional_*` candidate shall be included unless `adversarial_*` varies on a non-scope axis (mechanism, timing, or abstraction level), or the change is mechanically trivial. Scope overlap alone does NOT justify omitting `unconventional_*`; this rule prevents silent candidate duplication and is normative.",
         "The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors. The Generator output schema has no per-candidate score field, so a Generator output cannot override this handicap.",
@@ -1845,13 +1852,13 @@
         "None - all questions resolved."
       ],
       "notes": [
-        "The voice self-limits output via `tokens_budget.generator` received from Conservator, but has no mechanical way to enforce it — over-generation is a real risk on `magnitude = critical` inputs where the model may ignore the budget signal."
+        "The voice self-scales its output from the change's blast radius (diff size, sensitive paths) — there is no upstream `tokens_budget` (Generator runs first). It has no mechanical way to enforce depth — over-generation is a real risk on large/sensitive inputs where the model may over-produce."
       ],
       "current_impl": [
         "prompts/voices/generator.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a proposed change that touches shared/core code\n  When  the Generator voice runs\n  Then  the output `candidates` array contains exactly one entry whose `id` starts with `adversarial_`, OR `adversarial_skipped` is present with a non-empty reason string\n\nAC-2\n  Given a proposed change where no fallback can be articulated\n  When  the Generator voice runs\n  Then  the output contains `abstain.triggered: true` and `abstain.reason` is `\"goal_undefined\"` or a description of the domain-data gap; the `candidates` array may still be present\n\nAC-3\n  Given a proposed change with `magnitude = trivial` from Conservator but whose stated fallback implies > 10% capital loss\n  When  the Generator voice runs\n  Then  the output contains `challenge_upward.triggered: true` with a non-null `reason` string",
+      "accept": "AC-1\n  Given a proposed change that touches shared/core code\n  When  the Generator voice runs\n  Then  the output `candidates` array contains exactly one entry whose `id` starts with `adversarial_`, OR `adversarial_skipped` is present with a non-empty reason string\n\nAC-2\n  Given a proposed change where no fallback can be articulated\n  When  the Generator voice runs\n  Then  the output contains `abstain.triggered: true` and `abstain.reason` is `\"goal_undefined\"` or a description of the domain-data gap; the `candidates` array may still be present\n\nAC-3\n  Given a proposed change whose input carries 3+ risk terms (or whose stated fallback implies > 10% capital loss) while reading as routine\n  When  the Generator voice runs\n  Then  the output contains `challenge_upward.triggered: true` with a non-null `reason` string",
       "input": "",
       "output": "",
       "desc": "",
@@ -1864,7 +1871,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/generator.md:134"
+          "loc": "prompts/voices/generator.md:136"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",

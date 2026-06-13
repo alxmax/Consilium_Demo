@@ -27,7 +27,7 @@ depends_on: []
 ## WHAT — Notes & known limitations (informative)
 
 - `confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative. This is intentional: `low` is a transparency signal prompting the reader to treat the verdict as speculative, not a veto mechanism. The design choice is to surface speculation honestly rather than suppress it.
-- In Sequential mode all three voices (Conservator → Generator → Control) produce their outputs before the aggregator evaluates them. A `glossary_fail` is therefore detected post-hoc by the aggregator; Generator always runs before the BLOCK is issued, and Control always runs after Generator with access to Generator's candidates. AC-2 reflects this correctly.
+- In Sequential mode all three voices (Generator → Conservator → Control) produce their outputs before the aggregator evaluates them. A `glossary_fail` is therefore detected post-hoc by the aggregator; Control always runs last (after Generator and Conservator) with access to Generator's candidates. (The irreversibility consent BLOCK, by contrast, fires pre-dispatch at Step 1.6, before Generator.) AC-2 reflects this correctly.
 - No retrospective signal exists to detect cases where the 3-entry cap on `hidden_assumptions` caused a critical assumption to be dropped. The deprecated `meta_critic.py` provides a `control_speculation_flag` for thin verdicts but has no analogous mechanism for dropped assumptions. This is a known, accepted gap.
 
 ## HOW — Acceptance (= tests)

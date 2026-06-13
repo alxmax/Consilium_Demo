@@ -39,9 +39,9 @@ Keywords: "review PR", "evaluate change", "refactor planning", "risk assessment"
 
 | Stage | Name | Steps |
 |-------|------|-------|
-| 1 | Setup | **0** Bootstrap · **1** Gather & Goal · **1.5** Scope Gate |
-| 2 | Conservator | **2** Risk assessment (runs FIRST) |
-| 3 | Voices | **3** Generator · **4** Control |
+| 1 | Setup | **0** Bootstrap · **1** Gather & Goal · **1.5** Scope Gate · **1.6** Consent Gate |
+| 2 | Generator | **2** Produce alternatives (runs FIRST) |
+| 3 | Risk & Verify | **3** Conservator · **4** Control |
 | 4 | Aggregate | **5** Aggregate · **5b** Confidence · **5c** Meta-critic (advisory) · **5d** Retry (optional) |
 | 5 | Output | **6** Report · **7** Auto-pipeline |
 
@@ -51,8 +51,9 @@ Steps **5b, 5c, 5d** are sub-steps within Stage 4: **5b** (confidence) is mandat
 
 | Step(s) | Status |
 |---------|--------|
-| 0 · 1 · 2 · 5 · 5b · 6 | mandatory |
+| 0 · 1 · 2 · 3 · 5 · 5b · 6 | mandatory |
 | 1.5 | auto — scope gate, fails open; skippable for non-diff tasks |
+| 1.6 | auto — consent gate, fails **safe**; pre-dispatch (before Generator) |
 | 5c | advisory, never blocks |
 | 5d | conditional — only when `confidence < 0.7` and `chosen` non-null, non-headless |
 | 7 | **auto-dispatch** when prompt declares deliverables (no confirmation); opt-in otherwise |
@@ -137,10 +138,34 @@ Defaults: `max_files=1`, `max_lines=15`, conservative blocklist (`auth/`, `secur
 
 **Non-diff tasks** (audit, architecture review, planning): scope_gate is a no-op — you can skip Step 1.5.
 
-## Stage 2 — Conservator
+### 1.6. Pre-dispatch consent gate (auto)
+Generator runs **first**, so the irreversibility consent gate fires **before any voice** — consent is never requested after generation effort is already spent. After scope_gate, read `consent_required` from its output:
 
-### 2. Conservator — assess risk (runs FIRST)
-Use `prompts/voices/conservator.md`. Runs **before** Generator and Control. Its output sets the `tokens_budget` for the other voices.
+```bash
+python scripts/scope_gate.py   # read `consent_required` (and `signals.blocklist_hits`)
+```
+
+- `consent_required: true` (a sensitive/irreversible path — auth, migrations, CI, secrets, deps — or an undeterminable change) → **stop and ask**: *"This change touches an irreversible/sensitive path. Confirm you want to proceed before I deliberate?"* Proceed only on explicit YES. **Headless** (`is_headless()`): do not block; set `metadata.headless_overridden: true` and continue (the orchestrator that set `CLAUDE_HEADLESS=1` has assumed the stake).
+- **Text markers complement the path signal:** if the change description or diff contains irreversible-action language ("DROP TABLE", "delete all", "no way back", "force-push", "publish/break API") with no consent documented in the input, treat it as `consent_required` too.
+- **Fail-safe, not fail-open.** Unlike `should_skip` (which fails OPEN → deliberate), the consent check fails SAFE: a probe/config failure returns `consent_required: true`. Uncertainty asks; it never silently bypasses consent. Conservator's `irreversibility_flag` (Step 3) is the backstop for what a path/text pre-check cannot see.
+
+**Non-diff tasks:** with no diff to probe, skip Step 1.6 unless the request text itself carries irreversible-action language.
+
+## Stage 2 — Generator
+
+### 2. Generator — produce alternatives (runs FIRST)
+Use `prompts/voices/generator.md`. Runs **before** Conservator and Control — blind to risk framing (anti-anchoring). Request **3–5 candidates** (including `do_nothing` and any `adversarial_*`). Divergent style. Generator **self-scales** candidate count/detail from the change's blast radius (diff size, sensitive paths) — there is no upstream `tokens_budget`; default to moderate depth (3 candidates) when the signal is unclear.
+
+Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fallback_scenario, coverage_check, challenge_upward, abstain, preferred}`. Adversarial is conditional (the change touches shared/core code OR a function with >3 external callers) — otherwise emit `"adversarial_skipped": "<reason>"`. Unconventional is included by default (unless adversarial already covers that role or the change is mechanically trivial) — emit `"unconventional_skipped": "<reason>"` when omitting.
+
+**Receives no Conservator output.** Generator runs first; risk framing is deliberately withheld so the candidate set is not anchored by it.
+
+**Challenge upward (risk-escalation flag):** If Generator sets `challenge_upward.triggered: true`, forward that flag into Conservator's input (Conservator runs next) so it scales up its scrutiny. One-way signal forward, not a re-run.
+
+## Stage 3 — Risk & Verify
+
+### 3. Conservator — assess risk (runs after Generator)
+Use `prompts/voices/conservator.md`. Receives **Generator's candidates** and scores the risk of each. Its `tokens_budget.control` output caps how deep Control (next) goes.
 
 Required Questions (Q1-Q5): reversibility, magnitude, counterparty_risks, status quo bias check, meta_recommendation.
 
@@ -148,11 +173,9 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
 
 **Categorical flip caveat:** Conservator `magnitude`/`reversibility` labels have a ~40% inter-run flip rate on ambiguous inputs (experiment 2026-05-17). If the deliberation is sensitive to the magnitude/reversibility boundary, consider double-sampling.
 
-**Sequential-first.** Conservator runs before Generator and Control. Its `tokens_budget` output caps how deep the other voices go. Its `irreversibility_flag: true` BLOCKS the pipeline — confirm user consent before proceeding.
-
 **Veto check (auto, after Conservator output):**
-- If `irreversibility_flag: true` → stop, ask user: *"Conservator marks this decision as irreversible. Do you confirm you want to continue?"* — proceed only with explicit YES. **Headless** (`is_headless()`): DO NOT block; set `metadata.headless_overridden: true` in the bundle and continue. The external orchestrator that set `CLAUDE_HEADLESS=1` has assumed the stake.
-- If `meta_recommendation: scale_down` → **short-circuit**: skip dispatching Generator AND Control entirely. Build a minimal report directly:
+- If `irreversibility_flag: true` (backstop — the pre-dispatch Step 1.6 gate did not already obtain consent) → stop, ask user: *"Conservator marks this decision as irreversible. Do you confirm you want to continue?"* — proceed only with explicit YES. **Headless** (`is_headless()`): DO NOT block; set `metadata.headless_overridden: true` in the bundle and continue. The external orchestrator that set `CLAUDE_HEADLESS=1` has assumed the stake.
+- If `meta_recommendation: scale_down` → **short-circuit**: skip dispatching **Control** (Generator already ran). Build a minimal report directly from Generator's candidates + Conservator's risk:
   ```json
   {
     "success_criterion": "<input success_criterion>",
@@ -163,13 +186,13 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
     "confidence": 0.85,
     "pipeline_executed": false,
     "deliberation_log": [{"step": "scale_down_short_circuit", "reason": "<conservator notes>"}],
-    "telemetry": {"mode": "sequential_scale_down", "dispatch_count": 1, "consilium_version": "<python scripts/version.py>", "consilium_ref": "<python scripts/version.py --ref>"}
+    "telemetry": {"mode": "sequential_scale_down", "dispatch_count": 2, "consilium_version": "<python scripts/version.py>", "consilium_ref": "<python scripts/version.py --ref>"}
   }
   ```
   `confidence: 0.85` is deliberate — Conservator's judgment is the signal, not a weak guess. Designed to stay above the `[0.0, 0.7]` skeptic auto-trigger band.
 
-  **Dialectic mode exception (scale_down + Skeptic):** when `telemetry.mode = "dialectic"`, the Skeptic stage runs **even on scale_down short-circuits**. Rationale: Dialectic's whole point is a focused post-hoc challenge on the chosen answer; scale_down skipping Gen+Ctrl is fine (cost-aware) but skipping Skeptic too defeats the mode. The trivial-direct chosen is the input to Skeptic — if Skeptic produces `can_object: true` with a concrete constraint, log `skeptic_caught_constraint: true` and the orchestrator should reconsider the trivial-direct answer (advisory by default; `--skeptic-can-override` allows the override). Empirical motivation: 2026-05-28 benchmark validation (see `experiments/dialectic-skeptic-on-scale-down-validation-2026-05-28.md`). Dialectic spec already mandates "Skeptic runs unconditionally — not gated on the confidence band" (modes/dialectic.md §"Skeptic stage"); this exception makes the spec real on the scale_down path.
-- If `meta_recommendation: scale_up` → warn user, add context request before Generator. **Headless**: warning emitted to stderr, the context cannot be requested interactively — continue with existing input.
+  **Dialectic mode exception (scale_down + Skeptic):** when `telemetry.mode = "dialectic"`, the Skeptic stage runs **even on scale_down short-circuits**. Rationale: Dialectic's whole point is a focused post-hoc challenge on the chosen answer; scale_down skipping Control is fine (cost-aware) but skipping Skeptic too defeats the mode. The trivial-direct chosen is the input to Skeptic — if Skeptic produces `can_object: true` with a concrete constraint, log `skeptic_caught_constraint: true` and the orchestrator should reconsider the trivial-direct answer (advisory by default; `--skeptic-can-override` allows the override). Empirical motivation: 2026-05-28 benchmark validation (see `experiments/dialectic-skeptic-on-scale-down-validation-2026-05-28.md`). Dialectic spec already mandates "Skeptic runs unconditionally — not gated on the confidence band" (modes/dialectic.md §"Skeptic stage"); this exception makes the spec real on the scale_down path.
+- If `meta_recommendation: scale_up` → warn user, add context request. **Headless**: warning emitted to stderr, the context cannot be requested interactively — continue with existing input.
 
 **Optional — autoprobe:**
 ```bash
@@ -178,17 +201,6 @@ python scripts/probe_change.py --ref main --churn 30 # + commit count per file l
 ```
 Anchor `magnitude` to `files_changed/lines_*` and `regression_risk.net_concern` to the churn distribution when present.
 
-## Stage 3 — Voices
-
-### 3. Generator — produce alternatives
-Use `prompts/voices/generator.md`. Request **3–5 candidates** (including `do_nothing` and any `adversarial_*` — they count toward the budget), including `do_nothing`. Divergent style. Respect `tokens_budget.generator` set by Conservator.
-
-Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fallback_scenario, coverage_check, challenge_upward, abstain, preferred}`. Adversarial is conditional (the change touches shared/core code OR a function with >3 external callers) — otherwise emit `"adversarial_skipped": "<reason>"`. Unconventional is included by default (unless adversarial already covers that role or the change is mechanically trivial) — emit `"unconventional_skipped": "<reason>"` when omitting.
-
-**Receives from Conservator (selective):** `magnitude`, `counterparty_risks`, `tokens_budget.generator`. Does NOT receive `meta_recommendation` — that is policy, not Generator input.
-
-**Challenge upward:** If Generator sets `challenge_upward.triggered: true`, re-run Conservator with Generator's context before proceeding to Control.
-
 ### 4. Control — verify correctness
 Use `prompts/voices/control.md`. Per candidate: types, logic, tests, style.
 
@@ -196,7 +208,7 @@ Required Questions (Q1-Q4): glossary (max 5), hidden_assumptions (max 3), disagr
 
 Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negotiable_constraints, glossary_fail, glossary_attempts, verdicts: [{id, valid, issues, tests_to_write, notes}]}`. `tests_to_write` mandatory for `valid: true` (exception: `do_nothing`) — 1-4 acceptance tests.
 
-**Receives from both:** full Conservator output + full Generator output.
+**Receives from both:** full Generator output + full Conservator output.
 
 **Post-Control veto check:**
 - If `glossary_fail: true` → BLOCK, request reformulation from user.
@@ -264,7 +276,7 @@ cat bundle.json | python scripts/build_report.py | python scripts/validate_repor
 ```
 Bundle schema: `{success_criterion, verification, generator, control, conservator, aggregate, confidence, telemetry}`. `build_report.py` derives `voice_scores`, assembles `alternatives` (with `why_not`) and `deliberation_log`. (`voice_scores` is derived by `build_report.py` from voice outputs — it is not emitted by the voices directly.)
 
-> **Interception contract.** `build_report.py` accepts only the `AGGREGATE` aggregate shape (which carries `chosen`) or a `skipped` bundle. The non-`AGGREGATE` results of `aggregate_sequential` — `BLOCK` (glossary_fail / irreversibility), `REWORK` (substantial disagreement), `ESCALATE` (3+ triggers), `ADAPT_EXTENDED` (scale_up) — are **interception points** the orchestrator handles *before* Step 6 (ask the user, reformulate, re-run). `ADAPT_SHORT` (scale_down) builds its `trivial-direct` report by hand (SKILL.md Step 2), not via `build_report.py`. So `build_report.py` raising `ValueError` on a `chosen`-less aggregate is the correct hard-fail for a contract violation, not a shape it is expected to render.
+> **Interception contract.** `build_report.py` accepts only the `AGGREGATE` aggregate shape (which carries `chosen`) or a `skipped` bundle. The non-`AGGREGATE` results of `aggregate_sequential` — `BLOCK` (glossary_fail / irreversibility), `REWORK` (substantial disagreement), `ESCALATE` (3+ triggers), `ADAPT_EXTENDED` (scale_up) — are **interception points** the orchestrator handles *before* Step 6 (ask the user, reformulate, re-run). `ADAPT_SHORT` (scale_down) builds its `trivial-direct` report by hand (SKILL.md Step 3), not via `build_report.py`. So `build_report.py` raising `ValueError` on a `chosen`-less aggregate is the correct hard-fail for a contract violation, not a shape it is expected to render.
 
 **Output JSON** (required fields — validated by `validate_report.py`, required by Principle #4):
 ```json
@@ -588,15 +600,16 @@ When to escalate beyond a standard Consilium mode:
 
 ## Sequential mode (default)
 
-Default mode. Conservator → Generator → Control run in-context. 0 sub-agent dispatches, 1× cost. **Full reference: [modes/sequential.md](modes/sequential.md).**
+Default mode. Generator → Conservator → Control run in-context. 0 sub-agent dispatches, 1× cost. **Full reference: [modes/sequential.md](modes/sequential.md).**
 
 Key veto triggers (inline for quick reference during Steps 2–5):
 
 | Trigger | Source | Effect | Action |
 |---|---|---|---|
-| `irreversibility_flag: true` | Conservator | BLOCK (hard) | Ask user for explicit consent before Generator |
+| `consent_required: true` | scope_gate (Step 1.6) | BLOCK (hard) | Ask user for explicit consent **before Generator** (pre-dispatch) |
+| `irreversibility_flag: true` | Conservator | BLOCK (backstop) | Ask consent before finalizing (Step 1.6 already gates the common case) |
 | `glossary_fail: true` | Control | BLOCK (soft) | Ask user to reformulate with operational terms |
 | `disagreements: substantial` | Control | REWORK | Re-run Generator with clarification context |
-| `meta_recommendation: scale_down` | Conservator | ADAPT_SHORT | Short-circuit: skip Generator + Control, emit trivial-direct report (`pipeline_executed: false`) |
+| `meta_recommendation: scale_down` | Conservator | ADAPT_SHORT | Short-circuit: skip Control (Generator already ran), emit trivial-direct report (`pipeline_executed: false`) |
 | `meta_recommendation: scale_up` | Conservator | ADAPT_EXTENDED | Warn user, add context before Generator |
 | 3+ of above simultaneously | Aggregator | ESCALATE | Present trigger table to user, request decision |

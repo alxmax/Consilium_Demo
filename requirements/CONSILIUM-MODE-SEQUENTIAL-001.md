@@ -10,12 +10,13 @@ depends_on: [CONSILIUM-VOICE-GENERATOR-001, CONSILIUM-VOICE-CONTROL-001, CONSILI
 
 # sequential mode
 
-> WHY: Run Conservator, Generator, and Control in a single shared context window — the cheapest deliberation path, used by default when no higher mode is warranted.
+> WHY: Run Generator, Conservator, and Control in a single shared context window — the cheapest deliberation path, used by default when no higher mode is warranted.
 
 ## WHAT — Contract (normative)
-- The mode shall dispatch exactly three voices — Conservator, then Generator, then Control — in that fixed order within a single context window, with no external sub-agent dispatch (0 sub-agents, 1× baseline cost).
-- Before each voice runs (Steps 3–4), the prior voice's prompt shall be stripped from context via `strip_context.py`; model in-context memory is not cleared — this is a known deliberate limitation documented in the mode spec.
-- The aggregator shall apply an 8-component veto cascade (`aggregate_sequential()`) producing one of seven routing outcomes: BLOCK (irreversibility), BLOCK (glossary_fail), REWORK, SHORT-CIRCUIT (scale_down), ADAPT_EXTENDED (scale_up), ESCALATE, or AGGREGATE; the resulting report shall carry a `confidence` value derived from the veto outcome.
+- The mode shall dispatch exactly three voices — Generator, then Conservator, then Control — in that fixed order within a single context window, with no external sub-agent dispatch (0 sub-agents, 1× baseline cost). Generator runs first, blind to risk framing (anti-anchoring), and self-scales its depth from the change's blast radius.
+- The irreversibility consent gate shall run **pre-dispatch** (Step 1.6), before Generator, keyed on `scope_gate.consent_required` (a sensitive/irreversible path or an undeterminable change; fail-safe — uncertainty requires consent). Conservator's `irreversibility_flag` is the backstop for what a path/text pre-check cannot see.
+- Before each voice runs (Steps 2–4), the prior voice's prompt shall be stripped from context via `strip_context.py`; model in-context memory is not cleared — this is a known deliberate limitation documented in the mode spec.
+- The aggregator shall apply an 8-component veto cascade (`aggregate_sequential()`) producing one of seven routing outcomes: BLOCK (irreversibility), BLOCK (glossary_fail), REWORK, SHORT-CIRCUIT (scale_down — skips Control only, Generator already ran), ADAPT_EXTENDED (scale_up), ESCALATE, or AGGREGATE; the resulting report shall carry a `confidence` value derived from the veto outcome.
 - When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, a non-user-selectable auto-parallel cross-check shall be triggered; a silent parallel audit shall fire at a default cadence of 1-in-20 sequential runs (bumping to 1-in-5 when ≥2 of the last 5 audits diverged).
 - The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as "WEAK" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`.
 
@@ -32,12 +33,12 @@ depends_on: [CONSILIUM-VOICE-GENERATOR-001, CONSILIUM-VOICE-CONTROL-001, CONSILI
 AC-1
   Given a deliberation request with no explicit mode flag and no critical/irreversible trigger
   When  the mode runs
-  Then  exactly three voices are invoked in the order Conservator → Generator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade
+  Then  exactly three voices are invoked in the order Generator → Conservator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade
 
 AC-2
-  Given a deliberation request where Conservator emits `meta_recommendation: scale_down`
+  Given a deliberation request where Conservator (running second) emits `meta_recommendation: scale_down`
   When  the mode runs
-  Then  Generator and Control are skipped, the report contains `chosen_approach: "trivial-direct"`, `confidence: 0.85`, and `pipeline_executed: false`
+  Then  Control is skipped (Generator has already run), the report contains `chosen_approach: "trivial-direct"`, `confidence: 0.85`, and `pipeline_executed: false`
 
 AC-3
   Given a deliberation request where Control emits `glossary_fail: true`
@@ -48,6 +49,11 @@ AC-4
   Given a completed Sequential deliberation where `confidence < 0.6`
   When  the orchestrator checks confidence at Step 5b
   Then  it automatically re-runs the full pipeline with `--mode dialectic`; the Dialectic result (with `auto_escalated: true` in the report) is the final output; no further auto-escalation fires if Dialectic confidence is also < 0.6
+
+AC-5
+  Given a deliberation request whose diff touches a sensitive/irreversible path (scope_gate `consent_required: true`)
+  When  the mode runs in an interactive (non-headless) context
+  Then  the orchestrator requests explicit user consent BEFORE dispatching Generator; no voice output exists in context when consent is requested (the consent gate is pre-dispatch, not post-generation)
 
 ## WHERE — Current implementation
 - modes/sequential.md

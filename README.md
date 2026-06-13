@@ -6,8 +6,8 @@ One LLM reviewing its own proposal has predictable blind spots: it generates an 
 
 The three core voices:
 
-- **Conservator** (prudent) — scores risk and reversibility; runs *first* and sets the effort budget for the others
-- **Generator** (creative) — proposes alternatives, including `do_nothing`
+- **Generator** (creative) — proposes alternatives, including `do_nothing`; runs *first*, blind to risk framing (anti-anchoring)
+- **Conservator** (prudent) — scores risk and reversibility; runs *second* on the candidates and sets Control's effort budget
 - **Control** (analytical) — verifies correctness and writes acceptance tests
 
 ## What's interesting here
@@ -73,7 +73,7 @@ The chosen approach beat `do_nothing` and a plausible-but-weaker alternative —
 
 ## Pipeline trace
 
-Every run records its executed path in `deliberation_log` — which steps ran, which short-circuited, and how sub-agents were dispatched. Here is the executed path for the run shown above (`fix_canonical`, Sequential mode), rendered as a flowchart:
+Every run records its executed path in `deliberation_log` — which steps ran, which short-circuited, and how sub-agents were dispatched. Here is the executed path for the run shown above (`fix_canonical`, Sequential mode — a 2026-05-29 run, before the Generator-first reorder), rendered as a flowchart:
 
 ```mermaid
 flowchart TD
@@ -111,7 +111,7 @@ consilium/
 
 | Mode | Cost | What it adds |
 |------|------|--------------|
-| **Sequential** (default) | 1× | Conservator → Generator → Control in one context. Auto-escalates to Dialectic when confidence < 0.60 |
+| **Sequential** (default) | 1× | Generator → Conservator → Control in one context (Generator runs first, blind to risk framing). Auto-escalates to Dialectic when confidence < 0.60 |
 | **Dialectic** | 1.33× | Sequential + a Skeptic sub-agent on the chosen answer, with code-context injection |
 | **Trias** | 3× | 3 personalities (Pioneer / Architect / Steward), each running its own Sequential pass as a sub-agent, then a majority vote |
 | **`skeptic_on_chosen`** | base +1 | Composable flag over any mode — a focal Skeptic challenges the chosen answer. Auto-triggers when `confidence ∈ [0.0, 0.7]` |
@@ -142,7 +142,7 @@ What this project concretely shows, in Agentic-AI / LLMOps terms. Rated **Full**
 
 > **Why not LangGraph / CrewAI?** Evaluated and rejected on documented architectural grounds, not avoided — a 2026-05-16 deliberation chose `do_nothing` (confidence 0.36, conservative override), reaffirmed by two follow-ups on 2026-05-19. Three concrete integration shapes were proposed and scored:
 >
-> - **Full rewrite on LangGraph** — voices as `StateGraph` nodes calling the Anthropic API directly. Scored `risk=0.95`, control-invalid: it discards the orchestration substrate the skill is *built on* — Claude Code's sub-agent dispatch (the `Agent` tool, `agents/consilium-subagent.md`). Consilium's graph is small and fixed (Conservator → Generator → Control, fanning out to Trias/Skeptic sub-agents); that topology is already expressed as typed dispatch, not something a graph runtime would simplify.
+> - **Full rewrite on LangGraph** — voices as `StateGraph` nodes calling the Anthropic API directly. Scored `risk=0.95`, control-invalid: it discards the orchestration substrate the skill is *built on* — Claude Code's sub-agent dispatch (the `Agent` tool, `agents/consilium-subagent.md`). Consilium's graph is small and fixed (Generator → Conservator → Control, fanning out to Trias/Skeptic sub-agents); that topology is already expressed as typed dispatch, not something a graph runtime would simplify.
 > - **Vocabulary / diagrams only, no dependency** — rejected as cargo-culting: it borrows LangGraph's mental model with zero runtime benefit.
 > - **Isolated post-hoc sidecar** (`experiments/langgraph_replay/` rendering `runs/*.json`) — the closest to viable, rejected because it would need a hard, fragile contract that `experiments/` is *never* imported by `scripts/`, to keep the dependency strictly off the runtime path.
 >

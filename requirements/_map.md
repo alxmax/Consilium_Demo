@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-12 23:01
+generated: 2026-06-13 18:49
 nodes: 40
 edges: 50
 ---
@@ -181,14 +181,14 @@ graph LR
   f_modes_dialectic_md_47["modes/dialectic.md:47"]
   CONSILIUM_MODE_DIALECTIC_001 -->|implements| f_modes_dialectic_md_47
   CONSILIUM_MODE_SEQUENTIAL_001["sequential mode<br><small>CONSILIUM-MODE-SEQUENTIAL-001</small>"]
-  f_modes_sequential_md_69["modes/sequential.md:69"]
-  CONSILIUM_MODE_SEQUENTIAL_001 -->|implements| f_modes_sequential_md_69
+  f_modes_sequential_md_72["modes/sequential.md:72"]
+  CONSILIUM_MODE_SEQUENTIAL_001 -->|implements| f_modes_sequential_md_72
   CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001["skeptic_on_chosen flag<br><small>CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001</small>"]
   f_modes_skeptic_on_chosen_md_68["modes/skeptic_on_chosen.md:68"]
   CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 -->|implements| f_modes_skeptic_on_chosen_md_68
   CONSILIUM_MODE_TRIAS_001["trias mode<br><small>CONSILIUM-MODE-TRIAS-001</small>"]
-  f_modes_trias_md_182["modes/trias.md:182"]
-  CONSILIUM_MODE_TRIAS_001 -->|implements| f_modes_trias_md_182
+  f_modes_trias_md_184["modes/trias.md:184"]
+  CONSILIUM_MODE_TRIAS_001 -->|implements| f_modes_trias_md_184
   CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small>"]
   f_scripts_personalities_py_13["scripts/personalities.py:13"]
   CONSILIUM_PERSONALITIES_001 -->|implements| f_scripts_personalities_py_13
@@ -210,8 +210,10 @@ graph LR
   CONSILIUM_SCOPE_GATE_001["scope_gate<br><small>CONSILIUM-SCOPE-GATE-001</small>"]
   f_scripts_probe_change_py_187["scripts/probe_change.py:187"]
   CONSILIUM_SCOPE_GATE_001 -->|implements| f_scripts_probe_change_py_187
-  f_scripts_scope_gate_py_61["scripts/scope_gate.py:61"]
-  CONSILIUM_SCOPE_GATE_001 -->|implements| f_scripts_scope_gate_py_61
+  f_scripts_scope_gate_py_70["scripts/scope_gate.py:70"]
+  CONSILIUM_SCOPE_GATE_001 -->|implements| f_scripts_scope_gate_py_70
+  f_scripts_test_consent_gate_py_18["scripts/test_consent_gate.py:18"]
+  CONSILIUM_SCOPE_GATE_001 -->|tested-by| f_scripts_test_consent_gate_py_18
   f_scripts_test_probe_change_py_75["scripts/test_probe_change.py:75"]
   CONSILIUM_SCOPE_GATE_001 -->|tested-by| f_scripts_test_probe_change_py_75
   f_scripts_test_scope_gate_py_11["scripts/test_scope_gate.py:11"]
@@ -245,14 +247,14 @@ graph LR
   f_scripts_vocabulary_map_py_10["scripts/vocabulary_map.py:10"]
   CONSILIUM_VOCABULARY_MAP_001 -->|implements| f_scripts_vocabulary_map_py_10
   CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small>"]
-  f_prompts_voices_conservator_md_198["prompts/voices/conservator.md:198"]
-  CONSILIUM_VOICE_CONSERVATOR_001 -->|implements| f_prompts_voices_conservator_md_198
+  f_prompts_voices_conservator_md_204["prompts/voices/conservator.md:204"]
+  CONSILIUM_VOICE_CONSERVATOR_001 -->|implements| f_prompts_voices_conservator_md_204
   CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small>"]
   f_prompts_voices_control_md_113["prompts/voices/control.md:113"]
   CONSILIUM_VOICE_CONTROL_001 -->|implements| f_prompts_voices_control_md_113
   CONSILIUM_VOICE_GENERATOR_001["generator voice<br><small>CONSILIUM-VOICE-GENERATOR-001</small>"]
-  f_prompts_voices_generator_md_134["prompts/voices/generator.md:134"]
-  CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_134
+  f_prompts_voices_generator_md_136["prompts/voices/generator.md:136"]
+  CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_136
   CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small>"]
   f_prompts_voices_skeptic_md_123["prompts/voices/skeptic.md:123"]
   CONSILIUM_VOICE_SKEPTIC_001 -->|implements| f_prompts_voices_skeptic_md_123

@@ -160,7 +160,7 @@ function TwoLayerSection() {
             <div className="two-layer__tag">LAYER 1</div>
             <h3 className="two-layer__name">Deliberation</h3>
             <p className="two-layer__desc">
-              Runs on every user question. The three voices process the change in sequence (Conservator → Generator → Control) inside a single context, with <code>strip_context.py</code> projecting the Generator's candidates down to id/summary/sketch before Control sees them — minimizing cross-voice contamination.
+              Runs on every user question. The three voices process the change in sequence (Generator → Conservator → Control) inside a single context, with <code>strip_context.py</code> projecting the Generator's candidates down to id/summary/sketch before the later voices see them — minimizing cross-voice contamination.
             </p>
             <div className="two-layer__bits">
               <div className="two-layer__bit">3 voices, run in fixed order</div>

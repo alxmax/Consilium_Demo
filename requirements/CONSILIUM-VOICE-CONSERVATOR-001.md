@@ -10,13 +10,13 @@ depends_on: []
 
 # conservator voice
 
-> WHY: The Conservator runs first in the pipeline, scoring risk and calibrating the token budget that Generator and Control will use — it is the scope gate for the entire deliberation.
+> WHY: The Conservator runs second, after Generator, scoring the risk of each candidate Generator produced and calibrating the token budget that Control will use.
 
 ## WHAT — Contract (normative)
 
 - The voice shall emit a `scores` array where each entry carries `regression_risk` (with `reversibility`, `magnitude`, and `net_concern`), `counterparty_risks`, `bias_check`, `meta_recommendation`, and `tokens_budget` (with `generator` and `control` fields); the `id` field must be preserved verbatim from the input.
 - The voice shall compute `net_concern` using the defined formula (`mean` of the four component scores, with `reversibility_score > 0.7` floored to `max(net_concern, reversibility_score)`) and document any unanchored score components in `notes`.
-- The voice shall set `irreversibility_flag: true` for any candidate where `reversibility = irreversible` and explicit user consent is not documented in the input, signaling the aggregator to BLOCK before Generator runs.
+- The voice shall set `irreversibility_flag: true` for any candidate where `reversibility = irreversible` and explicit user consent is not documented in the input, signaling the aggregator to BLOCK before finalizing. This is the backstop behind the pre-dispatch consent gate (`scope_gate.consent_required`, Step 1.6) — it catches irreversible commitments visible only in the candidates, which a path/text pre-check cannot see.
 - For any candidate with `net_concern >= 0.3`, the voice shall emit either a `rollback_recipe` (2–5 concrete human-executable steps) or, when rollback is structurally impossible, replace it with `mitigation_steps` and set `irreversible: true` at the candidate level.
 - The mitigation cap (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is discipline-based with no automated schema enforcement. Compliance is audited through `notes` documentation of applied mitigation values.
 - When `meta_recommendation: "scale_down"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design.
@@ -33,7 +33,7 @@ depends_on: []
 AC-1
   Given a proposed change where `reversibility = irreversible` and no explicit user consent appears in the input
   When  the Conservator voice runs
-  Then  the candidate's score entry has `irreversibility_flag: true`, and the aggregator-facing signal causes a BLOCK before Generator runs
+  Then  the candidate's score entry has `irreversibility_flag: true`, and the aggregator-facing signal causes a BLOCK before finalizing (backstop behind the pre-dispatch consent gate)
 
 AC-2
   Given a candidate scored with `net_concern >= 0.3` and a structurally possible rollback

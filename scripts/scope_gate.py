@@ -17,6 +17,7 @@ Escape hatch: env CONSILIUM_FORCE_FULL=1 always returns should_skip=false
 Output (always to stdout, exit 0 on success):
   {
     "should_skip": bool,
+    "consent_required": bool,
     "magnitude": "low" | "medium" | "high" | "critical",
     "mode_ceiling": "sequential" | "dialectic" | "trias",
     "reason": str,
@@ -27,6 +28,14 @@ Output (always to stdout, exit 0 on success):
     },
     "config_used": {"max_files": int, "max_lines": int, "blocklist": [...]}
   }
+
+consent_required is the PRE-DISPATCH irreversibility consent gate (Generator runs
+first, so the consent check must fire before any voice). It is True when the diff
+touches a sensitive/irreversible path (blocklist hit) and — crucially — FAILS SAFE:
+a probe/config failure returns consent_required=true (uncertainty must NOT silently
+bypass consent). This is independent of should_skip's fail-OPEN, which only governs
+whether to deliberate. Text-based irreversible markers (e.g. "DROP TABLE", "no way
+back") are the orchestrator's complementary check in SKILL.md Step 1.6.
 
 magnitude thresholds (used by Trias lazy routing — independent of should_skip):
   low      — files ≤ 1, lines ≤ 15, no blocklist hits
@@ -194,8 +203,11 @@ def _gather_signals(probe_mod, ref, range_, files):
 
 def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
     if "error" in summary:
+        # Fail SAFE on consent: an undeterminable change must not silently bypass
+        # the pre-dispatch consent gate (should_skip still fails OPEN → deliberate).
         return {
             "should_skip": False,
+            "consent_required": True,
             "magnitude": "critical",
             "mode_ceiling": "trias",
             "reason": f"probe failed: {summary['error']}",
@@ -210,6 +222,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
     if files == 0:
         return {
             "should_skip": False,
+            "consent_required": False,
             "magnitude": "low",
             "mode_ceiling": "sequential",
             "reason": "no changes detected",
@@ -219,6 +232,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
         joined = ", ".join(sorted({h["pattern"] for h in hits}))
         return {
             "should_skip": False,
+            "consent_required": True,
             "magnitude": magnitude,
             "mode_ceiling": _MODE_CEILING[magnitude],
             "reason": f"sensitive path matched: {joined}",
@@ -227,6 +241,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
     if files > cfg["max_files"]:
         return {
             "should_skip": False,
+            "consent_required": False,
             "magnitude": magnitude,
             "mode_ceiling": _MODE_CEILING[magnitude],
             "reason": f"{files} files > max_files={cfg['max_files']}",
@@ -235,6 +250,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
     if lines > cfg["max_lines"]:
         return {
             "should_skip": False,
+            "consent_required": False,
             "magnitude": magnitude,
             "mode_ceiling": _MODE_CEILING[magnitude],
             "reason": f"{lines} lines > max_lines={cfg['max_lines']}",
@@ -242,6 +258,7 @@ def decide(summary: dict, paths: list[str], cfg: dict) -> dict:
         }
     return {
         "should_skip": True,
+        "consent_required": False,
         "magnitude": magnitude,
         "mode_ceiling": _MODE_CEILING[magnitude],
         "reason": f"{files} file(s), {lines} lines, no sensitive paths",
@@ -271,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(
             {
                 "should_skip": False,
+                "consent_required": False,
                 "magnitude": "critical",
                 "mode_ceiling": "trias",
                 "reason": "CONSILIUM_FORCE_FULL=1 (override)",
@@ -289,6 +307,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(
             {
                 "should_skip": False,
+                "consent_required": True,
                 "magnitude": "high",
                 "mode_ceiling": _MODE_CEILING["high"],
                 "reason": f"config load failed: {exc}",
