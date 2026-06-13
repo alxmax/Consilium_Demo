@@ -11,7 +11,9 @@ description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential i
 
 # Trias mode (high-stakes opt-in)
 
-**Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward), each dispatched as **one Sequential sub-agent** (Conservator→Generator→Control internally) with the personality lens prepended, then challenged by a **Skeptic sub-agent** dispatched by the orchestrator before the team vote. Democratic majority vote over the (possibly revised) 3 chosen results. Cost: 4× Sequential (6 sub-agents vs 1).
+**Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward), each dispatched as **one Sequential sub-agent** (Generator→Conservator→Control internally) with the personality lens prepended, then challenged by a **Skeptic sub-agent** dispatched by the orchestrator before the team vote. Democratic majority vote over the (possibly revised) 3 chosen results. Cost: 4× Sequential (6 sub-agents vs 1).
+
+Per personality, this composition — Sequential + a `skeptic_on_chosen` challenge — is **effectively a Dialectic**. The only difference from running a literal Dialectic inside each personality is *where* the Skeptic runs: at the orchestrator level (Step 3.5), not nested inside the personality sub-agent. That keeps dispatch flat (no sub-agent spawning its own sub-agent), lets the 3 Skeptics batch in parallel, and lets the B2 deadlock path re-run personalities *without* Skeptics for speed. The Skeptic sees the same input either way — only the `chosen` (+ `success_criterion`/`verification`), never the full voice bundle — so there is no deliberative difference. **Trias is therefore a democratic vote over 3 lens-tilted Dialectics.**
 
 **Why the vote diverges (D4).** All three sub-agents use the same model (Sonnet) but distinct lenses. Divergence source: **lens re-weighting** — Pioneer up-weights Generator (upside), Steward up-weights Conservator (risk), Architect balances. Divergence is measured by `vote_degeneracy.py` — empirical baseline ~52% non-unanimity at n=25 (uniform Sonnet). Revert signal: < 40% non-unanimity over ≥15 runs.
 
@@ -77,7 +79,7 @@ For any downgrade, emit the structured notification:
    stripped=$(echo "$raw_context" | python -X utf8 scripts/strip_context.py --truncate-text 15000)
    ```
    Use `$stripped` (not `$raw_context`) in each personality sub-agent prompt. This runs **per sub-agent** so each gets the same budget-capped context. The truncation marker `[... context truncated ...]` signals to the sub-agent that context was cut; it should proceed normally.
-3. **Dispatch all 3 personalities in parallel** (3 `consilium-subagent` Agent calls in the **same** orchestrator message), each with `prompts/<personality>_lens.md` prepended over the task context (using stripped context from Step 2). Each sub-agent runs a full Sequential deliberation (Conservator→Generator→Control) internally with its personality lens applied, and returns `{chosen_approach, rationale, confidence}`. Parallel dispatch is mandatory — sequential dispatch triples wall-clock for no quality gain, and is the root cause of the task-08 timeout pattern observed in benchmark n=10 (2026-05-27).
+3. **Dispatch all 3 personalities in parallel** (3 `consilium-subagent` Agent calls in the **same** orchestrator message), each with `prompts/<personality>_lens.md` prepended over the task context (using stripped context from Step 2). Each sub-agent runs a full Sequential deliberation (Generator→Conservator→Control) internally with its personality lens applied, and returns `{chosen_approach, rationale, confidence}`. Parallel dispatch is mandatory — sequential dispatch triples wall-clock for no quality gain, and is the root cause of the task-08 timeout pattern observed in benchmark n=10 (2026-05-27).
 
    **Model dispatch.** Each personality sub-agent is dispatched with `model: <personality.model>` from `personalities.py` output (all three → `sonnet`). All personalities use standard StructuredOutput schema dispatch.
 

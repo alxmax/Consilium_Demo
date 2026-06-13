@@ -1,4 +1,4 @@
-/* pipeline.jsx — animated step 0 → 7 walkthrough (ROUND2: Conservator first) */
+/* pipeline.jsx — animated step 0 → 7 walkthrough (ROUND2: Generator first) */
 
 const STEPS = [
   {
@@ -22,23 +22,23 @@ const STEPS = [
   {
     id: '1.5', name: 'scope gate',
     title: 'Scope gate',
-    desc: 'Auto-skip when the diff is trivial: ≤1 file, ≤15 lines (configurable via scope_gate.json), and no sensitive paths. The blocklist (auth/, security/, migrations/, .github/workflows/, secrets, .env, Dockerfile, *.tf) marks paths that always require deliberation — a one-liner in a secrets file is not trivial regardless of line count. "Fails open": if the diff is ambiguous or the probe fails, the gate defaults to running deliberation rather than silently skipping it.',
-    plain: 'If the change is tiny and low-risk, skip the full deliberation. Anything touching security, migrations, or CI always gets deliberated regardless of size.',
+    desc: 'Auto-skip when the diff is trivial: ≤1 file, ≤15 lines (configurable via scope_gate.json), and no sensitive paths. The blocklist (auth/, security/, migrations/, .github/workflows/, secrets, .env, Dockerfile, *.tf) marks paths that always require deliberation — a one-liner in a secrets file is not trivial regardless of line count. "Fails open": if the diff is ambiguous or the probe fails, the gate defaults to running deliberation rather than silently skipping it. The same probe also emits consent_required — the pre-dispatch consent gate (Step 1.6): because Generator now runs first, a sensitive/irreversible path (or an undeterminable change) makes the orchestrator ask for explicit consent BEFORE any voice runs, so generation effort is never spent on something the user might abort. Unlike should_skip, this fails SAFE — uncertainty asks, it never silently bypasses consent.',
+    plain: 'If the change is tiny and low-risk, skip the full deliberation. Anything touching security, migrations, or CI always gets deliberated regardless of size — and an irreversible/sensitive change is paused for your consent before any voice runs.',
     inputs: ['diff metrics', 'blocklist'],
-    outputs: ['should_skip: true → step 6', 'or → continue'],
+    outputs: ['should_skip: true → step 6', 'consent_required: true → ask before voices', 'or → continue'],
     scripts: ['scope_gate.py', 'probe_change.py'],
   },
   {
     id: '2–4', name: 'voices',
-    title: 'Voices — Conservator · Generator · Control',
-    desc: 'The three voices. Conservator always runs FIRST (it scores risk and sets the tokens_budget the others operate under); Generator proposes 3–5 candidates including do_nothing; Control verdicts each on goal-fit → types → logic → tests → style. What this single step does NOT fix is the DISPATCH — that depends on the chosen mode (see below). All voices run on Sonnet.',
+    title: 'Voices — Generator · Conservator · Control',
+    desc: 'The three voices. Generator always runs FIRST — blind to risk framing (anti-anchoring) — proposing 3–5 candidates including do_nothing and self-scaling its depth; Conservator then scores each candidate for risk and sets the tokens_budget Control operates under; Control verdicts each on goal-fit → types → logic → tests → style. What this single step does NOT fix is the DISPATCH — that depends on the chosen mode (see below). All voices run on Sonnet.',
     plain: 'The three reviewers do their work. Whether they run one-after-another or side-by-side depends on the mode you picked.',
-    inputs: ['diff + context', 'tokens_budget (Conservator → others)'],
-    outputs: ['regression_risk', 'candidates[]', 'verdicts[]'],
+    inputs: ['diff + context', 'tokens_budget (Conservator → Control)'],
+    outputs: ['candidates[]', 'regression_risk', 'verdicts[]'],
     scripts: ['strip_context.py', 'probe_change.py'],
-    voices: ['con', 'gen', 'ctl'],
+    voices: ['gen', 'con', 'ctl'],
     dispatch: [
-      ['Sequential', 'Cons → Gen → Ctrl in one context, strip_context.py between them'],
+      ['Sequential', 'Gen → Cons → Ctrl in one context, strip_context.py between them'],
       ['Parallel (auto)', 'Gen alone, then Control ∥ Conservator on its candidates'],
       ['Trias', '3 personality sub-agents (each a full Sequential pass) + 3 Skeptic challenges, then a vote'],
     ],
@@ -133,7 +133,7 @@ function PipelineSection() {
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>The change goes in. <strong>Conservator</strong> sizes up risk first and budgets the rest. <strong>Generator</strong> proposes options. <strong>Control</strong> verifies them. The aggregator picks a winner. If confidence is shaky, the <strong>Skeptic</strong> may get called. A report lands on disk and feeds the next run.</p>
+            <p>The change goes in. <strong>Generator</strong> proposes options first, blind to risk framing. <strong>Conservator</strong> sizes up risk and budgets Control. <strong>Control</strong> verifies them. The aggregator picks a winner. If confidence is shaky, the <strong>Skeptic</strong> may get called. A report lands on disk and feeds the next run.</p>
           </div>
         </div>
 

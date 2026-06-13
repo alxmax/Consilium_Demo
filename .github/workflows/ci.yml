@@ -48,6 +48,8 @@ jobs:
         run: python scripts/test_utils.py
       - name: Scope-gate decision tests
         run: python scripts/test_scope_gate.py
+      - name: Pre-dispatch consent-gate tests
+        run: python scripts/test_consent_gate.py
       - name: Regression scenarios (run_evals)
         run: python scripts/run_evals.py
       - name: Implement-mode routing gate tests

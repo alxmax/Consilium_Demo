@@ -58,7 +58,7 @@ Architecture visualization: `docs/architecture.html` (open locally). Benchmarks 
 
 User-selectable modes (SKILL.md documents them in detail):
 
-- **Sequential** (default) — Conservator → Generator → Control single-context.
+- **Sequential** (default) — Generator → Conservator → Control single-context.
 - **Dialectic** — Sequential + Skeptic sub-agent on the chosen answer (`scripts/deprecated/dialectic_merge.py` retired; Dialectic no longer uses Pass-2).
 - **Trias** — 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally, then challenged by a dedicated Skeptic sub-agent; democratic vote over the 3 (possibly revised) results (6 sub-agents nominal, worst-case 10, 4× Sequential).
 - **`trias_split`** — deprecated; use standard `trias` (cost is now equivalent).

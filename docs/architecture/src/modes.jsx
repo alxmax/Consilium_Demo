@@ -6,11 +6,11 @@ const MODES = [
     name: 'Sequential — blind',
     tag: 'DEFAULT',
     plain: 'One Claude turn plays all three voices in order, in the same context. A small script strips each voice\'s output before passing it to the next — so each voice sees only what it needs. If confidence < 0.60 after the pipeline, the orchestrator automatically re-runs with Dialectic.',
-    desc: 'A single Claude turn plays Conservator → Generator → Control sequentially. Between voices, scripts/strip_context.py trims each handoff to what the next voice needs — e.g. Control receives Generator\'s candidates without their rationale. (The Generator\'s narrower view of Conservator — magnitude, counterparty_risks, tokens_budget — is a manual handoff by the orchestrator; strip_context.py itself implements only the Gen→Control and Control→Conservator projections.) Auto-escalation: if confidence < 0.60 at Step 5b, the orchestrator re-runs the full pipeline with --mode dialectic — no user action required. The Dialectic result is the final output; the report carries auto_escalated: true. If Dialectic also < 0.60, no further escalation fires.',
+    desc: 'A single Claude turn plays Generator → Conservator → Control sequentially. Generator runs first, blind to risk framing (anti-anchoring), self-scaling its depth from the change\'s blast radius. Between voices, scripts/strip_context.py trims each handoff to what the next voice needs — e.g. Conservator receives Generator\'s candidates as id/summary/sketch, without the full rationale. The irreversibility consent gate runs pre-dispatch (Step 1.6), before Generator. Auto-escalation: if confidence < 0.60 at Step 5b, the orchestrator re-runs the full pipeline with --mode dialectic — no user action required. The Dialectic result is the final output; the report carries auto_escalated: true. If Dialectic also < 0.60, no further escalation fires.',
     use: 'most deliberations — fast, with a chinese wall via context stripping',
     cost: '1× (baseline)',
     isolation: 'context strip',
-    voices: 'Cons · Gen · Ctrl',
+    voices: 'Gen · Cons · Ctrl',
     subagents: '0',
   },
   {
@@ -22,7 +22,7 @@ const MODES = [
     use: 'any chosen answer that benefits from a focal post-hoc challenge before it ships',
     cost: '1.33×',
     isolation: 'in-process sequential + 1 isolated Skeptic',
-    voices: 'Cons · Gen · Ctrl + Skeptic',
+    voices: 'Gen · Cons · Ctrl + Skeptic',
     subagents: '1 (Skeptic)',
   },
   {
@@ -30,11 +30,11 @@ const MODES = [
     name: 'Trias',
     tag: 'OPT-IN',
     plain: 'Three independent Claude sub-agents each run the full Sequential pipeline. Each has a different personality (bold / structural / protective). Each answer is then challenged by its own Skeptic sub-agent before the three (possibly revised) answers go to a democratic vote.',
-    desc: 'Six sub-agents — three personalities (Pioneer / Architect / Steward), each running Sequential internally, then each personality\'s chosen is challenged by a dedicated Skeptic sub-agent at orchestrator level before the team vote. A simple majority vote decides the winner — 3-0 / 2-1 / 2-0. (Spec mandates parallel dispatch; in practice the runtime dispatches them serially — see the Trias parallelism audit, check_trias_parallelism.py.)',
+    desc: 'Six sub-agents — three personalities (Pioneer / Architect / Steward), each running Sequential internally, then each personality\'s chosen is challenged by a dedicated Skeptic sub-agent at orchestrator level before the team vote. That per-personality composition (Sequential + a Skeptic challenge) is effectively a Dialectic — so Trias is a vote over three lens-tilted Dialectics, with the Skeptics lifted to the orchestrator level to keep dispatch flat and parallel. A simple majority vote decides the winner — 3-0 / 2-1 / 2-0. (Spec mandates parallel dispatch; in practice the runtime dispatches them serially — see the Trias parallelism audit, check_trias_parallelism.py.)',
     use: 'highest-stakes — DB migrations, security, large refactors',
     cost: '4× · worst case 10 sub-agents (1-1-1 → Round 2 → Skeptic)',
     isolation: 'sub-agent per personality + strip per voice inside',
-    voices: '3× (Cons · Gen · Ctrl)',
+    voices: '3× (Gen · Cons · Ctrl)',
     subagents: '6 (3 personality + 3 Skeptic; worst 10)',
   },
   {
@@ -72,22 +72,22 @@ const WALKTHROUGHS = {
     name: 'Sequential — blind',
     layout: 'seq',
     steps: [
-      { id: '1', name: 'arrive', caption: 'The diff arrives at the orchestrator (Claude main).',
+      { id: '1', name: 'arrive', caption: 'The diff arrives at the orchestrator (Claude main). A pre-dispatch consent gate checks for irreversible/sensitive paths BEFORE any voice runs.',
         nodes: { orch: 'active', cons: 'idle', gen: 'idle', ctl: 'idle', agg: 'idle' }, arrows: [] },
-      { id: '2', name: 'conservator', caption: 'Conservator runs first. Reads the diff, scores risk, sets tokens_budget for the others.',
-        nodes: { orch: 'done', cons: 'active', gen: 'idle', ctl: 'idle', agg: 'idle' }, arrows: ['orch_cons'] },
-      { id: '3', name: 'strip→gen', caption: 'Hand-off to Generator: only {magnitude, counterparty_risks, tokens_budget} are passed on — a manual projection by the orchestrator (strip_context.py itself covers the Gen→Control and Control→Conservator hops). The rest stays in main context.',
-        nodes: { orch: 'done', cons: 'done', gen: 'active', ctl: 'idle', agg: 'idle' }, arrows: ['orch_cons', 'cons_gen'] },
-      { id: '4', name: 'generator', caption: 'Generator produces 3–5 candidate approaches, always including do_nothing.',
-        nodes: { orch: 'done', cons: 'done', gen: 'active', ctl: 'idle', agg: 'idle' }, arrows: ['orch_cons', 'cons_gen'] },
-      { id: '5', name: 'strip→ctl', caption: 'Strip: Control receives candidates without the Generator\'s rationale.',
-        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'active', agg: 'idle' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl'] },
+      { id: '2', name: 'generator', caption: 'Generator runs FIRST — blind to risk framing (anti-anchoring). It produces 3–5 candidate approaches, always including do_nothing, self-scaling its depth from the change\'s blast radius.',
+        nodes: { orch: 'done', cons: 'idle', gen: 'active', ctl: 'idle', agg: 'idle' }, arrows: ['orch_gen'] },
+      { id: '3', name: 'strip→cons', caption: 'Hand-off to Conservator: strip_context.py projects the candidates down to id/summary/sketch. Conservator scores risk on what Generator actually produced — not on a pre-framing.',
+        nodes: { orch: 'done', cons: 'active', gen: 'done', ctl: 'idle', agg: 'idle' }, arrows: ['orch_gen', 'gen_cons'] },
+      { id: '4', name: 'conservator', caption: 'Conservator scores each candidate for regression risk and reversibility, and sets tokens_budget for Control. It can raise irreversibility_flag as a backstop (the main consent gate already fired pre-dispatch).',
+        nodes: { orch: 'done', cons: 'active', gen: 'done', ctl: 'idle', agg: 'idle' }, arrows: ['orch_gen', 'gen_cons'] },
+      { id: '5', name: 'strip→ctl', caption: 'Strip: Control receives the candidates + risk read without the Generator\'s rationale.',
+        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'active', agg: 'idle' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl'] },
       { id: '6', name: 'control', caption: 'Control verifies types, logic, and tests for each candidate.',
-        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'active', agg: 'idle' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl'] },
+        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'active', agg: 'idle' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl'] },
       { id: '7', name: 'aggregate', caption: 'Aggregator applies conservative_override. Veto if Conservator scored risk > 0.8.',
-        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl', 'ctl_agg', 'cons_agg', 'gen_agg'] },
+        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg', 'gen_agg', 'cons_agg'] },
       { id: '8', name: 'done', caption: 'Winner chosen. Report written to runs/. Outcome logged to FEEDBACK.html. (If confidence < 0.60, the orchestrator re-runs the full pipeline with Dialectic automatically.)',
-        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl', 'ctl_agg', 'cons_agg', 'gen_agg', 'agg_out'] },
+        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg', 'gen_agg', 'cons_agg', 'agg_out'] },
     ],
   },
   dialectic_v2: {
@@ -96,16 +96,16 @@ const WALKTHROUGHS = {
     steps: [
       { id: '1', name: 'arrive', caption: 'Diff arrives. Code context (language, framework, test files, CI gates) is gathered and injected into voice inputs.',
         nodes: { orch: 'active', cons: 'idle', gen: 'idle', ctl: 'idle', agg: 'idle', skp: 'idle' }, arrows: [] },
-      { id: '2', name: 'sequential', caption: 'Stage 1: Sequential pass — Conservator → Generator → Control, all in main context with strips between.',
-        nodes: { orch: 'done', cons: 'active', gen: 'active', ctl: 'active', agg: 'idle', skp: 'idle' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl'] },
+      { id: '2', name: 'sequential', caption: 'Stage 1: Sequential pass — Generator → Conservator → Control, all in main context with strips between.',
+        nodes: { orch: 'done', cons: 'active', gen: 'active', ctl: 'active', agg: 'idle', skp: 'idle' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl'] },
       { id: '3', name: 'aggregate', caption: 'Aggregator picks chosen + confidence.',
-        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active', skp: 'idle' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl', 'ctl_agg'] },
+        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active', skp: 'idle' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg'] },
       { id: '4', name: 'skeptic dispatch', caption: 'Stage 2: a sub-agent Skeptic is dispatched with only the chosen answer + code context.',
-        nodes: { orch: 'active', cons: 'done', gen: 'done', ctl: 'done', agg: 'done', skp: 'active' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl', 'ctl_agg', 'agg_skp'] },
+        nodes: { orch: 'active', cons: 'done', gen: 'done', ctl: 'done', agg: 'done', skp: 'active' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg', 'agg_skp'] },
       { id: '5', name: 'skeptic', caption: 'Skeptic challenges the chosen. Returns concrete_concerns[], can_object, addressable.',
-        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done', skp: 'active' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl', 'ctl_agg', 'agg_skp'] },
+        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done', skp: 'active' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg', 'agg_skp'] },
       { id: '6', name: 'done', caption: 'Final report includes the Skeptic\'s objection (if any). Advisory by default.',
-        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done', skp: 'done' }, arrows: ['orch_cons', 'cons_gen', 'gen_ctl', 'ctl_agg', 'agg_skp', 'skp_out'] },
+        nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done', skp: 'done' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg', 'agg_skp', 'skp_out'] },
     ],
   },
   trias: {
@@ -116,11 +116,11 @@ const WALKTHROUGHS = {
         nodes: { orch: 'active', p1: 'idle', p2: 'idle', p3: 'idle', vote: 'idle' }, arrows: [] },
       { id: '2', name: 'dispatch', caption: 'Three sub-agents dispatched — one per personality (serial in practice; parallel by spec mandate). Each gets a different lens prepended over the core voices.',
         nodes: { orch: 'done', p1: 'active', p2: 'active', p3: 'active', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
-      { id: '3', name: 'inside', caption: 'Inside each personality, the full Sequential pipeline runs: Conservator → Generator → Control with strips.',
+      { id: '3', name: 'inside', caption: 'Inside each personality, the full Sequential pipeline runs: Generator → Conservator → Control with strips.',
         nodes: { orch: 'done', p1: 'active', p2: 'active', p3: 'active', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
       { id: '4', name: 'chosen', caption: 'Each personality returns its own chosen answer.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
-      { id: '4b', name: 'skeptic ×3', caption: 'Three Skeptic sub-agents dispatched in parallel — one per chosen answer. An in_place objection revises that personality\'s pick before the vote.',
+      { id: '4b', name: 'skeptic ×3', caption: 'Three Skeptic sub-agents dispatched in parallel — one per chosen answer. This is the Dialectic step: Sequential + this Skeptic = a Dialectic per personality, just lifted to the orchestrator level. An in_place objection revises that personality\'s pick before the vote.',
         nodes: { orch: 'done', p1: 'active', p2: 'active', p3: 'active', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
       { id: '5', name: 'tally', caption: 'Democratic vote tally over the (possibly revised) answers. 3-0 → confidence 0.95. 2-1 → 0.75. 2-0 → 0.70. 1-1-1 → PEND + escalate.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'active' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote'] },
@@ -347,7 +347,7 @@ function ModesSection() {
         <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, overflowX: 'auto', fontFamily: 'var(--font-mono)' }}>
           {[
             { tag: 'USER', title: '/consilium', sub: 'invokes the skill on a diff, a question, or a change to plan', color: 'var(--ink)' },
-            { tag: 'DELIBERATION', title: 'a mode runs', sub: 'Conservator → Generator → Control under the 8-component veto cascade → a chosen approach + confidence, saved as canonical JSON in runs/', color: 'var(--ctl)' },
+            { tag: 'DELIBERATION', title: 'a mode runs', sub: 'Generator → Conservator → Control under the 8-component veto cascade → a chosen approach + confidence, saved as canonical JSON in runs/', color: 'var(--ctl)' },
             { tag: 'IMPLEMENTATION', title: 'Step 7 pipeline', sub: 'if the prompt declares deliverables: Coder → (Test Writer ∥ Reviewer) → red→green gate → files written to disk', color: 'var(--gen)' },
             { tag: 'LEARN', title: 'feedback loop', sub: 'the outcome is logged to FEEDBACK.html; priors.py feeds it into the next deliberation', color: 'var(--con)' },
           ].map((s, i, arr) => (
@@ -450,9 +450,9 @@ function StageSeq({ step }) {
       <WBox x={20} y={140} w={90} h={48} title="orch" state={ns.orch} />
       <text x={65} y={130} textAnchor="middle" className="d-faint" style={{ fontSize: 9 }}>claude main</text>
 
-      {/* Three voices */}
-      <WVoice x={170} y={48} v="con" state={ns.cons} label="Conservator" />
-      <WVoice x={170} y={144} v="gen" state={ns.gen} label="Generator" />
+      {/* Three voices — Generator first */}
+      <WVoice x={170} y={48} v="gen" state={ns.gen} label="Generator" />
+      <WVoice x={170} y={144} v="con" state={ns.cons} label="Conservator" />
       <WVoice x={170} y={240} v="ctl" state={ns.ctl} label="Control" />
 
       {/* Aggregator */}
@@ -461,30 +461,30 @@ function StageSeq({ step }) {
       {/* Output */}
       <WBox x={560} y={140} w={130} h={48} title="chosen → runs/" state={has('agg_out') ? 'done' : 'idle'} />
 
-      {/* Arrows: orch → cons */}
-      <WArrow d="M 110 164 C 130 164, 140 80, 168 78" state={has('orch_cons') ? (ns.cons === 'active' ? 'active' : 'done') : 'idle'} />
+      {/* Arrows: orch → gen (Generator first) */}
+      <WArrow d="M 110 164 C 130 164, 140 80, 168 78" state={has('orch_gen') ? (ns.gen === 'active' ? 'active' : 'done') : 'idle'} />
 
-      {/* cons → gen (strip OR full) */}
+      {/* gen → cons (strip → candidates) */}
       <WArrow
         d="M 213 96 C 213 130, 213 142, 213 144"
-        state={has('cons_gen') ? (ns.gen === 'active' ? 'active' : 'done') : (has('cons_gen_full') ? (ns.gen === 'active' ? 'active' : 'done') : 'idle')}
-        dashed={has('cons_gen')}
-        label={has('cons_gen') ? 'strip → budget' : (has('cons_gen_full') ? 'FULL' : '')}
+        state={has('gen_cons') ? (ns.cons === 'active' ? 'active' : 'done') : 'idle'}
+        dashed={has('gen_cons')}
+        label={has('gen_cons') ? 'strip → candidates' : ''}
         labelX={272} labelY={120}
       />
 
-      {/* gen → ctl */}
+      {/* cons → ctl (strip → risk read) */}
       <WArrow
         d="M 213 188 C 213 220, 213 234, 213 240"
-        state={has('gen_ctl') ? (ns.ctl === 'active' ? 'active' : 'done') : (has('gen_ctl_full') ? (ns.ctl === 'active' ? 'active' : 'done') : 'idle')}
-        dashed={has('gen_ctl')}
-        label={has('gen_ctl') ? 'strip → candidates' : (has('gen_ctl_full') ? 'FULL' : '')}
+        state={has('cons_ctl') ? (ns.ctl === 'active' ? 'active' : 'done') : 'idle'}
+        dashed={has('cons_ctl')}
+        label={has('cons_ctl') ? 'strip → risk' : ''}
         labelX={278} labelY={218}
       />
 
-      {/* All three voices → aggregator */}
-      <WArrow d="M 256 78 C 310 78, 360 140, 400 162" state={has('cons_agg') ? 'active' : 'idle'} />
-      <WArrow d="M 256 166 L 400 166" state={has('gen_agg') ? 'active' : 'idle'} />
+      {/* All three voices → aggregator (gen top, cons mid, ctl bottom) */}
+      <WArrow d="M 256 78 C 310 78, 360 140, 400 162" state={has('gen_agg') ? 'active' : 'idle'} />
+      <WArrow d="M 256 166 L 400 166" state={has('cons_agg') ? 'active' : 'idle'} />
       <WArrow d="M 256 262 C 310 262, 360 188, 400 170" state={has('ctl_agg') ? 'active' : 'idle'} />
 
       {/* aggregator → output */}
@@ -507,15 +507,15 @@ function StageDialectic({ step }) {
       <rect x="14" y="32" width="500" height="180" rx="4" fill="var(--paper-2)" stroke="var(--rule)" strokeDasharray="3 3" />
 
       <WBox x={28} y={120} w={66} h={36} title="orch" state={ns.orch} />
-      <WVoice x={130} y={50} v="con" state={ns.cons} label="Cons" />
-      <WVoice x={130} y={118} v="gen" state={ns.gen} label="Gen" />
+      <WVoice x={130} y={50} v="gen" state={ns.gen} label="Gen" />
+      <WVoice x={130} y={118} v="con" state={ns.cons} label="Cons" />
       <WVoice x={130} y={186} v="ctl" state={ns.ctl} label="Ctrl" />
 
       <WBox x={290} y={120} w={90} h={36} title="aggregate" state={ns.agg} fill="var(--paper-3)" />
 
-      <WArrow d="M 94 138 C 110 138, 110 70, 128 70" state={has('orch_cons') ? 'done' : 'idle'} />
-      <WArrow d="M 173 86 L 173 118" state={has('cons_gen') ? (ns.gen === 'active' ? 'active' : 'done') : 'idle'} dashed />
-      <WArrow d="M 173 154 L 173 186" state={has('gen_ctl') ? (ns.ctl === 'active' ? 'active' : 'done') : 'idle'} dashed />
+      <WArrow d="M 94 138 C 110 138, 110 70, 128 70" state={has('orch_gen') ? 'done' : 'idle'} />
+      <WArrow d="M 173 86 L 173 118" state={has('gen_cons') ? (ns.cons === 'active' ? 'active' : 'done') : 'idle'} dashed />
+      <WArrow d="M 173 154 L 173 186" state={has('cons_ctl') ? (ns.ctl === 'active' ? 'active' : 'done') : 'idle'} dashed />
       <WArrow d="M 218 138 L 290 138" state={has('ctl_agg') ? (ns.agg === 'active' ? 'active' : 'done') : 'idle'} />
 
       <text x="20" y="252" className="d-faint">STAGE 2 — SKEPTIC SUB-AGENT (ISOLATED)</text>

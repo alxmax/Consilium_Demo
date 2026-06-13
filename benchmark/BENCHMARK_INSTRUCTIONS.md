@@ -19,7 +19,7 @@ Read this file first. Find your mode below and follow ONLY that section.
 ---
 
 ## CONSILIUM SEQUENTIAL
-Invoke with `/consilium` — Sequential mode (Conservator → Generator → Control)
+Invoke with `/consilium` — Sequential mode (Generator → Conservator → Control)
 Workspace: `workspace/consilium_sequential/{category}/{task}/`
 
 1. Create `PROCESS.md` — first line: `MODE: Consilium Sequential | START: [time]`

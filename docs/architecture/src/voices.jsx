@@ -1,4 +1,4 @@
-/* voices.jsx — four voices, Conservator first (v2) */
+/* voices.jsx — four voices, Generator first (v3) */
 
 /* === One candidate's journey — step-through animation === */
 /* Same play/pause/reset pattern as PipelineSection / ModesSection. */
@@ -11,27 +11,27 @@ const JOURNEY_STEPS = [
     focus: 'diff',
   },
   {
-    id: '2', name: 'conservator',
-    caption: 'Conservator reads it FIRST. It scores regression risk, decides how reversible the change is, and sets the tokens_budget every later voice must respect. It can raise irreversibility_flag and stop the pipeline here.',
-    payload: '{ net_concern: 0.25, tokens_budget: 800 }',
-    focus: 'con',
-  },
-  {
-    id: '3', name: 'strip',
-    caption: 'strip_context.py trims the handoff: Generator receives only magnitude, counterparty_risks and its budget — not Conservator\'s full reasoning. The cut is deliberate: it stops one voice\'s framing from anchoring the next.',
-    payload: 'magnitude · counterparty_risks · budget',
-    focus: 'strip1',
-  },
-  {
-    id: '4', name: 'generator',
-    caption: 'Generator proposes 3–5 genuinely different candidates — always including do_nothing as a baseline — and stays inside the budget Conservator set.',
+    id: '2', name: 'generator',
+    caption: 'Generator goes FIRST — blind to risk framing (anti-anchoring). It proposes 3–5 genuinely different candidates, always including do_nothing, and self-scales its depth from the change\'s blast radius. No upstream budget anchors it.',
     payload: 'candidates[4] · preferred',
     focus: 'gen',
   },
   {
-    id: '5', name: 'strip',
-    caption: 'Second strip: Control receives the candidates without Generator\'s rationale — it verdicts the code, not the sales pitch.',
+    id: '3', name: 'strip',
+    caption: 'strip_context.py trims the handoff: Conservator receives the candidates as id/summary/sketch — not Generator\'s full rationale. The cut stops one voice\'s framing from anchoring the next.',
     payload: 'candidates[] (rationale removed)',
+    focus: 'strip1',
+  },
+  {
+    id: '4', name: 'conservator',
+    caption: 'Conservator reads the candidates SECOND and scores each: regression risk, reversibility, and the tokens_budget Control must respect. It can raise irreversibility_flag — a backstop, since the main consent gate already fired pre-dispatch.',
+    payload: '{ net_concern: 0.25, tokens_budget.control: 800 }',
+    focus: 'con',
+  },
+  {
+    id: '5', name: 'strip',
+    caption: 'Second strip: Control receives the candidates and the risk read without the sales pitch — it verdicts the code, not the rationale.',
+    payload: 'candidates[] + risk',
     focus: 'strip2',
   },
   {
@@ -114,7 +114,7 @@ function JourneyDiagram({ focus, stepIndex }) {
   const stripFill = (key) => (focus === key ? 'var(--ink)' : 'var(--ink-3)');
 
   return (
-    <svg viewBox="0 0 880 190" style={{ width: '100%', maxWidth: 880, display: 'block' }} aria-label="One candidate's journey through the three voices">
+    <svg viewBox="0 0 880 190" className="diagram" style={{ width: '100%', maxWidth: 880, display: 'block' }} aria-label="One candidate's journey through the three voices">
       <ArrowDefs id="vj-arrow" />
 
       {/* spine */}
@@ -125,9 +125,9 @@ function JourneyDiagram({ focus, stepIndex }) {
         <BoxNode x={25} y={75} w={70} h={40} title="diff" sub="in" />
       </g>
 
-      {/* Conservator */}
-      <g opacity={op(nodeState('con', 1))}>
-        <VoiceNode v="con" cx={215} cy={95} label="Conservator · first" />
+      {/* Generator (runs first) */}
+      <g opacity={op(nodeState('gen', 1))}>
+        <VoiceNode v="gen" cx={215} cy={95} label="Generator · first" />
       </g>
 
       {/* strip 1 */}
@@ -136,9 +136,9 @@ function JourneyDiagram({ focus, stepIndex }) {
         <text x={330} y={68} textAnchor="middle" className="d-faint" style={{ fontSize: 9.5 }}>strip</text>
       </g>
 
-      {/* Generator */}
-      <g opacity={op(nodeState('gen', 3))}>
-        <VoiceNode v="gen" cx={445} cy={95} label="Generator" />
+      {/* Conservator (runs second) */}
+      <g opacity={op(nodeState('con', 3))}>
+        <VoiceNode v="con" cx={445} cy={95} label="Conservator" />
       </g>
 
       {/* strip 2 */}
@@ -172,50 +172,50 @@ function VoicesSection() {
           num="02"
           eyebrow="The voices"
           title="Three core voices, run in this order. Plus one focal challenger."
-          lede="Conservator runs first — its risk read sets the token budget every other voice operates under. Generator proposes. Control verifies. A fourth voice, the Skeptic, gets focal access to the chosen answer only."
+          lede="Generator runs first — blind to risk framing, it proposes candidates without being anchored by caution. Conservator then scores each for risk. Control verifies. A fourth voice, the Skeptic, gets focal access to the chosen answer only."
         />
 
         <WhyThreeVoices />
 
         <div className="voices-grid">
-          <article className="voice-card voice-card--con">
-            <div className="voice-card__head">
-              <div>
-                <h3 className="voice-card__name">Conservator</h3>
-                <div className="voice-card__role">prudent · runs <em>first</em></div>
-              </div>
-              <div className="voice-card__badge voice-card__badge--pulse">K</div>
-            </div>
-            <p className="voice-card__mantra">"Reversibility over cleverness. Blast radius matters. Scope discipline."</p>
-            <ul className="voice-card__list">
-              <li>Reads the diff and scores risk along 4 dimensions</li>
-              <li>Sets <code>tokens_budget</code> for Generator + Control — low risk allows verbose output; high risk tightens it to force concision</li>
-              <li>Can raise <code>irreversibility_flag</code> and block the pipeline</li>
-              <li>Scores risk; the aggregator applies a unilateral veto when <code>net_concern &gt; 0.8</code></li>
-            </ul>
-            <div className="voice-card__io">
-              <div><span className="io-tag">in</span> diff + context</div>
-              <div><span className="io-tag">out</span> {`{ regression_risk{ net_concern }, tokens_budget, meta_recommendation }`}</div>
-            </div>
-          </article>
-
           <article className="voice-card voice-card--gen">
             <div className="voice-card__head">
               <div>
                 <h3 className="voice-card__name">Generator</h3>
-                <div className="voice-card__role">creative · runs second</div>
+                <div className="voice-card__role">creative · runs <em>first</em></div>
               </div>
               <div className="voice-card__badge voice-card__badge--pulse">G</div>
             </div>
             <p className="voice-card__mantra">"Quantity before quality. No self-censorship. Always include do_nothing."</p>
             <ul className="voice-card__list">
-              <li>Produces 3–5 candidate approaches</li>
-              <li>Respects the Conservator's <code>tokens_budget.generator</code></li>
+              <li>Runs first, <strong>blind to risk framing</strong> — anti-anchoring</li>
+              <li>Produces 3–5 candidate approaches, self-scaling depth from the change's blast radius</li>
               <li>Includes a <code>do_nothing</code> baseline and a <code>preferred</code> pick</li>
             </ul>
             <div className="voice-card__io">
-              <div><span className="io-tag">in</span> diff + tokens_budget</div>
+              <div><span className="io-tag">in</span> diff + success_criterion</div>
               <div><span className="io-tag">out</span> {`{ candidates[], preferred, fallback }`}</div>
+            </div>
+          </article>
+
+          <article className="voice-card voice-card--con">
+            <div className="voice-card__head">
+              <div>
+                <h3 className="voice-card__name">Conservator</h3>
+                <div className="voice-card__role">prudent · runs <em>second</em></div>
+              </div>
+              <div className="voice-card__badge voice-card__badge--pulse">K</div>
+            </div>
+            <p className="voice-card__mantra">"Reversibility over cleverness. Blast radius matters. Scope discipline."</p>
+            <ul className="voice-card__list">
+              <li>Reads Generator's candidates and scores risk along 4 dimensions</li>
+              <li>Sets <code>tokens_budget.control</code> for Control — low risk allows verbose output; high risk tightens it to force concision</li>
+              <li>Can raise <code>irreversibility_flag</code> — a backstop behind the pre-dispatch consent gate</li>
+              <li>Scores risk; the aggregator applies a unilateral veto when <code>net_concern &gt; 0.8</code></li>
+            </ul>
+            <div className="voice-card__io">
+              <div><span className="io-tag">in</span> candidates + context</div>
+              <div><span className="io-tag">out</span> {`{ regression_risk{ net_concern }, tokens_budget, meta_recommendation }`}</div>
             </div>
           </article>
 
