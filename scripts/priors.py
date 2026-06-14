@@ -143,7 +143,7 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
     # Load sidecar: maps fingerprint → "runs/<file>.json"
     sidecar_path = runs_dir / ".run_path_map.json"
     try:
-        sidecar: dict[str, str] = json.loads(sidecar_path.read_text(encoding="utf-8"))
+        sidecar: dict[str, str] = json.loads(sidecar_path.read_text(encoding="utf-8-sig"))
     except (json.JSONDecodeError, OSError):
         sidecar = {}
     logged_run_paths: set[str] = set(sidecar.values())
@@ -165,8 +165,11 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
         if rel in logged_run_paths:
             continue
         try:
-            data = json.loads(run_file.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+            data = json.loads(run_file.read_text(encoding="utf-8-sig"))
+        except (json.JSONDecodeError, OSError) as e:
+            # Loud, not silent: a BOM/corrupt run that can't be read is invisible
+            # to the missing-feedback check — surface it instead of swallowing.
+            print(f"[priors] warning: skipping unreadable {run_file.name}: {e}", file=sys.stderr)
             continue
         # Only canonical reports are expected to have a FEEDBACK row. Non-report
         # artifacts saved under runs/ (e.g. Trias personality sub-runs, which carry
@@ -205,10 +208,16 @@ def _run_had_veto(run: dict) -> bool:
 
 
 def _veto_rate(runs: list[dict]) -> dict:
-    if not runs:
+    # Only canonical reports can register a veto. Non-report artifacts under runs/
+    # — the .run_path_map.json sidecar, Trias personality sub-runs — lack
+    # `chosen_approach` (a field validate_report requires on every real report) and
+    # would otherwise inflate the denominator and deflate the rate. Mirror the
+    # filter find_missing_feedback_runs already applies (audit B3).
+    reports = [r for r in runs if isinstance(r, dict) and "chosen_approach" in r]
+    if not reports:
         return {"conservator_veto_rate": None, "runs_seen": 0}
-    vetoed = sum(1 for r in runs if _run_had_veto(r))
-    return {"conservator_veto_rate": vetoed / len(runs), "runs_seen": len(runs)}
+    vetoed = sum(1 for r in reports if _run_had_veto(r))
+    return {"conservator_veto_rate": vetoed / len(reports), "runs_seen": len(reports)}
 
 
 def _top_keywords(entries: list[dict], k: int = 5) -> list[str]:
@@ -275,7 +284,7 @@ def _prompt_drift(runs_dir: Path) -> dict | None:
         return None
     for run_file in sorted(runs_dir.glob("*.json"), reverse=True):
         try:
-            data = json.loads(run_file.read_text(encoding="utf-8"))
+            data = json.loads(run_file.read_text(encoding="utf-8-sig"))
         except (json.JSONDecodeError, OSError):
             continue
         if not isinstance(data, dict):
@@ -287,6 +296,38 @@ def _prompt_drift(runs_dir: Path) -> dict | None:
         n = prompts_changed_since(ref)
         return {"changed_files": n, "since_ref": ref, "since_run": run_file.name} if n > 0 else None
     return None
+
+
+def get_memory_summary(label: str | None = None, n: int = 10) -> str | None:
+    """Return a compact plain-text memory context block for Conservator injection.
+
+    Produces 2–3 lines from recent FEEDBACK outcomes and, when a label is given,
+    any prior deliberation match. Intended to be prepended to the Conservator's
+    input context (not its authoritative prompt). Returns None when no FEEDBACK
+    data is available.
+    """
+    entries = parse_feedback(FEEDBACK)
+    if not entries:
+        return None
+    recent = entries[-n:]
+    counts = _outcome_counts(recent)
+    rates = _rates(recent)
+    lines: list[str] = []
+    ok, bad, ovr, pend = counts.get("OK", 0), counts.get("BAD", 0), counts.get("OVR", 0), counts.get("PEND", 0)
+    wbr = rates.get("weighted_bad_rate")
+    wbr_str = f", weighted_bad_rate={wbr:.2f}" if wbr is not None else ""
+    lines.append(f"[Prior runs: last {len(recent)} outcomes — OK={ok}, BAD={bad}, OVR={ovr}, PEND={pend}{wbr_str}]")
+    if label is not None:
+        match = _find_prior_match(label, entries)
+        if match:
+            lines.append(
+                f"[Prior match for '{label}': chosen='{match['chosen']}', date={match['date']},"
+                f" outcome={match['outcome']} — assess whether this approach is still valid.]"
+            )
+    keywords = _top_keywords(recent, k=3)
+    if keywords:
+        lines.append(f"[Recurring patterns in recent notes: {', '.join(keywords)}]")
+    return "\n".join(lines)
 
 
 def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False, label: str | None = None) -> dict:
@@ -333,6 +374,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--feedback-file", metavar="PATH", help="override FEEDBACK.html path (default: <repo>/FEEDBACK.html). Note: audit_feedback.py uses --feedback for the same concept.")
     ap.add_argument("--runs-dir", metavar="PATH", help="override runs/ directory path (default: <repo>/runs)")
     ap.add_argument("--label", metavar="TEXT", help="check FEEDBACK for a recent authoritative run matching this task label; emits prior_deliberation_match field")
+    ap.add_argument("--memory-summary", action="store_true", help="output a compact plain-text memory context block for Conservator injection (not JSON); combine with --label for prior-match line")
     args = ap.parse_args(argv)
 
     global FEEDBACK, RUNS
@@ -342,6 +384,11 @@ def main(argv: list[str] | None = None) -> int:
         RUNS = Path(args.runs_dir).resolve()
 
     _headless = (args.headless or (not sys.stdin.isatty()) or (os.environ.get("CONSILIUM_HEADLESS") == "1")) and os.environ.get("CONSILIUM_HEADLESS") != "0"
+    if args.memory_summary:
+        summary = get_memory_summary(label=args.label, n=args.n)
+        if summary:
+            sys.stdout.write(summary + "\n")
+        return 0
     priors = build_priors(n=args.n, include_runs=args.runs, headless=_headless, label=args.label)
     json.dump(priors, sys.stdout, indent=2)
     sys.stdout.write("\n")

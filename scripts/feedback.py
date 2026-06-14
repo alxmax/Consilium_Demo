@@ -51,7 +51,7 @@ def parse_feedback(path: Path) -> list[dict]:
     entries = []
     if not path.exists():
         return entries
-    text = path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8-sig")
     for m in ROW_RE.finditer(text):
         cell_matches = list(CELL_RE.finditer(m.group("body")))
 
@@ -123,7 +123,9 @@ def parse_runs(path: Path) -> list[dict]:
         return runs
     for f in sorted(path.glob("*.json")):
         try:
-            runs.append(json.loads(f.read_text(encoding="utf-8")))
+            # utf-8-sig so a BOM-prefixed run (PS 5.1 pipe) parses instead of
+            # raising JSONDecodeError and being silently dropped from priors.
+            runs.append(json.loads(f.read_text(encoding="utf-8-sig")))
         except json.JSONDecodeError as e:
             print(f"[feedback] warning: skipping {f.name}: {e}", file=sys.stderr)
             continue

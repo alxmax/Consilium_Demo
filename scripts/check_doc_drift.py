@@ -290,8 +290,16 @@ def check_test_suite_coverage() -> list[str]:
     test_files = sorted(p.name for p in (REPO_ROOT / "scripts").glob("test_*.py"))
     if not test_files:
         return failures
-    ci = _read(".github/workflows/ci.yml")
-    driver = _read(".claude/skills/run-consilium/driver.py")
+
+    def _active(text: str) -> str:
+        # GAP#2: ignore comment-only lines so a commented-out gating step
+        # ('# run: python scripts/test_x.py') or a name mentioned only in a
+        # comment no longer counts as coverage — the bare substring check was
+        # blind to whether a suite is actually INVOKED vs merely MENTIONED.
+        return "\n".join(l for l in text.splitlines() if not l.lstrip().startswith("#"))
+
+    ci = _active(_read(".github/workflows/ci.yml"))
+    driver = _active(_read(".claude/skills/run-consilium/driver.py"))
     for name in test_files:
         if name not in ci:
             failures.append(
@@ -481,6 +489,53 @@ def check_trias_spec_alignment() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# validate_report literal parity (audit GAP#4, 2026-06-14)
+# ---------------------------------------------------------------------------
+
+
+def check_validate_report_vote_pattern_parity() -> list[str]:
+    """validate_report's Trias vote-pattern literals must match confidence.py.
+
+    validate_report HAND-COPIES the canonical Trias vote patterns rather than
+    importing them — importing confidence would pull in its modes/*.md load at
+    import time (MODE_CONFIDENCE_FLOOR), and validate_report is a fast stdin gate.
+    This invariant keeps the hand-copied literals in lockstep with the SSOT so
+    they cannot silently diverge (audit GAP#4). check_trias_confidence_parity
+    guards the *doc* (trias.jsx) values; this guards the *gate* (validate_report)
+    key sets. validate_report is import-light (no confidence import), so reading
+    its runtime values here does NOT trigger the modes/*.md load.
+    """
+    conf = _extract_confidence_values()
+    conf_all = set(conf)
+    conf_null = {k for k, v in conf.items() if v is None}
+
+    scripts_dir = str(Path(__file__).resolve().parent)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    try:
+        import validate_report as vr
+    except Exception as exc:  # an unimportable validator is itself drift worth failing on
+        return [f"[validate_report_parity] could not import validate_report.py: {exc}"]
+
+    failures: list[str] = []
+    vr_all = set(vr._TRIAS_VOTE_PATTERNS)
+    vr_null = set(vr._TRIAS_NULL_PATTERNS)
+    if vr_all != conf_all:
+        failures.append(
+            f"[validate_report_parity] _TRIAS_VOTE_PATTERNS {sorted(vr_all)} != "
+            f"confidence.VOTE_PATTERN_CONFIDENCE keys {sorted(conf_all)}\n"
+            f"  fix: update validate_report._TRIAS_VOTE_PATTERNS to match confidence.py"
+        )
+    if vr_null != conf_null:
+        failures.append(
+            f"[validate_report_parity] _TRIAS_NULL_PATTERNS {sorted(vr_null)} != "
+            f"confidence null-confidence patterns {sorted(conf_null)}\n"
+            f"  fix: update validate_report._TRIAS_NULL_PATTERNS to match confidence.py"
+        )
+    return failures
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -489,6 +544,7 @@ def main() -> int:
     all_failures: list[str] = []
     all_failures.extend(check_text_invariants())
     all_failures.extend(check_trias_confidence_parity())
+    all_failures.extend(check_validate_report_vote_pattern_parity())
     all_failures.extend(check_trias_spec_alignment())
     all_failures.extend(check_legacy_mode_milestone())
     all_failures.extend(check_test_suite_coverage())

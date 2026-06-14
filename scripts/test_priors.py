@@ -28,6 +28,7 @@ from priors import (
     _veto_rate,
     find_missing_feedback_runs,
     find_stale_pendings,
+    parse_runs,
 )
 
 
@@ -139,19 +140,38 @@ class TestVetoRate(unittest.TestCase):
 
     def test_no_vetoes(self):
         runs = [
-            {"deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]},
-            {"deliberation_log": [{"step": "aggregate", "result": {"chosen": "B"}}]},
+            {"chosen_approach": "A", "deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]},
+            {"chosen_approach": "B", "deliberation_log": [{"step": "aggregate", "result": {"chosen": "B"}}]},
         ]
         result = _veto_rate(runs)
         self.assertEqual(result["conservator_veto_rate"], 0.0)
 
     def test_mixed_vetoes(self):
         runs = [
-            {"deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]},
-            {"deliberation_log": [{"step": "aggregate", "result": {"vetoed": ["X"]}}]},
+            {"chosen_approach": "A", "deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]},
+            {"chosen_approach": None, "deliberation_log": [{"step": "aggregate", "result": {"vetoed": ["X"]}}]},
         ]
         result = _veto_rate(runs)
         self.assertAlmostEqual(result["conservator_veto_rate"], 0.5)
+
+    def test_excludes_non_report_artifacts(self):
+        # B3: the .run_path_map.json sidecar (a flat str->str dict) and Trias
+        # personality sub-runs lack chosen_approach — they must NOT inflate the
+        # denominator. Only the one canonical report counts.
+        runs = [
+            {"chosen_approach": "A", "deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]},
+            {"fingerprint-1": "runs/x.json", "fingerprint-2": "runs/y.json"},  # sidecar shape
+            {"personality": "pioneer", "chose": "A"},  # trias sub-run
+        ]
+        result = _veto_rate(runs)
+        self.assertEqual(result["runs_seen"], 1)
+        self.assertEqual(result["conservator_veto_rate"], 0.0)
+
+    def test_all_non_reports_returns_none(self):
+        runs = [{"personality": "pioneer", "chose": "A"}, {"sidecar": "x"}]
+        result = _veto_rate(runs)
+        self.assertIsNone(result["conservator_veto_rate"])
+        self.assertEqual(result["runs_seen"], 0)
 
 
 class TestTopKeywords(unittest.TestCase):
@@ -247,6 +267,20 @@ class TestFindMissingFeedbackRuns(unittest.TestCase):
             f.write_text(json.dumps({"personality": "foo", "chose": "bar"}), encoding="utf-8")
             result = find_missing_feedback_runs(runs_dir, [], cap=5)
             self.assertEqual(result, [])
+
+
+class TestParseRunsBOM(unittest.TestCase):
+    def test_reads_bom_prefixed_run(self):
+        # B4: a BOM-prefixed run (PS 5.1 pipe) must parse, not be silently dropped.
+        with tempfile.TemporaryDirectory() as td:
+            runs_dir = Path(td) / "runs"
+            runs_dir.mkdir()
+            f = runs_dir / "2026-01-15-bom.json"
+            # Write raw UTF-8 bytes with a leading BOM.
+            f.write_bytes(b"\xef\xbb\xbf" + json.dumps({"chosen_approach": "x"}).encode("utf-8"))
+            runs = parse_runs(runs_dir)
+            self.assertEqual(len(runs), 1)
+            self.assertEqual(runs[0]["chosen_approach"], "x")
 
 
 if __name__ == "__main__":
