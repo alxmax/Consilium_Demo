@@ -9,7 +9,7 @@ description: Cross-cutting flag — +1 Skeptic sub-agent over any base mode post
 
 # Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
-**Mechanics:** `skeptic_on_chosen` is a **cross-cutting flag**, not a fixed mode. It composes over any base mode (Sequential, Parallel, Dialectic, Trias): after the base mode produces `chosen` and `confidence`, 1 additional Skeptic voice is dispatched on the resulting `chosen`, with the prompt `prompts/voices/skeptic.md`. The flag runs **sequentially post-hoc** on any mode. There is no dedicated Python code — orchestration is done via standard dispatch of `prompts/voices/skeptic.md` with the current chosen.
+**Mechanics:** `skeptic_on_chosen` is a **cross-cutting flag**, not a fixed mode. It composes over any base mode (Sequential, Parallel, Dialectic, Trias): after the base mode produces `chosen` and `confidence`, 1 additional Skeptic voice is dispatched on the resulting `chosen`, with the prompt `prompts/voices/skeptic.md`. The flag runs **sequentially post-hoc** on any mode. Dispatch uses standard invocation of `prompts/voices/skeptic.md` with the current chosen; the returned output is validated by `scripts/validate_skeptic.py` (Step 3) — invalid output is rejected and the original chosen ships unchallenged.
 
 **Cost:** +1 sub-agent over the chosen base mode (whichever it is). E.g.: Parallel + flag = 4 sub-agents (1.33× Parallel); Dialectic + flag = 2 sub-agents (~1.66× Sequential — current Dialectic is 1 Skeptic sub-agent, not the retired 6-voice Pass-1+Pass-2 layout).
 
@@ -37,10 +37,11 @@ description: Cross-cutting flag — +1 Skeptic sub-agent over any base mode post
    verification: <the command>
    ```
    DO NOT pass other candidates, scores, or deliberation logs.
-3. Validate the skeptic output:
+3. Validate the skeptic output with `python scripts/validate_skeptic.py < <skeptic_output>.json` (exit 0 = accept, exit 1 = reject → ship the original chosen unchallenged, exit 2 = malformed JSON). The gate enforces:
    - `can_object: true` with `concrete_concerns` ≥ 2 OR `quoted_scenario` non-null → accept
    - `can_object: true` without evidence → reject (schema fail), ship the original chosen
    - `can_object: false` → ship the original chosen, log that there is no concrete objection
+   - `failure_mode` must be one of the four canonical labels; `goal_fit` must quote `success_criterion`
 4. Log the result in `deliberation_log` with step `"skeptic_on_chosen"` and set flag `skeptic_caught_constraint: true|false` in the report
 5. Apply override semantics (section below)
 

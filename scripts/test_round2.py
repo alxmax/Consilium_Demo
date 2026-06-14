@@ -221,5 +221,45 @@ class TestValidateReportRound2(unittest.TestCase):
         self.assertTrue(len(problems) > 0)
 
 
+class TestValidateTriasTrigger(unittest.TestCase):
+    """GAP#1: _validate_trias must fire on telemetry.mode == 'trias', not only
+    on team == 'trias'. Real trias runs key off mode and frequently omit team;
+    gating on team alone silently skipped every trias check on those runs."""
+
+    def _trias_shaped_report(self, mode, team=None):
+        # Deliberately omits personalities + vote_pattern, so the trias checks
+        # (if they run) MUST produce 'trias:'-prefixed problems.
+        report = {
+            "success_criterion": "x",
+            "verification": "x",
+            "chosen_approach": "x",
+            "confidence": 0.8,
+            "telemetry": {"mode": mode, "voices": {"pioneer_generator": {"tokens_in": 0}}},
+            "pipeline_executed": True,
+            "deliberation_log": [{"step": "aggregate", "result": {"chosen": "x"}}],
+        }
+        if team is not None:
+            report["team"] = team
+        return report
+
+    def test_trias_mode_without_team_triggers_trias_checks(self):
+        problems = validate_report.validate(self._trias_shaped_report(mode="trias"))
+        self.assertTrue(
+            any(p.startswith("trias:") for p in problems),
+            f"trias-mode report (no team) must trigger trias checks; got {problems}",
+        )
+
+    def test_team_trias_still_triggers(self):
+        problems = validate_report.validate(self._trias_shaped_report(mode="sequential", team="trias"))
+        self.assertTrue(any(p.startswith("trias:") for p in problems))
+
+    def test_sequential_mode_no_trias_checks(self):
+        problems = validate_report.validate(self._trias_shaped_report(mode="sequential"))
+        self.assertFalse(
+            any(p.startswith("trias:") for p in problems),
+            f"sequential report must NOT trigger trias checks; got {problems}",
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

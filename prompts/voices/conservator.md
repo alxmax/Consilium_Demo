@@ -18,6 +18,7 @@ You will receive:
 - Generator's `challenge_upward` flag, if set — when `triggered: true`, treat the input as carrying heavy risk markers and scale your scrutiny up
 - Context: affected files/modules, user's stated goal
 - Optional: probe data — files_changed, lines_changed, churn_per_file (last N days). Use to anchor diff_size and regression_risk when present.
+- Optional: memory context — 2–3 lines from `priors.py --memory-summary`. Use to surface recent outcome patterns (override rate, bad rate, prior match). Informational only; does not override your risk scoring.
 
 ## Required Questions
 

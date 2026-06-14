@@ -314,7 +314,10 @@ def _validate_telemetry_required(report: dict) -> list[str]:
 # keys. 3-0/2-1/2-0 carry confidence; the null set are deadlock/abstention shapes.
 # Validation is MEMBERSHIP, not a digit-sum: 2-0/1-1-0/1-0-0/0-0-0 are legitimate yet
 # sum < 3, while 3-0-0 sums to 3 but is non-canonical and crashes confidence.py.
-# check_doc_drift.py enforces 2-1/2-0 parity with confidence.py.
+# Hand-copied (not imported) because importing confidence triggers its modes/*.md
+# load and this gate must stay fast/import-light. check_doc_drift.py's
+# validate_report_parity invariant CI-enforces that these literals stay equal to
+# confidence.py VOTE_PATTERN_CONFIDENCE keys, so the hand-copy cannot drift.
 _TRIAS_NULL_PATTERNS = {"1-1-1", "1-1-0", "1-0-0", "0-0-0"}
 _TRIAS_VOTE_PATTERNS = frozenset({"3-0", "2-1", "2-0"} | _TRIAS_NULL_PATTERNS)
 
@@ -325,7 +328,10 @@ def _vote_pattern_valid(pattern: str) -> bool:
 
 
 def _validate_trias(report: dict, errors: list) -> None:
-    """Trias-specific validation. Only runs when report has team == 'trias'."""
+    """Trias-specific validation. Runs when the report is Trias — keyed off
+    team == 'trias' OR telemetry.mode == 'trias'. The skill keys Trias off
+    telemetry.mode, so real trias runs frequently omit `team`; gating on `team`
+    alone silently skipped every trias check on those runs (audit GAP#1)."""
     personalities = report.get("personalities")
     shape_ok = isinstance(personalities, list) and len(personalities) == 3
     if not shape_ok:
@@ -411,7 +417,11 @@ def validate(report: dict) -> list[str]:
     if "telemetry" in report:
         problems.extend(_validate_telemetry(report["telemetry"]))
 
-    is_trias = report.get("team") == "trias"
+    _telemetry = report.get("telemetry")
+    _mode = _telemetry.get("mode") if isinstance(_telemetry, dict) else None
+    # GAP#1: key Trias off telemetry.mode too — the skill keys Trias off mode, so
+    # trias runs often omit `team`; gating on `team` alone skipped all trias checks.
+    is_trias = report.get("team") == "trias" or _mode == "trias"
     # Bypass-by-design reports (trivial-direct scale_down, prior-deliberation and
     # user-spec passthroughs) carry only their marker step — no aggregate, no voices.
     is_passthrough = report.get("chosen_approach") in _PIPELINE_BYPASS_CHOSEN

@@ -20,7 +20,7 @@ You will receive:
 
 ## Required Questions
 
-Answer these four before per-candidate validation:
+Answer these five before per-candidate validation:
 
 **Q1 — Glossary (max 5 terms):** Identify 2–5 key terms in this deliberation that could be misunderstood or used in different senses by different voices. Define each **operationally for this deliberation** — not in general, but specifically in this context.
 
@@ -37,6 +37,10 @@ Maximum 5 terms. If you identify more than 5, pick the 5 most load-bearing ones.
 **Q4 — Constraints:** What constraints are fixed vs negotiable?
 - `fixed_constraints` = cannot change (legal, technical impossibility, hard deadline)
 - `negotiable_constraints` = could be relaxed with trade-offs (budget, timeline, scope)
+
+**Q5 — Mandatory dissent:** If any candidate has a latent defect not captured by your per-candidate `valid`/`issues` — name it with one concrete, cited reason (file:line, a failing test, or a specific failure mode) and set `strongest_objection` to that candidate's id. If after honest review NO candidate has a latent defect beyond what is already in `issues`, set `strongest_objection` to null AND set `no_blocking_defect_attested: true` with a one-line justification. When `strongest_objection` is non-null, `no_blocking_defect_attested` MUST be false. You may not leave both unset — silence is not an option.
+
+This is distinct from per-candidate `valid: false`: a candidate can be `valid: true` (compiles, solves the goal) yet still be the one you would hold back from shipping. Q5 surfaces that reservation — the gap between "valid" and "ready to ship" — which the valid/issues axis misses. It targets Control's structural weakness: running last with full sight of every other voice, but no field that forces independent dissent.
 
 ## Per-candidate validation
 
@@ -98,7 +102,9 @@ For each `valid: true` candidate (except `do_nothing`), produce `tests_to_write`
       ],
       "notes": "..."
     }
-  ]
+  ],
+  "strongest_objection": {"target_id": "<candidate id, or null if none>", "reason": "<concrete cited reason; required when target_id is non-null>"},
+  "no_blocking_defect_attested": false
 }
 ```
 

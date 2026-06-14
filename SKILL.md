@@ -167,6 +167,12 @@ Output: `{candidates: [{id, summary, sketch, rationale, downside_estimate}], fal
 ### 3. Conservator — assess risk (runs after Generator)
 Use `prompts/voices/conservator.md`. Receives **Generator's candidates** and scores the risk of each. Its `tokens_budget.control` output caps how deep Control (next) goes.
 
+**Memory context (inject into Conservator input).** Run:
+```bash
+python scripts/priors.py --memory-summary --label "<task label>"
+```
+Prepend the output (2–3 lines) to Conservator's input context block — after Generator's candidates, before the required questions. When output is empty (no FEEDBACK data), skip silently. This keeps Conservator aware of recent outcome patterns and any prior deliberation match without altering its authoritative prompt.
+
 Required Questions (Q1-Q5): reversibility, magnitude, counterparty_risks, status quo bias check, meta_recommendation.
 
 Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_concern}, counterparty_risks, bias_check, meta_recommendation, tokens_budget: {generator, control}, irreversibility_flag, rollback_recipe, notes}`.
