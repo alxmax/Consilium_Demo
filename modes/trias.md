@@ -1,19 +1,21 @@
 ---
 name: trias
-subagents: 6
-cost_multiplier: 4.0
+subagents: 4
+cost_multiplier: 2.67
 confidence_floor: 0.80
 models: sonnet(pioneer),sonnet(architect),sonnet(steward)
-dispatch_count_worst_case: 10
+dispatch_count_worst_case: 7
 lazy_routing: true
-description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally then challenged by a Skeptic sub-agent at orchestrator level before voting. Lazy routing downgrades by magnitude tier — low/medium → Sequential, high → Dialectic, critical → full Trias (blocklist hits only).
+description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally, vote, then ONE Skeptic challenges the winning candidate post-vote (skeptic_on_chosen). Lazy routing downgrades by magnitude tier — low/medium → Sequential, high → Dialectic, critical → full Trias (blocklist hits only).
 ---
 
 # Trias mode (high-stakes opt-in)
 
-**Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward), each dispatched as **one Sequential sub-agent** (Generator→Conservator→Control internally) with the personality lens prepended, then challenged by a **Skeptic sub-agent** dispatched by the orchestrator before the team vote. Democratic majority vote over the (possibly revised) 3 chosen results. Cost: 4× Sequential (6 sub-agents vs 1).
+**Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward), each dispatched as **one Sequential sub-agent** (Generator→Conservator→Control internally) with the personality lens prepended. Democratic majority vote over the 3 chosen results, then **ONE** Skeptic sub-agent (`skeptic_on_chosen`) challenges the **winning** candidate post-vote. Cost: ~2.67× Sequential (4 sub-agents vs 1).
 
-Per personality, this composition — Sequential + a `skeptic_on_chosen` challenge — is **effectively a Dialectic**. The only difference from running a literal Dialectic inside each personality is *where* the Skeptic runs: at the orchestrator level (Step 3.5), not nested inside the personality sub-agent. That keeps dispatch flat (no sub-agent spawning its own sub-agent), lets the 3 Skeptics batch in parallel, and lets the B2 deadlock path re-run personalities *without* Skeptics for speed. The Skeptic sees the same input either way — only the `chosen` (+ `success_criterion`/`verification`), never the full voice bundle — so there is no deliberative difference. **Trias is therefore a democratic vote over 3 lens-tilted Dialectics.**
+**Skeptic-lever redesign (2026-06-19, [trias-6to4-impl-default-a](../runs/senate/2026-06-19_091418-trias-6to4-impl-default-a.json), MODIFY 4-5-0).** The previous design ran **one Skeptic per personality** at Step 3.5 (3 Skeptics, pre-vote, = 6 sub-agents). That was the cost lever, not the personalities: the redesign drops the 3 per-personality Skeptics and adds **one** post-vote `skeptic_on_chosen` on the winner (6→4 spawns). The cost lever is the **Skeptic count (3→1)**, never the personality topology — the 3 personalities stay blind + parallel (the `trias_parallel_dispatch` invariant is preserved). The single post-vote Skeptic is **advisory by default** (the vote stands; the objection is recorded as a caveat); under the explicit `--skeptic-can-override` flag a demolishing objection triggers a re-vote (see Step 3.6). **Default policy is unconditional** (Variant A): the Skeptic always fires. A confidence-gated variant (Variant C — Skeptic fires only when `confidence ∈ [0.0, 0.7]`) is an opt-in `--trias-skeptic-gate` flag, **off by default**, because the calibration gate (`confidence_calibration.py`) currently returns `FALLBACK_A` on the corpus (16 negatives, discrimination 0.14 < 0.15 margin). The default flips A→C automatically once that gate crosses its threshold.
+
+> **T1 coverage debt (unvalidated).** Replacing 3 pre-vote per-candidate Skeptics with 1 post-vote winner-only Skeptic is an **architectural assumption, not an empirically-validated equivalence** — the 2 losing candidates are no longer Skeptic-tested, and the winner is challenged only after it has won. There is no n≥5 evidence that 1 post-vote Skeptic catches what 3 pre-vote Skeptics caught (Deming/Tacitus, 2026-06-19 audit). The runs schema records `skeptic_challenges_count` + `post_vote_skeptic_used` so a future `confidence_calibration.py`-style coverage check can confirm or roll back the reduction.
 
 **Why the vote diverges (D4).** All three sub-agents use the same model (Sonnet) but distinct lenses. Divergence source: **lens re-weighting** — Pioneer up-weights Generator (upside), Steward up-weights Conservator (risk), Architect balances. Divergence is measured by `vote_degeneracy.py` — empirical baseline ~52% non-unanimity at n=25 (uniform Sonnet). Revert signal: < 40% non-unanimity over ≥15 runs.
 
@@ -26,7 +28,7 @@ The weights act **within** each personality only — they decide that personalit
 - Security audit (auth, crypto, RCE potential)
 - Refactor > 5 files
 - 2+ plausible architectural approaches, no clear winner
-- Cost of wrong decision >> cost of running (6 sub-agents, 4× Sequential)
+- Cost of wrong decision >> cost of running (4 sub-agents, ~2.67× Sequential)
 
 ## Lazy routing (default: enabled)
 
@@ -42,8 +44,8 @@ The weights act **within** each personality only — they decide that personalit
 
 **Override cost-warning (D2).** An explicit override on a sub-critical change is honored, but **not silently** — the user is paying 4× for a change `scope_gate.py` judged low/medium/high. Before dispatching the 6 sub-agents on an overridden change, emit a one-line warning so the cost is a conscious choice:
 ```json
-{"trias_override_warning": true, "magnitude": "<low|medium|high>", "cost_multiplier": 4.0,
- "note": "Full Trias forced below critical magnitude — 4x cost. Drop the override to auto-route (low/medium → Sequential, high → Dialectic)."}
+{"trias_override_warning": true, "magnitude": "<low|medium|high>", "cost_multiplier": 2.67,
+ "note": "Full Trias forced below critical magnitude — ~2.67x cost. Drop the override to auto-route (low/medium → Sequential, high → Dialectic)."}
 ```
 This is a warning, not a refusal: there is no hard block, because the user holds the authority on their own spend (a hard floor would override an explicit, informed instruction). The warning makes the tradeoff visible; the override still proceeds.
 
@@ -85,12 +87,12 @@ For any downgrade, emit the structured notification:
 
    **Failure handling.** If any personality returns malformed or empty JSON, treat it as a non-vote and continue per B2 timeout rules (≥2 valid votes from the remaining personalities yield a clear majority; < 2 valid votes → PEND immediately).
 
-   **Token cost.** The 3 personality sub-agents (all Sonnet) plus the 3 Skeptic sub-agents (Step 3.5, each Sonnet) give `cost_multiplier: 4.0` (vs Sequential).
+   **Token cost.** The 3 personality sub-agents (all Sonnet) plus the **single** post-vote Skeptic sub-agent (Step 9, Sonnet) give `cost_multiplier: 2.67` (vs Sequential). The confidence-gated variant drops to ~2× on confident runs (Skeptic skipped).
 
    **Runtime audit (Senate 2026-05-28, [trias-parallelism-enforcement](../runs/senate/2026-05-28_220338-trias-parallelism-enforcement.json), MODIFY 6-3-0):** `benchmark/scripts/check_trias_parallelism.py` reads the Claude CLI session JSONL transcript after each Trias run and writes `trias_dispatch_pattern: "serial"|"parallel"|"mixed"|"scale_down"` into `pipeline_audit.json`. Empirical observation as of 2026-05-28: 7/7 real-deliberation Trias runs were SERIAL despite this mandate. A spec-rewrite attempt (imperative phrasing + worked example + anti-pattern) also produced SERIAL — voice-prompt rewrites do not enforce orchestrator dispatch order (Tacitus retrospective, 0/6 clean-GO). The mandate stays as guidance; the runtime audit is the observability mechanism. Full evidence: [experiments/trias-parallelism-2026-05-28.md](../experiments/trias-parallelism-2026-05-28.md).
 
    **Vehicle decision (Senate 2026-05-29, [trias-parallelism-vehicle-a1-vs-a2](../runs/senate/2026-05-29_140645-trias-parallelism-vehicle-a1-vs-a2.json), MODIFY 6-3-0):** a follow-up audit reviewed the two architectural fixes deferred above — A1 (benchmark subprocess fan-out) and A2 (reimplement the mode via a Workflow orchestration vehicle). Outcome: **serial dispatch is accepted as by-construction-not-intent, not a bug to fix now.** A2 was rejected (the LangGraph orchestration-vehicle pattern — STOP×2 historically, never regretted; needs a separate architectural proposal if ever revived). A1 is admissible only as an explicitly-labeled *benchmark-harness* wall-clock fix, never claimed as real `/consilium` behavior. Crucially, any parallelism investment is **gated on the existing kill-criterion** — ≥2 Trias wins in n≥20 oracle-validated tasks (current record: 0 wins at n=6 on a saturated corpus). Until Trias demonstrates value, the proportional path is accept-serial + observe. Graduation mechanism: `benchmark/scripts/check_trias_escalation.py` (counts accumulated serial runs; logs a "revisit parallelism" recommendation at threshold).
-3.5. **Skeptic challenge — 3 parallel Skeptic sub-agents (one per personality chosen).** After Step 3 completes and all 3 personality chosens are collected, dispatch 3 Skeptic sub-agents in parallel (3 Skeptic Agent calls in the **same** orchestrator message). Each Skeptic receives `{chosen: <personality's chosen_approach + sketch + rationale>, success_criterion, verification}` per `prompts/voices/skeptic.md`. If Skeptic returns `can_object: true` with `addressable: "in_place"`, the personality's chosen is revised to the Skeptic's preferred alternative (advisory by default; orchestrator-level only — the sub-agent is not re-dispatched). `team_vote` proceeds on the (possibly revised) chosens. **B2 cascade exception:** Round 2 dispatches personality sub-agents only (no Skeptics) — the deadlock resolution path prioritizes speed. Cost: +3 sub-agents over Step 3.
+3.5. **(No pre-vote Skeptic.)** The per-personality pre-vote Skeptics were removed in the 2026-06-19 skeptic-lever redesign. The 3 personality chosens proceed **directly** to the vote (Steps 4–8). The single Skeptic now challenges only the **winning** candidate, **after** the vote — see Step 9.
 
 4. Collect the 3 `chosen_approach` values (one per personality) → `chose` per personality
 5. **Unanimous check (B1).** If all 3 personalities chose the same `chose`, skip `team_vote` — the result is unanimous. Set `vote_pattern: "3-0"` and `vote_skipped: true`. Confidence derived directly from `confidence_from_vote_pattern("3-0")`. Log in `deliberation_log` with `reason: "unanimous_personalities"`. If not unanimous, run `team_vote` normally.
@@ -101,6 +103,12 @@ For any downgrade, emit the structured notification:
    ```
    Do not manually build `{"candidates":[...],"chosen":"..."}` for Trias — the candidates don't have `scores` per voice.
 8. **Deadlock cascade (B2) — only if vote_pattern is 1-1-1 or 0-0-0.** See Failure recovery below.
+9. **Post-vote Skeptic challenge (`skeptic_on_chosen`) — ONE sub-agent on the winner.** After a decisive vote yields a `chosen_approach`, dispatch **one** Skeptic sub-agent per `prompts/voices/skeptic.md`. Input: `{chosen: <winner's chosen_approach + sketch + rationale>, runner_up_rationale: <2nd-place personality's rationale>, success_criterion, verification}`. The runner-up rationale is supplied **as a counter-hypothesis the Skeptic must actively attack** (does the losing argument expose a flaw in the winner?), not as neutral background — this is the coverage compensation for no longer challenging the losers directly. Record `skeptic_challenges_count: 1` and `post_vote_skeptic_used: true` in telemetry.
+   - **Default-A (unconditional):** the Skeptic always fires after a decisive vote.
+   - **Variant-C gate (`--trias-skeptic-gate`, off by default):** fire only when `confidence ∈ [0.0, 0.7]`; on confident runs skip the Skeptic (`post_vote_skeptic_used: false`, `skeptic_challenges_count: 0`). Reuses the existing `skeptic_on_chosen` auto-trigger band — no new mechanism.
+   - **"Demolishes the winner" is a concrete predicate:** the Skeptic output meets `can_object: true` AND (`severity == "blocking"` OR the objection names a falsifier that defeats the `success_criterion`). Anything weaker is **advisory** — recorded as a caveat, the vote stands.
+   - **B2 exception unchanged:** the deadlock cascade (Step 8) runs its own tiebreaker Skeptic; the post-vote Step 9 Skeptic does **not** also fire on a B2-resolved winner (the tiebreaker already challenged it).
+10. **Override re-vote (`--skeptic-can-override` only).** If Step 9's predicate fires (`demolishes` true) AND `--skeptic-can-override` is set: re-run `aggregator.py --scheme team_vote` over the **remaining** personality chosens **excluding the demolished winner** (no personality re-dispatch — the existing chosens are reused). The re-vote is a 2-way contest → `2-0` (confidence 0.70) or `1-1` (→ PEND). **The new winner is then itself challenged by one more `skeptic_on_chosen`** (the override must not silently promote an unscrutinised candidate); `skeptic_challenges_count: 2`. If that second Skeptic also demolishes, **PEND** (do not loop). Without `--skeptic-can-override`, Step 9 is advisory only and Step 10 never runs.
 
 ## Output schema (Trias-specific fields)
 ```json
@@ -159,7 +167,11 @@ For any downgrade, emit the structured notification:
 
 **Headless (B2):** All Round 2 and Skeptic dispatches run as non-interactive sub-agents — no prompt needed. Final PEND falls through to `PEND_HEADLESS` logging.
 
-**Max cost (worst case 1-1-1 → Round 2 → Skeptic):** 6 (Round 1: 3 personalities + 3 Skeptics) + 3 (Round 2 personalities, no Skeptics) + 1 (tiebreaker Skeptic) = 10 sub-agents.
+**Max cost.** Two mutually-exclusive tails (a decisive vote never also deadlocks):
+- **Deadlock tail (1-1-1 → Round 2 → tiebreaker):** 3 (Round 1 personalities, no pre-vote Skeptics) + 3 (Round 2 personalities) + 1 (tiebreaker Skeptic) = **7 sub-agents**. The Step 9 post-vote Skeptic does not also fire on a B2-resolved winner.
+- **Decisive-vote tail (Step 9 demolish → Step 10 override re-vote):** 3 (personalities) + 1 (Step 9 Skeptic) + 1 (Step 10 re-vote Skeptic on the new winner) = 5 sub-agents.
+
+Worst case overall = **7** (`dispatch_count_worst_case: 7`).
 
 **Dispatch failure / timeout guard (B2).** The cascade is depth-bounded (≤10 sub-agents) but each dispatch can still hang or error — a sub-agent that never returns must not strand the run with burned budget and no result. Every cascade dispatch (Round 2 ×3, Skeptic ×1) is treated as **best-effort**:
 

@@ -71,7 +71,6 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 17px;
@@ -80,6 +79,9 @@ html, body {
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
+
+html { background: var(--paper); }
+body { background: var(--paper); }
 
 @media (max-width: 640px) {
   html, body { font-size: 16px; }

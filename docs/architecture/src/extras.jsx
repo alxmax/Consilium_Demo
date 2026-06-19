@@ -108,7 +108,7 @@ function CostScatter() {
     { id: 'SEQ',  x: 0.20, y: 1.00, label: 'Sequential', cost: '1× · $0.189', model: 'Sonnet 4.6', sub: 'default · 0 sub-agents', color: 'var(--con)' },
     { id: 'DIAL', x: 0.40, y: 1.33, label: 'Dialectic', cost: '1.33×', model: 'Sonnet 4.6', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
     { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet 4.6', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
-    { id: 'TRI',  x: 0.90, y: 4.00, label: 'Trias', cost: '4×', model: 'Sonnet (all 3)', sub: '6 sub-agents · 3 personality + 3 Skeptic', color: 'oklch(0.55 0.16 320)' },
+    { id: 'TRI',  x: 0.90, y: 2.67, label: 'Trias', cost: '2.67×', model: 'Sonnet (all 3)', sub: '4 sub-agents · 3 personality + 1 Skeptic', color: 'oklch(0.55 0.16 320)' },
   ];
 
   const W = 720, H = 360;
@@ -188,7 +188,7 @@ function CostBars() {
     { name: 'sequential', cost: 1.0, label: '1×', sub: 'default', color: 'var(--con)', subagents: 0 },
     { name: 'dialectic', cost: 1.33, label: '1.33×', sub: 'seq + skeptic', color: 'var(--ctl)', subagents: 1 },
     { name: 'parallel', cost: 3.0, label: '3× (auto)', sub: 'auto-only', color: 'var(--gen)', subagents: 3 },
-    { name: 'trias', cost: 4.0, label: '4×', sub: '6 sub-agents', color: 'oklch(0.55 0.16 320)', subagents: 6 },
+    { name: 'trias', cost: 2.67, label: '2.67×', sub: '4 sub-agents', color: 'oklch(0.55 0.16 320)', subagents: 4 },
   ];
 
   const maxCost = 3.5;

@@ -62,6 +62,10 @@ jobs:
         run: python scripts/test_trias_model_schema.py
       - name: Skeptic validation-gate tests
         run: python scripts/test_skeptic.py
+      - name: Trias skeptic-lever (6->4) contract tests
+        run: python scripts/test_trias_skeptic_lever.py
+      - name: Confidence-calibration gate tests
+        run: python scripts/test_confidence_calibration.py
       - name: Mode-doc drift invariants (check_doc_drift)
         run: python scripts/check_doc_drift.py
       - name: Architecture explainer build is in sync

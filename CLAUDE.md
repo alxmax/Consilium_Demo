@@ -60,7 +60,7 @@ User-selectable modes (SKILL.md documents them in detail):
 
 - **Sequential** (default) — Generator → Conservator → Control single-context.
 - **Dialectic** — Sequential + Skeptic sub-agent on the chosen answer (`scripts/deprecated/dialectic_merge.py` retired; Dialectic no longer uses Pass-2).
-- **Trias** — 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally, then challenged by a dedicated Skeptic sub-agent; democratic vote over the 3 (possibly revised) results (6 sub-agents nominal, worst-case 10, 4× Sequential).
+- **Trias** — 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally and blind; democratic vote over the 3 results, then one Skeptic sub-agent (`skeptic_on_chosen`) challenges the winner post-vote (4 sub-agents nominal, worst-case 7, ~2.67× Sequential). The 2026-06-19 skeptic-lever redesign replaced the 3 per-personality pre-vote Skeptics with this single post-vote Skeptic.
 - **`trias_split`** — deprecated; use standard `trias` (cost is now equivalent).
 - **`skeptic_on_chosen`** — composable flag over any base mode (+1 sub-agent overhead). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-triggers when `confidence ∈ [0.0, 0.7]`. Replaces the fixed modes `parallel_skeptic` (= `parallel + skeptic_on_chosen`) and `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — collapsed on 2026-05-17, legacy names remain in `validate_report.py` MODE enum for backward-compat.
 

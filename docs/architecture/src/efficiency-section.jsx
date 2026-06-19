@@ -4,7 +4,7 @@
 const MODES_DATA = [
   { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  note: 'in-context baseline' },
   { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
-  { mode: 'trias',       costMultiplier: '4×',    dispatches: 6,  note: '3 personality + 3 Skeptic sub-agents' },
+  { mode: 'trias',       costMultiplier: '2.67×', dispatches: 4,  note: '3 personality + 1 post-vote Skeptic sub-agent' },
   { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, note: 'composable flag over any base' },
 ];
 
@@ -17,7 +17,7 @@ const MEASURED_COST = [
   { mode: 'superpowers',          usd: '$0.124', vsBare: '0.8×', note: 'generic agent-skill harness' },
   { mode: 'consilium_sequential', usd: '$0.189', vsBare: '1.3×', note: 'Consilium default' },
   { mode: 'consilium_dialectic',  usd: '$0.398', vsBare: '2.7×', note: '+ Skeptic + code context' },
-  { mode: 'consilium_trias',      usd: '$0.612', vsBare: '4.1×', note: '3 personality sub-agents (measured pre-Skeptic config)' },
+  { mode: 'consilium_trias',      usd: '$0.612', vsBare: '4.1×', note: '3 personalities (benchmark, pre-redesign). The 4-spawn config token-measures at 0.67× the old 6-spawn (n=2) — confirms 2.67× vs 4×; $ re-benchmark pending' },
 ];
 
 function BarChart({ data }) {
@@ -171,7 +171,7 @@ function EfficiencySection() {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--con)', marginBottom: 8 }}>Caveats</div>
           <ul style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.7, paddingLeft: 20 }}>
             <li>Token estimates use chars/4 (±10–20% error band), consistent across modes.</li>
-            <li>This is cost <em>per dispatch</em>, not per run — total run cost ≈ dispatches × this, which the cost-multiplier column on the left captures (Sequential 1×, Trias 4×).</li>
+            <li>This is cost <em>per dispatch</em>, not per run — total run cost ≈ dispatches × this, which the cost-multiplier column on the left captures (Sequential 1×, Trias 2.67×).</li>
             <li>`tokens_per_OK` (cost per confirmed-good outcome) is the stricter metric but was withheld from the snapshot — most runs at capture time were unlabeled, which would have inflated it.</li>
           </ul>
         </div>

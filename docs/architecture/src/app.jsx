@@ -194,17 +194,17 @@ function Hero() {
           structured.
         </h1>
         <p className="hero__lede">
-          Consilium evaluates every risky code change through three independent voices — a skeptic, a creative, an analyst — then aggregates them under a veto cascade. One canonical decision, with the disagreement preserved on disk.
+          Before a risky code change ships, Consilium gets three independent reviewers to weigh in — one hunts for what could break, one proposes bold fixes, one checks it actually works. Their opinions are combined into a single decision, and the disagreement is kept on the record.
         </p>
         <div className="hero__chips">
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--con)' }} />Conservator</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--gen)' }} />Generator</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--ctl)' }} />Control</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'oklch(0.55 0.16 320)' }} />Skeptic</span>
-          <span className="chip">3 modes + 1 flag + 1 auto</span>
-          <span className="chip">3 score-combination schemes</span>
-          <span className="chip">8-component cascade</span>
-          <span className="chip">self-calibrating</span>
+          <span className="chip">3 review modes + 1 flag + 1 auto</span>
+          <span className="chip">3 ways to combine the scores</span>
+          <span className="chip">8-step decision cascade</span>
+          <span className="chip">learns from past runs</span>
         </div>
       </div>
     </section>
@@ -222,10 +222,10 @@ function ProblemSection() {
           One agent's verdict on a risky change is one agent's verdict.
         </h2>
         <p className="lede" style={{ color: 'var(--paper-3)' }}>
-          For DB migrations, security work, and refactors that touch the whole codebase, you want the change pulled apart by three jobs that don't trust each other — risk, proposal, verification — before merge.
+          Ask one AI to review a risky change and you get one opinion: confident, but unchecked. For changes where a mistake is expensive — touching the database, security, or code the whole project depends on — you want it pulled apart by separate reviewers working in a relay, each unaware of the others' reasoning, so no single judgment goes unchecked.
         </p>
         <p className="lede" style={{ color: 'var(--paper-3)', maxWidth: 720 }}>
-          Consilium is that structure. It runs on Claude Code via a single skill invocation, lands every decision as canonical JSON in <code style={{ background: 'var(--paper-3)', color: 'var(--ink)', padding: '2px 6px', borderRadius: 3 }}>runs/</code>, and logs the outcome to <code style={{ background: 'var(--paper-3)', color: 'var(--ink)', padding: '2px 6px', borderRadius: 3 }}>FEEDBACK.html</code> so the next deliberation knows what worked.
+          Consilium is that structure, automated. It runs as a single command inside Claude Code, and every decision — with the reasons behind it — is saved, so the next review starts smarter than the last.
         </p>
       </div>
     </section>

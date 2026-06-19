@@ -366,7 +366,7 @@ def check_referenced_scripts_exist() -> list[str]:
 # ---------------------------------------------------------------------------
 
 # Explicit format-mapping: do not use f'{v}×' — avoids silent float→str bugs.
-_COST_FMT: dict[float, str] = {4.0: '4×', 3.0: '3×', 1.33: '1.33×', 1.0: '1×'}
+_COST_FMT: dict[float, str] = {4.0: '4×', 3.0: '3×', 2.67: '2.67×', 1.33: '1.33×', 1.0: '1×'}
 
 
 def _parse_trias_frontmatter() -> dict[str, float | int]:
