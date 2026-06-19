@@ -66,7 +66,7 @@ function TriasSection() {
 
         <h3 className="h-sub" style={{ marginTop: 40 }}>Cost-aware routing — when Trias auto-downgrades</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', marginBottom: 22 }}>
-          Trias costs 4× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), <strong>critical</strong> (blocklist hit: auth, security, migrations, CI, secrets) → <strong>full Trias</strong> (4×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
+          Trias costs 2.67× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), <strong>critical</strong> (blocklist hit: auth, security, migrations, CI, secrets) → <strong>full Trias</strong> (2.67×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
         </p>
 
         <LazyRoutingDiagram />
@@ -83,14 +83,14 @@ function TriasSection() {
         <div className="note" style={{ marginTop: 28 }}>
           <span className="note__label">Deadlock cascade — 1-1-1 / 0-0-0</span>
           <span>
-            A true tie doesn't resolve to a "senior" personality — it escalates. <strong>Round 2</strong> re-dispatches all three personalities (+3 sub-agents), each now seeing the other two's Round-1 pick and reasoning. If they still split 1-1-1, a single <strong>Skeptic</strong> tiebreaker (+1 sub-agent) selects the winner; <code>0-0-0</code> — everyone vetoed everything — falls straight through to <strong>PEND</strong>. That path is the worst-case cost of <strong>10 sub-agents</strong> (6 + Round 2's 3 + 1 Skeptic). In practice it is rare: <strong>4 of 37</strong> Trias runs reached a 1-1-1 deadlock (≈11%), and ≈51% were non-unanimous — measured by <code>scripts/vote_degeneracy.py</code>.
+            A true tie doesn't resolve to a "senior" personality — it escalates. <strong>Round 2</strong> re-dispatches all three personalities (+3 sub-agents), each now seeing the other two's Round-1 pick and reasoning. If they still split 1-1-1, a single <strong>Skeptic</strong> tiebreaker (+1 sub-agent) selects the winner; <code>0-0-0</code> — everyone vetoed everything — falls straight through to <strong>PEND</strong>. That path is the worst-case cost of <strong>7 sub-agents</strong> (3 + Round 2's 3 + 1 Skeptic). In practice it is rare: <strong>4 of 37</strong> Trias runs reached a 1-1-1 deadlock (≈11%), and ≈51% were non-unanimous — measured by <code>scripts/vote_degeneracy.py</code>.
           </span>
         </div>
 
         <div className="note" style={{ marginTop: 16 }}>
           <span className="note__label">Aggregate bias</span>
           <span>
-            Mean weights across the three personalities: <VToken v="gen">Generator 0.363</VToken>, <VToken v="ctl">Control 0.333</VToken>, <VToken v="con">Conservator 0.303</VToken>. Compared to a balanced 0.333, the team tilts <strong>slightly toward exploration</strong>. Trias costs 4× Sequential — use only when the cost of a wrong decision dominates the cost of running 6 sub-agents (3 personalities + 3 Skeptics).
+            Mean weights across the three personalities: <VToken v="gen">Generator 0.363</VToken>, <VToken v="ctl">Control 0.333</VToken>, <VToken v="con">Conservator 0.303</VToken>. Compared to a balanced 0.333, the team tilts <strong>slightly toward exploration</strong>. Trias costs 2.67× Sequential — use only when the cost of a wrong decision dominates the cost of running 4 sub-agents (3 personalities + 1 post-vote Skeptic).
           </span>
         </div>
       </div>
@@ -242,8 +242,8 @@ function LazyRoutingDiagram() {
             fill="color-mix(in oklch, oklch(0.55 0.16 320) 8%, var(--paper))"
             stroke="oklch(0.55 0.16 320)" strokeWidth="1.4" />
           <text x="760" y="64" textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, fill: 'var(--ink)' }}>Trias — full</text>
-          <text x="760" y="82" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'oklch(0.4 0.16 320)' }}>6 sub-agents · 4× cost</text>
-          <text x="760" y="97" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>3 personalities + 3 Skeptics</text>
+          <text x="760" y="82" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'oklch(0.4 0.16 320)' }}>4 sub-agents · 2.67× cost</text>
+          <text x="760" y="97" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>3 personalities + 1 post-vote Skeptic</text>
         </g>
 
         {/* Dialectic */}

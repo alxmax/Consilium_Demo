@@ -81,7 +81,6 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 17px;
@@ -90,6 +89,9 @@ html, body {
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
+
+html { background: var(--paper); }
+body { background: var(--paper); }
 
 @media (max-width: 640px) {
   html, body { font-size: 16px; }
@@ -4207,7 +4209,7 @@ function CostScatter() {
     { id: 'SEQ',  x: 0.20, y: 1.00, label: 'Sequential', cost: '1× · $0.189', model: 'Sonnet 4.6', sub: 'default · 0 sub-agents', color: 'var(--con)' },
     { id: 'DIAL', x: 0.40, y: 1.33, label: 'Dialectic', cost: '1.33×', model: 'Sonnet 4.6', sub: 'seq + 1 Skeptic', color: 'var(--ctl)' },
     { id: 'PAR',  x: 0.70, y: 3.00, label: 'Parallel*', cost: '3× (auto)', model: 'Sonnet 4.6', sub: 'auto-only · not user-selectable', color: 'var(--gen)' },
-    { id: 'TRI',  x: 0.90, y: 4.00, label: 'Trias', cost: '4×', model: 'Sonnet (all 3)', sub: '6 sub-agents · 3 personality + 3 Skeptic', color: 'oklch(0.55 0.16 320)' },
+    { id: 'TRI',  x: 0.90, y: 2.67, label: 'Trias', cost: '2.67×', model: 'Sonnet (all 3)', sub: '4 sub-agents · 3 personality + 1 Skeptic', color: 'oklch(0.55 0.16 320)' },
   ];
 
   const W = 720, H = 360;
@@ -4287,7 +4289,7 @@ function CostBars() {
     { name: 'sequential', cost: 1.0, label: '1×', sub: 'default', color: 'var(--con)', subagents: 0 },
     { name: 'dialectic', cost: 1.33, label: '1.33×', sub: 'seq + skeptic', color: 'var(--ctl)', subagents: 1 },
     { name: 'parallel', cost: 3.0, label: '3× (auto)', sub: 'auto-only', color: 'var(--gen)', subagents: 3 },
-    { name: 'trias', cost: 4.0, label: '4×', sub: '6 sub-agents', color: 'oklch(0.55 0.16 320)', subagents: 6 },
+    { name: 'trias', cost: 2.67, label: '2.67×', sub: '4 sub-agents', color: 'oklch(0.55 0.16 320)', subagents: 4 },
   ];
 
   const maxCost = 3.5;
@@ -4966,7 +4968,7 @@ function VoicesSection() {
           num="02"
           eyebrow="The voices"
           title="Three core voices, run in this order. Plus one focal challenger."
-          lede="Generator runs first — blind to risk framing, it proposes candidates without being anchored by caution. Conservator then scores each for risk. Control verifies. A fourth voice, the Skeptic, gets focal access to the chosen answer only."
+          lede="Three reviewers with different instincts, run in a relay. The Generator proposes ideas first — before anyone mentions risk, so caution doesn't shrink its imagination. The Conservator then rates how risky each idea is. The Control checks the code actually works. Each works from the proposal, not the previous reviewer's pitch. A fourth, the Skeptic, gets to attack only the final answer."
         />
 
         <WhyThreeVoices />
@@ -5326,7 +5328,7 @@ const STEPS = [
     dispatch: [
       ['Sequential', 'Gen → Cons → Ctrl in one context, strip_context.py between them'],
       ['Parallel (auto)', 'Gen alone, then Control ∥ Conservator on its candidates'],
-      ['Trias', '3 personality sub-agents (each a full Sequential pass) + 3 Skeptic challenges, then a vote'],
+      ['Trias', '3 personality sub-agents (each a full Sequential pass), a vote, then 1 post-vote Skeptic challenge'],
     ],
   },
   {
@@ -5822,13 +5824,13 @@ const MODES = [
     id: 'trias',
     name: 'Trias',
     tag: 'OPT-IN',
-    plain: 'Three independent Claude sub-agents each run the full Sequential pipeline. Each has a different personality (bold / structural / protective). Each answer is then challenged by its own Skeptic sub-agent before the three (possibly revised) answers go to a democratic vote.',
-    desc: 'Six sub-agents — three personalities (Pioneer / Architect / Steward), each running Sequential internally, then each personality\'s chosen is challenged by a dedicated Skeptic sub-agent at orchestrator level before the team vote. That per-personality composition (Sequential + a Skeptic challenge) is effectively a Dialectic — so Trias is a vote over three lens-tilted Dialectics, with the Skeptics lifted to the orchestrator level to keep dispatch flat and parallel. A simple majority vote decides the winner — 3-0 / 2-1 / 2-0. (Spec mandates parallel dispatch; in practice the runtime dispatches them serially — see the Trias parallelism audit, check_trias_parallelism.py.)',
+    plain: 'Three independent Claude sub-agents each run the full Sequential pipeline. Each has a different personality (bold / structural / protective). The three answers go to a democratic vote, then a single Skeptic sub-agent challenges the winning answer.',
+    desc: 'Four sub-agents — three personalities (Pioneer / Architect / Steward), each running Sequential internally and blind to the others, vote on a winner, then ONE Skeptic sub-agent challenges that winning candidate post-vote (skeptic_on_chosen, advisory by default; --skeptic-can-override triggers a re-vote excluding a demolished winner). The 2026-06-19 skeptic-lever redesign replaced the old 3 per-personality pre-vote Skeptics with this single post-vote Skeptic (6→4 spawns) — the cost lever is the Skeptic count, not the personalities, which stay blind + parallel. A simple majority vote decides the winner — 3-0 / 2-1 / 2-0. (Spec mandates parallel dispatch; in practice the runtime dispatches them serially — see the Trias parallelism audit, check_trias_parallelism.py.)',
     use: 'highest-stakes — DB migrations, security, large refactors',
-    cost: '4× · worst case 10 sub-agents (1-1-1 → Round 2 → Skeptic)',
+    cost: '2.67× · worst case 7 sub-agents (1-1-1 → Round 2 → tiebreaker)',
     isolation: 'sub-agent per personality + strip per voice inside',
     voices: '3× (Gen · Cons · Ctrl)',
-    subagents: '6 (3 personality + 3 Skeptic; worst 10)',
+    subagents: '4 (3 personality + 1 post-vote Skeptic; worst 7)',
   },
   {
     id: 'skeptic_flag',
@@ -5913,11 +5915,11 @@ const WALKTHROUGHS = {
         nodes: { orch: 'done', p1: 'active', p2: 'active', p3: 'active', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
       { id: '4', name: 'chosen', caption: 'Each personality returns its own chosen answer.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
-      { id: '4b', name: 'skeptic ×3', caption: 'Three Skeptic sub-agents dispatched in parallel — one per chosen answer. This is the Dialectic step: Sequential + this Skeptic = a Dialectic per personality, just lifted to the orchestrator level. An in_place objection revises that personality\'s pick before the vote.',
-        nodes: { orch: 'done', p1: 'active', p2: 'active', p3: 'active', vote: 'idle' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3'] },
-      { id: '5', name: 'tally', caption: 'Democratic vote tally over the (possibly revised) answers. 3-0 → confidence 0.95. 2-1 → 0.75. 2-0 → 0.70. 1-1-1 → PEND + escalate.',
+      { id: '5', name: 'tally', caption: 'Democratic vote tally over the three blind answers. 3-0 → confidence 0.95. 2-1 → 0.75. 2-0 → 0.70. 1-1-1 → PEND + escalate.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'active' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote'] },
-      { id: '6', name: 'done', caption: 'Winner declared. Dissent (if any) logged for human review.',
+      { id: '5b', name: 'skeptic ×1', caption: 'ONE Skeptic sub-agent challenges the winning candidate post-vote (skeptic_on_chosen), with the runner-up rationale handed in as a counter-hypothesis to attack. Advisory by default; --skeptic-can-override re-votes excluding a demolished winner.',
+        nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'active' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote'] },
+      { id: '6', name: 'done', caption: 'Winner declared (Skeptic caveat attached if it objected). Dissent logged for human review.',
         nodes: { orch: 'done', p1: 'done', p2: 'done', p3: 'done', vote: 'done' }, arrows: ['orch_p1', 'orch_p2', 'orch_p3', 'p1_vote', 'p2_vote', 'p3_vote', 'vote_out'] },
     ],
   },
@@ -6548,7 +6550,7 @@ function TriasSection() {
 
         <h3 className="h-sub" style={{ marginTop: 40 }}>Cost-aware routing — when Trias auto-downgrades</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', marginBottom: 22 }}>
-          Trias costs 4× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), <strong>critical</strong> (blocklist hit: auth, security, migrations, CI, secrets) → <strong>full Trias</strong> (4×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
+          Trias costs 2.67× Sequential. To avoid overspending on changes that don't need three perspectives, the orchestrator auto-downgrades based on risk (magnitude): <strong>low / medium → Sequential</strong> (1×), <strong>high → Dialectic</strong> (1.33×), <strong>critical</strong> (blocklist hit: auth, security, migrations, CI, secrets) → <strong>full Trias</strong> (2.67×). Each tier buys proportionally more scrutiny. You can override with an explicit <code>--trias</code> flag.
         </p>
 
         <LazyRoutingDiagram />
@@ -6565,14 +6567,14 @@ function TriasSection() {
         <div className="note" style={{ marginTop: 28 }}>
           <span className="note__label">Deadlock cascade — 1-1-1 / 0-0-0</span>
           <span>
-            A true tie doesn't resolve to a "senior" personality — it escalates. <strong>Round 2</strong> re-dispatches all three personalities (+3 sub-agents), each now seeing the other two's Round-1 pick and reasoning. If they still split 1-1-1, a single <strong>Skeptic</strong> tiebreaker (+1 sub-agent) selects the winner; <code>0-0-0</code> — everyone vetoed everything — falls straight through to <strong>PEND</strong>. That path is the worst-case cost of <strong>10 sub-agents</strong> (6 + Round 2's 3 + 1 Skeptic). In practice it is rare: <strong>4 of 37</strong> Trias runs reached a 1-1-1 deadlock (≈11%), and ≈51% were non-unanimous — measured by <code>scripts/vote_degeneracy.py</code>.
+            A true tie doesn't resolve to a "senior" personality — it escalates. <strong>Round 2</strong> re-dispatches all three personalities (+3 sub-agents), each now seeing the other two's Round-1 pick and reasoning. If they still split 1-1-1, a single <strong>Skeptic</strong> tiebreaker (+1 sub-agent) selects the winner; <code>0-0-0</code> — everyone vetoed everything — falls straight through to <strong>PEND</strong>. That path is the worst-case cost of <strong>7 sub-agents</strong> (3 + Round 2's 3 + 1 Skeptic). In practice it is rare: <strong>4 of 37</strong> Trias runs reached a 1-1-1 deadlock (≈11%), and ≈51% were non-unanimous — measured by <code>scripts/vote_degeneracy.py</code>.
           </span>
         </div>
 
         <div className="note" style={{ marginTop: 16 }}>
           <span className="note__label">Aggregate bias</span>
           <span>
-            Mean weights across the three personalities: <VToken v="gen">Generator 0.363</VToken>, <VToken v="ctl">Control 0.333</VToken>, <VToken v="con">Conservator 0.303</VToken>. Compared to a balanced 0.333, the team tilts <strong>slightly toward exploration</strong>. Trias costs 4× Sequential — use only when the cost of a wrong decision dominates the cost of running 6 sub-agents (3 personalities + 3 Skeptics).
+            Mean weights across the three personalities: <VToken v="gen">Generator 0.363</VToken>, <VToken v="ctl">Control 0.333</VToken>, <VToken v="con">Conservator 0.303</VToken>. Compared to a balanced 0.333, the team tilts <strong>slightly toward exploration</strong>. Trias costs 2.67× Sequential — use only when the cost of a wrong decision dominates the cost of running 4 sub-agents (3 personalities + 1 post-vote Skeptic).
           </span>
         </div>
       </div>
@@ -6724,8 +6726,8 @@ function LazyRoutingDiagram() {
             fill="color-mix(in oklch, oklch(0.55 0.16 320) 8%, var(--paper))"
             stroke="oklch(0.55 0.16 320)" strokeWidth="1.4" />
           <text x="760" y="64" textAnchor="middle" style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, fill: 'var(--ink)' }}>Trias — full</text>
-          <text x="760" y="82" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'oklch(0.4 0.16 320)' }}>6 sub-agents · 4× cost</text>
-          <text x="760" y="97" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>3 personalities + 3 Skeptics</text>
+          <text x="760" y="82" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fill: 'oklch(0.4 0.16 320)' }}>4 sub-agents · 2.67× cost</text>
+          <text x="760" y="97" textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fill: 'var(--ink-3)' }}>3 personalities + 1 post-vote Skeptic</text>
         </g>
 
         {/* Dialectic */}
@@ -6924,7 +6926,7 @@ window.LoopSection = LoopSection;
 const MODES_DATA = [
   { mode: 'sequential',  costMultiplier: '1×',    dispatches: 0,  note: 'in-context baseline' },
   { mode: 'dialectic',   costMultiplier: '1.33×', dispatches: 1,  note: '+ 1 skeptic sub-agent' },
-  { mode: 'trias',       costMultiplier: '4×',    dispatches: 6,  note: '3 personality + 3 Skeptic sub-agents' },
+  { mode: 'trias',       costMultiplier: '2.67×', dispatches: 4,  note: '3 personality + 1 post-vote Skeptic sub-agent' },
   { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, note: 'composable flag over any base' },
 ];
 
@@ -6937,7 +6939,7 @@ const MEASURED_COST = [
   { mode: 'superpowers',          usd: '$0.124', vsBare: '0.8×', note: 'generic agent-skill harness' },
   { mode: 'consilium_sequential', usd: '$0.189', vsBare: '1.3×', note: 'Consilium default' },
   { mode: 'consilium_dialectic',  usd: '$0.398', vsBare: '2.7×', note: '+ Skeptic + code context' },
-  { mode: 'consilium_trias',      usd: '$0.612', vsBare: '4.1×', note: '3 personality sub-agents (measured pre-Skeptic config)' },
+  { mode: 'consilium_trias',      usd: '$0.612', vsBare: '4.1×', note: '3 personalities (benchmark, pre-redesign). The 4-spawn config token-measures at 0.67× the old 6-spawn (n=2) — confirms 2.67× vs 4×; $ re-benchmark pending' },
 ];
 
 function BarChart({ data }) {
@@ -7091,7 +7093,7 @@ function EfficiencySection() {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--con)', marginBottom: 8 }}>Caveats</div>
           <ul style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.7, paddingLeft: 20 }}>
             <li>Token estimates use chars/4 (±10–20% error band), consistent across modes.</li>
-            <li>This is cost <em>per dispatch</em>, not per run — total run cost ≈ dispatches × this, which the cost-multiplier column on the left captures (Sequential 1×, Trias 4×).</li>
+            <li>This is cost <em>per dispatch</em>, not per run — total run cost ≈ dispatches × this, which the cost-multiplier column on the left captures (Sequential 1×, Trias 2.67×).</li>
             <li>`tokens_per_OK` (cost per confirmed-good outcome) is the stricter metric but was withheld from the snapshot — most runs at capture time were unlabeled, which would have inflated it.</li>
           </ul>
         </div>
@@ -7300,17 +7302,17 @@ function Hero() {
           structured.
         </h1>
         <p className="hero__lede">
-          Consilium evaluates every risky code change through three independent voices — a skeptic, a creative, an analyst — then aggregates them under a veto cascade. One canonical decision, with the disagreement preserved on disk.
+          Before a risky code change ships, Consilium gets three independent reviewers to weigh in — one hunts for what could break, one proposes bold fixes, one checks it actually works. Their opinions are combined into a single decision, and the disagreement is kept on the record.
         </p>
         <div className="hero__chips">
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--con)' }} />Conservator</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--gen)' }} />Generator</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'var(--ctl)' }} />Control</span>
           <span className="chip"><span className="chip__swatch" style={{ background: 'oklch(0.55 0.16 320)' }} />Skeptic</span>
-          <span className="chip">3 modes + 1 flag + 1 auto</span>
-          <span className="chip">3 score-combination schemes</span>
-          <span className="chip">8-component cascade</span>
-          <span className="chip">self-calibrating</span>
+          <span className="chip">3 review modes + 1 flag + 1 auto</span>
+          <span className="chip">3 ways to combine the scores</span>
+          <span className="chip">8-step decision cascade</span>
+          <span className="chip">learns from past runs</span>
         </div>
       </div>
     </section>
@@ -7328,10 +7330,10 @@ function ProblemSection() {
           One agent's verdict on a risky change is one agent's verdict.
         </h2>
         <p className="lede" style={{ color: 'var(--paper-3)' }}>
-          For DB migrations, security work, and refactors that touch the whole codebase, you want the change pulled apart by three jobs that don't trust each other — risk, proposal, verification — before merge.
+          Ask one AI to review a risky change and you get one opinion: confident, but unchecked. For changes where a mistake is expensive — touching the database, security, or code the whole project depends on — you want it pulled apart by separate reviewers working in a relay, each unaware of the others' reasoning, so no single judgment goes unchecked.
         </p>
         <p className="lede" style={{ color: 'var(--paper-3)', maxWidth: 720 }}>
-          Consilium is that structure. It runs on Claude Code via a single skill invocation, lands every decision as canonical JSON in <code style={{ background: 'var(--paper-3)', color: 'var(--ink)', padding: '2px 6px', borderRadius: 3 }}>runs/</code>, and logs the outcome to <code style={{ background: 'var(--paper-3)', color: 'var(--ink)', padding: '2px 6px', borderRadius: 3 }}>FEEDBACK.html</code> so the next deliberation knows what worked.
+          Consilium is that structure, automated. It runs as a single command inside Claude Code, and every decision — with the reasons behind it — is saved, so the next review starts smarter than the last.
         </p>
       </div>
     </section>

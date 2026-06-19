@@ -493,7 +493,7 @@ Every `/consilium` invocation MUST terminate by writing a report to `.consilium/
 
 Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. **Trias exception**: each personality uses the model declared in `scripts/personalities.py` — pioneer → `haiku`, architect → `sonnet`, steward → `opus`. Steward dispatches schema-less (fenced JSON) due to Opus+StructuredOutput flakiness; orchestrator parses with `json.loads()`. Mode sections declare per-invocation overrides — single source of truth per mode, descriptive not enforced.
 
-Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× · Trias 4×. The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×, Parallel+flag = 1.33× Parallel).
+Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× · Trias 2.67×. The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×, Parallel+flag = 1.33× Parallel).
 
 ## Parallel voices mode
 
@@ -576,7 +576,7 @@ Each mode has its own `.md` file in `modes/` with YAML frontmatter (`name`, `sub
 |---|---|---|---|---|
 | Sequential (default) | [modes/sequential.md](modes/sequential.md) | 0 | 1× | 0.70 |
 | Dialectic | [modes/dialectic.md](modes/dialectic.md) | 1 | 1.33× | 0.75 |
-| Trias | [modes/trias.md](modes/trias.md) | 6 (worst: 10) | 4× | 0.80 |
+| Trias | [modes/trias.md](modes/trias.md) | 4 (worst: 7) | 2.67× | 0.80 |
 | skeptic_on_chosen (flag) | [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md) | +1 over base | base+1 | N/A |
 
 `modes/` also holds reference docs for sub-components (not selectable modes): [implement_pipeline.md](modes/implement_pipeline.md) (Step 7), [aggregator_schemes.md](modes/aggregator_schemes.md) (Step 5), [confidence.md](modes/confidence.md) (Step 5b).
@@ -587,7 +587,7 @@ Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI 
 
 ## Trias mode (high-stakes opt-in)
 
-3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally then is challenged by a dedicated Skeptic sub-agent at orchestrator level before the team vote. Lazy routing graduates by magnitude: low/medium → Sequential, high → Dialectic — only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. **Cost: 4× Sequential** (worst-case 10 sub-agents on 1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
+3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally and blind, then a democratic vote, then **one** Skeptic sub-agent (`skeptic_on_chosen`) challenges the winning candidate post-vote (advisory by default; `--skeptic-can-override` re-votes excluding a demolished winner). The 2026-06-19 skeptic-lever redesign replaced the 3 per-personality pre-vote Skeptics with this single post-vote Skeptic (6→4 spawns). Lazy routing graduates by magnitude: low/medium → Sequential, high → Dialectic — only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. **Cost: ~2.67× Sequential** (worst-case 7 sub-agents on 1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 

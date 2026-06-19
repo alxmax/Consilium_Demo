@@ -172,7 +172,7 @@ function VoicesSection() {
           num="02"
           eyebrow="The voices"
           title="Three core voices, run in this order. Plus one focal challenger."
-          lede="Generator runs first — blind to risk framing, it proposes candidates without being anchored by caution. Conservator then scores each for risk. Control verifies. A fourth voice, the Skeptic, gets focal access to the chosen answer only."
+          lede="Three reviewers with different instincts, run in a relay. The Generator proposes ideas first — before anyone mentions risk, so caution doesn't shrink its imagination. The Conservator then rates how risky each idea is. The Control checks the code actually works. Each works from the proposal, not the previous reviewer's pitch. A fourth, the Skeptic, gets to attack only the final answer."
         />
 
         <WhyThreeVoices />
