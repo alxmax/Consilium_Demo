@@ -1101,7 +1101,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "modes/skeptic_on_chosen.md:68"
+          "loc": "modes/skeptic_on_chosen.md:69"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1117,8 +1117,9 @@
       "title": "trias mode",
       "intent": "WHY: Apply three divergent personality lenses (Pioneer/Architect/Steward) each running a full dialectic deliberation, then resolve by democratic majority vote — providing genuine multi-perspective scrutiny for high-stakes, irreversible, or architecturally complex decisions.",
       "contract": [
-        "The mode shall classify magnitude via `scope_gate.py` on the original unstripped context before any context stripping; when lazy routing is enabled (default), it shall downgrade to Sequential (low/medium magnitude) or Dialectic (high magnitude) and emit a structured `trias_lazy_routed` notification — full Trias (3 sub-agents) runs only on `critical` magnitude or when the user explicitly requests it.",
-        "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) each running a complete Sequential deliberation (Generator → Conservator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch. After the 3 personalities return their chosens, the orchestrator shall dispatch 3 Skeptic sub-agents in parallel (one per personality chosen) per `prompts/voices/skeptic.md`; if a Skeptic returns `can_object: true` with `addressable: \"in_place\"`, the personality's chosen is revised before `team_vote` (advisory by default).",
+        "The mode shall classify magnitude via `scope_gate.py` on the original unstripped context before any context stripping; when lazy routing is enabled (default), it shall downgrade to Sequential (low/medium magnitude) or Dialectic (high magnitude) and emit a structured `trias_lazy_routed` notification — full Trias (4 sub-agents nominal — 3 personalities + 1 post-vote Skeptic, ≈2.67× Sequential) runs only on `critical` magnitude or when the user explicitly requests it.",
+        "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) **in parallel**, each running a complete Sequential deliberation (Generator → Conservator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch. There is **no pre-vote Skeptic** — the 2026-06-19 skeptic-lever redesign removed the 3 per-personality pre-vote Skeptics; the 3 returned `chosen_approach` values proceed directly to the vote.",
+        "After a decisive vote yields a winning `chosen_approach`, the mode shall dispatch exactly **one** Skeptic sub-agent (`skeptic_on_chosen`, per `prompts/voices/skeptic.md`) to challenge that winner **post-vote**, supplying the runner-up personality's rationale as a counter-hypothesis the Skeptic must attack (the coverage compensation for no longer challenging the losing candidates directly). The Skeptic is **advisory by default** — the vote stands and any objection is recorded as a caveat. Under `--skeptic-can-override`, a *demolishing* objection (`can_object: true` AND (`severity == \"blocking\"` OR a falsifier that defeats the `success_criterion`)) shall trigger a re-vote over the remaining `chosen_approach` values excluding the demolished winner; the new winner is itself challenged by one further `skeptic_on_chosen` (PEND if also demolished — no loop). Telemetry shall record `skeptic_challenges_count` and `post_vote_skeptic_used`. This post-vote Skeptic does **not** fire on a winner already resolved by the B2 deadlock cascade (the cascade's tiebreaker Skeptic already challenged it). Default policy is unconditional (Variant A); the confidence-gated Variant C (`--trias-skeptic-gate`, fire only when `confidence ∈ [0.0, 0.7]`) is off by default.",
         "The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).",
         "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1). `0-0-0` means all 3 personalities returned `chose: null` (each personality's internal Sequential ran `conservative_override` and vetoed every candidate); it is distinct from 1-1-1 (three different non-null choices) and is achievable without abstention — it occurs when every candidate exceeds the conservator veto threshold inside each sub-agent.",
         "When lazy routing downgrades to Dialectic or Sequential, the `trias_lazy_routed: true` notification is emitted by the Trias orchestrator before the downgraded mode runs; the notification is not carried into the final persisted report produced by the downgraded mode's own pipeline. The persisted report reflects the actual mode that ran (`dialectic` or `sequential`), not `trias`.",
@@ -1137,7 +1138,7 @@
         "modes/trias.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a deliberation request in trias mode with `magnitude: critical` (blocklist hit)\n  When  the mode runs\n  Then  3 personality sub-agents are dispatched (Pioneer, Architect, Steward), each producing a `chosen_approach`; then 3 Skeptic sub-agents are dispatched in parallel (one per personality chosen); the vote is aggregated via `team_vote` on the (possibly revised) chosens; and the report contains `vote_pattern`, `confidence`, and `personalities[]` with each personality's `chose`\n\nAC-2\n  Given a deliberation request in trias mode with `magnitude: high` and lazy routing enabled\n  When  the mode runs\n  Then  the mode downgrades to Dialectic, emits a `trias_lazy_routed: true` notification with `routed_to: \"dialectic\"`, and no Trias sub-agents are dispatched\n\nAC-3\n  Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)\n  When  the B2 cascade fires\n  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true`",
+      "accept": "AC-1\n  Given a deliberation request in trias mode with `magnitude: critical` (blocklist hit)\n  When  the mode runs\n  Then  3 personality sub-agents are dispatched in parallel (Pioneer, Architect, Steward), each producing a `chosen_approach`; the 3 chosens are aggregated via `team_vote` with no pre-vote Skeptic; then exactly one post-vote Skeptic (`skeptic_on_chosen`) challenges the winning candidate; and the report contains `vote_pattern`, `confidence`, `personalities[]` with each personality's `chose`, plus `skeptic_challenges_count` and `post_vote_skeptic_used`\n\nAC-2\n  Given a deliberation request in trias mode with `magnitude: high` and lazy routing enabled\n  When  the mode runs\n  Then  the mode downgrades to Dialectic, emits a `trias_lazy_routed: true` notification with `routed_to: \"dialectic\"`, and no Trias sub-agents are dispatched\n\nAC-3\n  Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)\n  When  the B2 cascade fires\n  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true`",
       "input": "",
       "output": "",
       "desc": "",
@@ -1157,7 +1158,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "modes/trias.md:184"
+          "loc": "modes/trias.md:196"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1618,7 +1619,8 @@
         "CONSILIUM-PRIORS-001",
         "CONSILIUM-RENDER-FEEDBACK-HTML-001",
         "CONSILIUM-STRIP-CONTEXT-001",
-        "CONSILIUM-VALIDATE-REPORT-001"
+        "CONSILIUM-VALIDATE-REPORT-001",
+        "CONSILIUM-VALIDATE-SKEPTIC-001"
       ],
       "satisfies": [],
       "satisfied_by": [],
@@ -1687,6 +1689,62 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-VALIDATE-SKEPTIC-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "validate_skeptic",
+      "intent": "Describes observed behavior, verified against scripts/validate_skeptic.py source.",
+      "contract": [
+        "Shall validate `can_object` as a bool; exit 1 if missing or non-bool.",
+        "`can_object=false` shall require `objection` null or absent; presence of a non-null `objection` is an error.",
+        "`can_object=true` shall require `objection` with `concrete_concerns` (list) and `quoted_scenario` (str or null).",
+        "Evidence gate shall reject if fewer than 2 non-empty `concrete_concerns` AND `quoted_scenario` is empty/null.",
+        "`failure_mode` and `addressable` shall be validated against their allowed value sets.",
+        "`failure_mode=goal_fit` shall require at least one `concrete_concern` containing the substring `\"success_criterion\"`.",
+        "Shall exit 0 on valid, 1 on invalid (problems to stderr), 2 on malformed JSON."
+      ],
+      "verify": [
+        "None — all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "`can_object=false` with null objection exits 0",
+        "`can_object=true` with ≥2 concrete_concerns exits 0",
+        "`can_object=true` with only a non-empty quoted_scenario exits 0",
+        "`can_object=true` with 0 concrete_concerns and null quoted_scenario exits 1 (evidence gate)",
+        "`failure_mode=goal_fit` without \"success_criterion\" in any concern exits 1",
+        "Unknown `failure_mode` value exits 1",
+        "Malformed JSON exits 2"
+      ],
+      "accept": "- `can_object=false` with null objection exits 0\n- `can_object=true` with ≥2 concrete_concerns exits 0\n- `can_object=true` with only a non-empty quoted_scenario exits 0\n- `can_object=true` with 0 concrete_concerns and null quoted_scenario exits 1 (evidence gate)\n- `failure_mode=goal_fit` without \"success_criterion\" in any concern exits 1\n- Unknown `failure_mode` value exits 1\n- Malformed JSON exits 2",
+      "input": "A Skeptic voice output JSON on stdin (produced by the Skeptic voice per `prompts/voices/skeptic.md`)",
+      "output": "Exit 0 — verdict is well-formed; orchestrator may apply it Exit 1 — invalid; each problem printed to stderr; orchestrator ships original chosen Exit 2 — malformed JSON input",
+      "desc": "Structural validation gate for Skeptic output. Enforces the machine-checkable subset of the gate described in `prompts/voices/skeptic.md` and `modes/skeptic_on_chosen.md` — shape and evidence rules only, not semantic correctness. A verdict that fails this gate is discarded and the original `chosen` is shipped unchallenged. Rules enforced: `can_object` must be a bool `can_object=false` → `objection` must be null/absent `can_object=true` → `objection` is an object with: `concrete_concerns`: list of strings; `quoted_scenario`: str or null Evidence gate: ≥2 non-empty `concrete_concerns` OR a non-empty `quoted_scenario` `failure_mode` in `{correctness, goal_fit, verification_inadequate, meta_scope_mismatch}` `addressable` in `{in_place, requires_redesign, unaddressable}` `failure_mode=goal_fit` → at least one `concrete_concern` references `\"success_criterion\"`",
+      "deps": [
+        "CONSILIUM-VOICE-SKEPTIC-001",
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_skeptic.py:11"
+        },
+        {
+          "role": "implements",
+          "loc": "scripts/validate_skeptic.py:36"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.1",
       "priority": "",
       "risks": []
     },
@@ -1775,7 +1833,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/conservator.md:204"
+          "loc": "prompts/voices/conservator.md:205"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1823,7 +1881,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/control.md:113"
+          "loc": "prompts/voices/control.md:119"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1911,7 +1969,8 @@
       "deps": [],
       "used_by": [
         "CONSILIUM-MODE-DIALECTIC-001",
-        "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001"
+        "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001",
+        "CONSILIUM-VALIDATE-SKEPTIC-001"
       ],
       "satisfies": [],
       "satisfied_by": [],
@@ -2215,6 +2274,14 @@
     ],
     [
       "CONSILIUM-VALIDATE-REPORT-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-VALIDATE-SKEPTIC-001",
+      "CONSILIUM-VOICE-SKEPTIC-001"
+    ],
+    [
+      "CONSILIUM-VALIDATE-SKEPTIC-001",
       "CONSILIUM-UTILS-001"
     ],
     [

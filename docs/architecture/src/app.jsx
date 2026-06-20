@@ -160,6 +160,21 @@ function Topbar() {
         </a>
         <a
           className="topbar__repo"
+          href="consilium_full.html"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <path
+              fill="currentColor"
+              d="M1 1h6v6H1V1zm0 8h6v6H1V9zm8-8h6v6H9V1zm0 8h6v6H9V9z"
+            />
+          </svg>
+          <span>Full diagram</span>
+          <span style={{ opacity: 0.5, marginLeft: 'auto' }}>↗</span>
+        </a>
+        <a
+          className="topbar__repo"
           href="https://github.com/alxmax/Consilium_Demo"
           target="_blank"
           rel="noopener noreferrer"
