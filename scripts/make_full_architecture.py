@@ -82,10 +82,15 @@ scripts_b = s.row([
     ("log_feedback.py", "engine"),
     ("personalities.py", "engine"),
 ], 80, y + 344, w=168, h=52, gap=16, font_size=12)
-s.enclose(scripts_a + scripts_b, label="Engine scripts  (scripts/)", pad=16)
+scripts_c = s.row([
+    ("strip_context.py", "engine"),
+    ("validate_skeptic.py", "gate"),
+    ("audit_counter.py", "engine"),
+], 80, y + 416, w=168, h=52, gap=16, font_size=12)
+s.enclose(scripts_a + scripts_b + scripts_c, label="Engine scripts  (scripts/)", pad=16)
 
 # Row 4: Implement roles | persistent state | public interface
-impl_y = y + 458
+impl_y = y + 520
 impl = s.row([
     ("coder.md", "impl"),
     ("test_writer.md", "impl"),
@@ -130,7 +135,7 @@ s.route_under(pipe[1], pipe[6], label="skip (trivial)", drop=80)
 # Bypass: scale_down — Conservator signals trivial, skip Control
 s.route_under(pipe[3], pipe[5], label="scale_down", drop=50)
 # Retry: low confidence loops back to Generator (once)
-s.route_under(pipe[5], pipe[2], label="conf<0.7: retry", drop=155)
+s.route_under(pipe[5], pipe[2], label="conf<0.6: escalate\nto Dialectic", drop=155)
 
 s.label(
     "Consent gate (Step 1.6) fires BEFORE Generator.  "
@@ -161,7 +166,7 @@ dia = s.pipeline([
 ], 120, dia_y, gap=150)
 s.lane(dia, "Dialectic  —  Sequential + post-hoc Skeptic sub-agent, ~1.33x cost")
 
-# Lane 3: Trias (3 lens-tilted Dialectics + team vote)
+# Lane 3: Trias (3 blind personalities + team vote + 1 post-vote Skeptic)
 tri_y = dia_y + 260
 dispatch_box = s.box("Orchestrator\ndispatch", 120, tri_y + 62, w=148, h=58,
                      fill="external", font_size=12)
@@ -171,22 +176,18 @@ personalities_row = s.row([
     ("Steward\n(Sequential)", "skeptic"),
 ], 466, tri_y + 56, w=162, h=68, gap=45, font_size=12)
 pgroup = s.enclose(personalities_row, pad=14)
-s.label("3 personality sub-agents (sonnet)", 754, tri_y + 48, size=11)
-skeptics_row = s.row([
-    ("Skeptic A", "skeptic"),
-    ("Skeptic B", "skeptic"),
-    ("Skeptic C", "skeptic"),
-], 1266, tri_y + 60, w=120, h=58, gap=42, font_size=12)
-sgroup = s.enclose(skeptics_row, pad=14)
-s.label("3 Skeptics (parallel)", 1490, tri_y + 50, size=11)
-vote_box = s.box("Team Vote\n(majority)", 1890, tri_y + 62, w=148, h=58,
+s.label("3 sub-agents  BLIND  (sonnet)", 754, tri_y + 48, size=11)
+vote_box = s.box("Team Vote\n(majority)", 1100, tri_y + 62, w=148, h=58,
                  fill="engine", font_size=12)
-s.arrow(dispatch_box, pgroup, label="3x Sequential")
-s.arrow(pgroup, sgroup, label="chosen per lens")
-s.arrow(sgroup, vote_box, label="(possibly revised)")
-s.lane([dispatch_box, pgroup, sgroup, vote_box],
-       "Trias  —  3 Dialectics + team vote, 4x cost  "
-       "(lazy routing: low/med -> Sequential, high -> Dialectic, critical -> full Trias)")
+skeptic_box = s.box("Skeptic\n(post-vote)", 1400, tri_y + 62, w=140, h=58,
+                    fill="skeptic", font_size=12)
+s.label("1  advisory  post-vote", 1475, tri_y + 48, size=11)
+s.arrow(dispatch_box, pgroup, label="3x Sequential\nPARALLEL+BLIND")
+s.arrow(pgroup, vote_box, label="chosen per lens")
+s.arrow(vote_box, skeptic_box, label="winner")
+s.lane([dispatch_box, pgroup, vote_box, skeptic_box],
+       "Trias  —  3 blind personalities + team vote + 1 post-vote Skeptic, ~2.67x cost  "
+       "(lazy routing: low/med -> Sequential, high -> Dialectic, critical -> Trias)")
 
 # skeptic_on_chosen composable note
 skep_y = tri_y + 248
@@ -259,9 +260,20 @@ conf_ann = s.box(
     "  dia=0.75  trias=0.80",
     920, ys + 20, w=210, h=186, fill="engine", font_size=12,
 )
+trias_fields = s.box(
+    "Trias extras (mode=trias)\n\n"
+    "vote_pattern:\n"
+    "  3-0=0.95  2-1=0.75\n"
+    "  2-0=0.70  1-1-1=null\n"
+    "post_vote_skeptic_used: bool\n"
+    "skeptic_challenges_count:\n"
+    "  0 | 1 | 2",
+    920, ys + 220, w=230, h=186, fill="mode", font_size=12,
+)
 
 s.arrow(chosen_enum, report_record, label="one value per run")
 s.arrow(report_record, conf_ann, label="derived by\nconfidence.py")
+s.arrow(conf_ann, trias_fields, label="vote-pattern\nconfidence", dashed=True)
 
 # ═══════════════════════ Legend + Glossary ════════════════════════════════
 _, _, max_x, max_y = s.bounds()
@@ -282,12 +294,15 @@ s.glossary([
     ("SKILL.md", "public contract — skill prompt loaded by Claude Code at invocation"),
     ("Sequential", "Generator -> Conservator -> Control in a single context"),
     ("Dialectic", "Sequential + one Skeptic sub-agent challenging the chosen answer"),
-    ("Trias", "3 lens-tilted Dialectics (Pioneer / Architect / Steward) + team vote"),
+    ("Trias", "3 blind personalities (Pioneer/Architect/Steward) + team vote + 1 post-vote Skeptic"),
     ("skeptic_on_chosen", "composable flag: Skeptic sub-agent auto-triggers at confidence in [0.0,0.7]"),
     ("scale_down", "Conservator meta_recommendation -> skip Control (trivial / low-risk change)"),
     ("lazy routing", "Trias downgrades by magnitude: low/med->Sequential, high->Dialectic, critical->Trias"),
-    ("priors.py", "loads FEEDBACK.html outcome history into Conservator input at Step 0"),
+    ("priors.py", "loads FEEDBACK.html outcome history + memory context into Conservator at Step 0"),
     ("scope_gate.py", "auto-detects trivial changes (<=1 file / <=15 lines); fails open"),
+    ("strip_context.py", "truncates conversation to ~15K tokens before sub-agent dispatch (Trias/Dialectic)"),
+    ("validate_skeptic.py", "gate: enforces Skeptic output has concrete evidence before objection ships"),
+    ("audit_counter.py", "silent parallel audit every ~20 Sequential runs; divergence logged to runs/*.json"),
     ("consilium_ref", "committed HEAD SHA embedded in every run — enables git-reproducible replay"),
 ], 760, ly, title="Glossary")
 

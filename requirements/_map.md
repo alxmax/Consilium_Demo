@@ -1,7 +1,7 @@
 ---
-generated: 2026-06-13 15:47
-nodes: 40
-edges: 50
+generated: 2026-06-19 12:26
+nodes: 41
+edges: 52
 ---
 
 # Requirement Map
@@ -46,6 +46,7 @@ graph LR
     CONSILIUM_TRIAS_MODEL_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-MODEL-SCHEMA-001</small>"]
     CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small>"]
     CONSILIUM_VALIDATE_REPORT_001["validate_report<br><small>CONSILIUM-VALIDATE-REPORT-001</small>"]
+    CONSILIUM_VALIDATE_SKEPTIC_001["validate_skeptic<br><small>CONSILIUM-VALIDATE-SKEPTIC-001</small>"]
     CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
     CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small>"]
     CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small>"]
@@ -74,6 +75,7 @@ graph LR
   CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_STEWARD_001
   CONSILIUM_SUBAGENT_001 --> CONSILIUM_MODE_SEQUENTIAL_001
   CONSILIUM_TRIAS_MODEL_SCHEMA_001 --> CONSILIUM_MODE_TRIAS_001
+  CONSILIUM_VALIDATE_SKEPTIC_001 --> CONSILIUM_VOICE_SKEPTIC_001
   SKILL_RUN_CONSILIUM_001 --> CONSILIUM_AGGREGATOR_001
   SKILL_RUN_CONSILIUM_001 --> CONSILIUM_CONFIDENCE_001
   style CONSILIUM_FEEDBACK_001 stroke-width:3px
@@ -83,6 +85,7 @@ graph LR
   style CONSILIUM_TRIAS_MODEL_SCHEMA_001 stroke-width:3px
   style CONSILIUM_UTILS_001 stroke-width:3px
   style CONSILIUM_VALIDATE_REPORT_001 stroke-width:3px
+  style CONSILIUM_VALIDATE_SKEPTIC_001 stroke-width:3px
   style CONSILIUM_VOCABULARY_MAP_001 stroke-width:3px
 ```
 
@@ -184,11 +187,11 @@ graph LR
   f_modes_sequential_md_72["modes/sequential.md:72"]
   CONSILIUM_MODE_SEQUENTIAL_001 -->|implements| f_modes_sequential_md_72
   CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001["skeptic_on_chosen flag<br><small>CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001</small>"]
-  f_modes_skeptic_on_chosen_md_68["modes/skeptic_on_chosen.md:68"]
-  CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 -->|implements| f_modes_skeptic_on_chosen_md_68
+  f_modes_skeptic_on_chosen_md_69["modes/skeptic_on_chosen.md:69"]
+  CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 -->|implements| f_modes_skeptic_on_chosen_md_69
   CONSILIUM_MODE_TRIAS_001["trias mode<br><small>CONSILIUM-MODE-TRIAS-001</small>"]
-  f_modes_trias_md_184["modes/trias.md:184"]
-  CONSILIUM_MODE_TRIAS_001 -->|implements| f_modes_trias_md_184
+  f_modes_trias_md_196["modes/trias.md:196"]
+  CONSILIUM_MODE_TRIAS_001 -->|implements| f_modes_trias_md_196
   CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small>"]
   f_scripts_personalities_py_13["scripts/personalities.py:13"]
   CONSILIUM_PERSONALITIES_001 -->|implements| f_scripts_personalities_py_13
@@ -241,17 +244,22 @@ graph LR
   CONSILIUM_VALIDATE_REPORT_001 -->|tested-by| f_scripts_test_round2_py_8
   f_scripts_validate_report_py_49["scripts/validate_report.py:49"]
   CONSILIUM_VALIDATE_REPORT_001 -->|implements| f_scripts_validate_report_py_49
+  CONSILIUM_VALIDATE_SKEPTIC_001["validate_skeptic<br><small>CONSILIUM-VALIDATE-SKEPTIC-001</small>"]
+  f_scripts_test_skeptic_py_11["scripts/test_skeptic.py:11"]
+  CONSILIUM_VALIDATE_SKEPTIC_001 -->|tested-by| f_scripts_test_skeptic_py_11
+  f_scripts_validate_skeptic_py_36["scripts/validate_skeptic.py:36"]
+  CONSILIUM_VALIDATE_SKEPTIC_001 -->|implements| f_scripts_validate_skeptic_py_36
   CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
   f_scripts_test_round2_py_9["scripts/test_round2.py:9"]
   CONSILIUM_VOCABULARY_MAP_001 -->|tested-by| f_scripts_test_round2_py_9
   f_scripts_vocabulary_map_py_10["scripts/vocabulary_map.py:10"]
   CONSILIUM_VOCABULARY_MAP_001 -->|implements| f_scripts_vocabulary_map_py_10
   CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small>"]
-  f_prompts_voices_conservator_md_204["prompts/voices/conservator.md:204"]
-  CONSILIUM_VOICE_CONSERVATOR_001 -->|implements| f_prompts_voices_conservator_md_204
+  f_prompts_voices_conservator_md_205["prompts/voices/conservator.md:205"]
+  CONSILIUM_VOICE_CONSERVATOR_001 -->|implements| f_prompts_voices_conservator_md_205
   CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small>"]
-  f_prompts_voices_control_md_113["prompts/voices/control.md:113"]
-  CONSILIUM_VOICE_CONTROL_001 -->|implements| f_prompts_voices_control_md_113
+  f_prompts_voices_control_md_119["prompts/voices/control.md:119"]
+  CONSILIUM_VOICE_CONTROL_001 -->|implements| f_prompts_voices_control_md_119
   CONSILIUM_VOICE_GENERATOR_001["generator voice<br><small>CONSILIUM-VOICE-GENERATOR-001</small>"]
   f_prompts_voices_generator_md_136["prompts/voices/generator.md:136"]
   CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_136
@@ -274,7 +282,7 @@ _Area-level coupling: one box per area (N caps), arrow A->B = some capability in
 
 ```mermaid
 graph LR
-  a_CONSILIUM["CONSILIUM<br><small>39 caps</small>"]
+  a_CONSILIUM["CONSILIUM<br><small>40 caps</small>"]
   a_misc["misc<br><small>1 caps</small>"]
   a_misc --> a_CONSILIUM
   style a_CONSILIUM stroke-width:3px
