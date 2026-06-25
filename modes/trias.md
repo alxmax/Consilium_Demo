@@ -32,17 +32,17 @@ The weights act **within** each personality only — they decide that personalit
 
 ## Lazy routing (default: enabled)
 
-**Purpose:** Avoid the 4× Trias cost when the change does not warrant it. Trias classifies magnitude via `scope_gate.py` and routes to the cheapest mode that fits — a **graduated ladder** keyed on `scope_gate._MODE_CEILING`:
+**Purpose:** Avoid the ~2.67× Trias cost when the change does not warrant it. Trias classifies magnitude via `scope_gate.py` and routes to the cheapest mode that fits — a **graduated ladder** keyed on `scope_gate._MODE_CEILING`:
 
 | magnitude | routes to | cost |
 |---|---|---|
 | low / medium | **Sequential** | 1× |
 | high | **Dialectic** | 1.33× |
-| critical (blocklist hit: auth, security, migrations, CI workflows, secrets) | **full Trias** | 4× |
+| critical (blocklist hit: auth, security, migrations, CI workflows, secrets) | **full Trias** | ~2.67× |
 
 **Default:** `lazy=true`. Only `critical` magnitude proceeds to full Trias; `high` downgrades to Dialectic; `low`/`medium` downgrade all the way to bare Sequential — at low/medium magnitude the marginal scrutiny of Dialectic's Skeptic isn't worth the 1.33× over Sequential. To force full Trias on a non-critical change, the user must explicitly state "use full Trias" or "no lazy routing" in their request.
 
-**Override cost-warning (D2).** An explicit override on a sub-critical change is honored, but **not silently** — the user is paying 4× for a change `scope_gate.py` judged low/medium/high. Before dispatching the 6 sub-agents on an overridden change, emit a one-line warning so the cost is a conscious choice:
+**Override cost-warning (D2).** An explicit override on a sub-critical change is honored, but **not silently** — the user is paying ~2.67× for a change `scope_gate.py` judged low/medium/high. Before dispatching the 4 sub-agents on an overridden change, emit a one-line warning so the cost is a conscious choice:
 ```json
 {"trias_override_warning": true, "magnitude": "<low|medium|high>", "cost_multiplier": 2.67,
  "note": "Full Trias forced below critical magnitude — ~2.67x cost. Drop the override to auto-route (low/medium → Sequential, high → Dialectic)."}

@@ -15,7 +15,7 @@ The three core voices:
 - **Adversarial-by-design deliberation** — roles with conflicting incentives, not one model agreeing with itself.
 - **An 8-component veto cascade** (`scripts/aggregator.py`) that turns three voice outputs into one decision with 7 distinct routing outcomes (block / rework / adapt / escalate / aggregate).
 - **A self-calibrating feedback loop** — every run lands as canonical JSON in `.consilium/runs/`, outcomes are logged to `.consilium/FEEDBACK.html`, and the next deliberation reads those priors. Confidence below a per-mode floor is flagged.
-- **Cost-aware modes** — from a 1× single-context pass up to a 3× three-personality vote (Trias), with a scope gate that auto-skips trivial diffs.
+- **Cost-aware modes** — from a 1× single-context pass up to a ~2.67× three-personality vote (Trias), with a scope gate that auto-skips trivial diffs.
 - **Measured, not asserted** — a benchmark harness (`benchmark/`) compares each mode against bare-model baselines on real coding/reasoning tasks with a hidden oracle.
 - **Stdlib-only Python** — no external dependencies; each script is a small, standalone CLI with JSON I/O.
 
@@ -113,7 +113,7 @@ consilium/
 |------|------|--------------|
 | **Sequential** (default) | 1× | Generator → Conservator → Control in one context (Generator runs first, blind to risk framing). Auto-escalates to Dialectic when confidence < 0.60 |
 | **Dialectic** | 1.33× | Sequential + a Skeptic sub-agent on the chosen answer, with code-context injection |
-| **Trias** | 3× | 3 personalities (Pioneer / Architect / Steward), each running its own Sequential pass as a sub-agent, then a majority vote |
+| **Trias** | ~2.67× | 3 personalities (Pioneer / Architect / Steward), each running its own Sequential pass as a sub-agent, then a majority vote, then one post-vote Skeptic sub-agent on the winner |
 | **`skeptic_on_chosen`** | base +1 | Composable flag over any mode — a focal Skeptic challenges the chosen answer. Auto-triggers when `confidence ∈ [0.0, 0.7]` |
 
 Parallel dispatch is no longer user-selectable; it remains an automatic cross-check when a change is both `critical` and `irreversible`. All dispatched voices run on Sonnet; the orchestrator runs on Opus.
