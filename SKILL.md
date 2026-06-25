@@ -319,6 +319,17 @@ The two calls below are **mandatory**. If the orchestrator stops before running 
    - `confidence null` (all vetoed) → `python -X utf8 scripts/log_feedback.py --run-path .consilium/runs/<file>.json < .consilium/runs/<file>.json`
    - **Non-interactive path (headless — `claude -p`).** Skip the prompt at `confidence < 0.7` and call directly: `python -X utf8 scripts/log_feedback.py --outcome PEND_HEADLESS --run-path .consilium/runs/<file>.json < .consilium/runs/<file>.json`. `PEND_HEADLESS` is structurally excluded from `pend_pressure` and `stale_pendings` (PEND_HEADLESS ≠ "PEND" in Counter) — it requires no manual resolution.
 
+**Batched finalize (fewer turns).** On the **decision-free path** — `confidence >= 0.7` (OK) or headless (`PEND_HEADLESS`) — run the mechanical tail (assemble → validate → commit → log) as **one `&&`-chained Bash call**, not 3–4 separate tool-call turns. Each extra turn re-reads the full accumulated context at the `cache_read` rate; collapsing the tail saves ~4–5% cost + latency (measured A/B, 2026-06-24).
+
+**Validate BEFORE the run is committed (Constitution #4 invariant).** Build to a `.partial` staging file, validate *that*, and only `mv` it into `runs/<file>.json` on success. A failed `validate_report.py` short-circuits the chain so the run is **never committed** — nothing invalid reaches `priors.py` (which globs `runs/*.json`, not `*.partial`) or `FEEDBACK.html` (`log_feedback` runs last). This closes the silent-failure hole of streaming the write before validation (`tee`-then-validate left an invalid run on disk):
+```bash
+python scripts/build_report.py < bundle.json > .consilium/runs/<file>.json.partial \
+  && python scripts/validate_report.py < .consilium/runs/<file>.json.partial \
+  && mv -f .consilium/runs/<file>.json.partial .consilium/runs/<file>.json \
+  && python -X utf8 scripts/log_feedback.py --outcome OK --run-path .consilium/runs/<file>.json < .consilium/runs/<file>.json
+```
+On a validate failure the chain stops with the `.partial` un-promoted (delete it: `rm -f .consilium/runs/<file>.json.partial`); fix the bundle and re-run. **Do not chain** when a decision intervenes — the interactive `confidence < 0.7` override prompt must run *between* validate and log (the user picks OK/OVR/skip first). Chaining is an orchestration convenience, not a contract change: the scripts stay standalone-invocable and the step order is identical.
+
 **Outcome confirmation (retroactive).** The outcome logged in step 2 is subjective — it reflects the immediate impression. If production later reveals a regression or a good choice, overwrite it with the confirmed marker:
 ```bash
 python scripts/mark_outcome.py --run-path .consilium/runs/<file>.json --outcome BAD --reason "broke prod migration"
@@ -491,7 +502,7 @@ Every `/consilium` invocation MUST terminate by writing a report to `.consilium/
 
 ## Dispatch defaults (per voice)
 
-Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. **Trias exception**: each personality uses the model declared in `scripts/personalities.py` — pioneer → `haiku`, architect → `sonnet`, steward → `opus`. Steward dispatches schema-less (fenced JSON) due to Opus+StructuredOutput flakiness; orchestrator parses with `json.loads()`. Mode sections declare per-invocation overrides — single source of truth per mode, descriptive not enforced.
+Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. **Trias exception**: each personality uses the model declared in `scripts/personalities.py` — all three (pioneer, architect, steward) → `sonnet`. Mode sections declare per-invocation overrides — single source of truth per mode, descriptive not enforced.
 
 Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× · Trias 2.67×. The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×, Parallel+flag = 1.33× Parallel).
 
@@ -513,6 +524,8 @@ Continue with Step 5b → 5c → 5d → 6; capture tokens/latency per sub-agent 
 ### Silent parallel audit (adaptive cadence)
 
 After each completed Sequential deliberation (Step 6 written), the orchestrator runs the audit counter to decide whether to fire a silent parallel cross-check. Implementation: `scripts/audit_counter.py`. State: `.consilium/audit_state.json` (gitignored).
+
+**Ordering invariant (no phantom increments).** `--increment` runs *strictly after* Step 6 commits a validated report — never before. A `scope_gate` halt (Step 1.5), a `BLOCK`/`REWORK` interception, or any pre-write abort short-circuits the workflow before this point, so an aborted/uncommitted run can **never** inflate the counter or mis-fire the 20-run cadence. Combined with the validate-before-commit invariant in Step 6, "counter incremented" ⟹ "a valid run was committed".
 
 **Workflow (after Sequential Step 6):**
 

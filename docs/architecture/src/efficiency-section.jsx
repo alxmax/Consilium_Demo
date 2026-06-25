@@ -8,10 +8,12 @@ const MODES_DATA = [
   { mode: 'skeptic_on_chosen', costMultiplier: 'base +1', dispatches: 1, note: 'composable flag over any base' },
 ];
 
-// Measured avg cost/run over the 12-task benchmark (Sonnet 4.6, 100% correctness
-// on every mode) — benchmark/RESULTS.md. sonnet_bare = baseline; deliberation
-// modes cost 1.3×–4.1× bare. The measured premium EXCEEDS the theoretical dispatch
-// multiplier above (a real Skeptic + code-context injection costs more than +1/3).
+// SNAPSHOT 2026-05-29 (benchmark/RESULTS.md) — SUPERSEDED, see note below. These
+// figures predate the 2026-06-23 fix that made the consilium modes actually run the
+// deliberation pipeline; at capture time those modes had collapsed to a bare-model
+// pass, so the consilium rows UNDERCOUNT real deliberation cost. A post-fix n=1
+// spot-check puts real deliberation at ~$1–2 per reasoning task (≈8–10× these
+// figures); a full n>=15 re-measurement is pending. sonnet_bare (baseline) is unaffected.
 const MEASURED_COST = [
   { mode: 'sonnet_bare',          usd: '$0.148', vsBare: '1.0×', baseline: true, note: 'bare model · no Consilium' },
   { mode: 'superpowers',          usd: '$0.124', vsBare: '0.8×', note: 'generic agent-skill harness' },
@@ -68,7 +70,7 @@ function MeasuredCostTable() {
     <div style={{ marginTop: 36 }}>
       <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 4 }}>Measured cost — bare vs the modes</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 13.5, marginBottom: 14, maxWidth: 820 }}>
-        Real average cost / run over the 12-task benchmark (Sonnet 4.6, <strong>100% correctness on every mode</strong> — see <code>benchmark/RESULTS.md</code>). This is what deliberation actually costs over a bare model call. Note the measured premium <em>exceeds</em> the theoretical dispatch multipliers on the left — a real Skeptic plus code-context injection costs more than the "+⅓" the dispatch count implies.
+        A <strong>2026-05-29 snapshot</strong> over the 3-task benchmark — <strong>superseded</strong>. It was captured before the 2026-06-23 fix that made the consilium modes actually deliberate, so the consilium rows below reflect a bare-model pass, not real deliberation (a post-fix spot-check measures ~$1–2 per reasoning task, roughly 8–10× these figures). A full re-measurement at n≥15 is pending; the <code>sonnet_bare</code> baseline is unaffected. See <code>benchmark/RESULTS.md</code>.
       </p>
       <table style={{ width: '100%', maxWidth: 680, borderCollapse: 'collapse', fontSize: 13, fontFamily: 'var(--font-mono)' }}>
         <thead>
@@ -90,7 +92,7 @@ function MeasuredCostTable() {
         </tbody>
       </table>
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', marginTop: 8 }}>
-        same 100% score on this corpus across all five — the modes buy an auditable decision process, not a higher score (RESULTS.md)
+        on this 3-task set the two harder tasks are solved by all five modes; the third is a trick question where the deliberation modes answered correctly and the single-pass baseline did not (single run — directional) — the modes buy an auditable decision process and, on that task, a better answer (RESULTS.md)
       </p>
     </div>
   );

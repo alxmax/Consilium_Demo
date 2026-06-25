@@ -328,6 +328,23 @@ def _verify_closed_answer(workspace: Path, verify_src: Path, meta: dict) -> dict
         }
     correct = extracted == expected
 
+    # Optional keyword gate (deterministic, no AI). When `require_keywords_any`
+    # is set, a correct letter ALSO requires answer.md to contain >=1 of the
+    # listed tokens (whole-word, case-insensitive) — so a correct letter paired
+    # with an empty or nonsense justification does not score full marks. The token
+    # list lives in the task's meta.yaml in the external scoring repo, not here
+    # (keeping the answer out of this tracked file). Tasks that don't set the key
+    # are unaffected — keyword_ok stays True. (2026-06-23 Senate: Dimon, Socrate.)
+    req_keywords = meta.get("require_keywords_any")
+    matched_keyword = None
+    if req_keywords:
+        haystack = answer_md.read_text(encoding="utf-8").lower() if answer_md.exists() else ""
+        for kw in req_keywords:
+            if re.search(r"\b" + re.escape(str(kw).lower()) + r"\b", haystack):
+                matched_keyword = kw
+                break
+    keyword_ok = (matched_keyword is not None) if req_keywords else True
+
     # Optional second check: numeric VALUE: line. Tiered scoring:
     #   letter wrong                                    -> 0
     #   letter right + no VALUE / out of [v_min, v_max] -> 0
@@ -357,7 +374,7 @@ def _verify_closed_answer(workspace: Path, verify_src: Path, meta: dict) -> dict
                         value_extracted = None
                     break
 
-        if not correct:
+        if not (correct and keyword_ok):
             bucket, score_val = "wrong_letter", 0
         elif value_extracted is None:
             bucket, score_val = "no_value", 0
@@ -381,12 +398,15 @@ def _verify_closed_answer(workspace: Path, verify_src: Path, meta: dict) -> dict
             "score": score_val, "max_score": max_score,
         }
 
+    passed = correct and keyword_ok
     return {
         "ok": True, "kind": "closed_answer",
         "extracted": extracted, "expected": expected,
         "motivation": motivation,
         "correct": correct,
-        "score": max_score if correct else 0,
+        "keyword_required": bool(req_keywords),
+        "keyword_matched": matched_keyword,
+        "score": max_score if passed else 0,
         "max_score": max_score,
     }
 

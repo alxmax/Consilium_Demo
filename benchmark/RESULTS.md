@@ -2,6 +2,11 @@
 
 *Snapshot: 2026-05-29. Regenerate the visual matrix with `python analyze.py` → `report.html`.*
 
+> ⚠️ **SUPERSEDED (2026-06-23) — kept for provenance only.** This snapshot is out of date in three ways; treat every number below as historical, not current:
+> 1. **The corpus is now 3 tasks**, not the 12 core + 7 supplementary described below — only `code/01_circuit_breaker`, `reasoning/01_transport_choice`, and `reasoning/02_rule_of_three` exist in the harness.
+> 2. **Grading is now fully deterministic** — the open-ended Opus LLM judge was replaced by exact-answer + keyword checks (no AI grades another AI).
+> 3. **"100% on every mode" no longer holds.** Under the deterministic grader, `reasoning/01_transport_choice` is a trick question that the single-pass modes (`sonnet_bare`, `superpowers`) get **wrong** while the deliberation modes get right. The consilium cost figures below were also captured *before* the 2026-06-23 fix that made those modes actually deliberate — at the time they had silently collapsed to a bare-model pass — so they undercount real deliberation cost by roughly 8–10× (a post-fix spot-check measures ~$1–2 per reasoning task). A corrected re-run at n≥15 is pending.
+
 ## Setup
 
 - **Modes (5):** `sonnet_bare` (baseline — the model with no scaffolding), `superpowers` (a generic agent-skill harness), and three Consilium modes — `sequential`, `dialectic`, `trias`.

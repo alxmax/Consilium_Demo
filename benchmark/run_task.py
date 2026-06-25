@@ -5,8 +5,9 @@ Benchmark runner.
 Spawns `claude -p` headless with the configured model + effort, parses the
 JSON output (cost / duration / tokens), writes RESULT.md. Reports budget /
 time-limit / max-turn / timeout exhaustion explicitly. Hard wall-clock cap:
-10 min per run (RUN_TIMEOUT_SEC). The task prompt states a separate 15 min
-API-duration limit; the 10 min wall-clock kill is the harness guardrail.
+15 min per run (RUN_TIMEOUT_SEC), aligned with the task prompt's 15 min
+API-duration limit (raised from 10 min — heavy consilium/trias deliberations
+were brushing the old cap). The wall-clock kill is the harness guardrail.
 
 Examples
 --------
@@ -50,8 +51,11 @@ WORKSPACE      = BASE / "workspace"
 # benchmark/ lives inside the Consilium repo, so its parent IS the Consilium root.
 CONSILIUM_ROOT = BASE.parent
 
-# Hard wall-clock cap for any single run (10 minutes).
-RUN_TIMEOUT_SEC = 10 * 60
+# Hard wall-clock cap for any single run (default 15 minutes — aligned with the
+# 15-min API-duration limit; raised from 10 min so heavy trias/dialectic
+# deliberations on the code task aren't killed mid-pipeline). Override per-run
+# with the RUN_TIMEOUT_SEC env var (seconds).
+RUN_TIMEOUT_SEC = int(os.environ.get("RUN_TIMEOUT_SEC", 15 * 60))
 
 # Toolchains we want available to every run (fair to all modes).
 # Override with BENCHMARK_GXX_PATH (os.pathsep-separated); the msys64 paths
@@ -186,14 +190,82 @@ def count_questions(text):
 _RUN_PATH_RE = re.compile(r"(?:\.consilium/)?\bruns/[\w\-.]+\.json\b")
 
 
-def detect_pipeline_execution(mode: str, response: str, workspace: Path) -> None:
+def _consilium_engaged(workspace: Path, raw_json: dict | None) -> bool:
+    """Deterministically detect, from the session transcript (the ground truth of
+    what actually executed — not the skill's prose output), whether the consilium
+    deliberation was engaged.
+
+    Relying on the JSONL transcript rather than on the skill printing a
+    `.consilium/runs/` path makes detection robust to how the model interprets
+    SKILL.md (Python > prose). Headless runs activate the skill via the
+    `/consilium` slash command, which appears as a `<command-name>` in a user
+    message — NOT as a `Skill` tool_use — so the earlier tool_use-only proxy
+    missed every slash-command activation (2026-06-20 audit).
+
+    Returns True if any of these hard signals is present:
+      - a user message carrying a `<command-name>` that names consilium
+        (the /consilium slash command fired → the skill activated);
+      - a `Skill` tool_use naming consilium;
+      - an `Agent`/`Task` dispatch of a consilium sub-agent.
+    """
+    if not raw_json:
+        return False
+    session_id = raw_json.get("session_id")
+    if not session_id:
+        return False
+    try:
+        from check_trias_parallelism import _find_jsonl
+    except Exception:
+        return False
+    jsonl = _find_jsonl(workspace, session_id)
+    if jsonl is None:
+        return False
+    try:
+        with jsonl.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                msg = ev.get("message", {})
+                if not isinstance(msg, dict):
+                    continue
+                content = msg.get("content")
+                if msg.get("role") == "user":
+                    text = (content if isinstance(content, str)
+                            else " ".join(b.get("text", "") for b in (content or [])
+                                           if isinstance(b, dict)))
+                    low = text.lower()
+                    if "<command-name>" in low and "consilium" in low:
+                        return True
+                elif msg.get("role") == "assistant" and isinstance(content, list):
+                    for b in content:
+                        if not (isinstance(b, dict) and b.get("type") == "tool_use"):
+                            continue
+                        if b.get("name") not in ("Skill", "Agent", "Task"):
+                            continue
+                        inp = b.get("input", {})
+                        val = (" ".join(str(v) for v in inp.values())
+                               if isinstance(inp, dict) else str(inp))
+                        if "consilium" in val.lower():
+                            return True
+    except OSError:
+        return False
+    return False
+
+
+def detect_pipeline_execution(mode: str, response: str, workspace: Path,
+                              raw_json: dict | None = None) -> None:
     """Record whether a consilium_* run actually executed the deliberation pipeline.
 
-    Signal: the skill, on a real deliberation, prints the canonical terminal line
-    `chosen: <id> | conf: <X> | .consilium/runs/<file>.json` (SKILL.md Step 6).
-    A run that short-circuits to a direct answer (~2 turns, no pipeline) emits no
-    such run-path. We treat the presence of a runs/ path in the response as proof
-    the pipeline ran. Non-consilium modes have no pipeline → status null (badge N/A).
+    Authoritative signal is the JSONL transcript (`_consilium_engaged`): the
+    `/consilium` slash command firing, a Skill tool_use, or a consilium sub-agent
+    dispatch. A response-text `.consilium/runs/<file>.json` path (SKILL.md Step 6)
+    is kept as a secondary signal. A run that answers directly without engaging
+    the skill triggers neither. Non-consilium modes have no pipeline → status null.
 
     Writes pipeline_audit.json so analyze.py can mark the cell. Without this, a
     sequential run that answered directly is indistinguishable from bare Sonnet
@@ -202,13 +274,37 @@ def detect_pipeline_execution(mode: str, response: str, workspace: Path) -> None
     if not mode.startswith("consilium_"):
         return
     run_paths = _RUN_PATH_RE.findall(response or "")
-    # `report_detected` is a subprocess-observability proxy (runs/ path in response text),
-    # distinct from runs/<file>.json `pipeline_executed` (deliberation quality gate).
+    # Two complementary signals.
+    # `engaged` (transcript): the consilium skill actually fired — /consilium slash
+    # command, a Skill tool_use, or a sub-agent dispatch. Authoritative for "did the
+    # skill run at all", and catches runs that engaged without leaving a runs/ path.
+    engaged = _consilium_engaged(workspace, raw_json)
+    # `pipeline_executed`/`pipeline_mode` (report): read the actual run report(s) to
+    # tell a FULL pipeline from a Conservator scale_down short-circuit (skip Control).
+    # Both write a report, so engagement alone can't tell them apart — surfacing
+    # pipeline_executed + telemetry.mode keeps the measured object honest
+    # (2026-06-23 Senate condition).
+    pipeline_executed = None
+    pipeline_mode = None
+    for rel in run_paths:
+        run_file = CONSILIUM_ROOT / rel
+        if not run_file.exists():
+            continue
+        try:
+            run_data = json.loads(run_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        pipeline_executed = bool(run_data.get("pipeline_executed"))
+        pipeline_mode = (run_data.get("telemetry") or {}).get("mode")
+        break
     (workspace / "pipeline_audit.json").write_text(
         json.dumps({
-            "report_detected": bool(run_paths),
+            "report_detected": engaged or bool(run_paths),
             "run_paths": run_paths,
-            "signal": "runs/ report path in response",
+            "skill_engaged": engaged,
+            "pipeline_executed": pipeline_executed,
+            "pipeline_mode": pipeline_mode,
+            "signal": "transcript: /consilium command | Skill tool_use | sub-agent dispatch; OR runs/ path in response; report pipeline_executed/telemetry.mode",
         }, indent=2),
         encoding="utf-8",
     )
@@ -498,29 +594,52 @@ def auto_run(workspace, full_prompt, model, effort, budget):
     directory doesn't exist at any predictable path.
     """
     claude_bin = shutil.which("claude") or "claude"
-    # Prompt is fed via stdin, not as a positional argument. On Windows,
-    # multi-line arguments to subprocess.run are truncated at the first
-    # newline (CreateProcess + shell argument parsing), so passing
-    # full_prompt as an arg only delivered the cache-buster line to the
-    # model. Verified empirically 2026-05-20 via ~/.claude/projects/
-    # session transcripts: user-message was only the [run_id=...] line;
-    # the task content never reached the model. Tool-using modes (sonnet,
-    # superpowers) auto-discovered the prompt via Glob+Read; haiku 1-turn
-    # answered with a generic "what do you need help with?" because it
-    # had no task body to act on. Stdin sidesteps argv parsing entirely.
-    cmd = [
-        claude_bin, "-p",
+    # Prompt delivery is mode-dependent (see the 2026-06-23 benchmark audit):
+    #
+    #   * Non-slash modes (sonnet_bare, superpowers) → STDIN. Historically chosen
+    #     because passing a multi-line prompt as an argv positional truncated at
+    #     the first newline on Windows (2026-05-20 finding). These modes don't
+    #     need slash expansion, so stdin is correct and stays.
+    #
+    #   * Slash-command modes (consilium_*, prompt starts with "/consilium") MUST
+    #     pass the prompt as the `-p` ARGUMENT. `claude -p` only expands a slash
+    #     command when it is the -p argument at position 0 — a slash command piped
+    #     via stdin is treated as literal text and the skill never loads (the run
+    #     collapses to bare Sonnet: num_turns=2, no report). Verified empirically
+    #     2026-06-23: identical prompt as `-p <arg>` → num_turns=10, skill ran;
+    #     via stdin → num_turns=2, no skill. List-form subprocess (no shell)
+    #     preserves the multi-line argv intact, so the 2026-05-20 truncation
+    #     (which was via the cmd.exe/.cmd shim path) does not apply here.
+    via_arg = full_prompt.lstrip().startswith("/")
+    base_flags = [
         "--model", model,
         "--effort", effort,
         "--output-format", "json",
         "--permission-mode", "bypassPermissions",
         "--max-budget-usd", str(budget),
     ]
+    # Beta channel: with BENCHMARK_CONSILIUM_DEV=1, run consilium modes against the
+    # LOCAL dev skill (this repo, an installable plugin named "consilium") instead of
+    # the marketplace-installed plugin. --plugin-dir takes precedence over the
+    # same-named marketplace plugin for that invocation, so unmerged/beta skill
+    # changes can be measured in the benchmark before they are released to the
+    # published plugin. Only consilium_* modes (via_arg) load the skill.
+    if via_arg and os.environ.get("BENCHMARK_CONSILIUM_DEV") == "1":
+        base_flags += ["--plugin-dir", str(CONSILIUM_ROOT)]
+    if via_arg:
+        # Flags FIRST, `-p <prompt>` LAST. A multi-line slash-command prompt
+        # placed before the flags corrupts parsing of whatever follows it —
+        # --output-format json gets dropped and stdout comes back as prose,
+        # breaking metric extraction. Putting the prompt last keeps json intact
+        # AND expands the slash command. Verified empirically 2026-06-23.
+        cmd = [claude_bin] + base_flags + ["-p", full_prompt]
+    else:
+        cmd = [claude_bin, "-p"] + base_flags
     print(f"\n  Spawning: claude -p --model {model} --effort {effort} --max-budget-usd {budget}")
     print(f"  Workspace:    {workspace}  (subprocess cwd — model is sandboxed here)")
     print(f"  Budget cap:   ${budget}")
     print(f"  Timeout cap:  {RUN_TIMEOUT_SEC // 60} min (wall-clock)")
-    print(f"  Prompt:       {len(full_prompt)} chars via stdin")
+    print(f"  Prompt:       {len(full_prompt)} chars via {'-p arg (slash expansion)' if via_arg else 'stdin'}")
     print(f"  This may take several minutes...\n")
 
     # Augment PATH so the spawned claude (and any tools it shells out to,
@@ -536,7 +655,7 @@ def auto_run(workspace, full_prompt, model, effort, budget):
             proc = subprocess.run(
                 cmd, cwd=workspace, capture_output=True, text=True, encoding="utf-8",
                 env=env, timeout=RUN_TIMEOUT_SEC,
-                input=full_prompt,
+                input=None if via_arg else full_prompt,
             )
     except FileNotFoundError:
         print("  ERROR: `claude` binary not found on PATH.")
@@ -817,6 +936,21 @@ def main():
         print(f"ERROR: prompt not found: {prompt_f}")
         sys.exit(1)
 
+    # Fail closed: if verification is expected but the scoring key for this task is
+    # unreachable, abort BEFORE spending API budget rather than producing a
+    # silently-unscored run (the old behavior graded a missing key as a skip).
+    # Content-aware — an empty SCORING_DIR fails too, since the meta.yaml is absent.
+    # (2026-06-23 Senate benchmark-scoring audit: Dimon/Musk/Aurelius — fail-closed.)
+    if not args.no_verify:
+        scoring_key = SCORING_DIR / task / "meta.yaml"
+        if not scoring_key.exists():
+            print(f"ERROR: scoring key not found: {scoring_key}")
+            print(f"  Cannot grade '{task}' — the Benchmark-scoring/ sibling repo is missing,")
+            print(f"  BENCHMARK_SCORING_DIR is unset/wrong, or the scoring tree is empty.")
+            print(f"  Clone it beside the Consilium repo, set BENCHMARK_SCORING_DIR, or")
+            print(f"  pass --no-verify to run unscored.")
+            sys.exit(2)
+
     if args.clean and workspace.exists():
         shutil.rmtree(workspace)
         print(f"  Cleaned: {workspace}")
@@ -843,24 +977,46 @@ def main():
 
     full_prompt = prefix + prompt + "\n" + template
 
-    # Universal cache-buster: prepend a per-task, per-invocation token so
-    # Anthropic's prompt-cache misses between runs. Without this, back-to-back
-    # runs of the same task can replay a stale cached prefix (observed on
-    # superpowers in 2026-05-18: input_tokens=3-7 vs 800+ expected). The
-    # superpowers branch below still adds its own copy inside its framing
-    # text — harmless, and keeps that prefix self-contained.
+    # Universal cache-buster: a per-task, per-invocation token so Anthropic's
+    # prompt-cache misses between runs. Without it, back-to-back runs of the same
+    # task can replay a stale cached prefix (observed on superpowers in
+    # 2026-05-18: input_tokens=3-7 vs 800+ expected).
+    #
+    # Placement is mode-dependent. Slash-command modes (consilium_*, prefix
+    # "/consilium ...") require the slash command at position 0 of the prompt or
+    # `claude -p` does NOT expand it — the skill never loads and the run collapses
+    # to bare Sonnet (num_turns=2, no .consilium/runs report). This was THE root
+    # cause of the 2026-06-23 benchmark audit (deliberated=2 / skipped=41): the
+    # cache-buster was prepended ABOVE `/consilium`, pushing it to line 2. For
+    # those modes the token rides at the END instead (it still busts the cache;
+    # only its position changes). Non-slash modes keep the leading token.
     cache_buster_top = (
         f"[run_id={task}@"
         f"{datetime.now(timezone.utc).isoformat(timespec='seconds')}]"
     )
-    full_prompt = cache_buster_top + "\n" + full_prompt
+    # The /consilium slash command only auto-fires when it is the FIRST characters
+    # of the message, so for slash-prefixed modes the cache-buster rides at the END
+    # (it still busts the cache; only its position changes). Other modes prepend it.
+    if prefix.startswith("/"):
+        full_prompt = full_prompt + "\n\n" + cache_buster_top
+    else:
+        full_prompt = cache_buster_top + "\n" + full_prompt
 
     # For consilium modes: set CLAUDE_HEADLESS=1 so the skill skips user-facing
     # prompts (Step 0 stale_pendings, Step 2 irreversibility block, Step 5d retry,
     # Step 7 auto-pipeline). Deliverable enforcement is handled by Step 6.5 in
-    # the Consilium SKILL.md itself — no harness-level prompt suffix needed.
+    # the Consilium SKILL.md itself.
     if args.mode.startswith("consilium_"):
         os.environ["CLAUDE_HEADLESS"] = "1"
+        # Benchmark intent: measure the deliberation pipeline, not the trivial
+        # short-circuit. CONSILIUM_FORCE_FULL=1 forces scope_gate.should_skip=False
+        # so the Step 1.5 trivial-skip path can't collapse a reasoning task to a
+        # direct answer. NOTE: this does NOT override the Conservator's scale_down
+        # (Step 5 → skip Control); that path still writes a report with
+        # pipeline_executed telemetry, which detect_pipeline_execution() records
+        # so full-pipeline vs scale_down is visible, not silent (2026-06-23 Senate
+        # condition: make the measured object honest rather than forcing 3 voices).
+        os.environ["CONSILIUM_FORCE_FULL"] = "1"
 
     # superpowers skills tend to brainstorm / ask clarifying questions; in
     # auto mode we want a single non-interactive run for fair benchmarking.
@@ -963,7 +1119,7 @@ def main():
                  verify_report=verify_report)
 
     if args.mode.startswith("consilium_") and response:
-        detect_pipeline_execution(args.mode, response, workspace)
+        detect_pipeline_execution(args.mode, response, workspace, raw_json)
         fix_pend_headless(response)
         if args.mode == "consilium_trias":
             from check_trias_parallelism import check as _check_trias_par, update_pipeline_audit as _update_audit
