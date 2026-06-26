@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-26 13:12
+generated: 2026-06-26 23:29
 nodes: 41
 edges: 52
 ---
@@ -252,14 +252,14 @@ graph LR
   f_scripts_vocabulary_map_py_10["scripts/vocabulary_map.py:10"]
   CONSILIUM_VOCABULARY_MAP_001 -->|implements| f_scripts_vocabulary_map_py_10
   CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small>"]
-  f_prompts_voices_conservator_md_205["prompts/voices/conservator.md:205"]
-  CONSILIUM_VOICE_CONSERVATOR_001 -->|implements| f_prompts_voices_conservator_md_205
+  f_prompts_voices_conservator_md_208["prompts/voices/conservator.md:208"]
+  CONSILIUM_VOICE_CONSERVATOR_001 -->|implements| f_prompts_voices_conservator_md_208
   CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small>"]
-  f_prompts_voices_control_md_119["prompts/voices/control.md:119"]
-  CONSILIUM_VOICE_CONTROL_001 -->|implements| f_prompts_voices_control_md_119
+  f_prompts_voices_control_md_121["prompts/voices/control.md:121"]
+  CONSILIUM_VOICE_CONTROL_001 -->|implements| f_prompts_voices_control_md_121
   CONSILIUM_VOICE_GENERATOR_001["generator voice<br><small>CONSILIUM-VOICE-GENERATOR-001</small>"]
-  f_prompts_voices_generator_md_136["prompts/voices/generator.md:136"]
-  CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_136
+  f_prompts_voices_generator_md_137["prompts/voices/generator.md:137"]
+  CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_137
   CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small>"]
   f_prompts_voices_skeptic_md_123["prompts/voices/skeptic.md:123"]
   CONSILIUM_VOICE_SKEPTIC_001 -->|implements| f_prompts_voices_skeptic_md_123
