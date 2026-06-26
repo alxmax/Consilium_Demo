@@ -1,5 +1,5 @@
 {
-  "engine_version": "2026-06-21.6",
+  "engine_version": "2026-06-26.1",
   "repo": "alxmax/Consilium_Demo",
   "nodes": [
     {
@@ -1812,7 +1812,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/conservator.md:205"
+          "loc": "prompts/voices/conservator.md:208"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1860,7 +1860,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/control.md:119"
+          "loc": "prompts/voices/control.md:121"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1908,7 +1908,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/generator.md:136"
+          "loc": "prompts/voices/generator.md:137"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",

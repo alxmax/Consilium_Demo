@@ -107,7 +107,7 @@ RISK_ADVICE = {
 # vendored copy is older than the installed plugin's. ISO date with an optional
 # `.N` same-day revision suffix (YYYY-MM-DD[.N]): lexicographic order ==
 # chronological order, so a plain string compare is enough.
-MAP_ENGINE_VERSION = "2026-06-21.6"
+MAP_ENGINE_VERSION = "2026-06-26.1"
 
 # ---------------------------------------------------------------------------
 # COMMANDS registry — single source of truth for the CLI command set.
@@ -1150,12 +1150,46 @@ def save_memberlock(reqs_dir, member_hashes):  # implements: REQ-MEMBERDRIFT-027
         json.dump(payload, f, indent=2, sort_keys=True)
 
 
+def untracked_locks(reqs_dir):  # implements: REQ-CHECK-006
+    """Lock sidecars (`_reqlock.json`, `_memberlock.json`) are committed-by-design: an
+    uncommitted one silently disables drift detection on a fresh CI checkout (no baseline
+    to compare against). Return the paths of any that exist on disk but are NOT git-tracked.
+    Fail-open: returns [] when git is unavailable or the tree is not a work tree, so the
+    gate never breaks on a non-git consumer — the same discipline the map's git-derived
+    `repo` field uses."""
+    paths = [p for p in (lock_path(reqs_dir), _memberlock_path(reqs_dir)) if os.path.isfile(p)]
+    if not paths:
+        return []
+    root = os.path.dirname(os.path.abspath(reqs_dir)) or "."
+    try:
+        inside = subprocess.run(["git", "-C", root, "rev-parse", "--is-inside-work-tree"],
+                                capture_output=True, text=True, timeout=3)
+        if inside.returncode != 0 or inside.stdout.strip() != "true":
+            return []
+        out = []
+        for p in paths:
+            r = subprocess.run(["git", "-C", root, "ls-files", "--error-unmatch", os.path.abspath(p)],
+                               capture_output=True, text=True, timeout=3)
+            if r.returncode != 0:
+                out.append(p)
+        return out
+    except (OSError, subprocess.SubprocessError):
+        return []
+
+
 def _file_sha(path):  # implements: REQ-MEMBERDRIFT-027
+    """SHA-256 of a member file with line endings normalized to LF, so the hash is identical
+    whether the tree was checked out LF (Linux/CI) or CRLF (Windows core.autocrlf=true).
+    Without this, a lock generated on one platform shows spurious whole-repo member drift on
+    the other — under `gate --strict` that turns every member into a false error. Mirrors the
+    contract hash, which is already LF-normalized via the text-mode body parse."""
     try:
         with open(path, "rb") as f:
-            return hashlib.sha256(f.read()).hexdigest()
+            data = f.read()
     except OSError:
         return None
+    data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def compute_member_hashes(code_root, members):  # implements: REQ-MEMBERDRIFT-027
@@ -1262,6 +1296,14 @@ _DEF_TEST_RE = re.compile(
 _CALL_TEST_RE = re.compile(r"\b(?:it|test)\s*\(", re.IGNORECASE)
 _CALL_TEST_EXTS = (".js", ".ts", ".tsx", ".jsx", ".mjs", ".cjs")
 
+# A stdlib-only Python suite often exposes no `def test…` — it drives its checks from a
+# runnable entry point (`run` / `run_tests` / `main`) under an `if __name__ == "__main__"`
+# guard, signalling pass/fail via the process exit code. Honored ONLY for a `tested-by`
+# target (the author has already declared the file a test) and ONLY in a `.py` file, so a
+# non-test module that merely defines a `main()` is never mistaken for a test elsewhere.
+_PY_TEST_ENTRY_RE = re.compile(r"^\s*def\s+(?:run|run_tests|main)\s*\(", re.MULTILINE)
+_PY_MAIN_GUARD_RE = re.compile(r"""if\s+__name__\s*==\s*["']__main__["']""")
+
 
 def _test_link_problem(path):  # implements: REQ-TESTLINK-018
     """Return a short reason a `tested-by` file fails the behavior-sync check, or ''
@@ -1280,7 +1322,11 @@ def _test_link_problem(path):  # implements: REQ-TESTLINK-018
         return ""
     if path.lower().endswith(_CALL_TEST_EXTS) and _CALL_TEST_RE.search(src):
         return ""
-    return "contains no test function (def test.../func TestX.../#[test]/it()"
+    if (path.lower().endswith(".py")
+            and _PY_TEST_ENTRY_RE.search(src) and _PY_MAIN_GUARD_RE.search(src)):
+        return ""
+    return ("contains no test function "
+            "(def test.../func TestX.../#[test]/it()/py run|main under __main__)")
 
 
 def cmd_check(reqs, members, reqs_dir, update_lock, code_root=".", strict=False, as_json=False, since=None, accept_drift=True):  # implements: REQ-CHECK-006
@@ -1430,6 +1476,13 @@ def cmd_check(reqs, members, reqs_dir, update_lock, code_root=".", strict=False,
     for rid, rel in member_drift(reqs, members, lock, memberlock, code_root):
         strict_warns.append(f"{rid}: MEMBER DRIFT — {rel} changed since lock but the contract "
                             "was not re-touched; re-check the requirement, or run sync to re-baseline")
+
+    # Tracking guard (warn-only): a committed-by-design lock that exists on disk but is not
+    # git-tracked silently disables drift detection in CI — a fresh checkout has no baseline,
+    # so accumulated member drift goes unseen. Surface it so an uncommitted lock cannot hide.
+    for lp_rel in untracked_locks(reqs_dir):
+        warns.append(f"{lp_rel} exists on disk but is not git-tracked — `git add {lp_rel}` so "
+                     "drift detection works in CI (an uncommitted lock is invisible to a fresh checkout)")
 
     # Doc-sync blind spot: a large docs/ HTML doc generated from requirements but with
     # no generated-from: lineage drifts from them unnoticed (warn-only — see REQ-DOCBUNDLE-026).

@@ -70,5 +70,9 @@ jobs:
         run: python docs/architecture/build.py --check
       - name: No private-repo / local-path leaks (public-leak guard)
         run: python scripts/check_public_leak.py
-      - name: Requirement map gate (reqmap check)
-        run: python -X utf8 scripts/reqmap.py check
+      - name: Requirement map gate (reqmap, strict)
+        run: python -X utf8 scripts/reqmap.py gate --strict
+      - name: Requirement map freshness (no stale map / lock)
+        run: python -X utf8 scripts/reqmap.py map --check
+        env:
+          REQMAP_REPO: alxmax/Consilium_Demo
