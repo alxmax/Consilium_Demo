@@ -12,7 +12,7 @@ description: Default mode — Generator, Conservator, Control run in-context (no
 
 **Mechanics:** Generator → Conservator → Control run in the same context window. No external sub-agent dispatch. Cost: 1× (baseline).
 
-`strip_context.py` applies ONLY in Sequential mode (Steps 3-4) — it strips the prior voice's prompt before the next voice runs. Parallel dispatches do not use it.
+`strip_context.py` applies ONLY in Sequential mode (Steps 3-4) — it strips the prior voice's prompt before the next voice runs. Sub-agent modes (Dialectic, Trias) isolate voices by dispatch instead, so they do not use it.
 
 ## Three-layer architecture
 
@@ -31,11 +31,9 @@ Default order: **Generator → Conservator → Control**
 
 The irreversibility consent gate runs **pre-dispatch** (SKILL.md Step 1.6, `scope_gate.consent_required`), before Generator — so an irreversible change is gated before any generation effort is spent. Conservator's `irreversibility_flag` is the backstop. `scale_down` (Conservator, now second) short-circuits by skipping **Control only** — Generator has already run.
 
-**Role separation, not Chinese wall.** Sequential runs the same LLM playing three roles in the same context window; `strip_context.py` strips the prior voice's prompt, but does not clear the model's in-context memory. Reordering changes *speaking order*, not isolation: it gives Generator genuine turn-1 blindness to risk framing (Conservator has not run yet), but role prompts still provide separation, not true isolation. True isolation requires sub-agent dispatch — e.g. `parallel_auto`, which already runs Generator-first.
+**Role separation, not Chinese wall.** Sequential runs the same LLM playing three roles in the same context window; `strip_context.py` strips the prior voice's prompt, but does not clear the model's in-context memory. Reordering changes *speaking order*, not isolation: it gives Generator genuine turn-1 blindness to risk framing (Conservator has not run yet), but role prompts still provide separation, not true isolation. True isolation requires sub-agent dispatch (e.g. Trias).
 
-Auto-parallel cross-check: triggered only when Conservator outputs `magnitude: critical` AND `reversibility: irreversible`. Not user-selectable.
-
-Silent audit: implemented in `scripts/audit_counter.py`; state in `.consilium/audit_state.json`. Default cadence 1 silent parallel audit per 20 sequential runs; bumps to 1/5 when ≥2 of the last 5 audits diverged (restores to 1/20 after 5 clean audits). Full workflow + counted-runs semantics in SKILL.md §"Silent parallel audit".
+**Advisory.** When Conservator outputs `magnitude: critical` AND `reversibility: irreversible`, consider upgrading to **Trias** for true independent-context isolation across 3 personalities. Trias does not auto-trigger; select it explicitly.
 
 ## Veto powers
 
@@ -56,7 +54,7 @@ The 8 design components (per spec): vocabulary_map, length_targets, priority_vet
 - **Sub-agent crash / timeout:** retry that Agent call once; on a second failure, fall back to Sequential for that voice.
 - **Malformed JSON from voice:** reject the voice's output, treat as missing (`{}` for verdicts/scores, or `{"candidates":[]}` for generator) and continue with the others. Log the error in `deliberation_log` with step `"<voice>_parse_error"`.
 - **Missing mandatory fields (e.g. `candidates` empty):** raise a warning in the terminal, skip the aggregator and emit a skipped report with `skip_reason: "voice output incomplete after retry"`.
-- **Strip_context**: necessary only in Sequential mode (Steps 3-4); in Parallel each voice runs in isolation and does not need `strip_context.py`.
+- **Strip_context**: necessary only in Sequential mode (Steps 3-4); sub-agent modes (Dialectic, Trias) isolate each voice by dispatch and do not need `strip_context.py`.
 
 ## Low-confidence auto-escalation
 

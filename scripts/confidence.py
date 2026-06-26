@@ -297,6 +297,17 @@ def validate_input(data: dict) -> None:
             ["generator", "control", "conservator"],
             context=f"candidates[{i}].scores",
         )
+        for voice in VOICES:
+            try:
+                v = float(cand["scores"][voice])
+            except (TypeError, ValueError):
+                raise ValueError(
+                    f"confidence input: candidates[{i}].scores.{voice} is not numeric"
+                )
+            if not (0.0 <= v <= 1.0):
+                raise ValueError(
+                    f"confidence input: candidates[{i}].scores.{voice} = {v} is out of range [0, 1]"
+                )
 
 
 def derive(candidates: list[dict], chosen: str | None) -> dict:

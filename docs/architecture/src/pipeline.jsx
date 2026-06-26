@@ -39,7 +39,6 @@ const STEPS = [
     voices: ['gen', 'con', 'ctl'],
     dispatch: [
       ['Sequential', 'Gen → Cons → Ctrl in one context, strip_context.py between them'],
-      ['Parallel (auto)', 'Gen alone, then Control ∥ Conservator on its candidates'],
       ['Trias', '3 personality sub-agents (each a full Sequential pass), a vote, then 1 post-vote Skeptic challenge'],
     ],
   },

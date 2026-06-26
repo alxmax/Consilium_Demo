@@ -42,7 +42,6 @@ python .claude/skills/run-consilium/driver.py shot       # screenshot docs/archi
 ```
 [PASS] test_round2.py  (exit 0)
 [PASS] test_feedback_html.py  (exit 0)
-[PASS] test_audit_counter.py  (exit 0)
 [PASS] test_lens_bias.py  (exit 0)
 [PASS] test_vote_degeneracy.py  (exit 0)
 [PASS] test_meta_critic_trim.py  (exit 0)
@@ -78,7 +77,6 @@ python scripts/test_round2.py                     # 25 ROUND2 unit tests -> OK
 python scripts/test_feedback_html.py              # feedback tests -> "12/12 passed"
 python -X utf8 scripts/run_evals.py               # regression scenarios: 72 passed, 0 failed
 python -X utf8 scripts/check_doc_drift.py         # "doc-drift OK: all invariants hold"
-python -X utf8 scripts/audit_counter.py --status  # silent-parallel-audit state summary
 python docs/architecture/build.py --check         # "outputs up to date" (exit 1 if src/*.jsx unbuilt)
 ```
 
@@ -117,8 +115,8 @@ to capture it headlessly.
   how many such failures are pre-existing vs. your regression — currently `0`.)
 - **`run_evals.py` prints its `N passed, M failed` summary to *stderr*,** not stdout.
   Capture both if you parse it (the driver does).
-- **`check_doc_drift.py` and `audit_counter.py` need `python -X utf8` on Windows** —
-  they read UTF-8 files and crash on the default cp1252 console encoding. The driver
+- **`check_doc_drift.py` needs `python -X utf8` on Windows** —
+  it reads UTF-8 files and crashes on the default cp1252 console encoding. The driver
   forces this via `PYTHONUTF8=1` for every child process.
 - **`docs/architecture.html` is not offline-safe.** It pulls React 18, Babel, and
   Google Fonts from a CDN, so `file://` rendering (and the screenshot) needs internet.

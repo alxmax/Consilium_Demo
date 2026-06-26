@@ -28,7 +28,6 @@ function BarChart({ data }) {
     sequential: 'var(--gen)',
     dialectic:  'var(--ctl)',
     trias:      'oklch(0.55 0.18 260)',
-    parallel:   'var(--con)',
   };
   return (
     <svg viewBox={`0 0 640 ${data.length * 64 + 20}`} className="diagram" style={{ maxHeight: 360 }}>
@@ -107,7 +106,6 @@ function EfficiencySection() {
     { mode: 'sequential', value: 1565, label: '1 565 tok · n=131', model: 'Sonnet 4.6' },
     { mode: 'dialectic',  value: 2313, label: '2 313 tok · n=20',  model: 'Sonnet 4.6' },
     { mode: 'trias',      value: 6346, label: '6 346 tok · n=37',  model: 'Sonnet 4.6' },
-    { mode: 'parallel',   value: 5367, label: '5 367 tok · n=26',  model: 'Sonnet 4.6' },
   ];
 
   return (
