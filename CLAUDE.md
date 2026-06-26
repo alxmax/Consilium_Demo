@@ -14,11 +14,10 @@ Stdlib-only, no test runner. Smoke tests run manually via CLI:
 
 - `python scripts/test_round2.py` — sequential architecture (skeptic_on_chosen, MODE enum, validate_report extras)
 - `python scripts/test_feedback_html.py` — `render_feedback_html` + parser round-trip
-- `python scripts/test_audit_counter.py`, `test_lens_bias.py`, `test_vote_degeneracy.py`, `test_meta_critic_trim.py`, `test_implement_mode.py`, `test_implement_pipeline.py` — the remaining unit suites. Every `scripts/test_*.py` is gated in CI (`.github/workflows/ci.yml`) and the run-consilium `driver.py smoke` (enforced by `check_doc_drift.py`).
+- `python scripts/test_lens_bias.py`, `test_vote_degeneracy.py`, `test_meta_critic_trim.py`, `test_implement_mode.py`, `test_implement_pipeline.py` — the remaining unit suites. Every `scripts/test_*.py` is gated in CI (`.github/workflows/ci.yml`) and the run-consilium `driver.py smoke` (enforced by `check_doc_drift.py`).
 - `python scripts/run_evals.py` — regression scenarios from `evals/scenarios.json` (subprocess-based, deterministic; all scenarios run, non-zero exit if any fails)
 - `python scripts/validate_report.py < .consilium/runs/<file>.json` — Constitution Principle #4 gate; minimum required before any commit touching `prompts/voices/` or `aggregator.py`
-- `python scripts/check_doc_drift.py` — enforces parity between `modes/*.md`, `docs/architecture/src/*.jsx`, and `scripts/confidence.py` (5 invariants: Trias parallel dispatch, Trias 2-1/2-0 confidence values, sequential scale_down behavior, parallel-auto 2-turn structure, silent-audit-is-implemented) + dated removal milestones for legacy MODE aliases + test-suite coverage (every `scripts/test_*.py` must be gated in both `ci.yml` and the run-consilium driver — prevents the test-drift that hid a RED suite). Run before any commit touching `modes/`, `docs/architecture/src/`, `scripts/confidence.py`, or `scripts/test_*.py`. Origin: Senate audit `runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`.
-- `python scripts/audit_counter.py --status` — silent-parallel-audit state summary (counter, frequency, recent divergences). Orchestrator calls `--increment` / `--check` / `--record-divergence` automatically per SKILL.md §"Silent parallel audit"; state in `.consilium/audit_state.json` (gitignored).
+- `python scripts/check_doc_drift.py` — enforces parity between `modes/*.md`, `docs/architecture/src/*.jsx`, and `scripts/confidence.py` (invariants: Trias parallel dispatch, Trias 2-1/2-0 confidence values, sequential scale_down behavior) + dated removal milestones for legacy MODE aliases + test-suite coverage (every `scripts/test_*.py` must be gated in both `ci.yml` and the run-consilium driver — prevents the test-drift that hid a RED suite). Run before any commit touching `modes/`, `docs/architecture/src/`, `scripts/confidence.py`, or `scripts/test_*.py`. Origin: Senate audit `runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`.
 
 Type-check: `pyright` (config: `pyrightconfig.json`, `typeCheckingMode: basic`, Python 3.11, `scripts/` in `extraPaths`).
 
@@ -64,7 +63,7 @@ User-selectable modes (SKILL.md documents them in detail):
 - **`trias_split`** — deprecated; use standard `trias` (cost is now equivalent).
 - **`skeptic_on_chosen`** — composable flag over any base mode (+1 sub-agent overhead). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-triggers when `confidence ∈ [0.0, 0.7]`. Replaces the fixed modes `parallel_skeptic` (= `parallel + skeptic_on_chosen`) and `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — collapsed on 2026-05-17, legacy names remain in `validate_report.py` MODE enum for backward-compat.
 
-**Parallel removed.** No longer user-selectable (only via `parallel + skeptic_on_chosen`). Remains as an internal auto cross-check when `magnitude=critical ∧ reversibility=irreversible`, plus a silent audit every 20 runs.
+**Parallel removed.** Parallel dispatch is no longer available in any form (PR #454, 2026-06-26 — Senate GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs; the silent 20-run audit was removed with it). For `critical` + `irreversible` changes, select `trias` explicitly. Legacy `mode: "parallel"` runs stay valid via the backward-compat enum in `validate_report.py`.
 
 ## Local files (gitignored)
 

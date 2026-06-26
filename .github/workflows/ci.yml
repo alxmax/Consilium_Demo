@@ -54,8 +54,6 @@ jobs:
         run: python scripts/run_evals.py
       - name: Implement-mode routing gate tests
         run: python scripts/test_implement_mode.py
-      - name: Audit counter tests
-        run: python scripts/test_audit_counter.py
       - name: Vote degeneracy tests
         run: python scripts/test_vote_degeneracy.py
       - name: Trias model schema tests

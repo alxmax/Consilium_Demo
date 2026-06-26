@@ -9,28 +9,28 @@ description: Cross-cutting flag — +1 Skeptic sub-agent over any base mode post
 
 # Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
-**Mechanics:** `skeptic_on_chosen` is a **cross-cutting flag**, not a fixed mode. It composes over any base mode (Sequential, Parallel, Dialectic, Trias): after the base mode produces `chosen` and `confidence`, 1 additional Skeptic voice is dispatched on the resulting `chosen`, with the prompt `prompts/voices/skeptic.md`. The flag runs **sequentially post-hoc** on any mode. Dispatch uses standard invocation of `prompts/voices/skeptic.md` with the current chosen; the returned output is validated by `scripts/validate_skeptic.py` (Step 3) — invalid output is rejected and the original chosen ships unchallenged.
+**Mechanics:** `skeptic_on_chosen` is a **cross-cutting flag**, not a fixed mode. It composes over any base mode (Sequential, Dialectic, Trias): after the base mode produces `chosen` and `confidence`, 1 additional Skeptic voice is dispatched on the resulting `chosen`, with the prompt `prompts/voices/skeptic.md`. The flag runs **sequentially post-hoc** on any mode. Dispatch uses standard invocation of `prompts/voices/skeptic.md` with the current chosen; the returned output is validated by `scripts/validate_skeptic.py` (Step 3) — invalid output is rejected and the original chosen ships unchallenged.
 
-**Cost:** +1 sub-agent over the chosen base mode (whichever it is). E.g.: Parallel + flag = 4 sub-agents (1.33× Parallel); Dialectic + flag = 2 sub-agents (~1.66× Sequential — current Dialectic is 1 Skeptic sub-agent, not the retired 6-voice Pass-1+Pass-2 layout).
+**Cost:** +1 sub-agent over the chosen base mode (whichever it is). E.g.: Dialectic + flag = 2 sub-agents (~1.66× Sequential — current Dialectic is 1 Skeptic sub-agent, not the retired 6-voice Pass-1+Pass-2 layout).
 
-> **Legacy note.** The modes `parallel_skeptic` and `dialectic_skeptic` were distinct fixed modes (Parallel/Dialectic with Skeptic baked-in). They were collapsed into this composable flag on 2026-05-17 — the identical functionality is obtained via `parallel + skeptic_on_chosen` and `dialectic + skeptic_on_chosen`. The legacy names remain in `validate_report.py` MODE enum for backward-compat with historical runs.
+> **Legacy note.** The modes `parallel_skeptic` and `dialectic_skeptic` were distinct fixed modes (Parallel/Dialectic with Skeptic baked-in). They were collapsed into this composable flag on 2026-05-17 — at the time, the identical functionality was obtained via `parallel + skeptic_on_chosen` and `dialectic + skeptic_on_chosen` (Parallel itself was later removed, 2026-06-26). The legacy names remain in `validate_report.py` MODE enum for backward-compat with historical runs.
 
 ## When to use
 
 **Auto-trigger conditions** (any is sufficient):
-- Confidence ∈ `[0.0, 0.7]` — classic trigger
+- Confidence ∈ `[0.0, 0.70)` — classic trigger (strictly less than 0.70; confidence == 0.70 does NOT trigger — it is the Sequential floor and the Trias 2-0 canonical value, both considered passing)
 - Confidence > 0.7 BUT `Conservator.net_concern` > 0.7 — high-conf/high-concern discrepancy is worth probing: `trigger_reason: "high_conf_high_concern"`
 - `chosen_approach` coincides with a `BAD` outcome from `FEEDBACK.html` (last 30 days, substring match on label): `trigger_reason: "similar_to_recent_bad"` — Tacitus-lite for classic modes
 - `irreversibility_flag: true` — existing consent gate, Skeptic adds object-level check: `trigger_reason: "irreversibility_gate"`
 
 - **Manual opt-in** via `--skeptic-on-chosen` when you want a focal challenger post-hoc regardless of confidence (medium-stakes, problems with known implicit constraints)
 - Problems where chosen_confirmation_pass has empirically demonstrated value — particularly situations with implicit constraints not explicitly stated in success_criterion (P3 type: the logical preconditions of the solution don't appear in the statement)
-- When you want the focal challenger on any base (Sequential / Parallel / Dialectic / Trias) without dedicated fixed mode cost
+- When you want the focal challenger on any base (Sequential / Dialectic / Trias) without dedicated fixed mode cost
 - Cases where you want to know whether chosen missed something, but have no basis for comparison (no viable alternatives) — the focal Skeptic on chosen is cheaper than re-running the entire deliberation
 
 ## Workflow
-1. Run the full base mode (any: Sequential / Parallel / Dialectic / Trias) → produces `chosen`, `confidence`, intermediate report
-2. If `confidence ∈ [0.0, 0.7]` (auto) or the `--skeptic-on-chosen` flag is active, dispatch 1 Sonnet 4.6 sub-agent with `prompts/voices/skeptic.md` inline + minimal input:
+1. Run the full base mode (any: Sequential / Dialectic / Trias) → produces `chosen`, `confidence`, intermediate report
+2. If `confidence < 0.70` (auto) or the `--skeptic-on-chosen` flag is active, dispatch 1 Sonnet 4.6 sub-agent with `prompts/voices/skeptic.md` inline + minimal input:
    ```
    chosen: <id, summary, sketch, rationale>
    success_criterion: <the testable sentence>
@@ -60,7 +60,7 @@ Summary table:
 | `unaddressable / meta_scope_mismatch` | mark `misapplied` | mark `misapplied` |
 
 ## Skip if
-- Confidence ≥ 0.7 and the `--skeptic-on-chosen` flag is not manually active — the Skeptic has no structural motivation to find anything
+- Confidence ≥ 0.70 and the `--skeptic-on-chosen` flag is not manually active — the Skeptic has no structural motivation to find anything
 - `chosen` is null (all candidates vetoed) — there is no chosen to challenge
 - Diff is intrinsically high-stakes (auth, migrations, security) — use full Trias with justified cost
 

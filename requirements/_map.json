@@ -1,5 +1,5 @@
 {
-  "engine_version": "2026-06-12.4",
+  "engine_version": "2026-06-21.6",
   "repo": "alxmax/Consilium_Demo",
   "nodes": [
     {
@@ -61,7 +61,7 @@
     {
       "id": "CONSILIUM-AUDIT-COUNTER-001",
       "layer": "feature",
-      "status": "confirmed",
+      "status": "deprecated",
       "area": "CONSILIUM",
       "title": "Silent parallel audit counter",
       "intent": "Tracks sequential deliberation runs and determines when a silent parallel cross-check is due, implementing the adaptive-cadence claim from SKILL.md §\"Silent parallel audit\".",
@@ -97,16 +97,7 @@
       "used_by": [],
       "satisfies": [],
       "satisfied_by": [],
-      "members": [
-        {
-          "role": "implements",
-          "loc": "scripts/audit_counter.py:52"
-        },
-        {
-          "role": "tested-by",
-          "loc": "scripts/test_audit_counter.py:16"
-        }
-      ],
+      "members": [],
       "test_exempt": null,
       "milestone": null,
       "priority": "",
@@ -1042,7 +1033,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "modes/sequential.md:72"
+          "loc": "modes/sequential.md:70"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",

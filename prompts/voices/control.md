@@ -66,6 +66,8 @@ For each `valid: true` candidate (except `do_nothing`), produce `tests_to_write`
 
 ## Output format
 
+The `id` field in each verdict must be preserved verbatim from Generator's candidates — the aggregator uses it for lookup and any mismatch causes a silent merge failure.
+
 ```json
 {
   "glossary": {

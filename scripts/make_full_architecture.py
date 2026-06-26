@@ -85,7 +85,7 @@ scripts_b = s.row([
 scripts_c = s.row([
     ("strip_context.py", "engine"),
     ("validate_skeptic.py", "gate"),
-    ("audit_counter.py", "engine"),
+    ("priors.py", "engine"),
 ], 80, y + 416, w=168, h=52, gap=16, font_size=12)
 s.enclose(scripts_a + scripts_b + scripts_c, label="Engine scripts  (scripts/)", pad=16)
 
@@ -177,7 +177,7 @@ personalities_row = s.row([
 ], 466, tri_y + 56, w=162, h=68, gap=45, font_size=12)
 pgroup = s.enclose(personalities_row, pad=14)
 s.label("3 sub-agents  BLIND  (sonnet)", 754, tri_y + 48, size=11)
-vote_box = s.box("Team Vote\n(majority)", 1100, tri_y + 62, w=148, h=58,
+vote_box = s.box("Team Vote\n(majority)", 1180, tri_y + 62, w=148, h=58,
                  fill="engine", font_size=12)
 skeptic_box = s.box("Skeptic\n(post-vote)", 1400, tri_y + 62, w=140, h=58,
                     fill="skeptic", font_size=12)
@@ -268,7 +268,7 @@ trias_fields = s.box(
     "post_vote_skeptic_used: bool\n"
     "skeptic_challenges_count:\n"
     "  0 | 1 | 2",
-    920, ys + 220, w=230, h=186, fill="mode", font_size=12,
+    920, ys + 290, w=230, h=186, fill="mode", font_size=12,
 )
 
 s.arrow(chosen_enum, report_record, label="one value per run")
@@ -302,7 +302,6 @@ s.glossary([
     ("scope_gate.py", "auto-detects trivial changes (<=1 file / <=15 lines); fails open"),
     ("strip_context.py", "truncates conversation to ~15K tokens before sub-agent dispatch (Trias/Dialectic)"),
     ("validate_skeptic.py", "gate: enforces Skeptic output has concrete evidence before objection ships"),
-    ("audit_counter.py", "silent parallel audit every ~20 Sequential runs; divergence logged to runs/*.json"),
     ("consilium_ref", "committed HEAD SHA embedded in every run — enables git-reproducible replay"),
 ], 760, ly, title="Glossary")
 

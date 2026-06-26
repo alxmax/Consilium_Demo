@@ -4,20 +4,24 @@
 Subcommands:
   init              first-use bootstrap: scaffold requirements/ + .reqmapignore, draft
                     requirements from existing code, build the lock + map, print next steps
-  new AREA-NAME-NNN   scaffold a requirement from the built-in template
+  new AREA-NAME-NNN   scaffold a requirement from the built-in template (--from-todo seeds from TODO.md)
   scan              list code members (implements/generated-from/... tags) per capability
-  check             the gate: link sync + drift; exit non-zero on error (use in pre-commit/CI)
-  map               generate requirements/_map.md (Mermaid) + _map.json (graph)
+  gate              the gate: link sync + drift + test-link integrity; exit non-zero on error (pre-commit/CI)
+  sync              rescan + advance the drift baseline + regen the map (--accept-drift for an edited contract)
+  map               generate requirements/_map.md (Mermaid) + _map.json (graph) [+ _map.html viewer]
+  site              inject/refresh engine-owned regions into a presentation page (--attach/--regions/--diagram)
   export            emit the registry graph as requirements/_map.json (for a front-end)
   next              terminal 'what should I do next': counted, actionable risk buckets
   lint [--strict]   readability/structure check on non-draft requirements (warn; --strict fails on errors)
   show <ID>         consolidated dossier for one requirement (contract, deps, members, risk)
-  similar [--threshold T]  flag requirement pairs with overlapping contracts (TF-IDF cosine)
+  dupes [--threshold T]  flag requirement pairs with overlapping contracts (TF-IDF cosine)
   health [--json]   corpus coherence score + component counts (--json for a CI badge)
-  extract           draft requirements from legacy code (status: draft, risk-scored)
-  candidates        read-only JSON capability-extraction plan (writes no .md)
+  draft             draft requirements from legacy code (status: draft, risk-scored)
+  plan              read-only JSON capability-extraction plan (writes no .md)
   findings          aggregate open verify-intent items into requirements/_findings.md
-  promote <ID>      flip a reviewed requirement's status to confirmed (one frontmatter edit)
+  confirm <ID>      flip a reviewed requirement's status to confirmed (one frontmatter edit)
+  review [ID]       emit a JSON review plan (intent/contract/acceptance/anchors) for AI-assisted quality review
+  check             DEPRECATED alias for `gate` (report) / `sync` (with --update-lock); removed next major
 
 Layout on disk (relative to repo root, override with --root / --reqs / --code):
   requirements/*.md     the source of truth (markdown + YAML-ish frontmatter)
@@ -28,7 +32,28 @@ import argparse, ast, fnmatch, hashlib, json, math, os, re, subprocess, sys
 ROLES = ("implements", "generated-from", "validated-against", "tested-by")
 # the (?<![\w-]) left boundary stops substring matches like `reimplements:` or
 # `x-implements:` from being picked up as a real `implements:` tag
-TAG_RE = re.compile(r"(?<![\w-])(implements|generated-from|validated-against|tested-by)\s*:\s*([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)")
+_ID_PAT = r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+"
+TAG_RE = re.compile(r"(?<![\w-])(implements|generated-from|validated-against|tested-by)\s*:\s*(" + _ID_PAT + r")")
+# A single tag may bind several requirements via a comma-separated id list (one
+# `<!-- generated-from: ... -->` listing several ids) — used for a whole-system doc
+# generated from many requirements, so a contract drift on ANY of them lists the doc
+# to re-sync. TAG_RE (single id) stays for callers that only need the tag's start
+# position; TAG_LIST_RE captures the whole id list, which _findall_tags expands.
+TAG_LIST_RE = re.compile(r"(?<![\w-])(implements|generated-from|validated-against|tested-by)\s*:\s*("
+                         + _ID_PAT + r"(?:\s*,\s*" + _ID_PAT + r")*)")
+_ID_RE = re.compile(_ID_PAT)
+
+
+def _findall_tags(text):
+    """Like ``TAG_RE.findall`` but expands a comma-separated id list into one
+    ``(role, id)`` pair per id, so ``generated-from: A-1, B-2`` yields two members."""
+    out = []
+    for role, idlist in TAG_LIST_RE.findall(text):
+        for cap in _ID_RE.findall(idlist):
+            out.append((role, cap))
+    return out
+
+
 # Phantom-member exclusion helpers used in _scan_file_tags
 _FENCE_RE = re.compile(r'^(`{3,}|~{3,})')   # CommonMark fence opener/closer
 # NOTE: only handles single-backtick spans; double/triple-backtick spans (CommonMark-valid)
@@ -82,7 +107,521 @@ RISK_ADVICE = {
 # vendored copy is older than the installed plugin's. ISO date with an optional
 # `.N` same-day revision suffix (YYYY-MM-DD[.N]): lexicographic order ==
 # chronological order, so a plain string compare is enough.
-MAP_ENGINE_VERSION = "2026-06-12.4"
+MAP_ENGINE_VERSION = "2026-06-21.6"
+
+# ---------------------------------------------------------------------------
+# COMMANDS registry — single source of truth for the CLI command set.
+# Each entry describes one user-facing command: its summary, the positional
+# argument it accepts (or None), and the flags it owns (subset of the shared
+# argparse flag pool; global flags --root/--reqs/--code/--cache are omitted).
+# Later tasks will derive argparse choices, tool_definition.json, and a
+# markdown command table from this registry — do NOT add behaviour here.
+# ---------------------------------------------------------------------------
+# implements: REQ-CMDREGISTRY-033
+COMMANDS = {
+    "init": {
+        "summary": (
+            "First-use bootstrap: scaffold requirements/ and .reqmapignore if missing, "
+            "draft requirements from existing code/prose, build the lock and map, and "
+            "print guided next steps. Idempotent — safe to re-run; never clobbers an "
+            "existing .reqmapignore. Run once per repo to get started."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "wipe",
+                "flag": "--wipe",
+                "type": "bool",
+                "help": (
+                    "Hard-reset: delete all non-generated requirements and strip "
+                    "membership tags from source files before re-extracting."
+                ),
+            },
+            {
+                "name": "no_site",
+                "flag": "--no-site",
+                "type": "bool",
+                "help": "Skip the final site step (scaffolding docs/architecture.html).",
+            },
+        ],
+    },
+    "new": {
+        "summary": (
+            "Scaffold a new blank requirement from the built-in template. "
+            "Use --from-todo and --id together to pre-fill from a TODO.md item instead."
+        ),
+        "arg": "AREA-NAME-NNN",
+        "params": [
+            {
+                "name": "id",
+                "flag": "--id",
+                "type": "str",
+                "help": (
+                    "Requirement ID in AREA-NAME-NNN format (e.g. AUTH-LOGIN-001). "
+                    "Required when using --from-todo."
+                ),
+            },
+            {
+                "name": "from_todo",
+                "flag": "--from-todo",
+                "type": "str",
+                "help": (
+                    "Scaffold the requirement from a TODO.md item matched by this name "
+                    "(use with --id; add --mark-done to flip the item to [x])."
+                ),
+            },
+            {
+                "name": "mark_done",
+                "flag": "--mark-done",
+                "type": "bool",
+                "help": (
+                    "Also flip the matched TODO.md item to [x] (off by default). "
+                    "Only used with --from-todo."
+                ),
+            },
+        ],
+    },
+    "scan": {
+        "summary": (
+            "List which code files belong to which requirement, grouped by capability. "
+            "Shows all code members (implements:, generated-from:, validated-against:, "
+            "tested-by:) discovered by scanning the repo."
+        ),
+        "arg": None,
+        "params": [],
+    },
+    "gate": {
+        "summary": (
+            "Run the commit/CI gate (report-only): verify every code tag resolves to a "
+            "real requirement, every confirmed requirement has at least one implements: "
+            "member, and drift has not been introduced since the last sync. Exits "
+            "non-zero on link-sync errors only (drift and test-link integrity are "
+            "warnings). Never touches _reqlock.json. Run before every commit and in CI."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "strict",
+                "flag": "--strict",
+                "type": "bool",
+                "help": (
+                    "Promote drift and test-link integrity warnings to errors. "
+                    "Useful in CI when all requirements are confirmed."
+                ),
+            },
+            {
+                "name": "json",
+                "flag": "--json",
+                "type": "bool",
+                "help": "Emit structured JSON output instead of human-readable text.",
+            },
+            {
+                "name": "since",
+                "flag": "--since",
+                "type": "str",
+                "help": (
+                    "Scope the gate to requirements whose member files changed since "
+                    "this git ref (e.g. 'main', 'HEAD~1')."
+                ),
+            },
+        ],
+    },
+    "sync": {
+        "summary": (
+            "Rescan code members, advance the drift baseline, and regenerate the map in "
+            "one step. Run after editing requirement files or tagging new code members. "
+            "Use --accept-drift when a confirmed or implemented contract changed."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "accept_drift",
+                "flag": "--accept-drift",
+                "type": "bool",
+                "help": (
+                    "Explicitly advance the baseline when a confirmed or implemented "
+                    "contract changed. Required when those contracts differ from the "
+                    "lock; sync exits non-zero without it."
+                ),
+            },
+            {
+                "name": "strict",
+                "flag": "--strict",
+                "type": "bool",
+                "help": "Promote drift and test-link integrity from warn to error.",
+            },
+        ],
+    },
+    "check": {
+        "summary": (
+            "Deprecated alias for 'gate' (report-only) / 'sync' (with --update-lock). "
+            "Preserved for backward compatibility with consumer hooks, CI, and the "
+            "GitHub Action. Will be removed in the next major version — use 'gate' or "
+            "'sync' instead."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "strict",
+                "flag": "--strict",
+                "type": "bool",
+                "help": "Promote drift and test-link integrity warnings to errors.",
+            },
+            {
+                "name": "json",
+                "flag": "--json",
+                "type": "bool",
+                "help": "Emit structured JSON output (for CI/badge consumption).",
+            },
+            {
+                "name": "since",
+                "flag": "--since",
+                "type": "str",
+                "help": "Scope the gate to requirements whose member files changed since this git ref.",
+            },
+            {
+                "name": "update_lock",
+                "flag": "--update-lock",
+                "type": "bool",
+                "help": "Also regenerate the lock and map (mirrors legacy 'sync' behavior).",
+            },
+        ],
+    },
+    "map": {
+        "summary": (
+            "Generate requirements/_map.md (4 Mermaid diagrams), requirements/_map.json "
+            "(graph with nodes, edges, todos), and requirements/_map.html (a "
+            "self-contained React viewer). The viewer is only emitted when "
+            "scripts/_map_viewer.html is vendored beside the engine."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "check_fresh",
+                "flag": "--check",
+                "type": "bool",
+                "help": (
+                    "Freshness gate: rebuild the map in memory and exit non-zero if the "
+                    "committed _map.* is stale. Use in CI alongside gate."
+                ),
+            },
+        ],
+    },
+    "export": {
+        "summary": (
+            "Write requirements/_map.json (the graph with engine_version, nodes, edges) "
+            "for feeding an external front-end. Same output as map, without rebuilding "
+            "_map.md and _map.html."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "out",
+                "flag": "--out",
+                "type": "str",
+                "help": "Output path override. Use '-' for stdout (--out -); omit for requirements/_map.json.",
+            },
+        ],
+    },
+    "next": {
+        "summary": (
+            "Show what to do next: a prioritized, actionable list of risk buckets "
+            "(Orphans, Needs tests, Needs intent review, Drafts to review). "
+            "Read-only, always exits 0. The best follow-up command to run after any action."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "show_all",
+                "flag": "--all",
+                "type": "bool",
+                "help": "Expand all buckets to show every item instead of just the top few.",
+            },
+        ],
+    },
+    "lint": {
+        "summary": (
+            "Readability and structure check on non-draft requirements: long sentences "
+            "(>35 words), stacked conditions (3+ and/or joins on a shall/must line), "
+            "missing Contract or Acceptance sections. Read-only; exit-neutral by default."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "strict",
+                "flag": "--strict",
+                "type": "bool",
+                "help": "Exit non-zero on error-severity findings (warnings remain advisory).",
+            },
+        ],
+    },
+    "show": {
+        "summary": (
+            "Print a consolidated dossier for one requirement: header, intent, Contract "
+            "bullets, dependencies in both directions, code members grouped by role with "
+            "file:line, open Verify intent questions, and risk signals. Answers 'what "
+            "does this do / where is X' in one command. Read-only."
+        ),
+        "arg": "ID",
+        "params": [],
+    },
+    "dupes": {
+        "summary": (
+            "Flag requirement pairs whose contracts overlap (TF-IDF cosine similarity), "
+            "so a divergent re-implementation is caught before it lands. Read-only, "
+            "advisory — a human decides if a flagged pair is a real duplicate."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "threshold",
+                "flag": "--threshold",
+                "type": "float",
+                "help": "Cosine similarity cutoff in (0,1] for reporting a pair (default 0.35). Lower = more pairs flagged.",
+            },
+        ],
+    },
+    "health": {
+        "summary": (
+            "Print a corpus coherence snapshot: a headline score (percentage of "
+            "requirements fully green on every axis: confirmed + member + tested + no "
+            "open questions + not drifted) plus component counts. Use for a CI badge "
+            "with --json."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "json",
+                "flag": "--json",
+                "type": "bool",
+                "help": "Emit parseable JSON for a CI badge (--json).",
+            },
+            {
+                "name": "badge",
+                "flag": "--badge",
+                "type": "bool",
+                "help": "Emit Shields.io endpoint JSON (schemaVersion, label, message, color).",
+            },
+        ],
+    },
+    "draft": {
+        "summary": (
+            "Draft one requirement per untagged file (code and prose). Input is existing "
+            "untagged source code and Markdown. Emits draft requirements — never "
+            "confirmed. After drafting, run gate and report the result. Remind the user "
+            "to review and confirm the real ones."
+        ),
+        "arg": None,
+        "params": [],
+    },
+    "plan": {
+        "summary": (
+            "Read-only JSON capability-extraction plan: emit a capability map from "
+            "legacy code without writing any .md files. Safer than draft — a human "
+            "authors and confirms each candidate. Use before draft to preview what would "
+            "be extracted."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "out",
+                "flag": "--out",
+                "type": "str",
+                "help": "Write plan JSON here ('-' or omit = stdout).",
+            },
+            {
+                "name": "md_glob",
+                "flag": "--md-glob",
+                "type": "str",
+                "help": (
+                    "Also discover .md files matching this glob (repeatable; "
+                    "comma-separated ok). Off unless given. "
+                    "e.g. --md-glob 'prompts/**' --md-glob 'modes/**'."
+                ),
+            },
+        ],
+    },
+    "findings": {
+        "summary": (
+            "Aggregate open 'Verify intent' items across all requirements into "
+            "requirements/_findings.md. Surfaces every open human-review question in "
+            "one place."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "raw",
+                "flag": "--raw",
+                "type": "bool",
+                "help": "Ignore the triage sidecar and emit the raw grouped list.",
+            },
+        ],
+    },
+    "confirm": {
+        "summary": (
+            "Mark a reviewed requirement as confirmed — the human sign-off step. Flips "
+            "status to confirmed in the frontmatter. The engine refuses if the "
+            "requirement has no implements: member (a confirmed requirement must point "
+            "to code). Run sync after confirming."
+        ),
+        "arg": "ID",
+        "params": [],
+    },
+    "review": {
+        "summary": (
+            "Emit a JSON review plan (intent, contract, acceptance criteria, structural "
+            "anchors) for all requirements or one. Used as an AI feed for semantic "
+            "quality review. Read-only."
+        ),
+        "arg": "ID",
+        "params": [],
+    },
+    "site": {
+        "summary": (
+            "Inject or refresh engine-owned regions (nav links + stats counts) into a "
+            "project presentation page. Scaffolds a full page if the target does not "
+            "exist. Run after map to keep the page current."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "attach",
+                "flag": "--attach",
+                "type": "str",
+                "help": "Target HTML page to inject engine-owned regions into (scaffolds it if absent).",
+            },
+            {
+                "name": "regions",
+                "flag": "--regions",
+                "type": "str",
+                "help": "Comma-separated list of regions to inject (nav,stats). Default: nav.",
+            },
+            {
+                "name": "diagram",
+                "flag": "--diagram",
+                "type": "str",
+                "help": "Relative path (from the page) to an Excalidraw HTML viewer; linked only if it exists.",
+            },
+            {
+                "name": "detect",
+                "flag": "--detect",
+                "type": "bool",
+                "help": "Scan docs/ and print the suggested command — writes nothing.",
+            },
+        ],
+    },
+    "coverage": {
+        "summary": (
+            "Read-only report of untagged-code coverage signal: lists source files that "
+            "carry no implements: tag, grouped by directory. Use to identify gaps in "
+            "requirement traceability."
+        ),
+        "arg": None,
+        "params": [
+            {
+                "name": "json",
+                "flag": "--json",
+                "type": "bool",
+                "help": "Emit structured JSON output (for CI consumption).",
+            },
+        ],
+    },
+    "gen-integration": {
+        "summary": (
+            "Regenerate the multi-AI integration artifacts (tool_definition.json) from "
+            "the command registry."
+        ),
+        "arg": None,
+        "params": [],
+        "internal": True,
+    },
+}
+
+
+def _cli_choices():
+    """The CLI command names, derived from the registry (single source of truth)."""
+    return list(COMMANDS)
+
+
+def _generate_schema():  # implements: REQ-CMDREGISTRY-033
+    """Function-calling schema (OpenAI tool format) generated from COMMANDS.
+    Returns a JSON string (indent=2, trailing newline) — byte-stable for the gate
+    drift-compare. Internal commands are excluded from the AI-facing schema."""
+    _TYPE = {"bool": "boolean", "str": "string", "float": "number", "int": "integer"}
+    tools = []
+    for name, spec in COMMANDS.items():
+        if spec.get("internal"):
+            continue
+        props = {"root": {"type": "string",
+                          "description": "Repo root where requirements/ lives; defaults to the current directory."}}
+        if spec.get("arg"):
+            props["arg"] = {"type": "string", "description": spec["arg"]}
+        for p in spec["params"]:
+            props[p["name"]] = {"type": _TYPE[p["type"]], "description": p["help"]}
+        tools.append({"type": "function", "function": {
+            "name": "reqmap_" + name.replace("-", "_"),
+            "description": spec["summary"],
+            "parameters": {"type": "object", "properties": props, "required": []},
+        }})
+    return json.dumps(tools, indent=2, ensure_ascii=False) + "\n"
+
+
+def _generate_command_table():
+    """A markdown table of the user CLI commands from COMMANDS, for the generated
+    region inside SKILL.universal.md. Internal commands are excluded."""
+    rows = ["| Command | What it does | Flags |", "|---|---|---|"]
+    for name, spec in COMMANDS.items():
+        if spec.get("internal"):
+            continue
+        flags = ", ".join("`" + p["flag"] + "`" for p in spec["params"]) or "—"
+        rows.append("| `{}` | {} | {} |".format(name, spec["summary"], flags))
+    return "\n".join(rows)
+
+
+_REGION_RE = re.compile(r"(<!--##REQMAP:COMMANDS##-->)(.*?)(<!--##/REQMAP:COMMANDS##-->)", re.DOTALL)
+
+
+def _write_region(path, body):
+    """Replace the delimited region body in `path`; prose outside is untouched."""
+    text = open(path, encoding="utf-8").read()
+    new = _REGION_RE.sub(lambda m: m.group(1) + "\n" + body + "\n" + m.group(3), text)
+    if new != text:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(new)
+
+
+def cmd_gen_integration(reqs_dir, code_root):
+    """Write tool_definition.json (OpenAI function-calling schema) generated from COMMANDS."""
+    plugin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(plugin_root, "tool_definition.json"), "w", encoding="utf-8") as f:
+        f.write(_generate_schema())
+    print("wrote tool_definition.json")
+    skill = os.path.join(plugin_root, "skills", "requirement-manager", "SKILL.universal.md")
+    if os.path.exists(skill):
+        _write_region(skill, _generate_command_table())
+        print("wrote SKILL.universal.md command table")
+    return 0
+
+
+def _check_integration_fresh(plugin_root):
+    """Return a list of stale generated artifacts (empty = fresh). Compares the
+    committed tool_definition.json + the SKILL.universal.md command-table region
+    against a fresh generation from the registry. Mirrors map --check. Artifacts
+    that don't exist (e.g. a consumer repo that doesn't ship them) are skipped, so
+    this never breaks a vendored-engine gate."""
+    stale = []
+    tj = os.path.join(plugin_root, "tool_definition.json")
+    if os.path.exists(tj):
+        with open(tj, encoding="utf-8") as _f:
+            if _f.read() != _generate_schema():
+                stale.append("tool_definition.json")
+    skill = os.path.join(plugin_root, "skills", "requirement-manager", "SKILL.universal.md")
+    if os.path.exists(skill):
+        with open(skill, encoding="utf-8") as _f:
+            m = _REGION_RE.search(_f.read())
+        if m and m.group(2).strip() != _generate_command_table().strip():
+            stale.append("skills/requirement-manager/SKILL.universal.md")
+    return stale
 
 
 # ---------- parsing ----------
@@ -97,8 +636,10 @@ def _as_list(v):  # implements: CORE-PARSE-001
 
 
 def _clean_item(s):  # implements: CORE-PARSE-001
-    """One list element: drop a trailing `# comment`, trim, strip matching quotes."""
-    return s.split("#", 1)[0].strip().strip("\"'")
+    """One list element: drop a trailing `# comment`, trim, strip matching quotes.
+    A '#' is a comment only at the token start or after whitespace, so an embedded
+    '#' (e.g. issue#123) is preserved — matching the scalar parse path."""
+    return re.split(r'(?:^|\s)#', s, 1)[0].strip().strip("\"'")
 
 
 def parse_frontmatter(text):  # implements: CORE-PARSE-001
@@ -273,6 +814,13 @@ def _scan_file_tags(fp):  # implements: CORE-SCAN-002
         fence = None   # None = not fenced; else the opening fence string e.g. "```"
         for i, raw in enumerate(lines, 1):
             s = raw.rstrip("\n\r")
+            # Markdown indented code block (>=4 spaces / tab): treat as code so an
+            # indented ```-prefixed line never opens a phantom fence that would
+            # swallow every later tag, and an indented tag is excluded. Checked
+            # BEFORE fence detection. HTML has no indented-code concept, so the
+            # guard is Markdown-only — an indented tag comment in HTML stays valid.
+            if ext == ".md" and (s.startswith("    ") or s.startswith("\t")):
+                continue
             stripped = s.lstrip()
             fm = _FENCE_RE.match(stripped)
             if fm:
@@ -286,11 +834,9 @@ def _scan_file_tags(fp):  # implements: CORE-SCAN-002
                     continue
             if fence is not None:
                 continue
-            if s.startswith("    ") or s.startswith("\t"):
-                continue
             clean = _BACKTICK_RE.sub("", s)
             seen = set()
-            for role, cap in TAG_RE.findall(clean):
+            for role, cap in _findall_tags(clean):
                 key = (role, cap)
                 if key not in seen:
                     seen.add(key)
@@ -308,7 +854,7 @@ def _scan_file_tags(fp):  # implements: CORE-SCAN-002
                 in_triple = None
             s, in_triple = _strip_py_strings(s)
             seen = set()
-            for role, cap in TAG_RE.findall(s):
+            for role, cap in _findall_tags(s):
                 key = (role, cap)
                 if key not in seen:
                     seen.add(key)
@@ -317,7 +863,7 @@ def _scan_file_tags(fp):  # implements: CORE-SCAN-002
     else:
         for i, raw in enumerate(lines, 1):
             seen = set()
-            for role, cap in TAG_RE.findall(raw):
+            for role, cap in _findall_tags(raw):
                 key = (role, cap)
                 if key not in seen:
                     seen.add(key)
@@ -396,6 +942,61 @@ def scan_members(code_root, reqs_dir=None, cache=False):  # implements: CORE-SCA
     return members
 
 
+DOC_BUNDLE_MIN_BYTES = 50_000   # a docs/ HTML doc this big is a generated bundle, not a stub
+
+
+def untagged_doc_bundles(code_root, members, reqs_dir=None):  # implements: REQ-DOCBUNDLE-026
+    """Sorted rel-paths of large `docs/` HTML docs that carry no `generated-from:`
+    tag — the doc-sync blind spot: a whole-system doc (built from many requirements)
+    that drifts from them with nothing linking the two. A bare `generated-from:` only
+    pins ONE id, but the multi-id list (CORE-SCAN-002) lets one doc name all its
+    sources. Walk discipline matches scan_members: honors `.reqmapignore`, prunes
+    noise. Skips engine-generated outputs (`_`-prefixed, the published `map.html`
+    viewer). Threshold-only + warn-only by design, so it nudges without false alarms."""
+    tagged = {fp for hits in members.values()
+              for (role, fp, _ln) in hits if role == "generated-from"}
+    ignore = load_ignore(code_root, reqs_dir)
+    out = []
+    for dirpath, dirs, files in os.walk(code_root):
+        _prune_dirs(dirpath, dirs, reqs_dir)
+        for fn in sorted(files):
+            if not fn.endswith(".html") or fn.startswith("_") or fn == "map.html":
+                continue
+            fp = os.path.join(dirpath, fn)
+            rel = os.path.relpath(fp, code_root).replace(os.sep, "/")
+            if not (rel == "docs" or rel.startswith("docs/")):
+                continue
+            if rel in tagged or any(fnmatch.fnmatch(rel, pat) for pat in ignore):
+                continue
+            try:
+                if os.path.getsize(fp) >= DOC_BUNDLE_MIN_BYTES:
+                    out.append(rel)
+            except OSError:
+                continue
+    return sorted(out)
+
+
+def _scan_untagged(code_root, reqs_dir=None):  # implements: REQ-NEXT-013
+    """Return sorted relative paths of scannable files that carry no membership tags.
+    Same walk discipline as scan_members: honors .reqmapignore, prunes .git/node_modules."""
+    ignore = load_ignore(code_root, reqs_dir)
+    untagged = []
+    for dirpath, dirs, files in os.walk(code_root):
+        _prune_dirs(dirpath, dirs, reqs_dir)
+        dirs.sort()
+        for fn in sorted(files):
+            if not fn.endswith(CODE_EXTS):
+                continue
+            fp = os.path.join(dirpath, fn)
+            rel = os.path.relpath(fp, code_root).replace(os.sep, "/")
+            if any(fnmatch.fnmatch(rel, pat) for pat in ignore):
+                continue
+            tags = _scan_file_tags(fp)
+            if tags is not None and not tags:
+                untagged.append(rel)
+    return sorted(untagged)
+
+
 def scan_ac_verifies(code_root, reqs_dir=None):  # implements: REQ-ACVERIFY-019
     """Walk the code for `# verifies: REQ-X#AC-N` tags and return
     `{cap_id: {ac_label: [(file, line)]}}` — which labelled criterion each test
@@ -432,7 +1033,7 @@ def _labeled_acs(body):  # implements: REQ-ACVERIFY-019
     for line in body.splitlines():
         s = line.strip()
         if s.lower().startswith("## "):
-            grab = (not seen) and ("acceptan" in s.lower())
+            grab = (not seen) and _heading_label_is(s, "acceptan")   # anchored, like _count_ac
             if grab:
                 seen = True
             continue
@@ -450,8 +1051,10 @@ def _labeled_acs(body):  # implements: REQ-ACVERIFY-019
 # Anchored so the keyword must be the label (right after `## ` or after a WHAT/HOW —
 # prefix), NOT anywhere in the heading — otherwise a commentary heading like
 # `## Notes — contract caveats` would leak into the drift hash.
+# prefix set MUST stay in lockstep with _heading_label_is so the drift hash and
+# section detection agree on which heading is a normative section (see its docstring)
 _NORMATIVE_HEADING_RE = re.compile(
-    r"^##\s+(?:(?:what|how)\s*[—–-]?\s*)?(?:contract|acceptan|input|output)", re.I)
+    r"^##\s+(?:(?:what|why|where|how)\s*[—–-]?\s*)?(?:contract|acceptan|input|output)", re.I)
 
 
 def _heading_label_is(heading, name):  # implements: REQ-CHECK-006
@@ -463,7 +1066,7 @@ def _heading_label_is(heading, name):  # implements: REQ-CHECK-006
     in agreement with the drift hash (_NORMATIVE_HEADING_RE) — see the silent-drift
     inconsistency this guards against."""
     return bool(re.match(
-        r"##\s+(?:(?:what|how)\s*[—–-]?\s*)?" + re.escape(name.lower()),
+        r"##\s+(?:(?:what|why|where|how)\s*[—–-]?\s*)?" + re.escape(name.lower()),
         heading.strip().lower()))
 
 
@@ -492,7 +1095,10 @@ def load_lock(reqs_dir):  # implements: CORE-DRIFT-003
     if os.path.exists(p):
         try:
             with open(p, encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+            # a valid-JSON-but-non-object lock ([], null, 42) must also fail open —
+            # consumers call lock.get(rid); fail open like load_memberlock/_load_scancache
+            return data if isinstance(data, dict) else {}
         except (ValueError, OSError):
             # empty / corrupt / merge-conflicted / non-UTF-8 lock: treat as no lock.
             # ValueError covers both json.JSONDecodeError and UnicodeDecodeError, so
@@ -505,6 +1111,90 @@ def save_lock(reqs_dir, lock):  # implements: CORE-DRIFT-003
     os.makedirs(reqs_dir, exist_ok=True)
     with open(lock_path(reqs_dir), "w", encoding="utf-8") as f:
         json.dump(lock, f, indent=2, sort_keys=True)
+
+
+# ---------- member-hash drift (reverse direction) ----------
+# _reqlock.json keeps ONE hash per requirement = the contract; drift in that file only
+# fires prose-ahead-of-code. The reverse — a MEMBER's content changed while the contract
+# stayed put (behaviour shipped, spec not updated) — is invisible there. Member hashes
+# live in a SEPARATE, versioned sidecar so _reqlock.json stays a byte-stable cross-repo
+# contract: an older seeded engine never reads _memberlock.json and is wholly unaffected.
+MEMBERLOCK_SCHEMA = 1
+MEMBER_ROLES = ("implements", "generated-from")   # roles that bind code/doc content to a contract
+
+
+def _memberlock_path(reqs_dir):  # implements: REQ-MEMBERDRIFT-027
+    return os.path.join(reqs_dir, "_memberlock.json")
+
+
+def load_memberlock(reqs_dir):  # implements: REQ-MEMBERDRIFT-027
+    """Return {rid: {relfile: sha}} from the sidecar, or {} when absent/corrupt or
+    written by a NEWER schema than this engine knows — fail open (no false drift) the
+    same way load_lock and the scan cache do, so a forward-incompatible sidecar degrades
+    to 'reverse-drift off this run' rather than crashing or mis-comparing."""
+    try:
+        with open(_memberlock_path(reqs_dir), encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict) or data.get("_schema") != MEMBERLOCK_SCHEMA:
+        return {}
+    members = data.get("members")
+    return members if isinstance(members, dict) else {}
+
+
+def save_memberlock(reqs_dir, member_hashes):  # implements: REQ-MEMBERDRIFT-027
+    os.makedirs(reqs_dir, exist_ok=True)
+    payload = {"_schema": MEMBERLOCK_SCHEMA, "members": member_hashes}
+    with open(_memberlock_path(reqs_dir), "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
+
+
+def _file_sha(path):  # implements: REQ-MEMBERDRIFT-027
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return None
+
+
+def compute_member_hashes(code_root, members):  # implements: REQ-MEMBERDRIFT-027
+    """{rid: {relfile: sha}} for member files dedicated to ONE requirement. A file that
+    is an implements/generated-from member of several requirements (e.g. a single engine
+    file) is excluded: a change there cannot be attributed to one contract without noise."""
+    owners = {}   # relfile -> set(rid)
+    for rid, hits in members.items():
+        for role, fp, _ln in hits:
+            if role in MEMBER_ROLES:
+                owners.setdefault(fp, set()).add(rid)
+    out = {}
+    for fp, rids in owners.items():
+        if len(rids) == 1:
+            sha = _file_sha(os.path.join(code_root, fp))
+            if sha is not None:
+                out.setdefault(next(iter(rids)), {})[fp] = sha
+    return out
+
+
+def member_drift(reqs, members, lock, memberlock, code_root):  # implements: REQ-MEMBERDRIFT-027
+    """Sorted (rid, relfile) where a confirmed requirement's dedicated member changed
+    since the member-lock while the requirement's OWN contract did not. A requirement
+    whose contract also drifted is skipped — that is forward drift (the spec WAS
+    re-touched) and the contract-drift warning already owns it. A member with no recorded
+    baseline is skipped, so a freshly-tagged file is baselined on the next sync, not nagged."""
+    current = compute_member_hashes(code_root, members)
+    out = []
+    for rid, r in reqs.items():
+        if r["meta"].get("status") != "confirmed":
+            continue
+        if lock.get(rid) and lock[rid] != binding_hash(r["body"]):
+            continue   # forward drift owns this requirement
+        recorded = memberlock.get(rid, {})
+        for rel, sha in current.get(rid, {}).items():
+            old = recorded.get(rel)
+            if old and old != sha:
+                out.append((rid, rel))
+    return sorted(out)
 
 
 # ---------- commands ----------
@@ -593,11 +1283,16 @@ def _test_link_problem(path):  # implements: REQ-TESTLINK-018
     return "contains no test function (def test.../func TestX.../#[test]/it()"
 
 
-def cmd_check(reqs, members, reqs_dir, update_lock, code_root=".", strict=False, as_json=False, since=None):  # implements: REQ-CHECK-006
+def cmd_check(reqs, members, reqs_dir, update_lock, code_root=".", strict=False, as_json=False, since=None, accept_drift=True):  # implements: REQ-CHECK-006
     errors, warns = [], []
     strict_warns = []   # warns promoted to errors under --strict
     warn_if_stale()
     cap_ids = set(reqs)
+
+    # The reverse-drift baseline (_memberlock) must always cover the FULL member
+    # set; --since narrows `members` only to scope the gate's checks, so keep an
+    # unfiltered copy for the memberlock re-baseline below.
+    full_members = members
 
     # --since: scope checks to requirements whose member files changed since ref.
     # Fail-open: fall back to full scan with WARN if git is unavailable or ref invalid.
@@ -666,6 +1361,10 @@ def cmd_check(reqs, members, reqs_dir, update_lock, code_root=".", strict=False,
             # Similar logic for test checks: only enforce if the requirement is in scope
             if rid in members or not since:
                 warns.append(f"{rid}: confirmed but no tested-by: tag — acceptance tests not linked")
+        # owner accountability (warn): a confirmed requirement with owner: auto was never
+        # claimed by a human reviewer — assign an owner before the corpus grows anonymous.
+        if m.get("status") == "confirmed" and m.get("owner", "auto") in ("auto", "", None):
+            warns.append(f"{rid}: confirmed requirement has owner: auto — assign a named owner")
         # behavior-sync (warn-only): a tested-by link must point at a file that
         # exists and actually holds tests, else it asserts coverage it lacks.
         if m.get("status") == "confirmed" and tests:
@@ -725,6 +1424,20 @@ def cmd_check(reqs, members, reqs_dir, update_lock, code_root=".", strict=False,
             strict_warns.append(f"{rid}: DRIFT — contract changed since lock; "
                                f"re-check {len(locs)} member(s): {where}")
 
+    # Reverse-direction drift: a dedicated member changed while the contract stayed put
+    # (behaviour shipped, spec not updated). Warn-only, --strict-promotable (REQ-MEMBERDRIFT-027).
+    memberlock = load_memberlock(reqs_dir)
+    for rid, rel in member_drift(reqs, members, lock, memberlock, code_root):
+        strict_warns.append(f"{rid}: MEMBER DRIFT — {rel} changed since lock but the contract "
+                            "was not re-touched; re-check the requirement, or run sync to re-baseline")
+
+    # Doc-sync blind spot: a large docs/ HTML doc generated from requirements but with
+    # no generated-from: lineage drifts from them unnoticed (warn-only — see REQ-DOCBUNDLE-026).
+    for rel in untagged_doc_bundles(code_root, full_members, reqs_dir):  # full set: a doc's generated-from membership is independent of the --since diff
+        warns.append(f"{rel}: large docs/ HTML bundle ({DOC_BUNDLE_MIN_BYTES // 1000}KB+) has no "
+                     "generated-from: tag — link it to the requirement(s) it derives from "
+                     "(`<!-- generated-from: A, B -->`), or add it to .reqmapignore")
+
     # Health signals (non-blocking): how much of the corpus is human-validated, and
     # how much still uses the legacy body schema. Surfaced so an all-baseline corpus
     # (drift fires only on `confirmed`, so the gate enforces nothing yet) and a
@@ -742,6 +1455,7 @@ def cmd_check(reqs, members, reqs_dir, update_lock, code_root=".", strict=False,
     else:
         warns.extend(strict_warns)
 
+    lock_blocked = False
     if update_lock:
         changed = [(rid, lock.get(rid), h)
                    for rid, h in sorted(new_lock.items()) if lock.get(rid) != h]
@@ -751,17 +1465,47 @@ def cmd_check(reqs, members, reqs_dir, update_lock, code_root=".", strict=False,
             print(f"  lock update: {rid} hash changed ({old_short}->{new_h[:8]})")
         for rid in removed:
             print(f"  lock update: {rid} removed from lock")
-        save_lock(reqs_dir, new_lock)
-        print("lock updated.")
+        # sync drift guard: refuse to silently re-baseline an EDITED confirmed/implemented
+        # contract unless the caller explicitly accepts it (accept_drift). A brand-new
+        # requirement (old hash None) is not drift.  # implements: REQ-CHECK-006
+        confirmed_drift = [rid for (rid, old_h, _h) in changed
+                           if old_h is not None
+                           and reqs.get(rid, {}).get("meta", {}).get("status") in ("confirmed", "implemented")]
+        if confirmed_drift and not accept_drift:
+            lock_blocked = True
+            print("Contract drift on confirmed requirements; re-run with --accept-drift "
+                  "to advance the baseline:", file=sys.stderr)
+            for rid in confirmed_drift:
+                print(f"  drift: {rid}", file=sys.stderr)
+        else:
+            save_lock(reqs_dir, new_lock)
+            # re-baseline reverse drift over the FULL member set — using the
+            # --since-filtered `members` here would drop every unchanged member's
+            # baseline and silently disable reverse-drift detection for them.
+            save_memberlock(reqs_dir, compute_member_hashes(code_root, full_members))
+            print("lock updated.")
+
+    # Integration-artifact freshness: stale tool_definition.json or command-table region
+    # in SKILL.universal.md means someone edited COMMANDS without running gen-integration.
+    # Skipped silently when the artifacts don't exist (consumer/vendored repos).
+    # Must run BEFORE the as_json early-return so --json (the CI/badge path) also
+    # exits non-zero on a stale artifact.  # implements: REQ-CMDREGISTRY-033
+    plugin_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _stale = _check_integration_fresh(plugin_root)
+    if _stale:
+        errors = list(errors) + ["stale integration artifact(s): " + ", ".join(_stale)]
 
     if as_json:
-        print(json.dumps({"ok": not errors, "errors": errors, "warnings": warns}))
-        return 1 if errors else 0
+        print(json.dumps({"ok": not (errors or lock_blocked), "errors": errors, "warnings": warns}))
+        return 1 if (errors or lock_blocked) else 0
 
     for w in warns:
         print("WARN ", w)
     for e in errors:
         print("ERROR", e)
+    if _stale:
+        print("ERROR: stale generated integration artifact(s): " + ", ".join(_stale)
+              + " — run `python scripts/reqmap.py gen-integration` and commit.", file=sys.stderr)
 
     n_find = sum(len(items) for _rid, _t, items in collect_findings(reqs))
     if n_find:
@@ -770,7 +1514,7 @@ def cmd_check(reqs, members, reqs_dir, update_lock, code_root=".", strict=False,
     print(f"\n{len(reqs)} requirements ({n_confirmed} confirmed, {len(legacy)} legacy-schema), "
           f"{sum(len(v) for v in members.values())} members, "
           f"{len(errors)} errors, {len(warns)} warnings.")
-    return 1 if errors else 0
+    return 1 if (errors or lock_blocked) else 0
 
 
 # Built-in scaffold so `new` needs no separate templates/ dir — the engine is
@@ -866,7 +1610,7 @@ def cmd_promote_todo(reqs_dir, tmpl_path, name, cap_id, mark_done=False, root=".
     engine runs headless (CI, pre-commit hook), so there is no interactive prompt. With
     mark_done it flips the matched TODO line to [x]; otherwise TODO.md is never touched."""
     if not cap_id:
-        print('usage: reqmap promote-todo "<todo name>" --id AREA-NAME-NNN [--mark-done]'); return 2
+        print('usage: reqmap new --from-todo "<todo name>" --id AREA-NAME-NNN [--mark-done]'); return 2
     key = name.strip().casefold()
     open_todos = [t for t in _parse_todos(root) if not t["done"]]
     matches = [t for t in open_todos if t["name"].strip().casefold() == key]
@@ -893,8 +1637,18 @@ def cmd_promote_todo(reqs_dir, tmpl_path, name, cap_id, mark_done=False, root=".
     layer = todo["lane"] if todo["lane"] in VALID_LAYER else "feature"   # 'ops' is a TODO lane, not a layer
     t = t.replace("AREA-NAME-NNN", cap_id)
     t = re.sub(r"(?m)^layer:\s*feature\b", f"layer: {layer}", t, count=1)
-    t = t.replace("superseded_by:", f"milestone: {todo['milestone']}\nsuperseded_by:", 1)
-    t = t.replace("# Short name", "# " + todo["name"], 1)
+    # inject milestone at the template's anchor; if a custom template lacks it,
+    # fall back to the frontmatter fence, else warn rather than silently drop it
+    if "superseded_by:" in t:
+        t = t.replace("superseded_by:", f"milestone: {todo['milestone']}\nsuperseded_by:", 1)
+    elif t.startswith("---\n"):
+        t = t.replace("---\n", f"---\nmilestone: {todo['milestone']}\n", 1)
+    else:
+        print(f"warning: template has no frontmatter anchor; milestone {todo['milestone']} not recorded")
+    if "# Short name" in t:
+        t = t.replace("# Short name", "# " + todo["name"], 1)
+    else:
+        print(f"warning: template has no '# Short name' title anchor; TODO title {todo['name']!r} not inserted")
     os.makedirs(reqs_dir, exist_ok=True)
     with open(dest, "w", encoding="utf-8") as f:
         f.write(t)
@@ -922,7 +1676,9 @@ def _mark_todo_done(root, name):  # implements: REQ-PROMOTE-TODO-001
         changed = 0
         for i, line in enumerate(lines):
             m = re.match(r"^(\s*-\s+\[)[ ](\]\s+)(.+?)(\r?\n?)$", line)
-            if m and m.group(3).split("|", 1)[0].strip().casefold() == key:
+            # rsplit on the LAST '|' to mirror _parse_todos_from_text's name
+            # derivation — else a TODO whose name contains a '|' never matches
+            if m and m.group(3).rsplit("|", 1)[0].strip().casefold() == key:
                 lines[i] = m.group(1) + "x" + m.group(2) + m.group(3) + m.group(4)
                 changed = 1
                 break
@@ -947,7 +1703,9 @@ def _set_frontmatter_status(text, value):  # implements: REQ-PROMOTE-011
     if end == -1:
         return text, 0
     head, rest = body[:end], body[end:]     # only the frontmatter block, never the body
-    new_head, n = re.subn(r"(?m)^(\s*status\s*:\s*)(\S+)", r"\g<1>" + value, head, count=1)
+    # match the colon gap with [ \t]* (never newlines) so a blank `status:` line
+    # fills in place instead of swallowing the next frontmatter key; value optional
+    new_head, n = re.subn(r"(?m)^([ \t]*status[ \t]*:)[ \t]*(\S+)?", r"\g<1> " + value, head, count=1)
     return new_head + rest, n
 
 
@@ -981,7 +1739,7 @@ def cmd_promote(reqs, members, cap_id):  # implements: REQ-PROMOTE-011
     if "tested-by" not in roles:
         print(f"  note: no `tested-by:` member — wire an acceptance test (`# tested-by: {cap_id}`) "
               f"or set `test_exempt: <reason>` to silence the untested signal.")
-    print("  next: reqmap.py check --update-lock  &&  reqmap.py map")
+    print("  next: reqmap.py sync")
     return 0
 
 
@@ -1056,7 +1814,7 @@ def cmd_extract(reqs, members, code_root, reqs_dir):  # implements: REQ-EXTRACT-
         _prune_dirs(dirpath, dirs, reqs_dir)   # skip noise + the SSOT output dir
         dirs.sort()                            # deterministic id/suffix assignment
         for fn in sorted(files):
-            is_code = fn.endswith((".py", ".js", ".ts", ".cpp", ".c"))
+            is_code = fn.endswith(tuple(e for e in CODE_EXTS if e not in PROSE_EXTS))
             is_prose = fn.endswith(PROSE_EXTS)
             if not (is_code or is_prose):
                 continue
@@ -1150,12 +1908,13 @@ SPLIT_LOC_THRESHOLD = 300    # oversize file -> flag for human split, do not aut
 
 def _py_facts(src):  # implements: REQ-CANDIDATES-009
     """Module/symbol docstrings, top-level signatures and import targets via the
-    stdlib `ast`. A SyntaxError yields empty facts so one unparseable file never
-    aborts the whole plan."""
+    stdlib `ast`. A SyntaxError/ValueError yields empty facts so one unparseable
+    file (incl. a source with an embedded NUL byte, which ast.parse rejects with
+    ValueError, not SyntaxError) never aborts the whole plan."""
     facts = {"signatures": [], "docstrings": {}, "imports": []}
     try:
         tree = ast.parse(src)
-    except SyntaxError:
+    except (SyntaxError, ValueError):
         return facts
     mod_doc = ast.get_docstring(tree)
     if mod_doc:
@@ -1323,9 +2082,24 @@ def cmd_candidates(reqs, members, code_root, reqs_dir, out, md_globs=None):  # i
         if present:
             groups.append({"id": entry["id"], "layer": entry.get("layer"), "files": present})
             claimed.update(present)
+    # de-duplicate minted ids: two files sharing a slug (foo.py + foo.js, or
+    # foo-bar + foo_bar) would otherwise mint the same id and conflate two
+    # distinct candidates downstream — bump the numeric suffix on collision.
+    # Seed from capmap groups AND existing requirement ids so a minted id never
+    # duplicates a real requirement either.
+    used_ids = {g["id"] for g in groups} | set(reqs)
     for rel in files:
-        if rel not in claimed:
-            groups.append({"id": _mint_cap_id(rel), "layer": None, "files": [rel]})
+        if rel in claimed:
+            continue
+        cid = _mint_cap_id(rel)
+        if cid in used_ids:
+            stem = cid[:-3]                 # _mint_cap_id always ends in "-001"
+            n = 2
+            while "{}{:03d}".format(stem, n) in used_ids:
+                n += 1
+            cid = "{}{:03d}".format(stem, n)
+        used_ids.add(cid)
+        groups.append({"id": cid, "layer": None, "files": [rel]})
 
     group_id_of_file = {f: g["id"] for g in groups for f in g["files"]}
 
@@ -1509,14 +2283,19 @@ def cmd_findings(reqs, reqs_dir, raw=False):  # implements: REQ-FINDINGS-010
 
     if triage and isinstance(triage.get("items"), list):
         md, n_tri, n_bugs = _render_findings_triaged(triage, total)
+        used_triage = True
     else:
         md, n_tri, n_bugs = _render_findings_raw(groups, total)
+        used_triage = False
 
     os.makedirs(reqs_dir, exist_ok=True)
     out = os.path.join(reqs_dir, "_findings.md")
     with open(out, "w", encoding="utf-8") as f:
         f.write(md)
-    extra = ", {} triaged, {} confirmed bug(s)".format(n_tri, n_bugs) if triage else ""
+    # gate the suffix on the renderer actually used — a malformed sidecar that is
+    # truthy but whose `items` is not a list falls back to raw, so don't claim a
+    # triage view was rendered
+    extra = ", {} triaged, {} confirmed bug(s)".format(n_tri, n_bugs) if used_triage else ""
     print("{} open finding(s) across {} requirement(s){} -> {}"
           .format(total, len(groups), extra, out))
     return 0
@@ -1571,9 +2350,11 @@ def _build_map_data(reqs, members):  # implements: REQ-MAP-007
         })
     for rid, r in reqs.items():
         for dep in _as_list(r["meta"].get("depends_on")):
-            data["edges"].append([rid, dep])
+            if dep in reqs:                    # skip dangling targets — no phantom node
+                data["edges"].append([rid, dep])
         for up in _as_list(r["meta"].get("satisfies")):  # implements: REQ-TRACE-020
-            data["upstream_edges"].append([rid, up])
+            if up in reqs:
+                data["upstream_edges"].append([rid, up])
     return data
 
 
@@ -1582,7 +2363,10 @@ def _parse_todos_from_text(text):
     Items before the first ## vX.Y heading are silently ignored (milestone is required)."""
     todos, current_ms = [], None
     for line in text.splitlines():
-        ms_m = re.match(r"^##\s+(v\d[\d.]*)\s*$", line.strip())
+        # match the version token at the heading start; a trailing annotation
+        # like `## v2.8 (deferred — demand-gated)` is harmless (the capture group
+        # isolates the version) and must not drop the milestone's items.
+        ms_m = re.match(r"^##\s+(v\d[\d.]*)\b", line.strip())
         if ms_m:
             current_ms = ms_m.group(1)
             continue
@@ -1644,6 +2428,7 @@ def cmd_export(reqs, members, reqs_dir, root=".", out=None):  # implements: REQ-
     requirements/_map.json by default."""
     data = _build_map_data(reqs, members)
     data["repo"] = _repo_name(root)
+    data["todos"] = _parse_todos(root)   # mirror cmd_map so export is byte-equivalent
     text = _build_json_text(data)
     target = out if out else os.path.join(reqs_dir, "_map.json")
     if target == "-":
@@ -1669,12 +2454,13 @@ def _risk_score(meta):  # implements: REQ-NEXT-013
 _PRIORITY_ORDER = {"must-have": 0, "should-have": 1, "could-have": 2, "wont-have": 3}
 
 
-def cmd_next(reqs, members, show_all=False, top_n=3):  # implements: REQ-NEXT-013
+def cmd_next(reqs, members, show_all=False, top_n=3, code_root=None, reqs_dir=None):  # implements: REQ-NEXT-013
     """Terminal 'what should I do next': a focused, counted worklist over the same
     `_risk_signals` + `RISK_ADVICE` that drive the Risk tab. Prints a progress
     header, leads with the most-urgent bucket, shows the top few per bucket (the
     extract REVIEW-flagged ones first), and collapses the rest behind --all. Each
-    item names the requirement file to open. Read-only, always exit 0."""
+    item names the requirement file to open. Also surfaces scannable files that
+    carry no membership tag (untagged bucket). Read-only, always exit 0."""
     total = len(reqs)
     if total == 0:   # distinguish "nothing set up yet" from "all clean"
         print("No requirements yet. Run `reqmap.py init` to bootstrap from existing "
@@ -1714,12 +2500,14 @@ def cmd_next(reqs, members, show_all=False, top_n=3):  # implements: REQ-NEXT-01
 
     pending = [(sig, label, sorted(buckets[sig], key=lambda x: (_priority_ord(x[0]), -x[1], x[0])))
                for sig, label in PLAN if buckets.get(sig)]
-    if not pending:
+    untagged = _scan_untagged(code_root, reqs_dir) if code_root else []
+    if not pending and not untagged:
         print("Nothing pending — every confirmed requirement is implemented, tested and intent-checked.")
         return 0
-    total_actions = sum(len(ids) for _, _, ids in pending)
-    print("{} item(s) need attention across {} {}:\n".format(
-        total_actions, len(pending), "category" if len(pending) == 1 else "categories"))
+    if pending:
+        total_actions = sum(len(ids) for _, _, ids in pending)
+        print("{} item(s) need attention across {} {}:\n".format(
+            total_actions, len(pending), "category" if len(pending) == 1 else "categories"))
     for sig, label, ids in pending:
         print("{} ({})".format(label, len(ids)))
         shown = ids if show_all else ids[:top_n]
@@ -1729,6 +2517,15 @@ def cmd_next(reqs, members, show_all=False, top_n=3):  # implements: REQ-NEXT-01
         if not show_all and len(ids) > top_n:
             print("  ... {} more — run `reqmap.py next --all`".format(len(ids) - top_n))
         print("  -> {}\n".format(RISK_ADVICE[sig]))
+    if untagged:
+        shown_u = untagged if show_all else untagged[:top_n]
+        print("Untagged files ({})".format(len(untagged)))
+        for fp in shown_u:
+            print("  {}".format(fp))
+        if not show_all and len(untagged) > top_n:
+            print("  ... {} more — run `reqmap.py next --all`".format(len(untagged) - top_n))
+        print("  -> Run `reqmap.py draft` to auto-extract requirements, "
+              "or add to .reqmapignore to silence.\n")
     # Granularity advisory: requirements with many ACs covering disjoint behaviors
     AC_SPLIT_THRESHOLD = 5
     oversize = sorted(
@@ -1797,7 +2594,7 @@ def _lint_prose(body, name):  # implements: REQ-LINT-014
         if fenced:
             continue
         if s.startswith("## "):
-            grab = (not seen) and (name in s.lower())   # first matching section only
+            grab = (not seen) and _heading_label_is(s, name)   # anchored, agrees with _has_section
             if grab:
                 seen = True
             continue
@@ -1823,12 +2620,21 @@ def _clip(s, n=60):  # implements: REQ-LINT-014
 
 def _count_ac(body):
     """Count acceptance criteria in the HOW — Acceptance section.
-    Handles both bullet-list ACs (- ...) and labeled AC blocks (AC-N ...)."""
-    grab, seen, count = False, False, 0
+    Handles both bullet-list ACs (- ...) and labeled AC blocks (AC-N ...).
+    Skips fenced code blocks (so a ``` example with bullet lines doesn't inflate
+    the count) and detects the section with the anchored heading predicate (so a
+    `## Notes — acceptance …` commentary heading isn't mistaken for it) — keeping
+    this count in agreement with _has_section/_bullets and the gate."""
+    grab, seen, count, fenced = False, False, 0, False
     for line in body.splitlines():
         s = line.strip()
+        if s.startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
         if s.lower().startswith("## "):
-            grab = (not seen) and ("acceptan" in s.lower())
+            grab = (not seen) and _heading_label_is(s, "acceptan")
             if grab:
                 seen = True
             continue
@@ -1843,7 +2649,10 @@ def lint_requirement(rid, r, member_list=None):  # implements: REQ-LINT-014  # i
     """Return a list of {severity, check, detail} findings for one requirement;
     an empty list means clean. Checks the Contract + Acceptance sections only.
     `member_list` (optional [(role, file, line), ...]) enables the member-based
-    file-spread check; when omitted, that check is skipped."""
+    file-spread check; when omitted, that check is skipped.
+    Checks named in the requirement's `lint_exempt:` frontmatter list are silently
+    skipped and not counted against the requirement."""
+    exempt = set(_as_list(r["meta"].get("lint_exempt")))
     findings = []
     body = r["body"]
     # structural (error): a non-draft must carry both load-bearing sections
@@ -1944,6 +2753,8 @@ def lint_requirement(rid, r, member_list=None):  # implements: REQ-LINT-014  # i
                 "severity": "warn", "check": "file-spread",
                 "detail": "implements span {} files (>= {}): capability may be diffuse — "
                           "confirm cohesion or split".format(len(impl_files), LINT_FILE_SPREAD_MAX)})
+    if exempt:
+        findings = [f for f in findings if f["check"] not in exempt]
     return findings
 
 
@@ -1953,17 +2764,28 @@ def cmd_lint(reqs, strict=False, members=None):  # implements: REQ-LINT-014
     mechanical. Checks: missing-section (error), long-sentence (warn),
     stacked-conditions (warn), statement-too-long (warn), ac-count-low (warn),
     ac-count-high (warn), vague-term (warn). Read-only. Exit-neutral by default; with
-    --strict it exits non-zero on any error-severity finding (warnings never change exit)."""
+    --strict it exits non-zero on any error-severity finding AND promotes structural
+    checks (ac-count-high) to error severity.
+    Requirements with `lint_exempt: [check-name]` frontmatter silently skip those checks;
+    active exemptions are printed after the requirement header."""
+    # Checks promoted from warn→error in --strict mode (structural, not style).
+    STRICT_PROMOTE = {"ac-count-high", "over-scoped"}
     targets = [(rid, r) for rid, r in sorted(reqs.items())
                if r["meta"].get("status") in LINT_STATUSES]
     errors = warns = 0
     for rid, r in targets:
         fs = lint_requirement(rid, r, (members or {}).get(rid))
-        if not fs:
+        exempt = set(_as_list(r["meta"].get("lint_exempt")))
+        if not fs and not exempt:
             continue
         print("{}   requirements/{}.md".format(rid, rid))
+        if exempt:
+            print("  (exempt: {})".format(", ".join(sorted(exempt))))
         for f in fs:
-            if f["severity"] == "error":
+            effective = f["severity"]
+            if strict and f["check"] in STRICT_PROMOTE:
+                effective = "error"
+            if effective == "error":
                 errors += 1; mark = "ERROR"
             else:
                 warns += 1; mark = "warn "
@@ -1973,7 +2795,7 @@ def cmd_lint(reqs, strict=False, members=None):  # implements: REQ-LINT-014
     if errors == 0 and warns == 0:
         print("All clean — every linted requirement is well-formed and readable.")
     if strict and errors:
-        print("FAIL (--strict): {} structural error(s).".format(errors))
+        print("FAIL (--strict): {} structural error(s) (includes promoted structural warns).".format(errors))
         return 1
     return 0
 
@@ -2158,7 +2980,66 @@ def cmd_similar(reqs, threshold=SIMILAR_THRESHOLD):  # implements: REQ-SIMILAR-0
 
 
 # ---------- health (corpus coherence snapshot) ----------
-def cmd_health(reqs, members, reqs_dir, as_json=False):  # implements: REQ-HEALTH-017
+def cmd_coverage(reqs, members, code_root, reqs_dir, as_json=False):
+    """Per-directory coverage report: how many scannable files in each top-level
+    directory carry at least one membership tag vs. total scannable files.
+    Helps identify which parts of the codebase have no requirement coverage."""
+    ignore = load_ignore(code_root, reqs_dir)
+    # requirements dir contains spec files, not implementation files — exclude from coverage
+    reqs_abs = os.path.normcase(os.path.abspath(reqs_dir)) if reqs_dir else None
+    tagged_files = set()
+    for mlist in members.values():
+        for _role, fp, _ln in mlist:
+            tagged_files.add(os.path.normcase(os.path.abspath(os.path.join(code_root, fp))))
+
+    buckets = {}  # dir_label -> [total, tagged]
+    for dirpath, dirs, files in os.walk(code_root):
+        dirs[:] = [d for d in sorted(dirs) if d not in (".git", "__pycache__", "node_modules")]
+        for fn in sorted(files):
+            if not fn.endswith(CODE_EXTS):
+                continue
+            fp = os.path.join(dirpath, fn)
+            if reqs_abs and os.path.normcase(os.path.abspath(fp)).startswith(reqs_abs + os.sep):
+                continue
+            rel = os.path.relpath(fp, code_root).replace("\\", "/")
+            if any(fnmatch.fnmatch(rel, p) for p in ignore):
+                continue
+            # Group by first path component (top-level directory or "." for root files)
+            parts = rel.split("/")
+            label = parts[0] if len(parts) > 1 else "."
+            if label not in buckets:
+                buckets[label] = [0, 0]
+            buckets[label][0] += 1
+            if os.path.normcase(os.path.abspath(fp)) in tagged_files:
+                buckets[label][1] += 1
+
+    rows = []
+    for label in sorted(buckets):
+        total, tagged = buckets[label]
+        pct = round(100 * tagged / total) if total else 0
+        rows.append({"dir": label, "total": total, "tagged": tagged, "pct": pct})
+
+    if as_json:
+        print(json.dumps(rows, indent=2))
+        return 0
+
+    if not rows:
+        print("No scannable files found.")
+        return 0
+
+    w = max(len(r["dir"]) for r in rows)
+    for r in rows:
+        bar = "#" * (r["pct"] // 5) + "." * (20 - r["pct"] // 5)
+        print("{:<{w}}  {:>3}/{:<3}  ({:>3}%)  [{}]".format(
+            r["dir"], r["tagged"], r["total"], r["pct"], bar, w=w))
+    total_all = sum(r["total"] for r in rows)
+    tagged_all = sum(r["tagged"] for r in rows)
+    pct_all = round(100 * tagged_all / total_all) if total_all else 0
+    print("\nTotal: {}/{} files tagged ({:>3}%)".format(tagged_all, total_all, pct_all))
+    return 0
+
+
+def cmd_health(reqs, members, reqs_dir, as_json=False, as_badge=False, code_root=None):  # implements: REQ-HEALTH-017
     """Print a corpus coherence snapshot: a headline score plus component counts.
     The score is transparent — the percentage of requirements green on EVERY axis
     (confirmed, has an `implements` member, tested-or-`test_exempt`, no open
@@ -2204,6 +3085,21 @@ def cmd_health(reqs, members, reqs_dir, as_json=False):  # implements: REQ-HEALT
             "confirmed": confirmed, "implemented": implemented, "tested": tested,
             "drafts": drafts, "orphans": orphans, "untested": untested,
             "open_intent": open_intent, "drift": drifted}
+    # Untagged-code coverage signal (read-only): count of scannable code files
+    # carrying no membership tag — code traced to no requirement. Reuses
+    # _scan_untagged (REQ-NEXT-013). Informational only: it counts FILES, not
+    # requirements, so it never enters the per-requirement score, and it is
+    # absent (not zero) when no code root is available, e.g. a unit-test caller.
+    # implements: REQ-COVERAGE-029
+    untagged = _scan_untagged(code_root, reqs_dir) if code_root else None
+    if untagged is not None:
+        data["untagged"] = len(untagged)
+    if as_badge:
+        color = "brightgreen" if score == 100 else "green" if score >= 80 else "yellow" if score >= 60 else "red"
+        badge = {"schemaVersion": 1, "label": "requirements",
+                 "message": "{}/{} | {}%".format(confirmed, total, score), "color": color}
+        print(json.dumps(badge))
+        return 0
     if as_json:
         print(json.dumps(data, indent=2))
         return 0
@@ -2216,6 +3112,7 @@ def cmd_health(reqs, members, reqs_dir, as_json=False):  # implements: REQ-HEALT
     if untested:    print("  untested (code, no tests):        {}".format(untested))
     if open_intent: print("  open verify-intent:               {}".format(open_intent))
     if drifted:     print("  drift (contract changed vs lock): {}".format(drifted))
+    if untagged:    print("  untagged code (no requirement):   {}".format(len(untagged)))
     if total == 0:
         print("  (no requirements yet — run `reqmap.py init` or `new`)")
     return 0
@@ -2223,8 +3120,15 @@ def cmd_health(reqs, members, reqs_dir, as_json=False):  # implements: REQ-HEALT
 
 def _strip_line_tag(line):
     """Remove a reqmap membership-tag comment from a source line.
-    Finds the comment marker (#, //, <!--) closest to the tag and cuts from
-    there to end-of-line, preserving the code before it.
+
+    Strips only when a comment marker (#, //, <!--) *directly opens* the tag —
+    i.e. nothing but whitespace sits between the marker and the tag id. A line
+    that merely mentions a tag in prose or a heading (e.g. a doc line
+    `# How implements: AREA-NAME-001 tags work`, or
+    `<!-- note --> ... implements: AREA-NAME-001 is required <!-- end -->`) is
+    left unchanged, so `init --wipe` never truncates documentation that
+    documents the tagging convention. A multi-char heading/banner marker
+    (`## `, `//// `) is removed whole rather than leaving a dangling bare `#`.
     Lines with no tag are returned unchanged."""
     m = TAG_RE.search(line)
     if m is None:
@@ -2234,11 +3138,18 @@ def _strip_line_tag(line):
     cut = -1
     for marker in ("#", "//", "<!--"):
         idx = pre.rfind(marker)
-        if idx > cut:
+        # the marker opens the tag's comment only when the gap between the
+        # marker token and the tag id is whitespace-only; otherwise it is an
+        # unrelated heading / inline comment and must not anchor the cut
+        if idx > cut and pre[idx + len(marker):].strip() == "":
             cut = idx
-    if cut >= 0:
-        return line[:cut].rstrip() + nl
-    return line  # no recognisable comment marker — leave unchanged
+    if cut < 0:
+        return line  # no comment marker directly opens the tag — leave unchanged
+    # walk back over a contiguous run of the same marker char (`## `, `//// `)
+    # so the whole heading/banner marker is removed, not just its last char
+    while cut > 0 and pre[cut - 1] == pre[cut]:
+        cut -= 1
+    return line[:cut].rstrip() + nl
 
 
 def _wipe(reqs_dir, code_root):
@@ -2294,7 +3205,7 @@ def _reqmapignore_seed(code_root, reqs_dir):  # implements: REQ-INIT-012
     if req_ids and os.path.isfile(engine):
         try:
             with open(engine, encoding="utf-8") as f:
-                tagged = {m.group(2) for m in TAG_RE.finditer(f.read())}
+                tagged = {cap for (_role, cap) in _findall_tags(f.read())}   # expand comma-lists like scan_members
         except OSError:
             tagged = set()
         if tagged & req_ids:   # self-hosting: the engine's tags point at local reqs
@@ -2308,7 +3219,7 @@ def _reqmapignore_seed(code_root, reqs_dir):  # implements: REQ-INIT-012
             "scripts/reqmap.py\n")
 
 
-def cmd_init(reqs_dir, code_root, wipe=False):  # implements: REQ-INIT-012
+def cmd_init(reqs_dir, code_root, wipe=False, no_site=False):  # implements: REQ-INIT-012
     """First-use bootstrap for a fresh repo: create requirements/, seed a minimal
     .reqmapignore (idempotent — never clobbers an existing one), draft requirements
     from existing code, build the lock + map, then print guided next steps.
@@ -2334,6 +3245,17 @@ def cmd_init(reqs_dir, code_root, wipe=False):  # implements: REQ-INIT-012
     members = scan_members(code_root, reqs_dir)
     cmd_check(reqs, members, reqs_dir, update_lock=True, code_root=code_root)
     cmd_map(reqs, members, reqs_dir, code_root)
+    # implements: REQ-SITE-026 — best-effort project site. Never aborts init.
+    if not no_site:
+        target = _site_default_target(code_root)
+        if target:
+            try:
+                _site_pages_bootstrap(os.path.dirname(target))   # .nojekyll + index.html redirect
+                cmd_site(reqs, members, code_root, attach=target, regions=["nav", "stats"])
+            except Exception as e:   # site is decorative; a failure must not break bootstrap
+                print("note: site step skipped ({}).".format(e))
+        else:
+            print("note: no docs/ folder — run the requirement-manager skill to set up a project site.")
     print("\n" + "=" * 60)
     if not reqs:   # nothing to extract — don't masquerade as "all clean"
         print("reqmap initialized, but no requirements were extracted")
@@ -2346,7 +3268,7 @@ def cmd_init(reqs_dir, code_root, wipe=False):  # implements: REQ-INIT-012
     if created:
         print("created: " + ", ".join(created))
     print("\nNext: run `reqmap.py next` — it shows what to do, most important first.")
-    print("Then wire the gate: add `python scripts/reqmap.py check` to your pre-commit hook.")
+    print("Then wire the gate: add `python scripts/reqmap.py gate` to your pre-commit hook.")
     return 0
 
 
@@ -2393,6 +3315,17 @@ def _map_check(data, reqs_dir, root="."):  # implements: REQ-MAP-007
             fresh_html = _inject_viewer(f.read(), data)
         if _strip_generated(open(docs_out, encoding="utf-8").read()) != _strip_generated(fresh_html):
             stale.append(os.path.basename(docs_out))
+    # Site presentation page: gate the deterministic STATS region only. NAV embeds
+    # the git-derived repo URL (fork-specific) and is excluded, mirroring the
+    # `repo`-field exclusion in _strip_generated.  # implements: REQ-SITE-026
+    site_target = _site_default_target(root)
+    if site_target and os.path.exists(site_target):
+        on_disk = open(site_target, encoding="utf-8").read()
+        disk_stats = _extract_region(on_disk, "stats")
+        if disk_stats is not None:
+            ctx = _site_context_from_data(data, repo_url=None, map_ok=False, diagram_rel=None)
+            if disk_stats != _render_region("stats", ctx):
+                stale.append(os.path.basename(site_target))
     if stale:
         print("FAIL  map is stale: {} — run `reqmap.py map` and commit the result."
               .format(", ".join(stale)))
@@ -2437,7 +3370,7 @@ def _section(body, name):  # implements: REQ-MAP-007
     for line in body.splitlines():
         h = line.strip().lower()
         if h.startswith("## "):
-            grab = (not seen) and (name in h)   # first matching section only
+            grab = (not seen) and _heading_label_is(line.strip(), name)   # anchored, like _bullets
             if grab:
                 seen = True
             continue
@@ -2453,7 +3386,7 @@ def _section_raw(body, name):  # implements: REQ-MAP-007
     for line in body.splitlines():
         h = line.strip().lower()
         if h.startswith("## "):
-            grab = (not seen) and (name in h)   # first matching section only
+            grab = (not seen) and _heading_label_is(line.strip(), name)   # anchored, like _bullets
             if grab:
                 seen = True
             continue
@@ -2467,7 +3400,9 @@ def _bullets(body, name):  # implements: REQ-MAP-007
     for line in body.splitlines():
         h = line.strip().lower()
         if h.startswith("## "):
-            grab = (not seen) and (name in h)   # first matching section only
+            # anchored heading match (not substring) so a commentary heading like
+            # `## Notes — contract caveats` doesn't capture the Contract section
+            grab = (not seen) and _heading_label_is(line.strip(), name)
             if grab:
                 seen = True
             continue
@@ -2539,7 +3474,15 @@ def _grouped_areas(nodes):  # implements: REQ-MAP-007
     groups = [(a, areas[a]) for a in sorted(areas) if len(areas[a]) > 1]
     singles = [n for a in sorted(areas) if len(areas[a]) == 1 for n in areas[a]]
     if singles:
-        groups.append(("misc", sorted(singles, key=lambda n: n["id"])))
+        # fold the singletons into any pre-existing real "misc" multi-node group
+        # rather than appending a second ("misc", …) tuple — two subgraphs with
+        # the same _safe_id would break the Mermaid render
+        existing = next((i for i, (a, _) in enumerate(groups) if a == "misc"), None)
+        merged = sorted(singles, key=lambda n: n["id"])
+        if existing is not None:
+            groups[existing] = ("misc", groups[existing][1] + merged)
+        else:
+            groups.append(("misc", merged))
     return groups
 
 
@@ -2827,6 +3770,404 @@ def _repo_name(root):  # implements: REQ-MAP-007
     return os.path.basename(os.path.abspath(root)) or None
 
 
+def _normalise_remote(url):  # implements: REQ-SITE-026
+    """Normalise a git remote URL to a https web URL (https://host/owner/repo),
+    or None when empty/unparseable. Handles scp-style (git@host:owner/repo.git),
+    ssh:// and https:// forms; strips a trailing `.git`. Pure string work."""
+    url = (url or "").strip()
+    if not url:
+        return None
+    if url.endswith(".git"):
+        url = url[:-4]
+    m = re.match(r"^[\w.+-]+@([\w.-]+):(.+)$", url)          # scp-style
+    if m:
+        return "https://{}/{}".format(m.group(1), m.group(2))
+    # optional :port (corporate / self-hosted ssh remotes) is dropped, keeping
+    # group(1)=host and group(2)=path so the web URL stays clickable
+    m = re.match(r"^(?:ssh|git|https?)://(?:[^@/]+@)?([\w.-]+)(?::\d+)?/(.+)$", url)
+    if m:
+        return "https://{}/{}".format(m.group(1), m.group(2))
+    return url if "://" in url else None
+
+
+def _git_remote_web_url(root):  # implements: REQ-SITE-026
+    """The project's web URL from git `remote.origin.url`, or None when git is
+    absent / no remote / not a checkout. Honours the REQMAP_REPO override (a
+    bare slug becomes https://github.com/<slug>; empty disables). Never raises."""
+    override = os.environ.get("REQMAP_REPO")
+    if override is not None:
+        if not override:
+            return None
+        return override if "://" in override else "https://github.com/" + override
+    url = ""
+    try:
+        r = subprocess.run(["git", "-C", root, "config", "--get", "remote.origin.url"],
+                           capture_output=True, text=True, timeout=3)
+        if r.returncode == 0:
+            url = r.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        url = ""
+    return _normalise_remote(url)
+
+
+SITE_REGIONS = ("nav", "stats")  # implements: REQ-SITE-026  (commands/layers deferred to a follow-up)
+
+
+def _region_markers(name):  # implements: REQ-SITE-026
+    key = name.upper()
+    return "<!--##REQMAP:{}##-->".format(key), "<!--##/REQMAP:{}##-->".format(key)
+
+
+def _inject_region(html, name, inner, anchor="<body>"):  # implements: REQ-SITE-026
+    """Replace the content between the paired markers for `name` with `inner`
+    (idempotent). Markers absent -> insert a fresh marked block right after the
+    first `anchor`; anchor absent too -> append. Only the marked block is
+    written; surrounding (authored) bytes are untouched."""
+    open_m, close_m = _region_markers(name)
+    block = open_m + "\n" + inner + "\n" + close_m
+    # find the close that belongs to THIS open (search after it) so a stray close
+    # before the open isn't mistaken for the region end, which would append a
+    # duplicate block on re-run instead of rewriting in place
+    i = html.find(open_m)
+    j = html.find(close_m, i + len(open_m)) if i != -1 else -1
+    if i != -1 and j != -1:
+        return html[:i] + block + html[j + len(close_m):]
+    a = html.find(anchor)
+    if a != -1:
+        a += len(anchor)
+        return html[:a] + "\n" + block + html[a:]
+    return html + "\n" + block
+
+
+def _extract_region(html, name):  # implements: REQ-SITE-026
+    """Inner text between the paired markers for `name`, or None when absent.
+    Lets the freshness gate diff only engine-owned regions (prose is exempt)."""
+    open_m, close_m = _region_markers(name)
+    i = html.find(open_m)
+    if i == -1:
+        return None
+    i += len(open_m)
+    j = html.find(close_m, i)
+    return html[i:j].strip("\n") if j != -1 else None
+
+
+def _html_escape(s):  # implements: REQ-SITE-026
+    return (str(s).replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+def _site_context_from_data(data, repo_url, map_ok, diagram_rel):  # implements: REQ-SITE-026
+    """Deterministic region inputs derived from the map graph + already-resolved
+    link facts. No wall-clock, no filesystem here — callers resolve repo_url /
+    map_ok / diagram_rel, so a re-run with no change reproduces byte-identically."""
+    nodes = data.get("nodes", [])
+    layers = {n.get("layer", "feature") for n in nodes}
+    return {
+        "repo_url": repo_url,
+        "map_ok": map_ok,
+        "diagram_rel": diagram_rel,
+        "counts": {
+            "requirements": len(nodes),
+            "confirmed": sum(1 for n in nodes if n.get("status") == "confirmed"),
+            "layers": len(layers),
+            "edges": len(data.get("edges", [])),
+        },
+    }
+
+
+def _render_region(name, ctx):  # implements: REQ-SITE-026
+    """Inner HTML for an engine-owned region. NAV: plain target=_blank anchors,
+    each emitted only when its target resolves (graceful degradation). STATS:
+    deterministic stat cards from the graph counts + engine version."""
+    if name == "nav":
+        links = []
+        if ctx.get("map_ok"):
+            links.append('<a href="map.html" target="_blank" rel="noopener">Live Map ↗</a>')
+        if ctx.get("diagram_rel"):
+            links.append('<a href="{}" target="_blank" rel="noopener">Diagram ↗</a>'
+                         .format(_html_escape(ctx["diagram_rel"])))
+        if ctx.get("repo_url"):
+            links.append('<a href="{}" target="_blank" rel="noopener">GitHub ↗</a>'
+                         .format(_html_escape(ctx["repo_url"])))
+        return '<nav class="reqmap-nav">' + "".join(links) + '</nav>'
+    if name == "stats":
+        c = ctx["counts"]
+        cells = [("requirements", c["requirements"]), ("confirmed", c["confirmed"]),
+                 ("layers", c["layers"]), ("edges", c["edges"]),
+                 ("engine", MAP_ENGINE_VERSION)]
+        items = "".join('<div class="stat"><b>{}</b><span>{}</span></div>'.format(v, k)
+                        for k, v in cells)
+        return '<div class="reqmap-stats">' + items + '</div>'
+    return ""
+
+
+# A self-contained default presentation page written by `site` scaffold mode.
+# Inline (not a vendored file) so the engine stays hermetic. NAV and STATS are
+# marker-delimited engine-owned regions; everything else is authored prose the
+# user/skill rewrites. This template is the canonical source (the prototype that
+# seeded it has been removed).
+# Callers fill %%REPO_NAME%% / %%REPO_URL%% via str.replace (NOT str.format —
+# the CSS contains literal braces).
+SITE_TEMPLATE = """\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>%%REPO_NAME%% — project site</title>
+<!--
+  ============================================================================
+  PROTOTYPE of `reqmap.py site` — HYBRID model.
+    • Regions marked  <!##REQMAP:...##>  are regenerated by the engine on every
+      run (nav links, stats band, commands grid, layer model) — never stale.
+    • Everything else is AUTHORED prose, preserved across regenerations.
+  Self-contained: no CDN, no network. Plain anchor links (no file:// iframes).
+  Diagram is link-only (no builder coupling). Applies the Senate
+  (2026-06-14, MODIFY) blocking conditions.
+  ============================================================================
+-->
+<style>
+  :root{
+    --paper:#ECE9E1; --paper-2:#F4F2EC; --card:#FBFAF6;
+    --ink:#1F1D1A; --muted:#6B655C; --line:#D9D4C8;
+    --accent:#9A3B2E; --accent-2:#1F6F5C; --gate:#9A3B2E;
+    --eng:#1F6F5C; --auth:#9A6700;
+    --radius:12px; --maxw:980px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
+
+  /* ============ <!##REQMAP:NAV##>  engine-owned top bar ============ */
+  .nav{position:sticky; top:0; z-index:20; background:rgba(236,233,225,.86);
+       backdrop-filter:saturate(140%) blur(8px); border-bottom:1px solid var(--line)}
+  .nav-inner{max-width:var(--maxw); margin:0 auto; padding:12px 24px;
+             display:flex; align-items:center; justify-content:space-between; gap:16px}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.01em}
+  .mark{width:26px; height:26px; border-radius:7px; background:var(--accent);
+        display:grid; place-items:center; color:#fff; font-size:14px; font-weight:800}
+  .nav-links{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+  .nav-links a{display:inline-flex; align-items:center; gap:4px; text-decoration:none;
+               color:var(--ink); font-size:.9rem; font-weight:600; padding:7px 12px;
+               border-radius:8px; border:1px solid transparent}
+  .nav-links a:hover{background:var(--card); border-color:var(--line); color:var(--accent)}
+  .arrow{font-size:.8em; opacity:.7}
+
+  /* legend chip explaining the hybrid coloring */
+  .legend{display:flex; gap:14px; align-items:center; justify-content:center;
+          font-size:.74rem; color:var(--muted); padding:8px; background:var(--paper-2);
+          border-bottom:1px solid var(--line)}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle}
+  .dot.eng{background:var(--eng)} .dot.auth{background:var(--auth)}
+
+  /* region tag shown at the corner of engine/authored blocks */
+  .tag{display:inline-block; font-size:.66rem; font-weight:700; letter-spacing:.04em;
+       text-transform:uppercase; padding:.12rem .5rem; border-radius:999px}
+  .tag.eng{color:var(--eng); background:#1F6F5C18; border:1px solid #1F6F5C40}
+  .tag.auth{color:var(--auth); background:#9A670018; border:1px solid #9A670040}
+
+  section{padding:56px 0; border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:.78rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:0 0 10px}
+  h1{font-size:clamp(2rem,5vw,3.2rem); line-height:1.05; letter-spacing:-.02em; margin:.2em 0 .3em; font-weight:800}
+  h2{font-size:clamp(1.4rem,3vw,2rem); letter-spacing:-.01em; margin:0 0 .4em; font-weight:750}
+  .lead{font-size:1.12rem; color:var(--muted); max-width:60ch}
+
+  /* hero */
+  .hero{padding:72px 0 60px; background:
+        radial-gradient(60% 80% at 80% -10%, #9A3B2E14, transparent 60%), var(--paper)}
+  .hero .cta{margin-top:26px; display:flex; gap:12px; flex-wrap:wrap}
+  .btn{display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-weight:650; font-size:.95rem;
+       padding:.62rem 1.05rem; border-radius:9px}
+  .btn.primary{background:var(--accent); color:#fff}
+  .btn.primary:hover{filter:brightness(1.07)}
+  .btn.ghost{background:var(--card); border:1px solid var(--line); color:var(--ink)}
+  .btn.ghost:hover{border-color:var(--accent); color:var(--accent)}
+
+  /* stats band — engine */
+  .band{background:var(--paper-2)}
+  .stats{display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-top:8px}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 14px; text-align:center}
+  .stat b{display:block; font-size:1.7rem; font-weight:800; letter-spacing:-.02em; color:var(--ink)}
+  .stat span{font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+  .src{margin-top:14px; font-size:.78rem; color:var(--muted)}
+  .src code{font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  /* pillars — authored */
+  .pillars{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:10px}
+  .pill{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px}
+  .pill h3{margin:.1em 0 .35em; font-size:1.05rem}
+  .pill p{margin:0; color:var(--muted); font-size:.92rem}
+
+  /* commands grid — engine */
+  .cmds{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:10px}
+  .cmd{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px 14px}
+  .cmd.gate{border-color:#9A3B2E66; box-shadow:0 0 0 1px #9A3B2E22 inset}
+  .cmd code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85rem; font-weight:700; color:var(--accent)}
+  .cmd p{margin:.35em 0 0; font-size:.82rem; color:var(--muted)}
+
+  /* layers — engine/data */
+  .layers{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:10px}
+  .layer{border-radius:var(--radius); padding:18px; border:1px solid var(--line); background:var(--card)}
+  .layer .l{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.78rem; font-weight:700; margin-bottom:6px}
+  .layer.bus .l{color:var(--accent)} .layer.feat .l{color:var(--accent-2)} .layer.need .l{color:#6b4ea8}
+  .layer h3{margin:.1em 0 .3em; font-size:1rem}
+  .layer p{margin:0 0 8px; font-size:.85rem; color:var(--muted)}
+  .layer .ids{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.72rem; color:var(--muted)}
+
+  /* hybrid mechanism explainer */
+  .mech pre{background:#1f1d1a; color:#e9e5db; border-radius:var(--radius); padding:18px 20px; overflow:auto; font-size:.82rem; line-height:1.5}
+  .mech .c-eng{color:#7fd6bf} .mech .c-auth{color:#f0c674} .mech .c-dim{color:#9a948a}
+
+  footer{padding:30px 0 60px; color:var(--muted); font-size:.82rem; text-align:center}
+  footer code{font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .secthead{display:flex; align-items:center; gap:10px; margin-bottom:4px}
+
+  @media(max-width:760px){
+    .stats{grid-template-columns:repeat(3,1fr)}
+    .pillars,.cmds,.layers{grid-template-columns:1fr}
+    .nav-links a{padding:6px 9px; font-size:.82rem}
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-inner">
+    <div class="brand"><span class="mark">R</span> %%REPO_NAME%%</div>
+    <!--##REQMAP:NAV##--><!--##/REQMAP:NAV##-->
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="dot eng"></span>engine-generated (refreshed every run)</span>
+  <span><span class="dot auth"></span>authored prose (preserved)</span>
+</div>
+
+<!-- HERO — authored -->
+<header class="hero">
+  <div class="wrap">
+  <!-- author me -->
+    <span class="tag auth">authored</span>
+    <p class="eyebrow" style="margin-top:14px">Single source of truth</p>
+    <h1>Keep your specs, code,<br>and intent in sync.</h1>
+    <p class="lead">requirement-manager seeds one stdlib-only engine into any repo, then holds the line
+      between what you <em>meant</em> to build and what the code actually does — a drift gate you run before
+      every commit, a live map of every capability, and an answer to "where is this implemented?".</p>
+    <div class="cta">
+      <a class="btn primary" href="map.html" target="_blank" rel="noopener">Open the live map ↗</a>
+      <a class="btn ghost" href="%%REPO_URL%%" target="_blank" rel="noopener">View on GitHub ↗</a>
+    </div>
+  </div>
+</header>
+
+<section class="band">
+  <div class="wrap">
+    <div class="secthead"><span class="tag eng">engine-generated</span></div>
+    <p class="eyebrow">At a glance</p>
+    <h2>The corpus, right now</h2>
+    <div class="stats">
+      <!--##REQMAP:STATS##--><!--##/REQMAP:STATS##-->
+    </div>
+    <p class="src">Auto-injected by <code>reqmap.py site</code> from <code>_map.json</code> — re-computed on every run, so it never drifts.</p>
+  </div>
+</section>
+
+<!-- PILLARS — authored -->
+<section>
+  <div class="wrap">
+    <div class="secthead"><span class="tag auth">authored</span></div>
+    <p class="eyebrow">Why it exists</p>
+    <h2>Three jobs, one engine</h2>
+    <div class="pillars">
+      <div class="pill"><h3>Catch drift early</h3><p>Every code tag resolves to a real requirement; every confirmed requirement has code behind it. <code>gate</code> fails the build the moment intent and implementation diverge.</p></div>
+      <div class="pill"><h3>Map the system</h3><p>One command renders the whole capability graph — system map, req→code, dependencies, risk — into a self-contained viewer you open by double-click.</p></div>
+      <div class="pill"><h3>Prevent duplicates</h3><p>Before a second team re-implements an existing capability, <code>dupes</code> flags the overlapping contracts. The SSOT is the place you look first.</p></div>
+    </div>
+  </div>
+</section>
+
+<!--##REQMAP:COMMANDS## — engine lists the registered subcommands -->
+<section class="band">
+  <div class="wrap">
+    <div class="secthead"><span class="tag eng">engine-generated</span></div>
+    <p class="eyebrow">Surface</p>
+    <h2>All 18 commands</h2>
+    <div class="cmds">
+      <div class="cmd gate"><code>gate</code><p>The gate. Links resolve, drift detected, test-links verified. Run before every commit + in CI.</p></div>
+      <div class="cmd"><code>sync</code><p>Rescan + advance the drift baseline + regen the map. --accept-drift for an edited confirmed contract.</p></div>
+      <div class="cmd"><code>init</code><p>First-time bootstrap: scaffold, draft from code, lock, map, next-steps. Idempotent.</p></div>
+      <div class="cmd"><code>map</code><p>Generate _map.md (Mermaid) + _map.json (graph) + _map.html (viewer).</p></div>
+      <div class="cmd"><code>site</code><p>Inject engine-owned regions (nav links + counts) into a presentation page. --attach/--diagram.</p></div>
+      <div class="cmd"><code>next</code><p>"What should I work on?" — prioritised, actionable risk buckets.</p></div>
+      <div class="cmd"><code>show &lt;ID&gt;</code><p>Consolidated dossier: contract, deps, members by role, risk.</p></div>
+      <div class="cmd"><code>lint</code><p>Readability/structure check on non-draft requirements.</p></div>
+      <div class="cmd"><code>dupes</code><p>Flag requirement pairs with overlapping contracts (TF-IDF).</p></div>
+      <div class="cmd"><code>health</code><p>Corpus coherence score + component counts. --json for a badge.</p></div>
+      <div class="cmd"><code>confirm &lt;ID&gt;</code><p>Flip a reviewed requirement to confirmed (needs a member).</p></div>
+      <div class="cmd"><code>review</code><p>Emit a JSON review plan (intent/contract/acceptance) for AI-assisted quality review.</p></div>
+      <div class="cmd"><code>new</code><p>Scaffold a new requirement from the built-in template.</p></div>
+      <div class="cmd"><code>scan</code><p>List which code members belong to which capability.</p></div>
+      <div class="cmd"><code>draft</code><p>Draft requirements from untagged legacy code + prose.</p></div>
+      <div class="cmd"><code>plan</code><p>Read-only JSON extraction plan (AI-assist), writes nothing.</p></div>
+      <div class="cmd"><code>findings</code><p>Aggregate open verify-intent questions into _findings.md.</p></div>
+      <div class="cmd"><code>export</code><p>Emit _map.json for an external front-end. --out PATH or -.</p></div>
+    </div>
+  </div>
+</section>
+<!--##/REQMAP:COMMANDS##-->
+
+<!--##REQMAP:LAYERS## — engine derives layers from requirement frontmatter -->
+<section>
+  <div class="wrap">
+    <div class="secthead"><span class="tag eng">engine-generated</span></div>
+    <p class="eyebrow">Layer model</p>
+    <h2>Bus, feature, need</h2>
+    <div class="layers">
+      <div class="layer bus"><div class="l">layer: bus</div><h3>Foundation</h3><p>High fan-in capabilities — config, parse, scan, drift. Change only behind the contract.</p><div class="ids">CORE-PARSE-001 · CORE-SCAN-002 · CORE-DRIFT-003</div></div>
+      <div class="layer feat"><div class="l">layer: feature</div><h3>Composed</h3><p>Built on the bus via <code>depends_on</code>; each carries its own contract, acceptance, tests.</p><div class="ids">REQ-CHECK-006 · REQ-MAP-007 · REQ-INIT-012</div></div>
+      <div class="layer need"><div class="l">layer: need</div><h3>Stakeholder need</h3><p>An upstream need, satisfied-by features via <code>satisfies:</code>; exempt from the code gate.</p><div class="ids">NEED-SSOT-001</div></div>
+    </div>
+  </div>
+</section>
+<!--##/REQMAP:LAYERS##-->
+
+<!-- HYBRID MECHANISM — meta, explains the split -->
+<section class="mech">
+  <div class="wrap">
+    <div class="secthead"><span class="tag auth">authored</span></div>
+    <p class="eyebrow">How this page stays current</p>
+    <h2>The hybrid: markers</h2>
+    <p class="lead" style="margin-bottom:18px">The engine only rewrites what lives between its markers. Your prose is never touched.
+      Re-run <code>reqmap.py site</code> after any change and the nav links, stats, commands, and layers refresh — the hero and narrative survive.</p>
+<pre><span class="c-dim">&lt;!--##REQMAP:NAV##--&gt;</span>      <span class="c-eng">← engine: Live Map / Diagram / GitHub, from `git remote` + artifact paths</span>
+   ...your logo, your wording...   <span class="c-auth">← authored, preserved</span>
+<span class="c-dim">&lt;!--##/REQMAP:NAV##--&gt;</span>
+
+<span class="c-auth">&lt;header class="hero"&gt; ... your headline + story ... &lt;/header&gt;</span>   <span class="c-auth">← authored, preserved</span>
+
+<span class="c-dim">&lt;!--##REQMAP:STATS##--&gt;</span>    <span class="c-eng">← engine: counts from _map.json, recomputed every run</span>
+<span class="c-dim">&lt;!--##REQMAP:COMMANDS##--&gt;</span> <span class="c-eng">← engine: the registered subcommands</span>
+<span class="c-dim">&lt;!--##REQMAP:LAYERS##--&gt;</span>   <span class="c-eng">← engine: layers from requirement frontmatter</span></pre>
+  </div>
+</section>
+
+<footer>
+  Prototype of <code>reqmap.py site</code> · hybrid (engine links + data / authored prose) ·
+  self-contained, no network, no <code>file://</code> iframes · Senate 2026-06-14 verdict <strong>MODIFY</strong> conditions applied.
+</footer>
+
+</body>
+</html>
+"""  # implements: REQ-SITE-026
+
+
 def _since_changed_files(ref, code_root):
     """Return set of absolute paths changed since `ref`, or None on failure.
 
@@ -2839,11 +4180,27 @@ def _since_changed_files(ref, code_root):
         )
         if result.returncode != 0:
             return None
+        # `git diff` emits paths relative to the repo ROOT, not to cwd. Resolve
+        # the toplevel so these abspaths line up with member abspaths (which are
+        # relative to code_root) even when code_root is a subdirectory of the
+        # git root — otherwise the since-set and member-set never intersect and
+        # the gate silently checks zero requirements. Fall back to code_root on
+        # failure (mirrors _docs_publish_path).
+        root = code_root
+        try:
+            top = subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                capture_output=True, text=True, cwd=code_root, timeout=10,
+            )
+            if top.returncode == 0 and top.stdout.strip():
+                root = top.stdout.strip()
+        except Exception:
+            pass
         files = set()
         for line in result.stdout.splitlines():
             line = line.strip()
             if line:
-                files.add(os.path.normcase(os.path.abspath(os.path.join(code_root, line))))
+                files.add(os.path.normcase(os.path.abspath(os.path.join(root, line))))
         return files
     except Exception:
         return None
@@ -2899,15 +4256,113 @@ def _docs_publish_path(root):  # implements: REQ-PAGES-021
     return None
 
 
+def _site_pages_bootstrap(docs_dir):  # implements: REQ-SITE-026
+    """Ensure docs/ carries a GitHub Pages signal so REQ-PAGES-021 publishes and
+    the page is servable: write .nojekyll and an index.html redirect when absent.
+    Idempotent — never clobbers an existing index.html."""
+    os.makedirs(docs_dir, exist_ok=True)
+    nojekyll = os.path.join(docs_dir, ".nojekyll")
+    if not os.path.exists(nojekyll):
+        open(nojekyll, "w").close()
+    index = os.path.join(docs_dir, "index.html")
+    if not os.path.exists(index):
+        with open(index, "w", encoding="utf-8") as f:
+            f.write('<!doctype html><meta charset="utf-8">'
+                    '<meta http-equiv="refresh" content="0; url=./architecture.html">'
+                    '<link rel="canonical" href="./architecture.html">'
+                    '<title>Project site</title>'
+                    '<p>Redirecting to <a href="./architecture.html">the project site</a>…</p>\n')
+
+
+def _site_diagram_ok(target_path, diagram_rel):  # implements: REQ-SITE-026
+    """True when `diagram_rel` (relative to the page's directory) names an existing
+    file — so the Diagram link is emitted only when the artifact is actually there."""
+    if not diagram_rel:
+        return False
+    return os.path.isfile(os.path.join(os.path.dirname(target_path) or ".", diagram_rel))
+
+
+def _site_default_target(root):  # implements: REQ-SITE-026
+    """docs/architecture.html at the git root (so running from plugin/ still finds
+    the project-root docs/), or None when there is no docs/. Mirrors
+    _docs_publish_path's git-root resolution."""
+    try:
+        git_root = subprocess.check_output(
+            ["git", "-C", root, "rev-parse", "--show-toplevel"],
+            stderr=subprocess.DEVNULL, timeout=3).decode().strip()
+    except Exception:
+        git_root = root
+    docs = os.path.join(git_root, "docs")
+    return os.path.join(docs, "architecture.html") if os.path.isdir(docs) else None
+
+
+def cmd_site(reqs, members, root=".", attach=None,
+             regions=None, diagram=None, detect=False):  # implements: REQ-SITE-026
+    """Inject engine-owned regions into a presentation page (attach mode) or write
+    a default page when the target is absent (scaffold mode). Deterministic and
+    headless-safe: never prompts, never raises on missing git/files. `detect`
+    prints findings + the suggested command and writes nothing."""
+    regions = regions or ["nav"]
+    data = _build_map_data(reqs, members)
+    repo_url = _git_remote_web_url(root)
+
+    if detect:
+        default = _site_default_target(root)
+        cands = [p for p in (default,) if p and os.path.isfile(p)]
+        print("repo: {}".format(repo_url or "(no remote)"))
+        print("presentation candidates: {}".format(", ".join(cands) or "(none)"))
+        tgt = default or os.path.join(root, "docs", "architecture.html")
+        print("suggested: reqmap site --attach {} --regions nav,stats".format(tgt))
+        return 0
+
+    if not attach:
+        print("usage: reqmap site --attach <page.html> [--regions nav,stats] [--diagram <rel>]")
+        print("   or: reqmap site --detect")
+        return 0
+
+    map_ok = os.path.isfile(os.path.join(os.path.dirname(attach) or ".", "map.html"))
+    diagram_rel = diagram if _site_diagram_ok(attach, diagram) else None
+    ctx = _site_context_from_data(data, repo_url=repo_url, map_ok=map_ok, diagram_rel=diagram_rel)
+
+    if os.path.isfile(attach):
+        html = open(attach, encoding="utf-8").read()
+        mode = "refreshed"
+    else:                                   # scaffold mode
+        os.makedirs(os.path.dirname(attach) or ".", exist_ok=True)
+        # escape before substituting — a repo dir name or remote URL with < > " &
+        # would otherwise break out of the title/href sinks in the scaffold template
+        html = (SITE_TEMPLATE.replace("%%REPO_NAME%%", _html_escape(_repo_name(root) or "this project"))
+                             .replace("%%REPO_URL%%", _html_escape(repo_url or "#")))
+        mode = "scaffolded"
+
+    for name in regions:
+        if name in SITE_REGIONS:
+            html = _inject_region(html, name, _render_region(name, ctx))
+
+    with open(attach, "w", encoding="utf-8") as f:
+        f.write(html)
+    print("{} {} (regions: {})".format(mode, attach, ",".join(regions)))
+    return 0
+
+
 def _viewer_template_path():  # implements: REQ-VIEWER-007
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), VIEWER_TEMPLATE)
 
 
 def _inject_viewer(template_text, data):  # implements: REQ-VIEWER-007
     """Replace the data marker with an inline <script> assigning the graph to
-    window.__REQMAP_DATA__. `</` is escaped to `<\\/` so a requirement that
-    contains `</script>` cannot break out of the script element."""
-    blob = _build_json_text(data).replace("</", "<\\/")
+    window.__REQMAP_DATA__. Three sequences are escaped so the HTML5 parser
+    never changes state mid-blob:
+      `</`   → `<\\/`  prevents `</script>` from closing the element early
+      `<!--` → `<\\!--` prevents entering "script data escaped" state
+      `-->`  → `-\\->`  closes "script data escaped" state prematurely if unclosed
+    All three are valid JS string escapes (backslash ignored for `/`, `!`, `-`)."""
+    blob = (
+        _build_json_text(data)
+        .replace("</", "<\\/")
+        .replace("<!--", "<\\!--")
+        .replace("-->", "-\\->")
+    )
     script = "<script>window.__REQMAP_DATA__=" + blob + ";</script>"
     return template_text.replace(_REQMAP_DATA_MARKER, script, 1)
 
@@ -2935,6 +4390,9 @@ def cmd_review(reqs, one_id=None):  # implements: REQ-REVIEW-022
     consumer should focus on, a corpus coverage_summary, and the finding contract. The plan
     is byte-reproducible across runs; the AI findings DERIVED from it are advisory and NOT
     reproducible, and no gate path reads this output or any AI sidecar."""
+    if one_id and one_id not in reqs:
+        print("no requirement with id {} (expected requirements/{}.md)".format(one_id, one_id))
+        return 1
     ids = [one_id] if one_id else sorted(reqs)
     items = []
     for rid in ids:
@@ -2993,8 +4451,28 @@ def main():
             _stream.reconfigure(encoding="utf-8")
         except (AttributeError, ValueError, OSError):
             pass
-    ap = argparse.ArgumentParser(prog="reqmap")
-    ap.add_argument("cmd", choices=["init", "new", "scan", "check", "map", "export", "next", "lint", "show", "similar", "health", "extract", "candidates", "findings", "promote", "promote-todo", "review"])
+    ap = argparse.ArgumentParser(
+        prog="reqmap",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Everyday:\n"
+            "  init                 bootstrap a repo (scaffold + draft + lock + map)\n"
+            "  new ID               scaffold one requirement   (--from-todo \"name\" --id ID: from a TODO.md item)\n"
+            "  draft                derive draft requirements from untagged CODE\n"
+            "  confirm ID           validate a reviewed requirement -> status confirmed\n"
+            "  sync                 rescan + regenerate map + advance drift baseline (use --accept-drift on confirmed edits)\n"
+            "  gate                 the commit/CI gate: link sync + drift + test-link (report-only)\n"
+            "  next                 what to do next (counted risk buckets)\n"
+            "  show ID              one-requirement dossier\n"
+            "\nAdvanced:\n"
+            "  plan                 read-only extraction plan (writes nothing)\n"
+            "  dupes                flag requirement pairs with overlapping contracts\n"
+            "  scan / map / export / site / findings / lint / review / health\n"
+            "\nDeprecated:\n"
+            "  check                alias for 'gate' (removed next major)\n"
+        ),
+    )
+    ap.add_argument("cmd", choices=_cli_choices())
     ap.add_argument("arg", nargs="?")
     ap.add_argument("--root", default=".")
     ap.add_argument("--reqs", default=None)
@@ -3014,8 +4492,13 @@ def main():
     ap.add_argument("--threshold", type=_threshold_arg, default=None,
                     help="similar: cosine cutoff in (0,1] for reporting a pair (default 0.35)")
     ap.add_argument("--json", dest="as_json", action="store_true",
-                    help="check|health: emit structured JSON output (for CI/badge consumption)")
+                    help="check|health|coverage: emit structured JSON output (for CI/badge consumption)")
+    ap.add_argument("--badge", dest="as_badge", action="store_true",
+                    help="health: emit Shields.io endpoint JSON (schemaVersion, label, message, color)")
     ap.add_argument("--update-lock", action="store_true")
+    ap.add_argument("--accept-drift", dest="accept_drift", action="store_true",
+                    help="sync: advance the drift baseline even when a confirmed/implemented "
+                         "contract changed (otherwise sync refuses and exits non-zero)")
     ap.add_argument("--since", metavar="REF",
                     help="check: scope gate to requirements whose member files changed since REF "
                          "(hypothesis: highest-frequency changes; falls back to full scan on git error)")
@@ -3025,12 +4508,25 @@ def main():
     ap.add_argument("--check", dest="check_fresh", action="store_true",
                     help="map: verify the committed _map.* is fresh (exit 1 if stale) instead of writing")
     ap.add_argument("--id", dest="new_id", default=None,
-                    help="promote-todo: the AREA-NAME-NNN id for the scaffolded requirement (required)")
+                    help="new --from-todo: the AREA-NAME-NNN id for the scaffolded requirement (required)")
+    ap.add_argument("--from-todo", dest="from_todo", default=None,
+                    help="new: scaffold the requirement from a TODO.md item matched by this name "
+                         "(use with --id; add --mark-done to flip the item to [x])")
     ap.add_argument("--mark-done", dest="mark_done", action="store_true",
-                    help="promote-todo: also flip the matched TODO.md item to [x] (off by default)")
+                    help="new --from-todo: also flip the matched TODO.md item to [x] (off by default)")
     ap.add_argument("--cache", action="store_true",
                     help="opt-in: reuse a per-file scan cache (requirements/_scancache.json) so unchanged "
                          "files skip re-parsing. Off by default; results are identical with or without it.")
+    ap.add_argument("--attach", default=None,
+                    help="site: target HTML to inject engine-owned regions into (scaffolds it if absent)")
+    ap.add_argument("--regions", default="nav",
+                    help="site: comma list of regions to inject (nav,stats); default nav")
+    ap.add_argument("--diagram", default=None,
+                    help="site: relative path (from the page) to an excalidraw HTML; linked only if it exists")
+    ap.add_argument("--detect", action="store_true",
+                    help="site: print docs/ findings + the suggested command; writes nothing")
+    ap.add_argument("--no-site", dest="no_site", action="store_true",
+                    help="init: skip the final site step")
     a = ap.parse_args()
     reqs_dir = a.reqs or os.path.join(a.root, "requirements")
     code_root = a.code or a.root
@@ -3042,33 +4538,54 @@ def main():
         tmpl = None
 
     if a.cmd == "new":
+        if getattr(a, "from_todo", None):
+            return cmd_promote_todo(reqs_dir, tmpl, a.from_todo, a.new_id, a.mark_done, code_root)
         if not a.arg:
-            print("usage: reqmap new AREA-NAME-NNN"); return 2
+            print("usage: reqmap new AREA-NAME-NNN   |   reqmap new --from-todo \"<todo name>\" --id AREA-NAME-NNN"); return 2
         return cmd_new(reqs_dir, tmpl, a.arg)
-    if a.cmd == "promote-todo":
-        if not a.arg:
-            print('usage: reqmap promote-todo "<todo name>" --id AREA-NAME-NNN [--mark-done]'); return 2
-        return cmd_promote_todo(reqs_dir, tmpl, a.arg, a.new_id, a.mark_done, code_root)
     if a.cmd == "init":
-        return cmd_init(reqs_dir, code_root, wipe=a.wipe)
+        return cmd_init(reqs_dir, code_root, wipe=a.wipe, no_site=a.no_site)
+    if a.cmd == "gen-integration":
+        return cmd_gen_integration(reqs_dir, code_root)
 
     reqs = load_requirements(reqs_dir)
     members = scan_members(code_root, reqs_dir, cache=a.cache)
     if a.cmd == "scan":
         cmd_scan(reqs, members); return 0
     if a.cmd == "next":
-        return cmd_next(reqs, members, a.show_all)
+        return cmd_next(reqs, members, a.show_all, code_root=code_root, reqs_dir=reqs_dir)
     if a.cmd == "lint":
         return cmd_lint(reqs, a.strict, members)
     if a.cmd == "show":
         if not a.arg:
             print("usage: reqmap show <ID>"); return 2
         return cmd_show(reqs, members, a.arg)
-    if a.cmd == "similar":
+    if a.cmd == "dupes":
         return cmd_similar(reqs, a.threshold if a.threshold is not None else SIMILAR_THRESHOLD)
     if a.cmd == "health":
-        return cmd_health(reqs, members, reqs_dir, a.as_json)
+        return cmd_health(reqs, members, reqs_dir, a.as_json,
+                          getattr(a, "as_badge", False), code_root=code_root)
+    if a.cmd == "coverage":
+        return cmd_coverage(reqs, members, code_root, reqs_dir, a.as_json)
+    if a.cmd == "gate":
+        # report-only: link sync + drift + test-link; never touches the lock.
+        return cmd_check(reqs, members, reqs_dir, False, code_root, a.strict, a.as_json,
+                         getattr(a, "since", None))
+    if a.cmd == "sync":
+        # rescan + regenerate map + advance the drift baseline (guarded). Members were
+        # already scanned above; cmd_check rewrites the lock unless confirmed drift is
+        # detected without --accept-drift, then map regenerates only on success.
+        rc = cmd_check(reqs, members, reqs_dir, True, code_root, strict=a.strict,
+                       accept_drift=getattr(a, "accept_drift", False))
+        if rc == 0:
+            cmd_map(reqs, members, reqs_dir, code_root)
+        return rc
     if a.cmd == "check":
+        # deprecated alias for `gate` (report) / `sync` (regenerate). Preserves the
+        # legacy behavior verbatim so consumer hooks/CI/Action keep working.
+        print("reqmap: 'check' is deprecated — use 'gate' (report) or 'sync' (regenerate "
+              "lock+map). Forwarding to legacy behavior; the alias is removed in the next major.",
+              file=sys.stderr)
         rc = cmd_check(reqs, members, reqs_dir, a.update_lock, code_root, a.strict, a.as_json,
                        getattr(a, "since", None))
         if a.update_lock:
@@ -3076,11 +4593,15 @@ def main():
         return rc
     if a.cmd == "map":
         return cmd_map(reqs, members, reqs_dir, code_root, a.check_fresh)
+    if a.cmd == "site":  # implements: REQ-SITE-026
+        regions = [x.strip() for x in (a.regions or "").split(",") if x.strip()]
+        return cmd_site(reqs, members, code_root,
+                        attach=a.attach, regions=regions, diagram=a.diagram, detect=a.detect)
     if a.cmd == "export":
         return cmd_export(reqs, members, reqs_dir, code_root, a.out)
-    if a.cmd == "extract":
+    if a.cmd == "draft":
         return cmd_extract(reqs, members, code_root, reqs_dir)
-    if a.cmd == "candidates":
+    if a.cmd == "plan":
         md_globs = []
         for g in (a.md_glob or []):
             md_globs += [x.strip() for x in g.split(",") if x.strip()]
@@ -3089,9 +4610,9 @@ def main():
         return cmd_findings(reqs, reqs_dir, a.raw)
     if a.cmd == "review":
         return cmd_review(reqs, a.arg)
-    if a.cmd == "promote":
+    if a.cmd == "confirm":
         if not a.arg:
-            print("usage: reqmap promote AREA-NAME-NNN"); return 2
+            print("usage: reqmap confirm AREA-NAME-NNN"); return 2
         return cmd_promote(reqs, members, a.arg)
 
 

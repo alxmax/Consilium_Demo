@@ -65,7 +65,7 @@ Steps **5b, 5c, 5d** are sub-steps within Stage 4: **5b** (confidence) is mandat
 ### 0. Bootstrap (before any grep / Read on the codebase)
 Two actions in order:
 
-1. **Read the contracts required by the mode** — minimum 3 core voices: `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Dialectic also reads `prompts/voices/skeptic.md` (its Skeptic stage); Trias also reads `<personality>_lens.md` (`pioneer_lens.md`, `architect_lens.md`, `steward_lens.md`); skeptic modes also read `prompts/voices/skeptic.md`. They define the exact fields produced by each voice. **Parallel/dialectic note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough. **Also:** if running a non-default mode, read `modes/<mode>.md` for the full mode workflow and machine-readable config (subagents, cost_multiplier, confidence_floor).
+1. **Read the contracts required by the mode** — minimum 3 core voices: `prompts/voices/generator.md`, `prompts/voices/control.md`, `prompts/voices/conservator.md`. Dialectic also reads `prompts/voices/skeptic.md` (its Skeptic stage); Trias also reads `<personality>_lens.md` (`pioneer_lens.md`, `architect_lens.md`, `steward_lens.md`); skeptic modes also read `prompts/voices/skeptic.md`. They define the exact fields produced by each voice. **Sub-agent dispatch note:** the content of each prompt must be *inlined* into the sub-agent dispatch — reading at Step 0 is not enough. **Also:** if running a non-default mode, read `modes/<mode>.md` for the full mode workflow and machine-readable config (subagents, cost_multiplier, confidence_floor).
 2. **Run `python scripts/priors.py --label "<short task label>"`** — returns soft priors from `FEEDBACK.html` + `runs/`. The `--label` flag also checks for a prior authoritative run matching this task (see **Prior-deliberation passthrough** below). Three fields can block the current deliberation until resolved:
    - `stale_pendings` non-empty (PEND older than 2 days): ask *"You have N old PEND entries: [date | chosen] × N. Want me to close them (OK/BAD/skip)?"* — update via `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferred) or via `Edit` directly on `FEEDBACK.html`. **Do not** use `log_feedback.py` — it duplicates the row. **Headless** (`is_headless()`): log `[priors] stale_pendings: N entries — skipping prompt` to stderr and continue without asking.
    - `missing_feedback_runs` non-empty: run `python scripts/audit_feedback.py --backfill` to create PEND entries for orphan runs, then resolve them as above. If the list is larger than 3, prefer to resolve the gap *before* starting a new deliberation. **Headless**: run `audit_feedback.py --backfill` automatically and continue.
@@ -111,7 +111,7 @@ Two actions in order:
      }
      ```
    - Step 7 runs **with all gates intact** — implement-mode routing, red→green gate, Reviewer. The fiat skips the deliberation, not the safety net.
-   - Persist + log to FEEDBACK like any run (Step 6 final actions) — the `user_spec_passthrough` mode label keeps these runs visible to priors and outcome tracking. Does NOT increment the silent-audit counter (nothing to cross-check).
+   - Persist + log to FEEDBACK like any run (Step 6 final actions) — the `user_spec_passthrough` mode label keeps these runs visible to priors and outcome tracking.
    - **Headless:** works identically — the explicit instruction in the prompt *is* the consent; no confirmation needed.
    - **Falsification criterion:** if `user_spec_passthrough` runs accumulate BAD outcomes, tighten this trigger (e.g. require restating the skip instruction verbatim) — the valve is a convenience, not a right.
 
@@ -195,7 +195,7 @@ Output per candidate: `{id, regression_risk: {reversibility, magnitude, net_conc
     "telemetry": {"mode": "sequential_scale_down", "dispatch_count": 2, "consilium_version": "<python scripts/version.py>", "consilium_ref": "<python scripts/version.py --ref>"}
   }
   ```
-  `confidence: 0.85` is deliberate — Conservator's judgment is the signal, not a weak guess. Designed to stay above the `[0.0, 0.7]` skeptic auto-trigger band.
+  `confidence: 0.85` is deliberate — Conservator's judgment is the signal, not a weak guess. Designed to stay above the `[0.0, 0.70)` skeptic auto-trigger band.
 
   **Dialectic mode exception (scale_down + Skeptic):** when `telemetry.mode = "dialectic"`, the Skeptic stage runs **even on scale_down short-circuits**. Rationale: Dialectic's whole point is a focused post-hoc challenge on the chosen answer; scale_down skipping Control is fine (cost-aware) but skipping Skeptic too defeats the mode. The trivial-direct chosen is the input to Skeptic — if Skeptic produces `can_object: true` with a concrete constraint, log `skeptic_caught_constraint: true` and the orchestrator should reconsider the trivial-direct answer (advisory by default; `--skeptic-can-override` allows the override). Empirical motivation: 2026-05-28 benchmark validation (see `experiments/dialectic-skeptic-on-scale-down-validation-2026-05-28.md`). Dialectic spec already mandates "Skeptic runs unconditionally — not gated on the confidence band" (modes/dialectic.md §"Skeptic stage"); this exception makes the spec real on the scale_down path.
 - If `meta_recommendation: scale_up` → warn user, add context request. **Headless**: warning emitted to stderr, the context cannot be requested interactively — continue with existing input.
@@ -246,7 +246,7 @@ result = check_mode_floor(telemetry_mode, confidence_value, vote_pattern)  # vot
 ```
 Floors: `sequential=0.70`, `dialectic=0.75`, `trias=0.80`. A run below floor signals the mode did not deliver value for the cost. **Trias exemption:** a decisive vote pattern (`3-0`/`2-1`/`2-0`) is exempt from the WEAK flag — `2-1` (0.75) and `2-0` (0.70) sit *structurally* below the 0.80 floor by design, not because the deliberation was weak; pass `vote_pattern` so the floor flags only genuinely weak runs. The data accumulates in `FEEDBACK.html` — the pattern becomes visible after ≥10 runs per mode.
 
-**Low-confidence auto-escalation (Sequential only).** When `confidence < 0.6` and `mode=sequential`, the orchestrator **automatically re-runs the full pipeline (Steps 1–5) with `--mode dialectic`** — no user action required, no confirmation prompt. The Dialectic result is the final output; the Sequential run is discarded. Pass `auto_escalated: true` in the bundle before calling `build_report.py` so the final report carries the marker (observability + retroactive outcome tracing). One escalation level only — if Dialectic also yields `confidence < 0.6`, no further escalation fires. Threshold distinction: `skeptic_on_chosen` auto-triggers at `confidence ∈ [0.0, 0.7]`; this fires only at `< 0.6` — the genuinely weak band where a higher mode is likely to produce materially different results.
+**Low-confidence auto-escalation (Sequential only).** When `confidence < 0.6` and `mode=sequential`, the orchestrator **automatically re-runs the full pipeline (Steps 1–5) with `--mode dialectic`** — no user action required, no confirmation prompt. The Dialectic result is the final output; the Sequential run is discarded. Pass `auto_escalated: true` in the bundle before calling `build_report.py` so the final report carries the marker (observability + retroactive outcome tracing). One escalation level only — if Dialectic also yields `confidence < 0.6`, no further escalation fires. Threshold distinction: `skeptic_on_chosen` auto-triggers at `confidence < 0.70`; this fires only at `< 0.6` — the genuinely weak band where a higher mode is likely to produce materially different results.
 
 ### 5c. Meta-critic (auto, advisory) — *retired 2026-05-25*
 ```bash
@@ -504,82 +504,13 @@ Every `/consilium` invocation MUST terminate by writing a report to `.consilium/
 
 Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. **Trias exception**: each personality uses the model declared in `scripts/personalities.py` — all three (pioneer, architect, steward) → `sonnet`. Mode sections declare per-invocation overrides — single source of truth per mode, descriptive not enforced.
 
-Cost multipliers (baseline Sequential = 1×): Parallel 3× · Dialectic 1.33× · Trias 2.67×. The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×, Parallel+flag = 1.33× Parallel).
+Cost multipliers (baseline Sequential = 1×): Dialectic 1.33× · Trias 2.67×. The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×).
 
 ## Parallel voices mode
 
-> **Lineage.** Mode metadata single-source-of-truth was settled by prior Consilium deliberation `.consilium/runs/2026-05-25_160009-modes-dir-frontmatter-refactor.json` (YAML frontmatter chosen over JSON-manifest codegen). Doc-vs-impl parity for the 4 invariants below is enforced by `scripts/check_doc_drift.py` (Senate audit `runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`, Track 2).
+**Parallel mode removed** (2026-06-26 — Senate GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs). Parallel dispatch is no longer available in any form. Existing `.consilium/runs/*.json` files with `mode: "parallel"` remain valid (backward-compat enum in `validate_report.py`).
 
-**Parallel mode removed.** Parallel dispatch is no longer a user-selectable option. Auto-triggered internally in two cases: (a) when Conservator returns `magnitude = critical` AND `reversibility = irreversible`, as a cross-check on the sequential result; (b) the silent-audit cadence described in §"Silent parallel audit" below.
-
-**Dispatch flow (auto cross-check).** The 2-turn flow below — Generator alone first, then Control + Conservator in parallel with Generator's candidates. This preserves the data dependency (Control needs candidates to verdict, Conservator needs them to assess risk) while isolating each voice in its own context within a turn.
-
-### How (2 turns)
-1. **Turn 1:** dispatch Generator (1 Agent call). Wait for candidates.
-2. **Turn 2:** dispatch Control + Conservator in parallel (2 Agent calls in the same message), both receiving candidates from Turn 1.
-3. Aggregate directly with `scripts/aggregator.py`.
-
-Continue with Step 5b → 5c → 5d → 6; capture tokens/latency per sub-agent dispatch.
-
-### Silent parallel audit (adaptive cadence)
-
-After each completed Sequential deliberation (Step 6 written), the orchestrator runs the audit counter to decide whether to fire a silent parallel cross-check. Implementation: `scripts/audit_counter.py`. State: `.consilium/audit_state.json` (gitignored).
-
-**Ordering invariant (no phantom increments).** `--increment` runs *strictly after* Step 6 commits a validated report — never before. A `scope_gate` halt (Step 1.5), a `BLOCK`/`REWORK` interception, or any pre-write abort short-circuits the workflow before this point, so an aborted/uncommitted run can **never** inflate the counter or mis-fire the 20-run cadence. Combined with the validate-before-commit invariant in Step 6, "counter incremented" ⟹ "a valid run was committed".
-
-**Workflow (after Sequential Step 6):**
-
-```bash
-# 1. Bump the counter
-python -X utf8 scripts/audit_counter.py --increment
-
-# 2. Ask whether this run is due
-python -X utf8 scripts/audit_counter.py --check
-# → {"should_audit": <bool>, "sequential_count": N, "frequency": 20|5, "headless_skipped": <bool>, ...}
-```
-
-If `should_audit: true`, dispatch the 2-turn parallel flow above on the **same input** (silent — no user-visible change to the Sequential report). Compare the parallel `chosen` to the sequential `chosen`, then:
-
-```bash
-python -X utf8 scripts/audit_counter.py --record-divergence <0|1> \
-    --sequential-chosen <id> --parallel-chosen <id>
-```
-
-**Adaptive cadence.** Default `frequency = 20` (1 silent audit per 20 sequential runs). The rolling window holds the last 5 audit outcomes:
-- ≥2 divergences in the window AND `frequency == 20` → bump to `frequency = 5` (HOT mode)
-- 0 divergences in a full window of 5 audits AND `frequency == 5` → restore to `frequency = 20`
-
-**Divergence is logged, not blocked.** A mismatch appends a `silent_audit_divergence` field to the Sequential report and surfaces a one-line warning. Behavior on next run is unaffected — the audit is a measurement instrument, not a gate. Calibration audit (3-6 months out per Deming) reads `audit_state.json.audits[]`.
-
-**Counted runs.** Every Sequential deliberation increments, including `scale_down` short-circuits (a sequential scale_down while parallel runs the full pipeline IS divergence worth detecting). Prior-deliberation passthrough does NOT increment (bypasses both pipelines, nothing to cross-check).
-
-**Headless contexts.** `--check` still increments the counter via `--increment`, but `should_audit` returns `false` because orchestrator-driven parallel dispatch requires an interactive Claude session. A boundary run that lands headless is **skipped, not deferred** — the counter keeps advancing, so the next audit fires at the next `(sequential_count - last_audit_run) % frequency == 0` boundary (one full `frequency` later), not on the immediately-following interactive run. (Deferring the skipped audit to the next interactive run would require a carry-over flag in `audit_state.json`; that is a possible future enhancement, not current behavior.)
-
-**Status:** `python -X utf8 scripts/audit_counter.py --status` for a human-readable summary.
-
-Each sub-agent receives: `success_criterion`, diff/context, **the full content of its voice's prompt**, the instruction to return strict JSON.
-
-**Override semantics (Parallel mode):** `model: "opus"` on Generator for high-stakes/ambiguous cases; `model: "haiku"` on Control/Conservator for small diffs. Default per `## Dispatch defaults`.
-
-**Prompt template:**
-```
-Goal: <success_criterion>
-Change under review: <diff or description>
-Codebase context: <files touched, language, framework>
-
-Your role and instructions:
-<full content of prompts/<voice>.md>
-
-Return STRICTLY the JSON specified in the "Output format" section above. No prose before or after.
-```
-
-**Skip parallel if:** the change is trivial (<10 lines), you don't have the `Agent` tool, or you want to audit the reasoning step-by-step.
-
-**Failure-mode recovery:**
-- **Sub-agent crash / timeout:** retry that Agent call once; on a second failure, fall back to Sequential for that voice.
-- **Malformed JSON from voice:** reject the voice's output, treat as missing (`{}` for verdicts/scores, or `{"candidates":[]}` for generator) and continue with the others. Log the error in `deliberation_log` with step `"<voice>_parse_error"`.
-- **Missing mandatory fields (e.g. `candidates` empty):** raise a warning in the terminal, skip the aggregator and emit a skipped report with `skip_reason: "voice output incomplete after retry"`.
-- **Strip_context**: necessary only in Sequential mode (Steps 3-4); in Parallel each voice runs in isolation and does not need `strip_context.py`.
+**Advisory.** If `magnitude = critical` AND `reversibility = irreversible`, consider upgrading to **Trias** (2.67× cost, 3 independent personalities + post-vote Skeptic — stronger independent-context coverage than Parallel ever provided). Trias does not auto-trigger; you must select it explicitly.
 
 ## Mode files (machine-readable config)
 
@@ -604,7 +535,7 @@ Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI 
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
-Cross-cutting flag — +1 Skeptic sub-agent over any base mode post-hoc. Auto-triggers when `confidence ∈ [0.0, 0.7]`. Advisory by default; `--skeptic-can-override` for opt-in. **Full workflow: [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md).**
+Cross-cutting flag — +1 Skeptic sub-agent over any base mode post-hoc. Auto-triggers when `confidence < 0.70` (strictly less than 0.70; the Trias 2-0 canonical value and the Sequential floor are both at 0.70 and are passing). Advisory by default; `--skeptic-can-override` for opt-in. **Full workflow: [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md).**
 
 ## Routing boundary
 
@@ -612,10 +543,10 @@ When to escalate beyond a standard Consilium mode:
 
 | Decision profile | Mode |
 |---|---|
-| `confidence ∈ [0.0, 0.7]` from standard mode AND single drift concern | `dialectic + skeptic_on_chosen` |
+| `confidence < 0.70` from standard mode AND single drift concern | `dialectic + skeptic_on_chosen` |
 | 2+ plausible architectural approaches without clear winner | `trias` |
 | Bugfix evident OR diff <20 lines / 1 file | Sequential (scope_gate skips) |
-| All other PR-level reviews | Sequential / Parallel auto cross-check |
+| All other PR-level reviews | Sequential (select Trias if critical + irreversible) |
 
 ## Sequential mode (default)
 

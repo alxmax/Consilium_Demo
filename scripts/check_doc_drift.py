@@ -112,14 +112,6 @@ INVARIANTS = [
         "rationale": "Generator now runs FIRST (blind to risk framing); the dispatch order is load-bearing (irreversibility consent moved pre-dispatch, scale_down skips Control only). Pin it so a silent regression to Conservator-first fails CI — spec prose alone has a 0/6 clean-GO record for order enforcement.",
     },
     {
-        "id": "parallel_auto_is_two_turn",
-        "file": "docs/architecture/src/modes.jsx",
-        "required": r"parallel_auto[\s\S]*?(Two-turn|two-turn|Turn 1[\s\S]*?Turn 2)",
-        "forbidden": r"parallel_auto[\s\S]*?true\s+3-way\s+(parallel\s+)?isolation",
-        "source": "SKILL.md §'How (2 turns)' — Turn 1=Generator alone, Turn 2=Control+Conservator parallel with candidates",
-        "rationale": "Control needs candidates to verdict and Conservator needs them to assess risk; true 3-way isolation breaks this data dependency. SKILL.md explicitly describes the 2-turn flow.",
-    },
-    {
         "id": "build_report_emits_pipeline_executed",
         "file": "scripts/build_report.py",
         "required": r'"pipeline_executed":\s*True',
@@ -140,22 +132,6 @@ INVARIANTS = [
         "forbidden": r"2-1\s*→\s*0\.70",
         "source": "scripts/confidence.py VOTE_PATTERN_CONFIDENCE (2-1=0.75, 2-0=0.70); explainer audit 2026-05-30",
         "rationale": "The Trias walkthrough tally caption in modes.jsx is prose, NOT the TRIAS_OUTCOMES table that check_trias_confidence_parity scans, so it drifted to '2-1 → 0.70' (the 2-0 value). It must state the 2-1 confidence as 0.75 to match confidence.py.",
-    },
-    {
-        "id": "costscatter_parallel_cost_parity",
-        "file": "docs/architecture/src/extras.jsx",
-        "required": r"id:\s*'PAR'[\s\S]*?cost:\s*'3×\s*\(auto\)'",
-        "forbidden": r"'1×\s*\(auto\)'",
-        "source": "SKILL.md §Dispatch defaults (Parallel = 3 sub-agents = 3×) + extras.jsx CostBars parallel cost:3.0; explainer audit 2026-05-30",
-        "rationale": "CostScatter MODES_PLOT plotted Parallel at 1× (auto), contradicting SKILL.md (3 sub-agents = 3×) AND the sibling CostBars panel in the same file. The PAR scatter point must read 3× (auto); no mode is 1× (auto).",
-    },
-    {
-        "id": "parallel_auto_gen_dependency_edges",
-        "file": "docs/architecture/src/modes.jsx",
-        "required": r"parallel_auto[\s\S]*?gen_cons",
-        "forbidden": r"orch_ctl",
-        "source": "SKILL.md §'How (2 turns)' — Turn 2 = Generator's candidates → (Control ∥ Conservator); explainer audit 2026-05-30",
-        "rationale": "The parallel_auto diagram must draw the Gen→(Conservator ∥ Control) data dependency (gen_cons / gen_ctl edges), not a flat orchestrator→all-three fan-out (orch_ctl). The 'done' step regressed to orch_cons/orch_gen/orch_ctl, implying the orchestrator dispatches Control directly without Generator's candidates.",
     },
     {
         "id": "explainer_voices_journey_generator_first",

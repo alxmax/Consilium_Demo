@@ -49,18 +49,6 @@ const MODES = [
     voices: 'base + Skeptic',
     subagents: '+1',
   },
-  {
-    id: 'parallel_auto',
-    name: 'Parallel — auto',
-    tag: 'AUTO',
-    plain: 'Not user-selectable. The system fires this automatically when a change is both critical and irreversible. A two-turn dispatch: first Generator runs alone, then Control and Conservator run in parallel — both receiving Generator\'s candidates so they have what they need to verdict and assess risk.',
-    desc: 'Auto-triggered when magnitude=critical AND reversibility=irreversible. Two-turn flow per SKILL.md: Turn 1 dispatches Generator alone in an isolated sub-agent. Turn 2 dispatches Control and Conservator in parallel (same orchestrator message), both receiving Generator\'s candidates. This preserves the data dependency — Control needs candidates to verdict, Conservator needs them to assess risk — while isolating each voice in its own context within a turn.',
-    use: 'auto-only · critical + irreversible changes',
-    cost: '3× (3 sub-agents)',
-    isolation: 'isolated per voice within each turn',
-    voices: 'Gen → (Cons ∥ Ctrl)',
-    subagents: '3 (1 per voice, 2 turns)',
-  },
 ];
 
 /* === Per-mode walkthrough scripts === */
@@ -152,24 +140,6 @@ const WALKTHROUGHS = {
         nodes: { orch: 'idle', cons: 'idle', gen: 'idle', ctl: 'idle', agg: 'idle' }, arrows: [] },
     ],
   },
-  parallel_auto: {
-    name: 'Parallel — auto',
-    layout: 'parallel',
-    steps: [
-      { id: '1', name: 'gate', caption: 'A change arrives. Auto-gate checks: is this critical AND irreversible? If yes → Parallel mode auto-fires.',
-        nodes: { orch: 'active', gate: 'active', cons: 'idle', gen: 'idle', ctl: 'idle', agg: 'idle' }, arrows: [] },
-      { id: '2', name: 'turn 1 — Generator', caption: 'Turn 1: Generator dispatched alone in its own sub-agent. Returns candidates.',
-        nodes: { orch: 'active', gate: 'done', cons: 'idle', gen: 'active', ctl: 'idle', agg: 'idle' }, arrows: ['orch_gen'] },
-      { id: '3', name: 'turn 2 — Cons ∥ Ctrl', caption: 'Turn 2: Control and Conservator dispatched in parallel (same orchestrator message), both receiving Generator\'s candidates. Each runs isolated in its own context but sees the candidates it needs to verdict / assess risk.',
-        nodes: { orch: 'done', gate: 'done', cons: 'active', gen: 'done', ctl: 'active', agg: 'idle' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl'] },
-      { id: '4', name: 'collect', caption: 'Control and Conservator return their JSONs to the orchestrator.',
-        nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl', 'cons_agg', 'ctl_agg'] },
-      { id: '5', name: 'aggregate', caption: 'Aggregator applies the cascade and conservative_override scheme over the three outputs.',
-        nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl', 'cons_agg', 'ctl_agg'] },
-      { id: '6', name: 'done', caption: 'Winner chosen. Also fires as a silent audit every 20 Sequential runs (1/5 in HOT mode after ≥2 divergences in the last 5 audits) — implemented in scripts/audit_counter.py, state in .consilium/audit_state.json.',
-        nodes: { orch: 'done', gate: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_gen', 'gen_cons', 'gen_ctl', 'cons_agg', 'gen_agg', 'ctl_agg', 'agg_out'] },
-    ],
-  },
 };
 
 function ModesSection() {
@@ -210,14 +180,14 @@ function ModesSection() {
         <SectionHead
           num="07"
           eyebrow="Modes"
-          title="Five ways to run the same voices."
+          title="Four ways to run the same voices."
           lede="Modes differ in how voices are isolated and how often they get to talk. Pick a mode below, then hit play to see how a single diff actually travels through it."
         />
 
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Same three voices, different staging. The default mode runs everything in one Claude turn with information filtered between voices. Other modes spin up isolated sub-agents — three different "personalities" in <strong>Trias</strong>, or a single challenger in <strong>Dialectic</strong> and <strong>Skeptic-on-chosen</strong>. <strong>Parallel</strong> is no longer user-selectable — the system fires it automatically on critical, irreversible changes.</p>
+            <p>Same three voices, different staging. The default mode runs everything in one Claude turn with information filtered between voices. Other modes spin up isolated sub-agents — three different "personalities" in <strong>Trias</strong>, or a single challenger in <strong>Dialectic</strong> and <strong>Skeptic-on-chosen</strong>.</p>
           </div>
         </div>
 
@@ -228,7 +198,7 @@ function ModesSection() {
           </div>
           {[
             ['Obvious bugfix, or diff < 20 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
-            ['Any other PR-level review', 'Sequential', 'auto Parallel cross-check fires on critical + irreversible'],
+            ['Any other PR-level review', 'Sequential', 'default review — escalate to Trias if critical + irreversible'],
             ['A chosen answer came back shaky (confidence ≤ 0.7) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
             ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three Sonnet personalities with different lens weights, settled by vote'],
           ].map(([when, mode, why]) => (
@@ -329,16 +299,6 @@ function ModesSection() {
           </div>
         </div>
 
-        {/* === Parallel — auto: when, why, what next === */}
-        <div className="note" style={{ marginTop: 36 }}>
-          <span className="note__label">Parallel — auto, in depth</span>
-          <span>
-            <strong>When</strong> — the orchestrator never picks this by hand. It fires automatically in two cases: (1) the Conservator scores a change as <code>magnitude = critical</code> <em>and</em> <code>reversibility = irreversible</code>; (2) as a silent audit on every 20th run (rising to 1-in-5 if it keeps diverging from Sequential).{' '}
-            <strong>Why</strong> — true isolation (three voices in three separate context windows, no shared memory) costs 3×, so it is held back for the calls where a wrong answer is most expensive, and for keeping the cheap default honest.{' '}
-            <strong>After</strong> — the parallel result cross-checks the Sequential chosen answer; any divergence is surfaced in the report rather than silently resolved, then the run continues to confidence → canonical report → (if files were requested) the implementation pipeline.
-          </span>
-        </div>
-
         {/* === End-to-end lifecycle: request → deliberation → code → learn === */}
         <h3 className="h-sub" style={{ fontSize: 20, margin: '44px 0 4px' }}>From request to written code</h3>
         <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 18, maxWidth: 760 }}>
@@ -382,7 +342,6 @@ function ModeStage({ layout, step }) {
     case 'dialectic': return <StageDialectic step={step} />;
     case 'trias':     return <StageTrias step={step} />;
     case 'skeptic':   return <StageSkeptic step={step} />;
-    case 'parallel':  return <StageParallel step={step} />;
     default: return null;
   }
 }
@@ -627,58 +586,6 @@ function StageSkeptic({ step }) {
       <WArrow d="M 380 160 L 458 154" state={has('conf_skp') ? (ns.skp === 'active' ? 'active' : 'done') : 'idle'} dashed
         label="conf ∈ [0.0, 0.7]" labelX={420} labelY={138} />
       <WArrow d="M 600 154 L 620 154" state={has('skp_out') ? 'done' : 'idle'} />
-    </svg>
-  );
-}
-
-/* === Parallel — auto stage === */
-function StageParallel({ step }) {
-  const ns = step.nodes;
-  const ar = step.arrows;
-  const has = (id) => ar.includes(id);
-
-  return (
-    <svg viewBox="0 0 720 320" className="diagram">
-      <WtDefs />
-
-      <WBox x={20} y={140} w={90} h={48} title="orch" state={ns.orch} />
-      <text x={65} y={130} textAnchor="middle" className="d-faint" style={{ fontSize: 9 }}>claude main</text>
-
-      <g>
-        <polygon
-          points="180,164 220,144 260,164 220,184"
-          fill={ns.gate === 'active' || ns.gate === 'done' ? 'var(--signal-soft)' : 'var(--paper)'}
-          stroke={ns.gate === 'active' || ns.gate === 'done' ? 'var(--signal)' : 'var(--ink)'}
-          strokeWidth="1.4"
-        />
-        <text x={220} y={168} textAnchor="middle" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, fill: 'var(--ink)' }}>auto-gate</text>
-        <text x={220} y={205} textAnchor="middle" className="d-faint" style={{ fontSize: 8 }}>critical + irreversible?</text>
-      </g>
-
-      <WArrow d="M 110 164 L 180 164" state={ns.gate !== 'idle' ? 'done' : 'idle'} />
-
-      <WVoice x={330} y={48} v="con" state={ns.cons} label="Conservator" dashed w={120} h={50} />
-      <WVoice x={330} y={134} v="gen" state={ns.gen} label="Generator" dashed w={120} h={50} />
-      <WVoice x={330} y={220} v="ctl" state={ns.ctl} label="Control" dashed w={120} h={50} />
-
-      <text x={390} y={36} textAnchor="middle" className="d-faint" style={{ fontSize: 8 }}>isolated context windows</text>
-
-      <WArrow d="M 260 164 L 328 158" state={has('orch_gen') ? (ns.gen === 'active' ? 'active' : 'done') : 'idle'} dashed />
-      <WArrow d="M 390 134 L 390 100" state={has('gen_cons') ? (ns.cons === 'active' ? 'active' : 'done') : 'idle'} dashed />
-      <WArrow d="M 390 184 L 390 218" state={has('gen_ctl') ? (ns.ctl === 'active' ? 'active' : 'done') : 'idle'} dashed />
-
-      <WBox x={510} y={140} w={90} h={48} title="aggregate" state={ns.agg} fill="var(--paper-2)" />
-
-      <WArrow d="M 450 72 C 480 72, 490 130, 510 158" state={has('cons_agg') ? 'active' : 'idle'} />
-      <WArrow d="M 450 158 L 510 162" state={has('gen_agg') ? 'active' : 'idle'} />
-      <WArrow d="M 450 244 C 480 244, 490 188, 510 170" state={has('ctl_agg') ? 'active' : 'idle'} />
-
-      <WBox x={620} y={140} w={80} h={48} title="report" state={has('agg_out') ? 'done' : 'idle'} />
-      <WArrow d="M 600 164 L 620 164" state={has('agg_out') ? 'active' : 'idle'} />
-
-      <text x="360" y="298" textAnchor="middle" className="d-faint" style={{ fontSize: 9, fill: 'var(--ink-3)' }}>
-        auto-only · also runs silent audit every 20 runs
-      </text>
     </svg>
   );
 }
