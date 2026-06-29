@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-26 23:29
+generated: 2026-06-30 00:50
 nodes: 41
 edges: 52
 ---
@@ -114,8 +114,8 @@ graph LR
   CONSILIUM_BUILD_REPORT_001 -->|tested-by| f_scripts_test_build_report_py_11
   f_scripts_test_version_py_103["scripts/test_version.py:103"]
   CONSILIUM_BUILD_REPORT_001 -->|tested-by| f_scripts_test_version_py_103
-  f_scripts_version_py_121["scripts/version.py:121"]
-  CONSILIUM_BUILD_REPORT_001 -->|implements| f_scripts_version_py_121
+  f_scripts_version_py_126["scripts/version.py:126"]
+  CONSILIUM_BUILD_REPORT_001 -->|implements| f_scripts_version_py_126
   CONSILIUM_CHECK_DOC_DRIFT_001["check_doc_drift<br><small>CONSILIUM-CHECK-DOC-DRIFT-001</small>"]
   f_scripts_check_doc_drift_py_25["scripts/check_doc_drift.py:25"]
   CONSILIUM_CHECK_DOC_DRIFT_001 -->|implements| f_scripts_check_doc_drift_py_25
@@ -258,8 +258,8 @@ graph LR
   f_prompts_voices_control_md_121["prompts/voices/control.md:121"]
   CONSILIUM_VOICE_CONTROL_001 -->|implements| f_prompts_voices_control_md_121
   CONSILIUM_VOICE_GENERATOR_001["generator voice<br><small>CONSILIUM-VOICE-GENERATOR-001</small>"]
-  f_prompts_voices_generator_md_137["prompts/voices/generator.md:137"]
-  CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_137
+  f_prompts_voices_generator_md_139["prompts/voices/generator.md:139"]
+  CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_139
   CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small>"]
   f_prompts_voices_skeptic_md_123["prompts/voices/skeptic.md:123"]
   CONSILIUM_VOICE_SKEPTIC_001 -->|implements| f_prompts_voices_skeptic_md_123

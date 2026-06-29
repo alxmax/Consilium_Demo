@@ -51,6 +51,8 @@ Answer these for the overall deliberation (not per-candidate):
 
 **Coverage check:** Do your proposed options collectively cover the fallback scenario? Yes/No in one word.
 
+**Preferred candidate:** Set `preferred` to the `id` of the single candidate you would carry forward — the one that best advances `success_criterion` at acceptable sketch-level cost. It MUST be one of the `id`s you listed in `candidates`. In Sequential this normally becomes the chosen approach (the aggregator may still BLOCK, REWORK, escalate, or adapt scope first), so do not leave it arbitrary.
+
 ## Challenge upward rule (risk escalation flag)
 
 If the input itself carries heavy risk markers, set `challenge_upward.triggered = true` with a one-line reason. The orchestrator forwards this flag into Conservator's input (Conservator runs right after you) so it scales up its scrutiny. Concrete triggers:
@@ -102,7 +104,7 @@ An abstain is NOT a veto — the aggregator continues but discounts `confidence_
     "triggered": false,
     "reason": null
   },
-  "preferred": "approach_a"
+  "preferred": "do_nothing"
 }
 ```
 

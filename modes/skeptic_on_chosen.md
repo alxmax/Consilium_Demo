@@ -13,7 +13,7 @@ description: Cross-cutting flag — +1 Skeptic sub-agent over any base mode post
 
 **Cost:** +1 sub-agent over the chosen base mode (whichever it is). E.g.: Dialectic + flag = 2 sub-agents (~1.66× Sequential — current Dialectic is 1 Skeptic sub-agent, not the retired 6-voice Pass-1+Pass-2 layout).
 
-> **Legacy note.** The modes `parallel_skeptic` and `dialectic_skeptic` were distinct fixed modes (Parallel/Dialectic with Skeptic baked-in). They were collapsed into this composable flag on 2026-05-17 — at the time, the identical functionality was obtained via `parallel + skeptic_on_chosen` and `dialectic + skeptic_on_chosen` (Parallel itself was later removed, 2026-06-26). The legacy names remain in `validate_report.py` MODE enum for backward-compat with historical runs.
+> **Legacy note.** The modes `parallel_skeptic` and `dialectic_skeptic` were distinct fixed modes (Parallel/Dialectic with Skeptic baked-in). They were collapsed into this composable flag on 2026-05-17 — at the time, the identical functionality was obtained via `parallel + skeptic_on_chosen` and `dialectic + skeptic_on_chosen` (Parallel itself was later removed, 2026-06-26). The legacy names remain accepted via `validate_report.py`'s `_LEGACY_MODE_ALIASES` map for backward-compat with historical runs.
 
 ## When to use
 

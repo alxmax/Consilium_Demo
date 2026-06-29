@@ -212,7 +212,12 @@ def build(bundle: dict) -> dict:
     if chosen is not None and not isinstance(chosen, str):
         raise ValueError("bundle.aggregate.chosen must be string or null")
 
-    alt_limit = int(bundle.get("alternatives_limit") or 3)
+    # Resolve the default explicitly: `or 3` would treat the integer 0 as falsy,
+    # so `alternatives_limit: 0` ("suppress all alternatives") silently became 3
+    # while -1 worked — defeating the `if limit <= 0: return []` guard in
+    # _alternatives. Honor 0.
+    _raw_limit = bundle.get("alternatives_limit")
+    alt_limit = int(_raw_limit) if isinstance(_raw_limit, (int, float)) else 3
 
     report: dict[str, Any] = {
         "success_criterion": bundle["success_criterion"],

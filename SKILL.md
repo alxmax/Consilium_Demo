@@ -433,7 +433,7 @@ python scripts/run_evals.py
 | Script | Role |
 |---|---|
 | `scripts/priors.py` | Soft priors from FEEDBACK.html + runs/ (Step 0). Surfaces `missing_feedback_runs`, `stale_pendings` (2-day threshold), `weighted_bad_rate`, and `prompt_drift` (advisory — set when prompts/modes changed since the most-recent prior run's `consilium_ref`). |
-| `scripts/version.py` | Repo version provenance: `consilium_version()` (git describe stamp), `consilium_ref()` (resolvable committed sha or `""`), `prompts_changed_since(ref)` (guarded drift count). CLI: `--version` / `--ref` / `--drift <ref>`. |
+| `scripts/version.py` | Repo version provenance: `consilium_version()` (git describe stamp), `consilium_ref()` (resolvable committed sha or `""`), `prompts_changed_since(ref)` (guarded drift count). CLI: `(no flag)` prints the display stamp / `--ref` / `--drift <ref>`. |
 | `scripts/scope_gate.py` | Auto-detect skip if scope is small (Step 1.5) |
 | `scripts/probe_change.py` | Anchor diff_size to `git diff --numstat` (Step 4) |
 | `scripts/aggregator.py` | 5 aggregation schemes + auto-relax on total veto (Step 5); reference: `modes/aggregator_schemes.md` |

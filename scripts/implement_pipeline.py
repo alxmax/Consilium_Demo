@@ -126,21 +126,64 @@ def verify_red_green(
     }
 
 
+def _header_colon_index(line: str) -> int:
+    """Index of a def header's terminating colon on this physical line.
+
+    Returns the position of the first ``:`` at bracket-depth 0 that is not inside
+    a string or comment, or -1 if the header is not closed on this line. This is
+    what tells a one-line compound def (``def f(): return 1`` — colon present)
+    apart from a genuine multi-line header opener (``def f(`` — no depth-0 colon
+    yet). Bracket/string tracking keeps colons inside annotations, default dict
+    literals, and string defaults (``def f(x: int, y={1: 2}, z="a:b"):``) from
+    being mistaken for the header terminator.
+    """
+    depth = 0
+    quote: str | None = None
+    i, n = 0, len(line)
+    while i < n:
+        c = line[i]
+        if quote is not None:
+            if c == "\\":
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+        elif c in "\"'":
+            quote = c
+        elif c == "#":
+            break  # comment: no header colon on this line beyond here
+        elif c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        elif c == ":" and depth == 0:
+            return i
+        i += 1
+    return -1
+
+
 def _stub_bodies(source: str, stub_marker: str) -> str:
     """Replace each function body's first statement region with the stub marker.
 
-    Heuristic + stdlib-only: after every line ending a `def ...:` / `async def ...:`
-    header, insert the stub at the header's indent+4. This forces the suite RED
-    without a full AST rewrite (sufficient for the gate's falsification purpose).
+    Heuristic + stdlib-only: after every `def ...:` / `async def ...:` header,
+    insert the stub at the header's indent+4. This forces the suite RED without a
+    full AST rewrite (sufficient for the gate's falsification purpose).
 
-    Handles multi-line headers: once a `def`/`async def` opener is seen without
-    a trailing `:`, lines are accumulated until one ends with `:`, then the stub
-    is inserted at the opener's indent+4.
+    Three header shapes are handled:
+    - single-line header (``def f():`` with body on following lines) — stub is
+      inserted as the first body line;
+    - multi-line header (``def f(`` … ``):``) — lines accumulate until one ends
+      with ``:``, then the stub is inserted at the opener's indent+4;
+    - one-line compound def (``def f(): return 1``) — the inline body is dropped
+      and replaced by the stub, so the function actually raises. (Previously this
+      was misread as a multi-line opener: it set in_header and stole the *next*
+      def's closing colon, leaving its own body live and silently defeating the
+      RED gate.)
 
     Known heuristic limits (acceptable for the gate — it stubs normal impl files):
-    a multi-line header whose *intermediate* line ends with `:` closes the scan
-    early, and a `def`-like token inside a string literal is treated as a real
-    header. Both are inherent to a line-scanner; use AST if these ever bite.
+    a multi-line header whose closing line *also* carries an inline body
+    (``)\n: return 1``), and a `def`-like token inside a string literal. Both are
+    inherent to a line-scanner; use AST if these ever bite.
     """
     out: list[str] = []
     opener_re = re.compile(r"^(\s*)(async\s+def|def)\s+\w+")
@@ -153,17 +196,22 @@ def _stub_bodies(source: str, stub_marker: str) -> str:
             if line.rstrip().endswith(":"):
                 in_header = False
                 out.append(f"{header_indent}{stub_marker}")
-        else:
-            m = opener_re.match(line)
-            if m:
-                if line.rstrip().endswith(":"):
-                    # Single-line header — insert stub immediately
-                    indent = m.group(1) + "    "
-                    out.append(f"{indent}{stub_marker}")
-                else:
-                    # Multi-line header — wait for the closing ':'
-                    in_header = True
-                    header_indent = m.group(1) + "    "
+            continue
+        m = opener_re.match(line)
+        if not m:
+            continue
+        indent = m.group(1) + "    "
+        colon = _header_colon_index(line)
+        if colon == -1:
+            # Header is not closed on this line → genuine multi-line opener.
+            in_header = True
+            header_indent = indent
+            continue
+        rest = line[colon + 1:].lstrip()
+        if rest and not rest.startswith("#"):
+            # One-line compound def: drop the inline body, keep the header.
+            out[-1] = line[: colon + 1]
+        out.append(f"{indent}{stub_marker}")
     return "\n".join(out) + ("\n" if source.endswith("\n") else "")
 
 

@@ -357,11 +357,18 @@ def main(argv: list[str] | None = None) -> int:
     # instead of from utility/variance over voice scores. Dissent/abstained
     # arrive on aggregator output piped from --scheme team_vote.
     if "vote_pattern" in data:
-        result = confidence_from_vote_pattern(
-            data["vote_pattern"],
-            dissent=data.get("dissent"),
-            abstained=data.get("abstained"),
-        )
+        # Same clean-exit contract as the score path below: an unknown pattern
+        # (e.g. "3-0-0") raises ValueError in confidence_from_vote_pattern — catch
+        # it so the caller gets a one-line stderr message, not a raw traceback.
+        try:
+            result = confidence_from_vote_pattern(
+                data["vote_pattern"],
+                dissent=data.get("dissent"),
+                abstained=data.get("abstained"),
+            )
+        except ValueError as e:
+            print(e, file=sys.stderr)
+            sys.exit(1)
         json.dump(result, sys.stdout, indent=2)
         sys.stdout.write("\n")
         return 0

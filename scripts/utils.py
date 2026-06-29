@@ -84,6 +84,11 @@ def load_json_stdin(script_name: str) -> Any:
          cat runs/<file>.json | python scripts/<script_name>"
     """
     raw = sys.stdin.read()
+    # PowerShell 5.1 pipes prepend a UTF-8 BOM. force_utf8_streams reconfigures
+    # stdin as plain utf-8 (not utf-8-sig), so the BOM survives as a leading
+    # U+FEFF that str.strip() does NOT remove and json.loads rejects with
+    # "Unexpected UTF-8 BOM". Strip it before both the empty-check and parse.
+    raw = raw.lstrip("﻿")
     if not raw.strip():
         print(
             f"{script_name}: no input — pipe a report file, e.g.:\n"
