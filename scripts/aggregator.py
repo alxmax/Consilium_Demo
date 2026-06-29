@@ -46,7 +46,8 @@ RELAXED_VETO_CAP = 0.85
 VETO_UNCERTAINTY_BAND = 0.15
 # Score delta below which the top-2 ranking is coin-flip territory (2026-05-26 experiment).
 LOW_SEPARATION_THRESHOLD = 0.12
-# Sigmoid risk penalty parameters: 50% at risk=0.5, ~0.79 at 0.7, ~0.93 at 0.85
+# Sigmoid risk penalty parameters (STEEPNESS=10, MIDPOINT=0.5):
+# 50% at risk=0.5, ~0.88 at 0.7, ~0.97 at 0.85 — matches _sigmoid_penalty's docstring.
 SIGMOID_MIDPOINT = 0.5
 SIGMOID_STEEPNESS = 10.0
 
@@ -402,7 +403,7 @@ def aggregate_sequential(
     if generator_out.get("abstain", {}).get("triggered"):
         triggers.append("generator_abstain")
 
-    # Priority 5 (escalate before individual handling)
+    # Priority 3: 3+ triggers simultaneously → escalate before individual handling
     if len(triggers) >= 3:
         return {
             "scheme": "sequential",
@@ -415,7 +416,7 @@ def aggregate_sequential(
             ),
         }
 
-    # Priority 3: Substantial disagreement
+    # Priority 4: Substantial disagreement
     if "substantial_disagreement" in triggers:
         return {
             "scheme": "sequential",
@@ -425,7 +426,7 @@ def aggregate_sequential(
             "action": "Voices show substantial disagreement — clarify before final aggregation",
         }
 
-    # Priority 4a: scale_down
+    # Priority 5: scale_down
     if "scale_down" in triggers:
         preferred = generator_out.get("preferred")
         return {
@@ -436,7 +437,7 @@ def aggregate_sequential(
             "action": "Compressed deliberation — short response (max 2 sentences)",
         }
 
-    # Priority 4b: scale_up
+    # Priority 6: scale_up
     if "scale_up" in triggers:
         return {
             "scheme": "sequential",
@@ -448,6 +449,19 @@ def aggregate_sequential(
     # Default: aggregate normally
     preferred = generator_out.get("preferred")
     options = generator_out.get("options", generator_out.get("candidates", []))
+    # Enforce preferred ∈ candidate ids. The AGGREGATE path sets chosen=preferred
+    # unconditionally; a preferred that names no real candidate would otherwise
+    # silently ship a chosen pointing nowhere — every confidence_per_option
+    # collapses to the 0.5 base (no option matches) and no downstream gate catches
+    # it. Fail loud instead. None is the "no explicit winner" case (chosen=None)
+    # and is left permitted. (Surfaced by the 2026-06-28 skeptic_on_chosen review.)
+    option_ids = {opt.get("id") for opt in options if isinstance(opt, dict)}
+    if preferred is not None and preferred not in option_ids:
+        raise ValueError(
+            f"generator.preferred={preferred!r} is not among the candidate ids "
+            f"{sorted(i for i in option_ids if i)} — chosen would point to a "
+            f"non-existent candidate"
+        )
     # net_concern is per-candidate in scores[i] (conservator.md); score each
     # option against its own risk instead of one top-level value applied to all.
     confidence_per_option: dict[str, float] = {}
@@ -518,8 +532,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = ap.parse_args(argv)
 
-    data: dict[str, Any] = json.load(args.input)
-    result = SCHEMES[args.scheme](data)
+    # Clean exit on malformed input, matching the sibling pipeline scripts
+    # (confidence.py / build_report.py / validate_report.py): a scheme can raise
+    # ValueError (empty candidates, veto_threshold out of range, wrong personality
+    # count) or KeyError (partial weights dict), and json.load raises
+    # JSONDecodeError (a ValueError subclass). Emit one stderr line, exit 1 —
+    # never a raw traceback.
+    try:
+        data: dict[str, Any] = json.load(args.input)
+        result = SCHEMES[args.scheme](data)
+    except (ValueError, KeyError) as exc:
+        print(f"aggregator: {exc}", file=sys.stderr)
+        return 1
     json.dump(result, sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0

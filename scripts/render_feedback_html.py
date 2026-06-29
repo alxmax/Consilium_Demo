@@ -311,7 +311,10 @@ def _load_run_dict(run_path: str | None, runs_dir: Path) -> dict | None:
     if not run_file.exists():
         return None
     try:
-        return json.loads(run_file.read_text(encoding="utf-8"))
+        # utf-8-sig so a BOM-prefixed run (PS 5.1 pipe) keeps its drill-down
+        # panel instead of silently degrading to the "no detailed run data"
+        # stub — matches feedback.py/priors.py.
+        return json.loads(run_file.read_text(encoding="utf-8-sig"))
     except (json.JSONDecodeError, OSError):
         return None
 
@@ -343,7 +346,7 @@ def render(entries: list[Entry], runs_dir: Path) -> str:
         "<title>Consilium feedback</title>\n"
         f"<style>{CSS}</style>\n"
         "<h2>Consilium feedback</h2>\n"
-        f"<div class=\"sub\">{len(entries)} entries · skills/consilium/FEEDBACK.html · click a row for voice details</div>\n"
+        f"<div class=\"sub\">{len(entries)} entries · .consilium/FEEDBACK.html · click a row for voice details</div>\n"
         "<table>\n"
         "<thead><tr><th></th><th>Data</th><th>Context</th><th>Chosen</th><th>Outcome</th><th>Tokens</th><th>Note</th><th>Vote Pattern</th></tr></thead>\n"
         f"<tbody>\n{rows_html}</tbody>\n"

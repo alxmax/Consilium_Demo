@@ -92,7 +92,7 @@ class TestAggregateRound2(unittest.TestCase):
             ],
         }
 
-    def _base_generator(self, preferred="A", abstain=False):
+    def _base_generator(self, preferred: "str | None" = "A", abstain=False):
         return {
             "candidates": [{"id": "A"}, {"id": "do_nothing"}],
             "preferred": preferred,
@@ -170,6 +170,28 @@ class TestAggregateRound2(unittest.TestCase):
         )
         self.assertEqual(result["result"], "AGGREGATE")
         self.assertEqual(result["chosen"], "A")
+
+    def test_preferred_not_in_candidates_raises(self):
+        # Guard (2026-06-28 Skeptic): a generator.preferred that names no real
+        # candidate must fail loud, not silently become chosen — a non-existent
+        # id collapses every confidence_per_option to the 0.5 base with no error.
+        with self.assertRaises(ValueError):
+            aggregator.aggregate_sequential(
+                self._base_generator(preferred="ghost_candidate"),
+                self._base_control(),
+                self._base_conservator(),
+            )
+
+    def test_preferred_none_does_not_raise(self):
+        # Boundary: preferred=None is the "no explicit winner" case (chosen=None),
+        # not a hallucination — it stays permitted and must not trip the guard.
+        result = aggregator.aggregate_sequential(
+            self._base_generator(preferred=None),
+            self._base_control(),
+            self._base_conservator(),
+        )
+        self.assertEqual(result["result"], "AGGREGATE")
+        self.assertIsNone(result["chosen"])
 
     def test_low_methodology_confidence_warns(self):
         result = aggregator.aggregate_sequential(

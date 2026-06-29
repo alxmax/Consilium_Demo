@@ -63,8 +63,13 @@ def consilium_ref() -> str:
     Returns ``""`` when the tree has uncommitted tracked changes (the run's prompts
     may not match any commit → not reconstructable) or when git is unavailable.
     ``.consilium/`` is gitignored, so writing a run file does not dirty the tree.
+
+    ``--untracked-files=no`` so a stray untracked file (a scratch note, an
+    un-added new script) does NOT blank the ref — matching ``git describe
+    --dirty`` semantics used by consilium_version(), which ignores untracked
+    files. Only uncommitted *tracked* changes void the ref, per the contract above.
     """
-    status = _git(["status", "--porcelain"])
+    status = _git(["status", "--porcelain", "--untracked-files=no"])
     if status is None or status.strip():
         return ""
     return _git(["rev-parse", "HEAD"]) or ""

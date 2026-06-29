@@ -93,6 +93,73 @@ def test_async_def_single_line() -> None:
 
 
 # ---------------------------------------------------------------------------
+# REGRESSION: one-line compound def (gate-defeat bug)
+# `def f(x): return x + 1` was misread as a multi-line header opener — it set
+# in_header, stole the NEXT def's closing ':', and left its own body live, so a
+# one-liner impl passed the RED gate unstubbed. These exercise the real idiom
+# behaviorally (exec + call), which the two-line test_single_line_def did not.
+# ---------------------------------------------------------------------------
+
+def _raises_not_implemented(fn, *args) -> bool:
+    try:
+        fn(*args)
+    except NotImplementedError:
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+    return False
+
+
+def test_one_line_compound_def() -> None:
+    source = textwrap.dedent("""\
+        def foo(x): return x + 1
+        def bar(y):
+            return y * 2
+    """)
+    stubbed = _stub_bodies(source, MARKER)
+    ns: dict = {}
+    try:
+        exec(compile(stubbed, "<stub>", "exec"), ns)  # noqa: S102
+    except SyntaxError as exc:
+        check("one-line compound: stubbed source compiles", False, str(exc))
+        return
+    check("one-line compound: stubbed source compiles", True)
+    check(
+        "one-line compound: foo() raises after stub (inline body neutralized)",
+        _raises_not_implemented(ns["foo"], 3),
+        repr(stubbed),
+    )
+    check(
+        "one-line compound: sibling bar() still stubbed (colon not stolen)",
+        _raises_not_implemented(ns["bar"], 3),
+        repr(stubbed),
+    )
+
+
+def test_one_line_method() -> None:
+    source = textwrap.dedent("""\
+        class C:
+            def val(self): return 42
+    """)
+    stubbed = _stub_bodies(source, MARKER)
+    check(
+        "one-line method: inline body dropped",
+        "return 42" not in stubbed,
+        repr(stubbed),
+    )
+    ns: dict = {}
+    try:
+        exec(compile(stubbed, "<stub>", "exec"), ns)  # noqa: S102
+    except SyntaxError as exc:
+        check("one-line method: stubbed source compiles", False, str(exc))
+        return
+    check(
+        "one-line method: C().val() raises after stub",
+        _raises_not_implemented(ns["C"]().val),
+    )
+
+
+# ---------------------------------------------------------------------------
 # NEW: multi-line def header
 # ---------------------------------------------------------------------------
 
@@ -229,6 +296,8 @@ def main() -> None:
     print("=== test_implement_pipeline ===")
     test_single_line_def()
     test_async_def_single_line()
+    test_one_line_compound_def()
+    test_one_line_method()
     test_multiline_def_header()
     test_multiline_stub_is_executable()
     test_multiline_def_indented()
