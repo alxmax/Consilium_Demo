@@ -13,7 +13,7 @@
       "scripts/version.py": "575dc3473c682b447ddaf056aa53edf31023ebedb049131a7573790e10766ca0"
     },
     "CONSILIUM-CHECK-DOC-DRIFT-001": {
-      "scripts/check_doc_drift.py": "358e219194547a25a7835e07cd62c79a3bf51a3d04eeecb31a9f208831930b52"
+      "scripts/check_doc_drift.py": "e2e33741710c9fc6f605344a9cc64f163cb079e6bd3256a4fc5a6e02040c4171"
     },
     "CONSILIUM-CHECK-PUBLIC-LEAK-001": {
       "scripts/check_public_leak.py": "30d4e2985d252f4dc6437f6f056fb3a20ebdc1305d40db0b6ff1b2621e5a8d05"
@@ -29,11 +29,11 @@
       "prompts/implement/coder.md": "538913e617a2e2d42fdfd919ea6264d7a1f5085e65e22b236ca35720eee8eaf8"
     },
     "CONSILIUM-IMPLEMENT-PIPELINE-001": {
-      "modes/implement_pipeline.md": "6e2b47944b8a073bde9b6d78d53ce73c260c912586073d05609dcaec1bdee3e5",
-      "scripts/implement_pipeline.py": "c19193880ae1d5e5ed374fe43aa87ca7e2c5398d0992572d5445a15e769239ba"
+      "modes/implement_pipeline.md": "a5fdcfc615c69337fbb4694bc113cf53076d111bc4435ce0ec96bab315ea2f92",
+      "scripts/implement_pipeline.py": "6f87c2ad914e15b88c1f59a4af5a315d26bd9c32b69a4487223e307578c620ab"
     },
     "CONSILIUM-IMPLEMENT-SUBAGENT-001": {
-      "agents/consilium-implement-subagent.md": "b53e0df3782ee5efccf857bd48ed0e06744e21d331c1ebc0038bc790aa29ffc1"
+      "agents/consilium-implement-subagent.md": "47b3bb0b22e09a82c72b22bba7dc7ebb68130df43622481a815ab3cbe8afd7da"
     },
     "CONSILIUM-IMPLEMENT-TEST-WRITER-001": {
       "prompts/implement/test_writer.md": "3b14bef70c77157ce06d6aa600700be903bb729754e786b6f75b8efc2fc8e608"
@@ -60,7 +60,7 @@
       "scripts/memory.py": "ec0c9018e1961262c3803689c022e3db9b491f1047fb638f0a44fa479afeddc1"
     },
     "CONSILIUM-MODE-DIALECTIC-001": {
-      "modes/dialectic.md": "502efead9017518e53ee2419963ae24ccccdd2f77974fff56b70ff5db281c69f"
+      "modes/dialectic.md": "f66c1957bd1eea90bf3d39a44c0d8dd3c964de6a09d3575f5a336ef7caa758de"
     },
     "CONSILIUM-MODE-SEQUENTIAL-001": {
       "modes/sequential.md": "3f05a66c069b309acf5c8133e6dc1c1ae98f1eb199ed31887807abe16312b602"

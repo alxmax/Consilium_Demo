@@ -8,7 +8,6 @@ benchmark/**
 experiments/**
 evals/**
 scripts/deprecated/**
-prompts/deprecated/**
 # test_meta_critic_trim.py covers a deprecated module with no live requirement.
 scripts/test_meta_critic_trim.py
 scripts/fix_benchmark_pendings.py

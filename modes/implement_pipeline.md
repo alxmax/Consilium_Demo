@@ -46,8 +46,8 @@ Reviewer reuses the Control voice on the *written* code (not the proposal). No s
 # Plan only (dry-run)
 python -X utf8 scripts/implement_pipeline.py --input .consilium/runs/<file>.json --dry-run
 
-# Verify the red→green gate on an already-written impl
-python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "pytest -x" --target <impl_file>
+# Verify the red→green gate on an already-written impl (pass every impl file under fan-out)
+python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "pytest -x" --target <impl_file...>
 
 # Dispatch (orchestrator calls this after routing decision)
 # Agent(subagent_type="consilium-implement-subagent", prompt=<inlined plan + spec>)
@@ -61,6 +61,8 @@ Dispatch vehicle: `agents/consilium-implement-subagent.md`. Returns a file manif
 
 1. **GREEN run** — real implementation. Must exit 0.
 2. **RED run** — stub that replaces every function body with `raise NotImplementedError`. Must exit non-zero.
+
+`--target` accepts one or more files. Under Coder fan-out (N impl files), pass **all** of them: stubbing only one leaves the rest live, so the suite can stay GREEN under the stub and the gate spuriously **fails** a correctly-tested change. All targets are stubbed together for the RED run and every original is restored afterward. (`red_ok` is an existential signal across the passed set — it does not certify each file is individually covered.)
 
 A test that passes the stub provides no regression protection and is rejected (`gate_passed: false`).
 

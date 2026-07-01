@@ -17,7 +17,8 @@ const SECTIONS = [
   { id: 'benchmark',    num: '09', name: 'Benchmark' },
   { id: 'loop',         num: '10', name: 'Calibration' },
   { id: 'implement',    num: '11', name: 'Integration' },
-  { id: 'efficiency',   num: '12', name: 'Efficiency' },
+  { id: 'gate',         num: '12', name: 'Green gate' },
+  { id: 'efficiency',   num: '13', name: 'Efficiency' },
 ];
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
       <BenchmarkSection />
       <LoopSection />
       <ImplementSection />
+      <GreenGateSection />
       <EfficiencySection />
       <Footer />
       <Tweaks t={t} setTweak={setTweak} />

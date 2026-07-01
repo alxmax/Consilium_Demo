@@ -6,15 +6,19 @@ Run:
 # tested-by: CONSILIUM-IMPLEMENT-PIPELINE-001
 # tested-by: CONSILIUM-IMPLEMENT-CODER-001
 # tested-by: CONSILIUM-IMPLEMENT-TEST-WRITER-001
+import os
+import shlex
 import sys
+import tempfile
 import textwrap
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from implement_pipeline import _stub_bodies
+from implement_pipeline import _stub_bodies, verify_red_green
 
 MARKER = "raise NotImplementedError"
+_PY = shlex.quote(sys.executable)
 
 _PASS = 0
 _FAIL = 0
@@ -289,6 +293,118 @@ def test_multiline_def_indented() -> None:
 
 
 # ---------------------------------------------------------------------------
+# NEW: verify_red_green multi-target gate (fan-out: stub ALL impl files)
+#
+# Hole (deductively identified post-#463, fixed 2026-06-29; not an observed CI
+# failure): the gate stubbed a single --target. When the Coder fan-out writes N
+# implementation files, stubbing only one leaves the other N-1 live, so the RED
+# run can stay GREEN (the suite is still pinned by an
+# un-stubbed file) and the gate spuriously fails a correctly-tested change.
+# Stubbing every target at once makes the RED run reliably break behavior.
+# ---------------------------------------------------------------------------
+
+
+def _gate_fixture(tmp: Path) -> str:
+    """Two impl files + a test that exercises only impl_core. Returns the test cmd.
+
+    impl_extra is a fan-out sibling that no test imports — stubbing it alone
+    cannot turn the suite RED, which is exactly the single-target hole.
+    """
+    (tmp / "impl_core.py").write_text(
+        textwrap.dedent("""\
+            def answer():
+                return 42
+        """),
+        encoding="utf-8",
+    )
+    (tmp / "impl_extra.py").write_text(
+        textwrap.dedent("""\
+            def unused():
+                return 0
+        """),
+        encoding="utf-8",
+    )
+    (tmp / "test_core.py").write_text(
+        textwrap.dedent("""\
+            from impl_core import answer
+            assert answer() == 42
+        """),
+        encoding="utf-8",
+    )
+    return f"{_PY} test_core.py"
+
+
+def _run_gate_in(tmp: Path, targets) -> dict:
+    """Run verify_red_green with cwd set to tmp (the gate runs the suite from cwd)."""
+    cmd = _gate_fixture(tmp)
+    prev = os.getcwd()
+    os.chdir(tmp)
+    try:
+        return verify_red_green(cmd, targets)
+    finally:
+        os.chdir(prev)
+
+
+def test_gate_multi_target_stubs_all() -> None:
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d)
+        result = _run_gate_in(tmp, ["impl_core.py", "impl_extra.py"])
+        check("multi-target: green_ok", result.get("green_ok") is True, repr(result))
+        check(
+            "multi-target: red_ok (stubbing all impl files breaks the suite)",
+            result.get("red_ok") is True,
+            repr(result),
+        )
+        check("multi-target: gate_passed", result.get("gate_passed") is True, repr(result))
+        # restore-all: both files back to original after the run
+        check(
+            "multi-target: impl_core restored",
+            "return 42" in (tmp / "impl_core.py").read_text(encoding="utf-8"),
+            repr((tmp / "impl_core.py").read_text(encoding="utf-8")),
+        )
+        check(
+            "multi-target: impl_extra restored",
+            "return 0" in (tmp / "impl_extra.py").read_text(encoding="utf-8"),
+            repr((tmp / "impl_extra.py").read_text(encoding="utf-8")),
+        )
+
+
+def test_gate_single_wrong_target_misses_sibling() -> None:
+    """The hole: stubbing one untested sibling leaves the suite GREEN → gate fails."""
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d)
+        result = _run_gate_in(tmp, ["impl_extra.py"])
+        check("single-wrong: green_ok", result.get("green_ok") is True, repr(result))
+        check(
+            "single-wrong: red_ok is False (untested sibling stub can't break suite)",
+            result.get("red_ok") is False,
+            repr(result),
+        )
+        check("single-wrong: gate_passed False", result.get("gate_passed") is False, repr(result))
+
+
+def test_gate_single_string_backward_compat() -> None:
+    """A bare string target (legacy single-file call) still works."""
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d)
+        result = _run_gate_in(tmp, "impl_core.py")
+        check(
+            "single-string: gate_passed True (str accepted, not iterated char-wise)",
+            result.get("gate_passed") is True,
+            repr(result),
+        )
+
+
+def test_gate_missing_target_errors() -> None:
+    """Any missing target → error dict, gate not passed, no crash."""
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d)
+        result = _run_gate_in(tmp, ["impl_core.py", "does_not_exist.py"])
+        check("missing-target: gate_passed False", result.get("gate_passed") is False, repr(result))
+        check("missing-target: error present", "error" in result, repr(result))
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -301,6 +417,10 @@ def main() -> None:
     test_multiline_def_header()
     test_multiline_stub_is_executable()
     test_multiline_def_indented()
+    test_gate_multi_target_stubs_all()
+    test_gate_single_wrong_target_misses_sibling()
+    test_gate_single_string_backward_compat()
+    test_gate_missing_target_errors()
 
     total = _PASS + _FAIL
     print(f"\n{_PASS}/{total} passed, {_FAIL} failed")

@@ -216,6 +216,102 @@ def check_trias_confidence_parity() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Confidence-floor completeness (found post-#463, added 2026-06-29)
+# ---------------------------------------------------------------------------
+
+
+def _confidence_floor_failures(loaded: dict, fallback: dict) -> list[str]:
+    """Pure comparison: floors parsed from modes/*.md vs confidence._FLOOR_FALLBACK.
+
+    Factored out from check_confidence_floor_completeness so the comparison logic is
+    unit-testable without importing confidence or touching modes/*.md on disk.
+    """
+    if loaded == fallback:
+        return []
+    missing = {k: fallback[k] for k in fallback if k not in loaded}
+    unexpected = {k: loaded[k] for k in loaded if k not in fallback}
+    mismatched = {
+        k: f"modes={loaded[k]} vs fallback={fallback[k]}"
+        for k in fallback
+        if k in loaded and loaded[k] != fallback[k]
+    }
+    return [
+        "[confidence_floor_completeness] floors parsed from modes/*.md frontmatter diverge "
+        "from confidence._FLOOR_FALLBACK — a PARTIAL loss (one mode losing its "
+        "`confidence_floor:`) silently disables the WEAK floor for that mode in "
+        "check_mode_floor()\n"
+        f"  missing (mode lost its confidence_floor): {missing}\n"
+        f"  unexpected (floor present but not in fallback): {unexpected}\n"
+        f"  mismatched value: {mismatched}\n"
+        "  source: scripts/confidence.py _FLOOR_FALLBACK (the canonical floors)\n"
+        "  fix: restore/align `confidence_floor:` in modes/<mode>.md to match _FLOOR_FALLBACK, "
+        "or update _FLOOR_FALLBACK if a floor genuinely changed"
+    ]
+
+
+def check_confidence_floor_completeness() -> list[str]:
+    """Each canonical mode's confidence_floor on disk must match confidence._FLOOR_FALLBACK.
+
+    `confidence.check_mode_floor()` returns `below_floor=False` for any mode absent from
+    `MODE_CONFIDENCE_FLOOR`, so a `modes/<mode>.md` that loses (or mis-sets) its
+    `confidence_floor:` frontmatter silently disables that mode's WEAK floor. This pins
+    the on-disk floors to the canonical set so any such drift fails CI.
+
+    Reads each mode's floor DIRECTLY from `modes/<mode>.md` rather than trusting
+    `confidence.MODE_CONFIDENCE_FLOOR`: `_load_mode_floors()` collapses to
+    `_FLOOR_FALLBACK` when modes/ is absent OR when EVERY floor is stripped, so comparing
+    the loaded dict to the fallback would tautologically pass under the exact total-loss
+    condition this gate must catch (Senate 2026-06-29, Dimon — a drift-checker must not
+    silently pass when it could not actually check).
+
+    Scope: this is a CI gate over the on-disk frontmatter. The runtime loader still falls
+    back silently on a partial/total loss for a hand-edited non-CI install; the
+    consequence there is bounded — the WEAK floor is advisory-only (not wired into
+    aggregator/build_report).
+
+    Intended coupling: adding a NEW mode with a `confidence_floor` (or changing a value)
+    is reported as drift until `_FLOOR_FALLBACK` is updated in lockstep — by design (the
+    fallback is the canonical complete set); the failure message names the offending mode.
+    """
+    scripts_dir = str(Path(__file__).resolve().parent)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    try:
+        import confidence as conf
+    except Exception as exc:  # an unimportable confidence module is itself drift worth failing on
+        return [f"[confidence_floor_completeness] could not import confidence.py: {exc}"]
+
+    modes_dir = conf._MODES_DIR
+    if not modes_dir.is_dir():
+        return [
+            f"[confidence_floor_completeness] modes/ directory absent at {modes_dir} — "
+            "confidence_floor frontmatter cannot be validated; failing loud rather than "
+            "trusting the _FLOOR_FALLBACK collapse"
+        ]
+
+    fallback = dict(conf._FLOOR_FALLBACK)
+    # Read the floor declared on disk for each canonical mode. sequential_scale_down has
+    # no file of its own — it inherits sequential, exactly as _load_mode_floors derives it.
+    loaded: dict[str, float] = {}
+    for mode in fallback:
+        if mode == "sequential_scale_down":
+            continue
+        md = modes_dir / f"{mode}.md"
+        if not md.is_file():
+            continue  # absent file -> mode missing from `loaded` -> reported as drift below
+        fm = conf._parse_frontmatter(md.read_text(encoding="utf-8"))
+        raw = fm.get("confidence_floor", "").strip()
+        if raw and raw != "N/A":
+            try:
+                loaded[mode] = float(raw)
+            except ValueError:
+                pass
+    if "sequential" in loaded:
+        loaded["sequential_scale_down"] = loaded["sequential"]
+    return _confidence_floor_failures(loaded, fallback)
+
+
+# ---------------------------------------------------------------------------
 # Legacy MODE enum removal milestone (Tacitus R1 pattern D)
 # ---------------------------------------------------------------------------
 
@@ -520,6 +616,7 @@ def main() -> int:
     all_failures: list[str] = []
     all_failures.extend(check_text_invariants())
     all_failures.extend(check_trias_confidence_parity())
+    all_failures.extend(check_confidence_floor_completeness())
     all_failures.extend(check_validate_report_vote_pattern_parity())
     all_failures.extend(check_trias_spec_alignment())
     all_failures.extend(check_legacy_mode_milestone())

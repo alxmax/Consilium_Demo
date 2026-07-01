@@ -16,7 +16,8 @@ The three core voices:
 - **An 8-component veto cascade** (`scripts/aggregator.py`) that turns three voice outputs into one decision with 7 distinct routing outcomes (block / rework / adapt / escalate / aggregate).
 - **A self-calibrating feedback loop** — every run lands as canonical JSON in `.consilium/runs/`, outcomes are logged to `.consilium/FEEDBACK.html`, and the next deliberation reads those priors. Confidence below a per-mode floor is flagged.
 - **Cost-aware modes** — from a 1× single-context pass up to a ~2.67× three-personality vote (Trias), with a scope gate that auto-skips trivial diffs.
-- **Measured, not asserted** — a benchmark harness (`benchmark/`) compares each mode against bare-model baselines on real coding/reasoning tasks with a hidden oracle.
+- **Measured, not asserted** — a benchmark harness (`benchmark/`) compares each mode against bare-model baselines on real coding/reasoning tasks with a hidden oracle. See [Benchmark results](#benchmark-results) below.
+- **A CI green-gate** — every push and PR runs every unit suite, the deterministic regression scenarios (`evals/`), doc-drift invariants (`scripts/check_doc_drift.py` — the architecture explainer is parsed and checked against the code it describes), a public-leak guard, and a strict requirements-map gate. All stdlib; the CI has no `pip install` step.
 - **Stdlib-only Python** — no external dependencies; each script is a small, standalone CLI with JSON I/O.
 
 ## Architecture explainer
@@ -119,6 +120,22 @@ consilium/
 For changes that are both `critical` and `irreversible`, select **Trias** explicitly — there is no automatic escalation. All dispatched voices run on Sonnet; the orchestrator runs on Opus.
 
 **Canonical output** (validated by `scripts/validate_report.py`): JSON with `success_criterion`, `chosen_approach`, `verification`, `alternatives`, `voice_scores`, `confidence`, and a `deliberation_log`.
+
+## Benchmark results
+
+Snapshot 2026-06-24. Three tasks (a hard C++ coding task, a trick question whose obvious answer is a trap, a rate-math puzzle), five modes, all on **Sonnet 4.6** at high effort, graded **deterministically** against an answer key kept outside the repo — no AI judging AI, and every consilium run is verified to have actually deliberated. Two tasks sit at ceiling for every mode; the trick question is what separates them:
+
+| Mode | Trick question (4 tries) | Coding task | Math puzzle | Avg cost / task |
+|---|---|---|---|---|
+| consilium_sequential | **4/4** | ✓ | ✓ ~5.7 min | $1.30 |
+| consilium_dialectic | **4/4** | ✓ | ✓ ~7.3 min | $1.51 |
+| consilium_trias | **3/4** | — timed out | ✓ ~9.2 min | $1.63 |
+| superpowers | 2/4 | ✓ | ✓ ~42 s | $0.30 |
+| **sonnet_bare** (baseline) | 1/4 | ✓ | ✓ ~38 s | $0.30 |
+
+Same model throughout — the flip from 1/4 to 4/4 on the trick question is the deliberation *process*, not the model. The price is **~4–5× cost** and minutes instead of seconds — which is why the skill defaults to the cheapest mode and escalates on *stake* (irreversibility × magnitude), not difficulty. (Per-task cost ratios compress the pure deliberation multipliers in the Modes table — every mode also pays the same task-solving work; deliberation is the increment on top.)
+
+Honest limits: n=4 tries per mode (a rigorous claim wants ~15); only one task is hard enough to discriminate; the Trias coding-task timeout (15-minute cap, sub-agents dispatched one at a time) is a real operational cost, not a quality result. Full write-up in the Benchmark section of `docs/architecture.html`.
 
 ## Competencies demonstrated
 

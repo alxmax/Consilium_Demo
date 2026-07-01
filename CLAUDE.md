@@ -48,7 +48,6 @@ Architecture visualization: `docs/architecture.html` (open locally). Benchmarks 
 
 - **`prompts/voices/*.md`** — read by each voice at runtime. A change here affects all future deliberations → high `regression_risk` in Conservator. Prefer injecting extra context into the voice's input rather than into the prompt.
   - Core voices: `generator.md`, `control.md`, `conservator.md` — run in any mode
-  - Pass-2: `generator_pass2.md`, `control_pass2.md`, `conservator_pass2.md` — legacy, moved to `prompts/deprecated/`; no longer dispatched (Dialectic moved to Sequential + Skeptic)
   - `skeptic.md` — focal challenger, run in `skeptic_on_chosen` (composable flag over any base mode)
   - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended over core voices in `trias`
 - **`SKILL.md` Constitution + workflow** — changing steps 0–7 breaks the JSON format expected by `aggregator.py` and `validate_report.py`. Modify both at the same time.
@@ -58,7 +57,7 @@ Architecture visualization: `docs/architecture.html` (open locally). Benchmarks 
 User-selectable modes (SKILL.md documents them in detail):
 
 - **Sequential** (default) — Generator → Conservator → Control single-context.
-- **Dialectic** — Sequential + Skeptic sub-agent on the chosen answer (`scripts/deprecated/dialectic_merge.py` retired; Dialectic no longer uses Pass-2).
+- **Dialectic** — Sequential + Skeptic sub-agent on the chosen answer (Pass-2 and the old merge script removed; Dialectic no longer uses Pass-2).
 - **Trias** — 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally and blind; democratic vote over the 3 results, then one Skeptic sub-agent (`skeptic_on_chosen`) challenges the winner post-vote (4 sub-agents nominal, worst-case 7, ~2.67× Sequential). The 2026-06-19 skeptic-lever redesign replaced the 3 per-personality pre-vote Skeptics with this single post-vote Skeptic.
 - **`trias_split`** — deprecated; use standard `trias` (cost is now equivalent).
 - **`skeptic_on_chosen`** — composable flag over any base mode (+1 sub-agent overhead). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-triggers when `confidence < 0.70` (strictly less than 0.70; the Trias 2-0 value and the Sequential floor both sit at 0.70 and pass). Replaces the fixed modes `parallel_skeptic` (= `parallel + skeptic_on_chosen`) and `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — collapsed on 2026-05-17, legacy names remain accepted via `validate_report.py`'s `_LEGACY_MODE_ALIASES` map for backward-compat.
@@ -69,7 +68,7 @@ User-selectable modes (SKILL.md documents them in detail):
 
 All deliberation state lives under `.consilium/` (gitignored; paths centralized in `scripts/utils.py`).
 
-- `.consilium/FEEDBACK.html` — real-usage journal, append-only via `scripts/log_feedback.py` (atomic writes). See `scripts/deprecated/migrate_feedback_md_to_html.py` for the migration history from `.md` format (retired one-shot tool).
+- `.consilium/FEEDBACK.html` — real-usage journal, append-only via `scripts/log_feedback.py` (atomic writes). Migrated from `.md` format via a one-shot tool (now removed — see git history).
 - `.consilium/runs/*.json` — output of each deliberation (schema in `docs/runs-schema.md`; only `.consilium/runs/.gitkeep` is tracked).
 - `docs/superpowers/plans/`, `docs/superpowers/specs/` — artifacts from `superpowers:writing-plans` / `executing-plans` (one file per non-trivial feature, naming `YYYY-MM-DD-<slug>.md`). **Local-only (gitignored):** personal planning scratch with local paths/insider detail — kept on disk, not published.
 

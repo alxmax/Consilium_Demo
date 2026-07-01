@@ -74,8 +74,8 @@ report (GO) ──▶ Coder (alone first — can't test code that doesn't exist)
    - **Reviewer:** inline `prompts/voices/control.md` with a single synthetic candidate whose
      `sketch` is the *actual written code* (read the files), `id: "implemented"`. Run goal-fit →
      types → logic → tests → style on the written code. Read-only — it writes nothing.
-4. **Gate.** `python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "<verification>" --target <impl_file>`
-   — tests must be RED against a stubbed impl and GREEN against the real one. Reject tests that are green under the stub.
+4. **Gate.** `python -X utf8 scripts/implement_pipeline.py --verify-gate --test-cmd "<verification>" --target <impl_file...>`
+   — pass **every** Coder-written impl file (all of `files_written`; under fan-out, the union across the parallel Coders), not just one. The gate stubs exactly what it is given, so passing a subset re-opens the single-file hole — this complete-union requirement is load-bearing and **not enforced by the script**. Stubbing only one of N leaves the rest live, so the suite can stay GREEN under the stub and the gate spuriously **fails** a correctly-tested change. Tests must be RED against the fully-stubbed impl and GREEN against the real one. Reject tests that are green under the stub. (The gate confirms the tests are non-vacuously coupled to the passed files; it does not certify each file is individually covered.)
 
 ## Optional fan-out (task-split)
 

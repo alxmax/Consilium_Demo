@@ -274,8 +274,8 @@ Output 20 pieces. How long?
     name: 'Transport Choice',
     kind: 'Reasoning',
     lang: '—',
-    difficulty: 'Easy',
-    summary: 'You want to wash your car 50 meters away. Walk / something else / train / fly? Tests whether the model commits to a sensible answer with one assumption stated, or hedges.',
+    difficulty: 'Trick',
+    summary: 'You want to wash your car 50 meters away. Walk / something else / train / fly? Looks trivial — but the obvious choice quietly fails the actual goal. The one task in the corpus that separates the modes.',
     prompt: `Wash car · 50 meters away.
   A) Walk there
   B) Something else
@@ -291,7 +291,7 @@ const MODES_TESTED = [
   { id: 'superpowers',   name: 'superpowers',        tag: 'baseline', desc: 'Sonnet + tool harness, no Consilium.' },
   { id: 'seq',           name: 'consilium_sequential', tag: 'consilium', desc: 'Default mode — 3 voices in single context.' },
   { id: 'dial',          name: 'consilium_dialectic', tag: 'consilium', desc: 'Sequential + Skeptic sub-agent on chosen.' },
-  { id: 'tri',           name: 'consilium_trias',    tag: 'consilium', desc: '3 personalities, each runs Sequential = 3 sub-agents (benchmark predates the per-personality Skeptic; current Trias dispatches 6).' },
+  { id: 'tri',           name: 'consilium_trias',    tag: 'consilium', desc: '3 personalities, each runs Sequential blind, majority vote, then one post-vote Skeptic on the winner — 4 sub-agents.' },
 ];
 
 function BenchmarkSection() {
@@ -305,13 +305,13 @@ function BenchmarkSection() {
           num="09"
           eyebrow="Benchmark"
           title="How the modes are tested."
-          lede="A local harness runs each Consilium mode against twelve tasks via Claude Code in headless mode — three representative tasks are shown below. Each call is fire-and-forget; an automated verifier grades the output. No browser, no user input, no interactive prompts."
+          lede="A local harness runs each Consilium mode against a three-task corpus via Claude Code in headless mode. Each call is fire-and-forget; grading is fully deterministic — exact-answer and keyword checks against a hidden answer key, compilation for the code task. No AI grades another AI."
         />
 
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Twelve problems. Five modes per problem — 60 runs (three representative problems shown below). Each run is sandboxed in its own workspace. The model has 15 minutes, no internet, no access to answer keys — solve from first principles or fail. Cost, correctness, and a self-estimate calibration score are all recorded.</p>
+            <p>Three problems, five modes per problem, several graded tries each. Each run is sandboxed in its own workspace. The model has 15 minutes, no internet, no access to answer keys — solve from first principles or fail. Cost, correctness, and wall-clock are all recorded, and every consilium run is verified to have actually deliberated (no silent fallback to a plain answer).</p>
           </div>
         </div>
 
@@ -330,7 +330,7 @@ function BenchmarkSection() {
         </div>
 
         <h3 className="h-sub" style={{ fontSize: 20 }}>Tasks</h3>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', margin: '4px 0 0' }}>Three of the twelve shown — one Code task and two Reasoning tasks.</p>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', margin: '4px 0 0' }}>The full corpus — one Code task and two Reasoning tasks. An earlier 12-task corpus was retired: Sonnet solved every task in it, so it could not discriminate between the modes.</p>
         <div className="bench-tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '14px 0 16px' }}>
           {BENCH_TASKS.map((t) => (
             <button
@@ -444,14 +444,148 @@ function BenchmarkSection() {
           ))}
         </div>
 
-        <div className="note" style={{ marginTop: 24 }}>
-          <span className="note__label">Status</span>
-          <span>
-            Full benchmark in progress. Per-task and per-mode scores will be published once all five modes have completed each task. Early signal: <strong>sequential</strong> baselines around sonnet_bare on reasoning tasks, while <strong>trias</strong> shows the largest gains on tasks with implicit constraints (Rule of Three, Transport Choice).
-          </span>
-        </div>
+        <BenchResults />
       </div>
     </section>
+  );
+}
+
+/* === Measured benchmark results (2026-06-24 snapshot, deterministic grading) === */
+
+const BENCH_OK = 'oklch(0.55 0.14 150)';
+const BENCH_BAD = 'oklch(0.55 0.19 25)';
+
+const TRICK_RESULTS = [
+  { name: 'consilium_sequential', tag: 'consilium', tries: [1, 1, 1, 1] },
+  { name: 'consilium_dialectic',  tag: 'consilium', tries: [1, 1, 1, 1] },
+  { name: 'consilium_trias',      tag: 'consilium', tries: [1, 1, 1, 0] },
+  { name: 'superpowers',          tag: 'baseline',  tries: [0, 1, 0, 1] },
+  { name: 'sonnet_bare',          tag: 'baseline',  tries: [0, 0, 0, 1] },
+];
+
+const SCORECARD = [
+  { name: 'consilium_sequential', code: '✓ 60/60', trick: '✓ 100', math: '~5.7 min' },
+  { name: 'consilium_dialectic',  code: '✓ 60/60', trick: '✓ 100', math: '~7.3 min' },
+  { name: 'consilium_trias',      code: '— timed out', trick: '✓ 100', math: '~9.2 min' },
+  { name: 'superpowers',          code: '✓ 60/60', trick: '✗ wrong', math: '~42 s' },
+  { name: 'sonnet_bare',          code: '✓ 60/60', trick: '✗ wrong', math: '~38 s' },
+];
+
+const COST_ROWS = [
+  { name: 'consilium_trias',      cost: 1.63, tag: 'consilium' },
+  { name: 'consilium_dialectic',  cost: 1.51, tag: 'consilium' },
+  { name: 'consilium_sequential', cost: 1.30, tag: 'consilium' },
+  { name: 'superpowers',          cost: 0.30, tag: 'baseline' },
+  { name: 'sonnet_bare',          cost: 0.30, tag: 'baseline' },
+];
+
+function BenchResults() {
+  return (
+    <div style={{ marginTop: 40 }}>
+      <h3 className="h-sub" style={{ fontSize: 20 }}>Measured results — 2026-06-24 snapshot</h3>
+      <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, margin: '6px 0 18px', maxWidth: 760 }}>
+        Two of the three tasks are at ceiling — every mode solves them — so correctness only separates the modes on the trick question, where the obvious answer is a trap. There, the same model flips from mostly-wrong to almost-always-right purely by deliberating. The price is cost and wall-clock.
+      </p>
+
+      {/* Trick question — per-try dots */}
+      <h4 style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)', margin: '0 0 10px' }}>
+        Trick question · 4 graded tries per mode
+      </h4>
+      <div style={{ border: '1px solid var(--rule)', borderRadius: 2, background: 'var(--paper)', overflow: 'hidden', marginBottom: 22 }}>
+        {TRICK_RESULTS.map((m, i) => {
+          const ok = m.tries.filter(Boolean).length;
+          return (
+            <div key={m.name} style={{
+              display: 'grid',
+              gridTemplateColumns: '190px 1fr 110px 64px',
+              gap: 14,
+              alignItems: 'center',
+              padding: '11px 18px',
+              borderBottom: i === TRICK_RESULTS.length - 1 ? 0 : '1px solid var(--rule)',
+            }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5, color: m.tag === 'consilium' ? 'var(--ink)' : 'var(--ink-3)' }}>{m.name}</span>
+              <span style={{ display: 'flex', gap: 7 }}>
+                {m.tries.map((t, j) => (
+                  <span key={j} style={{
+                    width: 13, height: 13, borderRadius: '50%',
+                    background: t ? BENCH_OK : 'transparent',
+                    border: `2px solid ${t ? BENCH_OK : BENCH_BAD}`,
+                    display: 'inline-block',
+                  }} />
+                ))}
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: m.tag === 'consilium' ? 'var(--signal)' : 'var(--ink-3)' }}>{m.tag}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: ok >= 3 ? BENCH_OK : BENCH_BAD, textAlign: 'right' }}>{ok}/4</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Scorecard across all three tasks */}
+      <h4 style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)', margin: '0 0 10px' }}>
+        All three tasks
+      </h4>
+      <div style={{ border: '1px solid var(--rule)', borderRadius: 2, background: 'var(--paper)', overflow: 'hidden', marginBottom: 8 }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: '190px 1fr 1fr 1fr', gap: 14,
+          padding: '9px 18px', borderBottom: '1px solid var(--rule)',
+          fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)',
+        }}>
+          <span>Mode</span><span>Coding task (C++)</span><span>Trick question</span><span>Math puzzle — time (all correct)</span>
+        </div>
+        {SCORECARD.map((m, i) => (
+          <div key={m.name} style={{
+            display: 'grid', gridTemplateColumns: '190px 1fr 1fr 1fr', gap: 14,
+            padding: '10px 18px',
+            borderBottom: i === SCORECARD.length - 1 ? 0 : '1px solid var(--rule)',
+            fontFamily: 'var(--font-mono)', fontSize: 12.5,
+          }}>
+            <span style={{ color: 'var(--ink)' }}>{m.name}</span>
+            <span style={{ color: m.code.startsWith('✓') ? BENCH_OK : 'var(--ink-3)' }}>{m.code}</span>
+            <span style={{ color: m.trick.startsWith('✓') ? BENCH_OK : BENCH_BAD }}>{m.trick}</span>
+            <span style={{ color: 'var(--ink-2)' }}>{m.math}</span>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', margin: '0 0 22px' }}>
+        ✓ = solved · ✗ = wrong answer (graded identically for every mode) · — = exceeded the 15-minute limit. Trias dispatches its sub-agents one at a time and runs out of clock on the coding task — a real cost/speed limit, not a quality result.
+      </p>
+
+      {/* Cost */}
+      <h4 style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)', margin: '0 0 10px' }}>
+        Average cost per task
+      </h4>
+      <div style={{ border: '1px solid var(--rule)', borderRadius: 2, background: 'var(--paper)', overflow: 'hidden', marginBottom: 8 }}>
+        {COST_ROWS.map((r, i) => (
+          <div key={r.name} style={{
+            display: 'grid', gridTemplateColumns: '190px 1fr 70px', gap: 14, alignItems: 'center',
+            padding: '11px 18px',
+            borderBottom: i === COST_ROWS.length - 1 ? 0 : '1px solid var(--rule)',
+          }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5, color: r.tag === 'consilium' ? 'var(--ink)' : 'var(--ink-3)' }}>{r.name}</span>
+            <div style={{ background: 'var(--paper-2)', height: 16, borderRadius: 2 }}>
+              <div style={{
+                height: '100%', width: `${(r.cost / 1.63) * 100}%`,
+                background: r.tag === 'consilium' ? 'var(--signal)' : 'var(--ink-3)',
+                opacity: r.tag === 'consilium' ? 1 : 0.45,
+                borderRadius: 2,
+              }} />
+            </div>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 500, color: 'var(--ink)', textAlign: 'right' }}>${r.cost.toFixed(2)}</span>
+          </div>
+        ))}
+      </div>
+      <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, margin: '0 0 22px', maxWidth: 760 }}>
+        <strong>Deliberation costs ~4–5× the single-pass baselines</strong> ($1.30–$1.63 vs $0.30 per task) and takes minutes where a plain answer takes seconds. Worth it where a quick answer quietly slips; overkill on tasks the base model already solves — which is exactly why the skill defaults to the cheapest mode and a scope gate, escalating on stake rather than difficulty. (These per-task ratios compress section 07's pure dispatch multipliers — e.g. Trias ≈ 2.67× Sequential per <em>deliberation</em>: every benchmark task also carries the same task-solving work in every mode, and deliberation is the increment on top.)
+      </p>
+
+      <div className="note">
+        <span className="note__label">Honest limits</span>
+        <span>
+          Small n (4 graded tries per mode) — the direction is consistent, but a rigorous claim wants ~15. Only one task is hard enough to discriminate; the other two sit at ceiling. Trias's coding-task timeout is a real operational cost of sequential sub-agent dispatch. One model (Sonnet 4.6, high effort) throughout — the benchmark isolates the <em>process</em>, not the model. And these figures are a dated, hand-transcribed snapshot of the benchmark report — the CI drift gate (section 12) pins this page's mode invariants, not this snapshot.
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -682,4 +816,108 @@ blocked: false`}</pre>
   );
 }
 
-Object.assign(window, { Collapsible, WhyThreeVoices, CostScatter, CostBars, BenchmarkSection, ImplementSection });
+/* === Green gate — the layered quality gates that keep main green === */
+
+function GreenGateSection() {
+  const CI_CHECKS = [
+    {
+      name: 'Unit suites',
+      cmd: 'scripts/test_*.py',
+      desc: 'Every test suite in scripts/ runs on every push and PR — aggregator cascade, confidence, scope gate, consent gate, Skeptic, Trias vote, implement pipeline, and more. A drift invariant fails CI if any test_*.py is missing from the gate, so a suite cannot silently fall out of coverage.',
+    },
+    {
+      name: 'Regression scenarios',
+      cmd: 'run_evals.py',
+      desc: 'Deterministic subprocess scenarios from evals/scenarios.json exercise the scripts end-to-end — real CLI invocations with pinned inputs and expected outputs, not LLM evals. All scenarios run; any failure is a non-zero exit.',
+    },
+    {
+      name: 'Doc-drift invariants',
+      cmd: 'check_doc_drift.py',
+      desc: 'Parses modes/*.md, scripts/confidence.py — and the JSX source of this very page — and fails if they disagree: Trias vote-confidence values, dispatch counts, cost multipliers, scale-down behavior. Those invariants cannot silently drift from the code they describe (dated measurement snapshots are outside the gate).',
+    },
+    {
+      name: 'Explainer build sync',
+      cmd: 'build.py --check',
+      desc: 'The committed one-file architecture.html must byte-match a fresh build from the React source. Edit the source without rebuilding and CI goes red.',
+    },
+    {
+      name: 'Public-leak guard',
+      cmd: 'check_public_leak.py',
+      desc: 'Blocks private-repo names and local filesystem paths from reaching the public tree.',
+    },
+    {
+      name: 'Requirements gate',
+      cmd: 'reqmap.py gate --strict + map --check',
+      desc: 'Every requirement in requirements/ is checked against the code that claims to implement it (member-file hashes), and the published requirement map must be fresh — stale map or lock fails the gate.',
+    },
+  ];
+
+  return (
+    <section className="section section--tinted" id="gate">
+      <div className="container">
+        <SectionHead
+          num="12"
+          eyebrow="Quality gates"
+          title="The green gate."
+          lede="Nothing merges red. The CI job is literally named green-gate: a stdlib-only wall of deterministic checks that every push and pull request must pass — and the same discipline is applied per deliberation report and per written test."
+        />
+
+        <div className="tldr">
+          <span className="tldr__label">In plain words</span>
+          <div>
+            <p>Three layers. Per <strong>report</strong>: <code>validate_report.py</code> — no deliberation lands on disk without passing the Constitution's output contract. Per <strong>implementation</strong>: the red→green test gate — a test that passes against an empty stub is rejected. Per <strong>commit</strong>: CI runs every unit suite, the regression scenarios, and drift/leak/requirements guards. Even this page is partly gated — a script parses its source and fails CI if its mode invariants (vote confidences, dispatch counts, cost multipliers) drift from the code. The dated benchmark snapshot in section 09 is transcribed by hand and sits outside that gate.</p>
+          </div>
+        </div>
+
+        {/* Layer strip */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, margin: '26px 0 34px' }}>
+          {[
+            { tag: 'PER REPORT', name: 'validate_report.py', color: 'var(--con)', body: <>Constitution Principle #4 — schema, mode enum, confidence floors, deliberation log. The final gate before a run is written to <code>.consilium/runs/</code>.</> },
+            { tag: 'PER IMPLEMENTATION', name: 'red→green gate', color: 'var(--ctl)', body: <>Step 7's Test Writer output must be RED against a <code>NotImplementedError</code> stub and GREEN against the real code — tests that don't pin behavior are rejected (section 11).</> },
+            { tag: 'PER COMMIT', name: 'CI green-gate', color: 'var(--signal)', body: <>The <code>.github/workflows/ci.yml</code> job below — no pip install step by design; everything it runs is stdlib Python.</> },
+          ].map((l) => (
+            <div key={l.tag} style={{
+              padding: '16px 18px',
+              border: '1px solid var(--rule)',
+              borderTop: `3px solid ${l.color}`,
+              background: 'var(--paper)',
+              borderRadius: 4,
+            }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--ink-3)', marginBottom: 6 }}>{l.tag}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: l.color, marginBottom: 8 }}>{l.name}</div>
+              <p style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.55, margin: 0 }}>{l.body}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* CI checks */}
+        <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 12 }}>What the CI green-gate runs</h3>
+        <div style={{ border: '1px solid var(--rule)', borderRadius: 2, background: 'var(--paper)', overflow: 'hidden' }}>
+          {CI_CHECKS.map((c, i) => (
+            <div key={c.name} style={{
+              display: 'grid',
+              gridTemplateColumns: '170px 230px 1fr',
+              gap: 16,
+              padding: '13px 18px',
+              borderBottom: i === CI_CHECKS.length - 1 ? 0 : '1px solid var(--rule)',
+              alignItems: 'baseline',
+            }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{c.name}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--signal)', fontWeight: 500, wordBreak: 'break-word' }}>{c.cmd}</span>
+              <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.55 }}>{c.desc}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="note" style={{ marginTop: 24 }}>
+          <span className="note__label">Why it matters</span>
+          <span>
+            A skill whose contract lives in prose (prompts, mode docs, an explainer page) drifts by default — someone edits the code and the story stops being true. The green gate turns that prose into checked invariants: docs, diagrams, requirements, and tests are all verified against the code on every commit, with zero external dependencies.
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+Object.assign(window, { Collapsible, WhyThreeVoices, CostScatter, CostBars, BenchmarkSection, ImplementSection, GreenGateSection });
