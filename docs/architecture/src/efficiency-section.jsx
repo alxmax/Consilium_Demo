@@ -112,7 +112,7 @@ function EfficiencySection() {
     <section className="section" id="efficiency">
       <div className="container">
         <SectionHead
-          num="12"
+          num="13"
           eyebrow="Usage & Efficiency"
           title="How much does each mode actually cost?"
           lede="The chart below is a frozen snapshot of measured tokens-per-dispatch, captured 2026-05-30 with scripts/efficiency.py — a rollup tool retired in the 2026-06-04 dead-code triage, so these are dated historical measurements, not a live feed. Per-run telemetry still accumulates in each repo's .consilium/runs/*.json. The stricter tokens_per_OK metric was held back until enough runs carry a confirmed OK/BAD label — honest measurement over a flattering one."

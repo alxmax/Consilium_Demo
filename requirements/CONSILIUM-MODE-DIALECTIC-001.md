@@ -26,7 +26,7 @@ depends_on: [CONSILIUM-MODE-SEQUENTIAL-001, CONSILIUM-VOICE-SKEPTIC-001]
 - None - all questions resolved.
 
 ## WHAT — Notes & known limitations (informative)
-- The old Dialectic (Pass1+Pass2 via `scripts/deprecated/dialectic_merge.py`) is retired; the `*_pass2.md` prompts live in `prompts/deprecated/` for reference and are not dispatched.
+- The old Dialectic (Pass1+Pass2) has been removed; the merge script and `*_pass2.md` prompts were deleted (see git history).
 
 ## HOW — Acceptance (= tests)
 AC-1

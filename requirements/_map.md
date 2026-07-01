@@ -1,5 +1,5 @@
 ---
-generated: 2026-06-30 00:50
+generated: 2026-07-01 23:54
 nodes: 41
 edges: 52
 ---
@@ -138,10 +138,10 @@ graph LR
   f_scripts_test_implement_pipeline_py_7["scripts/test_implement_pipeline.py:7"]
   CONSILIUM_IMPLEMENT_CODER_001 -->|tested-by| f_scripts_test_implement_pipeline_py_7
   CONSILIUM_IMPLEMENT_PIPELINE_001["implement_pipeline<br><small>CONSILIUM-IMPLEMENT-PIPELINE-001</small>"]
-  f_modes_implement_pipeline_md_84["modes/implement_pipeline.md:84"]
-  CONSILIUM_IMPLEMENT_PIPELINE_001 -->|implements| f_modes_implement_pipeline_md_84
-  f_scripts_implement_pipeline_py_32["scripts/implement_pipeline.py:32"]
-  CONSILIUM_IMPLEMENT_PIPELINE_001 -->|implements| f_scripts_implement_pipeline_py_32
+  f_modes_implement_pipeline_md_86["modes/implement_pipeline.md:86"]
+  CONSILIUM_IMPLEMENT_PIPELINE_001 -->|implements| f_modes_implement_pipeline_md_86
+  f_scripts_implement_pipeline_py_34["scripts/implement_pipeline.py:34"]
+  CONSILIUM_IMPLEMENT_PIPELINE_001 -->|implements| f_scripts_implement_pipeline_py_34
   f_scripts_test_implement_pipeline_py_6["scripts/test_implement_pipeline.py:6"]
   CONSILIUM_IMPLEMENT_PIPELINE_001 -->|tested-by| f_scripts_test_implement_pipeline_py_6
   CONSILIUM_IMPLEMENT_SUBAGENT_001["consilium-implement-subagent<br><small>CONSILIUM-IMPLEMENT-SUBAGENT-001</small>"]

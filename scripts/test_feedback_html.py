@@ -276,34 +276,6 @@ def test_log_feedback_appends_html_entry():
         assert parsed[1]["outcome"] == "OK"
 
 
-def test_migration_parses_legacy_md_and_emits_html():
-    import subprocess
-    with tempfile.TemporaryDirectory() as td:
-        md_path = Path(td) / "FEEDBACK.md"
-        html_path = Path(td) / "FEEDBACK.html"
-        md_path.write_text(
-            "# FEEDBACK\n#\n# data | context | chosen | outcome | note\n\n"
-            "- 2026-05-11 | audit-reduction | nuke_orphans | PEND | 5 cand, conf=0.63\n"
-            "- 2026-05-12 | rerun-resilience | disable_when_unreachable | OK | conf=0.62\n",
-            encoding="utf-8",
-        )
-        result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "deprecated" / "migrate_feedback_md_to_html.py"),
-             "--md", str(md_path),
-             "--html", str(html_path),
-             "--runs-dir", str(ROOT / "runs")],
-            capture_output=True,
-            check=False,
-        )
-        assert result.returncode == 0, f"stderr: {result.stderr.decode()}"
-        assert html_path.exists()
-        body = html_path.read_text(encoding="utf-8")
-        assert "nuke_orphans" in body
-        assert "disable_when_unreachable" in body
-        assert (md_path.parent / "FEEDBACK.md.bak").exists()
-        assert not md_path.exists()
-
-
 def test_log_feedback_dedup_skips_duplicate():
     """Appending the same entry twice must not create a duplicate row."""
     import subprocess

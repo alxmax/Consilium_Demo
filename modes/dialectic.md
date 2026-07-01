@@ -12,7 +12,7 @@ description: Sequential + 1 Skeptic sub-agent. Code-specialized context injectio
 
 **Mechanics:** Standard Sequential (Generator→Conservator→Control) with code-specific context injected into the voice inputs, followed by `skeptic_on_chosen`. Cost: 1.33× Sequential (1× Sequential + 1/3 for Skeptic sub-agent). No new prompt files — context is injected via the voice input fields.
 
-**Old Dialectic (Pass1+Pass2) archived.** `scripts/deprecated/dialectic_merge.py` is the retired implementation. The `*_pass2.md` prompts live in `prompts/deprecated/` for reference and are not dispatched.
+**Old Dialectic (Pass1+Pass2) removed.** The Pass-1+Pass-2 merge script and `*_pass2.md` prompts have been deleted (see git history).
 
 ## Code-context injection
 

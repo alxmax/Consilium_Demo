@@ -16,12 +16,14 @@ Usage:
     python scripts/implement_pipeline.py --input runs/<file>.json --dry-run
     python scripts/implement_pipeline.py --input runs/<file>.json          # prints plan JSON
     python scripts/implement_pipeline.py --verify-gate --test-cmd "pytest -x" --target solution.py
+    python scripts/implement_pipeline.py --verify-gate --test-cmd "pytest -x" --target a.py b.py c.py
 
 Flags:
     --dry-run      Print the dispatch plan and exit 0 (no side effects).
     --verify-gate  Run the red->green gate instead of planning (needs --test-cmd + --target).
     --test-cmd     Test command for the gate (e.g. "pytest -x").
-    --target       Implementation file the gate stubs to produce the RED run.
+    --target       Implementation file(s) the gate stubs to produce the RED run. Pass every
+                   Coder-written impl file (fan-out) — stubbing one of N leaves the rest live.
     --stub-marker  Body injected to stub the target (default: "raise NotImplementedError").
 
 Exit codes:
@@ -90,40 +92,76 @@ def _run(test_cmd: str) -> int:
 
 def verify_red_green(
     test_cmd: str,
-    target_file: str,
+    target_files: list[str] | str,
     stub_marker: str = "raise NotImplementedError",
 ) -> dict:
-    """Run the suite against the real impl (expect GREEN) and a stubbed copy (expect RED).
+    """Run the suite against the real impl (expect GREEN) and a fully-stubbed copy (expect RED).
 
-    Never mutates the real target permanently: the original text is held in memory and
-    rewritten in the finally block. A green run on the stub means the tests do not pin
-    behavior -> gate fails.
+    Accepts one target or many. When the Coder fan-out writes N implementation files,
+    ALL of them must be stubbed together: stubbing a single file leaves the other N-1
+    live, so the suite can stay GREEN under the stub (it is still pinned by an un-stubbed
+    file) and the gate spuriously fails a correctly-tested change. Stubbing every target
+    at once makes the RED run break behavior across the whole passed set, so ``red_ok``
+    reflects all targets rather than one arbitrary file.
+
+    ``red_ok`` is an EXISTENTIAL signal: it goes red when the suite fails on ANY stubbed
+    target. So the gate verifies the tests are non-vacuously coupled to the passed
+    implementation; it does NOT certify each file is individually covered (a passed file
+    with zero tests still leaves the gate green if a sibling breaks the suite), and it
+    cannot check files the caller did not pass — the orchestrator owns passing the full
+    ``files_written`` union (see agents/consilium-implement-subagent.md).
+
+    Never mutates the real targets permanently: each original text is held in memory and
+    rewritten in the finally block — every captured file is restored even if a write or
+    the stubbed run raises mid-loop, and one failing restore does not abort the rest
+    (a partial restore would leave a sibling stubbed). A green run on the stubs means the
+    tests do not pin behavior -> gate fails.
     """
-    target = pathlib.Path(target_file)
-    if not target.is_file():
-        return {"error": f"target not found: {target_file}", "gate_passed": False}
+    if isinstance(target_files, str):
+        target_files = [target_files]
 
-    original = target.read_text(encoding="utf-8")
+    targets = [pathlib.Path(t) for t in target_files]
+    if not targets:
+        return {"error": "no target files supplied", "gate_passed": False}
+    missing = [str(t) for t in targets if not t.is_file()]
+    if missing:
+        return {"error": f"target(s) not found: {', '.join(missing)}", "gate_passed": False}
+
+    # Capture every original BEFORE any write so the finally block can always restore all.
+    originals = {t: t.read_text(encoding="utf-8") for t in targets}
 
     # GREEN run: real implementation should pass (exit 0).
     green_code = _run(test_cmd)
     green_ok = green_code == 0
 
-    # RED run: stub every def/async-def body, suite should now fail (exit != 0).
-    stubbed = _stub_bodies(original, stub_marker)
+    # RED run: stub every target's def/async-def bodies, suite should now fail (exit != 0).
     red_ok = False
+    restore_errors: list[str] = []
     try:
-        target.write_text(stubbed, encoding="utf-8")
+        for t, original in originals.items():
+            t.write_text(_stub_bodies(original, stub_marker), encoding="utf-8")
         red_code = _run(test_cmd)
         red_ok = red_code != 0
     finally:
-        target.write_text(original, encoding="utf-8")
+        # Best-effort restore: one failing write must not leave the remaining siblings
+        # stubbed (the multi-target blast radius the single-target gate did not have).
+        for t, original in originals.items():
+            try:
+                t.write_text(original, encoding="utf-8")
+            except OSError as exc:
+                restore_errors.append(f"{t}: {exc}")
 
-    return {
+    result: dict[str, object] = {
         "red_ok": red_ok,
         "green_ok": green_ok,
         "gate_passed": red_ok and green_ok,
     }
+    if restore_errors:
+        # A target left in stub state is a worse outcome than a gate verdict — surface it
+        # and fail the gate so the caller does not trust a half-restored tree.
+        result["restore_errors"] = restore_errors
+        result["gate_passed"] = False
+    return result
 
 
 def _header_colon_index(line: str) -> int:
@@ -229,7 +267,9 @@ def main() -> None:
     parser.add_argument("--verify-gate", action="store_true",
                         help="Run the red->green gate instead of planning")
     parser.add_argument("--test-cmd", help="Test command for the gate (e.g. 'pytest -x')")
-    parser.add_argument("--target", help="Implementation file the gate stubs for the RED run")
+    parser.add_argument("--target", nargs="+",
+                        help="Implementation file(s) the gate stubs for the RED run "
+                             "(fan-out: pass every Coder-written impl file, not just one)")
     parser.add_argument("--stub-marker", default="raise NotImplementedError",
                         help="Body injected to stub the target (default: raise NotImplementedError)")
     args = parser.parse_args()
