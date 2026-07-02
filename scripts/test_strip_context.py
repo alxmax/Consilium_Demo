@@ -123,5 +123,41 @@ class TestStripForTrias(unittest.TestCase):
         self.assertEqual(result, text)
 
 
+class BomInputTest(unittest.TestCase):
+    # PS 5.1 pipes/redirects prepend a UTF-8 BOM. main() must strip it (exit 0
+    # on valid JSON) and exit 2 with one stderr line on malformed input - never
+    # a raw JSONDecodeError traceback (audit 2026-07-02).
+
+    BOM = bytes([0xEF, 0xBB, 0xBF])
+
+    def _run_main(self, argv):
+        import contextlib
+        import io
+        from strip_context import main as sc_main
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = sc_main(argv)
+        return rc, out.getvalue(), err.getvalue()
+
+    def test_bom_valid_json_parses(self):
+        import json
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "in.json"
+            p.write_bytes(self.BOM + json.dumps({"candidates": []}).encode())
+            rc, out, _ = self._run_main(["--for", "control", "--input", str(p)])
+        self.assertEqual(rc, 0)
+        self.assertIn("candidates", out)
+
+    def test_bom_malformed_json_clean_exit(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "bad.json"
+            p.write_bytes(self.BOM + b"not json")
+            rc, _, err = self._run_main(["--for", "control", "--input", str(p)])
+        self.assertEqual(rc, 2)
+        self.assertIn("invalid JSON", err)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

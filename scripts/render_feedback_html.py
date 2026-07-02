@@ -18,8 +18,9 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-# This module is loaded via importlib from several entry points (including
-# scripts/deprecated/), so scripts/ may not be on sys.path. Bootstrap it
+# This module is loaded via importlib from several entry points (priors,
+# log_feedback, mark_outcome, audit_feedback), so scripts/ may not be on
+# sys.path. Bootstrap it
 # before importing the shared utils constants.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from utils import RUNS_DIR

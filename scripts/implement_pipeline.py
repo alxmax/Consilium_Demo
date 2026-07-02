@@ -55,6 +55,22 @@ _ROLE_PROMPTS = {
 }
 
 
+def _resolve_chosen_candidate(report: dict, chosen: str) -> dict | None:
+    """Full candidate object for `chosen` from the generator step, else None.
+
+    coder.md's input contract promises `chosen_approach: {id, summary, sketch,
+    rationale}`, but the report's top-level field is a bare id
+    (docs/runs-schema.md) — resolve it so the Coder receives the sketch instead
+    of an id-only spec its own thin-sketch rule would mark blocked.
+    """
+    for entry in report.get("deliberation_log") or []:
+        if isinstance(entry, dict) and entry.get("step") == "generator":
+            for cand in entry.get("candidates") or []:
+                if isinstance(cand, dict) and cand.get("id") == chosen:
+                    return cand
+    return None
+
+
 def build_plan(report: dict) -> dict:
     """Return the implementation dispatch plan from a deliberation report.
 
@@ -64,8 +80,10 @@ def build_plan(report: dict) -> dict:
     if chosen in ("do_nothing", "skipped", None, ""):
         raise ValueError(f"chosen_approach={chosen!r} — no implementation pipeline to run")
 
+    resolved = _resolve_chosen_candidate(report, chosen)
     spec = {
-        "chosen_approach": chosen,
+        "chosen_approach": resolved if resolved is not None else chosen,
+        "chosen_resolved": resolved is not None,
         "success_criterion": report.get("success_criterion", ""),
         "verification": report.get("verification", ""),
     }
@@ -200,6 +218,31 @@ def _header_colon_index(line: str) -> int:
     return -1
 
 
+def _strip_trailing_comment(line: str) -> str:
+    """Return the line with any ``#`` comment removed (string-literal aware).
+
+    Used by the multi-line-header scan in :func:`_stub_bodies`: a closing line
+    like ``):  # noqa`` must still be recognized as terminating the header, so
+    the comment is cut before the ``endswith(":")`` check.
+    """
+    quote: str | None = None
+    i, n = 0, len(line)
+    while i < n:
+        c = line[i]
+        if quote is not None:
+            if c == "\\":
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+        elif c in "\"'":
+            quote = c
+        elif c == "#":
+            return line[:i]
+        i += 1
+    return line
+
+
 def _stub_bodies(source: str, stub_marker: str) -> str:
     """Replace each function body's first statement region with the stub marker.
 
@@ -220,8 +263,11 @@ def _stub_bodies(source: str, stub_marker: str) -> str:
 
     Known heuristic limits (acceptable for the gate — it stubs normal impl files):
     a multi-line header whose closing line *also* carries an inline body
-    (``)\n: return 1``), and a `def`-like token inside a string literal. Both are
-    inherent to a line-scanner; use AST if these ever bite.
+    (``)\n: return 1``), a `def`-like token inside a string literal, and a
+    multi-line header whose *intermediate* line ends with a bare ``:`` outside
+    brackets (closes the scan early). All are inherent to a line-scanner; use
+    AST if these ever bite. (A trailing comment on the closing line —
+    ``):  # noqa`` — is handled via _strip_trailing_comment.)
     """
     out: list[str] = []
     opener_re = re.compile(r"^(\s*)(async\s+def|def)\s+\w+")
@@ -230,8 +276,9 @@ def _stub_bodies(source: str, stub_marker: str) -> str:
     for line in source.splitlines():
         out.append(line)
         if in_header:
-            # Keep accumulating until we see a line ending with ':'
-            if line.rstrip().endswith(":"):
+            # Keep accumulating until we see a line ending with ':' (after
+            # cutting any trailing comment — `):  # noqa` closes the header too)
+            if _strip_trailing_comment(line).rstrip().endswith(":"):
                 in_header = False
                 out.append(f"{header_indent}{stub_marker}")
             continue
@@ -303,7 +350,8 @@ def main() -> None:
         sys.exit(1)
 
     print(f"\nImplementation pipeline: {plan['sequence']}")
-    print(f"  chosen : {plan['spec']['chosen_approach']}")
+    _chosen = plan['spec']['chosen_approach']
+    print(f"  chosen : {_chosen.get('id') if isinstance(_chosen, dict) else _chosen}")
     for role in plan["roles"]:
         flag = "" if role["exists"] else "  [MISSING]"
         print(f"  {role['role']:<12} <- {role['prompt_path']}{flag}")

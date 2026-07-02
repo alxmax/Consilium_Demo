@@ -17,7 +17,7 @@ test_exempt: "agent spec document — behavioral contract validated by Step 7 au
 - Pipeline sequence: (1) Coder writes implementation files; (2) Test Writer and Reviewer are dispatched in parallel on the written code; (3) Red→Green gate verifies tests are RED against a stub and GREEN against the real implementation.
 - The subagent shall enforce disjoint-path ownership: Coder writes implementation files; Test Writer writes `test_*` files only; Reviewer writes nothing.
 - If the Coder or Test Writer returns malformed or non-JSON output, the subagent shall retry that dispatch once; on second failure it shall abort and return `{"error": "subagent_json_invalid", "role": "<coder|test_writer>"}`. It shall never proceed on an empty or fabricated manifest.
-- The subagent shall not re-run the deliberation; `chosen_approach` from the input report is the fixed spec.
+- The subagent shall not re-run the deliberation; `chosen_approach` from the input report is the fixed spec (resolved by `build_plan` to the full candidate object when the generator step is present in `deliberation_log`; optional Coder fan-out targets are derived from the chosen candidate's `sketch` — reports carry no `files_touched[]` field).
 - Output contract: strict JSON with `files_written`, `test_files_written`, `gate` (red_ok, green_ok, gate_passed), `gate_rejected`, `review`, `blocked`, `blocked_reason`.
 
 ## WHAT — Verify intent

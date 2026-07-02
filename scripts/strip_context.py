@@ -129,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument(
         "--input",
-        type=argparse.FileType("r", encoding="utf-8"),
+        type=argparse.FileType("r", encoding="utf-8-sig"),
         default=sys.stdin,
         help="input file (default: stdin)",
     )
@@ -140,7 +140,13 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write(strip_for_trias(text, args.truncate_tokens))
         return 0
 
-    data = json.load(args.input)
+    # Clean exit on malformed/BOM-prefixed input (PS 5.1 pipes prepend a BOM on
+    # stdin) — one stderr line + exit 2, matching build_report/validate_report.
+    try:
+        data = json.loads(args.input.read().lstrip("﻿"))
+    except json.JSONDecodeError as exc:
+        print(f"strip_context: invalid JSON input: {exc}", file=sys.stderr)
+        return 2
     result = PROJECTIONS[args.voice](data)
     json.dump(result, sys.stdout, indent=2)
     sys.stdout.write("\n")

@@ -26,7 +26,9 @@ from pathlib import Path
 # driver.py lives at <repo>/.claude/skills/run-consilium/driver.py
 REPO = Path(__file__).resolve().parents[3]
 PY = [sys.executable, "-X", "utf8"]
-ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8",
+       # reqmap map --check needs the public-repo override (memory: omitting it fails CI)
+       "REQMAP_REPO": os.environ.get("REQMAP_REPO", "alxmax/Consilium_Demo")}
 
 # Baseline of known-failing run_evals scenarios treated as pre-existing (not a
 # regression): smoke() exits non-zero only when failures exceed it. Was 6 — the
@@ -104,9 +106,16 @@ def smoke():
         "test_skeptic.py",
         "test_trias_skeptic_lever.py",
         "test_confidence_calibration.py",
+        "test_public_leak.py",
     ):
         failures += run(suite, script(suite)).returncode != 0
     failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0
+    # CI parity: the three blocking ci.yml gates that are not test suites. Without
+    # them a local "OK - all green" did not predict a green CI (audit 2026-07-02;
+    # the reqmap steps are the recurring red-CI cause after requirement edits).
+    failures += run("check_public_leak.py", script("check_public_leak.py")).returncode != 0
+    failures += run("reqmap gate --strict", script("reqmap.py") + ["gate", "--strict"]).returncode != 0
+    failures += run("reqmap map --check", script("reqmap.py") + ["map", "--check"]).returncode != 0
     failures += run("architecture build --check",
                     PY + [str(REPO / "docs" / "architecture" / "build.py"), "--check"]).returncode != 0
 

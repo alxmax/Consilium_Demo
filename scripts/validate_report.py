@@ -27,8 +27,9 @@ skipped reports — and skip_reason must justify the bypass.
 
 The telemetry block is required for non-skipped reports (mode field
 must be a non-empty string). For skipped reports it should be omitted.
-When present it should carry per-voice token + latency counts so
-scripts/usage.py can roll up cost statistics across runs/. Validator
+When present it should carry per-voice token + latency counts so cost
+statistics can be rolled up across runs/ (e.g. the measured
+tokens-per-dispatch snapshot in the architecture explainer). Validator
 checks shape (non-negative ints for counts, positive int for passes,
 str for mode); fields beyond mode may be omitted individually because
 the agent can't always measure them all (e.g. sequential mode can't
@@ -290,8 +291,8 @@ def _validate_telemetry_required(report: dict) -> list[str]:
         "trias_split": "trias",                    # remove after 2026-08-21
     }
     mode = _LEGACY_MODE_ALIASES.get(mode.strip(), mode.strip())
-    # All modes that dispatch multiple voices require per-voice telemetry so
-    # usage.py can roll up cost across runs/. parallel_skeptic/dialectic_skeptic
+    # All modes that dispatch multiple voices require per-voice telemetry for
+    # cost roll-up across runs/. parallel_skeptic/dialectic_skeptic
     # are resolved via _LEGACY_MODE_ALIASES above before this check.
     # Legacy aliases (trias_split/parallel_skeptic/dialectic_skeptic) are resolved
     # to canonical names by _LEGACY_MODE_ALIASES above, so only canonical names are

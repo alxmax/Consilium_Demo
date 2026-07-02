@@ -29,6 +29,11 @@ success_criterion, whether a verification_inadequate scenario is genuinely speci
 Those gate rules require judgment; this validator enforces the machine-checkable
 subset that previously went entirely unchecked.
 
+Tiebreak mode (Trias B2 cascade): a verdict shaped {"tiebreak": {"chosen":
+str|null, "reason": str}} is the sanctioned alternative top-level shape (see
+prompts/voices/skeptic.md section "Tiebreak mode") — chosen must be a non-empty
+string or null (abstain -> PEND), reason must be non-empty.
+
 CLI:
     cat skeptic_output.json | python scripts/validate_skeptic.py
     python scripts/validate_skeptic.py < skeptic_output.json
@@ -47,9 +52,26 @@ _FAILURE_MODES = frozenset(
 _ADDRESSABLE = frozenset({"in_place", "requires_redesign", "unaddressable"})
 
 
+def _validate_tiebreak(tb: object) -> list[str]:
+    """Validate the B2 tiebreak selection shape (prompts/voices/skeptic.md)."""
+    if not isinstance(tb, dict):
+        return ["tiebreak must be an object with {chosen, reason}"]
+    problems: list[str] = []
+    chosen = tb.get("chosen")
+    if chosen is not None and (not isinstance(chosen, str) or not chosen.strip()):
+        problems.append("tiebreak.chosen must be a non-empty string or null (abstain)")
+    reason = tb.get("reason")
+    if not isinstance(reason, str) or not reason.strip():
+        problems.append("tiebreak.reason must be a non-empty string")
+    return problems
+
+
 def validate_skeptic(verdict: object) -> list[str]:
     if not isinstance(verdict, dict):
         return [f"skeptic output must be a JSON object, got {type(verdict).__name__}"]
+
+    if "tiebreak" in verdict:
+        return _validate_tiebreak(verdict["tiebreak"])
 
     can = verdict.get("can_object")
     if not isinstance(can, bool):

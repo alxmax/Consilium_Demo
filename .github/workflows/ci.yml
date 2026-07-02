@@ -64,6 +64,8 @@ jobs:
         run: python scripts/test_trias_skeptic_lever.py
       - name: Confidence-calibration gate tests
         run: python scripts/test_confidence_calibration.py
+      - name: Unit tests (public-leak guard RED path)
+        run: python scripts/test_public_leak.py
       - name: Mode-doc drift invariants (check_doc_drift)
         run: python scripts/check_doc_drift.py
       - name: Architecture explainer build is in sync

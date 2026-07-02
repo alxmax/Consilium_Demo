@@ -57,6 +57,7 @@ parse_feedback = _feedback.parse_feedback
 parse_runs = _feedback.parse_runs
 
 from version import prompts_changed_since  # noqa: E402 — sibling script, scripts/ on path
+from utils import force_utf8_streams  # noqa: E402 — sibling script, scripts/ on path
 
 TOKEN_RE = re.compile(r"[^\W\d_]{4,}", re.UNICODE)
 STOPWORDS = {
@@ -367,6 +368,7 @@ def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False,
 
 
 def main(argv: list[str] | None = None) -> int:
+    force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--n", type=int, default=10, help="number of recent FEEDBACK entries to summarize")
     ap.add_argument("--no-runs", dest="runs", action="store_false", help="skip scanning runs/*.json")

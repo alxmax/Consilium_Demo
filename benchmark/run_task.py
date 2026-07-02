@@ -82,7 +82,7 @@ MODE_PREFIXES = {
 # Per-mode model pin. Modes whose name implies a specific model lock to it,
 # regardless of the --model flag default. Pass --model explicitly to override.
 MODE_MODELS = {
-    "sonnet_bare": "claude-sonnet-4-6",
+    "sonnet_bare": "claude-sonnet-5",
 }
 
 # Per-mode budget overrides (USD). Default budget ($3) is uniform across modes
@@ -893,8 +893,8 @@ def main():
                     help="e.g. code/01_circuit_breaker, reasoning/01_transport_choice, reasoning/02_rule_of_three")
     ap.add_argument("--clean",  action="store_true",
                     help="Wipe this task's workspace before running")
-    ap.add_argument("--model",  default="claude-sonnet-4-6",
-                    help="Model id or alias (default: claude-sonnet-4-6)")
+    ap.add_argument("--model",  default="claude-sonnet-5",
+                    help="Model id or alias (default: claude-sonnet-5)")
     ap.add_argument("--effort", default="high",
                     choices=["low", "medium", "high", "xhigh", "max"],
                     help="Effort level (default: high)")

@@ -2,12 +2,20 @@
 
 const CASCADE_ROWS = [
   {
+    trigger: 'consent_required: true',
+    source: 'gate',
+    sourceName: 'Scope gate (Step 1.6)',
+    outcome: 'BLOCK (hard)',
+    outcomeKind: 'block',
+    action: 'Ask user for explicit consent before Generator runs (pre-dispatch, fail-safe).',
+  },
+  {
     trigger: 'irreversibility_flag: true',
     source: 'con',
     sourceName: 'Conservator',
-    outcome: 'BLOCK (hard)',
+    outcome: 'BLOCK (backstop)',
     outcomeKind: 'block',
-    action: 'Ask user for explicit consent before Generator runs.',
+    action: 'Ask consent before finalizing — the pre-dispatch consent gate (Step 1.6) already covers the common case.',
   },
   {
     trigger: 'glossary_fail: true',
@@ -31,7 +39,7 @@ const CASCADE_ROWS = [
     sourceName: 'Conservator',
     outcome: 'ADAPT_SHORT',
     outcomeKind: 'adapt',
-    action: 'Short-circuit — skip Generator and Control; emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed absent).',
+    action: 'Short-circuit — skip Control only (Generator already ran); emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed: false).',
   },
   {
     trigger: 'meta_recommendation: scale_up',
@@ -132,6 +140,7 @@ function SourceChip({ source, name }) {
     ctl: 'var(--ctl)',
     con: 'var(--con)',
     agg: 'var(--ink)',
+    gate: 'var(--ink)',
     default: 'var(--ink-3)',
   };
   return (

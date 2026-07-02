@@ -54,7 +54,7 @@ const STEPS = [
   {
     id: '5b', name: 'confidence',
     title: 'Confidence',
-    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Separately, when confidence ∈ [0.0, 0.7] the skeptic_on_chosen mechanism auto-triggers (if composed) and the Step 5d retry fires — this threshold is fixed at 0.7 regardless of mode.',
+    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Separately, when confidence ∈ [0.0, 0.70) — strictly below 0.70 — the skeptic_on_chosen mechanism auto-triggers (if composed) and the Step 5d retry fires; 0.70 itself (the sequential floor and the Trias 2-0 value) passes. This threshold is fixed regardless of mode.',
     plain: 'How confident are the voices in the winner? Each mode has a floor — if it falls below, that\'s a signal (not a hard stop). The more a mode costs, the higher its expected confidence bar.',
     inputs: ['ranking', 'voice variances', 'mode'],
     outputs: ['confidence ∈ [0, 1]', 'below_floor: bool'],
@@ -242,7 +242,7 @@ function PipelineDiagram({ active }) {
     <svg viewBox={`0 0 ${W} ${H}`} className="diagram" style={{ maxHeight: 280 }} aria-hidden="true">
       <ArrowDefs id="pl" />
 
-      <text x="30" y="22" className="d-faint">CANONICAL PATH · CONSERVATOR-FIRST</text>
+      <text x="30" y="22" className="d-faint">CANONICAL PATH · GENERATOR-FIRST</text>
       <line x1="30" y1="32" x2={W - 30} y2="32" className="d-rule" />
 
       {/* Flow line behind boxes */}

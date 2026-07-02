@@ -42,7 +42,7 @@ The run-consilium skill driver exercises Consilium's entire deterministic, LLM-f
 - `python .claude/skills/run-consilium/driver.py pipeline` prints valid JSON for each of the four pipeline stages and exits 0.
 - `python .claude/skills/run-consilium/driver.py shot` writes a non-empty PNG to `.consilium/shots/architecture.png` when Chrome or Edge is available.
 - A failing test suite causes `smoke` to print the failure tail (up to 12 lines) and exit non-zero.
-- The driver injects `PYTHONUTF8=1` into all child process environments, ensuring non-ASCII output (e.g. arrows in trace_graph) does not cause codec errors on Windows.
+- The driver injects `PYTHONUTF8=1` into all child process environments, ensuring non-ASCII output does not cause codec errors on Windows.
 
 ## Why test_exempt
 

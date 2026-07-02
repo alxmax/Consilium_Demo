@@ -28,7 +28,9 @@ appended entry stays parseable.
 
 Exits 1 if the report lacks success_criterion or chosen_approach (run
 validate_report.py first to catch shape issues earlier). Exits 2 on
-malformed JSON. Otherwise exits 0 and prints the appended entry summary to stdout.
+malformed JSON. Exits 3 when the entry is already present (duplicate
+fingerprint) — the row is skipped and "skipped (duplicate): ..." is printed.
+Otherwise exits 0 and prints the appended entry summary to stdout.
 
 CLI:
     cat runs/<file>.json | python scripts/log_feedback.py

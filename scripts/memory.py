@@ -12,8 +12,8 @@ Tiers:
   short-term content is only accessible to the agent itself.
 
 - **medium** — ``runs/*.json``, one file per deliberation. Episodic.
-  Read by ``priors.py`` at Step 0 and by ``usage.py`` for telemetry
-  rollups. Without a query, returns the most recent N as summaries.
+  Read by ``priors.py`` at Step 0. Without a query, returns the most
+  recent N as summaries.
   With ``--query``, filters by substring against ``success_criterion``
   and ``chosen_approach``.
 
@@ -146,8 +146,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--tier", choices=("short", "medium", "long", "all"), default="all")
     ap.add_argument("--n", type=int, default=10, help="cap on entries returned per tier")
     ap.add_argument("--query", default=None, help="substring filter (medium/long only)")
-    ap.add_argument("--feedback-file", metavar="PATH", help="override FEEDBACK.html path (default: <repo>/FEEDBACK.html)")
-    ap.add_argument("--runs-dir", metavar="PATH", help="override runs/ directory path (default: <repo>/runs)")
+    ap.add_argument("--feedback-file", metavar="PATH", help="override FEEDBACK.html path (default: .consilium/FEEDBACK.html)")
+    ap.add_argument("--runs-dir", metavar="PATH", help="override runs/ directory path (default: .consilium/runs)")
     args = ap.parse_args(argv)
 
     global RUNS, FEEDBACK

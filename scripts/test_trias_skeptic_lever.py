@@ -45,8 +45,13 @@ def test_post_vote_single_skeptic() -> None:
 
 def test_demolish_predicate_is_concrete() -> None:
     # "demolishes" must be bound to a concrete predicate (Wittgenstein blocking).
-    check("demolish predicate references severity == blocking",
-          re.search(r'severity\s*==\s*"blocking"', TRIAS) is not None)
+    # 2026-07-02: re-keyed from the phantom `severity == "blocking"` (a field
+    # skeptic.md never emits) to `addressable == "requires_redesign"`, aligning
+    # with the --skeptic-can-override table in modes/skeptic_on_chosen.md.
+    check("demolish predicate references addressable == requires_redesign",
+          re.search(r'addressable\s*==\s*"requires_redesign"', TRIAS) is not None)
+    check("phantom severity == blocking predicate is gone",
+          re.search(r'severity\s*==\s*"blocking"', TRIAS) is None)
 
 
 def test_override_revote_safety() -> None:

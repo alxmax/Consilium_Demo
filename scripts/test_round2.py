@@ -193,6 +193,14 @@ class TestAggregateRound2(unittest.TestCase):
         self.assertEqual(result["result"], "AGGREGATE")
         self.assertIsNone(result["chosen"])
 
+    def test_conservative_override_empty_candidates_raises(self):
+        # Guard (audit 2026-07-02): an empty candidates list is an upstream
+        # bundle bug — the default scheme used to exit 0 with a false "all
+        # candidates vetoed by conservator" reason (nothing was vetoed) while
+        # the sibling schemes raise ValueError. It must fail loud like them.
+        with self.assertRaises(ValueError):
+            aggregator.aggregate_conservative_override([])
+
     def test_low_methodology_confidence_warns(self):
         result = aggregator.aggregate_sequential(
             self._base_generator(abstain=True),

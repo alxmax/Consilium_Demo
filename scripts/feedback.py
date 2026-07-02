@@ -21,7 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 # Loaded via importlib from several entry points (priors, log_feedback,
-# efficiency, deprecated/), so scripts/ may not be on sys.path. Bootstrap it.
+# mark_outcome, audit_feedback), so scripts/ may not be on sys.path. Bootstrap it.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from utils import FEEDBACK_PATH, RUNS_DIR
 

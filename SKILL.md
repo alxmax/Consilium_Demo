@@ -69,7 +69,7 @@ Two actions in order:
 2. **Run `python scripts/priors.py --label "<short task label>"`** — returns soft priors from `FEEDBACK.html` + `runs/`. The `--label` flag also checks for a prior authoritative run matching this task (see **Prior-deliberation passthrough** below). Three fields can block the current deliberation until resolved:
    - `stale_pendings` non-empty (PEND older than 2 days): ask *"You have N old PEND entries: [date | chosen] × N. Want me to close them (OK/BAD/skip)?"* — update via `mark_outcome.py --date <d> --chosen <id> --outcome OK|BAD` (preferred) or via `Edit` directly on `FEEDBACK.html`. **Do not** use `log_feedback.py` — it duplicates the row. **Headless** (`is_headless()`): log `[priors] stale_pendings: N entries — skipping prompt` to stderr and continue without asking.
    - `missing_feedback_runs` non-empty: run `python scripts/audit_feedback.py --backfill` to create PEND entries for orphan runs, then resolve them as above. If the list is larger than 3, prefer to resolve the gap *before* starting a new deliberation. **Headless**: run `audit_feedback.py --backfill` automatically and continue.
-   - `pend_pressure > 0.3` (PEND ratio in the last N=20 entries — threshold lowered from 0.5): soft alert *"{pend_count}/{window_size} recent entries are PEND — consider closing them?"* — do not block, but record the signal. **Headless**: log only, no prompt.
+   - `pend_pressure > 0.3` (PEND ratio in the last N=10 entries — `priors.py` default `--n 10`; threshold lowered from 0.5): soft alert *"{pend_count}/{window_size} recent entries are PEND — consider closing them?"* — do not block, but record the signal. **Headless**: log only, no prompt.
    - `prompt_drift` non-empty (advisory, **non-blocking**): prompts/ or modes/ changed since the most-recent prior run's `consilium_ref` — surface a one-line note *"{changed_files} prompt/mode file(s) changed since last deliberation ({since_run})"* so the operator knows past comparisons may not be apples-to-apples. Inspect with `python scripts/version.py --drift <since_ref>`. Absent when there is no resolvable prior baseline (older runs predate the stamp) — never blocks.
 
    **Headless (non-interactive — `claude -p` or CI):** `stale_pendings` and `missing_feedback_runs` are automatically suppressed (returned `[]`) when `sys.stdin.isatty()` is `False`. Explicit override: `--headless` flag or `CONSILIUM_HEADLESS=1` env var. Output includes `headless_mode: true` as a marker for consumers.
@@ -210,9 +210,9 @@ Anchor `magnitude` to `files_changed/lines_*` and `regression_risk.net_concern` 
 ### 4. Control — verify correctness
 Use `prompts/voices/control.md`. Per candidate: types, logic, tests, style.
 
-Required Questions (Q1-Q4): glossary (max 5), hidden_assumptions (max 3), disagreements, fixed/negotiable_constraints.
+Required Questions (Q1-Q5): glossary (max 5), hidden_assumptions (max 3), disagreements, fixed/negotiable_constraints, mandatory dissent (`strongest_objection` / `no_blocking_defect_attested` — exactly one of them set, silence is not an option). Q5 is **orchestrator-advisory**: no script consumes it — when `strongest_objection.target_id` is non-null (especially if it names the eventual chosen), surface it as a caveat in the report's notes/reasoning.
 
-Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negotiable_constraints, glossary_fail, glossary_attempts, verdicts: [{id, valid, issues, tests_to_write, notes}]}`. `tests_to_write` mandatory for `valid: true` (exception: `do_nothing`) — 1-4 acceptance tests.
+Output: `{glossary, hidden_assumptions, disagreements, fixed_constraints, negotiable_constraints, glossary_fail, glossary_attempts, verdicts: [{id, valid, confidence_in_verdict, issues, tests_to_write, notes}], strongest_objection, no_blocking_defect_attested}`. `tests_to_write` mandatory for `valid: true` (exception: `do_nothing`) — 1-4 acceptance tests.
 
 **Receives from both:** full Generator output + full Conservator output.
 
@@ -240,7 +240,8 @@ Returns `{confidence, agreement, separation}`. If `chosen` is `null` (all candid
 
 **Mode confidence floor (E1).** After confidence is derived, check whether the mode reached the minimum floor:
 ```python
-from scripts.confidence import check_mode_floor
+import sys; sys.path.insert(0, "scripts")  # scripts/ is not a package; confidence.py uses flat sibling imports
+from confidence import check_mode_floor
 result = check_mode_floor(telemetry_mode, confidence_value, vote_pattern)  # vote_pattern only for trias; omit/None otherwise
 # result["below_floor"] == True → log with --outcome WEAK in FEEDBACK.html
 ```
@@ -257,7 +258,7 @@ Scores **deliberation quality** (not choice correctness). Retained metric: `cons
 ### 5d. Retry on low confidence (optional, single pass)
 If `confidence < 0.7`, **before** asking the user: identify the single question whose answer would discriminate the top-2 candidates (an unverified assumption, a file you haven't read, an empirical check you can run). Gather that evidence yourself (Read + Grep + smoke-run), then re-run Generator/Control/Conservator **once** with the enriched input. If confidence is still < 0.7, only then ask the user (Step 6).
 
-The retry is orchestrator-driven — derive the discriminating evidence from the deliberation itself. (`retry_context.py`, the old hint generator, was retired to `scripts/deprecated/` on 2026-06-10: its hints had zero usage in the corpus, while two same-day orchestrator-driven retries succeeded — 0.697→0.726 and 0.662→0.679.)
+The retry is orchestrator-driven — derive the discriminating evidence from the deliberation itself. (`retry_context.py`, the old hint generator, was retired on 2026-06-10 and later deleted — see git history: its hints had zero usage in the corpus, while two same-day orchestrator-driven retries succeeded — 0.697→0.726 and 0.662→0.679.)
 
 **Headless** (`is_headless()`): skip Step 5d entirely — go directly to Step 6 where `PEND_HEADLESS` is logged.
 
@@ -506,7 +507,7 @@ Cost multipliers (baseline Sequential = 1×): Dialectic 1.33× · Trias 2.67×. 
 
 ## Parallel voices mode
 
-**Parallel mode removed** (2026-06-26 — Senate GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs). Parallel dispatch is no longer available in any form. Existing `.consilium/runs/*.json` files with `mode: "parallel"` remain valid (backward-compat enum in `validate_report.py`).
+**Parallel mode removed** (2026-06-26 — Senate GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs). Parallel dispatch is no longer available in any form. Existing `.consilium/runs/*.json` files with `mode: "parallel"` remain valid — `validate_report.py` does not enum-validate `telemetry.mode`, and `"parallel"` stays in its `_MULTI_VOICE_MODES` set so historical runs keep the per-voice telemetry check.
 
 **Advisory.** If `magnitude = critical` AND `reversibility = irreversible`, consider upgrading to **Trias** (2.67× cost, 3 independent personalities + post-vote Skeptic — stronger independent-context coverage than Parallel ever provided). Trias does not auto-trigger; you must select it explicitly.
 
@@ -543,7 +544,7 @@ When to escalate beyond a standard Consilium mode:
 |---|---|
 | `confidence < 0.70` from standard mode AND single drift concern | `dialectic + skeptic_on_chosen` |
 | 2+ plausible architectural approaches without clear winner | `trias` |
-| Bugfix evident OR diff <20 lines / 1 file | Sequential (scope_gate skips) |
+| Bugfix evident OR diff ≤15 lines / 1 file | Sequential (scope_gate skips — `max_lines: 15`, `max_files: 1` in `scope_gate.py`) |
 | All other PR-level reviews | Sequential (select Trias if critical + irreversible) |
 
 ## Sequential mode (default)

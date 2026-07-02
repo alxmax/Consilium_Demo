@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from implement_pipeline import _stub_bodies, verify_red_green
+from implement_pipeline import _stub_bodies, build_plan, verify_red_green
 
 MARKER = "raise NotImplementedError"
 _PY = shlex.quote(sys.executable)
@@ -35,6 +35,41 @@ def check(name: str, condition: bool, detail: str = "") -> None:
         if detail:
             msg += f"\n        {detail}"
         print(msg)
+
+
+# ---------------------------------------------------------------------------
+# build_plan: chosen_approach spec resolution (audit 2026-07-02)
+# ---------------------------------------------------------------------------
+
+def test_build_plan_resolves_chosen_candidate() -> None:
+    # coder.md promises chosen_approach as {id, summary, sketch, rationale};
+    # the report top-level field is a bare id - build_plan must resolve it
+    # from the generator deliberation_log step so the Coder is not handed an
+    # id-only spec its own thin-sketch rule marks blocked.
+    report = {
+        "chosen_approach": "approach_a",
+        "success_criterion": "sc", "verification": "v",
+        "deliberation_log": [
+            {"step": "generator", "candidates": [
+                {"id": "approach_a", "summary": "s", "sketch": "sk", "rationale": "r"},
+                {"id": "do_nothing", "summary": "n", "sketch": "-", "rationale": "-"},
+            ]},
+        ],
+    }
+    plan = build_plan(report)
+    check(
+        "build_plan: chosen resolved to the full candidate object",
+        isinstance(plan["spec"]["chosen_approach"], dict)
+        and plan["spec"]["chosen_approach"].get("sketch") == "sk",
+        repr(plan["spec"]["chosen_approach"]),
+    )
+    check("build_plan: chosen_resolved flag true", plan["spec"]["chosen_resolved"] is True)
+    bare = build_plan({"chosen_approach": "x", "success_criterion": "sc", "verification": "v"})
+    check(
+        "build_plan: unresolvable id falls back to the bare string + flag false",
+        bare["spec"]["chosen_approach"] == "x" and bare["spec"]["chosen_resolved"] is False,
+        repr(bare["spec"]),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -408,6 +443,38 @@ def test_gate_missing_target_errors() -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+def test_multiline_header_trailing_comment() -> None:
+    # REGRESSION (audit 2026-07-02): a multi-line header whose closing `):` line
+    # carries a trailing comment (`):  # noqa`) was never recognized as closing
+    # the header, so the body stayed live — RED == GREEN and the gate spuriously
+    # failed a correctly-tested change with "tests do not pin behavior".
+    source = textwrap.dedent("""\
+        def helper(
+            a,
+        ):  # noqa
+            return a
+    """)
+    result = _stub_bodies(source, MARKER)
+    check(
+        "multiline+comment: stub inserted (source changed)",
+        result != source,
+        "source unchanged — trailing comment hid the header close",
+    )
+    stub_count = sum(1 for l in result.splitlines() if MARKER in l)
+    check(
+        "multiline+comment: exactly one stub line total",
+        stub_count == 1,
+        f"found {stub_count}",
+    )
+    ns: dict = {}
+    exec(result, ns)  # noqa: S102 — exercising the stubbed source behaviorally
+    check(
+        "multiline+comment: stubbed helper actually raises",
+        _raises_not_implemented(ns["helper"], 5),
+        "helper(5) returned a value instead of raising",
+    )
+
+
 def main() -> None:
     print("=== test_implement_pipeline ===")
     test_single_line_def()
@@ -415,12 +482,14 @@ def main() -> None:
     test_one_line_compound_def()
     test_one_line_method()
     test_multiline_def_header()
+    test_multiline_header_trailing_comment()
     test_multiline_stub_is_executable()
     test_multiline_def_indented()
     test_gate_multi_target_stubs_all()
     test_gate_single_wrong_target_misses_sibling()
     test_gate_single_string_backward_compat()
     test_gate_missing_target_errors()
+    test_build_plan_resolves_chosen_candidate()
 
     total = _PASS + _FAIL
     print(f"\n{_PASS}/{total} passed, {_FAIL} failed")

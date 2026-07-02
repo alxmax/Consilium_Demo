@@ -13,4 +13,10 @@ if [[ "$branch" == "main" || "$branch" == "master" ]]; then
     echo "(Intentional one-liner/typo? bypass with: git commit --no-verify)"
     exit 1
 fi
+
+# Reqmap gates — fail fast locally instead of in CI (a stale requirement map
+# after edits is the recurring red-CI cause). Moved here 2026-07-02 from
+# .git/hooks/pre-commit, which core.hooksPath=.githooks had silently disabled.
+python -X utf8 scripts/reqmap.py gate --strict || exit 1
+REQMAP_REPO=alxmax/Consilium_Demo python -X utf8 scripts/reqmap.py map --check || exit 1
 exit 0

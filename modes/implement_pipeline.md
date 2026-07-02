@@ -66,7 +66,7 @@ Dispatch vehicle: `agents/consilium-implement-subagent.md`. Returns a file manif
 
 A test that passes the stub provides no regression protection and is rejected (`gate_passed: false`).
 
-`_stub_bodies()` in `implement_pipeline.py` handles multi-line function headers. Known heuristic limits: `def`-like tokens inside string literals are treated as real headers; a multi-line header whose intermediate line ends with `:` closes the scan early. Both are acceptable for the gate's falsification purpose.
+`_stub_bodies()` in `implement_pipeline.py` handles multi-line function headers. Known heuristic limits: `def`-like tokens inside string literals are treated as real headers; a multi-line header whose intermediate line ends with `:` closes the scan early; a closing line that *also* carries an inline body (`): return 1`) leaves that body live. All are acceptable for the gate's falsification purpose. (A trailing comment on the closing line — `):  # noqa` — is handled.)
 
 ## Benchmark
 

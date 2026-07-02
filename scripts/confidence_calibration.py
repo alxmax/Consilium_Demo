@@ -4,7 +4,7 @@
 Senate ranking (runs/senate/2026-06-17_113009 + the variant-ranking round)
 made Variant C conditional on ONE cheap check: do high confidence scores
 actually predict OK outcomes in the existing corpus? If yes, C's gate
-(skeptic fires only when ``confidence in [0.0, 0.7]``) is justified — ship C.
+(skeptic fires only when ``confidence in [0.0, 0.70)`` — strictly below 0.70) is justified — ship C.
 If not, the gate is illusory — fall back to Variant A (always one skeptic).
 
 This script answers that, with zero new deliberation runs. It reads the

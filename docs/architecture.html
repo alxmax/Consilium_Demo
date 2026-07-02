@@ -4223,7 +4223,7 @@ function CostScatter() {
     <div style={{ margin: '24px 0' }}>
       <h3 className="h-sub" style={{ fontSize: 20, marginBottom: 6 }}>Cost vs voice independence</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, marginBottom: 14, maxWidth: 720 }}>
-        Where each mode lands on the cost / isolation map. <code>BARE</code> (<code>sonnet_bare</code>, no Consilium) is the measured baseline — it sits below 1×; the deliberation modes cost more for the auditable process they add. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 4× for fully isolated sub-agents. Dispatched voices are pinned to <strong>Sonnet 4.6</strong> — including all three Trias personalities (per <code>personalities.py</code>); divergence comes from lens re-weighting, not model tier. The orchestrator runs on <strong>your session model</strong>, with an opt-in <strong>Opus</strong> override on the Generator for high-stakes changes.
+        Where each mode lands on the cost / isolation map. <code>BARE</code> (<code>sonnet_bare</code>, no Consilium) is the measured baseline — it sits below 1×; the deliberation modes cost more for the auditable process they add. <code>SEQ</code> is cheap but shared-context; <code>TRI</code> spends 4× for fully isolated sub-agents. Dispatched voices are pinned to <strong>Sonnet 5</strong> — including all three Trias personalities (per <code>personalities.py</code>); divergence comes from lens re-weighting, not model tier. The orchestrator runs on <strong>your session model</strong>, with an opt-in <strong>Opus</strong> override on the Generator for high-stakes changes.
       </p>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="diagram">
@@ -4719,7 +4719,7 @@ function ImplementSection() {
       name: 'Coder',
       color: 'var(--gen)',
       lane: 'implementation files',
-      model: 'Sonnet 4.6',
+      model: 'Sonnet 5',
       desc: 'Reads chosen_approach + success_criterion. Writes all implementation files. Returns a strict JSON manifest. Skipped if chosen_approach is do_nothing or skipped.',
     },
     {
@@ -4727,7 +4727,7 @@ function ImplementSection() {
       name: 'Test Writer',
       color: 'var(--ctl)',
       lane: 'test_* files only',
-      model: 'Sonnet 4.6',
+      model: 'Sonnet 5',
       desc: 'Runs in parallel with Reviewer. Reads spec + files_written. Writes test_* files only. Tests must be RED against a stub and GREEN against the implementation (red→green gate).',
     },
     {
@@ -4735,7 +4735,7 @@ function ImplementSection() {
       name: 'Reviewer',
       color: 'var(--con)',
       lane: 'read-only',
-      model: 'Sonnet 4.6',
+      model: 'Sonnet 5',
       desc: 'Runs in parallel with Test Writer. Inlines prompts/voices/control.md against the actual written code as a single synthetic candidate. Goal-fit → types → logic → tests → style. Writes nothing.',
     },
   ];
@@ -5281,7 +5281,7 @@ function VoicesSection() {
               </div>
             </div>
             <p className="skeptic-card__desc">
-              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.0, 0.7]</code>. Sees <strong>only the chosen answer</strong> — never the other candidates, never the verdicts — and tries to find a concrete failure scenario: a missing test case, a crash on an edge input, a performance cliff. If it can't find one, <code>can_object: false</code>. Advisory by default; can change the chosen answer only with <code>--skeptic-can-override</code>.
+              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.0, 0.70)</code> — strictly below 0.70; 0.70 itself passes. Sees <strong>only the chosen answer</strong> — never the other candidates, never the verdicts — and tries to find a concrete failure scenario: a missing test case, a crash on an edge input, a performance cliff. If it can't find one, <code>can_object: false</code>. Advisory by default; can change the chosen answer only with <code>--skeptic-can-override</code>.
             </p>
             <div className="skeptic-card__io">
               <div><span className="io-tag">in</span> chosen approach + context</div>
@@ -5326,12 +5326,20 @@ window.VoicesSection = VoicesSection;
 
 const CASCADE_ROWS = [
   {
+    trigger: 'consent_required: true',
+    source: 'gate',
+    sourceName: 'Scope gate (Step 1.6)',
+    outcome: 'BLOCK (hard)',
+    outcomeKind: 'block',
+    action: 'Ask user for explicit consent before Generator runs (pre-dispatch, fail-safe).',
+  },
+  {
     trigger: 'irreversibility_flag: true',
     source: 'con',
     sourceName: 'Conservator',
-    outcome: 'BLOCK (hard)',
+    outcome: 'BLOCK (backstop)',
     outcomeKind: 'block',
-    action: 'Ask user for explicit consent before Generator runs.',
+    action: 'Ask consent before finalizing — the pre-dispatch consent gate (Step 1.6) already covers the common case.',
   },
   {
     trigger: 'glossary_fail: true',
@@ -5355,7 +5363,7 @@ const CASCADE_ROWS = [
     sourceName: 'Conservator',
     outcome: 'ADAPT_SHORT',
     outcomeKind: 'adapt',
-    action: 'Short-circuit — skip Generator and Control; emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed absent).',
+    action: 'Short-circuit — skip Control only (Generator already ran); emit a trivial-direct report (2-sentence output, confidence 0.85, pipeline_executed: false).',
   },
   {
     trigger: 'meta_recommendation: scale_up',
@@ -5456,6 +5464,7 @@ function SourceChip({ source, name }) {
     ctl: 'var(--ctl)',
     con: 'var(--con)',
     agg: 'var(--ink)',
+    gate: 'var(--ink)',
     default: 'var(--ink-3)',
   };
   return (
@@ -5573,7 +5582,7 @@ const STEPS = [
   {
     id: '5b', name: 'confidence',
     title: 'Confidence',
-    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Separately, when confidence ∈ [0.0, 0.7] the skeptic_on_chosen mechanism auto-triggers (if composed) and the Step 5d retry fires — this threshold is fixed at 0.7 regardless of mode.',
+    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Separately, when confidence ∈ [0.0, 0.70) — strictly below 0.70 — the skeptic_on_chosen mechanism auto-triggers (if composed) and the Step 5d retry fires; 0.70 itself (the sequential floor and the Trias 2-0 value) passes. This threshold is fixed regardless of mode.',
     plain: 'How confident are the voices in the winner? Each mode has a floor — if it falls below, that\'s a signal (not a hard stop). The more a mode costs, the higher its expected confidence bar.',
     inputs: ['ranking', 'voice variances', 'mode'],
     outputs: ['confidence ∈ [0, 1]', 'below_floor: bool'],
@@ -5761,7 +5770,7 @@ function PipelineDiagram({ active }) {
     <svg viewBox={`0 0 ${W} ${H}`} className="diagram" style={{ maxHeight: 280 }} aria-hidden="true">
       <ArrowDefs id="pl" />
 
-      <text x="30" y="22" className="d-faint">CANONICAL PATH · CONSERVATOR-FIRST</text>
+      <text x="30" y="22" className="d-faint">CANONICAL PATH · GENERATOR-FIRST</text>
       <line x1="30" y1="32" x2={W - 30} y2="32" className="d-rule" />
 
       {/* Flow line behind boxes */}
@@ -6067,7 +6076,7 @@ const MODES = [
     name: 'Skeptic-on-chosen',
     tag: 'FLAG',
     plain: 'A composable flag, not a standalone mode. Adds one Skeptic sub-agent to any base mode that challenges the chosen answer after aggregation. Auto-fires when the system isn\'t sure.',
-    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.0, 0.7]. Manual trigger: --skeptic-on-chosen.',
+    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.0, 0.70) — strictly below 0.70; 0.70 itself passes. Manual trigger: --skeptic-on-chosen.',
     use: 'whenever you want a focal challenger post-hoc',
     cost: 'base +1 (≈1.33× of a 3-voice base)',
     isolation: '+1 isolated Skeptic',
@@ -6149,7 +6158,7 @@ const WALKTHROUGHS = {
         nodes: { base: 'active', conf: 'idle', skp: 'idle', out: 'idle' }, arrows: [] },
       { id: '2', name: 'confidence', caption: 'Confidence gate checks the score after aggregation.',
         nodes: { base: 'done', conf: 'active', skp: 'idle', out: 'idle' }, arrows: ['base_conf'] },
-      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.0, 0.7] — below the trust floor — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
+      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.0, 0.70) — strictly below the 0.70 trust floor — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
       { id: '4', name: 'skeptic', caption: 'Skeptic receives only the chosen answer — never candidates, never verdicts. Tries to find a concrete failure mode.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
@@ -6222,9 +6231,9 @@ function ModesSection() {
             Which mode, when — the routing boundary
           </div>
           {[
-            ['Obvious bugfix, or diff < 20 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
+            ['Obvious bugfix, or diff ≤ 15 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
             ['Any other PR-level review', 'Sequential', 'default review — escalate to Trias if critical + irreversible'],
-            ['A chosen answer came back shaky (confidence ≤ 0.7) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
+            ['A chosen answer came back shaky (confidence < 0.70) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
             ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three Sonnet personalities with different lens weights, settled by vote'],
           ].map(([when, mode, why]) => (
             <div key={mode + when} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(150px, 0.8fr) 1.2fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--rule)', fontSize: 13, alignItems: 'baseline' }}>
@@ -6545,8 +6554,8 @@ function StageTrias({ step }) {
             <text x="172" y={p.y + 32} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: 'var(--ink-3)' }}>{p.weights}</text>
 
             {/* inner sequential indicator */}
-            <WVoice x={172} y={p.y + 38} v="con" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
-            <WVoice x={232} y={p.y + 38} v="gen" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
+            <WVoice x={172} y={p.y + 38} v="gen" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
+            <WVoice x={232} y={p.y + 38} v="con" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
             <WVoice x={292} y={p.y + 38} v="ctl" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
 
             {/* strip walls within */}
@@ -6609,7 +6618,7 @@ function StageSkeptic({ step }) {
 
       <WArrow d="M 180 160 L 250 160" state={has('base_conf') ? 'done' : 'idle'} />
       <WArrow d="M 380 160 L 458 154" state={has('conf_skp') ? (ns.skp === 'active' ? 'active' : 'done') : 'idle'} dashed
-        label="conf ∈ [0.0, 0.7]" labelX={420} labelY={138} />
+        label="conf ∈ [0.0, 0.70)" labelX={420} labelY={138} />
       <WArrow d="M 600 154 L 620 154" state={has('skp_out') ? 'done' : 'idle'} />
     </svg>
   );
@@ -6647,8 +6656,8 @@ const LENSES = [
 
 const TRIAS_OUTCOMES = [
   { p: '3–0', label: 'Unanimous', desc: 'All three personalities picked the same candidate. Strongest signal possible.', conf: 0.95, outcome: 'OK auto' },
-  { p: '2–1', label: 'Majority + dissent', desc: 'Two personalities agree on a candidate; the third picks a different one. Dissent is logged. The majority wins.', conf: 0.75, outcome: 'OK auto' },
-  { p: '2–0', label: 'Majority + abstention', desc: 'Two personalities agree. The third had no valid choice — Conservator vetoed all its candidates (chose=null). The majority still elects a winner.', conf: 0.70, outcome: 'OK auto' },
+  { p: '2–1', label: 'Majority + dissent', desc: 'Two personalities agree on a candidate; the third picks a different one. Dissent is logged. The majority wins. Exception: when the dissenter is the Steward, a −0.10 penalty drops confidence to 0.65 — below the auto-ship bar, so the user is prompted.', conf: 0.75, outcome: 'OK auto' },
+  { p: '2–0', label: 'Majority + abstention', desc: 'Two personalities agree. The third had no valid choice — Conservator vetoed all its candidates (chose=null). The majority still elects a winner. Exception: when the abstainer is the Steward, a −0.15 penalty drops confidence to 0.55 — prompts instead of auto-OK.', conf: 0.70, outcome: 'OK auto' },
   { p: '1–1–1', label: 'Fragmented', desc: 'Each personality picked a different candidate — no consensus. Escalates to a second deliberation round with peer context (B2 cascade).', conf: null, outcome: 'Round 2 → Skeptic → PEND' },
   { p: '1–1–0', label: 'Split + abstention', desc: 'Two different candidates got one vote each; one personality was vetoed out. No majority — goes to PEND for human decision.', conf: null, outcome: 'PEND' },
   { p: '1–0–0', label: 'Lone vote + 2 abstentions', desc: 'Only one personality produced a valid choice; the other two were vetoed. Insufficient agreement to auto-proceed.', conf: null, outcome: 'PEND' },
@@ -7208,7 +7217,7 @@ function EfficiencySection() {
         <div style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {[
             { role: 'Orchestrator', model: 'your session model', color: 'var(--con)', note: 'the main Claude Code session that runs the workflow and dispatches sub-agents — on whatever model you launched Claude Code with (Opus or Sonnet). The skill does not pin it; Opus gives the strongest orchestration.' },
-            { role: 'Voices & sub-agents', model: 'Sonnet 4.6', color: 'var(--ctl)', note: 'Generator · Control · Conservator · Skeptic · Trias personalities — pinned to model: "sonnet"; they do not inherit the session model.' },
+            { role: 'Voices & sub-agents', model: 'Sonnet 5', color: 'var(--ctl)', note: 'Generator · Control · Conservator · Skeptic · Trias personalities — pinned to model: "sonnet"; they do not inherit the session model.' },
             { role: 'Override', model: '→ Opus', color: 'var(--gen)', note: 'an opt-in that bumps the Generator from its pinned Sonnet up to Opus for high-stakes / ambiguous changes.' },
           ].map((m) => (
             <div key={m.role} style={{ padding: '14px 16px', border: '1px solid var(--rule)', borderTop: `3px solid ${m.color}`, borderRadius: 4, background: 'var(--paper)' }}>

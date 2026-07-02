@@ -52,8 +52,8 @@ arrive expecting an Observe–Think–Act–Learn shape — without prescribing 
 A small in-run sub-iteration exists: at `confidence < 0.7`, Step 5d has the
 orchestrator gather discriminating evidence and re-run the voices once (`↻` in the
 diagram). This is the only formal iteration mechanism; there is no meta-controller.
-(The old hint generator `retry_context.py` was retired to `scripts/deprecated/` on
-2026-06-10 — its hints had zero corpus usage; the retry step itself stays.)
+(The old hint generator `retry_context.py` was retired on 2026-06-10 and later
+deleted — see git history; its hints had zero corpus usage; the retry step itself stays.)
 
 **Calibration note (Learn phase).** The Learn phase is presently *partial* in a
 structural sense: `log_feedback.py` writes outcomes into `.consilium/FEEDBACK.html`
