@@ -95,5 +95,27 @@ class TestRejects(unittest.TestCase):
         self.assertTrue(len(problems) == 1)
 
 
+class TestTiebreak(unittest.TestCase):
+    # B2 cascade tiebreak mode (audit 2026-07-02): the Skeptic returns a
+    # selection, not an objection - validate_skeptic must accept the shape
+    # defined in prompts/voices/skeptic.md section 'Tiebreak mode'.
+
+    def test_valid_selection(self):
+        v = {"tiebreak": {"chosen": "approach_a", "reason": "fewest concrete failure modes"}}
+        self.assertEqual(validate_skeptic(v), [])
+
+    def test_null_chosen_abstain(self):
+        v = {"tiebreak": {"chosen": None, "reason": "every candidate has a disqualifying flaw"}}
+        self.assertEqual(validate_skeptic(v), [])
+
+    def test_missing_reason_rejected(self):
+        problems = validate_skeptic({"tiebreak": {"chosen": "a"}})
+        self.assertTrue(any("reason" in p for p in problems))
+
+    def test_empty_chosen_rejected(self):
+        problems = validate_skeptic({"tiebreak": {"chosen": "", "reason": "r"}})
+        self.assertTrue(any("chosen" in p for p in problems))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

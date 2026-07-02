@@ -13,7 +13,7 @@ the repo root.
 
 | What it does                    | Command                                                  |
 |---------------------------------|----------------------------------------------------------|
-| All 7 modes × 3 tasks (21 runs) | `python scripts/run.py all`                              |
+| All 5 modes × 3 tasks (15 runs) | `python scripts/run.py all`                              |
 | One mode against all tasks      | `python scripts/run.py mode --mode <m>`                  |
 | All modes against one task      | `python scripts/run.py task --task <t>`                  |
 | One mode × one task             | `python scripts/run.py single --mode <m> --task <t>`     |
@@ -86,9 +86,13 @@ Three layers of isolation per run:
    `workspace/<mode>/<task>/[rep_N/]`. `--clean` deletes the entire cell
    (incl. all `rep_*` dirs) before starting; append mode never touches
    existing slots.
-2. **Subprocess sandbox** — each run is its own `claude -p` subprocess with
-   `cwd=workspace/<mode>/<task>/[rep_N/]`, so the model cannot read other
-   modes' workspaces or the hidden `Benchmark-scoring/` tree.
+2. **Scoped cwd (NOT a sandbox)** — each run is its own `claude -p`
+   subprocess with `cwd=workspace/<mode>/<task>/[rep_N/]`. `cwd` confines
+   nothing by itself (see the main README's threat model); isolation from
+   other modes' workspaces and from `Benchmark-scoring/` is enforced by the
+   physical stash pair (`stash_scoring_for_run()` /
+   `stash_sibling_workspaces()` in `run_task.py`), which moves them out of
+   any derivable path for the duration of the run.
 3. **Prompt-cache buster** — `run_task.py` prepends a per-task,
    per-invocation timestamp token to every auto run, forcing Anthropic's
    prompt-cache prefix to miss between runs. Note: the Claude Code system

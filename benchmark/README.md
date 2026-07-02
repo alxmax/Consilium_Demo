@@ -238,8 +238,10 @@ What happens, end-to-end:
 3. `stash_scoring_for_run()` enters: `..\Benchmark-scoring\` is physically
    moved to `%TEMP%\.bms_<random hex>`. From the subprocess's POV, the
    sibling directory does not exist at any derivable path.
-4. `claude -p` is spawned in that folder with the task prompt (no
-   cache-buster — sequential runs already have isolated session IDs).
+4. `claude -p` is spawned in that folder with the task prompt plus the
+   universal per-task, per-invocation `[run_id=...]` cache-buster
+   (appended after the prompt for slash-command modes so the slash command
+   stays at position 0, prepended otherwise — see `run_task.py`).
 5. The model writes its deliverable (`answer.md` for reasoning,
    `solution.py` / `solution.hpp` etc. for code) into that folder.
 6. Subprocess exits. `stash_scoring_for_run()` exits its `finally` block
@@ -329,28 +331,30 @@ isolation guarantees in detail.
 
 | # | Task | Type | Difficulty |
 |---|------|------|------------|
-| 1  | `code/01_circuit_breaker`         | Code (C++ concurrency)                        | Hard   |
-| 2  | `reasoning/01_transport_choice`   | Reasoning — multiple-choice                   | Easy   |
-| 3  | `reasoning/02_rule_of_three`      | Reasoning — multiple-choice + VALUE: tier     | Hard   |
+| 1  | `code/01_circuit_breaker`         | Code (C++ concurrency)                        | At ceiling (measured) |
+| 2  | `reasoning/01_transport_choice`   | Reasoning — multiple-choice                   | Discriminator |
+| 3  | `reasoning/02_rule_of_three`      | Reasoning — multiple-choice + VALUE: tier     | At ceiling (measured) |
 
 > The `#` column is just a row index. Task slugs are numbered within their
 > own category, so the filenames don't form a single contiguous sequence.
 >
-> Difficulty is the author's calibration of how much the task discriminates
-> between modes — `Easy` tasks are expected to hit ceiling under most modes;
-> `Hard` tasks are where mode differences show up. The difficulty label is
-> kept out of the prompt files on purpose so models can't calibrate effort
-> against it.
+> The column reflects the **measured** 2026-06-24 results (n=4/mode), which
+> inverted the author's pre-run Easy/Hard calibration: both tasks rated
+> "Hard" sit at ceiling for every mode, while the "Easy" trick question
+> (`transport_choice`) is the only discriminator — 1/4 (`sonnet_bare`) vs
+> 4/4 (consilium modes). Open follow-up: replace the two saturated tasks.
+> The label is kept out of the prompt files on purpose so models can't
+> calibrate effort against it.
 
 ## Modes
 
 | Mode | Model (default) | Effort (default) | What it adds |
 |------|-----------------|------------------|--------------|
-| `sonnet_bare`            | `claude-sonnet-4-6` | `high` | Plain Sonnet, no skills, no prefix. Baseline. |
-| `superpowers`            | `claude-sonnet-4-6` | `high` | Auto-loads the `superpowers:*` skill bundle. |
-| `consilium_sequential`   | `claude-sonnet-4-6` | `high` | `/consilium` skill in sequential mode. |
-| `consilium_trias`        | `claude-sonnet-4-6` | `high` | `/consilium --mode trias` (three voices). |
-| `consilium_dialectic`    | `claude-sonnet-4-6` | `high` | `/consilium --mode dialectic`. |
+| `sonnet_bare`            | `claude-sonnet-5` | `high` | Plain Sonnet, no skills, no prefix. Baseline. |
+| `superpowers`            | `claude-sonnet-5` | `high` | Auto-loads the `superpowers:*` skill bundle. |
+| `consilium_sequential`   | `claude-sonnet-5` | `high` | `/consilium` skill in sequential mode. |
+| `consilium_trias`        | `claude-sonnet-5` | `high` | `/consilium --mode trias` (three voices). |
+| `consilium_dialectic`    | `claude-sonnet-5` | `high` | `/consilium --mode dialectic`. |
 
 > The model is pinned per mode in `MODE_MODELS` (currently only `sonnet_bare`);
 > all other modes inherit the global `--model` default. Effort is the same
@@ -363,7 +367,7 @@ isolation guarantees in detail.
 | Flag         | Default              | Description |
 |--------------|----------------------|-------------|
 | `--clean`    | off                  | Delete `workspace/<mode>/<task>/` before run (the scripts pass this by default). |
-| `--model`    | `claude-sonnet-4-6`  | Model id or alias. Some modes pin a model — see `MODE_MODELS` in `run_task.py`. |
+| `--model`    | `claude-sonnet-5`  | Model id or alias. Some modes pin a model — see `MODE_MODELS` in `run_task.py`. |
 | `--effort`   | `high`               | `low / medium / high / xhigh / max`. |
 | `--budget`   | `3.0`                | `--max-budget-usd` cap (USD). |
 | `--no-verify`| off                  | Skip the automated verification step. |

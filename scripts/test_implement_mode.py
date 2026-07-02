@@ -76,6 +76,27 @@ def main() -> int:
     failed += not ok
     print(f"  {'PASS' if ok else 'FAIL'}  null voice_scores report does not crash ({note})")
 
+    # Regression (audit 2026-07-02): an explicit conservator score of 0.0 was
+    # coerced to 0.5 by `or 0.5` (falsy), mis-routing a zero-concern change to
+    # the full pipeline and misreporting the rationale. 0.0 must hit the
+    # 'trivial' bucket -> ['implement', 'compile'] -> single_shot.
+    zero_concern = {
+        "chosen_approach": "a",
+        "voice_scores": {"conservator": 0.0},
+        "deliberation_log": [],
+    }
+    try:
+        steps, _ = infer_steps(zero_concern)
+        mode = recommend_implement_mode(zero_concern)
+        ok = steps == ["implement", "compile"] and mode == "single_shot"
+        note = f"steps={steps}, mode={mode}"
+    except Exception as exc:  # noqa: BLE001
+        ok = False
+        note = f"raised {type(exc).__name__}: {exc}"
+    passed += ok
+    failed += not ok
+    print(f"  {'PASS' if ok else 'FAIL'}  conservator=0.0 routes single_shot ({note})")
+
     print(f"\n{passed}/{passed + failed} passed, {failed} failed")
     return 1 if failed else 0
 

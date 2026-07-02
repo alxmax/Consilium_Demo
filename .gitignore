@@ -45,9 +45,13 @@ FEEDBACK.html
 !.claude/settings.json
 !.claude/skills/
 
-# Local bug tracking / agent reports
-BUGS.md
-bugs-agent-*.md
+# Local bug tracking / agent reports (anchored to repo root — an unanchored
+# pattern silently swallowed docs/archive/bugs-agent-*.md, audit 2026-07-02).
+# docs/archive/ agent reports stay local by explicit choice (personal notes,
+# local paths) — the line below is deliberate, not a stray glob.
+/BUGS.md
+/bugs-agent-*.md
+docs/archive/bugs-agent-*.md
 
 # Local plans and experiments
 # superpowers writing-plans / executing-plans artifacts — personal planning

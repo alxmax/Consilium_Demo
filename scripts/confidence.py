@@ -345,13 +345,20 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--input",
-        type=argparse.FileType("r", encoding="utf-8"),
+        type=argparse.FileType("r", encoding="utf-8-sig"),
         default=sys.stdin,
         help="JSON input file (default: stdin)",
     )
     args = ap.parse_args(argv)
 
-    data = json.load(args.input)
+    # Clean exit on malformed/BOM-prefixed input, matching the sibling pipeline
+    # scripts (build_report.py / validate_report.py exit 2 on JSONDecodeError).
+    # PowerShell 5.1 pipes prepend a BOM on stdin — strip it before parsing.
+    try:
+        data = json.loads(args.input.read().lstrip("﻿"))
+    except json.JSONDecodeError as exc:
+        print(f"confidence: invalid JSON input: {exc}", file=sys.stderr)
+        return 2
 
     # Trias mode: when vote_pattern is present, derive confidence from pattern
     # instead of from utility/variance over voice scores. Dissent/abstained

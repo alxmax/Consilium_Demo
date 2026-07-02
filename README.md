@@ -115,7 +115,7 @@ consilium/
 | **Sequential** (default) | 1× | Generator → Conservator → Control in one context (Generator runs first, blind to risk framing). Auto-escalates to Dialectic when confidence < 0.60 |
 | **Dialectic** | 1.33× | Sequential + a Skeptic sub-agent on the chosen answer, with code-context injection |
 | **Trias** | ~2.67× | 3 personalities (Pioneer / Architect / Steward), each running its own Sequential pass as a sub-agent, then a majority vote, then one post-vote Skeptic sub-agent on the winner |
-| **`skeptic_on_chosen`** | base +1 | Composable flag over any mode — a focal Skeptic challenges the chosen answer. Auto-triggers when `confidence ∈ [0.0, 0.7]` |
+| **`skeptic_on_chosen`** | base +1 | Composable flag over any mode — a focal Skeptic challenges the chosen answer. Auto-triggers when `confidence ∈ [0.0, 0.70)` |
 
 For changes that are both `critical` and `irreversible`, select **Trias** explicitly — there is no automatic escalation. All dispatched voices run on Sonnet; the orchestrator runs on Opus.
 

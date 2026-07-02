@@ -1,6 +1,6 @@
 """Aggregate voice scores into a final decision.
 
-Four schemes exposed via CLI:
+Five schemes exposed via CLI:
 - majority: average of voices; pick highest mean. Ties broken by lowest stdev,
   then by insertion order (stable, deterministic).
 - conservative_override: vetoes any candidate with conservator risk >
@@ -10,6 +10,11 @@ Four schemes exposed via CLI:
   which treated conservator as utility — fixed via audit C.)
 - risk_adjusted_utility: flip conservator into safety, blend utility with
   a sigmoid risk penalty. No hard veto — risk degrades the score smoothly.
+- sequential: the default mode's own scheme — consumes the full
+  generator/control/conservator voice outputs and walks the veto cascade
+  (BLOCK / REWORK / ADAPT / ESCALATE / AGGREGATE).
+- team_vote: Trias — democratic vote over the 3 personality results
+  (see modes/aggregator_schemes.md for the full matrix).
 
 Input format on stdin (JSON):
     {
@@ -109,6 +114,12 @@ def aggregate_conservative_override(
             vetoed.append({"id": c["id"], "risk": risk})
         else:
             survivors.append(c)
+
+    if not candidates:
+        # Same contract as the sibling schemes (majority / risk_adjusted_utility):
+        # an empty list is a bundle bug upstream, not "everything vetoed" — fail
+        # loud instead of emitting a plausible-looking null-chosen result.
+        raise ValueError("aggregate_conservative_override requires a non-empty candidates list")
 
     if not survivors:
         result: dict = {

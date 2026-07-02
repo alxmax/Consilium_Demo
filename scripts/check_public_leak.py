@@ -37,6 +37,21 @@ def tracked_files() -> list[str]:
     return [f for f in out.splitlines() if f.strip()]
 
 
+def scan_text(label: str, text: str) -> list[str]:
+    """All PATTERNS hits in `text`, formatted as report lines (testable seam).
+
+    Extracted so the RED path is exercisable by scripts/test_public_leak.py —
+    a live CI run only ever sees a clean repo, so a PATTERNS regression could
+    otherwise disable the guard with no signal (audit 2026-07-02).
+    """
+    hits: list[str] = []
+    for pat, desc in PATTERNS:
+        for m in pat.finditer(text):
+            line = text.count("\n", 0, m.start()) + 1
+            hits.append(f"  {label}:{line}: {desc}: {m.group(0)!r}")
+    return hits
+
+
 def main() -> int:
     hits: list[str] = []
     for f in tracked_files():
@@ -46,10 +61,7 @@ def main() -> int:
             text = Path(f).read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
-        for pat, desc in PATTERNS:
-            for m in pat.finditer(text):
-                line = text.count("\n", 0, m.start()) + 1
-                hits.append(f"  {f}:{line}: {desc}: {m.group(0)!r}")
+        hits.extend(scan_text(f, text))
 
     if hits:
         print("public-leak guard FAILED — the published repo must not point back to "

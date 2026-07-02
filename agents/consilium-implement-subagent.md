@@ -80,7 +80,7 @@ report (GO) ──▶ Coder (alone first — can't test code that doesn't exist)
 ## Optional fan-out (task-split)
 
 By default a single Coder writes all files. **Optionally**, the orchestrator may split the *coding*
-step across 3–5 parallel Coders — one per file from `chosen_approach.files_touched[]` — but only when
+step across 3–5 parallel Coders — one per impl file (the target list the orchestrator derives from the chosen candidate's `sketch`; reports carry no `files_touched[]` field) — but only when
 the merge is trivial by construction:
 
 - **Precondition (independence):** fan out only if the target files are mutually independent — no file
@@ -115,7 +115,7 @@ After the gate runs, emit **exactly** this JSON as your final assistant message 
 
 ```json
 {
-  "spec": {"chosen_approach": "<id>", "success_criterion": "...", "verification": "..."},
+  "spec": {"chosen_approach": {"id": "...", "summary": "...", "sketch": "...", "rationale": "..."}, "chosen_resolved": true, "success_criterion": "...", "verification": "..."},
   "files_written": [{"path": "...", "symbols": ["..."]}],
   "test_files_written": [{"path": "...", "covers": "..."}],
   "gate": {"red_ok": true, "green_ok": true, "gate_passed": true},

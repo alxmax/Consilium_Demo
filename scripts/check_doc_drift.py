@@ -157,6 +157,46 @@ INVARIANTS = [
         "source": "Generator-first reorder (PR #416); explainer mode-card audit 2026-06-13",
         "rationale": "The mode cards' `voices:` quick-reference fields list the voice order; pin them Generator-first so a regression to 'Cons · Gen · Ctrl' fails CI.",
     },
+    {
+        "id": "explainer_pipeline_header_generator_first",
+        "file": "docs/architecture/src/pipeline.jsx",
+        "required": r"CANONICAL PATH · GENERATOR-FIRST",
+        "forbidden": r"CONSERVATOR-FIRST",
+        "source": "Generator-first reorder (PR #416); audit 2026-07-02 — the SVG header label sat outside every pinned pattern and still read 'CONSERVATOR-FIRST'",
+        "rationale": "The headline label on the section-04 pipeline diagram states the dispatch order in its own string, separate from captions and dispatch rows. Pin it so the most visible order claim in the explainer cannot regress silently.",
+    },
+    {
+        "id": "explainer_cascade_scale_down_skips_control",
+        "file": "docs/architecture/src/cascade.jsx",
+        "required": r"skip Control only.*pipeline_executed:\s*false",
+        "forbidden": r"(?i)skip\s+Generator\s+and\s+Control|pipeline_executed absent",
+        "source": "sequential_scale_down_skips_control invariant only scans modes/sequential.md; audit 2026-07-02 found the same pre-reorder wording alive in cascade.jsx",
+        "rationale": "The cascade table's scale_down row is a second, independent statement of the short-circuit contract. Under Generator-first it skips Control only, and the trivial-direct report must carry pipeline_executed: false (validate_report.py rejects it otherwise).",
+    },
+    {
+        "id": "explainer_skeptic_band_strict_modes",
+        "file": "docs/architecture/src/modes.jsx",
+        "required": r"\[0\.0,\s*0\.70\)",
+        "forbidden": r"\[0\.0,\s*0\.7\]",
+        "source": "SKILL.md:536 — auto-trigger is strictly < 0.70; 0.70 (Trias 2-0 value, Sequential floor) passes; audit 2026-07-02",
+        "rationale": "The closed-interval form [0.0, 0.7] includes exactly the boundary value the system emits by construction; the explainer must use the half-open band so a 0.70 run is documented as passing.",
+    },
+    {
+        "id": "explainer_skeptic_band_strict_pipeline",
+        "file": "docs/architecture/src/pipeline.jsx",
+        "required": r"\[0\.0,\s*0\.70\)",
+        "forbidden": r"\[0\.0,\s*0\.7\]",
+        "source": "SKILL.md:536 — auto-trigger is strictly < 0.70; audit 2026-07-02",
+        "rationale": "Same band pin as explainer_skeptic_band_strict_modes, for the confidence-step description in pipeline.jsx.",
+    },
+    {
+        "id": "explainer_skeptic_band_strict_voices",
+        "file": "docs/architecture/src/voices.jsx",
+        "required": r"\[0\.0,\s*0\.70\)",
+        "forbidden": r"\[0\.0,\s*0\.7\]",
+        "source": "SKILL.md:536 — auto-trigger is strictly < 0.70; audit 2026-07-02",
+        "rationale": "Same band pin as explainer_skeptic_band_strict_modes, for the Skeptic card in voices.jsx.",
+    },
 ]
 
 
@@ -324,12 +364,28 @@ REMOVAL_MILESTONES: dict[str, str] = {
 
 
 def check_legacy_mode_milestone() -> list[str]:
-    """Verify legacy MODE aliases in validate_report.py carry a dated removal note."""
+    """Verify legacy MODE aliases in validate_report.py carry a dated removal note.
+
+    Also enforces the milestone itself: once the date has passed, a lingering
+    alias fails the gate (audit 2026-07-02 — previously the dates were
+    decorative and would silently expire).
+    """
+    from datetime import date
+
     failures: list[str] = []
     src = _read("scripts/validate_report.py")
+    today = date.today().isoformat()
     for alias, milestone_date in REMOVAL_MILESTONES.items():
         if alias not in src:
             # Already removed — that's fine, milestone reached.
+            continue
+        if today > milestone_date:
+            failures.append(
+                f"[legacy_mode_milestone] {alias!r}: removal milestone {milestone_date} has passed "
+                f"but the alias is still present in validate_report.py\n"
+                f"  fix: remove the alias (+ its doc mentions), or extend the milestone in "
+                f"REMOVAL_MILESTONES with a dated rationale"
+            )
             continue
         # Require a comment containing the milestone date near the alias line.
         # Tolerant: the date must appear within 200 chars of the alias literal.
@@ -545,7 +601,9 @@ def check_trias_spec_alignment() -> list[str]:
 
     # -- CLAUDE.md: Trias entry must not carry the pre-Skeptic sub-agent count --
     # When cost_multiplier is 4.0 (Skeptics added), the old count was 3 sub-agents.
-    stale_count_by_cost: dict[float, str] = {4.0: '3', 3.0: '9'}
+    # 2.67 -> '6' added 2026-07-02: the 6->4 skeptic-lever redesign changed the
+    # cost without extending this dict, leaving the guard inert (audit finding).
+    stale_count_by_cost: dict[float, str] = {4.0: '3', 3.0: '9', 2.67: '6'}
     stale_count = stale_count_by_cost.get(cost_multiplier)
     if stale_count:
         claude = _read("CLAUDE.md")

@@ -118,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
         for m in missing:
             run_path_abs = runs_dir / m["run"]
             try:
-                report = json.loads(run_path_abs.read_text(encoding="utf-8"))
+                report = json.loads(run_path_abs.read_text(encoding="utf-8-sig"))
                 entry = log_mod.build_entry(report, outcome="PEND")
             except (json.JSONDecodeError, OSError, ValueError) as exc:
                 print(f"  skip {m['run']}: {exc}", file=sys.stderr)
@@ -158,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
         run_path_abs = runs_dir / m["run"]
         rel = f"runs/{m['run']}"
         try:
-            report = json.loads(run_path_abs.read_text(encoding="utf-8"))
+            report = json.loads(run_path_abs.read_text(encoding="utf-8-sig"))
         except (json.JSONDecodeError, OSError) as exc:
             print(f"  skip {m['run']}: {exc}", file=sys.stderr)
             continue

@@ -119,7 +119,9 @@ def infer_steps(report: dict) -> tuple[list[str], dict]:
         # `voice_scores` is explicitly null on hand-built reports (prior-deliberation
         # passthrough, scale_down trivial-direct), so `.get("voice_scores", {})` returns
         # None — guard with `or {}` before the nested .get to avoid AttributeError.
-        net_concern = float((report.get("voice_scores") or {}).get("conservator", 0.5) or 0.5)
+        # `or 0.5` would coerce a legitimate 0.0 to 0.5 — only None means missing.
+        _raw_concern = (report.get("voice_scores") or {}).get("conservator")
+        net_concern = 0.5 if _raw_concern is None else float(_raw_concern)
         fb_mag, fb_rev = _fallback_from_concern(net_concern, reversibility if rev_valid else None)
         # Keep whichever axis the report actually provided; reconstruct only the
         # missing one. A known reversibility sidesteps the floored-scalar ambiguity

@@ -254,7 +254,7 @@ function VoicesSection() {
               </div>
             </div>
             <p className="skeptic-card__desc">
-              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.0, 0.7]</code>. Sees <strong>only the chosen answer</strong> — never the other candidates, never the verdicts — and tries to find a concrete failure scenario: a missing test case, a crash on an edge input, a performance cliff. If it can't find one, <code>can_object: false</code>. Advisory by default; can change the chosen answer only with <code>--skeptic-can-override</code>.
+              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.0, 0.70)</code> — strictly below 0.70; 0.70 itself passes. Sees <strong>only the chosen answer</strong> — never the other candidates, never the verdicts — and tries to find a concrete failure scenario: a missing test case, a crash on an edge input, a performance cliff. If it can't find one, <code>can_object: false</code>. Advisory by default; can change the chosen answer only with <code>--skeptic-can-override</code>.
             </p>
             <div className="skeptic-card__io">
               <div><span className="io-tag">in</span> chosen approach + context</div>

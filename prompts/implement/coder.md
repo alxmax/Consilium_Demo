@@ -15,7 +15,7 @@ You receive (extracted from the Consilium report — the report *is* the spec):
 - `chosen_approach`: `{id, summary, sketch, rationale}`
 - `success_criterion`: the testable sentence the code must satisfy
 - `verification`: the command/check that will be run against your output
-- Context: `language`, `framework`, `files_touched[]`, existing patterns
+- Context: `language`, `framework`, the target file paths (derived by the orchestrator from `chosen_approach.sketch`), existing patterns
 
 ## Task
 
@@ -23,7 +23,7 @@ You receive (extracted from the Consilium report — the report *is* the spec):
    Match existing codebase conventions. No speculative abstractions, no features
    beyond the chosen approach (Constitution Principle 2 — Simplicity first).
 2. Use the **Write** tool for every file. Files must exist on disk — not just prose.
-3. Touch only the paths implied by `chosen_approach` / `files_touched`. If you must
+3. Touch only the paths implied by `chosen_approach` / the supplied target paths. If you must
    touch a file outside that set, STOP and report it in `scope_escapes` — do not edit it.
 
 ## Hard rules

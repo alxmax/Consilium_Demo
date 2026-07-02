@@ -26,8 +26,8 @@ const LENSES = [
 
 const TRIAS_OUTCOMES = [
   { p: '3–0', label: 'Unanimous', desc: 'All three personalities picked the same candidate. Strongest signal possible.', conf: 0.95, outcome: 'OK auto' },
-  { p: '2–1', label: 'Majority + dissent', desc: 'Two personalities agree on a candidate; the third picks a different one. Dissent is logged. The majority wins.', conf: 0.75, outcome: 'OK auto' },
-  { p: '2–0', label: 'Majority + abstention', desc: 'Two personalities agree. The third had no valid choice — Conservator vetoed all its candidates (chose=null). The majority still elects a winner.', conf: 0.70, outcome: 'OK auto' },
+  { p: '2–1', label: 'Majority + dissent', desc: 'Two personalities agree on a candidate; the third picks a different one. Dissent is logged. The majority wins. Exception: when the dissenter is the Steward, a −0.10 penalty drops confidence to 0.65 — below the auto-ship bar, so the user is prompted.', conf: 0.75, outcome: 'OK auto' },
+  { p: '2–0', label: 'Majority + abstention', desc: 'Two personalities agree. The third had no valid choice — Conservator vetoed all its candidates (chose=null). The majority still elects a winner. Exception: when the abstainer is the Steward, a −0.15 penalty drops confidence to 0.55 — prompts instead of auto-OK.', conf: 0.70, outcome: 'OK auto' },
   { p: '1–1–1', label: 'Fragmented', desc: 'Each personality picked a different candidate — no consensus. Escalates to a second deliberation round with peer context (B2 cascade).', conf: null, outcome: 'Round 2 → Skeptic → PEND' },
   { p: '1–1–0', label: 'Split + abstention', desc: 'Two different candidates got one vote each; one personality was vetoed out. No majority — goes to PEND for human decision.', conf: null, outcome: 'PEND' },
   { p: '1–0–0', label: 'Lone vote + 2 abstentions', desc: 'Only one personality produced a valid choice; the other two were vetoed. Insufficient agreement to auto-proceed.', conf: null, outcome: 'PEND' },

@@ -1,5 +1,5 @@
 ---
-generated: 2026-07-01 23:54
+generated: 2026-07-02 18:48
 nodes: 41
 edges: 52
 ---
@@ -98,8 +98,8 @@ graph LR
   CONSILIUM_AGGREGATOR_001["aggregator<br><small>CONSILIUM-AGGREGATOR-001</small>"]
   f_modes_aggregator_schemes_md_55["modes/aggregator_schemes.md:55"]
   CONSILIUM_AGGREGATOR_001 -->|implements| f_modes_aggregator_schemes_md_55
-  f_scripts_aggregator_py_29["scripts/aggregator.py:29"]
-  CONSILIUM_AGGREGATOR_001 -->|implements| f_scripts_aggregator_py_29
+  f_scripts_aggregator_py_34["scripts/aggregator.py:34"]
+  CONSILIUM_AGGREGATOR_001 -->|implements| f_scripts_aggregator_py_34
   f_scripts_test_round2_py_7["scripts/test_round2.py:7"]
   CONSILIUM_AGGREGATOR_001 -->|tested-by| f_scripts_test_round2_py_7
   CONSILIUM_AUDIT_COUNTER_001["Silent parallel audit counter<br><small>CONSILIUM-AUDIT-COUNTER-001</small>"]
@@ -122,6 +122,8 @@ graph LR
   CONSILIUM_CHECK_PUBLIC_LEAK_001["check_public_leak<br><small>CONSILIUM-CHECK-PUBLIC-LEAK-001</small>"]
   f_scripts_check_public_leak_py_15["scripts/check_public_leak.py:15"]
   CONSILIUM_CHECK_PUBLIC_LEAK_001 -->|implements| f_scripts_check_public_leak_py_15
+  f_scripts_test_public_leak_py_12["scripts/test_public_leak.py:12"]
+  CONSILIUM_CHECK_PUBLIC_LEAK_001 -->|tested-by| f_scripts_test_public_leak_py_12
   CONSILIUM_CONFIDENCE_001["confidence<br><small>CONSILIUM-CONFIDENCE-001</small>"]
   f_modes_confidence_md_60["modes/confidence.md:60"]
   CONSILIUM_CONFIDENCE_001 -->|implements| f_modes_confidence_md_60
@@ -167,8 +169,8 @@ graph LR
   f_prompts_voices_steward_lens_md_25["prompts/voices/steward_lens.md:25"]
   CONSILIUM_LENS_STEWARD_001 -->|implements| f_prompts_voices_steward_lens_md_25
   CONSILIUM_LOG_FEEDBACK_001["log_feedback<br><small>CONSILIUM-LOG-FEEDBACK-001</small>"]
-  f_scripts_log_feedback_py_41["scripts/log_feedback.py:41"]
-  CONSILIUM_LOG_FEEDBACK_001 -->|implements| f_scripts_log_feedback_py_41
+  f_scripts_log_feedback_py_43["scripts/log_feedback.py:43"]
+  CONSILIUM_LOG_FEEDBACK_001 -->|implements| f_scripts_log_feedback_py_43
   f_scripts_test_log_feedback_py_10["scripts/test_log_feedback.py:10"]
   CONSILIUM_LOG_FEEDBACK_001 -->|tested-by| f_scripts_test_log_feedback_py_10
   CONSILIUM_MARK_OUTCOME_001["mark_outcome<br><small>CONSILIUM-MARK-OUTCOME-001</small>"]
@@ -239,13 +241,13 @@ graph LR
   CONSILIUM_VALIDATE_REPORT_001["validate_report<br><small>CONSILIUM-VALIDATE-REPORT-001</small>"]
   f_scripts_test_round2_py_8["scripts/test_round2.py:8"]
   CONSILIUM_VALIDATE_REPORT_001 -->|tested-by| f_scripts_test_round2_py_8
-  f_scripts_validate_report_py_49["scripts/validate_report.py:49"]
-  CONSILIUM_VALIDATE_REPORT_001 -->|implements| f_scripts_validate_report_py_49
+  f_scripts_validate_report_py_50["scripts/validate_report.py:50"]
+  CONSILIUM_VALIDATE_REPORT_001 -->|implements| f_scripts_validate_report_py_50
   CONSILIUM_VALIDATE_SKEPTIC_001["validate_skeptic<br><small>CONSILIUM-VALIDATE-SKEPTIC-001</small>"]
   f_scripts_test_skeptic_py_11["scripts/test_skeptic.py:11"]
   CONSILIUM_VALIDATE_SKEPTIC_001 -->|tested-by| f_scripts_test_skeptic_py_11
-  f_scripts_validate_skeptic_py_36["scripts/validate_skeptic.py:36"]
-  CONSILIUM_VALIDATE_SKEPTIC_001 -->|implements| f_scripts_validate_skeptic_py_36
+  f_scripts_validate_skeptic_py_41["scripts/validate_skeptic.py:41"]
+  CONSILIUM_VALIDATE_SKEPTIC_001 -->|implements| f_scripts_validate_skeptic_py_41
   CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
   f_scripts_test_round2_py_9["scripts/test_round2.py:9"]
   CONSILIUM_VOCABULARY_MAP_001 -->|tested-by| f_scripts_test_round2_py_9
@@ -261,8 +263,8 @@ graph LR
   f_prompts_voices_generator_md_139["prompts/voices/generator.md:139"]
   CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_139
   CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small>"]
-  f_prompts_voices_skeptic_md_123["prompts/voices/skeptic.md:123"]
-  CONSILIUM_VOICE_SKEPTIC_001 -->|implements| f_prompts_voices_skeptic_md_123
+  f_prompts_voices_skeptic_md_139["prompts/voices/skeptic.md:139"]
+  CONSILIUM_VOICE_SKEPTIC_001 -->|implements| f_prompts_voices_skeptic_md_139
   CONSILIUM_VOTE_DEGENERACY_001["Trias vote degeneracy measurement<br><small>CONSILIUM-VOTE-DEGENERACY-001</small>"]
   f_scripts_test_vote_degeneracy_py_11["scripts/test_vote_degeneracy.py:11"]
   CONSILIUM_VOTE_DEGENERACY_001 -->|tested-by| f_scripts_test_vote_degeneracy_py_11

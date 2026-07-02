@@ -31,7 +31,6 @@ Canonical flow of a deliberation:
 4. `scripts/validate_report.py` is the final gate before writing to `.consilium/runs/<ts>_<slug>.json`
 
 Mode-specific scripts:
-- `dialectic_merge.py` — two-pass merge for Dialectic
 - `personalities.py` — Trias lens injection (Pioneer/Architect/Steward)
 
 Sub-agent dispatch (Trias, Skeptic): see `agents/consilium-subagent.md`. Sub-agents use `model: "sonnet"` by default — do not inherit Opus. **Trias**: each personality uses the `model` from `scripts/personalities.py` (all three → `sonnet`).
@@ -62,7 +61,7 @@ User-selectable modes (SKILL.md documents them in detail):
 - **`trias_split`** — deprecated; use standard `trias` (cost is now equivalent).
 - **`skeptic_on_chosen`** — composable flag over any base mode (+1 sub-agent overhead). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-triggers when `confidence < 0.70` (strictly less than 0.70; the Trias 2-0 value and the Sequential floor both sit at 0.70 and pass). Replaces the fixed modes `parallel_skeptic` (= `parallel + skeptic_on_chosen`) and `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — collapsed on 2026-05-17, legacy names remain accepted via `validate_report.py`'s `_LEGACY_MODE_ALIASES` map for backward-compat.
 
-**Parallel removed.** Parallel dispatch is no longer available in any form (PR #454, 2026-06-26 — Senate GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs; the silent 20-run audit was removed with it). For `critical` + `irreversible` changes, select `trias` explicitly. Legacy `mode: "parallel"` runs stay valid via the backward-compat `_LEGACY_MODE_ALIASES` map in `validate_report.py`.
+**Parallel removed.** Parallel dispatch is no longer available in any form (PR #454, 2026-06-26 — Senate GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs; the silent 20-run audit was removed with it). For `critical` + `irreversible` changes, select `trias` explicitly. Legacy `mode: "parallel"` runs stay valid because `validate_report.py` does not enum-validate `telemetry.mode`; `"parallel"` is kept in its `_MULTI_VOICE_MODES` set so historical runs still get the per-voice telemetry check (`_LEGACY_MODE_ALIASES` covers only `parallel_skeptic` / `dialectic_skeptic` / `trias_split`).
 
 ## Local files (gitignored)
 

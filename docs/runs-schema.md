@@ -32,25 +32,15 @@ fields are marked **REQUIRED**; the rest are recommended but not blocking.
     "conservator": 0.4
   },
   "confidence": 0.85,
+  "pipeline_executed": true,
   "telemetry": {
-    "mode": "sequential | parallel | dialectic | trias | senate",
+    "mode": "sequential | dialectic | trias | skeptic_on_chosen | sequential_scale_down | prior_deliberation_passthrough | user_spec_passthrough",
     "dispatch_count": 3,
     "passes": 1,
     "voices": {
       "generator":   {"tokens_in": 1200, "tokens_out": 400, "latency_ms": 3500},
       "control":     {"tokens_in":  800, "tokens_out": 200, "latency_ms": 2100},
       "conservator": {"tokens_in":  900, "tokens_out": 180, "latency_ms": 1800}
-    },
-    "senators": {
-      "wittgenstein": {"tokens_in": 2000, "tokens_out": 500, "latency_ms": 3100},
-      "aurelius":     {"tokens_in": 2000, "tokens_out": 510, "latency_ms": 3400},
-      "confucius":    {"tokens_in": 2000, "tokens_out": 490, "latency_ms": 3200},
-      "socrate":      {"tokens_in": 2000, "tokens_out": 520, "latency_ms": 3300},
-      "musk":         {"tokens_in": 2000, "tokens_out": 480, "latency_ms": 2900},
-      "dimon":        {"tokens_in": 2000, "tokens_out": 510, "latency_ms": 3100},
-      "napoleon":     {"tokens_in": 2000, "tokens_out": 500, "latency_ms": 3000},
-      "deming":       {"tokens_in": 2000, "tokens_out": 505, "latency_ms": 3050},
-      "tacitus":      {"tokens_in": 2000, "tokens_out": 515, "latency_ms": 3150}
     },
     "personalities": {
       "pioneer":   {"tokens_in": 5200, "tokens_out": 1400, "latency_ms": 8000},
@@ -93,9 +83,21 @@ fields are marked **REQUIRED**; the rest are recommended but not blocking.
 
 ## Field notes
 
-- **`telemetry`** is optional. Fill what you can measure (parallel/dialectic
-  give per-voice latencies; sequential mode often can't isolate per-voice
-  tokens) and omit the rest. Downstream readers tolerate missing blocks.
+- **`pipeline_executed`** (bool) is **REQUIRED for non-skipped reports**
+  (`validate_report.py` rejects reports without it). `true` when the full
+  voice pipeline ran; **must be `false`** for the bypass templates
+  (`trivial-direct` scale_down short-circuits, `prior-deliberation` /
+  `user-spec` passthroughs) — setting it `true` there is rejected as
+  inconsistent. Not required when `skipped: true`.
+- **`telemetry`** is **REQUIRED for non-skipped reports**: the block itself
+  and a non-empty `telemetry.mode`. Per-voice blocks (`telemetry.voices`)
+  are required for the multi-voice modes (trias / dialectic /
+  skeptic_on_chosen). Fill what you can measure and omit the rest of the
+  optional counters. `telemetry.mode` is an open string — historical
+  `parallel` runs stay readable (see `_MULTI_VOICE_MODES` in
+  `validate_report.py`); legacy names `parallel_skeptic` /
+  `dialectic_skeptic` / `trias_split` are normalized via
+  `_LEGACY_MODE_ALIASES`.
 - **`chosen_approach`** can be `null` legitimately when `aggregator.py`
   with `conservative_override` vetoes every candidate. In that case
   `deliberation_log[aggregate].result` should carry `retry_suggested`.
@@ -106,7 +108,8 @@ fields are marked **REQUIRED**; the rest are recommended but not blocking.
   optional). The 2026-06-19 skeptic-lever redesign replaced the 3 per-personality
   pre-vote Skeptics with one post-vote `skeptic_on_chosen`. `post_vote_skeptic_used`
   is `true` when that Skeptic fired (always under default-A; only when
-  `confidence ∈ [0.0, 0.7]` under the opt-in `--trias-skeptic-gate`).
+  `confidence ∈ [0.0, 0.70)` — strictly below 0.70 — under the opt-in
+  `--trias-skeptic-gate`).
   `skeptic_challenges_count` is `0` (skipped), `1` (challenged the winner), or
   `2` (winner demolished → `--skeptic-can-override` re-vote → new winner
   re-challenged). These exist so a future `confidence_calibration.py`-style

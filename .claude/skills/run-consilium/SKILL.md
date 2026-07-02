@@ -47,7 +47,11 @@ python .claude/skills/run-consilium/driver.py shot       # screenshot docs/archi
 [PASS] test_meta_critic_trim.py  (exit 0)
 [PASS] test_implement_mode.py  (exit 0)
 [PASS] test_implement_pipeline.py  (exit 0)
+[... every scripts/test_*.py suite — abbreviated; the drift gate keeps the full list in lockstep ...]
 [PASS] check_doc_drift.py  (exit 0)
+[PASS] check_public_leak.py  (exit 0)
+[PASS] reqmap gate --strict  (exit 0)
+[PASS] reqmap map --check  (exit 0)
 [PASS] architecture build --check  (exit 0)
 [PASS] run_evals.py (regression scenarios)  (exit 0)
 [PASS] build_report.py | validate_report.py  (exit 0)

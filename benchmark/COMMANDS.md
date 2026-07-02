@@ -1,6 +1,6 @@
 # BENCHMARK COMMANDS
 
-All runs use `claude -p` headless mode (Sonnet 4.6 by default, effort=high,
+All runs use `claude -p` headless mode (Sonnet 5 by default, effort=high,
 budget cap $3/task).
 
 > **Easy mode:** the wrapper at `scripts/run.py` covers the common batches
@@ -42,7 +42,7 @@ claude --version
 ```
 --clean             → wipe this task's workspace before running
 --rep N             → write to workspace/<mode>/<task>/rep_<N>/ (single slot)
---model    claude-sonnet-4-6   (default; sonnet_bare pins claude-sonnet-4-6)
+--model    claude-sonnet-5   (default; sonnet_bare pins claude-sonnet-5)
 --effort   high                (default; choices: low/medium/high/xhigh/max)
 --budget   3.0                 (USD cap; halts with `error_max_budget` if hit)
 --no-verify                    (skip automatic verify step after the run)

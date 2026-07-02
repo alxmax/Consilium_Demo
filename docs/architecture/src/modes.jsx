@@ -42,7 +42,7 @@ const MODES = [
     name: 'Skeptic-on-chosen',
     tag: 'FLAG',
     plain: 'A composable flag, not a standalone mode. Adds one Skeptic sub-agent to any base mode that challenges the chosen answer after aggregation. Auto-fires when the system isn\'t sure.',
-    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.0, 0.7]. Manual trigger: --skeptic-on-chosen.',
+    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.0, 0.70) — strictly below 0.70; 0.70 itself passes. Manual trigger: --skeptic-on-chosen.',
     use: 'whenever you want a focal challenger post-hoc',
     cost: 'base +1 (≈1.33× of a 3-voice base)',
     isolation: '+1 isolated Skeptic',
@@ -124,7 +124,7 @@ const WALKTHROUGHS = {
         nodes: { base: 'active', conf: 'idle', skp: 'idle', out: 'idle' }, arrows: [] },
       { id: '2', name: 'confidence', caption: 'Confidence gate checks the score after aggregation.',
         nodes: { base: 'done', conf: 'active', skp: 'idle', out: 'idle' }, arrows: ['base_conf'] },
-      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.0, 0.7] — below the trust floor — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
+      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.0, 0.70) — strictly below the 0.70 trust floor — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
       { id: '4', name: 'skeptic', caption: 'Skeptic receives only the chosen answer — never candidates, never verdicts. Tries to find a concrete failure mode.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
@@ -197,9 +197,9 @@ function ModesSection() {
             Which mode, when — the routing boundary
           </div>
           {[
-            ['Obvious bugfix, or diff < 20 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
+            ['Obvious bugfix, or diff ≤ 15 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
             ['Any other PR-level review', 'Sequential', 'default review — escalate to Trias if critical + irreversible'],
-            ['A chosen answer came back shaky (confidence ≤ 0.7) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
+            ['A chosen answer came back shaky (confidence < 0.70) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
             ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three Sonnet personalities with different lens weights, settled by vote'],
           ].map(([when, mode, why]) => (
             <div key={mode + when} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(150px, 0.8fr) 1.2fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--rule)', fontSize: 13, alignItems: 'baseline' }}>
@@ -520,8 +520,8 @@ function StageTrias({ step }) {
             <text x="172" y={p.y + 32} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: 'var(--ink-3)' }}>{p.weights}</text>
 
             {/* inner sequential indicator */}
-            <WVoice x={172} y={p.y + 38} v="con" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
-            <WVoice x={232} y={p.y + 38} v="gen" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
+            <WVoice x={172} y={p.y + 38} v="gen" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
+            <WVoice x={232} y={p.y + 38} v="con" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
             <WVoice x={292} y={p.y + 38} v="ctl" state={inside ? 'active' : 'idle'} label="" w={42} h={28} />
 
             {/* strip walls within */}
@@ -584,7 +584,7 @@ function StageSkeptic({ step }) {
 
       <WArrow d="M 180 160 L 250 160" state={has('base_conf') ? 'done' : 'idle'} />
       <WArrow d="M 380 160 L 458 154" state={has('conf_skp') ? (ns.skp === 'active' ? 'active' : 'done') : 'idle'} dashed
-        label="conf ∈ [0.0, 0.7]" labelX={420} labelY={138} />
+        label="conf ∈ [0.0, 0.70)" labelX={420} labelY={138} />
       <WArrow d="M 600 154 L 620 154" state={has('skp_out') ? 'done' : 'idle'} />
     </svg>
   );
