@@ -1,7 +1,7 @@
 ---
-generated: 2026-07-02 18:48
-nodes: 41
-edges: 52
+generated: 2026-07-03 16:48
+nodes: 43
+edges: 53
 ---
 
 # Requirement Map
@@ -39,6 +39,7 @@ graph LR
     CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small>"]
     CONSILIUM_PRIORS_001["priors<br><small>CONSILIUM-PRIORS-001</small>"]
     CONSILIUM_RENDER_FEEDBACK_HTML_001["render_feedback_html<br><small>CONSILIUM-RENDER-FEEDBACK-HTML-001</small>"]
+    CONSILIUM_RENDER_IMPL_PREVIEW_001["render_impl_preview<br><small>CONSILIUM-RENDER-IMPL-PREVIEW-001</small>"]
     CONSILIUM_RUN_EVALS_001["run_evals<br><small>CONSILIUM-RUN-EVALS-001</small>"]
     CONSILIUM_SCOPE_GATE_001["scope_gate<br><small>CONSILIUM-SCOPE-GATE-001</small>"]
     CONSILIUM_STRIP_CONTEXT_001["strip_context<br><small>CONSILIUM-STRIP-CONTEXT-001</small>"]
@@ -47,6 +48,7 @@ graph LR
     CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small>"]
     CONSILIUM_VALIDATE_REPORT_001["validate_report<br><small>CONSILIUM-VALIDATE-REPORT-001</small>"]
     CONSILIUM_VALIDATE_SKEPTIC_001["validate_skeptic<br><small>CONSILIUM-VALIDATE-SKEPTIC-001</small>"]
+    CONSILIUM_VERSION_001["version<br><small>CONSILIUM-VERSION-001</small>"]
     CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
     CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small>"]
     CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small>"]
@@ -81,11 +83,13 @@ graph LR
   style CONSILIUM_FEEDBACK_001 stroke-width:3px
   style CONSILIUM_PERSONALITIES_001 stroke-width:3px
   style CONSILIUM_RENDER_FEEDBACK_HTML_001 stroke-width:3px
+  style CONSILIUM_RENDER_IMPL_PREVIEW_001 stroke-width:3px
   style CONSILIUM_SUBAGENT_001 stroke-width:3px
   style CONSILIUM_TRIAS_MODEL_SCHEMA_001 stroke-width:3px
   style CONSILIUM_UTILS_001 stroke-width:3px
   style CONSILIUM_VALIDATE_REPORT_001 stroke-width:3px
   style CONSILIUM_VALIDATE_SKEPTIC_001 stroke-width:3px
+  style CONSILIUM_VERSION_001 stroke-width:3px
   style CONSILIUM_VOCABULARY_MAP_001 stroke-width:3px
 ```
 
@@ -112,10 +116,8 @@ graph LR
   CONSILIUM_BUILD_REPORT_001 -->|implements| f_scripts_build_report_py_42
   f_scripts_test_build_report_py_11["scripts/test_build_report.py:11"]
   CONSILIUM_BUILD_REPORT_001 -->|tested-by| f_scripts_test_build_report_py_11
-  f_scripts_test_version_py_103["scripts/test_version.py:103"]
-  CONSILIUM_BUILD_REPORT_001 -->|tested-by| f_scripts_test_version_py_103
-  f_scripts_version_py_126["scripts/version.py:126"]
-  CONSILIUM_BUILD_REPORT_001 -->|implements| f_scripts_version_py_126
+  f_scripts_test_version_py_104["scripts/test_version.py:104"]
+  CONSILIUM_BUILD_REPORT_001 -->|tested-by| f_scripts_test_version_py_104
   CONSILIUM_CHECK_DOC_DRIFT_001["check_doc_drift<br><small>CONSILIUM-CHECK-DOC-DRIFT-001</small>"]
   f_scripts_check_doc_drift_py_25["scripts/check_doc_drift.py:25"]
   CONSILIUM_CHECK_DOC_DRIFT_001 -->|implements| f_scripts_check_doc_drift_py_25
@@ -206,6 +208,11 @@ graph LR
   CONSILIUM_RENDER_FEEDBACK_HTML_001 -->|implements| f_scripts_render_feedback_html_py_11
   f_scripts_test_feedback_html_py_6["scripts/test_feedback_html.py:6"]
   CONSILIUM_RENDER_FEEDBACK_HTML_001 -->|tested-by| f_scripts_test_feedback_html_py_6
+  CONSILIUM_RENDER_IMPL_PREVIEW_001["render_impl_preview<br><small>CONSILIUM-RENDER-IMPL-PREVIEW-001</small>"]
+  f_scripts_render_impl_preview_py_28["scripts/render_impl_preview.py:28"]
+  CONSILIUM_RENDER_IMPL_PREVIEW_001 -->|implements| f_scripts_render_impl_preview_py_28
+  f_scripts_test_render_impl_preview_py_12["scripts/test_render_impl_preview.py:12"]
+  CONSILIUM_RENDER_IMPL_PREVIEW_001 -->|tested-by| f_scripts_test_render_impl_preview_py_12
   CONSILIUM_RUN_EVALS_001["run_evals<br><small>CONSILIUM-RUN-EVALS-001</small>"]
   f_scripts_run_evals_py_23["scripts/run_evals.py:23"]
   CONSILIUM_RUN_EVALS_001 -->|implements| f_scripts_run_evals_py_23
@@ -248,6 +255,11 @@ graph LR
   CONSILIUM_VALIDATE_SKEPTIC_001 -->|tested-by| f_scripts_test_skeptic_py_11
   f_scripts_validate_skeptic_py_41["scripts/validate_skeptic.py:41"]
   CONSILIUM_VALIDATE_SKEPTIC_001 -->|implements| f_scripts_validate_skeptic_py_41
+  CONSILIUM_VERSION_001["version<br><small>CONSILIUM-VERSION-001</small>"]
+  f_scripts_test_version_py_103["scripts/test_version.py:103"]
+  CONSILIUM_VERSION_001 -->|tested-by| f_scripts_test_version_py_103
+  f_scripts_version_py_126["scripts/version.py:126"]
+  CONSILIUM_VERSION_001 -->|implements| f_scripts_version_py_126
   CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
   f_scripts_test_round2_py_9["scripts/test_round2.py:9"]
   CONSILIUM_VOCABULARY_MAP_001 -->|tested-by| f_scripts_test_round2_py_9
@@ -281,7 +293,7 @@ _Area-level coupling: one box per area (N caps), arrow A->B = some capability in
 
 ```mermaid
 graph LR
-  a_CONSILIUM["CONSILIUM<br><small>40 caps</small>"]
+  a_CONSILIUM["CONSILIUM<br><small>42 caps</small>"]
   a_misc["misc<br><small>1 caps</small>"]
   a_misc --> a_CONSILIUM
   style a_CONSILIUM stroke-width:3px

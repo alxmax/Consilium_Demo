@@ -5618,11 +5618,11 @@ const STEPS = [
   {
     id: '7', name: 'infer pipeline',
     title: 'Infer pipeline',
-    desc: 'Conditional — runs only when the prompt declared Required output files or Deliverables. infer_pipeline.py deduces and executes the implementation steps after step 6. Skipped if chosen_approach ∈ {do_nothing, skipped}. Headless flag: --yes.',
+    desc: 'Conditional — runs only when the prompt declared Required output files or Deliverables. infer_pipeline.py deduces and executes the implementation steps after step 6. Skipped if chosen_approach ∈ {do_nothing, skipped}. Headless flag: --yes. Opt-in companion: render_impl_preview.py renders the report + working-tree diff as a self-contained HTML review page for pre-commit handoff — never part of the dispatch flow.',
     plain: 'If the change should actually ship, this is the step that ships it.',
     inputs: ['chosen_approach', 'declared deliverables'],
     outputs: ['implementation steps[]', 'execution result'],
-    scripts: ['infer_pipeline.py'],
+    scripts: ['infer_pipeline.py', 'render_impl_preview.py'],
   },
 ];
 

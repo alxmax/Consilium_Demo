@@ -22,7 +22,7 @@ depends_on: [CONSILIUM-VOICE-SKEPTIC-001]
 - None — doc is unambiguous.
 
 ## WHAT — Notes & known limitations (informative)
-- The legacy fixed modes `parallel_skeptic` and `dialectic_skeptic` were collapsed into this composable flag on 2026-05-17; the legacy names remain in `validate_report.py` MODE enum for backward-compat with historical runs.
+- The legacy fixed modes `parallel_skeptic` and `dialectic_skeptic` were collapsed into this composable flag on 2026-05-17; the legacy names remain accepted via `validate_report.py`'s `_LEGACY_MODE_ALIASES` map for backward-compat with historical runs (there is no MODE enum; `telemetry.mode` is not enum-validated).
 - Empirical origin (n=1, P3 problem): the equivalent `chosen_confirmation_pass` reached 4/7 catch-rate in real reruns; generalizability to other problems is unconfirmed until ≥3 distinct problems are tested.
 
 ## HOW — Acceptance (= tests)

@@ -43,6 +43,14 @@ An interactive, single-page walkthrough of the voices, pipeline, modes, voting, 
 
 This installs the `consilium` skill plus its sub-agents in a single step. Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
 
+Deliberation state (run reports, the feedback journal, preview pages) is written to **`.consilium/`** at your project root. We recommend adding it to your `.gitignore` — it is local working state:
+
+```gitignore
+.consilium/
+```
+
+This is a preference, not a requirement: if you *want* the deliberation trail versioned alongside your code (e.g. for team review of past decisions), simply don't ignore it — everything under `.consilium/` is plain JSON/HTML and diffs cleanly.
+
 > **Releases:** clean, tagged releases (currently **v1.1**) are published here for installation and review.
 
 ## Example
@@ -90,6 +98,16 @@ flowchart TD
 ```
 
 GitHub renders Mermaid natively — paste the `--fence` output directly into any `.md` file.
+
+## Implementation preview
+
+One command turns a deliberation report (+ your working-tree diff) into a single self-contained HTML review page — spec, rationale, rejected alternatives, verification and per-file coloured diff, with a light/dark toggle:
+
+```bash
+git diff | python scripts/render_impl_preview.py --input .consilium/runs/<run>.json --diff-file -
+```
+
+The page lands under `.consilium/preview/` as a plain file: it survives the session and is safe to attach to a PR or hand off for review outside the CLI. In interactive Claude sessions the orchestrator also publishes it as a shareable Artifact link by default; headless/CI runs produce the file only. Opt-in only — it never gates the pipeline.
 
 ## Structure
 

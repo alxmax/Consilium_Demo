@@ -100,4 +100,5 @@ def run() -> int:
 if __name__ == "__main__":
     sys.exit(run())
 
-# tested-by: CONSILIUM-BUILD-REPORT-001
+# tested-by: CONSILIUM-VERSION-001
+# tested-by: CONSILIUM-BUILD-REPORT-001  (the report-stamp checks: all three producers carry the stamp)
