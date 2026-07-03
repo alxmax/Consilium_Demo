@@ -465,7 +465,7 @@ The authoritative git rules live in `CLAUDE.md` §Git workflow (branch naming, o
 
 ## Feedback loop
 
-All deliberation state lives under **`.consilium/`** at the repo root (gitignored; the single data directory). Paths are centralized in `scripts/utils.py` (`DATA_DIR`/`RUNS_DIR`/`FEEDBACK_PATH`) — scripts import them as defaults, `--runs-dir`/`--feedback` still override.
+All deliberation state lives under **`.consilium/`** at the repo root (the single data directory; in this repo it is gitignored). In a consumer project, adding `.consilium/` to `.gitignore` is the recommended default but a preference, not a requirement — keep it tracked if you want the deliberation trail versioned. Paths are centralized in `scripts/utils.py` (`DATA_DIR`/`RUNS_DIR`/`FEEDBACK_PATH`) — scripts import them as defaults, `--runs-dir`/`--feedback` still override.
 
 - **`.consilium/runs/`** — JSON per deliberation in `.consilium/runs/YYYY-MM-DD_HHMM_<label>.json` (schema in `docs/runs-schema.md`). Read by `priors.py` (Step 0), `feedback.py`, `memory.py`. Run-paths are stored relative to `.consilium/` (key `runs/<file>.json`); `--run-path` accepts any spelling (`.consilium/runs/<f>.json`, `runs/<f>.json`, absolute) and `utils.canonical_run_path` normalizes it to that key.
 - **`.consilium/FEEDBACK.html`** — one line per use: `date | context | chosen | outcome | note`. Outcome: `OK`, `BAD`, `OVR`, `PEND`. **Drill-down:** when `log_feedback.py` appends, existing rows lose drill-down; bulk re-population was a one-shot migration tool (now removed — see git history).

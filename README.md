@@ -43,6 +43,14 @@ An interactive, single-page walkthrough of the voices, pipeline, modes, voting, 
 
 This installs the `consilium` skill plus its sub-agents in a single step. Then, in a new Claude Code session: `Review the last commit using the consilium skill`.
 
+Deliberation state (run reports, the feedback journal, preview pages) is written to **`.consilium/`** at your project root. We recommend adding it to your `.gitignore` — it is local working state:
+
+```gitignore
+.consilium/
+```
+
+This is a preference, not a requirement: if you *want* the deliberation trail versioned alongside your code (e.g. for team review of past decisions), simply don't ignore it — everything under `.consilium/` is plain JSON/HTML and diffs cleanly.
+
 > **Releases:** clean, tagged releases (currently **v1.1**) are published here for installation and review.
 
 ## Example
