@@ -44,5 +44,5 @@ Assembles the canonical deliberation report shape from the intermediate voice an
 - Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.
 - Given a skipped bundle (`skipped: true`) with valid `skip_reason`, the output contains `chosen_approach: skipped`, `pipeline_executed` absent or false, and `deliberation_log: []`.
 - Given a bundle where the chosen candidate has a control verdict with `valid=false` and issues, the output's `voice_scores.control` is less than 1.0 and alternatives list a `why_not` string derived from the issues.
-- Given any valid bundle, the telemetry block in the output contains non-empty `consilium_version` and `consilium_ref` fields stamped by the version module.
+- Given any valid bundle, the telemetry block in the output contains a non-empty `consilium_version` and a `consilium_ref` that is either the committed HEAD sha or `""` on a dirty/unknown tree (the version-module contract — see CONSILIUM-VERSION-001), both stamped by the version module.
 - Given a bundle missing `success_criterion`, the script exits with code 1 and prints an error to stderr without writing any JSON to stdout.

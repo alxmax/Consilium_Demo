@@ -91,6 +91,16 @@ flowchart TD
 
 GitHub renders Mermaid natively — paste the `--fence` output directly into any `.md` file.
 
+## Implementation preview
+
+One command turns a deliberation report (+ your working-tree diff) into a single self-contained HTML review page — spec, rationale, rejected alternatives, verification and per-file coloured diff, with a light/dark toggle:
+
+```bash
+git diff | python scripts/render_impl_preview.py --input .consilium/runs/<run>.json --diff-file -
+```
+
+The page lands under `.consilium/preview/` as a plain file: it survives the session and is safe to attach to a PR or hand off for review outside the CLI. In interactive Claude sessions the orchestrator also publishes it as a shareable Artifact link by default; headless/CI runs produce the file only. Opt-in only — it never gates the pipeline.
+
 ## Structure
 
 ```

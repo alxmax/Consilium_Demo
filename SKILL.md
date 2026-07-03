@@ -446,6 +446,7 @@ python scripts/run_evals.py
 | `scripts/mark_outcome.py` | Retroactive outcome overwrite (`[confirmed]` in note → 2x weight) |
 | `scripts/infer_pipeline.py` | Step 7: infer + confirm implementation steps from the report; `--dry-run` / `--yes` |
 | `scripts/implement_pipeline.py` | Step 7: plan the Coder→(Test Writer∥Reviewer) dispatch + red→green gate verifier; default for regression-risk changes; `--dry-run` / `--verify-gate` |
+| `scripts/render_impl_preview.py` | Opt-in Step 7 companion: report (+ optional `git diff`) → self-contained static HTML review page (spec + rationale + multi-file diff) for pre-commit handoff; never in the dispatch control flow. Interactive sessions: the orchestrator also publishes the generated page as an Artifact by default (shareable link); headless runs produce the file only |
 | `agents/consilium-implement-subagent.md` | Vehicle for the implementation pipeline; default for regression-risk changes (Step 7); returns a file manifest + Control verdict |
 | `prompts/implement/{coder,test_writer}.md` | Implementation pipeline role templates (Reviewer reuses `prompts/voices/control.md`) |
 | `modes/implement_pipeline.md` | Machine-readable config + full spec for the implementation pipeline (roles, routing, invariants, red→green gate, benchmark) |

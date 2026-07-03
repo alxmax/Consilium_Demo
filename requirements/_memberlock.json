@@ -9,8 +9,7 @@
       "scripts/audit_feedback.py": "e227ead8b9c922f04d3e1fb063bcfdc84af64cce13db147c1f1f16fa1985ed8f"
     },
     "CONSILIUM-BUILD-REPORT-001": {
-      "scripts/build_report.py": "b347feba2dc0341c4cc5999ceafd5735481b14f99e2e6d416b441d4ea1c7d185",
-      "scripts/version.py": "575dc3473c682b447ddaf056aa53edf31023ebedb049131a7573790e10766ca0"
+      "scripts/build_report.py": "b347feba2dc0341c4cc5999ceafd5735481b14f99e2e6d416b441d4ea1c7d185"
     },
     "CONSILIUM-CHECK-DOC-DRIFT-001": {
       "scripts/check_doc_drift.py": "f6826e22eace6b6e600b0cb53b04908ece588d616900d0b18924476a780d5c6f"
@@ -77,6 +76,9 @@
     "CONSILIUM-RENDER-FEEDBACK-HTML-001": {
       "scripts/render_feedback_html.py": "c292b3aaa533378364e4c6120ba32befd3654c33e03e4f38b4e687ca252e8c3c"
     },
+    "CONSILIUM-RENDER-IMPL-PREVIEW-001": {
+      "scripts/render_impl_preview.py": "05535941379c7c5f707e6b506ef654f0676818e7f01ea275ec60b12eb5621932"
+    },
     "CONSILIUM-RUN-EVALS-001": {
       "scripts/run_evals.py": "b87a4180f9b86244941843ce89818c32b0cd4167d4e283ca18a87a03500f301e"
     },
@@ -99,6 +101,9 @@
     "CONSILIUM-VALIDATE-SKEPTIC-001": {
       "scripts/validate_skeptic.py": "683c1bf3de2282961d985a53d8bd2de9caf4b78805a515e05b09b6cde64ef910"
     },
+    "CONSILIUM-VERSION-001": {
+      "scripts/version.py": "196abffc56617b8d9ca8de2402949b7c8f555475fe067c4ec340710769769d87"
+    },
     "CONSILIUM-VOCABULARY-MAP-001": {
       "scripts/vocabulary_map.py": "52b2efad75bfe41b539ae63d84398404723623794fde00124817963ca4e7e82d"
     },
@@ -118,7 +123,7 @@
       "scripts/vote_degeneracy.py": "0f7878a28e80d2c00c7c49c41f7645711a44886738d1ac0fa17c5d16683957e4"
     },
     "SKILL-RUN-CONSILIUM-001": {
-      ".claude/skills/run-consilium/driver.py": "62d1fabc44c75f41f456b34627bb150c3e5c225dbf83456d5c482a2433c4ec07"
+      ".claude/skills/run-consilium/driver.py": "159cc2afbc489c4186e2cf65992f5fc96cc4f20604859c83846d86f00c06110e"
     }
   }
 }

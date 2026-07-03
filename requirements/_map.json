@@ -174,10 +174,10 @@
         "Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.",
         "Given a skipped bundle (`skipped: true`) with valid `skip_reason`, the output contains `chosen_approach: skipped`, `pipeline_executed` absent or false, and `deliberation_log: []`.",
         "Given a bundle where the chosen candidate has a control verdict with `valid=false` and issues, the output's `voice_scores.control` is less than 1.0 and alternatives list a `why_not` string derived from the issues.",
-        "Given any valid bundle, the telemetry block in the output contains non-empty `consilium_version` and `consilium_ref` fields stamped by the version module.",
+        "Given any valid bundle, the telemetry block in the output contains a non-empty `consilium_version` and a `consilium_ref` that is either the committed HEAD sha or `\"\"` on a dirty/unknown tree (the version-module contract — see CONSILIUM-VERSION-001), both stamped by the version module.",
         "Given a bundle missing `success_criterion`, the script exits with code 1 and prints an error to stderr without writing any JSON to stdout."
       ],
-      "accept": "- Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.\n- Given a skipped bundle (`skipped: true`) with valid `skip_reason`, the output contains `chosen_approach: skipped`, `pipeline_executed` absent or false, and `deliberation_log: []`.\n- Given a bundle where the chosen candidate has a control verdict with `valid=false` and issues, the output's `voice_scores.control` is less than 1.0 and alternatives list a `why_not` string derived from the issues.\n- Given any valid bundle, the telemetry block in the output contains non-empty `consilium_version` and `consilium_ref` fields stamped by the version module.\n- Given a bundle missing `success_criterion`, the script exits with code 1 and prints an error to stderr without writing any JSON to stdout.",
+      "accept": "- Given a well-formed full bundle, the output contains `pipeline_executed: true` and a `deliberation_log` array with entries for steps `generator`, `control`, `conservator`, and `aggregate`.\n- Given a skipped bundle (`skipped: true`) with valid `skip_reason`, the output contains `chosen_approach: skipped`, `pipeline_executed` absent or false, and `deliberation_log: []`.\n- Given a bundle where the chosen candidate has a control verdict with `valid=false` and issues, the output's `voice_scores.control` is less than 1.0 and alternatives list a `why_not` string derived from the issues.\n- Given any valid bundle, the telemetry block in the output contains a non-empty `consilium_version` and a `consilium_ref` that is either the committed HEAD sha or `\"\"` on a dirty/unknown tree (the version-module contract — see CONSILIUM-VERSION-001), both stamped by the version module.\n- Given a bundle missing `success_criterion`, the script exits with code 1 and prints an error to stderr without writing any JSON to stdout.",
       "input": "stdin or `--input` file: JSON bundle with keys `success_criterion`, `verification`, `generator`, `control`, `conservator`, `aggregate`, `confidence`, and optional `telemetry`, `reasoning`, `alternatives_limit`, `team`, `personalities`, `vote_pattern`, `personality_choices`, `deliberation_quality`, `vote_skipped` For skipped bundles: `skipped: true` plus `skip_reason` and `signals` instead of voice outputs CLI flag `--input`: path to JSON bundle file (default: stdin)",
       "output": "stdout: canonical JSON report with fields: `success_criterion`, `verification`, `chosen_approach`, `reasoning`, `alternatives`, `voice_scores`, `confidence`, `pipeline_executed`, `deliberation_log`, `telemetry`, and optional Trias fields (`team`, `personalities`, `vote_pattern`, `dissent`, `abstained`, `personality_choices`) exit code 0 on success exit code 1 on missing required field exit code 2 on malformed JSON input",
       "desc": "Assembles the canonical deliberation report shape from the intermediate voice and aggregation outputs, eliminating the error-prone manual JSON construction that previously occurred in the orchestrator between pipeline steps. It extracts the chosen candidate's voice scores from the control verdict and conservator score lists, derives `why_not` summaries for each non-chosen alternative from control issues and conservator risk, and stamps version provenance (`consilium_version` and `consilium_ref`) into the telemetry block of every report it emits. Skipped reports (trivial-direct, prior-deliberation passthrough) are handled via a separate code path that requires only `skip_reason` and `signals`; `pipeline_executed` is absent (not set) on skipped reports — `validate_report.py` skips the field check entirely when `skipped: true`. Full pipeline reports always set `pipeline_executed: true`. The output must pass `validate_report.py` to be written to `.consilium/runs/`. `why_not` for non-chosen candidates combines both Control issues and Conservator risk: if the control verdict is invalid, it lists issue categories; if valid but issues exist, it uses the first issue's detail; if Conservator `net_concern >= 0.5`, it appends `risk=N.NN`. When neither source yields text, the fallback is `\"ranked below chosen\"` (or `\"all candidates vetoed\"` when `chosen` is null). `--input` and stdin are mutually exclusive by argparse design (`FileType` default is stdin; providing `--input` opens the file instead). No conflict resolution is needed — only one source is ever active.",
@@ -198,11 +198,7 @@
         },
         {
           "role": "tested-by",
-          "loc": "scripts/test_version.py:103"
-        },
-        {
-          "role": "implements",
-          "loc": "scripts/version.py:126"
+          "loc": "scripts/test_version.py:104"
         }
       ],
       "test_exempt": null,
@@ -1062,7 +1058,7 @@
         "None — doc is unambiguous."
       ],
       "notes": [
-        "The legacy fixed modes `parallel_skeptic` and `dialectic_skeptic` were collapsed into this composable flag on 2026-05-17; the legacy names remain in `validate_report.py` MODE enum for backward-compat with historical runs.",
+        "The legacy fixed modes `parallel_skeptic` and `dialectic_skeptic` were collapsed into this composable flag on 2026-05-17; the legacy names remain accepted via `validate_report.py`'s `_LEGACY_MODE_ALIASES` map for backward-compat with historical runs (there is no MODE enum; `telemetry.mode` is not enum-validated).",
         "Empirical origin (n=1, P3 problem): the equivalent `chosen_confirmation_pass` reached 4/7 catch-rate in real reruns; generalizability to other problems is unconfirmed until ≥3 distinct problems are tested."
       ],
       "current_impl": [
@@ -1304,6 +1300,59 @@
       ],
       "test_exempt": null,
       "milestone": "v1.0",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-RENDER-IMPL-PREVIEW-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "render_impl_preview",
+      "intent": "Opt-in Step 7 companion: deliberation report (+ optional unified diff) -> one self-contained static HTML review page for pre-commit handoff.",
+      "contract": [
+        "Shall render `success_criterion`, `chosen_approach`, `verification`, `alternatives` (id, summary, why_not) and `confidence` from the input report into the page.",
+        "Shall render each `diff --git` section of the supplied diff as its own titled block; with no diff supplied, shall render a spec-only placeholder instead and still exit 0.",
+        "Shall pass all report and diff content through `html.escape` — hostile input (`</script>`, inline event handlers) shall never appear unescaped in the output.",
+        "Shall emit a self-contained page: no `<link>`, `<script src>`, or `<img src>` references to external URLs.",
+        "Shall follow the viewer's light/dark preference (`prefers-color-scheme`) and include an inline theme-toggle button (`id=\"theme-toggle\"`) that overrides it, persisting the choice in `localStorage`.",
+        "Shall never dispatch, block, or gate any Step 7 stage — the script only reads its inputs and writes one HTML file."
+      ],
+      "verify": [
+        "None - the default output directory `.consilium/preview/` inherits the gitignore on `.consilium/`, so preview pages cannot enter the tree; no separate ignore rule is asserted by tests.",
+        "None - `--diff-file -` consumes stdin exactly once; combining it with a stdin-based report is unsupported by construction (the report always comes from `--input`)."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "Round-trip: a report plus a two-file unified diff renders a page containing the success criterion, the chosen id, and one section per `diff --git` header (`scripts/test_render_impl_preview.py`).",
+        "Escaping: a diff containing `</script><script>alert(1)</script>` and `<img onerror=...>` yields a page where the raw sequences are absent and the escaped forms present.",
+        "Spec-only: with no `--diff-file`, the page contains the placeholder and no diff blocks; the CLI exits 0.",
+        "Failure modes: a report missing `chosen_approach` exits 1 naming the field on stderr; malformed JSON exits 2; an absent report path exits 1.",
+        "Theme toggle: the rendered page contains the `theme-toggle` button element."
+      ],
+      "accept": "- Round-trip: a report plus a two-file unified diff renders a page containing the success criterion, the chosen id, and one section per `diff --git` header (`scripts/test_render_impl_preview.py`).\n- Escaping: a diff containing `</script><script>alert(1)</script>` and `<img onerror=...>` yields a page where the raw sequences are absent and the escaped forms present.\n- Spec-only: with no `--diff-file`, the page contains the placeholder and no diff blocks; the CLI exits 0.\n- Failure modes: a report missing `chosen_approach` exits 1 naming the field on stderr; malformed JSON exits 2; an absent report path exits 1.\n- Theme toggle: the rendered page contains the `theme-toggle` button element.",
+      "input": "CLI flag `--input` (required): path to a `runs/<file>.json` deliberation report; read with `utf-8-sig` so BOM-stamped files parse CLI flag `--diff-file` (optional): unified diff text to render (`-` reads stdin, e.g. piped from `git diff`); omitted -> spec-only preview CLI flag `--output` (optional): output HTML path; default `.consilium/preview/<input-stem>.html` CLI flag `--title` (optional): page title override Programmatic surface: `render_preview_html(report, diff_text, title)` and `split_diff_sections(diff_text)` (pure functions, no I/O)",
+      "output": "One self-contained HTML file (inline CSS, no external assets) written atomically via `utils.atomic_write_text` to `--output` or the default preview path stdout: `preview: <path>` on success exit 0 on success; exit 1 on unreadable input or a missing required report field (`success_criterion`, `chosen_approach`, `verification`); exit 2 on malformed JSON",
+      "desc": "Renders a completed deliberation report — success criterion, chosen approach with voice scores, alternatives with why_not, verification command, confidence and mode — together with an optional multi-file unified diff into a single self-contained HTML page. Exists for handoff review outside the live CLI session: unlike session-bound Artifact URLs or ephemeral Plan Mode, the page is a plain file on disk that survives the session and can be attached to the run report it renders. It is never part of the Step 7 dispatch control flow — invocation is always explicit (decided by deliberation `runs/2026-07-03_1443_html-preview-impl-step.json`, which rejected a prose-enforced pipeline checkpoint as the self-enforced-guard anti-pattern). Diff text is split into per-file sections on `diff --git` headers, with headerless input falling back to a single `(diff)` section, and every line of report and diff content passes through `html.escape` before it reaches the page.",
+      "deps": [
+        "CONSILIUM-UTILS-001"
+      ],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "scripts/render_impl_preview.py:28"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_render_impl_preview.py:12"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.2",
       "priority": "",
       "risks": []
     },
@@ -1601,6 +1650,7 @@
         "CONSILIUM-MEMORY-001",
         "CONSILIUM-PRIORS-001",
         "CONSILIUM-RENDER-FEEDBACK-HTML-001",
+        "CONSILIUM-RENDER-IMPL-PREVIEW-001",
         "CONSILIUM-STRIP-CONTEXT-001",
         "CONSILIUM-VALIDATE-REPORT-001",
         "CONSILIUM-VALIDATE-SKEPTIC-001"
@@ -1728,6 +1778,53 @@
       ],
       "test_exempt": null,
       "milestone": "v1.1",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-VERSION-001",
+      "layer": "bus",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "version",
+      "intent": "Repo version provenance: git-describe display stamp, resolvable committed-HEAD ref, and a guarded prompt-drift counter — the primitives every report producer stamps into telemetry.",
+      "contract": [
+        "Shall return a `consilium_version` display stamp that fails open to `\"unknown\"` (never raises) when git is absent.",
+        "Shall return `consilium_ref` as either the committed HEAD sha or `\"\"` on a dirty/unknown tree — never a `-dirty`-suffixed or otherwise unresolvable string.",
+        "`prompts_changed_since` shall never raise and shall return 0 for empty, `\"unknown\"`, or unreachable refs.",
+        "`ref_resolves` shall return False for `\"\"` and `\"unknown\"` without invoking git."
+      ],
+      "verify": [
+        "None - the report-stamping obligation (every producer writes these two fields into telemetry) belongs to CONSILIUM-BUILD-REPORT-001 and the two hand-built SKILL.md templates; this requirement covers only the provenance primitives themselves."
+      ],
+      "notes": [],
+      "current_impl": [],
+      "acc": [
+        "With `_git` stubbed to fail: `consilium_version() == \"unknown\"`, `consilium_ref() == \"\"`, `ref_resolves(\"abc\") is False`, `prompts_changed_since(\"abc\") == 0` (`scripts/test_version.py`).",
+        "With a dirty-tree stub: `consilium_ref() == \"\"`; with a clean-tree stub: `consilium_ref()` equals the HEAD sha.",
+        "`ref_resolves(\"\")` and `ref_resolves(\"unknown\")` are False without a git call.",
+        "On a real repo, `consilium_version()` returns a non-empty string."
+      ],
+      "accept": "- With `_git` stubbed to fail: `consilium_version() == \"unknown\"`, `consilium_ref() == \"\"`, `ref_resolves(\"abc\") is False`, `prompts_changed_since(\"abc\") == 0` (`scripts/test_version.py`).\n- With a dirty-tree stub: `consilium_ref() == \"\"`; with a clean-tree stub: `consilium_ref()` equals the HEAD sha.\n- `ref_resolves(\"\")` and `ref_resolves(\"unknown\")` are False without a git call.\n- On a real repo, `consilium_version()` returns a non-empty string.",
+      "input": "The git repository state of the Consilium checkout (`git describe`, `git status --porcelain`, `git rev-parse`), read via subprocess `prompts_changed_since(ref)` / `--drift <ref>`: a prior `consilium_ref` value to diff `prompts/` + `modes/` against CLI flags: `--version` (default), `--ref`, `--drift <ref>`",
+      "output": "`consilium_version()` → non-empty display string, `\"unknown\"` when git is unavailable `consilium_ref()` → committed HEAD sha (clean tree) or `\"\"` (dirty/unknown tree) `ref_resolves(ref)` → bool; short-circuits `\"\"`/`\"unknown\"` to False without a git call `prompts_changed_since(ref)` → int ≥ 0, never raises CLI prints the requested value to stdout; exit 0",
+      "desc": "Single home for version provenance, separated from report assembly (`build_report`, which merely consumes these values). `consilium_version()` returns the human display stamp (`git describe --tags --always --dirty`) and FAILS OPEN to `\"unknown\"` when git is absent or errors. `consilium_ref()` returns the resolvable diff operand: the committed HEAD sha on a clean tree, and `\"\"` — by contract, never a `<sha>-dirty` string — on a dirty or unknown tree, so a recorded ref is always `git checkout`-able. `prompts_changed_since(ref)` counts prompt/mode files changed since a prior ref and NEVER raises: it returns 0 on `\"\"`/`\"unknown\"`/unreachable refs, so the Step-0 `prompt_drift` advisory can call it unconditionally. Origin of the split: Senate 2026-05-31_200016 (versioning-provenance-design); retagged out of CONSILIUM-BUILD-REPORT-001 on 2026-07-03 (Senate backlog-disposition audit, item b) because impact analysis on the report assembler was pulling in unrelated provenance code.",
+      "deps": [],
+      "used_by": [],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_version.py:103"
+        },
+        {
+          "role": "implements",
+          "loc": "scripts/version.py:126"
+        }
+      ],
+      "test_exempt": null,
+      "milestone": "v1.2",
       "priority": "",
       "risks": []
     },
@@ -2233,6 +2330,10 @@
     ],
     [
       "CONSILIUM-RENDER-FEEDBACK-HTML-001",
+      "CONSILIUM-UTILS-001"
+    ],
+    [
+      "CONSILIUM-RENDER-IMPL-PREVIEW-001",
       "CONSILIUM-UTILS-001"
     ],
     [
