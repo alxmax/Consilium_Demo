@@ -88,6 +88,12 @@ def run() -> int:
     check("round-trip: 2 diff sections split", len(split_diff_sections(DIFF)) == 2,
           repr([n for n, _ in split_diff_sections(DIFF)]))
 
+    # 1b. Filename with spaces: git emits `diff --git a/a file.txt b/a file.txt`
+    # unquoted; the section name must be the full `a file.txt`, not `file.txt`.
+    spaced = split_diff_sections("diff --git a/a file.txt b/a file.txt\n@@ -1 +1 @@\n-x\n+y\n")
+    check("spaced filename: section name keeps the space",
+          bool(spaced) and spaced[0][0] == "a file.txt", repr([n for n, _ in spaced]))
+
     # 2. Escaping: hostile content never survives raw.
     hostile = render_preview_html(REPORT, HOSTILE_DIFF)
     check("escape: no raw </script> from diff", "</script><script>alert(1)" not in hostile)
@@ -113,6 +119,17 @@ def run() -> int:
                          "--output", str(out_path)], stdin=DIFF)
         check("cli: exit 0 on valid input", proc.returncode == 0, proc.stderr)
         check("cli: output file written", out_path.exists() and "pkg/frob.py" in out_path.read_text(encoding="utf-8"))
+
+        # 4b. CLI diff via stdin with a leading UTF-8 BOM (PowerShell pipe):
+        # the BOM must not defeat the first `diff --git` header.
+        bom_out = tdp / "bom.html"
+        proc = _run_cli(["--input", str(report_path), "--diff-file", "-",
+                         "--output", str(bom_out)], stdin="﻿" + DIFF)
+        bom_html = bom_out.read_text(encoding="utf-8") if bom_out.exists() else ""
+        check("cli: BOM-prefixed stdin diff labels first file correctly",
+              '<span class="fname">pkg/frob.py</span>' in bom_html
+              and '<span class="fname">(diff)</span>' not in bom_html,
+              proc.stderr)
 
         # 5. CLI spec-only: exit 0.
         proc = _run_cli(["--input", str(report_path), "--output", str(tdp / "spec_only.html")])
