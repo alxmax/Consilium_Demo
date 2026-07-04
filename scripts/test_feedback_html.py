@@ -373,6 +373,31 @@ def test_mark_outcome_happy_path():
         assert "[confirmed]" in parsed[0]["note"]
 
 
+def test_main_bom_prefixed_stdin_renders():
+    """main() tolerates a leading UTF-8 BOM (PowerShell pipe) instead of crashing."""
+    import subprocess
+    payload = {"entries": [{"date": "2026-07-04", "context": "bom-test",
+                            "chosen": "approach_bom", "outcome": "OK", "note": "x"}]}
+    stdin_bytes = b"\xef\xbb\xbf" + json.dumps(payload).encode("utf-8")
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "render_feedback_html.py")],
+        input=stdin_bytes, capture_output=True, check=False,
+    )
+    assert result.returncode == 0, f"BOM stdin should render, got rc={result.returncode}: {result.stderr.decode(errors='replace')}"
+    assert b"approach_bom" in result.stdout
+
+
+def test_main_malformed_stdin_exits_2():
+    """main() exits 2 with a clean message on malformed stdin, not a raw traceback."""
+    import subprocess
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "render_feedback_html.py")],
+        input=b"{not json", capture_output=True, check=False,
+    )
+    assert result.returncode == 2, f"expected exit 2, got {result.returncode}"
+    assert b"Traceback" not in result.stderr
+
+
 def _run_tests():
     funcs = [v for k, v in globals().items() if k.startswith("test_") and callable(v)]
     failed = 0

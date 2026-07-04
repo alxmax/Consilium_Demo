@@ -13,6 +13,24 @@ under the Business Source License 1.1 (see `LICENSE`).
   updated (#466).
 - Green-gate section + measured benchmark results in the architecture explainer
   and README (#467).
+- Architecture explainer: 7 content drifts vs the repo corrected + 5 new drift
+  invariants pinned (#468).
+- Script robustness: 8 audit fixes — BOM/encoding hardening, empty-candidates
+  guard, 0.0-score routing, stub-gate header scan (+RED tests) (#469).
+- Docs: strict skeptic-band notation, runs-schema overhaul, stale refs cleaned
+  post-#454/#466 (#470).
+- Gates/evals: revived the dead pre-commit reqmap gate, driver↔CI parity,
+  enforced legacy-alias removal milestones, leak-gate RED tests, #464 eval pins,
+  measured benchmark docs (#472).
+- Skeptic-lever contract coherence: runner_up input, tiebreak mode,
+  addressable-keyed demolish predicate, post-#416 subagent semantics (#473).
+- Migrated Sonnet 4.6 references to Claude Sonnet 5 (#474).
+- `render_impl_preview.py`: opt-in Step 7 static HTML review page bundling spec,
+  rationale, and the multi-file diff (#475).
+- Reqmap: version provenance retagged to `CONSILIUM-VERSION-001` + stale
+  acceptance/wording reworded (Senate 2026-07-03 batch b/d/e) (#476).
+- Install docs: `.consilium/` gitignore noted as recommended-but-preference
+  (keep tracked if you want the trail versioned) (#477).
 
 ## [1.1] — 2026-06
 

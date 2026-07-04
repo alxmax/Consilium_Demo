@@ -23,7 +23,7 @@ from pathlib import Path
 # sys.path. Bootstrap it
 # before importing the shared utils constants.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from utils import RUNS_DIR
+from utils import RUNS_DIR, force_utf8_streams, load_json_stdin
 
 
 @dataclass
@@ -360,7 +360,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--runs-dir", default=None)
     args = ap.parse_args(argv)
-    data = json.load(sys.stdin)
+    force_utf8_streams()
+    data = load_json_stdin("render_feedback_html.py")  # BOM-strip + clean exit 2 on bad input
     entries = [Entry(**e) for e in data.get("entries", [])]
     runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS_DIR
     sys.stdout.write(render(entries, runs_dir))

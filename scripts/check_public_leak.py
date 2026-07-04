@@ -33,7 +33,14 @@ SELF = Path(__file__).name
 
 
 def tracked_files() -> list[str]:
-    out = subprocess.run(["git", "ls-files"], capture_output=True, text=True, check=True).stdout
+    # encoding="utf-8" is load-bearing: without it text=True decodes via
+    # locale.getpreferredencoding() (cp1252 on Windows), so a non-ASCII tracked
+    # filename mis-decodes to a path that read_text() can't find — the file is
+    # then silently dropped from the leak scan by main()'s `except OSError`.
+    # Same fix already applied in probe_change._run_numstat (PR #332).
+    out = subprocess.run(
+        ["git", "ls-files"], capture_output=True, text=True, encoding="utf-8", check=True
+    ).stdout
     return [f for f in out.splitlines() if f.strip()]
 
 

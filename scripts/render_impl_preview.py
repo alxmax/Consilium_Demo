@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -223,8 +224,11 @@ def split_diff_sections(diff_text: str) -> list[tuple[str, list[str]]]:
     current: list[str] | None = None
     for line in diff_text.splitlines():
         if line.startswith("diff --git "):
-            parts = line.split()
-            name = parts[-1][2:] if parts[-1].startswith("b/") else parts[-1]
+            # `line.split()[-1]` mis-labels paths containing spaces (git does not
+            # quote plain spaces). Anchor on the `a/… b/…` shape and take the
+            # b/ path; fall back to the post-prefix remainder on an odd header.
+            m = re.match(r"^diff --git a/(.*) b/(.*)$", line)
+            name = m.group(2) if m else line[len("diff --git "):]
             current = [line]
             sections.append((name, current))
         elif current is not None:
@@ -397,7 +401,11 @@ def main(argv: list[str] | None = None) -> int:
 
     diff_text: str | None = None
     if args.diff_file == "-":
-        diff_text = sys.stdin.read()
+        # PowerShell 5.1 pipes prepend a UTF-8 BOM that survives force_utf8_streams
+        # (stdin is plain utf-8, not utf-8-sig). A leading U+FEFF defeats the
+        # `diff --git ` header match, mislabeling the first file's card. Same
+        # idiom as utils.load_json_stdin / confidence.py / strip_context.py.
+        diff_text = sys.stdin.read().lstrip("﻿")
     elif args.diff_file:
         try:
             diff_text = Path(args.diff_file).read_text(encoding="utf-8-sig")

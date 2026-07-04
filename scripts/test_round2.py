@@ -215,6 +215,74 @@ class TestAggregateRound2(unittest.TestCase):
         self.assertIn(result["result"], ("REWORK", "ESCALATE", "AGGREGATE"))
 
 
+class TestConservativeOverride(unittest.TestCase):
+    """Behavioral coverage for the documented default aggregation scheme.
+
+    CONSILIUM-AGGREGATOR-001 declares two acceptance criteria for
+    conservative_override (all-vetoed retry, lower-risk-ranks-first) but only
+    the sequential routing outcomes were actually tested. These lock the veto
+    boundary (SKILL.md: risk>0.8 strict), the safer-wins tie-break (a bug that
+    already shipped once — TODO.md:108), and the escalation path.
+    """
+
+    @staticmethod
+    def _cand(cid, gen, ctrl, cons):
+        return {"id": cid, "scores": {"generator": gen, "control": ctrl, "conservator": cons}}
+
+    def test_veto_boundary_is_strict(self):
+        # risk == 0.80 survives (not > 0.8); risk == 0.81 is vetoed.
+        result = aggregator.aggregate_conservative_override([
+            self._cand("at_080", 0.7, 0.7, 0.80),
+            self._cand("over_081", 0.9, 0.9, 0.81),
+        ])
+        self.assertEqual(result["chosen"], "at_080")
+        self.assertEqual([v["id"] for v in result["vetoed"]], ["over_081"])
+
+    def test_all_vetoed_auto_relax_suggests_retry(self):
+        # Acceptance #1: every candidate over threshold, auto_relax on ->
+        # chosen null + non-empty retry_suggested with the lowest risk relaxed.
+        result = aggregator.aggregate_conservative_override([
+            self._cand("a", 0.8, 0.8, 0.84),
+            self._cand("b", 0.8, 0.8, 0.82),
+        ])
+        self.assertIsNone(result["chosen"])
+        self.assertIn("retry_suggested", result)
+        self.assertEqual(result["retry_suggested"]["relaxed_threshold"], 0.82)
+        self.assertEqual(result["retry_suggested"]["lowest_risk_candidate"]["id"], "b")
+        self.assertNotIn("escalation_required", result)
+
+    def test_lower_risk_ranks_first(self):
+        # Acceptance #2: identical generator+control, different conservator ->
+        # the lower-risk candidate ranks first.
+        result = aggregator.aggregate_conservative_override([
+            self._cand("risky", 0.7, 0.7, 0.55),
+            self._cand("safe", 0.7, 0.7, 0.20),
+        ])
+        self.assertEqual(result["chosen"], "safe")
+
+    def test_equal_score_tiebreak_prefers_safer(self):
+        # Genuine weighted-score tie (both == 0.6): safer (lower conservator)
+        # must win. Locks the TODO.md:108 "safer wins on tie" fix — the prior
+        # bug broke the tie by insertion order instead.
+        result = aggregator.aggregate_conservative_override([
+            self._cand("hi_risk", 0.7, 0.7, 0.60),   # safety 0.4 -> (0.7+0.7+0.4)/3 = 0.6
+            self._cand("lo_risk", 0.6, 0.6, 0.40),   # safety 0.6 -> (0.6+0.6+0.6)/3 = 0.6
+        ])
+        self.assertAlmostEqual(result["ranking"][0]["score"], result["ranking"][1]["score"])
+        self.assertEqual(result["chosen"], "lo_risk")
+
+    def test_all_vetoed_beyond_relaxed_cap_escalates(self):
+        # Lowest risk exceeds RELAXED_VETO_CAP (0.85): relaxing would not help,
+        # so escalate instead of suggesting a retry.
+        result = aggregator.aggregate_conservative_override([
+            self._cand("a", 0.8, 0.8, 0.92),
+            self._cand("b", 0.8, 0.8, 0.90),
+        ])
+        self.assertIsNone(result["chosen"])
+        self.assertTrue(result["escalation_required"])
+        self.assertNotIn("retry_suggested", result)
+
+
 class TestValidateReportRound2(unittest.TestCase):
     def test_regression_risk_scalar_still_valid(self):
         problems = validate_report._validate_regression_risk(0.5)
