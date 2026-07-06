@@ -34,7 +34,7 @@ Workspace: `workspace/consilium_sequential/{category}/{task}/`
 Invoke with `/consilium --mode trias`
 Workspace: `workspace/consilium_trias/{category}/{task}/`
 
-Same steps as Sequential. Three personalities (Pioneer/Architect/Steward) each run
+Same steps as Sequential. Three personalities (Essentialist/Verifier/Sentinel) each run
 all three voices independently; final choice is democratic vote across the three.
 Log each personality's outcome in PROCESS.md.
 

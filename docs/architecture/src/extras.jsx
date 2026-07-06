@@ -850,6 +850,11 @@ function GreenGateSection() {
       cmd: 'reqmap.py gate --strict + map --check',
       desc: 'Every requirement in requirements/ is checked against the code that claims to implement it (member-file hashes), and the published requirement map must be fresh — stale map or lock fails the gate.',
     },
+    {
+      name: 'Manifest & changelog gate',
+      cmd: 'check_versions.py + CHANGELOG entry check',
+      desc: 'plugin.json and marketplace.json semver must stay coherent, and a plugin.json version bump must ship with a matching CHANGELOG.md entry — manifests that drift apart, or a bump with no changelog note, fail CI.',
+    },
   ];
 
   return (

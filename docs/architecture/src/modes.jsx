@@ -29,8 +29,8 @@ const MODES = [
     id: 'trias',
     name: 'Trias',
     tag: 'OPT-IN',
-    plain: 'Three independent Claude sub-agents each run the full Sequential pipeline. Each has a different personality (bold / structural / protective). The three answers go to a democratic vote, then a single Skeptic sub-agent challenges the winning answer.',
-    desc: 'Four sub-agents — three personalities (Pioneer / Architect / Steward), each running Sequential internally and blind to the others, vote on a winner, then ONE Skeptic sub-agent challenges that winning candidate post-vote (skeptic_on_chosen, advisory by default; --skeptic-can-override triggers a re-vote excluding a demolished winner). The 2026-06-19 skeptic-lever redesign replaced the old 3 per-personality pre-vote Skeptics with this single post-vote Skeptic (6→4 spawns) — the cost lever is the Skeptic count, not the personalities, which stay blind + parallel. A simple majority vote decides the winner — 3-0 / 2-1 / 2-0. (Spec mandates parallel dispatch; in practice the runtime dispatches them serially — see the Trias parallelism audit, check_trias_parallelism.py.)',
+    plain: 'Three independent Claude sub-agents each run the full Sequential pipeline. Each has a different personality (first-principles / operational / adversarial). The three answers go to a democratic vote, then a single Skeptic sub-agent challenges the winning answer.',
+    desc: 'Four sub-agents — three personalities (Essentialist / Verifier / Sentinel), each running Sequential internally and blind to the others, vote on a winner, then ONE Skeptic sub-agent challenges that winning candidate post-vote (skeptic_on_chosen, advisory by default; --skeptic-can-override triggers a re-vote excluding a demolished winner). The 2026-06-19 skeptic-lever redesign replaced the old 3 per-personality pre-vote Skeptics with this single post-vote Skeptic (6→4 spawns) — the cost lever is the Skeptic count, not the personalities, which stay blind + parallel. A simple majority vote decides the winner — 3-0 / 2-1 / 2-0. (Spec mandates parallel dispatch; in practice the runtime dispatches them serially — see the Trias parallelism audit, check_trias_parallelism.py.)',
     use: 'highest-stakes — DB migrations, security, large refactors',
     cost: '2.67× · worst case 7 sub-agents (1-1-1 → Round 2 → tiebreaker)',
     isolation: 'sub-agent per personality + strip per voice inside',
@@ -499,9 +499,9 @@ function StageTrias({ step }) {
   const has = (id) => ar.includes(id);
 
   const personalities = [
-    { id: 'p1', name: 'Pioneer', y: 24, weights: 'G 0.49 · C 0.30 · K 0.21' },
-    { id: 'p2', name: 'Architect', y: 130, weights: 'G 0.30 · C 0.40 · K 0.30' },
-    { id: 'p3', name: 'Steward', y: 236, weights: 'G 0.30 · C 0.30 · K 0.40' },
+    { id: 'p1', name: 'Essentialist', y: 24, weights: 'G 0.49 · C 0.30 · K 0.21' },
+    { id: 'p2', name: 'Verifier', y: 130, weights: 'G 0.30 · C 0.40 · K 0.30' },
+    { id: 'p3', name: 'Sentinel', y: 236, weights: 'G 0.30 · C 0.30 · K 0.40' },
   ];
 
   return (

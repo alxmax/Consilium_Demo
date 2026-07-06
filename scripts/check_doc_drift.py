@@ -256,6 +256,81 @@ def check_trias_confidence_parity() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Trias personality-name parity (found by the 2026-07-06 self-audit: the v3
+# lens rename, PR #482, never touched the explainer or the poster generator)
+# ---------------------------------------------------------------------------
+
+
+def _extract_personality_names() -> set[str]:
+    """AST-parse the PERSONALITIES list literal in scripts/personalities.py."""
+    src = _read("scripts/personalities.py")
+    tree = ast.parse(src)
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "PERSONALITIES":
+                    personalities = ast.literal_eval(node.value)
+                    return {p["name"].lower() for p in personalities}
+    print("check_doc_drift: PERSONALITIES not found in personalities.py", file=sys.stderr)
+    sys.exit(2)
+
+
+def _extract_jsx_array_names(jsx_text: str, array_marker: str) -> set[str]:
+    """Regex-extract `name: '...'` values from the first array literal that starts
+    at `array_marker` (e.g. 'const LENSES = ['), up to its closing '];'."""
+    start = jsx_text.find(array_marker)
+    if start < 0:
+        return set()
+    end = jsx_text.find("];", start)
+    block = jsx_text[start:end if end >= 0 else len(jsx_text)]
+    return {m.lower() for m in re.findall(r"name:\s*'([^']+)'", block)}
+
+
+def check_trias_personality_name_parity() -> list[str]:
+    """personalities.py is the SSOT for the 3 Trias personality names; the explainer
+    (trias.jsx LENSES, modes.jsx's StageTrias personalities array) and the full-
+    architecture poster generator must not silently drift to a retired team name."""
+    failures: list[str] = []
+    authoritative = _extract_personality_names()
+
+    trias_jsx = _extract_jsx_array_names(_read("docs/architecture/src/trias.jsx"), "const LENSES = [")
+    if trias_jsx != authoritative:
+        failures.append(
+            f"[trias_personality_name_parity] docs/architecture/src/trias.jsx LENSES names "
+            f"{sorted(trias_jsx)} != scripts/personalities.py {sorted(authoritative)}\n"
+            f"  fix: update trias.jsx LENSES (name + desc, matched to the new personality's "
+            f"actual lens, not just the label) and run docs/architecture/build.py"
+        )
+
+    modes_jsx = _extract_jsx_array_names(
+        _read("docs/architecture/src/modes.jsx"), "const personalities = ["
+    )
+    if modes_jsx != authoritative:
+        failures.append(
+            f"[trias_personality_name_parity] docs/architecture/src/modes.jsx StageTrias "
+            f"personalities names {sorted(modes_jsx)} != scripts/personalities.py "
+            f"{sorted(authoritative)}\n"
+            f"  fix: update the personalities array in modes.jsx StageTrias and run "
+            f"docs/architecture/build.py"
+        )
+
+    poster_src = _read("scripts/make_full_architecture.py")
+    poster_names = {
+        m.split("\\n")[0].lower()
+        for m in re.findall(r'"([A-Za-z]+)\\n\(Sequential\)"', poster_src)
+    }
+    if poster_names and poster_names != authoritative:
+        failures.append(
+            f"[trias_personality_name_parity] scripts/make_full_architecture.py personalities_row "
+            f"names {sorted(poster_names)} != scripts/personalities.py {sorted(authoritative)}\n"
+            f"  fix: update the personalities_row labels (+ the matching *_lens.md filenames) "
+            f"and re-run the script to regenerate docs/consilium_full.{{excalidraw,html}}"
+        )
+
+    return failures
+
+
+# ---------------------------------------------------------------------------
 # Confidence-floor completeness (found post-#463, added 2026-06-29)
 # ---------------------------------------------------------------------------
 
@@ -490,6 +565,85 @@ def check_referenced_scripts_exist() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# CI_CHECKS <-> ci.yml completeness (2026-07-06 Trias self-audit finding)
+# ---------------------------------------------------------------------------
+
+# Steps with no scripts/*.py or build.py reference (pure bash / inline `python -c`)
+# that are nonetheless covered by an existing CI_CHECKS card -- named explicitly so
+# the exception is visible in a diff, not a silent gap. Add an entry here ONLY
+# alongside the CI_CHECKS card it references.
+ALLOWED_OUT_OF_SCOPE_CI_STEPS: dict[str, str] = {
+    "Version bump has a matching CHANGELOG entry":
+        "covered by the 'Manifest & changelog gate' CI_CHECKS card together with "
+        "Manifest version coherence",
+}
+
+_CI_STEP_SPLIT_RE = re.compile(r"\n(?=\s{6}- (?:name|uses):)")
+_CI_SCRIPT_TOKEN_RE = re.compile(r"scripts/[A-Za-z0-9_/]+\.py|docs/architecture/build\.py")
+
+
+def _parse_ci_named_steps(ci_yaml_text: str) -> list[tuple[str, str]]:
+    """Text-based parse of the green-gate job's steps: (name, run_text) for every step
+    that declares a `name:` field. Steps using only `uses:` (actions/checkout,
+    actions/setup-python) carry no human-readable label and are dropped by
+    construction -- not specially allowlisted."""
+    steps: list[tuple[str, str]] = []
+    for chunk in _CI_STEP_SPLIT_RE.split(ci_yaml_text):
+        m = re.match(r"\s*-\s*name:\s*(.+)", chunk)
+        if not m:
+            continue
+        name = m.group(1).strip()
+        run_m = re.search(r"run:\s*\|?[ \t]*\n?(.*)", chunk, re.DOTALL)
+        run_text = run_m.group(1) if run_m else ""
+        steps.append((name, run_text))
+    return steps
+
+
+def _ci_checks_completeness_failures(ci_yaml_text: str, extras_jsx_text: str) -> list[str]:
+    """Pure comparison: every non-test ci.yml step must have a matching CI_CHECKS card
+    (by exact scripts/*.py or build.py basename) or an explicit
+    ALLOWED_OUT_OF_SCOPE_CI_STEPS entry. Matches on the script's basename, not the full
+    run-line, so 2 steps sharing one script (e.g. reqmap.py gate --strict / map --check)
+    correctly resolve to 1 card. Skeptic finding, 2026-07-06 Trias self-audit: free-text
+    substring matching on the full run-line either false-fails on that already-correct
+    grouping, or (matching only bare filenames) is too loose to catch a real drift."""
+    block = re.search(r"const CI_CHECKS = \[(.*?)\n\s*\];", extras_jsx_text, re.DOTALL)
+    if not block:
+        return ["[ci_checks_completeness] docs/architecture/src/extras.jsx: CI_CHECKS array not found"]
+    cards_text = block.group(1)
+
+    failures: list[str] = []
+    for name, run_text in _parse_ci_named_steps(ci_yaml_text):
+        token = _CI_SCRIPT_TOKEN_RE.search(run_text)
+        if not token:
+            if name not in ALLOWED_OUT_OF_SCOPE_CI_STEPS:
+                failures.append(
+                    f"[ci_checks_completeness] ci.yml step {name!r} has no scripts/*.py or "
+                    f"build.py reference and no ALLOWED_OUT_OF_SCOPE_CI_STEPS entry\n"
+                    f"  fix: add a docs/architecture/src/extras.jsx CI_CHECKS card, or an "
+                    f"explicit ALLOWED_OUT_OF_SCOPE_CI_STEPS entry naming the covering card"
+                )
+            continue
+        basename = token.group(0).rsplit("/", 1)[-1]
+        if re.match(r"test_.*\.py$", basename):
+            continue  # covered generically by the 'Unit suites' card
+        if basename not in cards_text:
+            failures.append(
+                f"[ci_checks_completeness] ci.yml step {name!r} runs {basename!r} but no "
+                f"CI_CHECKS card in docs/architecture/src/extras.jsx mentions it\n"
+                f"  fix: add a card naming {basename!r} (or an ALLOWED_OUT_OF_SCOPE_CI_STEPS "
+                f"entry) and re-run docs/architecture/build.py"
+            )
+    return failures
+
+
+def check_ci_checks_completeness() -> list[str]:
+    ci_yaml_text = _read(".github/workflows/ci.yml")
+    extras_jsx_text = _read("docs/architecture/src/extras.jsx")
+    return _ci_checks_completeness_failures(ci_yaml_text, extras_jsx_text)
+
+
+# ---------------------------------------------------------------------------
 # Trias spec alignment (cost_multiplier / subagents parity)
 # ---------------------------------------------------------------------------
 
@@ -674,12 +828,14 @@ def main() -> int:
     all_failures: list[str] = []
     all_failures.extend(check_text_invariants())
     all_failures.extend(check_trias_confidence_parity())
+    all_failures.extend(check_trias_personality_name_parity())
     all_failures.extend(check_confidence_floor_completeness())
     all_failures.extend(check_validate_report_vote_pattern_parity())
     all_failures.extend(check_trias_spec_alignment())
     all_failures.extend(check_legacy_mode_milestone())
     all_failures.extend(check_test_suite_coverage())
     all_failures.extend(check_referenced_scripts_exist())
+    all_failures.extend(check_ci_checks_completeness())
 
     if not all_failures:
         print("doc-drift OK: all invariants hold", flush=True)

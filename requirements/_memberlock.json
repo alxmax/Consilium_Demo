@@ -12,7 +12,7 @@
       "scripts/build_report.py": "b347feba2dc0341c4cc5999ceafd5735481b14f99e2e6d416b441d4ea1c7d185"
     },
     "CONSILIUM-CHECK-DOC-DRIFT-001": {
-      "scripts/check_doc_drift.py": "1600b3d359d43ab95fb796de8c6ff36206a1a1d99c84be80c5ef5710a7b50e11"
+      "scripts/check_doc_drift.py": "bd189d51c414c02760edd13d0b6d96b2238df7ea912a0d2240038589f9c0ed72"
     },
     "CONSILIUM-CHECK-PUBLIC-LEAK-001": {
       "scripts/check_public_leak.py": "a0efa717766035be459f65c38c562abe1b5df1df61a78945f37bb057211e5872"
@@ -126,7 +126,7 @@
       "scripts/vote_degeneracy.py": "e40c81b625f824c98b76e52dfc387935359dbbf12deb612ca9e90bd5486b20a8"
     },
     "SKILL-RUN-CONSILIUM-001": {
-      ".claude/skills/run-consilium/driver.py": "b2d66c3310dd17085f4858df868dee0b2443bbab458585632a6458e4c5aa65ea"
+      ".claude/skills/run-consilium/driver.py": "71b9e9950674069104c896609938eeb296104d763407e0f4087bde6fe9218efa"
     }
   }
 }

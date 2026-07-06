@@ -2,32 +2,32 @@
 
 const LENSES = [
   {
-    name: 'Pioneer',
-    tag: 'bold',
+    name: 'Essentialist',
+    tag: 'first-principles',
     model: 'Sonnet',
     g: 0.49, c: 0.30, k: 0.21,
-    desc: 'Values bold, high-reward approaches that push the codebase forward. Tolerates moderate risk for genuinely new solutions. Prefers new patterns over existing ones when the new pattern offers a clear gain.',
+    desc: 'Reasons from first principles and attacks accreted complexity — every component must earn its existence, and the default answer is delete. Prefers the viable minimum over patching an accretion; treats "we might need it later" as a reason to delete now, not to keep.',
   },
   {
-    name: 'Architect',
-    tag: 'structural',
+    name: 'Verifier',
+    tag: 'operational',
     model: 'Sonnet',
     g: 0.30, c: 0.40, k: 0.30,
-    desc: 'Values internal consistency, type safety, clean abstractions. Long-term maintainability over short-term wins. Prefers changes that strengthen invariants over those that work around them.',
+    desc: 'Values operational clarity — a claim counts only if it’s testable. Replaces vague terms ("better", "safer") with a verifiable criterion, and names the concrete signal that distinguishes a candidate working from silently not working.',
   },
   {
-    name: 'Steward',
-    tag: 'protective',
+    name: 'Sentinel',
+    tag: 'adversarial',
     model: 'Sonnet',
     g: 0.30, c: 0.30, k: 0.40,
-    desc: 'Values reversibility, minimal scope, and protection of systems that already work. Prefers existing patterns over novel ones unless the new is clearly necessary. Blast radius is the dominant concern.',
+    desc: 'Stress-tests before believing — imagines the failure before it happens and asks who bears the cost when it goes wrong. Decomposes risk into probability × downside; never confuses a happy-path demo with robustness.',
   },
 ];
 
 const TRIAS_OUTCOMES = [
   { p: '3–0', label: 'Unanimous', desc: 'All three personalities picked the same candidate. Strongest signal possible.', conf: 0.95, outcome: 'OK auto' },
-  { p: '2–1', label: 'Majority + dissent', desc: 'Two personalities agree on a candidate; the third picks a different one. Dissent is logged. The majority wins. Exception: when the dissenter is the Steward, a −0.10 penalty drops confidence to 0.65 — below the auto-ship bar, so the user is prompted.', conf: 0.75, outcome: 'OK auto' },
-  { p: '2–0', label: 'Majority + abstention', desc: 'Two personalities agree. The third had no valid choice — Conservator vetoed all its candidates (chose=null). The majority still elects a winner. Exception: when the abstainer is the Steward, a −0.15 penalty drops confidence to 0.55 — prompts instead of auto-OK.', conf: 0.70, outcome: 'OK auto' },
+  { p: '2–1', label: 'Majority + dissent', desc: 'Two personalities agree on a candidate; the third picks a different one. Dissent is logged. The majority wins. Exception: when the dissenter is the Sentinel, a −0.10 penalty drops confidence to 0.65 — below the auto-ship bar, so the user is prompted.', conf: 0.75, outcome: 'OK auto' },
+  { p: '2–0', label: 'Majority + abstention', desc: 'Two personalities agree. The third had no valid choice — Conservator vetoed all its candidates (chose=null). The majority still elects a winner. Exception: when the abstainer is the Sentinel, a −0.15 penalty drops confidence to 0.55 — prompts instead of auto-OK.', conf: 0.70, outcome: 'OK auto' },
   { p: '1–1–1', label: 'Fragmented', desc: 'Each personality picked a different candidate — no consensus. Escalates to a second deliberation round with peer context (B2 cascade).', conf: null, outcome: 'Round 2 → Skeptic → PEND' },
   { p: '1–1–0', label: 'Split + abstention', desc: 'Two different candidates got one vote each; one personality was vetoed out. No majority — goes to PEND for human decision.', conf: null, outcome: 'PEND' },
   { p: '1–0–0', label: 'Lone vote + 2 abstentions', desc: 'Only one personality produced a valid choice; the other two were vetoed. Insufficient agreement to auto-proceed.', conf: null, outcome: 'PEND' },
@@ -48,7 +48,7 @@ function TriasSection() {
         <div className="tldr">
           <span className="tldr__label">In plain words</span>
           <div>
-            <p>Three Claudes each run the full pipeline — one is told to be bold, one structural, one cautious. All three run on <strong>Sonnet</strong> — divergence comes purely from the lens re-weighting (Pioneer up-weights Generator, Steward up-weights Conservator, Architect balances). Empirical baseline: ≈52% non-unanimity at n=25. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
+            <p>Three Claudes each run the full pipeline — one is told to be bold, one structural, one cautious. All three run on <strong>Sonnet</strong> — divergence comes purely from the lens re-weighting (Essentialist up-weights Generator, Sentinel up-weights Conservator, Verifier balances). Empirical baseline: ≈52% non-unanimity at n=25. They each pick a winner. A majority vote of the three picks the final answer. If they fragment 1-1-1, escalate.</p>
           </div>
         </div>
 
