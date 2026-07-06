@@ -1,5 +1,5 @@
 ---
-generated: 2026-07-06 21:06
+generated: 2026-07-06 21:34
 nodes: 44
 edges: 53
 ---
@@ -122,8 +122,8 @@ graph LR
   CONSILIUM_CHECK_DOC_DRIFT_001["check_doc_drift<br><small>CONSILIUM-CHECK-DOC-DRIFT-001</small>"]
   f_scripts_check_doc_drift_py_25["scripts/check_doc_drift.py:25"]
   CONSILIUM_CHECK_DOC_DRIFT_001 -->|implements| f_scripts_check_doc_drift_py_25
-  f_scripts_test_check_doc_drift_py_10["scripts/test_check_doc_drift.py:10"]
-  CONSILIUM_CHECK_DOC_DRIFT_001 -->|tested-by| f_scripts_test_check_doc_drift_py_10
+  f_scripts_test_check_doc_drift_py_11["scripts/test_check_doc_drift.py:11"]
+  CONSILIUM_CHECK_DOC_DRIFT_001 -->|tested-by| f_scripts_test_check_doc_drift_py_11
   CONSILIUM_CHECK_PUBLIC_LEAK_001["check_public_leak<br><small>CONSILIUM-CHECK-PUBLIC-LEAK-001</small>"]
   f_scripts_check_public_leak_py_15["scripts/check_public_leak.py:15"]
   CONSILIUM_CHECK_PUBLIC_LEAK_001 -->|implements| f_scripts_check_public_leak_py_15

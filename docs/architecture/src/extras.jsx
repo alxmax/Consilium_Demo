@@ -641,6 +641,7 @@ function ImplementSection() {
 
   const GATE_ITEMS = [
     { label: 'Status', value: 'default for regression-risk', note: 'promoted 2026-05-25 (user decision)' },
+    { label: 'Cost', value: '3 sub-agents · ~1.1× tokens', note: '3–7× wall-clock (Coder, then Test Writer ∥ Reviewer)' },
     { label: 'Model', value: 'Sonnet sub-agents', note: 'Coder · Test Writer · Reviewer all on Sonnet' },
     { label: 'Routing', value: 'pipeline vs single-shot', note: 'regression-risk → pipeline; greenfield → single-shot' },
     { label: 'Promotion gate', value: '≥2/3 wins', note: 'criterion not met — promoted anyway' },

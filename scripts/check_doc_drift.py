@@ -648,7 +648,7 @@ def check_ci_checks_completeness() -> list[str]:
 # ---------------------------------------------------------------------------
 
 # Explicit format-mapping: do not use f'{v}×' — avoids silent float→str bugs.
-_COST_FMT: dict[float, str] = {4.0: '4×', 3.0: '3×', 2.67: '2.67×', 1.33: '1.33×', 1.0: '1×'}
+_COST_FMT: dict[float, str] = {4.0: '4×', 3.0: '3×', 2.67: '2.67×', 1.33: '1.33×', 1.0: '1×', 1.1: '1.1×'}
 
 
 def _parse_trias_frontmatter() -> dict[str, float | int]:
@@ -773,6 +773,62 @@ def check_trias_spec_alignment() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Implement-pipeline spec alignment (found 2026-07-06: the explainer's "Code
+# integration pipeline" section never stated its own subagent count / cost)
+# ---------------------------------------------------------------------------
+
+
+def check_implement_pipeline_spec_alignment() -> list[str]:
+    """modes/implement_pipeline.md's `subagents`/`cost_multiplier` frontmatter must be
+    stated explicitly in extras.jsx's ImplementSection GATE_ITEMS -- mirrors
+    check_trias_spec_alignment's pattern, scoped to the one section that was found
+    to omit its own headline stats (every other mode/flag states cost + subagent
+    count explicitly in modes.jsx's MODES array; ImplementSection is a different
+    component, GATE_ITEMS, which had no equivalent line)."""
+    src = _read("modes/implement_pipeline.md")
+    fm = re.search(r'^---\n(.*?)\n---', src, re.DOTALL | re.MULTILINE)
+    if not fm:
+        print("check_doc_drift: modes/implement_pipeline.md has no YAML frontmatter", file=sys.stderr)
+        sys.exit(2)
+    text = fm.group(1)
+    m_sub = re.search(r'^subagents:\s*([0-9]+)', text, re.MULTILINE)
+    m_cost = re.search(r'^cost_multiplier:\s*([0-9.]+)', text, re.MULTILINE)
+    if not m_sub or not m_cost:
+        print("check_doc_drift: modes/implement_pipeline.md frontmatter missing subagents/cost_multiplier", file=sys.stderr)
+        sys.exit(2)
+    subagents = int(m_sub.group(1))
+    cost_multiplier = float(m_cost.group(1))
+
+    cost_fmt = _COST_FMT.get(cost_multiplier)
+    if cost_fmt is None:
+        return [
+            f"[implement_pipeline_spec_alignment] modes/implement_pipeline.md cost_multiplier="
+            f"{cost_multiplier} has no entry in _COST_FMT — add it before updating"
+        ]
+
+    ext = _read("docs/architecture/src/extras.jsx")
+    block = re.search(r'const GATE_ITEMS = \[(.*?)\n\s*\];', ext, re.DOTALL)
+    gate_text = block.group(1) if block else ""
+
+    failures: list[str] = []
+    if f"{subagents} sub-agent" not in gate_text:
+        failures.append(
+            f"[implement_pipeline_spec_alignment] extras.jsx GATE_ITEMS does not state "
+            f"'{subagents} sub-agent(s)' (modes/implement_pipeline.md subagents={subagents})\n"
+            f"  fix: state the sub-agent count in ImplementSection's GATE_ITEMS and run "
+            f"docs/architecture/build.py"
+        )
+    if cost_fmt not in gate_text:
+        failures.append(
+            f"[implement_pipeline_spec_alignment] extras.jsx GATE_ITEMS does not state "
+            f"'{cost_fmt}' (modes/implement_pipeline.md cost_multiplier={cost_multiplier})\n"
+            f"  fix: state the cost multiplier in ImplementSection's GATE_ITEMS and run "
+            f"docs/architecture/build.py"
+        )
+    return failures
+
+
+# ---------------------------------------------------------------------------
 # validate_report literal parity (audit GAP#4, 2026-06-14)
 # ---------------------------------------------------------------------------
 
@@ -836,6 +892,7 @@ def main() -> int:
     all_failures.extend(check_test_suite_coverage())
     all_failures.extend(check_referenced_scripts_exist())
     all_failures.extend(check_ci_checks_completeness())
+    all_failures.extend(check_implement_pipeline_spec_alignment())
 
     if not all_failures:
         print("doc-drift OK: all invariants hold", flush=True)
