@@ -15,11 +15,32 @@ jobs:
       PYTHONUTF8: "1"
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
+      # fetch-depth: 0 (full history) so the changelog-entry check below can
+      # resolve HEAD~1 — the previous commit's plugin.json version — on both
+      # push and pull_request events.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       # Stdlib-only — no pip install step by design.
+      - name: Manifest version coherence
+        run: python scripts/check_versions.py
+      - name: Version-gate tests
+        run: python scripts/test_check_versions.py
+      # A plugin.json version bump must ship with a matching CHANGELOG.md
+      # entry, or it merges silently undocumented. Mirrors requirement-manager's
+      # gate (adopted 2026-07-06).
+      - name: Version bump has a matching CHANGELOG entry
+        run: |
+          if git rev-parse HEAD~1 >/dev/null 2>&1 && ! git diff --quiet HEAD~1 -- .claude-plugin/plugin.json; then
+            VERSION=$(python -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+            if ! grep -qF "[$VERSION]" CHANGELOG.md; then
+              echo "::error::plugin.json version bumped to $VERSION but CHANGELOG.md has no matching '[$VERSION]' heading — add one before merging."
+              exit 1
+            fi
+          fi
       - name: ROUND2 smoke tests
         run: python scripts/test_round2.py
       - name: Feedback HTML round-trip tests

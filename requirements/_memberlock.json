@@ -17,6 +17,9 @@
     "CONSILIUM-CHECK-PUBLIC-LEAK-001": {
       "scripts/check_public_leak.py": "a0efa717766035be459f65c38c562abe1b5df1df61a78945f37bb057211e5872"
     },
+    "CONSILIUM-CHECK-VERSIONS-001": {
+      "scripts/check_versions.py": "6a33796e5f7c1bb1a4f187ca35f6ee0f6ba1454f6bfdfc0b4295826a29179d36"
+    },
     "CONSILIUM-CONFIDENCE-001": {
       "modes/confidence.md": "c58466f4da12e9a8b0619a75882cea08d98377e146b0350257d837311408f40f",
       "scripts/confidence.py": "4ecbb37b7fb61b536c831e0805d394362945ebef9a28ad178b2e3cf9a760bf0f"
@@ -123,7 +126,7 @@
       "scripts/vote_degeneracy.py": "e40c81b625f824c98b76e52dfc387935359dbbf12deb612ca9e90bd5486b20a8"
     },
     "SKILL-RUN-CONSILIUM-001": {
-      ".claude/skills/run-consilium/driver.py": "159cc2afbc489c4186e2cf65992f5fc96cc4f20604859c83846d86f00c06110e"
+      ".claude/skills/run-consilium/driver.py": "b2d66c3310dd17085f4858df868dee0b2443bbab458585632a6458e4c5aa65ea"
     }
   }
 }
