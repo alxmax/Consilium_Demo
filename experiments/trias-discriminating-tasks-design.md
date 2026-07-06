@@ -2,7 +2,7 @@
 
 ## Origin
 
-Senate 2026-05-29 ([trias-parallelism-vehicle-a1-vs-a2](../runs/senate/2026-05-29_140645-trias-parallelism-vehicle-a1-vs-a2.json), MODIFY 6-3-0) reframed the parallelism question: **do not invest in any parallelism vehicle until Trias proves value.** Musk/Deming/Socrate/Tacitus converged — Trias has **0 wins at n=6** on a saturated corpus (all modes ~100/100), and the user's own pinned kill-criterion (**≥2 Trias wins in n≥20 oracle-validated tasks**, from the 2026-05-21 reframe) is unmet.
+review 2026-05-29 (trias-parallelism-vehicle-a1-vs-a2, MODIFY 6-3-0) reframed the parallelism question: **do not invest in any parallelism vehicle until Trias proves value.** Reviewer 5/Reviewer 8/Reviewer 4/Reviewer 9 converged — Trias has **0 wins at n=6** on a saturated corpus (all modes ~100/100), and the user's own pinned kill-criterion (**≥2 Trias wins in n≥20 oracle-validated tasks**, from the 2026-05-21 reframe) is unmet.
 
 This file designs the experiment that resolves that gate. Runs are a separate, budgeted opt-in (like [trias-parallelism-n5-design.md](trias-parallelism-n5-design.md)).
 
@@ -55,8 +55,8 @@ Described by their *discriminating property* + the *trap*, not their answer.
 ## Decision rule (the gate)
 
 - **≥2 Trias wins in n≥20** (Trias correct ∧ sonnet_bare wrong) → Trias earns its 3× cost; **then** parallelism (A1 labeled benchmark fix, or A2 as a separate architectural proposal) becomes worth revisiting.
-- **<2 wins in n≥20** → Trias does not earn its keep; deprecate toward Dialectic (Musk's STOP), do not invest in parallelism.
-- **Methodology guard (Deming):** report per-task run files; if a task ties (both correct or both wrong) it is not a discriminator — it neither confirms nor refutes; only Trias-correct ∧ baseline-wrong counts as a win.
+- **<2 wins in n≥20** → Trias does not earn its keep; deprecate toward Dialectic (Reviewer 5's STOP), do not invest in parallelism.
+- **Methodology guard (Reviewer 8):** report per-task run files; if a task ties (both correct or both wrong) it is not a discriminator — it neither confirms nor refutes; only Trias-correct ∧ baseline-wrong counts as a win.
 
 ## Cost & caveats
 
@@ -66,4 +66,4 @@ Described by their *discriminating property* + the *trap*, not their answer.
 
 ## Status
 
-- 2026-05-29: design ready; T1–T6 are seed templates. Task authoring + runs deferred to explicit user opt-in (per the budget + the Senate gate).
+- 2026-05-29: design ready; T1–T6 are seed templates. Task authoring + runs deferred to explicit user opt-in (per the budget + a design review gate).

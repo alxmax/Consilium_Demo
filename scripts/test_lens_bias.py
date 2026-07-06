@@ -13,10 +13,10 @@ This test asserts the contract deterministically (without invoking the LLM):
 2. **Frontmatter contract.** Each lens declares `personality: <name>` and
    `voice_bias: prepended` so the orchestrator can sanity-check before dispatch.
 3. **Bias-keyword contract.** Each lens contains its own expected keywords
-   (Pioneer = forward-leaning vocabulary, Steward = risk-averse vocabulary,
-   Architect = structural vocabulary) and does NOT contain the dominant
-   keywords of the opposing personality. Catches accidental cross-pollination
-   when someone edits a lens file.
+   (Essentialist = first-principles-minimalism vocabulary, Verifier =
+   testable/operational vocabulary, Sentinel = stress/silent-failure vocabulary)
+   and does NOT contain the dominant keywords of the opposing personality.
+   Catches accidental cross-pollination when someone edits a lens file.
 
 CLI:
     python scripts/test_lens_bias.py            # all cases
@@ -50,25 +50,26 @@ _spec.loader.exec_module(personalities)
 
 # Keywords each lens MUST contain (drawn from current lens text) — case-insensitive.
 # Picked to be load-bearing terms whose removal would mean the lens lost its
-# distinctive bias entirely.
+# distinctive bias entirely. The three fixed Trias personalities are
+# Essentialist (generator-heavy), Verifier (control-heavy), Sentinel
+# (conservator-heavy).
 EXPECTED_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "pioneer":   ("bold", "novel", "ambitious", "forward"),
-    "architect": ("consistency", "invariants", "abstractions", "maintainability"),
-    "steward":   ("reversib", "minimal", "blast radius", "rollback"),
+    "essentialist": ("first principles", "delete", "viable minimum", "earn its existence"),
+    "verifier":     ("testable", "operational", "verif", "criterion"),
+    "sentinel":     ("stress", "silent", "counterparty", "downside"),
 }
 
 # Phrases each lens MUST NOT contain — picked so they only appear when a lens
-# *endorses* the opposing bias, not when it merely names it in passing. ("a
-# smaller safe change beats a larger ambitious one" mentions ambitious but
-# rejects it — that's not contamination.) Phrases here are full endorsements:
-# "weight creative potential" only appears if a lens is *recommending* novelty.
+# *endorses* the opposing bias, not when it merely names it in passing. Phrases
+# here are full endorsements: "weight creative potential" only appears if a lens
+# is *recommending* novelty.
 FORBIDDEN_KEYWORDS: dict[str, tuple[str, ...]] = {
-    # Pioneer should not start preaching Steward's emphasis on rollback / blast radius.
-    "pioneer":   ("weight regression risk", "rollback ease", "minimal-scope"),
-    # Steward should not start endorsing Pioneer's tolerance for risk / creative push.
-    "steward":   ("tolerate moderate risk", "weight creative potential", "prefer ambitious"),
-    # Architect sits in the middle — flag only overt endorsements of either pole.
-    "architect": ("tolerate moderate risk", "rollback ease"),
+    # Essentialist (generator-heavy) should not start preaching the risk lens's emphases.
+    "essentialist": ("weight regression risk", "rollback ease"),
+    # Verifier sits in the middle (control-heavy) — flag overt endorsements of either pole.
+    "verifier":     ("tolerate moderate risk", "rollback ease"),
+    # Sentinel (conservator-heavy) should not endorse the upside-chasing pole.
+    "sentinel":     ("prefer ambitious", "weight creative potential"),
 }
 
 
@@ -137,6 +138,16 @@ def run_tests(verbose: bool) -> int:
             failures.extend(kw_problems)
         else:
             passes.append(f"{name}: lens at {rel} carries expected bias signature")
+
+    # Weight-geometry contract: the three personalities must carry distinct,
+    # normalized weight vectors (generator-heavy / control-heavy / conservator-heavy)
+    # so the democratic vote can diverge. A single shared vector would collapse
+    # Trias to three identical voices.
+    vectors = [tuple(sorted(p["weights"].items())) for p in personalities.PERSONALITIES]
+    if len(set(vectors)) != len(vectors):
+        failures.append("personality weight vectors are not all distinct — Trias divergence would collapse")
+    else:
+        passes.append("personality weight vectors are distinct")
 
     if verbose:
         for line in passes:

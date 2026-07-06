@@ -7,11 +7,11 @@ files: \`solution.py\``), then scans the model's chat response in
 claude_raw.json for fenced code blocks matching those filenames, and writes
 each to the workspace.
 
-Designed per Consilium senate audit 2026-05-18_203925: text-only SKILL.md
+Designed per an internal design audit 2026-05-18_203925: text-only SKILL.md
 rules empirically insufficient to force Write tool calls in Sonnet 4.6
 headless. Authority for deliverable file presence moves to the harness layer.
 
-Contract (per senate conditions):
+Contract (per review conditions):
 - Deterministic: same prompt + same response → same files written, every run.
 - Strict matching: prefer fence-info-string label match (` ```python solution.py `).
   Fall back to language-extension match ONLY when there is exactly one declared
@@ -20,7 +20,7 @@ Contract (per senate conditions):
   called Write itself; do not overwrite).
 - Verifiability: post-write, confirm `os.path.getsize() > 0`; report status
   per file.
-- Hard error (not silent skip) on no-match / ambiguous-match — see Dimon's
+- Hard error (not silent skip) on no-match / ambiguous-match — see Reviewer 6's
   silent failure scenarios.
 
 CLI:
@@ -287,7 +287,7 @@ def write_deliverables(
             statuses[fname] = f"write_error: {exc}"
             continue
 
-        # Verifiability gate (Dimon): exists + non-empty.
+        # Verifiability gate (Reviewer 6): exists + non-empty.
         if not target.exists() or target.stat().st_size == 0:
             statuses[fname] = "write_error: post-write check failed"
         else:

@@ -17,7 +17,7 @@ Stdlib-only, no test runner. Smoke tests run manually via CLI:
 - `python scripts/test_lens_bias.py`, `test_vote_degeneracy.py`, `test_meta_critic_trim.py`, `test_implement_mode.py`, `test_implement_pipeline.py` — the remaining unit suites. Every `scripts/test_*.py` is gated in CI (`.github/workflows/ci.yml`) and the run-consilium `driver.py smoke` (enforced by `check_doc_drift.py`).
 - `python scripts/run_evals.py` — regression scenarios from `evals/scenarios.json` (subprocess-based, deterministic; all scenarios run, non-zero exit if any fails)
 - `python scripts/validate_report.py < .consilium/runs/<file>.json` — Constitution Principle #4 gate; minimum required before any commit touching `prompts/voices/` or `aggregator.py`
-- `python scripts/check_doc_drift.py` — enforces parity between `modes/*.md`, `docs/architecture/src/*.jsx`, and `scripts/confidence.py` (invariants: Trias parallel dispatch, Trias 2-1/2-0 confidence values, sequential scale_down behavior) + dated removal milestones for legacy MODE aliases + test-suite coverage (every `scripts/test_*.py` must be gated in both `ci.yml` and the run-consilium driver — prevents the test-drift that hid a RED suite). Run before any commit touching `modes/`, `docs/architecture/src/`, `scripts/confidence.py`, or `scripts/test_*.py`. Origin: Senate audit `runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json`.
+- `python scripts/check_doc_drift.py` — enforces parity between `modes/*.md`, `docs/architecture/src/*.jsx`, and `scripts/confidence.py` (invariants: Trias parallel dispatch, Trias 2-1/2-0 confidence values, sequential scale_down behavior) + dated removal milestones for legacy MODE aliases + test-suite coverage (every `scripts/test_*.py` must be gated in both `ci.yml` and the run-consilium driver — prevents the test-drift that hid a RED suite). Run before any commit touching `modes/`, `docs/architecture/src/`, `scripts/confidence.py`, or `scripts/test_*.py`. Origin: design audit `an internal design audit`.
 
 Type-check: `pyright` (config: `pyrightconfig.json`, `typeCheckingMode: basic`, Python 3.11, `scripts/` in `extraPaths`).
 
@@ -31,7 +31,7 @@ Canonical flow of a deliberation:
 4. `scripts/validate_report.py` is the final gate before writing to `.consilium/runs/<ts>_<slug>.json`
 
 Mode-specific scripts:
-- `personalities.py` — Trias lens injection (Pioneer/Architect/Steward)
+- `personalities.py` — Trias lens injection (Essentialist/Verifier/Sentinel)
 
 Sub-agent dispatch (Trias, Skeptic): see `agents/consilium-subagent.md`. Sub-agents use `model: "sonnet"` by default — do not inherit Opus. **Trias**: each personality uses the `model` from `scripts/personalities.py` (all three → `sonnet`).
 
@@ -48,7 +48,7 @@ Architecture visualization: `docs/architecture.html` (open locally). Benchmarks 
 - **`prompts/voices/*.md`** — read by each voice at runtime. A change here affects all future deliberations → high `regression_risk` in Conservator. Prefer injecting extra context into the voice's input rather than into the prompt.
   - Core voices: `generator.md`, `control.md`, `conservator.md` — run in any mode
   - `skeptic.md` — focal challenger, run in `skeptic_on_chosen` (composable flag over any base mode)
-  - `<personality>_lens.md` (Pioneer/Architect/Steward) — prepended over core voices in `trias`
+  - `<personality>_lens.md` (Essentialist/Verifier/Sentinel) — prepended over core voices in `trias`
 - **`SKILL.md` Constitution + workflow** — changing steps 0–7 breaks the JSON format expected by `aggregator.py` and `validate_report.py`. Modify both at the same time.
 
 ## Available modes
@@ -57,11 +57,11 @@ User-selectable modes (SKILL.md documents them in detail):
 
 - **Sequential** (default) — Generator → Conservator → Control single-context.
 - **Dialectic** — Sequential + Skeptic sub-agent on the chosen answer (Pass-2 and the old merge script removed; Dialectic no longer uses Pass-2).
-- **Trias** — 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally and blind; democratic vote over the 3 results, then one Skeptic sub-agent (`skeptic_on_chosen`) challenges the winner post-vote (4 sub-agents nominal, worst-case 7, ~2.67× Sequential). The 2026-06-19 skeptic-lever redesign replaced the 3 per-personality pre-vote Skeptics with this single post-vote Skeptic.
+- **Trias** — 3 personalities (Essentialist/Verifier/Sentinel), each runs Sequential internally and blind; democratic vote over the 3 results, then one Skeptic sub-agent (`skeptic_on_chosen`) challenges the winner post-vote (4 sub-agents nominal, worst-case 7, ~2.67× Sequential). The 2026-06-19 skeptic-lever redesign replaced the 3 per-personality pre-vote Skeptics with this single post-vote Skeptic.
 - **`trias_split`** — deprecated; use standard `trias` (cost is now equivalent).
 - **`skeptic_on_chosen`** — composable flag over any base mode (+1 sub-agent overhead). Advisory by default; opt-in override via `--skeptic-can-override`. Auto-triggers when `confidence < 0.70` (strictly less than 0.70; the Trias 2-0 value and the Sequential floor both sit at 0.70 and pass). Replaces the fixed modes `parallel_skeptic` (= `parallel + skeptic_on_chosen`) and `dialectic_skeptic` (= `dialectic + skeptic_on_chosen`) — collapsed on 2026-05-17, legacy names remain accepted via `validate_report.py`'s `_LEGACY_MODE_ALIASES` map for backward-compat.
 
-**Parallel removed.** Parallel dispatch is no longer available in any form (PR #454, 2026-06-26 — Senate GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs; the silent 20-run audit was removed with it). For `critical` + `irreversible` changes, select `trias` explicitly. Legacy `mode: "parallel"` runs stay valid because `validate_report.py` does not enum-validate `telemetry.mode`; `"parallel"` is kept in its `_MULTI_VOICE_MODES` set so historical runs still get the per-voice telemetry check (`_LEGACY_MODE_ALIASES` covers only `parallel_skeptic` / `dialectic_skeptic` / `trias_split`).
+**Parallel removed.** Parallel dispatch is no longer available in any form (PR #454, 2026-06-26 — review GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs; the silent 20-run audit was removed with it). For `critical` + `irreversible` changes, select `trias` explicitly. Legacy `mode: "parallel"` runs stay valid because `validate_report.py` does not enum-validate `telemetry.mode`; `"parallel"` is kept in its `_MULTI_VOICE_MODES` set so historical runs still get the per-voice telemetry check (`_LEGACY_MODE_ALIASES` covers only `parallel_skeptic` / `dialectic_skeptic` / `trias_split`).
 
 ## Local files (gitignored)
 

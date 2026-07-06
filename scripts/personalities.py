@@ -5,10 +5,16 @@ a named character with:
 - weights: how it ranks candidates after voice scores arrive
 - lens: a prompt prepended to each voice prompt that biases voice perception
 
+The three personalities are Essentialist (first-principles minimalism,
+generator-heavy), Verifier (operational/testable clarity, control-heavy), and
+Sentinel (stress / silent-failure / counterparty, conservator-heavy). Their
+weight vectors sum to 1.0 and differ meaningfully so the democratic vote can
+diverge.
+
 CLI:
-    python personalities.py                  # emit all 3 as JSON array
-    python personalities.py --name pioneer   # emit single personality
-    python personalities.py <N>              # legacy form — rejected with exit 2
+    python personalities.py                     # emit all 3 as JSON array
+    python personalities.py --name essentialist # emit single personality
+    python personalities.py <N>                 # legacy form — rejected with exit 2
 """
 # implements: CONSILIUM-PERSONALITIES-001
 # implements: CONSILIUM-TRIAS-MODEL-SCHEMA-001
@@ -22,22 +28,22 @@ import sys
 
 PERSONALITIES = [
     {
-        "name": "pioneer",
+        "name": "essentialist",
         "model": "sonnet",
         "weights": {"generator": 0.49, "control": 0.30, "conservator": 0.21},
-        "lens": "prompts/voices/pioneer_lens.md",
+        "lens": "prompts/voices/essentialist_lens.md",
     },
     {
-        "name": "architect",
+        "name": "verifier",
         "model": "sonnet",
         "weights": {"generator": 0.30, "control": 0.40, "conservator": 0.30},
-        "lens": "prompts/voices/architect_lens.md",
+        "lens": "prompts/voices/verifier_lens.md",
     },
     {
-        "name": "steward",
+        "name": "sentinel",
         "model": "sonnet",
         "weights": {"generator": 0.30, "control": 0.30, "conservator": 0.40},
-        "lens": "prompts/voices/steward_lens.md",
+        "lens": "prompts/voices/sentinel_lens.md",
     },
 ]
 
@@ -77,8 +83,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.n_legacy is not None:
         print(
             "error: personalities.py no longer samples random N personalities.\n"
-            "       Trias mode uses 3 fixed personalities: pioneer, architect, steward.\n"
-            "       Run without arguments to emit all 3, or use --name <pioneer|architect|steward>.",
+            "       Trias mode uses 3 fixed personalities: essentialist, verifier, sentinel.\n"
+            "       Run without arguments to emit all 3, or use --name <essentialist|verifier|sentinel>.",
             file=sys.stderr,
         )
         return 2

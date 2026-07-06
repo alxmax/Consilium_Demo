@@ -39,7 +39,7 @@ import verify as verify_engine
 # doesn't call Write, this extracts each declared deliverable from
 # claude_raw.json and writes it to the workspace (idempotent — skips if file
 # already exists). See scripts/extract_deliverables.py docstring + Consilium
-# senate audit runs/senate/2026-05-18_203925-deliverable-enforcement-r2.json.
+# an internal design audit.
 sys.path.insert(0, str(Path(__file__).parent / "scripts"))
 import extract_deliverables  # noqa: E402
 import audit_behavior  # noqa: E402
@@ -283,7 +283,7 @@ def detect_pipeline_execution(mode: str, response: str, workspace: Path,
     # tell a FULL pipeline from a Conservator scale_down short-circuit (skip Control).
     # Both write a report, so engagement alone can't tell them apart — surfacing
     # pipeline_executed + telemetry.mode keeps the measured object honest
-    # (2026-06-23 Senate condition).
+    # (2026-06-23 review condition).
     pipeline_executed = None
     pipeline_mode = None
     for rel in run_paths:
@@ -940,7 +940,7 @@ def main():
     # unreachable, abort BEFORE spending API budget rather than producing a
     # silently-unscored run (the old behavior graded a missing key as a skip).
     # Content-aware — an empty SCORING_DIR fails too, since the meta.yaml is absent.
-    # (2026-06-23 Senate benchmark-scoring audit: Dimon/Musk/Aurelius — fail-closed.)
+    # (2026-06-23 review benchmark-scoring audit: Reviewer 6/Reviewer 5/Reviewer 2 — fail-closed.)
     if not args.no_verify:
         scoring_key = SCORING_DIR / task / "meta.yaml"
         if not scoring_key.exists():
@@ -1014,7 +1014,7 @@ def main():
         # direct answer. NOTE: this does NOT override the Conservator's scale_down
         # (Step 5 → skip Control); that path still writes a report with
         # pipeline_executed telemetry, which detect_pipeline_execution() records
-        # so full-pipeline vs scale_down is visible, not silent (2026-06-23 Senate
+        # so full-pipeline vs scale_down is visible, not silent (2026-06-23 review
         # condition: make the measured object honest rather than forcing 3 voices).
         os.environ["CONSILIUM_FORCE_FULL"] = "1"
 
@@ -1067,8 +1067,8 @@ def main():
     # If the prompt declared output files and the model emitted them as
     # fenced code blocks in chat instead of calling Write, materialize
     # them now. Idempotent — skips files the model already wrote.
-    # See scripts/extract_deliverables.py + senate audit
-    # runs/senate/2026-05-18_203925-deliverable-enforcement-r2.json.
+    # See scripts/extract_deliverables.py + design audit
+    # an internal design audit.
     if not (error_info and error_info.get("error")):
         try:
             deliv_statuses = extract_deliverables.extract_and_write_from_response(

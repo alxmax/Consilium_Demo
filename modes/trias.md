@@ -3,21 +3,21 @@ name: trias
 subagents: 4
 cost_multiplier: 2.67
 confidence_floor: 0.80
-models: sonnet(pioneer),sonnet(architect),sonnet(steward)
+models: sonnet(essentialist),sonnet(verifier),sonnet(sentinel)
 dispatch_count_worst_case: 7
 lazy_routing: true
-description: 3 personalities (Pioneer/Architect/Steward), each runs Sequential internally, vote, then ONE Skeptic challenges the winning candidate post-vote (skeptic_on_chosen). Lazy routing downgrades by magnitude tier — low/medium → Sequential, high → Dialectic, critical → full Trias (blocklist hits only).
+description: 3 personalities (Essentialist/Verifier/Sentinel), each runs Sequential internally, vote, then ONE Skeptic challenges the winning candidate post-vote (skeptic_on_chosen). Lazy routing downgrades by magnitude tier — low/medium → Sequential, high → Dialectic, critical → full Trias (blocklist hits only).
 ---
 
 # Trias mode (high-stakes opt-in)
 
-**Mechanics:** 3 fixed personalities (Pioneer / Architect / Steward), each dispatched as **one Sequential sub-agent** (Generator→Conservator→Control internally) with the personality lens prepended. Democratic majority vote over the 3 chosen results, then **ONE** Skeptic sub-agent (`skeptic_on_chosen`) challenges the **winning** candidate post-vote. Cost: ~2.67× Sequential (4 sub-agents vs 1).
+**Mechanics:** 3 fixed personalities (Essentialist / Verifier / Sentinel), each dispatched as **one Sequential sub-agent** (Generator→Conservator→Control internally) with the personality lens prepended. Democratic majority vote over the 3 chosen results, then **ONE** Skeptic sub-agent (`skeptic_on_chosen`) challenges the **winning** candidate post-vote. Cost: ~2.67× Sequential (4 sub-agents vs 1).
 
-**Skeptic-lever redesign (2026-06-19, [trias-6to4-impl-default-a](../runs/senate/2026-06-19_091418-trias-6to4-impl-default-a.json), MODIFY 4-5-0).** The previous design ran **one Skeptic per personality** at Step 3.5 (3 Skeptics, pre-vote, = 6 sub-agents). That was the cost lever, not the personalities: the redesign drops the 3 per-personality Skeptics and adds **one** post-vote `skeptic_on_chosen` on the winner (6→4 spawns). The cost lever is the **Skeptic count (3→1)**, never the personality topology — the 3 personalities stay blind + parallel (the `trias_parallel_dispatch` invariant is preserved). The single post-vote Skeptic is **advisory by default** (the vote stands; the objection is recorded as a caveat); under the explicit `--skeptic-can-override` flag a demolishing objection triggers a re-vote (see Step 3.6). **Default policy is unconditional** (Variant A): the Skeptic always fires. A confidence-gated variant (Variant C — Skeptic fires only when `confidence ∈ [0.0, 0.70)`) is an opt-in `--trias-skeptic-gate` flag, **off by default**, because the calibration gate (`confidence_calibration.py`) currently returns `FALLBACK_A` on the corpus (16 negatives, discrimination 0.14 < 0.15 margin). The default flips A→C automatically once that gate crosses its threshold.
+**Skeptic-lever redesign (2026-06-19, trias-6to4-impl-default-a, MODIFY 4-5-0).** The previous design ran **one Skeptic per personality** at Step 3.5 (3 Skeptics, pre-vote, = 6 sub-agents). That was the cost lever, not the personalities: the redesign drops the 3 per-personality Skeptics and adds **one** post-vote `skeptic_on_chosen` on the winner (6→4 spawns). The cost lever is the **Skeptic count (3→1)**, never the personality topology — the 3 personalities stay blind + parallel (the `trias_parallel_dispatch` invariant is preserved). The single post-vote Skeptic is **advisory by default** (the vote stands; the objection is recorded as a caveat); under the explicit `--skeptic-can-override` flag a demolishing objection triggers a re-vote (see Step 3.6). **Default policy is unconditional** (Variant A): the Skeptic always fires. A confidence-gated variant (Variant C — Skeptic fires only when `confidence ∈ [0.0, 0.70)`) is an opt-in `--trias-skeptic-gate` flag, **off by default**, because the calibration gate (`confidence_calibration.py`) currently returns `FALLBACK_A` on the corpus (16 negatives, discrimination 0.14 < 0.15 margin). The default flips A→C automatically once that gate crosses its threshold.
 
-> **T1 coverage debt (unvalidated).** Replacing 3 pre-vote per-candidate Skeptics with 1 post-vote winner-only Skeptic is an **architectural assumption, not an empirically-validated equivalence** — the 2 losing candidates are no longer Skeptic-tested, and the winner is challenged only after it has won. There is no n≥5 evidence that 1 post-vote Skeptic catches what 3 pre-vote Skeptics caught (Deming/Tacitus, 2026-06-19 audit). The runs schema records `skeptic_challenges_count` + `post_vote_skeptic_used` so a future `confidence_calibration.py`-style coverage check can confirm or roll back the reduction.
+> **T1 coverage debt (unvalidated).** Replacing 3 pre-vote per-candidate Skeptics with 1 post-vote winner-only Skeptic is an **architectural assumption, not an empirically-validated equivalence** — the 2 losing candidates are no longer Skeptic-tested, and the winner is challenged only after it has won. There is no n≥5 evidence that 1 post-vote Skeptic catches what 3 pre-vote Skeptics caught (Reviewer 8/Reviewer 9, 2026-06-19 audit). The runs schema records `skeptic_challenges_count` + `post_vote_skeptic_used` so a future `confidence_calibration.py`-style coverage check can confirm or roll back the reduction.
 
-**Why the vote diverges (D4).** All three sub-agents use the same model (Sonnet) but distinct lenses. Divergence source: **lens re-weighting** — Pioneer up-weights Generator (upside), Steward up-weights Conservator (risk), Architect balances. Divergence is measured by `vote_degeneracy.py` — empirical baseline ~52% non-unanimity at n=25 (uniform Sonnet). Revert signal: < 40% non-unanimity over ≥15 runs.
+**Why the vote diverges (D4).** All three sub-agents use the same model (Sonnet) but distinct lenses. Divergence source: **lens re-weighting** — Essentialist up-weights Generator (upside), Sentinel up-weights Conservator (risk), Verifier balances. Divergence is measured by `vote_degeneracy.py` — empirical baseline ~52% non-unanimity at n=25 (uniform Sonnet). Revert signal: < 40% non-unanimity over ≥15 runs.
 
 The weights act **within** each personality only — they decide that personality's own `chose`. **Between** personalities there is no precedence ordering: `aggregator.py --scheme team_vote` is a flat majority over the three `chose` values, and no lens outranks another. A true tie (1-1-1) does not resolve to a "senior" personality — it routes to the B2 deadlock cascade (Round 2 → Skeptic → PEND). So there is no authority hierarchy among the three; the only re-ranking is internal to each sub-agent.
 
@@ -89,9 +89,9 @@ For any downgrade, emit the structured notification:
 
    **Token cost.** The 3 personality sub-agents (all Sonnet) plus the **single** post-vote Skeptic sub-agent (Step 9, Sonnet) give `cost_multiplier: 2.67` (vs Sequential). The confidence-gated variant drops to ~2× on confident runs (Skeptic skipped).
 
-   **Runtime audit (Senate 2026-05-28, [trias-parallelism-enforcement](../runs/senate/2026-05-28_220338-trias-parallelism-enforcement.json), MODIFY 6-3-0):** `benchmark/scripts/check_trias_parallelism.py` reads the Claude CLI session JSONL transcript after each Trias run and writes `trias_dispatch_pattern: "serial"|"parallel"|"mixed"|"scale_down"` into `pipeline_audit.json`. Empirical observation as of 2026-05-28: 7/7 real-deliberation Trias runs were SERIAL despite this mandate. A spec-rewrite attempt (imperative phrasing + worked example + anti-pattern) also produced SERIAL — voice-prompt rewrites do not enforce orchestrator dispatch order (Tacitus retrospective, 0/6 clean-GO). The mandate stays as guidance; the runtime audit is the observability mechanism. Full evidence: [experiments/trias-parallelism-2026-05-28.md](../experiments/trias-parallelism-2026-05-28.md).
+   **Runtime audit (review 2026-05-28, trias-parallelism-enforcement, MODIFY 6-3-0):** `benchmark/scripts/check_trias_parallelism.py` reads the Claude CLI session JSONL transcript after each Trias run and writes `trias_dispatch_pattern: "serial"|"parallel"|"mixed"|"scale_down"` into `pipeline_audit.json`. Empirical observation as of 2026-05-28: 7/7 real-deliberation Trias runs were SERIAL despite this mandate. A spec-rewrite attempt (imperative phrasing + worked example + anti-pattern) also produced SERIAL — voice-prompt rewrites do not enforce orchestrator dispatch order (Reviewer 9 retrospective, 0/6 clean-GO). The mandate stays as guidance; the runtime audit is the observability mechanism. Full evidence: [experiments/trias-parallelism-2026-05-28.md](../experiments/trias-parallelism-2026-05-28.md).
 
-   **Vehicle decision (Senate 2026-05-29, [trias-parallelism-vehicle-a1-vs-a2](../runs/senate/2026-05-29_140645-trias-parallelism-vehicle-a1-vs-a2.json), MODIFY 6-3-0):** a follow-up audit reviewed the two architectural fixes deferred above — A1 (benchmark subprocess fan-out) and A2 (reimplement the mode via a Workflow orchestration vehicle). Outcome: **serial dispatch is accepted as by-construction-not-intent, not a bug to fix now.** A2 was rejected (the LangGraph orchestration-vehicle pattern — STOP×2 historically, never regretted; needs a separate architectural proposal if ever revived). A1 is admissible only as an explicitly-labeled *benchmark-harness* wall-clock fix, never claimed as real `/consilium` behavior. Crucially, any parallelism investment is **gated on the existing kill-criterion** — ≥2 Trias wins in n≥20 oracle-validated tasks (current record: 0 wins at n=6 on a saturated corpus). Until Trias demonstrates value, the proportional path is accept-serial + observe. Graduation mechanism: `benchmark/scripts/check_trias_escalation.py` (counts accumulated serial runs; logs a "revisit parallelism" recommendation at threshold).
+   **Vehicle decision (review 2026-05-29, trias-parallelism-vehicle-a1-vs-a2, MODIFY 6-3-0):** a follow-up audit reviewed the two architectural fixes deferred above — A1 (benchmark subprocess fan-out) and A2 (reimplement the mode via a Workflow orchestration vehicle). Outcome: **serial dispatch is accepted as by-construction-not-intent, not a bug to fix now.** A2 was rejected (the LangGraph orchestration-vehicle pattern — STOP×2 historically, never regretted; needs a separate architectural proposal if ever revived). A1 is admissible only as an explicitly-labeled *benchmark-harness* wall-clock fix, never claimed as real `/consilium` behavior. Crucially, any parallelism investment is **gated on the existing kill-criterion** — ≥2 Trias wins in n≥20 oracle-validated tasks (current record: 0 wins at n=6 on a saturated corpus). Until Trias demonstrates value, the proportional path is accept-serial + observe. Graduation mechanism: `benchmark/scripts/check_trias_escalation.py` (counts accumulated serial runs; logs a "revisit parallelism" recommendation at threshold).
 3.5. **(No pre-vote Skeptic.)** The per-personality pre-vote Skeptics were removed in the 2026-06-19 skeptic-lever redesign. The 3 personality chosens proceed **directly** to the vote (Steps 4–8). The single Skeptic now challenges only the **winning** candidate, **after** the vote — see Step 9.
 
 4. Collect the 3 `chosen_approach` values (one per personality) → `chose` per personality
@@ -117,9 +117,9 @@ For any downgrade, emit the structured notification:
   "confidence": 0.82,
   "vote_pattern": "3-0",
   "personalities": [
-    {"name": "Pioneer", "lens": "pioneer_lens.md", "chose": "candidate_id", "weights": {}},
-    {"name": "Architect", "lens": "architect_lens.md", "chose": "candidate_id", "weights": {}},
-    {"name": "Steward", "lens": "steward_lens.md", "chose": "candidate_id", "weights": {}}
+    {"name": "Essentialist", "lens": "essentialist_lens.md", "chose": "candidate_id", "weights": {}},
+    {"name": "Verifier", "lens": "verifier_lens.md", "chose": "candidate_id", "weights": {}},
+    {"name": "Sentinel", "lens": "sentinel_lens.md", "chose": "candidate_id", "weights": {}}
   ]
 }
 ```
@@ -141,9 +141,9 @@ For any downgrade, emit the structured notification:
 {
   "success_criterion": "<testable sentence>",
   "chosen_approach": "<id>",
-  "team": ["pioneer", "architect", "steward"],
+  "team": ["essentialist", "verifier", "sentinel"],
   "vote_pattern": "2-1",
-  "vote_counts": {"pioneer": "approach_a", "architect": "approach_a", "steward": "approach_b"},
+  "vote_counts": {"essentialist": "approach_a", "verifier": "approach_a", "sentinel": "approach_b"},
   "confidence": 0.75,
   "deliberation_log": [{"step": "trias_vote", "vote_pattern": "2-1", "trias_rounds": 1}]
 }
@@ -180,7 +180,7 @@ Worst case overall = **7** (`dispatch_count_worst_case: 7`).
 - A Skeptic dispatch that fails or times out → **PEND** (never hang waiting on it).
 - Whenever the cascade exits on incomplete data, surface the **partial result** — the Round 1 `{personality, chosen_approach}` triple — in the report so the user sees the divergence, and set `cascade_incomplete: true` in telemetry alongside the count of sub-agents that actually returned (`cascade_dispatches_returned: <n>`). A PEND with the three competing positions shown is more useful than a silent stall.
 
-Rationale: Senate audit 2026-05-26 (Dimon) flagged that the 6th/7th cascade dispatch hanging on a slow/near-budget session would burn cost and write no run report (the badge never fires). This guard makes the failure **graceful and visible** instead of silent. The 1-1-1 path that triggers the cascade is rare in practice (≈8% of Trias runs — see `scripts/vote_degeneracy.py`), so the guard protects a real but infrequent tail.
+Rationale: design audit 2026-05-26 (Reviewer 6) flagged that the 6th/7th cascade dispatch hanging on a slow/near-budget session would burn cost and write no run report (the badge never fires). This guard makes the failure **graceful and visible** instead of silent. The 1-1-1 path that triggers the cascade is rare in practice (≈8% of Trias runs — see `scripts/vote_degeneracy.py`), so the guard protects a real but infrequent tail.
 
 ## Skip Trias if
 - Diff ≤ 15 lines / 1 file — `scope_gate.py` will skip anyway (`max_lines: 15`, `max_files: 1` in its DEFAULT_CONFIG)

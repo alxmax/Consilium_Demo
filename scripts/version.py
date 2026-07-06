@@ -1,11 +1,11 @@
-"""Repo-level version provenance for Consilium (Senate-hardened design).
+"""Repo-level version provenance for Consilium (review-hardened design).
 
 Git is the version system: each deliberation records which repo state produced it,
 so any `.consilium/runs/*.json` is reproducible via `git checkout`. No bespoke
 per-prompt registry — git already content-hashes, versions (tags), and diffs.
 
-Two distinct fields, because one string cannot serve both roles (Wittgenstein,
-senate 2026-05-31_200016):
+Two distinct fields, because one string cannot serve both roles (Reviewer 1,
+review 2026-05-31_200016):
 
 - ``consilium_version()`` — HUMAN display stamp: ``git describe --tags --always
   --dirty`` (e.g. ``v1.0.0``, ``v1.0.0-3-gabc123``, ``abc123``, ``abc123-dirty``),
@@ -17,7 +17,7 @@ senate 2026-05-31_200016):
 
 Drift is computed only against a *resolvable* ref (``prompts_changed_since``):
 it never raises and returns 0 when the ref is empty / ``"unknown"`` / unreachable
-(Dimon's guard), so a Step-0 advisory can call it unconditionally.
+(Reviewer 6's guard), so a Step-0 advisory can call it unconditionally.
 
 CLI:
     python scripts/version.py            # print the display version stamp
@@ -86,7 +86,7 @@ def prompts_changed_since(ref: str) -> int:
     """Count of prompts/ + modes/ files changed between ``ref`` and HEAD.
 
     Returns 0 (no drift) when ``ref`` is empty / "unknown" / unresolvable — never
-    raises and never shells a malformed diff (Dimon's guard). Safe to call
+    raises and never shells a malformed diff (Reviewer 6's guard). Safe to call
     unconditionally from a Step-0 advisory.
     """
     if not ref_resolves(ref):

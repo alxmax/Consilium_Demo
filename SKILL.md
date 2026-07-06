@@ -253,7 +253,7 @@ Floors: `sequential=0.70`, `dialectic=0.75`, `trias=0.80`. A run below floor sig
 ```bash
 cat bundle.json | python scripts/deprecated/meta_critic.py
 ```
-Scores **deliberation quality** (not choice correctness). Retained metric: `conservator_spread` (shrug?). Dead metrics `generator_divergence` and `control_concreteness` removed (0/163 fires). Emits `deliberation_quality.flags` — attach to the bundle before Step 6 (build_report passes it through to the report). Non-empty `flags` do not block. Senate verdict: MODIFY (GO 5 · MODIFY 3 · STOP 1, 2026-05-24 `kill-meta-critic-r2`) — trimmed to conservator_spread only, moved to deprecated/. Substance-validation gap accepted as a known limitation (see TODO.md).
+Scores **deliberation quality** (not choice correctness). Retained metric: `conservator_spread` (shrug?). Dead metrics `generator_divergence` and `control_concreteness` removed (0/163 fires). Emits `deliberation_quality.flags` — attach to the bundle before Step 6 (build_report passes it through to the report). Non-empty `flags` do not block. review verdict: MODIFY (GO 5 · MODIFY 3 · STOP 1, 2026-05-24 `kill-meta-critic-r2`) — trimmed to conservator_spread only, moved to deprecated/. Substance-validation gap accepted as a known limitation (see TODO.md).
 
 ### 5d. Retry on low confidence (optional, single pass)
 If `confidence < 0.7`, **before** asking the user: identify the single question whose answer would discriminate the top-2 candidates (an unverified assumption, a file you haven't read, an empirical check you can run). Gather that evidence yourself (Read + Grep + smoke-run), then re-run Generator/Control/Conservator **once** with the enriched input. If confidence is still < 0.7, only then ask the user (Step 6).
@@ -492,25 +492,25 @@ When `CLAUDE_HEADLESS=1` (set by the external orchestrator that invoked `claude 
 
 **Pattern adopted:** strict boolean `CLAUDE_HEADLESS=1` (other values → False). Aligned with `CONSILIUM_FORCE_FULL=1` precedent (see `scripts/scope_gate.py`). The external orchestrator (run_task.py, CI script, parent agent) sets the env var before invocation; the skill never modifies the env.
 
-**Senate note:** `runs/senate/2026-05-18_164154-mode-bugfix-performance.json` + mini-senate H2+H4 (verdict B+X 5/7 + 4/7) validated this contract.
+**Note:** `an internal design audit` + internal review H2+H4 (verdict B+X 5/7 + 4/7) validated this contract.
 
 ### Pipeline-execution contract (orchestrator-enforced)
 
 Every `/consilium` invocation MUST terminate by writing a report to `.consilium/runs/` — either a real deliberation report, or a `skipped` / `trivial-direct` report (Step 1.5 / scale_down short-circuit). A run that produces **no** report did not execute the pipeline (it answered directly with the skill merely in context — the gap found in the 2026-05-26 benchmark audit, where `consilium_sequential`/`dialectic` collapsed to bare Sonnet).
 
-**Detection is the orchestrator's responsibility, not the skill's.** A guard written as SKILL.md prose ("assert dispatch happened, else warn") is self-defeating: the skip happens *because* the model didn't execute the steps, so it would skip the guard too — a non-executing process cannot run its own self-check (Senate 2026-05-26, `runs/senate/2026-05-26_215328-trias-dialectic-audit-improvements.json`). Therefore the skill does **not** self-enforce headless execution. Instead, any orchestrator that invokes `claude -p` with this skill detects a skipped deliberation by the **absence of a fresh `runs/` report** for the invocation. Reference implementation: `benchmark/run_task.py` `detect_pipeline_execution()` (writes `pipeline_audit.json`; surfaced in `report.html` as a `pipeline: deliberated|skipped` badge). Interactive (non-headless) use is not silent — the operator sees in the transcript whether the pipeline ran.
+**Detection is the orchestrator's responsibility, not the skill's.** A guard written as SKILL.md prose ("assert dispatch happened, else warn") is self-defeating: the skip happens *because* the model didn't execute the steps, so it would skip the guard too — a non-executing process cannot run its own self-check (review 2026-05-26, `an internal design audit`). Therefore the skill does **not** self-enforce headless execution. Instead, any orchestrator that invokes `claude -p` with this skill detects a skipped deliberation by the **absence of a fresh `runs/` report** for the invocation. Reference implementation: `benchmark/run_task.py` `detect_pipeline_execution()` (writes `pipeline_audit.json`; surfaced in `report.html` as a `pipeline: deliberated|skipped` badge). Interactive (non-headless) use is not silent — the operator sees in the transcript whether the pipeline ran.
 
 > Deliberation of record: `.consilium/runs/2026-05-26_2230_live-path-guard.json` (chosen `doc_only_invariant` over a `.claude/settings.json` Stop hook — the hook has a global blast radius and false-positives on correct `trivial-direct` short-circuits, for a benefit confined to third-party headless orchestration).
 
 ## Dispatch defaults (per voice)
 
-Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. **Trias exception**: each personality uses the model declared in `scripts/personalities.py` — all three (pioneer, architect, steward) → `sonnet`. Mode sections declare per-invocation overrides — single source of truth per mode, descriptive not enforced.
+Default behavior unless overridden by project memory (`MEMORY.md`). All voices pinned to `model: "sonnet"` per `feedback_subagents_sonnet.md`. **Trias exception**: each personality uses the model declared in `scripts/personalities.py` — all three (essentialist, verifier, sentinel) → `sonnet`. Mode sections declare per-invocation overrides — single source of truth per mode, descriptive not enforced.
 
 Cost multipliers (baseline Sequential = 1×): Dialectic 1.33× · Trias 2.67×. The `skeptic_on_chosen` flag adds +1 sub-agent over the base mode (e.g. Sequential+flag = 1.33×).
 
 ## Parallel voices mode
 
-**Parallel mode removed** (2026-06-26 — Senate GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs). Parallel dispatch is no longer available in any form. Existing `.consilium/runs/*.json` files with `mode: "parallel"` remain valid — `validate_report.py` does not enum-validate `telemetry.mode`, and `"parallel"` stays in its `_MULTI_VOICE_MODES` set so historical runs keep the per-voice telemetry check.
+**Parallel mode removed** (2026-06-26 — review GO_WITH_CONDITIONS, 0 divergences in 41 empirical runs). Parallel dispatch is no longer available in any form. Existing `.consilium/runs/*.json` files with `mode: "parallel"` remain valid — `validate_report.py` does not enum-validate `telemetry.mode`, and `"parallel"` stays in its `_MULTI_VOICE_MODES` set so historical runs keep the per-voice telemetry check.
 
 **Advisory.** If `magnitude = critical` AND `reversibility = irreversible`, consider upgrading to **Trias** (2.67× cost, 3 independent personalities + post-vote Skeptic — stronger independent-context coverage than Parallel ever provided). Trias does not auto-trigger; you must select it explicitly.
 
@@ -533,7 +533,7 @@ Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI 
 
 ## Trias mode (high-stakes opt-in)
 
-3 personalities (Pioneer/Architect/Steward), each runs a full Sequential deliberation internally and blind, then a democratic vote, then **one** Skeptic sub-agent (`skeptic_on_chosen`) challenges the winning candidate post-vote (advisory by default; `--skeptic-can-override` re-votes excluding a demolished winner). The 2026-06-19 skeptic-lever redesign replaced the 3 per-personality pre-vote Skeptics with this single post-vote Skeptic (6→4 spawns). Lazy routing graduates by magnitude: low/medium → Sequential, high → Dialectic — only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. **Cost: ~2.67× Sequential** (worst-case 7 sub-agents on 1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
+3 personalities (Essentialist/Verifier/Sentinel), each runs a full Sequential deliberation internally and blind, then a democratic vote, then **one** Skeptic sub-agent (`skeptic_on_chosen`) challenges the winning candidate post-vote (advisory by default; `--skeptic-can-override` re-votes excluding a demolished winner). The 2026-06-19 skeptic-lever redesign replaced the 3 per-personality pre-vote Skeptics with this single post-vote Skeptic (6→4 spawns). Lazy routing graduates by magnitude: low/medium → Sequential, high → Dialectic — only `critical` magnitude (blocklist hits: auth, security, migrations, CI workflows, secrets) proceeds to full Trias. **Cost: ~2.67× Sequential** (worst-case 7 sub-agents on 1-1-1 deadlock cascade). `trias_split` deprecated — use standard `trias`. **Full workflow: [modes/trias.md](modes/trias.md).**
 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 

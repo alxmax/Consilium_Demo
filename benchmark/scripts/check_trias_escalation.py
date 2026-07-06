@@ -2,7 +2,7 @@
 """Trias serial-dispatch escalation predicate (detect-log-don't-block, with a graduation gate).
 
 Trias dispatches its 3 personalities SERIALLY at runtime (by construction — see
-modes/trias.md "Vehicle decision", Senate 2026-05-29). That is accepted, not fixed:
+modes/trias.md "Vehicle decision", review 2026-05-29). That is accepted, not fixed:
 any parallelism investment is gated on Trias first proving value (>=2 wins in
 n>=20 oracle-validated tasks; current record 0 wins at n=6).
 
@@ -70,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
               f"scale_down={counts.get('scale_down', 0)} (threshold {args.threshold})")
         if escalate:
             print(f"ESCALATION: {serial} serial Trias runs accumulated with 0 parallel — "
-                  "revisit the parallelism vehicle (Senate 2026-05-29 gated this on "
+                  "revisit the parallelism vehicle (review 2026-05-29 gated this on "
                   ">=2 Trias wins in n>=20; confirm that bar is met before investing).")
         elif parallel:
             print("note: parallel/mixed dispatch observed — the serial-by-construction "

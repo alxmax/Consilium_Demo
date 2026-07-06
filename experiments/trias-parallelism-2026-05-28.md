@@ -110,47 +110,47 @@ Still serial. Three separate assistant messages, max_agents_in_message=1. The ru
 
 Decision: option 1 by default. Options 2 and 3 deferred.
 
-### Senate audit (2026-05-28, MODIFY 6 · STOP 3 · GO 0)
+### design audit (2026-05-28, MODIFY 6 · STOP 3 · GO 0)
 
-[runs/senate/2026-05-28_220338-trias-parallelism-enforcement.json](../runs/senate/2026-05-28_220338-trias-parallelism-enforcement.json)
+an internal design audit
 
-| Senator | Vote | Core point |
+| Reviewer | Vote | Core point |
 |---|---|---|
-| Wittgenstein | MODIFY | "Parallel" has 3 coexisting definitions; success threshold not stated |
-| Aurelius | MODIFY | `partial × moderate` quadrant; over-engineered; scope to (a) |
-| Confucius | MODIFY | Only (a) consistent with `detect-log-don't-block` institutional pattern; (c)/(d) require architectural-layer review; (f) is structurally identical to deliverable-enforcement R2/R3 (rejected) |
-| Socrate | MODIFY | N=1 rewrite ≠ "robust"; PreToolUse hook untested; user's "Python script" is 2 distinct proposals conflated |
-| Musk | **STOP** | All options add complexity to a mode with no demonstrated value over Dialectic (benchmark: all 5 modes 100/100 including sonnet_bare); delete Trias |
-| Dimon | MODIFY | Silent-failure modes in every option; quorum validation + session isolation mandatory |
-| Napoleon | **STOP** | ROI break-even ~3-10 years at current Trias usage rate (low single-digit invocations/month) |
-| Deming | **STOP** | N=1 rewrite attempt is statistically insufficient; need N≥5 variants across ≥2 prompt injection points |
-| Tacitus | MODIFY | 0/6 clean-GO historical record for "prompt rewrite fixes model behavior"; 3/3 green for "detect-log-don't-block"; pin enforcement at orchestrator/check_doc_drift layer, NOT voice prompts |
+| Reviewer 1 | MODIFY | "Parallel" has 3 coexisting definitions; success threshold not stated |
+| Reviewer 2 | MODIFY | `partial × moderate` quadrant; over-engineered; scope to (a) |
+| Reviewer 3 | MODIFY | Only (a) consistent with `detect-log-don't-block` institutional pattern; (c)/(d) require architectural-layer review; (f) is structurally identical to deliverable-enforcement R2/R3 (rejected) |
+| Reviewer 4 | MODIFY | N=1 rewrite ≠ "robust"; PreToolUse hook untested; user's "Python script" is 2 distinct proposals conflated |
+| Reviewer 5 | **STOP** | All options add complexity to a mode with no demonstrated value over Dialectic (benchmark: all 5 modes 100/100 including sonnet_bare); delete Trias |
+| Reviewer 6 | MODIFY | Silent-failure modes in every option; quorum validation + session isolation mandatory |
+| Reviewer 7 | **STOP** | ROI break-even ~3-10 years at current Trias usage rate (low single-digit invocations/month) |
+| Reviewer 8 | **STOP** | N=1 rewrite attempt is statistically insufficient; need N≥5 variants across ≥2 prompt injection points |
+| Reviewer 9 | MODIFY | 0/6 clean-GO historical record for "prompt rewrite fixes model behavior"; 3/3 green for "detect-log-don't-block"; pin enforcement at orchestrator/check_doc_drift layer, NOT voice prompts |
 
 **Convergent modify_requests:**
-1. **Layer-pin (Tacitus, Confucius):** enforcement belongs in `scripts/check_doc_drift.py` + the orchestrator contract, not in voice prompts. — **SHIPPED 2026-05-28** (new invariant `trias_parallelism_runtime_audit` in `check_doc_drift.py`; runtime audit reference added to `modes/trias.md` Step 3 with pointer to `check_trias_parallelism.py`).
-2. **N≥5 variant test (Deming, Socrate):** raise N above 1 before declaring prompt-enforcement falsified. Test PreToolUse hook + system prompt injection + 3-5 phrasing variants. — **DESIGN SHIPPED 2026-05-28** ([trias-parallelism-n5-design.md](trias-parallelism-n5-design.md)); execution deferred to user opt-in (~$6-10 spend).
-3. **Semantic disambiguation (Wittgenstein, Socrate):** user must clarify "Python script" = read-by-orchestrator vs executed-as-validator, and defect = correctness vs performance. — **DEFERRED** to user.
-4. **Cost-benefit gate (Napoleon):** no (c)/(d) implementation until Trias usage exceeds ~20 invocations/month. — **ACCEPTED**.
-5. **Existential question (Musk):** does Trias justify 3× cost vs Dialectic? — **OPEN**; reopen if N≥5 experiment fails.
+1. **Layer-pin (Reviewer 9, Reviewer 3):** enforcement belongs in `scripts/check_doc_drift.py` + the orchestrator contract, not in voice prompts. — **SHIPPED 2026-05-28** (new invariant `trias_parallelism_runtime_audit` in `check_doc_drift.py`; runtime audit reference added to `modes/trias.md` Step 3 with pointer to `check_trias_parallelism.py`).
+2. **N≥5 variant test (Reviewer 8, Reviewer 4):** raise N above 1 before declaring prompt-enforcement falsified. Test PreToolUse hook + system prompt injection + 3-5 phrasing variants. — **DESIGN SHIPPED 2026-05-28** ([trias-parallelism-n5-design.md](trias-parallelism-n5-design.md)); execution deferred to user opt-in (~$6-10 spend).
+3. **Semantic disambiguation (Reviewer 1, Reviewer 4):** user must clarify "Python script" = read-by-orchestrator vs executed-as-validator, and defect = correctness vs performance. — **DEFERRED** to user.
+4. **Cost-benefit gate (Reviewer 7):** no (c)/(d) implementation until Trias usage exceeds ~20 invocations/month. — **ACCEPTED**.
+5. **Existential question (Reviewer 5):** does Trias justify 3× cost vs Dialectic? — **OPEN**; reopen if N≥5 experiment fails.
 
-### What we shipped after the Senate audit
+### What we shipped after the design audit
 
 | Component | Pin layer |
 |---|---|
-| `benchmark/scripts/check_trias_parallelism.py` | Runtime detector (already shipped pre-Senate) |
+| `benchmark/scripts/check_trias_parallelism.py` | Runtime detector (already shipped pre-review) |
 | `benchmark/run_task.py` hook | Post-run audit invocation |
 | `benchmark/analyze.py` badge | Visibility in `report.html` |
 | `scripts/check_doc_drift.py` invariant `trias_parallelism_runtime_audit` | **NEW** — requires `modes/trias.md` to reference the runtime audit script; prevents the spec text from drifting away from the detector |
 | `modes/trias.md` Step 3 audit reference | **NEW** — minimal pointer to the runtime audit (not a behavioral rewrite; the spec mandate stays the same) |
 | `experiments/trias-parallelism-n5-design.md` | **NEW** — pre-registered N≥5 test plan with falsification criterion |
 
-### What we did NOT ship (Senate dissent)
+### What we did NOT ship (review dissent)
 
-- Spec rewrite of `modes/trias.md` Step 3 with imperative phrasing — empirically falsified at N=1, reverted, and Tacitus's retrospective (0/6 clean-GO for voice-prompt enforcement) makes further attempts unjustified without first widening N via the V2-V7 design.
-- `claude -p` subprocess launcher (option c) — breaks in-session contract; Confucius requires architectural-layer review before eligibility.
-- Direct API Python orchestrator (option d) — loses MCP, prompt caching, session integration; Napoleon's ROI break-even is decade-scale.
-- Pre-dispatch intent declaration script (option e) — Socrate flagged ambiguous semantics; would have the same failure mode as the spec rewrite if read by orchestrator.
-- Reducing Trias 3→2 personalities (option b) — Dimon: introduces 1-1 tie silent-failure; Confucius: identity change requiring separate proposal.
+- Spec rewrite of `modes/trias.md` Step 3 with imperative phrasing — empirically falsified at N=1, reverted, and Reviewer 9's retrospective (0/6 clean-GO for voice-prompt enforcement) makes further attempts unjustified without first widening N via the V2-V7 design.
+- `claude -p` subprocess launcher (option c) — breaks in-session contract; Reviewer 3 requires architectural-layer review before eligibility.
+- Direct API Python orchestrator (option d) — loses MCP, prompt caching, session integration; Reviewer 7's ROI break-even is decade-scale.
+- Pre-dispatch intent declaration script (option e) — Reviewer 4 flagged ambiguous semantics; would have the same failure mode as the spec rewrite if read by orchestrator.
+- Reducing Trias 3→2 personalities (option b) — Reviewer 6: introduces 1-1 tie silent-failure; Reviewer 3: identity change requiring separate proposal.
 
 ## Cost picture (code/01_circuit_breaker, 2026-05-28 successful run)
 

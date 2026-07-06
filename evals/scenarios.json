@@ -1,7 +1,7 @@
 [
  {
   "_meta": true,
-  "_note": "Synthetic fixtures — validate code-path coverage only, not semantic correctness. A passing scenario confirms the script handles the given input shape; it does not assert that the heuristic or threshold is calibrated correctly. (Deming MODIFY, eval-parity audit 2026-05-25)"
+  "_note": "Synthetic fixtures — validate code-path coverage only, not semantic correctness. A passing scenario confirms the script handles the given input shape; it does not assert that the heuristic or threshold is calibrated correctly. (Reviewer 8 MODIFY, eval-parity audit 2026-05-25)"
  },
  {
   "name": "aggregator/majority picks highest mean",
@@ -276,13 +276,13 @@
   }
  },
  {
-  "name": "confidence/vote_pattern 2-1 with steward dissent drops below PEND threshold",
+  "name": "confidence/vote_pattern 2-1 with sentinel dissent drops below PEND threshold",
   "tool": "scripts/confidence.py",
   "stdin_json": {
    "vote_pattern": "2-1",
    "dissent": [
     {
-     "personality": "steward",
+     "personality": "sentinel",
      "chose": "B"
     }
    ],
@@ -295,13 +295,13 @@
   }
  },
  {
-  "name": "confidence/vote_pattern 2-1 with pioneer dissent keeps baseline",
+  "name": "confidence/vote_pattern 2-1 with essentialist dissent keeps baseline",
   "tool": "scripts/confidence.py",
   "stdin_json": {
    "vote_pattern": "2-1",
    "dissent": [
     {
-     "personality": "pioneer",
+     "personality": "essentialist",
      "chose": "B"
     }
    ],
@@ -314,14 +314,14 @@
   }
  },
  {
-  "name": "confidence/vote_pattern 2-0 with steward abstain drops below PEND threshold",
+  "name": "confidence/vote_pattern 2-0 with sentinel abstain drops below PEND threshold",
   "tool": "scripts/confidence.py",
   "stdin_json": {
    "vote_pattern": "2-0",
    "dissent": [],
    "abstained": [
     {
-     "name": "steward",
+     "name": "sentinel",
      "reason": "all candidates vetoed"
     }
    ]
@@ -1244,7 +1244,7 @@
    "team": "trias",
    "personalities": [
     {
-     "name": "pioneer",
+     "name": "essentialist",
      "weights": {
       "generator": 0.34,
       "control": 0.33,
@@ -1254,7 +1254,7 @@
      "chose": "approach_a"
     },
     {
-     "name": "architect",
+     "name": "verifier",
      "weights": {
       "generator": 0.34,
       "control": 0.33,
@@ -1264,7 +1264,7 @@
      "chose": "approach_a"
     },
     {
-     "name": "steward",
+     "name": "sentinel",
      "weights": {
       "generator": 0.34,
       "control": 0.33,
@@ -1294,50 +1294,50 @@
    "vote_pattern": "3-0",
    "personalities": [
     {
-     "name": "pioneer",
+     "name": "essentialist",
      "weights": {
       "generator": 0.49,
       "control": 0.3,
       "conservator": 0.21
      },
-     "lens": "pioneer_lens",
+     "lens": "essentialist_lens",
      "chose": "approach_a"
     },
     {
-     "name": "architect",
+     "name": "verifier",
      "weights": {
       "generator": 0.3,
       "control": 0.4,
       "conservator": 0.3
      },
-     "lens": "architect_lens",
+     "lens": "verifier_lens",
      "chose": "approach_a"
     },
     {
-     "name": "steward",
+     "name": "sentinel",
      "weights": {
       "generator": 0.3,
       "control": 0.3,
       "conservator": 0.4
      },
-     "lens": "steward_lens",
+     "lens": "sentinel_lens",
      "chose": "approach_a"
     }
    ],
    "telemetry": {
     "mode": "trias",
     "voices": {
-     "pioneer": {
+     "essentialist": {
       "tokens_in": 100,
       "tokens_out": 50,
       "latency_ms": 1000
      },
-     "architect": {
+     "verifier": {
       "tokens_in": 100,
       "tokens_out": 50,
       "latency_ms": 1000
      },
-     "steward": {
+     "sentinel": {
       "tokens_in": 100,
       "tokens_out": 50,
       "latency_ms": 1000
@@ -1357,15 +1357,15 @@
   "stdin_json": {
    "personalities": [
     {
-     "name": "pioneer",
+     "name": "essentialist",
      "chose": "A"
     },
     {
-     "name": "architect",
+     "name": "verifier",
      "chose": "A"
     },
     {
-     "name": "steward",
+     "name": "sentinel",
      "chose": "A"
     }
    ],
@@ -1395,15 +1395,15 @@
   "stdin_json": {
    "personalities": [
     {
-     "name": "pioneer",
+     "name": "essentialist",
      "chose": "A"
     },
     {
-     "name": "architect",
+     "name": "verifier",
      "chose": "A"
     },
     {
-     "name": "steward",
+     "name": "sentinel",
      "chose": "B"
     }
    ],
@@ -1433,15 +1433,15 @@
   "stdin_json": {
    "personalities": [
     {
-     "name": "pioneer",
+     "name": "essentialist",
      "chose": "A"
     },
     {
-     "name": "architect",
+     "name": "verifier",
      "chose": "A"
     },
     {
-     "name": "steward",
+     "name": "sentinel",
      "chose": null
     }
    ],
@@ -1471,15 +1471,15 @@
   "stdin_json": {
    "personalities": [
     {
-     "name": "pioneer",
+     "name": "essentialist",
      "chose": "A"
     },
     {
-     "name": "architect",
+     "name": "verifier",
      "chose": "B"
     },
     {
-     "name": "steward",
+     "name": "sentinel",
      "chose": "C"
     }
    ],
@@ -1512,15 +1512,15 @@
   "stdin_json": {
    "personalities": [
     {
-     "name": "pioneer",
+     "name": "essentialist",
      "chose": null
     },
     {
-     "name": "architect",
+     "name": "verifier",
      "chose": null
     },
     {
-     "name": "steward",
+     "name": "sentinel",
      "chose": null
     }
    ],
@@ -1827,57 +1827,57 @@
   }
  },
  {
-  "name": "personalities/pioneer weights generator highest (progress bias)",
+  "name": "personalities/essentialist weights generator highest (progress bias)",
   "tool": "scripts/personalities.py",
   "args": [
    "--name",
-   "pioneer"
+   "essentialist"
   ],
   "expect_exit": 0,
   "expect_stdout_subset": {
-   "name": "pioneer",
+   "name": "essentialist",
    "weights": {
     "generator": 0.49,
     "control": 0.3,
     "conservator": 0.21
    },
-   "lens": "prompts/voices/pioneer_lens.md"
+   "lens": "prompts/voices/essentialist_lens.md"
   }
  },
  {
-  "name": "personalities/architect weights tilted toward control (structural bias)",
+  "name": "personalities/verifier weights tilted toward control (structural bias)",
   "tool": "scripts/personalities.py",
   "args": [
    "--name",
-   "architect"
+   "verifier"
   ],
   "expect_exit": 0,
   "expect_stdout_subset": {
-   "name": "architect",
+   "name": "verifier",
    "weights": {
     "generator": 0.3,
     "control": 0.4,
     "conservator": 0.3
    },
-   "lens": "prompts/voices/architect_lens.md"
+   "lens": "prompts/voices/verifier_lens.md"
   }
  },
  {
-  "name": "personalities/steward weights conservator highest (risk-averse bias)",
+  "name": "personalities/sentinel weights conservator highest (risk-averse bias)",
   "tool": "scripts/personalities.py",
   "args": [
    "--name",
-   "steward"
+   "sentinel"
   ],
   "expect_exit": 0,
   "expect_stdout_subset": {
-   "name": "steward",
+   "name": "sentinel",
    "weights": {
     "generator": 0.3,
     "control": 0.3,
     "conservator": 0.4
    },
-   "lens": "prompts/voices/steward_lens.md"
+   "lens": "prompts/voices/sentinel_lens.md"
   }
  },
  {

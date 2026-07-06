@@ -2,7 +2,7 @@
 
 Covers both score-based mode (sequential/dialectic) and Trias mode (democratic
 vote pattern). Includes agreement calculation, separation signal blending,
-mode-floor exemption logic, and Steward-specific dissent/abstain penalties.
+mode-floor exemption logic, and Sentinel-specific dissent/abstain penalties.
 
 Run:
     python scripts/test_confidence.py
@@ -23,8 +23,8 @@ from confidence import (
     validate_input,
     CONFIDENCE_CEIL,
     CONFIDENCE_FLOOR,
-    STEWARD_ABSTAIN_PENALTY,
-    STEWARD_DISSENT_PENALTY,
+    SENTINEL_ABSTAIN_PENALTY,
+    SENTINEL_DISSENT_PENALTY,
     VOTE_PATTERN_CONFIDENCE,
 )
 
@@ -117,16 +117,16 @@ class TestTriasVotePattern(unittest.TestCase):
     def test_two_one_dissent_without_steward(self):
         result = confidence_from_vote_pattern(
             "2-1",
-            dissent=[{"personality": "pioneer", "chose": "other"}],
+            dissent=[{"personality": "essentialist", "chose": "other"}],
         )
         self.assertEqual(result["confidence"], VOTE_PATTERN_CONFIDENCE["2-1"])
 
     def test_two_one_dissent_with_steward(self):
         result = confidence_from_vote_pattern(
             "2-1",
-            dissent=[{"personality": "steward", "chose": "other"}],
+            dissent=[{"personality": "sentinel", "chose": "other"}],
         )
-        expected = round(VOTE_PATTERN_CONFIDENCE["2-1"] - STEWARD_DISSENT_PENALTY, 3)
+        expected = round(VOTE_PATTERN_CONFIDENCE["2-1"] - SENTINEL_DISSENT_PENALTY, 3)
         self.assertEqual(result["confidence"], expected)
 
     def test_two_zero_veto(self):
@@ -136,9 +136,9 @@ class TestTriasVotePattern(unittest.TestCase):
     def test_two_zero_abstain_with_steward(self):
         result = confidence_from_vote_pattern(
             "2-0",
-            abstained=[{"name": "steward", "reason": "ambiguous"}],
+            abstained=[{"name": "sentinel", "reason": "ambiguous"}],
         )
-        expected = round(VOTE_PATTERN_CONFIDENCE["2-0"] - STEWARD_ABSTAIN_PENALTY, 3)
+        expected = round(VOTE_PATTERN_CONFIDENCE["2-0"] - SENTINEL_ABSTAIN_PENALTY, 3)
         self.assertEqual(result["confidence"], expected)
 
     def test_unknown_pattern_raises(self):
@@ -246,7 +246,7 @@ class TestModeFloorCompleteness(unittest.TestCase):
         self.assertIn("trias", failures[0])
 
     def test_completeness_check_fires_when_modes_absent(self):
-        # Senate 2026-06-29 (Dimon): when modes/ is absent the runtime loader collapses to
+        # review 2026-06-29 (Reviewer 6): when modes/ is absent the runtime loader collapses to
         # _FLOOR_FALLBACK, so comparing the loaded dict to the fallback would tautologically
         # pass. The direct-read check must instead FAIL LOUD — a drift-checker may not
         # silently certify "no drift" when it could not read the source of truth.

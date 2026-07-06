@@ -123,37 +123,6 @@ def _validate_sequential_fields(report: dict) -> list[str]:
 # === END ROUND2 ===
 
 
-# === PHILOSOPHICAL VOICES ===
-_PHILOSOPHICAL_VOICES = frozenset({
-    "aurelius-control", "confucius"
-})
-
-
-def _validate_philosophical_aurelius_control(voice_output: dict) -> list[str]:
-    problems = []
-    for field in ("in_control", "out_of_control"):
-        val = voice_output.get(field)
-        if not isinstance(val, list):
-            problems.append(f"strict-philosophical=aurelius-control: '{field}' must be a list")
-    wasted = voice_output.get("wasted_deliberation")
-    if wasted is not None and not isinstance(wasted, str):
-        problems.append("strict-philosophical=aurelius-control: wasted_deliberation must be string or null")
-    return problems
-
-
-def _validate_philosophical_confucius(voice_output: dict) -> list[str]:
-    # confucius-strict validation removed when precedent_search deprecated 2026-05-17
-    del voice_output
-    return []
-
-
-_PHILOSOPHICAL_VALIDATORS = {
-    "aurelius-control": _validate_philosophical_aurelius_control,
-    "confucius": _validate_philosophical_confucius,
-}
-# === END PHILOSOPHICAL VOICES ===
-
-
 def _validate_telemetry(telemetry: object) -> list[str]:
     if not isinstance(telemetry, dict):
         return ["telemetry must be a JSON object"]
@@ -368,9 +337,14 @@ def _validate_trias(report: dict, errors: list) -> None:
             lens = p.get("lens")
             if lens is not None and not isinstance(lens, str):
                 errors.append(f"trias: personalities[{i}].lens must be a string, got {type(lens).__name__}")
-    if names_seen and names_seen != frozenset(NAMES):
+    # Current team is essentialist/verifier/sentinel; the legacy pioneer/architect/
+    # steward trio is still accepted so historical trias runs re-validate (mirrors
+    # the _LEGACY_MODE_ALIASES backward-compat philosophy).
+    _LEGACY_TRIAS_TEAM = frozenset({"pioneer", "architect", "steward"})
+    if names_seen and frozenset(names_seen) not in (frozenset(NAMES), _LEGACY_TRIAS_TEAM):
         errors.append(
-            f"trias: personality names must be exactly {sorted(NAMES)},"
+            f"trias: personality names must be exactly {sorted(NAMES)} "
+            f"(or the legacy {sorted(_LEGACY_TRIAS_TEAM)} for historical runs),"
             f" got {sorted(names_seen)}"
         )
 
@@ -560,15 +534,6 @@ def main(argv: list[str] | None = None) -> int:
         help="require ROUND2 fields (regression_risk object, tokens_budget) in conservator scores",
     )
     # === END ROUND2 ===
-    # === PHILOSOPHICAL VOICES ===
-    ap.add_argument(
-        "--strict-philosophical",
-        choices=sorted(_PHILOSOPHICAL_VOICES),
-        default=None,
-        metavar="VOICE",
-        help=f"require philosophical voice fields; one of: {', '.join(sorted(_PHILOSOPHICAL_VOICES))}",
-    )
-    # === END PHILOSOPHICAL VOICES ===
     ap.add_argument(
         "--strict-substance",
         action="store_true",
@@ -593,13 +558,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.strict_round2:
         problems.extend(_validate_sequential_fields(report))
     # === END ROUND2 ===
-    # === PHILOSOPHICAL VOICES ===
-    if args.strict_philosophical:
-        validator = _PHILOSOPHICAL_VALIDATORS.get(args.strict_philosophical)
-        if validator:
-            voice_output = report.get("voice_outputs", {}).get(args.strict_philosophical, report)
-            problems.extend(validator(voice_output))
-    # === END PHILOSOPHICAL VOICES ===
     if args.strict_substance:
         problems.extend(_strict_substance_problems(report))
     if problems:

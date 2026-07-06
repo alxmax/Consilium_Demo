@@ -4,7 +4,7 @@
 The Trias skeptic stage is orchestrator prose in modes/trias.md, not a script
 function — so the guard against a silent regression is a contract test over the
 spec itself. It asserts the redesign's load-bearing elements survive any future
-edit (Senate 2026-06-19 audit, Dimon blocking: "a targeted test gated in CI").
+edit (review 2026-06-19 audit, Reviewer 6 blocking: "a targeted test gated in CI").
 
 Run: python -X utf8 scripts/test_trias_skeptic_lever.py    (exit 0 = pass)
 """
@@ -44,7 +44,7 @@ def test_post_vote_single_skeptic() -> None:
 
 
 def test_demolish_predicate_is_concrete() -> None:
-    # "demolishes" must be bound to a concrete predicate (Wittgenstein blocking).
+    # "demolishes" must be bound to a concrete predicate (Reviewer 1 blocking).
     # 2026-07-02: re-keyed from the phantom `severity == "blocking"` (a field
     # skeptic.md never emits) to `addressable == "requires_redesign"`, aligning
     # with the --skeptic-can-override table in modes/skeptic_on_chosen.md.
@@ -55,7 +55,7 @@ def test_demolish_predicate_is_concrete() -> None:
 
 
 def test_override_revote_safety() -> None:
-    # Override re-vote must not silently promote an unscrutinised candidate (Socrate/Dimon blocking).
+    # Override re-vote must not silently promote an unscrutinised candidate (Reviewer 4/Reviewer 6 blocking).
     check("override re-vote is gated on --skeptic-can-override",
           "--skeptic-can-override" in TRIAS)
     check("re-elected winner is itself re-challenged (no silent promotion)",

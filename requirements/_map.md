@@ -1,5 +1,5 @@
 ---
-generated: 2026-07-04 17:46
+generated: 2026-07-06 16:46
 nodes: 43
 edges: 53
 ---
@@ -26,9 +26,9 @@ graph LR
     CONSILIUM_IMPLEMENT_SUBAGENT_001["consilium-implement-subagent<br><small>CONSILIUM-IMPLEMENT-SUBAGENT-001</small>"]
     CONSILIUM_IMPLEMENT_TEST_WRITER_001["implement-test-writer<br><small>CONSILIUM-IMPLEMENT-TEST-WRITER-001</small>"]
     CONSILIUM_INFER_PIPELINE_001["Infer implementation pipeline steps<br><small>CONSILIUM-INFER-PIPELINE-001</small>"]
-    CONSILIUM_LENS_ARCHITECT_001["architect lens<br><small>CONSILIUM-LENS-ARCHITECT-001</small>"]
-    CONSILIUM_LENS_PIONEER_001["pioneer lens<br><small>CONSILIUM-LENS-PIONEER-001</small>"]
-    CONSILIUM_LENS_STEWARD_001["steward lens<br><small>CONSILIUM-LENS-STEWARD-001</small>"]
+    CONSILIUM_LENS_ESSENTIALIST_001["essentialist lens<br><small>CONSILIUM-LENS-ESSENTIALIST-001</small>"]
+    CONSILIUM_LENS_SENTINEL_001["sentinel lens<br><small>CONSILIUM-LENS-SENTINEL-001</small>"]
+    CONSILIUM_LENS_VERIFIER_001["verifier lens<br><small>CONSILIUM-LENS-VERIFIER-001</small>"]
     CONSILIUM_LOG_FEEDBACK_001["log_feedback<br><small>CONSILIUM-LOG-FEEDBACK-001</small>"]
     CONSILIUM_MARK_OUTCOME_001["mark_outcome<br><small>CONSILIUM-MARK-OUTCOME-001</small>"]
     CONSILIUM_MEMORY_001["memory<br><small>CONSILIUM-MEMORY-001</small>"]
@@ -72,9 +72,9 @@ graph LR
   CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 --> CONSILIUM_VOICE_SKEPTIC_001
   CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_MODE_SEQUENTIAL_001
   CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001
-  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_PIONEER_001
-  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_ARCHITECT_001
-  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_STEWARD_001
+  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_ESSENTIALIST_001
+  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_VERIFIER_001
+  CONSILIUM_MODE_TRIAS_001 --> CONSILIUM_LENS_SENTINEL_001
   CONSILIUM_SUBAGENT_001 --> CONSILIUM_MODE_SEQUENTIAL_001
   CONSILIUM_TRIAS_MODEL_SCHEMA_001 --> CONSILIUM_MODE_TRIAS_001
   CONSILIUM_VALIDATE_SKEPTIC_001 --> CONSILIUM_VOICE_SKEPTIC_001
@@ -161,15 +161,15 @@ graph LR
   CONSILIUM_INFER_PIPELINE_001 -->|implements| f_scripts_infer_pipeline_py_29
   f_scripts_test_implement_mode_py_8["scripts/test_implement_mode.py:8"]
   CONSILIUM_INFER_PIPELINE_001 -->|tested-by| f_scripts_test_implement_mode_py_8
-  CONSILIUM_LENS_ARCHITECT_001["architect lens<br><small>CONSILIUM-LENS-ARCHITECT-001</small>"]
-  f_prompts_voices_architect_lens_md_25["prompts/voices/architect_lens.md:25"]
-  CONSILIUM_LENS_ARCHITECT_001 -->|implements| f_prompts_voices_architect_lens_md_25
-  CONSILIUM_LENS_PIONEER_001["pioneer lens<br><small>CONSILIUM-LENS-PIONEER-001</small>"]
-  f_prompts_voices_pioneer_lens_md_25["prompts/voices/pioneer_lens.md:25"]
-  CONSILIUM_LENS_PIONEER_001 -->|implements| f_prompts_voices_pioneer_lens_md_25
-  CONSILIUM_LENS_STEWARD_001["steward lens<br><small>CONSILIUM-LENS-STEWARD-001</small>"]
-  f_prompts_voices_steward_lens_md_25["prompts/voices/steward_lens.md:25"]
-  CONSILIUM_LENS_STEWARD_001 -->|implements| f_prompts_voices_steward_lens_md_25
+  CONSILIUM_LENS_ESSENTIALIST_001["essentialist lens<br><small>CONSILIUM-LENS-ESSENTIALIST-001</small>"]
+  f_prompts_voices_essentialist_lens_md_37["prompts/voices/essentialist_lens.md:37"]
+  CONSILIUM_LENS_ESSENTIALIST_001 -->|implements| f_prompts_voices_essentialist_lens_md_37
+  CONSILIUM_LENS_SENTINEL_001["sentinel lens<br><small>CONSILIUM-LENS-SENTINEL-001</small>"]
+  f_prompts_voices_sentinel_lens_md_39["prompts/voices/sentinel_lens.md:39"]
+  CONSILIUM_LENS_SENTINEL_001 -->|implements| f_prompts_voices_sentinel_lens_md_39
+  CONSILIUM_LENS_VERIFIER_001["verifier lens<br><small>CONSILIUM-LENS-VERIFIER-001</small>"]
+  f_prompts_voices_verifier_lens_md_39["prompts/voices/verifier_lens.md:39"]
+  CONSILIUM_LENS_VERIFIER_001 -->|implements| f_prompts_voices_verifier_lens_md_39
   CONSILIUM_LOG_FEEDBACK_001["log_feedback<br><small>CONSILIUM-LOG-FEEDBACK-001</small>"]
   f_scripts_log_feedback_py_43["scripts/log_feedback.py:43"]
   CONSILIUM_LOG_FEEDBACK_001 -->|implements| f_scripts_log_feedback_py_43
@@ -194,8 +194,8 @@ graph LR
   f_modes_trias_md_196["modes/trias.md:196"]
   CONSILIUM_MODE_TRIAS_001 -->|implements| f_modes_trias_md_196
   CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small>"]
-  f_scripts_personalities_py_13["scripts/personalities.py:13"]
-  CONSILIUM_PERSONALITIES_001 -->|implements| f_scripts_personalities_py_13
+  f_scripts_personalities_py_19["scripts/personalities.py:19"]
+  CONSILIUM_PERSONALITIES_001 -->|implements| f_scripts_personalities_py_19
   f_scripts_test_lens_bias_py_31["scripts/test_lens_bias.py:31"]
   CONSILIUM_PERSONALITIES_001 -->|tested-by| f_scripts_test_lens_bias_py_31
   CONSILIUM_PRIORS_001["priors<br><small>CONSILIUM-PRIORS-001</small>"]
@@ -236,8 +236,8 @@ graph LR
   f_agents_consilium_subagent_md_111["agents/consilium-subagent.md:111"]
   CONSILIUM_SUBAGENT_001 -->|implements| f_agents_consilium_subagent_md_111
   CONSILIUM_TRIAS_MODEL_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-MODEL-SCHEMA-001</small>"]
-  f_scripts_personalities_py_14["scripts/personalities.py:14"]
-  CONSILIUM_TRIAS_MODEL_SCHEMA_001 -->|implements| f_scripts_personalities_py_14
+  f_scripts_personalities_py_20["scripts/personalities.py:20"]
+  CONSILIUM_TRIAS_MODEL_SCHEMA_001 -->|implements| f_scripts_personalities_py_20
   f_scripts_test_trias_model_schema_py_12["scripts/test_trias_model_schema.py:12"]
   CONSILIUM_TRIAS_MODEL_SCHEMA_001 -->|tested-by| f_scripts_test_trias_model_schema_py_12
   CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small>"]

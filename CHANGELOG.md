@@ -28,7 +28,7 @@ under the Business Source License 1.1 (see `LICENSE`).
 - `render_impl_preview.py`: opt-in Step 7 static HTML review page bundling spec,
   rationale, and the multi-file diff (#475).
 - Reqmap: version provenance retagged to `CONSILIUM-VERSION-001` + stale
-  acceptance/wording reworded (Senate 2026-07-03 batch b/d/e) (#476).
+  acceptance/wording reworded (review 2026-07-03 batch b/d/e) (#476).
 - Install docs: `.consilium/` gitignore noted as recommended-but-preference
   (keep tracked if you want the trail versioned) (#477).
 
@@ -37,7 +37,7 @@ under the Business Source License 1.1 (see `LICENSE`).
 ### Changed
 - Sequential reordered **Generator-first** (anti-anchoring), with the
   irreversibility consent gate moved pre-dispatch (Step 1.6,
-  `scope_gate.consent_required`, fail-safe) — #416, Senate 2026-06-13.
+  `scope_gate.consent_required`, fail-safe) — #416, review 2026-06-13.
 - Trias redesigned 6→4 sub-agents: the 3 per-personality pre-vote Skeptics
   replaced by **one post-vote `skeptic_on_chosen`** on the winner; cost
   3× → ~2.67× (skeptic-lever redesign, 2026-06-19).
@@ -47,7 +47,7 @@ under the Business Source License 1.1 (see `LICENSE`).
 
 ### Removed
 - **Parallel mode** and the silent 1-in-20 parallel audit
-  (`scripts/audit_counter.py`) — #454, Senate GO_WITH_CONDITIONS, 0 divergences
+  (`scripts/audit_counter.py`) — #454, review GO_WITH_CONDITIONS, 0 divergences
   in 41 empirical runs. Historical `mode: "parallel"` runs stay readable.
 - Dialectic Pass-2 merge (`dialectic_merge.py` and the `*_pass2.md` prompts).
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Confidence-calibration gate for Variant C (confidence-gated Trias).
 
-Senate ranking (runs/senate/2026-06-17_113009 + the variant-ranking round)
+review ranking (an internal design audit + the variant-ranking round)
 made Variant C conditional on ONE cheap check: do high confidence scores
 actually predict OK outcomes in the existing corpus? If yes, C's gate
 (skeptic fires only when ``confidence in [0.0, 0.70)`` — strictly below 0.70) is justified — ship C.

@@ -114,7 +114,7 @@ fields are marked **REQUIRED**; the rest are recommended but not blocking.
   `2` (winner demolished → `--skeptic-can-override` re-vote → new winner
   re-challenged). These exist so a future `confidence_calibration.py`-style
   coverage check can measure skeptic-coverage-vs-outcome and confirm or roll back
-  the 3→1 reduction (the open **T1 debt** — Deming/Tacitus, 2026-06-19 audit).
+  the 3→1 reduction (the open **T1 debt** — Reviewer 8/Reviewer 9, 2026-06-19 audit).
 
 ## Consumers
 
