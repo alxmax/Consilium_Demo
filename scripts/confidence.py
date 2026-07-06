@@ -138,7 +138,7 @@ MODE_CONFIDENCE_FLOOR: dict[str, float] = _load_mode_floors()
 # transport_choice benchmark task a 3-0 was recorded on a WRONG answer (32/100).
 # Agreement != truth. Until a corpus of >=20 labeled (vote_pattern, outcome)
 # pairs yields a calibration curve (Brier/AUC), treat these as ordered priors,
-# not probabilities. (Senate 2026-05-26 round 2, D1 — 5 MODIFY / 2 STOP / 2 GO.)
+# not probabilities. (review 2026-05-26 round 2, D1 — 5 MODIFY / 2 STOP / 2 GO.)
 VOTE_PATTERN_CONFIDENCE = {
     "3-0": 0.95,
     "2-1": 0.75,  # dissent: one personality chose a different candidate (recoverable)
@@ -192,19 +192,19 @@ def check_mode_floor(
         "outcome_hint": "WEAK" if below else "OK",
     }
 
-# Steward is the conservative-leaning personality (weights K=0.40). When it
+# Sentinel is the conservative-leaning personality (weights K=0.40). When it
 # dissents or abstains, that carries more risk-signal than the same outcome
-# from Pioneer or Architect — drop confidence below the PEND threshold so
+# from Essentialist or Verifier — drop confidence below the PEND threshold so
 # the orchestrator prompts the user instead of auto-shipping.
-STEWARD_DISSENT_PENALTY = 0.10
-STEWARD_ABSTAIN_PENALTY = 0.15
-STEWARD_NAME = "steward"
+SENTINEL_DISSENT_PENALTY = 0.10
+SENTINEL_ABSTAIN_PENALTY = 0.15
+SENTINEL_NAME = "sentinel"
 
 
-def _steward_involved(items: list[dict] | None, key: str) -> bool:
+def _sentinel_involved(items: list[dict] | None, key: str) -> bool:
     if not items:
         return False
-    return any(isinstance(it, dict) and it.get(key) == STEWARD_NAME for it in items)
+    return any(isinstance(it, dict) and it.get(key) == SENTINEL_NAME for it in items)
 
 
 def confidence_from_vote_pattern(
@@ -220,9 +220,9 @@ def confidence_from_vote_pattern(
 
     When ``dissent`` (list of ``{personality, chose}``) or ``abstained``
     (list of ``{name, reason}``) is provided, applies a penalty when
-    Steward — the conservative voice — is the dissenter/abstainer. Other
+    Sentinel — the conservative voice — is the dissenter/abstainer. Other
     personalities' dissent/abstain doesn't change confidence; the spec
-    flags Steward involvement as semantically stronger.
+    flags Sentinel involvement as semantically stronger.
     """
     if pattern not in VOTE_PATTERN_CONFIDENCE:
         raise ValueError(f"unknown vote pattern: {pattern!r}")
@@ -236,14 +236,14 @@ def confidence_from_vote_pattern(
 
     notes: list[str] = []
     if conf is not None:
-        steward_dissenting = pattern == "2-1" and _steward_involved(dissent, "personality")
-        steward_abstaining = pattern == "2-0" and _steward_involved(abstained, "name")
-        if steward_dissenting:
-            conf = round(conf - STEWARD_DISSENT_PENALTY, 3)
-            notes.append(f"steward dissented (penalty {STEWARD_DISSENT_PENALTY})")
-        if steward_abstaining:
-            conf = round(conf - STEWARD_ABSTAIN_PENALTY, 3)
-            notes.append(f"steward abstained (penalty {STEWARD_ABSTAIN_PENALTY})")
+        sentinel_dissenting = pattern == "2-1" and _sentinel_involved(dissent, "personality")
+        sentinel_abstaining = pattern == "2-0" and _sentinel_involved(abstained, "name")
+        if sentinel_dissenting:
+            conf = round(conf - SENTINEL_DISSENT_PENALTY, 3)
+            notes.append(f"sentinel dissented (penalty {SENTINEL_DISSENT_PENALTY})")
+        if sentinel_abstaining:
+            conf = round(conf - SENTINEL_ABSTAIN_PENALTY, 3)
+            notes.append(f"sentinel abstained (penalty {SENTINEL_ABSTAIN_PENALTY})")
 
     result = {
         "confidence": conf,

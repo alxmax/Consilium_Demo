@@ -20,7 +20,7 @@ description: Cross-cutting flag — +1 Skeptic sub-agent over any base mode post
 **Auto-trigger conditions** (any is sufficient):
 - Confidence ∈ `[0.0, 0.70)` — classic trigger (strictly less than 0.70; confidence == 0.70 does NOT trigger — it is the Sequential floor and the Trias 2-0 canonical value, both considered passing)
 - Confidence > 0.7 BUT `Conservator.net_concern` > 0.7 — high-conf/high-concern discrepancy is worth probing: `trigger_reason: "high_conf_high_concern"`
-- `chosen_approach` coincides with a `BAD` outcome from `FEEDBACK.html` (last 30 days, substring match on label): `trigger_reason: "similar_to_recent_bad"` — Tacitus-lite for classic modes
+- `chosen_approach` coincides with a `BAD` outcome from `FEEDBACK.html` (last 30 days, substring match on label): `trigger_reason: "similar_to_recent_bad"` — Reviewer 9-lite for classic modes
 - `irreversibility_flag: true` — existing consent gate, Skeptic adds object-level check: `trigger_reason: "irreversibility_gate"`
 
 - **Manual opt-in** via `--skeptic-on-chosen` when you want a focal challenger post-hoc regardless of confidence (medium-stakes, problems with known implicit constraints)

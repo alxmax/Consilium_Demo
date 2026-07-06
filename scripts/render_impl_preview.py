@@ -15,7 +15,7 @@ runs/2026-07-03_1443_html-preview-impl-step.json (chosen
 
 The HTML is self-contained: inline CSS, no external assets, every piece of
 report/diff content escaped via ``html.escape``. Light/dark theme follows
-``prefers-color-scheme`` (paper/ink palette, Senate-audit artifact style).
+``prefers-color-scheme`` (paper/ink palette, design-audit artifact style).
 
 CLI:
     python scripts/render_impl_preview.py --input .consilium/runs/<file>.json

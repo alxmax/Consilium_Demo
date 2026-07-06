@@ -2,13 +2,13 @@
 
 Run: python scripts/test_version.py   (exit 0 = all pass, 1 = a failure)
 
-Senate-mandated coverage (2026-05-31_200016-versioning-provenance-design):
+review-mandated coverage (2026-05-31_200016-versioning-provenance-design):
 - consilium_version returns a string; FAILS OPEN to "unknown" when git is absent.
-- consilium_ref returns "" on a dirty tree / git-absent (Wittgenstein: a
+- consilium_ref returns "" on a dirty tree / git-absent (Reviewer 1: a
   "<sha>-dirty" string is never recorded as a diff operand).
 - prompts_changed_since NEVER raises and returns 0 on ""/"unknown"/unreachable
-  refs (Dimon's guard) — so the Step-0 advisory can call it unconditionally.
-- All THREE report producers carry the stamp (Socrate): build_report pipeline
+  refs (Reviewer 6's guard) — so the Step-0 advisory can call it unconditionally.
+- All THREE report producers carry the stamp (Reviewer 4): build_report pipeline
   output + the two hand-built SKILL.md templates (scale_down, passthrough).
 """
 from __future__ import annotations
@@ -57,7 +57,7 @@ def run() -> int:
     check("ref_resolves('') is False", version.ref_resolves("") is False)
     check("ref_resolves('unknown') is False", version.ref_resolves("unknown") is False)
 
-    # 7. prompts_changed_since NEVER raises and returns 0 on bad refs (Dimon's guard).
+    # 7. prompts_changed_since NEVER raises and returns 0 on bad refs (Reviewer 6's guard).
     for bad in ("", "unknown", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"):
         try:
             n = version.prompts_changed_since(bad)
@@ -86,7 +86,7 @@ def run() -> int:
     sk = (build({"success_criterion": "x", "verification": "v", "skipped": True, "skip_reason": "trivial"}).get("telemetry") or {})
     check("skipped report stamped", "consilium_version" in sk)
 
-    # 9. Producers 2 & 3 — both hand-built SKILL.md templates carry the stamp (Socrate).
+    # 9. Producers 2 & 3 — both hand-built SKILL.md templates carry the stamp (Reviewer 4).
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     for mode in ("prior_deliberation_passthrough", "sequential_scale_down"):
         line = next((ln for ln in skill.splitlines() if f'"mode": "{mode}"' in ln), "")

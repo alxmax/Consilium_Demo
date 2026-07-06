@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
     # Completeness gate: a missing row is silent corpus loss (a run that never
     # got an outcome can never enter a labeled calibration corpus). validate_report
     # is a pure per-report gate and cannot see FEEDBACK.html, so the corpus-level
-    # check lives here. (Senate 2026-05-27 — Dimon D5.)
+    # check lives here. (review 2026-05-27 — Reviewer 6 D5.)
     if args.check:
         print(f"\nFAIL: {len(missing)} run(s) without a FEEDBACK row. "
               f"Run with --backfill to append default PEND rows.", file=sys.stderr)

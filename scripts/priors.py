@@ -250,7 +250,7 @@ def _find_prior_match(label: str, entries: list[dict], window_days: int = _PRIOR
 
     Returns None when label is too short (< 8 chars after strip) or no match exists
     within window_days. Scans entries newest-first so the most recent match wins.
-    Only entries with outcome "OK" qualify — PEND/BAD/OVR do not. (GO is a Senate
+    Only entries with outcome "OK" qualify — PEND/BAD/OVR do not. (GO is a review
     verdict, never a FEEDBACK outcome, so it can never match.)
     """
     if len(label.strip()) < _PRIOR_MATCH_MIN_LABEL_LEN:

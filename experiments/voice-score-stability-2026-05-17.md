@@ -1,22 +1,22 @@
 # Voice Score Stability Experiment — 2026-05-17
 
-**Source:** Senate top-5 diagnostic audit (`runs/senate/2026-05-17_161608-top5-diagnostic-audit.json`), item #1 — `voice_scores_treated_as_calibrated_measurements` (Socrate, CRITICAL). R2 from Wittgenstein + Dimon refined the claim:
+**Source:** review top-5 diagnostic audit (`an internal design audit`), item #1 — `voice_scores_treated_as_calibrated_measurements` (Reviewer 4, CRITICAL). R2 from Reviewer 1 + Reviewer 6 refined the claim:
 
-- Wittgenstein: calibration *asymmetry* — Conservator IS anchored via `conservator.md:62-75` formula; Generator + Control are NOT.
-- Dimon: predicts inter-run `pstdev` 0.12-0.18 on `risk_score`; veto threshold 0.8 sits in high-variance region; non-deterministic veto on boundary cases.
+- Reviewer 1: calibration *asymmetry* — Conservator IS anchored via `conservator.md:62-75` formula; Generator + Control are NOT.
+- Reviewer 6: predicts inter-run `pstdev` 0.12-0.18 on `risk_score`; veto threshold 0.8 sits in high-variance region; non-deterministic veto on boundary cases.
 
 ## Falsification design
 
-Per Dimon's R2 proposal: pick 5 historical diffs covering the risk spectrum (low ~0.05, medium ~0.5, boundary-low ~0.68, boundary-high ~0.84, high ~0.92), re-dispatch each twice with identical input, measure `pstdev` per voice. If `mean(pstdev) > 0.10` on `net_concern` → Socrate's claim empirically confirmed.
+Per Reviewer 6's R2 proposal: pick 5 historical diffs covering the risk spectrum (low ~0.05, medium ~0.5, boundary-low ~0.68, boundary-high ~0.84, high ~0.92), re-dispatch each twice with identical input, measure `pstdev` per voice. If `mean(pstdev) > 0.10` on `net_concern` → Reviewer 4's claim empirically confirmed.
 
 ## Scope concessions (read before interpreting)
 
 This run **measures only the Conservator voice**, not the full sequential pipeline. The original design was to re-dispatch the `consilium-subagent` 10 times; mid-execution the subagent reported missing Bash tool permissions on some calls and the dispatch was aborted. The pivot was: dispatch only the Conservator voice as a `general-purpose` Agent with the `conservator.md` prompt inline + the case context, request a strict JSON output, measure inter-run variance on `regression_risk.net_concern`.
 
 Consequences of the pivot:
-- We measure **only Conservator variance**, not Generator/Control. Wittgenstein's asymmetry claim (Gen/Ctrl are less anchored than Conservator) is **not tested** here.
+- We measure **only Conservator variance**, not Generator/Control. Reviewer 1's asymmetry claim (Gen/Ctrl are less anchored than Conservator) is **not tested** here.
 - We measure **scoring stability**, not **chosen-flip stability**. Without Generator+Control voting, we can't say whether the score variance would flip the eventual `chosen_approach`.
-- The veto-threshold-near-0.8 high-variance region (Dimon's main claim) is **not probed empirically** — none of our 5 cases produced `net_concern ≥ 0.5`. We hit ceiling 0.42 on BOUNDARY_HI.
+- The veto-threshold-near-0.8 high-variance region (Reviewer 6's main claim) is **not probed empirically** — none of our 5 cases produced `net_concern ≥ 0.5`. We hit ceiling 0.42 on BOUNDARY_HI.
 
 ## Cases
 
@@ -73,11 +73,11 @@ Across all 10 runs, `do_nothing.net_concern`:
 
 ## Findings
 
-### F1 — Numerical stability of `net_concern` is BETTER than Dimon predicted
+### F1 — Numerical stability of `net_concern` is BETTER than Reviewer 6 predicted
 
-Mean `pstdev` = 0.038 across the 5 pairs, max = 0.10. Dimon's R2 prediction (0.12-0.18) is **refuted** for the cases sampled. Within a stable categorical assignment, Conservator's formula produces tight numerical output (Δ ≤ 0.03 in 3/5 pairs; identical to 2 decimal places in 1 pair).
+Mean `pstdev` = 0.038 across the 5 pairs, max = 0.10. Reviewer 6's R2 prediction (0.12-0.18) is **refuted** for the cases sampled. Within a stable categorical assignment, Conservator's formula produces tight numerical output (Δ ≤ 0.03 in 3/5 pairs; identical to 2 decimal places in 1 pair).
 
-**Interpretation:** the formula IS providing anchoring, exactly as Wittgenstein's R2 noted (`conservator.md:62-75` maps categorical labels to fixed sub-scores). When category assignments agree, the float output agrees.
+**Interpretation:** the formula IS providing anchoring, exactly as Reviewer 1's R2 noted (`conservator.md:62-75` maps categorical labels to fixed sub-scores). When category assignments agree, the float output agrees.
 
 ### F2 — But categorical assignment is NOT stable (40% magnitude flip rate)
 
@@ -93,7 +93,7 @@ When the candidate is unambiguous (`do_nothing` = no change → trivial + comple
 
 ### F4 — Veto threshold region (0.8) is UNTESTED
 
-None of the 5 cases produced `net_concern ≥ 0.5`. Ceiling was 0.42 on BOUNDARY_HI. **Dimon's main claim** — that the veto threshold of 0.8 sits in the high-variance region and would fire non-deterministically on boundary cases — **remains untested** by this experiment. We need cases that ACTUALLY produce high `net_concern` for both pair members to probe the veto behavior.
+None of the 5 cases produced `net_concern ≥ 0.5`. Ceiling was 0.42 on BOUNDARY_HI. **Reviewer 6's main claim** — that the veto threshold of 0.8 sits in the high-variance region and would fire non-deterministically on boundary cases — **remains untested** by this experiment. We need cases that ACTUALLY produce high `net_concern` for both pair members to probe the veto behavior.
 
 ### F5 — Meta-recommendation is noisier than `net_concern` itself
 
@@ -105,8 +105,8 @@ The original AC for #1 said "add inter-run stability check (run identical input 
 
 - **Drop the `pstdev > 0.15` check on `net_concern`.** Numerical variance is well below that for typical cases (max observed: 0.10). The check would never fire and would waste tokens.
 - **Add a categorical-stability check instead.** Sample Conservator twice; if `reversibility` or `magnitude` categories disagree, surface the categorical disagreement to the orchestrator (don't auto-resolve). This catches the 40% flip rate at its source.
-- **Probe the veto-threshold region separately.** Construct or find 2-3 cases with `net_concern` in [0.7, 0.9] and re-run this experiment. Until that data exists, Dimon's non-deterministic-veto claim is plausible but unconfirmed.
-- **Generator + Control stability are still untested.** This experiment isolated Conservator. If Wittgenstein's asymmetry claim is right, Generator+Control should show MORE variance than Conservator (no formula anchor). Open question for future experiments.
+- **Probe the veto-threshold region separately.** Construct or find 2-3 cases with `net_concern` in [0.7, 0.9] and re-run this experiment. Until that data exists, Reviewer 6's non-deterministic-veto claim is plausible but unconfirmed.
+- **Generator + Control stability are still untested.** This experiment isolated Conservator. If Reviewer 1's asymmetry claim is right, Generator+Control should show MORE variance than Conservator (no formula anchor). Open question for future experiments.
 
 ## Suggested SKILL.md edits (separate PR)
 

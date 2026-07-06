@@ -3,7 +3,7 @@
 Run manually (stdlib-only, no test runner):
     python scripts/test_vote_degeneracy.py
 
-Locks the two corrections from Senate 2026-05-27:
+Locks the two corrections from review 2026-05-27:
   - unanimity is 3-0 ONLY; 2-0 is a veto, reported separately (not folded in)
   - only exact `"mode": "trias"` / `"trias_split"` runs are counted (no contamination
     from composite-mode runs that merely cite a vote_pattern)

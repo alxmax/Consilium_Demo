@@ -10,11 +10,11 @@ risk: 1
 
 # trias-model-assignment
 
-> Trias uniform model assignment: all 3 personalities (pioneer, architect, steward) use sonnet. No per-personality schema workarounds needed.
+> Trias uniform model assignment: all 3 personalities (essentialist, verifier, sentinel) use sonnet. No per-personality schema workarounds needed.
 
 ## WHAT — Contract (normative)
 - `scripts/personalities.py` shall expose a `PERSONALITIES` list where every entry carries a `model` field whose value controls which Claude model tier the Trias orchestrator dispatches for that sub-agent.
-- Model assignments shall be uniform: pioneer → `sonnet`, architect → `sonnet`, steward → `sonnet`.
+- Model assignments shall be uniform: essentialist → `sonnet`, verifier → `sonnet`, sentinel → `sonnet`.
 - No personality entry shall carry `schema_less: True`. All personalities use standard StructuredOutput dispatch.
 - The `personalities.py` CLI shall emit a valid JSON array of exactly 3 objects, each with at minimum a `model` field, for use by the Trias orchestrator at runtime.
 

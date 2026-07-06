@@ -3,7 +3,7 @@ authoritative behavior in SKILL.md and scripts/confidence.py.
 
 Stdlib-only. Exit 0 = OK, exit 1 = drift detected, exit 2 = malformed input.
 
-Origin: Senate audit 2026-05-28 (runs/senate/2026-05-28_094832-doc-drift-ssot-mode-docs.json)
+Origin: design audit 2026-05-28 (an internal design audit)
 found 4 discrepancies between docs/architecture/ (CV-visible explainer) and the
 authoritative behavior in modes/*.md + scripts/confidence.py + SKILL.md. Track 1
 (fix/docs-arch-drift-sync, commit 2114f21) fixed the 4 drifts; this script is
@@ -85,22 +85,22 @@ INVARIANTS = [
         "file": "modes/trias.md",
         "required": r"[Dd]ispatch\s+all\s+3\s+personalities\s+in\s+parallel|in\s+parallel.*personalities|parallel\s+dispatch.*personalities",
         "forbidden": r"For\s+each\s+personality,\s+dispatch\s+\*\*1\s+`consilium-subagent`\*\*",
-        "source": "Senate 2026-05-28 audit + benchmark task-08 timeout (sequential loop)",
+        "source": "review 2026-05-28 audit + benchmark task-08 timeout (sequential loop)",
         "rationale": "Trias must dispatch 3 sub-agents in parallel; sequential loop triples wall-clock and caused task-08 to time out at 15min in n=10 benchmark.",
     },
     {
         "id": "trias_parallelism_runtime_audit",
         "file": "modes/trias.md",
         "required": r"benchmark/scripts/check_trias_parallelism\.py|check_trias_parallelism\.py",
-        "source": "Senate 2026-05-28 (trias-parallelism-enforcement.json) — Tacitus: 'pin enforcement at orchestrator/drift-checker, NOT voice prompts'",
-        "rationale": "Spec prose alone has 0/6 clean-GO historical record for dispatch enforcement (per Tacitus retrospective on 6 prior runs). modes/trias.md MUST reference the runtime audit script that detects serial dispatch from JSONL transcripts. Removing the audit reference without removing the parallel mandate leaves a hidden, unmeasured drift — the exact gap this invariant prevents.",
+        "source": "review 2026-05-28 (trias-parallelism-enforcement.json) — Reviewer 9: 'pin enforcement at orchestrator/drift-checker, NOT voice prompts'",
+        "rationale": "Spec prose alone has 0/6 clean-GO historical record for dispatch enforcement (per Reviewer 9 retrospective on 6 prior runs). modes/trias.md MUST reference the runtime audit script that detects serial dispatch from JSONL transcripts. Removing the audit reference without removing the parallel mandate leaves a hidden, unmeasured drift — the exact gap this invariant prevents.",
     },
     {
         "id": "sequential_scale_down_skips_control",
         "file": "modes/sequential.md",
         "required": r"scale_down.*SHORT-CIRCUIT.*Skip\s+Control",
         "forbidden": r"scale_down.*Skip\s+Generator\s+AND\s+Control",
-        "source": "SKILL.md Step 3 + Generator-first reorder (Senate 2026-06-13_143602 GO_WITH_CONDITIONS)",
+        "source": "SKILL.md Step 3 + Generator-first reorder (review 2026-06-13_143602 GO_WITH_CONDITIONS)",
         "rationale": "Under Generator-first dispatch, Conservator runs SECOND, so scale_down can no longer skip Generator — it skips Control only (Generator already ran). The forbidden pattern guards a regression to the old Conservator-first 'skip Generator AND Control' wording.",
     },
     {
@@ -108,7 +108,7 @@ INVARIANTS = [
         "file": "modes/sequential.md",
         "required": r"Default order:\s*\*\*Generator\s*→\s*Conservator\s*→\s*Control\*\*",
         "forbidden": r"Default order:\s*\*\*Conservator\s*→\s*Generator",
-        "source": "Senate 2026-06-13_143602 GO_WITH_CONDITIONS (Generator-first reorder); Tacitus: pin enforcement at the drift-checker, not prose",
+        "source": "review 2026-06-13_143602 GO_WITH_CONDITIONS (Generator-first reorder); Reviewer 9: pin enforcement at the drift-checker, not prose",
         "rationale": "Generator now runs FIRST (blind to risk framing); the dispatch order is load-bearing (irreversibility consent moved pre-dispatch, scale_down skips Control only). Pin it so a silent regression to Conservator-first fails CI — spec prose alone has a 0/6 clean-GO record for order enforcement.",
     },
     {
@@ -301,7 +301,7 @@ def check_confidence_floor_completeness() -> list[str]:
     `confidence.MODE_CONFIDENCE_FLOOR`: `_load_mode_floors()` collapses to
     `_FLOOR_FALLBACK` when modes/ is absent OR when EVERY floor is stripped, so comparing
     the loaded dict to the fallback would tautologically pass under the exact total-loss
-    condition this gate must catch (Senate 2026-06-29, Dimon — a drift-checker must not
+    condition this gate must catch (review 2026-06-29, Reviewer 6 — a drift-checker must not
     silently pass when it could not actually check).
 
     Scope: this is a CI gate over the on-disk frontmatter. The runtime loader still falls
@@ -352,7 +352,7 @@ def check_confidence_floor_completeness() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Legacy MODE enum removal milestone (Tacitus R1 pattern D)
+# Legacy MODE enum removal milestone (Reviewer 9 R1 pattern D)
 # ---------------------------------------------------------------------------
 
 REMOVAL_MILESTONES: dict[str, str] = {

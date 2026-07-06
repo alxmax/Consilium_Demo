@@ -161,14 +161,14 @@ class TestVetoRate(unittest.TestCase):
         runs = [
             {"chosen_approach": "A", "deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]},
             {"fingerprint-1": "runs/x.json", "fingerprint-2": "runs/y.json"},  # sidecar shape
-            {"personality": "pioneer", "chose": "A"},  # trias sub-run
+            {"personality": "essentialist", "chose": "A"},  # trias sub-run
         ]
         result = _veto_rate(runs)
         self.assertEqual(result["runs_seen"], 1)
         self.assertEqual(result["conservator_veto_rate"], 0.0)
 
     def test_all_non_reports_returns_none(self):
-        runs = [{"personality": "pioneer", "chose": "A"}, {"sidecar": "x"}]
+        runs = [{"personality": "essentialist", "chose": "A"}, {"sidecar": "x"}]
         result = _veto_rate(runs)
         self.assertIsNone(result["conservator_veto_rate"])
         self.assertEqual(result["runs_seen"], 0)

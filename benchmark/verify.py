@@ -334,7 +334,7 @@ def _verify_closed_answer(workspace: Path, verify_src: Path, meta: dict) -> dict
     # with an empty or nonsense justification does not score full marks. The token
     # list lives in the task's meta.yaml in the external scoring repo, not here
     # (keeping the answer out of this tracked file). Tasks that don't set the key
-    # are unaffected — keyword_ok stays True. (2026-06-23 Senate: Dimon, Socrate.)
+    # are unaffected — keyword_ok stays True. (2026-06-23 review: Reviewer 6, Reviewer 4.)
     req_keywords = meta.get("require_keywords_any")
     matched_keyword = None
     if req_keywords:

@@ -2,10 +2,10 @@
 
 Generator now runs FIRST in Sequential, so the irreversibility consent gate moved
 ahead of every voice (SKILL.md Step 1.6). scope_gate.decide() carries the path-based
-signal. The Senate's blocking condition (2026-06-13, Dimon) requires that the gate:
+signal. The review's blocking condition (2026-06-13, Reviewer 6) requires that the gate:
   (a) fires on a sensitive/irreversible path BEFORE any voice runs, and
   (b) FAILS SAFE — an undeterminable change must NOT silently bypass consent
-      (Confucius: must not inherit should_skip's fail-OPEN default).
+      (Reviewer 3: must not inherit should_skip's fail-OPEN default).
 
 These are pure-function tests over decide(); the live "Generator output absent at
 consent-fire" assertion is an orchestrator contract documented in SKILL.md Step 1.6
@@ -58,7 +58,7 @@ class TestConsentGate(unittest.TestCase):
         self.assertFalse(out["consent_required"])
 
     def test_probe_error_fails_safe_to_consent(self):
-        # Confucius's catch: an undeterminable change must FAIL SAFE — require
+        # Reviewer 3's catch: an undeterminable change must FAIL SAFE — require
         # consent, never silently bypass it (unlike should_skip's fail-OPEN).
         out = decide({"error": "not a git repository"}, [], DEFAULT_CONFIG)
         self.assertTrue(out["consent_required"])

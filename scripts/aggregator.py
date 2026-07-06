@@ -47,7 +47,7 @@ from utils import force_utf8_streams
 VOICES = ("generator", "control", "conservator")
 DEFAULT_VETO = 0.8
 RELAXED_VETO_CAP = 0.85
-# Predicted inter-run pstdev for conservator risk_score is 0.12–0.18 (Dimon R2 2026-05-17).
+# Predicted inter-run pstdev for conservator risk_score is 0.12–0.18 (Reviewer 6 R2 2026-05-17).
 VETO_UNCERTAINTY_BAND = 0.15
 # Score delta below which the top-2 ranking is coin-flip territory (2026-05-26 experiment).
 LOW_SEPARATION_THRESHOLD = 0.12

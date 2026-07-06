@@ -761,7 +761,7 @@ def build_html(rows):
             # for work it did not do — exclude from the per-task ranking. The
             # cell still renders (with its pipeline:skipped badge) and still
             # counts toward cost/run totals; it just cannot win/lose as a
-            # deliberation result. (Senate 2026-05-26 rec#1.)
+            # deliberation result. (review 2026-05-26 rec#1.)
             if r.get("pipeline_executed") is False:
                 continue
             sc = proxy_score(r)

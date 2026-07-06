@@ -84,9 +84,9 @@ def test_trias_personalities_divergence() -> None:
     bundle = {
         "team": "trias",
         "members": {
-            "pioneer": {"chosen": "A"},
-            "architect": {"chosen": "A"},
-            "steward": {"chosen": "A"},
+            "essentialist": {"chosen": "A"},
+            "verifier": {"chosen": "A"},
+            "sentinel": {"chosen": "A"},
         },
         "conservator": {
             "scores": [{"id": "A", "risk_score": 0.4}, {"id": "B", "risk_score": 0.6}]

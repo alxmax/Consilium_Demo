@@ -233,7 +233,7 @@
       "accept": "- When all invariant patterns hold and `confidence.py VOTE_PATTERN_CONFIDENCE` matches `trias.jsx TRIAS_OUTCOMES` for patterns 3-0, 2-1, and 2-0, the script exits 0 and prints the OK message.\n- If the scale_down wording in `modes/sequential.md` regresses to \"Skip Generator AND Control\", the `sequential_scale_down_skips_control` invariant fails and the script exits 1.\n- If `confidence.py VOTE_PATTERN_CONFIDENCE['2-1']` is changed to a value that differs from the `conf` field of the `2-1` row in `trias.jsx TRIAS_OUTCOMES`, the trias confidence parity check reports a failure.\n- If a new `scripts/test_*.py` file is added without a corresponding entry in `ci.yml`, the `test_suite_coverage` check fails and exits 1.\n- If a required file listed in an invariant's `file` key is missing from disk, the script exits 2 immediately.",
       "input": "`modes/trias.md`: read for `trias_parallel_dispatch` and `trias_parallelism_runtime_audit` invariants `modes/sequential.md`: read for `sequential_scale_down_skips_control` and `sequential_generator_first` invariants `docs/architecture/src/modes.jsx`: read for `trias_tally_caption_confidence`, `explainer_modes_voices_generator_first`, and the Trias spec-alignment worst-case check `docs/architecture/src/trias.jsx`: read for `TRIAS_OUTCOMES` confidence parity check `docs/architecture/src/extras.jsx`: read by the Trias spec-alignment check (CostScatter TRI entry + CostBars trias row) `SKILL.md`: read for the `skill_templates_have_pipeline_executed` invariant `scripts/build_report.py`: read for `build_report_emits_pipeline_executed` invariant `scripts/confidence.py`: AST-parsed for `VOTE_PATTERN_CONFIDENCE` dict values `scripts/validate_report.py`: read for legacy MODE alias removal milestone check `.github/workflows/ci.yml` and `.claude/skills/run-consilium/driver.py`: read for test-suite coverage check `scripts/test_*.py`: globbed to enumerate all test suites requiring coverage",
       "output": "stdout: `doc-drift OK: all invariants hold` when all checks pass stderr: numbered list of violated invariants with pattern, source, and rationale for each failure exit code 0 when all invariants pass; 1 when one or more are violated; 2 when a required input file is missing",
-      "desc": "Enforces parity between the authoritative behavior defined in SKILL.md and `scripts/confidence.py` and the human-readable documentation in `modes/*.md` and `docs/architecture/src/*.jsx`, preventing the class of silent drift found in the Senate audit of 2026-05-28 where four discrepancies had accumulated undetected. It runs four independent check families: text-based regex invariants (required/forbidden patterns in specific files), Trias confidence parity between `confidence.py`'s `VOTE_PATTERN_CONFIDENCE` dict and the `TRIAS_OUTCOMES` table in `trias.jsx` (parsed via AST and regex respectively), legacy MODE alias removal milestone enforcement (ensures dated removal comments accompany deprecated aliases in `validate_report.py`), and test-suite coverage (every `scripts/test_*.py` must appear in both `ci.yml` and the run-consilium driver). The script is intended to run before any commit that touches `modes/`, `docs/architecture/src/`, `scripts/confidence.py`, or `scripts/test_*.py`.",
+      "desc": "Enforces parity between the authoritative behavior defined in SKILL.md and `scripts/confidence.py` and the human-readable documentation in `modes/*.md` and `docs/architecture/src/*.jsx`, preventing the class of silent drift found in the design audit of 2026-05-28 where four discrepancies had accumulated undetected. It runs four independent check families: text-based regex invariants (required/forbidden patterns in specific files), Trias confidence parity between `confidence.py`'s `VOTE_PATTERN_CONFIDENCE` dict and the `TRIAS_OUTCOMES` table in `trias.jsx` (parsed via AST and regex respectively), legacy MODE alias removal milestone enforcement (ensures dated removal comments accompany deprecated aliases in `validate_report.py`), and test-suite coverage (every `scripts/test_*.py` must appear in both `ci.yml` and the run-consilium driver). The script is intended to run before any commit that touches `modes/`, `docs/architecture/src/`, `scripts/confidence.py`, or `scripts/test_*.py`.",
       "deps": [],
       "used_by": [],
       "satisfies": [],
@@ -306,7 +306,7 @@
       "contract": [
         "When there is only one candidate (no runner-up), `separation` defaults to `1.0` (`derive()` line: `else: separation = 1.0`). The existing Acceptance bullet covers this case explicitly.",
         "The 2-0 exemption from the WEAK floor flag is intentional. 2-0 means one personality had all candidates vetoed (a veto, not a deadlock) — a winner still emerged, so the run is structurally decisive. The lower base confidence (0.70 vs 0.75 for 2-1) already encodes the stronger risk signal; flagging it WEAK on top would be double-penalising.",
-        "The dissent (−0.10) and abstain (−0.15) penalties are applied only when the Steward personality is the dissenter/abstainer. Pioneer and Architect dissent/abstain carry no penalty because Steward (conservative-leaning, K=0.40) is the sole risk-anchor voice; its absence from the majority signals a materially higher risk that the base vote-pattern score does not capture."
+        "The dissent (−0.10) and abstain (−0.15) penalties are applied only when the Sentinel personality is the dissenter/abstainer. Essentialist and Verifier dissent/abstain carry no penalty because Sentinel (conservative-leaning, K=0.40) is the sole risk-anchor voice; its absence from the majority signals a materially higher risk that the base vote-pattern score does not capture."
       ],
       "verify": [
         "None - all questions resolved."
@@ -316,14 +316,14 @@
       "acc": [
         "Given a chosen candidate with `generator=0.8`, `control=0.9`, `conservator=0.1` (high utility, low risk, high agreement) and no runner-up, the output confidence is close to 0.99 (agreement near 1.0, separation defaults to 1.0).",
         "Given `chosen: null` in the input, the output is `{confidence: null, reason: \"...\"}` and the script exits 0.",
-        "Given `vote_pattern='2-1'` with a dissent list containing the Steward personality, the output confidence equals `VOTE_PATTERN_CONFIDENCE['2-1']` minus the `STEWARD_DISSENT_PENALTY` (0.10), rounded to 3 decimal places.",
+        "Given `vote_pattern='2-1'` with a dissent list containing the Sentinel personality, the output confidence equals `VOTE_PATTERN_CONFIDENCE['2-1']` minus the `SENTINEL_DISSENT_PENALTY` (0.10), rounded to 3 decimal places.",
         "Given `vote_pattern='3-0'`, `check_mode_floor` with `mode='trias'` returns `below_floor=false` regardless of the numeric floor, because 3-0 is in the decisive exempt set.",
         "Given a candidates list where one candidate is missing the `scores` key, the script exits 1 and prints a descriptive error to stderr before producing any output."
       ],
-      "accept": "- Given a chosen candidate with `generator=0.8`, `control=0.9`, `conservator=0.1` (high utility, low risk, high agreement) and no runner-up, the output confidence is close to 0.99 (agreement near 1.0, separation defaults to 1.0).\n- Given `chosen: null` in the input, the output is `{confidence: null, reason: \"...\"}` and the script exits 0.\n- Given `vote_pattern='2-1'` with a dissent list containing the Steward personality, the output confidence equals `VOTE_PATTERN_CONFIDENCE['2-1']` minus the `STEWARD_DISSENT_PENALTY` (0.10), rounded to 3 decimal places.\n- Given `vote_pattern='3-0'`, `check_mode_floor` with `mode='trias'` returns `below_floor=false` regardless of the numeric floor, because 3-0 is in the decisive exempt set.\n- Given a candidates list where one candidate is missing the `scores` key, the script exits 1 and prints a descriptive error to stderr before producing any output.",
+      "accept": "- Given a chosen candidate with `generator=0.8`, `control=0.9`, `conservator=0.1` (high utility, low risk, high agreement) and no runner-up, the output confidence is close to 0.99 (agreement near 1.0, separation defaults to 1.0).\n- Given `chosen: null` in the input, the output is `{confidence: null, reason: \"...\"}` and the script exits 0.\n- Given `vote_pattern='2-1'` with a dissent list containing the Sentinel personality, the output confidence equals `VOTE_PATTERN_CONFIDENCE['2-1']` minus the `SENTINEL_DISSENT_PENALTY` (0.10), rounded to 3 decimal places.\n- Given `vote_pattern='3-0'`, `check_mode_floor` with `mode='trias'` returns `below_floor=false` regardless of the numeric floor, because 3-0 is in the decisive exempt set.\n- Given a candidates list where one candidate is missing the `scores` key, the script exits 1 and prints a descriptive error to stderr before producing any output.",
       "input": "stdin or `--input` file: JSON object with `candidates` (list of `{id, scores: {generator, control, conservator}}`) and `chosen` (string or null) for score-based mode For Trias mode: JSON object with `vote_pattern` (e.g. `3-0`, `2-1`) and optional `dissent` and `abstained` lists instead of candidates/chosen CLI flag `--input`: path to JSON input file (default: stdin) `modes/*.md` frontmatter: read at import time to populate per-mode confidence floors (`confidence_floor` key)",
       "output": "stdout: JSON with `confidence` (float or null), `agreement` (float), `separation` (float or null), and optional `source` and `notes` fields When `chosen` is null or absent from candidates: JSON with `confidence: null` and `reason` string exit code 0 on success; exit code 1 on invalid input shape",
-      "desc": "Derives a calibrated confidence score for a deliberation result using two complementary signals: inter-voice agreement on the chosen candidate (measured as 1 minus the population stdev of the three voices after flipping Conservator from risk to safety, normalized against the theoretical maximum stdev) and separation from the runner-up candidate (difference in mean utility). The two signals are blended as `0.7 * agreement + 0.3 * separation` and clamped to `[0.05, 0.99]`. For Trias mode it bypasses voice-score arithmetic entirely and derives confidence from the democratic vote pattern via a hardcoded lookup table (`VOTE_PATTERN_CONFIDENCE`), applying Steward-specific penalties when the conservative personality dissents (-0.10) or abstains (-0.15). The `check_mode_floor` helper lets callers determine whether the derived confidence falls below the mode-specific floor loaded from `modes/*.md` frontmatter, exempting structurally decisive Trias vote patterns (3-0, 2-1, 2-0) from the WEAK flag.",
+      "desc": "Derives a calibrated confidence score for a deliberation result using two complementary signals: inter-voice agreement on the chosen candidate (measured as 1 minus the population stdev of the three voices after flipping Conservator from risk to safety, normalized against the theoretical maximum stdev) and separation from the runner-up candidate (difference in mean utility). The two signals are blended as `0.7 * agreement + 0.3 * separation` and clamped to `[0.05, 0.99]`. For Trias mode it bypasses voice-score arithmetic entirely and derives confidence from the democratic vote pattern via a hardcoded lookup table (`VOTE_PATTERN_CONFIDENCE`), applying Sentinel-specific penalties when the conservative personality dissents (-0.10) or abstains (-0.15). The `check_mode_floor` helper lets callers determine whether the derived confidence falls below the mode-specific floor loaded from `modes/*.md` frontmatter, exempting structurally decisive Trias vote patterns (3-0, 2-1, 2-0) from the WEAK flag.",
       "deps": [
         "CONSILIUM-UTILS-001"
       ],
@@ -655,77 +655,28 @@
       "risks": []
     },
     {
-      "id": "CONSILIUM-LENS-ARCHITECT-001",
+      "id": "CONSILIUM-LENS-ESSENTIALIST-001",
       "layer": "feature",
       "status": "confirmed",
       "area": "CONSILIUM",
-      "title": "architect lens",
-      "intent": "WHY: biases all three voices toward structural soundness, test coverage, and long-term maintainability over short-term speed or external novelty.",
+      "title": "essentialist lens",
+      "intent": "WHY: generator-heavy member of the Trias personality team — biases all three voices toward first-principles minimalism: every component must earn its existence, deletion is the default, and the viable minimum is preferred over accretion.",
       "contract": [
-        "The lens shall cause the voice it overlays to weight architectural cleanliness, type safety, clear abstractions, and test verifiability more heavily than it would by default, favoring candidates that strengthen invariants over those that loosen them.",
-        "The lens shall preserve each voice's standard structural role; it shifts evaluation priorities without replacing the role's core output or inflating/deflating raw numerical scores directly.",
-        "When applied to Conservator, the lens shall affect only the quality-progress adjustment on ; it shall not inflate  solely on the basis of absent tests.",
-        "The lens operates as an absolute structural constraint within its voice layer; trade-off judgments between architectural integrity and pragmatic speed are delegated to the multi-voice aggregator (democratic vote across Personality trio), not internalized in Architect's reasoning. There is no internal threshold for accepting pragmatic shortcuts — that balance is handled at aggregation.",
-        "The 'quality-progress path' is defined solely in the lens prompt (`architect_lens.md`), not in the Conservator voice contract; it refers to adjusting `regression_risk` upward when test coverage is weak relative to the change's scope.",
-        "'Ranking higher' is achieved by the voice shifting its qualitative judgment of which candidate is structurally sounder; no raw numerical score is changed by the lens — aggregator re-weighting (via personality weights in `personalities.py`) translates that judgment into the final ranking.",
-        "When Architect is applied to Conservator, the lens can affect which candidate Conservator prefers (lower `regression_risk` on one candidate makes it preferred), but the mechanism is constrained to the quality-progress adjustment on `regression_risk` — not a direct `risk_score` inflation."
-      ],
-      "verify": [
-        "None - all questions resolved."
-      ],
-      "notes": [],
-      "current_impl": [
-        "prompts/voices/architect_lens.md"
-      ],
-      "acc": [],
-      "accept": "AC-1\n  Given  two candidates — one well-structured with full test coverage, one faster to ship but with weaker abstractions and no new tests\n  When   the Architect lens is prepended to a core voice\n  Then   the voice ranks the well-structured, well-tested candidate higher regardless of implementation speed\n\nAC-2\n  Given  the Architect lens applied to the Conservator voice and a candidate with no new tests\n  When   the Conservator produces its risk assessment\n  Then   the  component may be adjusted upward via the quality-progress path, but  is not inflated solely because tests are absent",
-      "input": "",
-      "output": "",
-      "desc": "",
-      "deps": [
-        "CONSILIUM-PERSONALITIES-001"
-      ],
-      "used_by": [
-        "CONSILIUM-MODE-TRIAS-001"
-      ],
-      "satisfies": [],
-      "satisfied_by": [],
-      "members": [
-        {
-          "role": "implements",
-          "loc": "prompts/voices/architect_lens.md:25"
-        }
-      ],
-      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "milestone": "v1.0",
-      "priority": "",
-      "risks": []
-    },
-    {
-      "id": "CONSILIUM-LENS-PIONEER-001",
-      "layer": "feature",
-      "status": "confirmed",
-      "area": "CONSILIUM",
-      "title": "pioneer lens",
-      "intent": "WHY: biases all three voices toward boldness and upside — tolerating moderate risk and favoring novel, forward-moving solutions over safe, conservative ones.",
-      "contract": [
-        "The lens shall cause the voice it overlays to weight creative potential and forward momentum more heavily than it would by default, preferring ambitious candidates over safe ones when the two are otherwise comparable.",
+        "The lens shall cause the voice it overlays to interrogate each component's right to exist and to prefer the viable-minimum candidate when candidates are otherwise comparable.",
         "The lens shall preserve each voice's standard structural role (Generator produces candidates, Control verifies correctness, Conservator assesses risk); it shifts perception and priority without suppressing the role's core output.",
-        "When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not directly alter the numerical  formula or its component scores (, , etc.).",
-        "The Conservator carve-out is sufficient by design. Pioneer's influence is on narrative tone and meta_recommendation framing, not on the numerical risk gate. The  formula remains governed by Conservator's own logic, preserving Trias balance through democratic aggregation across all three voices.",
-        "'Magnitude calibration' means the `magnitude` label only (low/medium/high/critical); Pioneer shall not shift the `reversibility` component score or any other input to the `net_concern` formula.",
-        "The Pioneer lens adds no additional pressure on `unconventional_*` candidate selection beyond what the Generator voice contract already requires.",
-        "There is no defined minimum ambition gap for the lens to activate; when candidates differ in ambition, Pioneer always prefers the most ambitious one, even if the difference is marginal."
+        "When applied to Generator, the deletion bias shall order candidates smallest-first and always include a `do_nothing`/minimal candidate, while still producing the full 3-5 candidate spread — larger candidates are ranked lower, never censored.",
+        "When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not deflate the `net_concern` numerical formula or its component scores because a candidate \"deletes more\".",
+        "The lens is the generator-heavy Trias personality (weights generator 0.49 / control 0.30 / conservator 0.21) and is one of the three fixed personalities the Trias team dispatches."
       ],
       "verify": [
         "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [
-        "prompts/voices/pioneer_lens.md"
+        "prompts/voices/essentialist_lens.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given  a set of candidates evaluated under Trias, one clearly novel and higher-risk, one safe and incremental\n  When   the Pioneer lens is prepended to a core voice\n  Then   the voice's chosen or most-favored candidate is the novel/ambitious option rather than the safe/incremental one\n\nAC-2\n  Given  the Pioneer lens applied to the Conservator voice\n  When   the Conservator produces its risk assessment\n  Then   the  numerical value reflects the standard formula unchanged, while the  or magnitude label may reflect a more tolerant stance toward the ambitious candidate",
+      "accept": "AC-1\n  Given  a set of candidates evaluated under Trias, one minimal/deletion-based and one additive, otherwise comparable\n  When   the Essentialist lens is prepended to a core voice\n  Then   the voice's chosen or most-favored candidate is the minimal/deletion-based option\n\nAC-2\n  Given  the Essentialist lens applied to the Generator voice\n  When   the Generator produces its candidate spread\n  Then   the spread still contains 3-5 candidates including a do_nothing/minimal option, with larger candidates present but ranked lower",
       "input": "",
       "output": "",
       "desc": "",
@@ -740,36 +691,37 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/pioneer_lens.md:25"
+          "loc": "prompts/voices/essentialist_lens.md:37"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "milestone": "v1.0",
+      "milestone": "v1.1",
       "priority": "",
       "risks": []
     },
     {
-      "id": "CONSILIUM-LENS-STEWARD-001",
+      "id": "CONSILIUM-LENS-SENTINEL-001",
       "layer": "feature",
       "status": "confirmed",
       "area": "CONSILIUM",
-      "title": "steward lens",
-      "intent": "WHY: biases all three voices toward minimal-scope, reversible changes — prioritizing blast-radius reduction and protection of working systems over novelty or ambition.",
+      "title": "sentinel lens",
+      "intent": "WHY: conservator-heavy member of the Trias personality team — biases all three voices toward stress-testing: sketch the plausible adverse scenario per candidate, weigh probability × downside magnitude, name the counterparty, and treat silent failure modes as the heaviest risk class.",
       "contract": [
-        "The lens shall cause the voice it overlays to weight reversibility, minimal scope, and regression safety more heavily than it would by default, preferring smaller safe changes over larger ambitious ones when both are viable.",
-        "The lens shall preserve each voice's standard structural role; it shifts candidate ordering and priority without suppressing the full candidate set or altering the role's core output format.",
-        "When applied to Generator, the lens shall order candidates by smallest blast radius first but shall still produce the full required spread of candidates (3-5); it shall not suppress high-blast-radius candidates from the output.",
-        "\"Prefer existing patterns over new ones unless the new one is clearly necessary\" means: a new pattern is justified only when the existing pattern is INSUFFICIENT to meet the change requirements — not merely suboptimal or less elegant. \"Suboptimal but workable\" does NOT qualify as grounds for a new pattern."
+        "The lens shall cause the voice it overlays to weigh adverse scenarios (graceful / hard / silent failure) and counterparty exposure more heavily than it would by default, with silent failure modes weighted heaviest.",
+        "The lens shall preserve each voice's standard structural role; it shifts perception and priority without suppressing the role's core output.",
+        "When applied to Generator, stress framing shall be expressed in each candidate's risks/trade-off fields — the full 3-5 candidate spread is still produced, including higher-upside candidates; a candidate is never suppressed for having a stress scenario.",
+        "When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not inflate the `net_concern` numerical formula through vivid scenario prose.",
+        "The lens is the conservator-heavy Trias personality (weights generator 0.30 / control 0.30 / conservator 0.40) and is one of the three fixed personalities the Trias team dispatches."
       ],
       "verify": [
         "None - all questions resolved."
       ],
       "notes": [],
       "current_impl": [
-        "prompts/voices/steward_lens.md"
+        "prompts/voices/sentinel_lens.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given  two candidates — one minimal-scope and easily reversible, one larger in blast radius and harder to roll back\n  When   the Steward lens is prepended to a core voice\n  Then   the voice ranks or selects the minimal-scope, reversible candidate as preferred\n\nAC-2\n  Given  the Steward lens applied to the Generator voice\n  When   Generator produces its candidate list\n  Then   the list contains the full required number of candidates (no suppression of ambitious options), with minimal-blast-radius candidates listed first",
+      "accept": "AC-1\n  Given  two otherwise comparable candidates, one carrying a plausible silent-failure mode and one failing loudly\n  When   the Sentinel lens is prepended to a core voice\n  Then   the voice ranks the loud-failure candidate above the silent-failure one, and the silent-failure mode is surfaced explicitly\n\nAC-2\n  Given  the Sentinel lens applied to the Generator voice\n  When   the Generator produces its candidate spread\n  Then   the spread still contains 3-5 candidates including higher-upside options, each with its adverse scenario recorded in the risks/trade-off fields",
       "input": "",
       "output": "",
       "desc": "",
@@ -784,11 +736,56 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/steward_lens.md:25"
+          "loc": "prompts/voices/sentinel_lens.md:39"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "milestone": "v1.0",
+      "milestone": "v1.1",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-LENS-VERIFIER-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "verifier lens",
+      "intent": "WHY: control-heavy member of the Trias personality team — biases all three voices toward operational clarity: vague claims must be replaced with verifiable criteria, and candidates with checkable success signals are preferred over comparable ones whose success is a matter of opinion.",
+      "contract": [
+        "The lens shall cause the voice it overlays to replace vague quality terms with testable criteria and to name, per candidate, the signal distinguishing working from silently-not-working.",
+        "The lens shall preserve each voice's standard structural role; it shifts perception and priority without suppressing the role's core output.",
+        "When applied to Control, demanding testability shall not stall the verdict: an unverifiable claim lowers confidence and becomes a named condition — it is not an automatic BLOCK, and no unbounded evidence may be demanded before ruling.",
+        "When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not shift the `net_concern` numerical formula because a claim is merely well-phrased.",
+        "The lens is the control-heavy Trias personality (weights generator 0.30 / control 0.40 / conservator 0.30) and is one of the three fixed personalities the Trias team dispatches."
+      ],
+      "verify": [
+        "None - all questions resolved."
+      ],
+      "notes": [],
+      "current_impl": [
+        "prompts/voices/verifier_lens.md"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given  two otherwise comparable candidates, one with a checkable success criterion and one whose benefit is stated in vague terms\n  When   the Verifier lens is prepended to a core voice\n  Then   the voice's chosen or most-favored candidate is the one with the checkable criterion\n\nAC-2\n  Given  the Verifier lens applied to the Control voice and a chosen candidate carrying an unverifiable claim\n  When   Control produces its verdict\n  Then   the verdict is still issued, with the unverifiable claim surfaced as a named condition or confidence reduction rather than an automatic BLOCK",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-PERSONALITIES-001"
+      ],
+      "used_by": [
+        "CONSILIUM-MODE-TRIAS-001"
+      ],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "prompts/voices/verifier_lens.md:39"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.1",
       "priority": "",
       "risks": []
     },
@@ -1094,10 +1091,10 @@
       "status": "confirmed",
       "area": "CONSILIUM",
       "title": "trias mode",
-      "intent": "WHY: Apply three divergent personality lenses (Pioneer/Architect/Steward) each running a full dialectic deliberation, then resolve by democratic majority vote — providing genuine multi-perspective scrutiny for high-stakes, irreversible, or architecturally complex decisions.",
+      "intent": "WHY: Apply three divergent personality lenses (Essentialist/Verifier/Sentinel) each running a full dialectic deliberation, then resolve by democratic majority vote — providing genuine multi-perspective scrutiny for high-stakes, irreversible, or architecturally complex decisions.",
       "contract": [
         "The mode shall classify magnitude via `scope_gate.py` on the original unstripped context before any context stripping; when lazy routing is enabled (default), it shall downgrade to Sequential (low/medium magnitude) or Dialectic (high magnitude) and emit a structured `trias_lazy_routed` notification — full Trias (4 sub-agents nominal — 3 personalities + 1 post-vote Skeptic, ≈2.67× Sequential) runs only on `critical` magnitude or when the user explicitly requests it.",
-        "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Pioneer, Architect, Steward) **in parallel**, each running a complete Sequential deliberation (Generator → Conservator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch. There is **no pre-vote Skeptic** — the 2026-06-19 skeptic-lever redesign removed the 3 per-personality pre-vote Skeptics; the 3 returned `chosen_approach` values proceed directly to the vote.",
+        "When full Trias runs, the mode shall dispatch 3 personality sub-agents (Essentialist, Verifier, Sentinel) **in parallel**, each running a complete Sequential deliberation (Generator → Conservator → Control) internally with the personality lens prepended; each sub-agent receives context truncated to ≈15 000 tokens before dispatch. There is **no pre-vote Skeptic** — the 2026-06-19 skeptic-lever redesign removed the 3 per-personality pre-vote Skeptics; the 3 returned `chosen_approach` values proceed directly to the vote.",
         "After a decisive vote yields a winning `chosen_approach`, the mode shall dispatch exactly **one** Skeptic sub-agent (`skeptic_on_chosen`, per `prompts/voices/skeptic.md`) to challenge that winner **post-vote**, supplying the runner-up personality's rationale as a counter-hypothesis the Skeptic must attack (the coverage compensation for no longer challenging the losing candidates directly). The Skeptic is **advisory by default** — the vote stands and any objection is recorded as a caveat. Under `--skeptic-can-override`, a *demolishing* objection (`can_object: true` AND (`addressable == \"requires_redesign\"` OR a falsifier that defeats the `success_criterion`)) shall trigger a re-vote over the remaining `chosen_approach` values excluding the demolished winner; the new winner is itself challenged by one further `skeptic_on_chosen` (PEND if also demolished — no loop). Telemetry shall record `skeptic_challenges_count` and `post_vote_skeptic_used`. This post-vote Skeptic does **not** fire on a winner already resolved by the B2 deadlock cascade (the cascade's tiebreaker Skeptic already challenged it). Default policy is unconditional (Variant A); the confidence-gated Variant C (`--trias-skeptic-gate`, fire only when `confidence ∈ [0.0, 0.70)`) is off by default.",
         "The mode shall aggregate the 3 `chosen_approach` values via `aggregator.py --scheme team_vote`; if all 3 are unanimous (`vote_pattern: 3-0`), the team_vote step shall be skipped and `vote_skipped: true` set; confidence shall be derived from the vote pattern (3-0 → 0.95, 2-1 → 0.75, 2-0 → 0.70).",
         "When the vote pattern is 1-1-1 or 0-0-0, the B2 deadlock cascade shall fire: Round 2 re-dispatches all 3 personalities with peer context; if still deadlocked, a Skeptic tiebreaker sub-agent is dispatched; if unresolved, the result is PEND. Maximum cost is 7 sub-agents (3 + 3 + 1). `0-0-0` means all 3 personalities returned `chose: null` (each personality's internal Sequential ran `conservative_override` and vetoed every candidate); it is distinct from 1-1-1 (three different non-null choices) and is achievable without abstention — it occurs when every candidate exceeds the conservator veto threshold inside each sub-agent.",
@@ -1117,16 +1114,16 @@
         "modes/trias.md"
       ],
       "acc": [],
-      "accept": "AC-1\n  Given a deliberation request in trias mode with `magnitude: critical` (blocklist hit)\n  When  the mode runs\n  Then  3 personality sub-agents are dispatched in parallel (Pioneer, Architect, Steward), each producing a `chosen_approach`; the 3 chosens are aggregated via `team_vote` with no pre-vote Skeptic; then exactly one post-vote Skeptic (`skeptic_on_chosen`) challenges the winning candidate; and the report contains `vote_pattern`, `confidence`, `personalities[]` with each personality's `chose`, plus `skeptic_challenges_count` and `post_vote_skeptic_used`\n\nAC-2\n  Given a deliberation request in trias mode with `magnitude: high` and lazy routing enabled\n  When  the mode runs\n  Then  the mode downgrades to Dialectic, emits a `trias_lazy_routed: true` notification with `routed_to: \"dialectic\"`, and no Trias sub-agents are dispatched\n\nAC-3\n  Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)\n  When  the B2 cascade fires\n  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true`",
+      "accept": "AC-1\n  Given a deliberation request in trias mode with `magnitude: critical` (blocklist hit)\n  When  the mode runs\n  Then  3 personality sub-agents are dispatched in parallel (Essentialist, Verifier, Sentinel), each producing a `chosen_approach`; the 3 chosens are aggregated via `team_vote` with no pre-vote Skeptic; then exactly one post-vote Skeptic (`skeptic_on_chosen`) challenges the winning candidate; and the report contains `vote_pattern`, `confidence`, `personalities[]` with each personality's `chose`, plus `skeptic_challenges_count` and `post_vote_skeptic_used`\n\nAC-2\n  Given a deliberation request in trias mode with `magnitude: high` and lazy routing enabled\n  When  the mode runs\n  Then  the mode downgrades to Dialectic, emits a `trias_lazy_routed: true` notification with `routed_to: \"dialectic\"`, and no Trias sub-agents are dispatched\n\nAC-3\n  Given a full Trias run where all 3 personalities return different `chosen_approach` values (1-1-1 vote)\n  When  the B2 cascade fires\n  Then  Round 2 re-dispatches 3 sub-agents with peer context; if still 1-1-1, a Skeptic tiebreaker is dispatched; if unresolved, the report is marked PEND with `cascade_incomplete: true`",
       "input": "",
       "output": "",
       "desc": "",
       "deps": [
         "CONSILIUM-MODE-SEQUENTIAL-001",
         "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001",
-        "CONSILIUM-LENS-PIONEER-001",
-        "CONSILIUM-LENS-ARCHITECT-001",
-        "CONSILIUM-LENS-STEWARD-001",
+        "CONSILIUM-LENS-ESSENTIALIST-001",
+        "CONSILIUM-LENS-VERIFIER-001",
+        "CONSILIUM-LENS-SENTINEL-001",
         "CONSILIUM-PERSONALITIES-001"
       ],
       "used_by": [
@@ -1151,9 +1148,9 @@
       "status": "confirmed",
       "area": "CONSILIUM",
       "title": "personalities",
-      "intent": "Canonical registry of the three fixed Trias personalities (Pioneer/Architect/Steward) and their voice weights.",
+      "intent": "Canonical registry of the three fixed Trias personalities (Essentialist/Verifier/Sentinel) and their voice weights.",
       "contract": [
-        "Shall provide a deterministic registry of exactly three Trias personalities — Pioneer, Architect, Steward — each with a `name`, a `weights` dict (`generator`, `control`, `conservator` summing to 1.0), and a `lens` path.",
+        "Shall provide a deterministic registry of exactly three Trias personalities — Essentialist, Verifier, Sentinel — each with a `name`, a `weights` dict (`generator`, `control`, `conservator` summing to 1.0), and a `lens` path.",
         "`get_by_name()` shall return a deep copy of the personality dict so that runtime mutations do not affect subsequent calls.",
         "A legacy positional integer argument shall exit with code 2 and a migration message naming the three valid personality names."
       ],
@@ -1164,20 +1161,20 @@
       "current_impl": [],
       "acc": [
         "Running without arguments emits a JSON array of exactly 3 objects, each containing `name`, `weights` (with keys `generator`, `control`, `conservator` summing to 1.0), and `lens` (a path string).",
-        "Running with `--name pioneer` emits a single JSON object matching the Pioneer entry; the returned dict is a deep copy and mutations do not affect subsequent calls.",
+        "Running with `--name essentialist` emits a single JSON object matching the Essentialist entry; the returned dict is a deep copy and mutations do not affect subsequent calls.",
         "Running with a positional integer argument exits with code 2 and prints a migration message referencing the three valid personality names.",
         "`get_by_name('unknown')` raises `KeyError` with a message listing valid names.",
         "The weights for all three personalities each have `generator + control + conservator == 1.0` (within floating-point tolerance)."
       ],
-      "accept": "- Running without arguments emits a JSON array of exactly 3 objects, each containing `name`, `weights` (with keys `generator`, `control`, `conservator` summing to 1.0), and `lens` (a path string).\n- Running with `--name pioneer` emits a single JSON object matching the Pioneer entry; the returned dict is a deep copy and mutations do not affect subsequent calls.\n- Running with a positional integer argument exits with code 2 and prints a migration message referencing the three valid personality names.\n- `get_by_name('unknown')` raises `KeyError` with a message listing valid names.\n- The weights for all three personalities each have `generator + control + conservator == 1.0` (within floating-point tolerance).",
-      "input": "CLI flag `--name`: optional filter to emit a single personality by name (`pioneer | architect | steward`) Legacy positional argument N: rejected with exit code 2 and a migration message",
+      "accept": "- Running without arguments emits a JSON array of exactly 3 objects, each containing `name`, `weights` (with keys `generator`, `control`, `conservator` summing to 1.0), and `lens` (a path string).\n- Running with `--name essentialist` emits a single JSON object matching the Essentialist entry; the returned dict is a deep copy and mutations do not affect subsequent calls.\n- Running with a positional integer argument exits with code 2 and prints a migration message referencing the three valid personality names.\n- `get_by_name('unknown')` raises `KeyError` with a message listing valid names.\n- The weights for all three personalities each have `generator + control + conservator == 1.0` (within floating-point tolerance).",
+      "input": "CLI flag `--name`: optional filter to emit a single personality by name (`essentialist | verifier | sentinel`) Legacy positional argument N: rejected with exit code 2 and a migration message",
       "output": "JSON array of all three personality dicts emitted to stdout when called with no `--name` flag JSON object for a single personality emitted to stdout when `--name` is provided exit code 0 on success; exit code 2 when a legacy positional N argument is detected, with a human-readable migration message on stderr",
-      "desc": "Canonical registry of the three fixed Trias-mode personalities (Pioneer, Architect, Steward), each defined by a named set of voice-weighting coefficients and a path to a lens prompt file. It replaces the old random-sampling Ensemble approach (legacy `personalities.py <N>`) with deterministic, named characters so that Trias deliberations are reproducible and auditable. Each personality biases the weighted aggregation of Generator, Control, and Conservator scores differently: **Pioneer**: `generator 0.49 / control 0.30 / conservator 0.21` — skews toward novelty **Architect**: `generator 0.30 / control 0.40 / conservator 0.30` — balances around Control **Steward**: `generator 0.30 / control 0.30 / conservator 0.40` — skews toward risk-aversion All three vectors sum to 1.0 and differ meaningfully across personalities. The script is also imported as a library by the Trias orchestration layer via `get_by_name()`, which uses `copy.deepcopy()` to prevent mutation of the module-level `PERSONALITIES` list at runtime (guards against nested-dict mutation, not just reference aliasing).",
+      "desc": "Canonical registry of the three fixed Trias-mode personalities (Essentialist, Verifier, Sentinel), each defined by a named set of voice-weighting coefficients and a path to a lens prompt file. It replaces the old random-sampling Ensemble approach (legacy `personalities.py <N>`) with deterministic, named characters so that Trias deliberations are reproducible and auditable. Each personality biases the weighted aggregation of Generator, Control, and Conservator scores differently: **Essentialist**: `generator 0.49 / control 0.30 / conservator 0.21` — first-principles minimalism, generator-heavy **Verifier**: `generator 0.30 / control 0.40 / conservator 0.30` — operational/testable clarity, balances around Control **Sentinel**: `generator 0.30 / control 0.30 / conservator 0.40` — stress / silent-failure / counterparty, conservator-heavy All three vectors sum to 1.0 and differ meaningfully across personalities. The script is also imported as a library by the Trias orchestration layer via `get_by_name()`, which uses `copy.deepcopy()` to prevent mutation of the module-level `PERSONALITIES` list at runtime (guards against nested-dict mutation, not just reference aliasing).",
       "deps": [],
       "used_by": [
-        "CONSILIUM-LENS-ARCHITECT-001",
-        "CONSILIUM-LENS-PIONEER-001",
-        "CONSILIUM-LENS-STEWARD-001",
+        "CONSILIUM-LENS-ESSENTIALIST-001",
+        "CONSILIUM-LENS-SENTINEL-001",
+        "CONSILIUM-LENS-VERIFIER-001",
         "CONSILIUM-MODE-TRIAS-001",
         "CONSILIUM-TRIAS-MODEL-SCHEMA-001",
         "CONSILIUM-VALIDATE-REPORT-001"
@@ -1187,7 +1184,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "scripts/personalities.py:13"
+          "loc": "scripts/personalities.py:19"
         },
         {
           "role": "tested-by",
@@ -1561,10 +1558,10 @@
       "status": "confirmed",
       "area": "CONSILIUM",
       "title": "trias-model-assignment",
-      "intent": "Trias uniform model assignment: all 3 personalities (pioneer, architect, steward) use sonnet. No per-personality schema workarounds needed.",
+      "intent": "Trias uniform model assignment: all 3 personalities (essentialist, verifier, sentinel) use sonnet. No per-personality schema workarounds needed.",
       "contract": [
         "`scripts/personalities.py` shall expose a `PERSONALITIES` list where every entry carries a `model` field whose value controls which Claude model tier the Trias orchestrator dispatches for that sub-agent.",
-        "Model assignments shall be uniform: pioneer → `sonnet`, architect → `sonnet`, steward → `sonnet`.",
+        "Model assignments shall be uniform: essentialist → `sonnet`, verifier → `sonnet`, sentinel → `sonnet`.",
         "No personality entry shall carry `schema_less: True`. All personalities use standard StructuredOutput dispatch.",
         "The `personalities.py` CLI shall emit a valid JSON array of exactly 3 objects, each with at minimum a `model` field, for use by the Trias orchestrator at runtime."
       ],
@@ -1593,7 +1590,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "scripts/personalities.py:14"
+          "loc": "scripts/personalities.py:20"
         },
         {
           "role": "tested-by",
@@ -1808,7 +1805,7 @@
       "accept": "- With `_git` stubbed to fail: `consilium_version() == \"unknown\"`, `consilium_ref() == \"\"`, `ref_resolves(\"abc\") is False`, `prompts_changed_since(\"abc\") == 0` (`scripts/test_version.py`).\n- With a dirty-tree stub: `consilium_ref() == \"\"`; with a clean-tree stub: `consilium_ref()` equals the HEAD sha.\n- `ref_resolves(\"\")` and `ref_resolves(\"unknown\")` are False without a git call.\n- On a real repo, `consilium_version()` returns a non-empty string.",
       "input": "The git repository state of the Consilium checkout (`git describe`, `git status --porcelain`, `git rev-parse`), read via subprocess `prompts_changed_since(ref)` / `--drift <ref>`: a prior `consilium_ref` value to diff `prompts/` + `modes/` against CLI flags: `--version` (default), `--ref`, `--drift <ref>`",
       "output": "`consilium_version()` → non-empty display string, `\"unknown\"` when git is unavailable `consilium_ref()` → committed HEAD sha (clean tree) or `\"\"` (dirty/unknown tree) `ref_resolves(ref)` → bool; short-circuits `\"\"`/`\"unknown\"` to False without a git call `prompts_changed_since(ref)` → int ≥ 0, never raises CLI prints the requested value to stdout; exit 0",
-      "desc": "Single home for version provenance, separated from report assembly (`build_report`, which merely consumes these values). `consilium_version()` returns the human display stamp (`git describe --tags --always --dirty`) and FAILS OPEN to `\"unknown\"` when git is absent or errors. `consilium_ref()` returns the resolvable diff operand: the committed HEAD sha on a clean tree, and `\"\"` — by contract, never a `<sha>-dirty` string — on a dirty or unknown tree, so a recorded ref is always `git checkout`-able. `prompts_changed_since(ref)` counts prompt/mode files changed since a prior ref and NEVER raises: it returns 0 on `\"\"`/`\"unknown\"`/unreachable refs, so the Step-0 `prompt_drift` advisory can call it unconditionally. Origin of the split: Senate 2026-05-31_200016 (versioning-provenance-design); retagged out of CONSILIUM-BUILD-REPORT-001 on 2026-07-03 (Senate backlog-disposition audit, item b) because impact analysis on the report assembler was pulling in unrelated provenance code.",
+      "desc": "Single home for version provenance, separated from report assembly (`build_report`, which merely consumes these values). `consilium_version()` returns the human display stamp (`git describe --tags --always --dirty`) and FAILS OPEN to `\"unknown\"` when git is absent or errors. `consilium_ref()` returns the resolvable diff operand: the committed HEAD sha on a clean tree, and `\"\"` — by contract, never a `<sha>-dirty` string — on a dirty or unknown tree, so a recorded ref is always `git checkout`-able. `prompts_changed_since(ref)` counts prompt/mode files changed since a prior ref and NEVER raises: it returns 0 on `\"\"`/`\"unknown\"`/unreachable refs, so the Step-0 `prompt_drift` advisory can call it unconditionally. Origin of the split: review 2026-05-31_200016 (versioning-provenance-design); retagged out of CONSILIUM-BUILD-REPORT-001 on 2026-07-03 (review backlog-disposition audit, item b) because impact analysis on the report assembler was pulling in unrelated provenance code.",
       "deps": [],
       "used_by": [],
       "satisfies": [],
@@ -2071,7 +2068,7 @@
       "status": "confirmed",
       "area": "CONSILIUM",
       "title": "Trias vote degeneracy measurement",
-      "intent": "Empirically measures whether the Trias \"democratic vote\" carries signal by computing the 3-0 unanimity rate across Trias runs in the corpus — testing the hypothesis that 3 personality lenses on the same model are correlated and always agree (Senate audit 2026-05-26).",
+      "intent": "Empirically measures whether the Trias \"democratic vote\" carries signal by computing the 3-0 unanimity rate across Trias runs in the corpus — testing the hypothesis that 3 personality lenses on the same model are correlated and always agree (design audit 2026-05-26).",
       "contract": [
         "Shall scan `.consilium/runs/*.json` for genuine Trias runs (mode field = `\"trias\"` or `\"trias_split\"` exactly) and tally vote-pattern distribution.",
         "Shall report `vote_degenerate: true` if 3-0 unanimity rate > threshold (default 0.85) and n ≥ min-n (default 20); `\"insufficient\"` when n < min-n; `false` otherwise.",
@@ -2082,7 +2079,7 @@
         "The default threshold of 0.85 is calibration-provisional; it shall be revisited once n ≥ min-n genuine Trias runs exist. The `insufficient` verdict already defers judgment until that corpus exists."
       ],
       "verify": [
-        "None — contract matches script docstring and Senate audit 2026-05-26 intent exactly."
+        "None — contract matches script docstring and design audit 2026-05-26 intent exactly."
       ],
       "notes": [],
       "current_impl": [
@@ -2225,15 +2222,15 @@
       "CONSILIUM-UTILS-001"
     ],
     [
-      "CONSILIUM-LENS-ARCHITECT-001",
+      "CONSILIUM-LENS-ESSENTIALIST-001",
       "CONSILIUM-PERSONALITIES-001"
     ],
     [
-      "CONSILIUM-LENS-PIONEER-001",
+      "CONSILIUM-LENS-SENTINEL-001",
       "CONSILIUM-PERSONALITIES-001"
     ],
     [
-      "CONSILIUM-LENS-STEWARD-001",
+      "CONSILIUM-LENS-VERIFIER-001",
       "CONSILIUM-PERSONALITIES-001"
     ],
     [
@@ -2306,15 +2303,15 @@
     ],
     [
       "CONSILIUM-MODE-TRIAS-001",
-      "CONSILIUM-LENS-PIONEER-001"
+      "CONSILIUM-LENS-ESSENTIALIST-001"
     ],
     [
       "CONSILIUM-MODE-TRIAS-001",
-      "CONSILIUM-LENS-ARCHITECT-001"
+      "CONSILIUM-LENS-VERIFIER-001"
     ],
     [
       "CONSILIUM-MODE-TRIAS-001",
-      "CONSILIUM-LENS-STEWARD-001"
+      "CONSILIUM-LENS-SENTINEL-001"
     ],
     [
       "CONSILIUM-MODE-TRIAS-001",

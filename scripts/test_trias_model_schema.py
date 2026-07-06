@@ -23,9 +23,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PERSONALITIES_PATH = REPO_ROOT / "scripts" / "personalities.py"
 
 EXPECTED = {
-    "pioneer": {"model": "sonnet", "schema_less": False},
-    "architect": {"model": "sonnet", "schema_less": False},
-    "steward": {"model": "sonnet", "schema_less": False},
+    "essentialist": {"model": "sonnet", "schema_less": False},
+    "verifier": {"model": "sonnet", "schema_less": False},
+    "sentinel": {"model": "sonnet", "schema_less": False},
 }
 
 

@@ -9,7 +9,7 @@ risk: 1
 
 # Trias vote degeneracy measurement
 
-> Empirically measures whether the Trias "democratic vote" carries signal by computing the 3-0 unanimity rate across Trias runs in the corpus — testing the hypothesis that 3 personality lenses on the same model are correlated and always agree (Senate audit 2026-05-26).
+> Empirically measures whether the Trias "democratic vote" carries signal by computing the 3-0 unanimity rate across Trias runs in the corpus — testing the hypothesis that 3 personality lenses on the same model are correlated and always agree (design audit 2026-05-26).
 
 ## WHAT — Contract
 
@@ -23,7 +23,7 @@ risk: 1
 
 ## WHAT — Verify intent (open questions for the human)
 
-- None — contract matches script docstring and Senate audit 2026-05-26 intent exactly.
+- None — contract matches script docstring and design audit 2026-05-26 intent exactly.
 
 ## HOW — Acceptance (= tests)
 

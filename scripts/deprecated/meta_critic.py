@@ -123,7 +123,7 @@ def pass2_revision_quality(bundle: dict) -> float | None:
 
 
 def personalities_divergence(bundle: dict) -> float | None:
-    """For Trias mode: fraction of personalities (Pioneer/Architect/Steward)
+    """For Trias mode: fraction of personalities (Essentialist/Verifier/Sentinel)
     that picked different `chosen` candidates. Returns None outside Trias.
 
     1.0 = full divergence (3 different chosen IDs).

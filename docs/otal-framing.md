@@ -66,14 +66,14 @@ readers don't assume an unwired feedback channel exists.
 beyond Step 5d's single retry, does not name a meta-controller, and does not authorize
 voices or aggregator to cite "OTAL step X" as ground for new behavior. If a future
 proposal seeks behavioral iteration triggers (e.g. firing a second pass on
-`meta_critic.generator_divergence < 0.4`), that requires its own Senate audit with
+`meta_critic.generator_divergence < 0.4`), that requires its own design audit with
 empirical pilot data — `generator_divergence` had zero labeled triggering events in
 `runs/`, so any threshold would be uncalibrated. A dynamic meta-controller is
 explicitly out of scope: its TODO precondition (item #16) was dropped in triage, and
 recursive routing contradicts Constitution Principle 2 (Simplicity first).
 
-> **TODO #18 closure rationale** (2026-05-19 Senate audit,
-> `runs/senate/2026-05-19_214850-todo-18-otal-formalization.json`, MODIFY 0-8-1): 8 of
+> **TODO #18 closure rationale** (2026-05-19 design audit,
+> `an internal design audit`, MODIFY 0-8-1): 8 of
 > 9 senators converged on docs-only framing. Level 2 (iteration triggers) deferred
 > until ≥3 PEND rows in `FEEDBACK.html` demonstrate the current `confidence<0.7` retry
 > underperforms. Level 3 (meta-controller) closed pending #16's revival.
