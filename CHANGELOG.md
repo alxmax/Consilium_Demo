@@ -32,6 +32,16 @@ under the Business Source License 1.1 (see `LICENSE`).
 - Install docs: `.consilium/` gitignore noted as recommended-but-preference
   (keep tracked if you want the trail versioned) (#477).
 
+## [1.4.0] — 2026-07-06
+
+### Added
+- Plugin manifest version-coherence gate: `scripts/check_versions.py` asserts
+  `plugin.json` and `marketplace.json` semver agree, and CI now requires that
+  any `plugin.json` version bump ships with a matching CHANGELOG entry —
+  mirroring `requirement-manager`'s check. `marketplace.json` gained a
+  `version` field for the first time (previously absent, now tracking
+  `plugin.json`).
+
 ## [1.1] — 2026-06
 
 ### Changed

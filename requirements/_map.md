@@ -1,6 +1,6 @@
 ---
-generated: 2026-07-06 16:46
-nodes: 43
+generated: 2026-07-06 19:13
+nodes: 44
 edges: 53
 ---
 
@@ -19,6 +19,7 @@ graph LR
     CONSILIUM_BUILD_REPORT_001["build_report<br><small>CONSILIUM-BUILD-REPORT-001</small>"]
     CONSILIUM_CHECK_DOC_DRIFT_001["check_doc_drift<br><small>CONSILIUM-CHECK-DOC-DRIFT-001</small>"]
     CONSILIUM_CHECK_PUBLIC_LEAK_001["check_public_leak<br><small>CONSILIUM-CHECK-PUBLIC-LEAK-001</small>"]
+    CONSILIUM_CHECK_VERSIONS_001["check_versions<br><small>CONSILIUM-CHECK-VERSIONS-001</small>"]
     CONSILIUM_CONFIDENCE_001["confidence<br><small>CONSILIUM-CONFIDENCE-001</small>"]
     CONSILIUM_FEEDBACK_001["feedback<br><small>CONSILIUM-FEEDBACK-001</small>"]
     CONSILIUM_IMPLEMENT_CODER_001["implement-coder<br><small>CONSILIUM-IMPLEMENT-CODER-001</small>"]
@@ -126,6 +127,11 @@ graph LR
   CONSILIUM_CHECK_PUBLIC_LEAK_001 -->|implements| f_scripts_check_public_leak_py_15
   f_scripts_test_public_leak_py_12["scripts/test_public_leak.py:12"]
   CONSILIUM_CHECK_PUBLIC_LEAK_001 -->|tested-by| f_scripts_test_public_leak_py_12
+  CONSILIUM_CHECK_VERSIONS_001["check_versions<br><small>CONSILIUM-CHECK-VERSIONS-001</small>"]
+  f_scripts_check_versions_py_25["scripts/check_versions.py:25"]
+  CONSILIUM_CHECK_VERSIONS_001 -->|implements| f_scripts_check_versions_py_25
+  f_scripts_test_check_versions_py_8["scripts/test_check_versions.py:8"]
+  CONSILIUM_CHECK_VERSIONS_001 -->|tested-by| f_scripts_test_check_versions_py_8
   CONSILIUM_CONFIDENCE_001["confidence<br><small>CONSILIUM-CONFIDENCE-001</small>"]
   f_modes_confidence_md_60["modes/confidence.md:60"]
   CONSILIUM_CONFIDENCE_001 -->|implements| f_modes_confidence_md_60
@@ -293,7 +299,7 @@ _Area-level coupling: one box per area (N caps), arrow A->B = some capability in
 
 ```mermaid
 graph LR
-  a_CONSILIUM["CONSILIUM<br><small>42 caps</small>"]
+  a_CONSILIUM["CONSILIUM<br><small>43 caps</small>"]
   a_misc["misc<br><small>1 caps</small>"]
   a_misc --> a_CONSILIUM
   style a_CONSILIUM stroke-width:3px
