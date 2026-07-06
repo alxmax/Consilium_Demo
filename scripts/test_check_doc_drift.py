@@ -1,8 +1,9 @@
-"""Regression tests for check_doc_drift.py's two 2026-07-06 self-audit invariants:
-_ci_checks_completeness_failures (CI_CHECKS <-> ci.yml) and
-check_trias_personality_name_parity (Trias team names vs personalities.py).
+"""Regression tests for check_doc_drift.py's 2026-07-06 self-audit invariants:
+_ci_checks_completeness_failures (CI_CHECKS <-> ci.yml),
+check_trias_personality_name_parity (Trias team names vs personalities.py), and
+check_implement_pipeline_spec_alignment (subagents/cost vs GATE_ITEMS).
 
-Scope: these two new invariants only -- check_doc_drift.py's other checks are
+Scope: these new invariants only -- check_doc_drift.py's other checks are
 exercised by running the real gate in CI, per its own docstring.
 
 Run: python scripts/test_check_doc_drift.py
@@ -182,6 +183,36 @@ class TriasPersonalityNameParity(unittest.TestCase):
         finally:
             cdd._read = orig
         self.assertTrue(any("make_full_architecture.py" in f and "architect" in f for f in fails))
+
+
+class ImplementPipelineSpecAlignment(unittest.TestCase):
+    def test_real_repo_files_pass_clean(self):
+        self.assertEqual(cdd.check_implement_pipeline_spec_alignment(), [])
+
+    def test_missing_subagent_count_detected(self):
+        real = cdd._read("docs/architecture/src/extras.jsx")
+        stale = real.replace("3 sub-agents · ~1.1× tokens", "n/a")
+        orig = cdd._read
+        cdd._read = lambda rel: stale if rel == "docs/architecture/src/extras.jsx" else orig(rel)
+        try:
+            fails = cdd.check_implement_pipeline_spec_alignment()
+        finally:
+            cdd._read = orig
+        self.assertEqual(len(fails), 2)
+        self.assertTrue(any("3 sub-agent" in f for f in fails))
+        self.assertTrue(any("1.1" in f for f in fails))
+
+    def test_missing_frontmatter_field_exits_2(self):
+        real = cdd._read("modes/implement_pipeline.md")
+        stale = real.replace("subagents: 3\n", "")
+        orig = cdd._read
+        cdd._read = lambda rel: stale if rel == "modes/implement_pipeline.md" else orig(rel)
+        try:
+            with self.assertRaises(SystemExit) as ctx:
+                cdd.check_implement_pipeline_spec_alignment()
+            self.assertEqual(ctx.exception.code, 2)
+        finally:
+            cdd._read = orig
 
 
 if __name__ == "__main__":

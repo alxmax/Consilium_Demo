@@ -32,6 +32,17 @@ under the Business Source License 1.1 (see `LICENSE`).
 - Install docs: `.consilium/` gitignore noted as recommended-but-preference
   (keep tracked if you want the trail versioned) (#477).
 
+## [1.4.3] — 2026-07-06
+
+### Fixed
+- The "Code integration pipeline" explainer section (`docs/architecture/src/extras.jsx`
+  `ImplementSection`) never stated its own sub-agent count (3) or cost multiplier
+  (~1.1×) anywhere in its text, unlike every other mode/flag (Sequential,
+  Dialectic, Trias, `skeptic_on_chosen`), which all state cost + sub-agent count
+  explicitly. Added the missing stat to `GATE_ITEMS` and a new
+  `check_doc_drift.py` invariant (`check_implement_pipeline_spec_alignment`)
+  pinning it against `modes/implement_pipeline.md`'s frontmatter.
+
 ## [1.4.2] — 2026-07-06
 
 ### Fixed
