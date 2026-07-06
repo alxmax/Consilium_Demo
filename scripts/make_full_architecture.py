@@ -63,9 +63,9 @@ s.enclose(voices, label="Core voices  (prompts/voices/)", pad=16)
 
 # Row 2: Trias personality lenses
 lenses = s.row([
-    ("pioneer_lens.md", "skeptic"),
-    ("architect_lens.md", "skeptic"),
-    ("steward_lens.md", "skeptic"),
+    ("essentialist_lens.md", "skeptic"),
+    ("verifier_lens.md", "skeptic"),
+    ("sentinel_lens.md", "skeptic"),
 ], 80, y + 162, w=178, h=55, gap=20, font_size=13)
 s.enclose(lenses, label="Trias personality lenses", pad=16)
 
@@ -171,9 +171,9 @@ tri_y = dia_y + 260
 dispatch_box = s.box("Orchestrator\ndispatch", 120, tri_y + 62, w=148, h=58,
                      fill="external", font_size=12)
 personalities_row = s.row([
-    ("Pioneer\n(Sequential)", "skeptic"),
-    ("Architect\n(Sequential)", "skeptic"),
-    ("Steward\n(Sequential)", "skeptic"),
+    ("Essentialist\n(Sequential)", "skeptic"),
+    ("Verifier\n(Sequential)", "skeptic"),
+    ("Sentinel\n(Sequential)", "skeptic"),
 ], 466, tri_y + 56, w=162, h=68, gap=45, font_size=12)
 pgroup = s.enclose(personalities_row, pad=14)
 s.label("3 sub-agents  BLIND  (sonnet)", 754, tri_y + 48, size=11)
@@ -294,7 +294,7 @@ s.glossary([
     ("SKILL.md", "public contract — skill prompt loaded by Claude Code at invocation"),
     ("Sequential", "Generator -> Conservator -> Control in a single context"),
     ("Dialectic", "Sequential + one Skeptic sub-agent challenging the chosen answer"),
-    ("Trias", "3 blind personalities (Pioneer/Architect/Steward) + team vote + 1 post-vote Skeptic"),
+    ("Trias", "3 blind personalities (Essentialist/Verifier/Sentinel) + team vote + 1 post-vote Skeptic"),
     ("skeptic_on_chosen", "composable flag: Skeptic sub-agent auto-triggers at confidence in [0.0,0.7]"),
     ("scale_down", "Conservator meta_recommendation -> skip Control (trivial / low-risk change)"),
     ("lazy routing", "Trias downgrades by magnitude: low/med->Sequential, high->Dialectic, critical->Trias"),

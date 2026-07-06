@@ -109,6 +109,7 @@ def smoke():
         "test_public_leak.py",
         "test_render_impl_preview.py",
         "test_check_versions.py",
+        "test_check_doc_drift.py",
     ):
         failures += run(suite, script(suite)).returncode != 0
     failures += run("check_doc_drift.py", script("check_doc_drift.py")).returncode != 0

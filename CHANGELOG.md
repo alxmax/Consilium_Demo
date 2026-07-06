@@ -32,6 +32,29 @@ under the Business Source License 1.1 (see `LICENSE`).
 - Install docs: `.consilium/` gitignore noted as recommended-but-preference
   (keep tracked if you want the trail versioned) (#477).
 
+## [1.4.2] — 2026-07-06
+
+### Fixed
+- Architecture explainer, README, benchmark instructions, and the
+  `consilium_full` poster generator still named the retired Trias personality
+  team (Pioneer/Architect/Steward) after the v3 lens rename (PR
+  #482) replaced it with Essentialist/Verifier/Sentinel. Renamed everywhere
+  (with descriptions rewritten to match each personality's actual lens, not
+  just the label), regenerated both derived HTML artifacts, and added a new
+  `check_doc_drift.py` invariant (`check_trias_personality_name_parity`) so a
+  future personality-team change can't silently miss the explainer again.
+
+## [1.4.1] — 2026-07-06
+
+### Fixed
+- Architecture explainer: the "What the CI green-gate runs" section had silently
+  fallen behind `ci.yml` — PR #485's `check_versions.py` + CHANGELOG-entry gate
+  had no matching `CI_CHECKS` card. Added the missing card and a new
+  `check_doc_drift.py` invariant (`check_ci_checks_completeness`) that fails CI
+  if a future gate ships with no matching card or explicit allowlist entry.
+  Found by a Trias self-audit (3-0, confidence 0.95); the post-vote Skeptic
+  caught and fixed an under-specified matching rule before it shipped.
+
 ## [1.4.0] — 2026-07-06
 
 ### Added
