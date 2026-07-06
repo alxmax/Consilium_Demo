@@ -74,6 +74,6 @@ recursive routing contradicts Constitution Principle 2 (Simplicity first).
 
 > **TODO #18 closure rationale** (2026-05-19 design audit,
 > `an internal design audit`, MODIFY 0-8-1): 8 of
-> 9 senators converged on docs-only framing. Level 2 (iteration triggers) deferred
+> 9 reviewers converged on docs-only framing. Level 2 (iteration triggers) deferred
 > until ≥3 PEND rows in `FEEDBACK.html` demonstrate the current `confidence<0.7` retry
 > underperforms. Level 3 (meta-controller) closed pending #16's revival.
