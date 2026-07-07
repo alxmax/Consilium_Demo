@@ -240,7 +240,7 @@ def build(bundle: dict) -> dict:
     }
     # Persist Control's declared falsifier so mark_outcome.py --auto-suggest can
     # read it back when the outcome is scored later (consumer wired 2026-07-07;
-    # senate run 2026-07-07_011914 required consumer-first).
+    # design review 2026-07-07_011914 required consumer-first).
     _control_step = report["deliberation_log"][1]
     if "strongest_objection" in control:
         _control_step["strongest_objection"] = control["strongest_objection"]

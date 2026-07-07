@@ -7,9 +7,9 @@ under the Business Source License 1.1 (see `LICENSE`).
 ## [1.6.0] — 2026-07-07
 
 ### Added
-- Declared falsifier on the chosen approach, **consumer-first** (Senate run
+- Declared falsifier on the chosen approach, **consumer-first** (design review
   `2026-07-07_011914-consilium-falsifier-round2-control-voice`, MODIFY 0/8/1
-  — implement-now rejected; this ships the Senate-revised trim instead of the
+  — implement-now rejected; this ships the review-revised trim instead of the
   original clause): (1) `build_report.py` now persists Control's
   `strongest_objection` + `no_blocking_defect_attested` into the run JSON's
   control step — previously emitted mid-deliberation but never persisted;
@@ -29,17 +29,16 @@ under the Business Source License 1.1 (see `LICENSE`).
 ## [1.5.0] — 2026-07-07
 
 ### Added
-- Prompt-only discipline transplant from the Senate skill into the 3 core
-  voices (`prompts/voices/generator.md`, `conservator.md`, `control.md`):
+- Prompt-only discipline transplant from an internal design-review framework
+  into the 3 core voices (`prompts/voices/generator.md`, `conservator.md`, `control.md`):
   a Conservator silent-failure question (Q6), a merged Control rule requiring
   `strongest_objection` to be a testable claim anchored to a declared
   `hidden_assumptions` premise, a materiality/polite-retreat discipline on all
   three voices, and a `## Limits` disjointness section per voice. No JSON
   schema change, no new dispatches, no `aggregator.py`/`validate_report.py`
-  edits — purely additive prompt text. Per Senate run
-  `2026-07-06_093007-consilium-voice-lenses-from-senators` (GO_WITH_CONDITIONS)
-  and the trimmed spec from its senators' cross-questioning (Musk's final
-  condition). `test_lens_bias.py` (4/4), `test_vote_degeneracy.py` (4/4), and
+  edits — purely additive prompt text. Per design review run
+  `2026-07-06_093007` (GO_WITH_CONDITIONS) and the trimmed spec from its
+  reviewers' cross-questioning (the final blocking condition). `test_lens_bias.py` (4/4), `test_vote_degeneracy.py` (4/4), and
   `run_evals.py` (65/0) are identical before and after — zero verdict
   inversions. Manually verified on one qualitative example (not part of the
   scored corpus) that the new clauses produce the intended behavior: Q6 names

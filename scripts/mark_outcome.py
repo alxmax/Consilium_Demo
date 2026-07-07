@@ -145,7 +145,7 @@ def main(argv: list[str] | None = None) -> int:
         print("mark_outcome: provide --run-path OR (--date AND --chosen)", file=sys.stderr)
         return 1
 
-    # Consumer for the declared falsifier (senate run 2026-07-07_011914:
+    # Consumer for the declared falsifier (design review 2026-07-07_011914:
     # consumer-first). Explicit --reason always wins; auto-suggest only fills
     # the gap, and degrades gracefully on runs that predate the field.
     if args.auto_suggest and not args.reason and args.run_path:
