@@ -373,6 +373,92 @@ def test_mark_outcome_happy_path():
         assert "[confirmed]" in parsed[0]["note"]
 
 
+def test_mark_outcome_auto_suggest_reads_falsifier():
+    """--auto-suggest with no explicit --reason pulls the declared falsifier
+    (Control's strongest_objection.reason) from the run JSON as the default reason."""
+    import subprocess
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import feedback  # noqa: E402
+
+    with tempfile.TemporaryDirectory() as td:
+        feedback_path = Path(td) / "FEEDBACK.html"
+        runs_dir = Path(td) / "runs"
+        runs_dir.mkdir()
+
+        run_file = runs_dir / "2026-07-07_falsifier-test.json"
+        run_file.write_text(json.dumps({
+            "chosen_approach": "approach_f",
+            "deliberation_log": [
+                {"step": "generator", "candidates": [{"id": "approach_f"}]},
+                {"step": "control", "verdicts": [{"id": "approach_f", "valid": True}],
+                 "strongest_objection": {"target_id": None,
+                                         "reason": "wrong if error rate exceeds 2% in week 1"},
+                 "no_blocking_defect_attested": True},
+                {"step": "aggregate", "scheme": "sequential", "result": {"chosen": "approach_f"}},
+            ],
+        }), encoding="utf-8")
+
+        # Seed a row whose sidecar maps to the run path.
+        e = rfh.Entry(date="2026-07-07", context="falsifier-test", chosen="approach_f",
+                      outcome="PEND", note="conf=0.8")
+        feedback_path.write_text(rfh.render([e], runs_dir=runs_dir), encoding="utf-8")
+        import importlib.util as _ilu
+        spec = _ilu.spec_from_file_location("lf", ROOT / "scripts" / "log_feedback.py")
+        assert spec and spec.loader
+        lf = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(lf)
+        fp = lf._fingerprint("2026-07-07", "approach_f", "falsifier-test",
+                             run_id=run_file.name)
+        (runs_dir / ".run_path_map.json").write_text(
+            json.dumps({fp: f"runs/{run_file.name}"}), encoding="utf-8")
+
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "mark_outcome.py"),
+             "--feedback", str(feedback_path),
+             "--run-path", str(run_file),
+             "--outcome", "BAD",
+             "--auto-suggest"],
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 0, f"stderr: {result.stderr.decode()}"
+        parsed = feedback.parse_feedback(feedback_path)
+        assert len(parsed) == 1
+        assert parsed[0]["outcome"] == "BAD"
+        assert "wrong if error rate exceeds 2% in week 1" in parsed[0]["note"], \
+            f"falsifier not in note: {parsed[0]['note']!r}"
+
+    # explicit --reason must still win over auto-suggest (no falsifier override)
+    with tempfile.TemporaryDirectory() as td:
+        feedback_path = Path(td) / "FEEDBACK.html"
+        runs_dir = Path(td) / "runs"
+        runs_dir.mkdir()
+        run_file = runs_dir / "2026-07-07_falsifier-test2.json"
+        run_file.write_text(json.dumps({
+            "deliberation_log": [
+                {"step": "control", "verdicts": [],
+                 "strongest_objection": {"target_id": None, "reason": "should not appear"}},
+            ],
+        }), encoding="utf-8")
+        e = rfh.Entry(date="2026-07-07", context="falsifier-test2", chosen="approach_g",
+                      outcome="PEND", note="conf=0.8")
+        feedback_path.write_text(rfh.render([e], runs_dir=runs_dir), encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "mark_outcome.py"),
+             "--feedback", str(feedback_path),
+             "--date", "2026-07-07", "--chosen", "approach_g",
+             "--outcome", "BAD",
+             "--auto-suggest",
+             "--reason", "explicit wins"],
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 0, f"stderr: {result.stderr.decode()}"
+        parsed = feedback.parse_feedback(feedback_path)
+        assert "outcome_reason=explicit wins" in parsed[0]["note"]
+        assert "should not appear" not in parsed[0]["note"]
+
+
 def test_main_bom_prefixed_stdin_renders():
     """main() tolerates a leading UTF-8 BOM (PowerShell pipe) instead of crashing."""
     import subprocess

@@ -38,9 +38,13 @@ Maximum 5 terms. If you identify more than 5, pick the 5 most load-bearing ones.
 - `fixed_constraints` = cannot change (legal, technical impossibility, hard deadline)
 - `negotiable_constraints` = could be relaxed with trade-offs (budget, timeline, scope)
 
-**Q5 — Mandatory dissent:** If any candidate has a latent defect not captured by your per-candidate `valid`/`issues` — name it with one concrete, cited reason (file:line, a failing test, or a specific failure mode): set `strongest_objection.target_id` to that candidate's id and `strongest_objection.reason` to the cited reason. If after honest review NO candidate has a latent defect beyond what is already in `issues`, set `strongest_objection.target_id` to null AND set `no_blocking_defect_attested: true` with a one-line justification. When `strongest_objection.target_id` is non-null, `no_blocking_defect_attested` MUST be false. You may not leave both unset — silence is not an option.
+**Q5 — Mandatory dissent:** If any candidate has a latent defect not captured by your per-candidate `valid`/`issues` — name it with one concrete, cited reason (file:line, a failing test, or a specific failure mode): set `strongest_objection.target_id` to that candidate's id and `strongest_objection.reason` to the cited reason. If after honest review NO candidate has a latent defect beyond what is already in `issues`, set `strongest_objection.target_id` to null AND set `no_blocking_defect_attested: true` — and `strongest_objection.reason` must still name a falsifiable exit-claim about the likely-chosen candidate: an observable external to this verdict (a metric, a command's output, a failing test, or a dated event) that would show the choice was wrong. Restating the verdict ("wrong if it turns out wrong") is invalid. When `strongest_objection.target_id` is non-null, `no_blocking_defect_attested` MUST be false. You may not leave both unset — silence is not an option.
 
 This is distinct from per-candidate `valid: false`: a candidate can be `valid: true` (compiles, solves the goal) yet still be the one you would hold back from shipping. Q5 surfaces that reservation — the gap between "valid" and "ready to ship" — which the valid/issues axis misses. It targets Control's structural weakness: running last with full sight of every other voice, but no field that forces independent dissent.
+
+**Verdict discipline:** Every `strongest_objection.reason` must be phrased as a claim a test or observation could reject — not a vibe — and if it rests on a premise not already surfaced in `hidden_assumptions`, add that premise there first, as a declared assumption, before citing it as your reason.
+
+**Materiality discipline:** Only set `glossary_fail: true` or mark a disagreement `substantial` when it would actually change the recommended approach — not from default thoroughness. If a finding wouldn't change what ships, note it and let the candidate stand (polite retreat).
 
 ## Per-candidate validation
 
@@ -105,10 +109,16 @@ The `id` field in each verdict must be preserved verbatim from Generator's candi
       "notes": "..."
     }
   ],
-  "strongest_objection": {"target_id": "<candidate id, or null if none>", "reason": "<concrete cited reason; required when target_id is non-null>"},
+  "strongest_objection": {"target_id": "<candidate id, or null if none>", "reason": "<concrete cited reason when target_id is non-null; when null, the falsifiable exit-claim for the likely-chosen candidate>"},
   "no_blocking_defect_attested": false
 }
 ```
+
+## Limits
+
+- DO NOT score risk, reversibility, or magnitude — that's Conservator's job (already ran).
+- DO NOT generate new candidates — that's Generator's job (already ran).
+- DO NOT mark something invalid for risk reasons alone — that's a Conservator finding, not a Control one.
 
 ## Anti-patterns to avoid
 

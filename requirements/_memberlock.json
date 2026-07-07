@@ -9,7 +9,7 @@
       "scripts/audit_feedback.py": "2c15916c1d03174bde7aa4a71c499316c4a05a028e84d26c661ae34b3d4aae0f"
     },
     "CONSILIUM-BUILD-REPORT-001": {
-      "scripts/build_report.py": "b347feba2dc0341c4cc5999ceafd5735481b14f99e2e6d416b441d4ea1c7d185"
+      "scripts/build_report.py": "e40d8e92d1a73d7641c507a75a3b42e54e3cbc62b8a23f3d38d2e9ac7e8ce661"
     },
     "CONSILIUM-CHECK-DOC-DRIFT-001": {
       "scripts/check_doc_drift.py": "8ae889bacc110be82cdf1db3c85d6b119382fd86efe26ac4ad8da5fb7f2c2ea1"
@@ -56,7 +56,7 @@
       "scripts/log_feedback.py": "a5d05c527d594273bd4075d83e4dee044de2cf9ab089ea50df1c073fa0152633"
     },
     "CONSILIUM-MARK-OUTCOME-001": {
-      "scripts/mark_outcome.py": "47cd3aedce630ce536de5026dbe5b4f2088da82d711d36decbcdeb0c016b14d4"
+      "scripts/mark_outcome.py": "96908677348108ba5868ad0dfbe91913eaed1893de885468de097823ffd39c28"
     },
     "CONSILIUM-MEMORY-001": {
       "scripts/memory.py": "60c43e3ad26e91954e1bda4631ecd9496a37d912a9f9d3489bb8b2d66c7f0f87"
@@ -111,13 +111,13 @@
       "scripts/vocabulary_map.py": "52b2efad75bfe41b539ae63d84398404723623794fde00124817963ca4e7e82d"
     },
     "CONSILIUM-VOICE-CONSERVATOR-001": {
-      "prompts/voices/conservator.md": "38e2e0a03faf33ee6412625460508dbb13187e659dfc233b4eb2fac4fc00e696"
+      "prompts/voices/conservator.md": "c026426e9c6cf1c769d35faf289ff71680f43020b3f861292e83b702deec2f69"
     },
     "CONSILIUM-VOICE-CONTROL-001": {
-      "prompts/voices/control.md": "130ff5f5f94b368d35e53cf84d0aea76933bcbc722b8d088b2c33a936adf0f75"
+      "prompts/voices/control.md": "7d36bab3112cebc09fb1d9ba136bbbfcde56b98c3df01d455f6349182073436e"
     },
     "CONSILIUM-VOICE-GENERATOR-001": {
-      "prompts/voices/generator.md": "8d2e1ef2e3cd1db03c6280ff5c0f8e9b0cba85b8b79a184ee678b590e534cd3c"
+      "prompts/voices/generator.md": "462dd231c2dd0ea2f703700f07c1e17d08e7cbc2543a2e44f843131952aa253b"
     },
     "CONSILIUM-VOICE-SKEPTIC-001": {
       "prompts/voices/skeptic.md": "bf0031cdf099a97b04e6657946c92c83ec5746175c91504e319ad5a019747aa4"

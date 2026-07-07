@@ -100,12 +100,12 @@
   <header>
     <p class="kick"><span class="en">Consilium · benchmark results</span><span class="ro">Consilium · rezultate benchmark</span></p>
     <h1><span class="en">Does making an AI <span class="accent">deliberate</span><br>give better answers?</span><span class="ro">Dă un AI care <span class="accent">deliberează</span><br>răspunsuri mai bune?</span></h1>
-    <p class="sub"><span class="en">One model (Sonnet 4.6). Five ways of working — from answering alone to a 3-way debate. Three questions. Graded by a script, no AI judging AI.</span><span class="ro">Un singur model (Sonnet 4.6). Cinci moduri de lucru — de la a răspunde singur la o dezbatere în trei. Trei întrebări. Notate de un script, fără AI care notează AI.</span></p>
+    <p class="sub"><span class="en">One model (Claude Sonnet 5). Five ways of working — from answering alone to a 3-way debate. Three questions. Graded by a script, no AI judging AI.</span><span class="ro">Un singur model (Claude Sonnet 5). Cinci moduri de lucru — de la a răspunde singur la o dezbatere în trei. Trei întrebări. Notate de un script, fără AI care notează AI.</span></p>
 
     <div class="tldr">
       <p class="t"><span class="en">In one line</span><span class="ro">Pe scurt</span></p>
-      <p class="p"><span class="en">On the one genuinely hard question, deliberation won — almost every time.</span><span class="ro">La singura întrebare cu adevărat grea, deliberarea a câștigat — aproape de fiecare dată.</span></p>
-      <p class="s"><span class="en"><b>Over 4 tries: the two single-context deliberation modes got it right 4/4; the 3-way debate 3/4 — all far above answering alone (1–2/4).</b> Same model — the difference is the process, not the model.</span><span class="ro"><b>Pe 4 încercări: cele două moduri cu deliberare în context unic au răspuns corect 4/4; dezbaterea în trei 3/4 — toate mult peste a răspunde singur (1–2/4).</b> Același model — diferența e procesul, nu modelul.</span></p>
+      <p class="p"><span class="en">On the one genuinely hard question, deliberation won — every single run.</span><span class="ro">La singura întrebare cu adevărat grea, deliberarea a câștigat — la fiecare rulare.</span></p>
+      <p class="s"><span class="en"><b>Every deliberation run answered the trick question correctly (5/5 across the three consilium modes); both single-pass modes fell for the trap (0/2).</b> Same model — the difference is the process, not the model.</span><span class="ro"><b>Fiecare rulare cu deliberare a răspuns corect la întrebarea-capcană (5/5 pe cele trei moduri consilium); ambele moduri fără deliberare au căzut în capcană (0/2).</b> Același model — diferența e procesul, nu modelul.</span></p>
     </div>
   </header>
 
@@ -135,24 +135,24 @@
   <!-- TRICK QUESTION -->
   <section>
     <h2><span class="en">The question that separated them</span><span class="ro">Întrebarea care le-a despărțit</span></h2>
-    <p class="lead"><span class="en">A trick question: the obvious answer is a trap. Each mode was tried 4 times. A filled dot = got it right; a hollow red dot = fell for the trap.</span><span class="ro">O întrebare-capcană: răspunsul evident e o capcană. Fiecare mod a fost încercat de 4 ori. Bulină plină = corect; cerc roșu gol = a căzut în capcană.</span></p>
+    <p class="lead"><span class="en">A trick question: the obvious answer is a trap. consilium_sequential was tried 3 times; every other mode once. A filled dot = got it right; a hollow red dot = fell for the trap.</span><span class="ro">O întrebare-capcană: răspunsul evident e o capcană. consilium_sequential a fost încercat de 3 ori; celelalte moduri o dată. Bulină plină = corect; cerc roșu gol = a căzut în capcană.</span></p>
 
     <p class="grp"><span class="en">Deliberation modes</span><span class="ro">Moduri cu deliberare</span></p>
     <div class="modes">
       <div class="mrow"><span class="nm">consilium_sequential</span>
-        <span class="dots"><i class="dot y"></i><i class="dot y"></i><i class="dot y"></i><i class="dot y"></i></span><span class="rate hi">4/4</span></div>
+        <span class="dots"><i class="dot y"></i><i class="dot y"></i><i class="dot y"></i></span><span class="rate hi">3/3</span></div>
       <div class="mrow"><span class="nm">consilium_dialectic</span>
-        <span class="dots"><i class="dot y"></i><i class="dot y"></i><i class="dot y"></i><i class="dot y"></i></span><span class="rate hi">4/4</span></div>
+        <span class="dots"><i class="dot y"></i></span><span class="rate hi">1/1</span></div>
       <div class="mrow"><span class="nm">consilium_trias</span>
-        <span class="dots"><i class="dot y"></i><i class="dot y"></i><i class="dot y"></i><i class="dot n"></i></span><span class="rate hi">3/4</span></div>
+        <span class="dots"><i class="dot y"></i></span><span class="rate hi">1/1</span></div>
     </div>
 
     <p class="grp"><span class="en">Single-pass modes</span><span class="ro">Moduri fără deliberare</span></p>
     <div class="modes">
       <div class="mrow"><span class="nm">superpowers</span>
-        <span class="dots"><i class="dot n"></i><i class="dot y"></i><i class="dot n"></i><i class="dot y"></i></span><span class="rate lo">2/4</span></div>
+        <span class="dots"><i class="dot n"></i></span><span class="rate lo">0/1</span></div>
       <div class="mrow"><span class="nm">sonnet_bare <small><span class="en">baseline</span><span class="ro">referință</span></small></span>
-        <span class="dots"><i class="dot n"></i><i class="dot n"></i><i class="dot n"></i><i class="dot y"></i></span><span class="rate lo">1/4</span></div>
+        <span class="dots"><i class="dot n"></i></span><span class="rate lo">0/1</span></div>
     </div>
   </section>
 
@@ -169,18 +169,18 @@
       </tr></thead>
       <tbody>
         <tr><td class="m">consilium_sequential</td>
-          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~5.7m</span><small><span class="en">✓ solved</span><span class="ro">✓ rezolvat</span></small></td></tr>
+          <td><span class="ic ok">✓</span><small><span class="en">60 · 2 of 3 runs (1 hit the $3 cap)</span><span class="ro">60 · 2 din 3 rulări (1 a atins plafonul de $3)</span></small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~5.6m</span><small><span class="en">✓ solved</span><span class="ro">✓ rezolvat</span></small></td></tr>
         <tr><td class="m">consilium_dialectic</td>
-          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~7.3m</span><small>✓</small></td></tr>
+          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~6.4m</span><small>✓</small></td></tr>
         <tr><td class="m">consilium_trias</td>
-          <td><span class="ic na">—</span><small><span class="en">too slow, timed out</span><span class="ro">prea lent, a expirat</span></small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~9.2m</span><small>✓</small></td></tr>
+          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~5.3m</span><small>✓</small></td></tr>
         <tr><td class="m">superpowers</td>
-          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic no">✗</span><small><span class="en">wrong</span><span class="ro">greșit</span></small></td><td><span class="time fast">~42s</span><small>✓</small></td></tr>
+          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic no">✗</span><small><span class="en">wrong</span><span class="ro">greșit</span></small></td><td><span class="time fast">~33s</span><small>✓</small></td></tr>
         <tr><td class="m">sonnet_bare <small>baseline</small></td>
-          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic no">✗</span><small><span class="en">wrong</span><span class="ro">greșit</span></small></td><td><span class="time fast">~38s</span><small>✓</small></td></tr>
+          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic no">✗</span><small><span class="en">wrong</span><span class="ro">greșit</span></small></td><td><span class="time fast">~33s</span><small>✓</small></td></tr>
       </tbody>
     </table>
-    <p class="easy" style="margin-top:12px"><span class="en">✓ = solved · ✗ = wrong answer (graded the same way for everyone) · — = couldn't finish in time · math column shows average solve time (all modes got 100)</span><span class="ro">✓ = rezolvat · ✗ = răspuns greșit (notat la fel pentru toți) · — = nu a terminat la timp · coloana mate arată timpul mediu de rezolvare (toate modurile au luat 100)</span></p>
+    <p class="easy" style="margin-top:12px"><span class="en">✓ = solved · ✗ = wrong answer (graded the same way for everyone) · math column shows solve time (all modes got 100)</span><span class="ro">✓ = rezolvat · ✗ = răspuns greșit (notat la fel pentru toți) · coloana mate arată timpul de rezolvare (toate modurile au luat 100)</span></p>
   </section>
 
   <!-- COST -->
@@ -188,27 +188,28 @@
     <h2><span class="en">What it costs</span><span class="ro">Cât costă</span></h2>
     <p class="lead"><span class="en">Deliberation isn't free — it runs many more steps. Average cost per question:</span><span class="ro">Deliberarea nu e gratis — rulează mult mai mulți pași. Cost mediu per întrebare:</span></p>
     <div class="cost">
-      <div class="crow"><span class="nm">consilium_trias</span><div class="bar" style="width:100%"></div><span class="v">$1.63</span></div>
-      <div class="crow"><span class="nm">consilium_dialectic</span><div class="bar" style="width:93%"></div><span class="v">$1.51</span></div>
-      <div class="crow"><span class="nm">consilium_sequential</span><div class="bar" style="width:80%"></div><span class="v">$1.30</span></div>
-      <div class="crow"><span class="nm">superpowers</span><div class="bar lo" style="width:18%"></div><span class="v">$0.30</span></div>
-      <div class="crow"><span class="nm">sonnet_bare</span><div class="bar lo" style="width:18%"></div><span class="v">$0.30</span></div>
+      <div class="crow"><span class="nm">consilium_trias</span><div class="bar" style="width:100%"></div><span class="v">$2.36</span></div>
+      <div class="crow"><span class="nm">consilium_sequential</span><div class="bar" style="width:99%"></div><span class="v">$2.35</span></div>
+      <div class="crow"><span class="nm">consilium_dialectic</span><div class="bar" style="width:92%"></div><span class="v">$2.18</span></div>
+      <div class="crow"><span class="nm">superpowers</span><div class="bar lo" style="width:11%"></div><span class="v">$0.26</span></div>
+      <div class="crow"><span class="nm">sonnet_bare</span><div class="bar lo" style="width:11%"></div><span class="v">$0.26</span></div>
     </div>
-    <p class="lead" style="margin-top:18px"><span class="en"><b style="color:var(--ink)">Deliberation costs ~4–5× more.</b> Worth it on a hard question where a quick answer slips — overkill on easy ones.</span><span class="ro"><b style="color:var(--ink)">Deliberarea costă de ~4–5× mai mult.</b> Merită la o întrebare grea unde răspunsul rapid greșește — inutil la cele ușoare.</span></p>
+    <p class="lead" style="margin-top:18px"><span class="en"><b style="color:var(--ink)">Deliberation costs ~9× more.</b> Worth it on a hard question where a quick answer slips — overkill on easy ones.</span><span class="ro"><b style="color:var(--ink)">Deliberarea costă de ~9× mai mult.</b> Merită la o întrebare grea unde răspunsul rapid greșește — inutil la cele ușoare.</span></p>
   </section>
 
   <!-- HONEST -->
   <section>
     <h2><span class="en">Being honest about it</span><span class="ro">Sincer despre limite</span></h2>
     <ul class="lim">
-      <li><span class="en"><b>3 tries each</b> — the direction is clear and consistent (9/9 for deliberation vs 1/6 for single-pass), but a textbook claim wants ~15 tries per mode.</span><span class="ro"><b>3 încercări fiecare</b> — direcția e clară și consistentă (9/9 pentru deliberare vs 1/6 fără deliberare), dar o afirmație riguroasă cere ~15 încercări per mod.</span></li>
+      <li><span class="en"><b>Mostly 1 try per mode</b> — only consilium_sequential got 3 tries (on the coding task and the trick question); every other cell is a single run. The trick-question direction is consistent (5/5 deliberation vs 0/2 single-pass), but a textbook claim wants ~15 tries per mode.</span><span class="ro"><b>În mare parte 1 încercare per mod</b> — doar consilium_sequential a avut 3 încercări (la sarcina de cod și la întrebarea-capcană); restul celulelor au o singură rulare. Direcția la întrebarea-capcană e consistentă (5/5 cu deliberare vs 0/2 fără), dar o afirmație riguroasă cere ~15 încercări per mod.</span></li>
       <li><span class="en"><b>Only one question was hard enough to matter</b> — the other two are at ceiling; more genuinely tricky questions are needed.</span><span class="ro"><b>Doar o întrebare a fost suficient de grea</b> — celelalte două sunt la maxim; e nevoie de mai multe întrebări cu adevărat dificile.</span></li>
-      <li><span class="en"><b>The 3-way debate can't finish the coding task</b> — it dispatches its sub-agents one at a time and runs past the 15-minute limit. A real cost/speed limit, not a quality result.</span><span class="ro"><b>Dezbaterea în trei nu termină sarcina de cod</b> — pornește sub-agenții pe rând și depășește limita de 15 minute. O limită reală de cost/viteză, nu un rezultat de calitate.</span></li>
+      <li><span class="en"><b>Run-to-run noise is real</b> — on the coding task, the exact same sequential configuration hit the $3 budget cap once and passed cleanly twice. At n=1, that variance is larger than most differences between modes.</span><span class="ro"><b>Zgomotul între rulări e real</b> — la sarcina de cod, exact aceeași configurație sequential a atins o dată plafonul de $3 și a trecut curat de două ori. La n=1, variația asta e mai mare decât majoritatea diferențelor dintre moduri.</span></li>
+      <li><span class="en"><b>Two prompt versions are mixed in the sequential replicates</b> — its third run used the newer v1.5–1.6 voice prompts (treated as one bundled change; no separate attribution), the rest the prior version. Scores were identical either way, so no quality claim is made for the newer prompts.</span><span class="ro"><b>Replicatele sequential amestecă două versiuni de prompturi</b> — a treia rulare a folosit prompturile de voce v1.5–1.6 (tratate ca o singură schimbare-pachet; fără atribuire separată), restul versiunea anterioară. Scorurile au fost identice, deci nu se face nicio afirmație de calitate pentru prompturile noi.</span></li>
     </ul>
   </section>
 
   <footer>
-    <span class="en">One model (Sonnet 4.6, high effort) · 5 modes · 3 questions · 3 deliberated runs each · graded automatically against a fixed answer key · 2026-06-24.<br>The deliberation pipeline is verified to actually run on every consilium run (no silent fallback to a plain answer).</span><span class="ro">Un model (Sonnet 4.6, efort ridicat) · 5 moduri · 3 întrebări · 3 rulări deliberate fiecare · notate automat față de o cheie de răspuns fixă · 2026-06-24.<br>Pipeline-ul de deliberare e verificat că rulează efectiv la fiecare rulare consilium (fără revenire silențioasă la un răspuns simplu).</span>
+    <span class="en">One model (Claude Sonnet 5, high effort) · 5 modes · 3 questions · 1 run per cell, plus 3 replicates for consilium_sequential on the code + trick tasks · graded automatically against a fixed answer key · 2026-07-06/07.<br>The deliberation pipeline is verified to actually run on every consilium run (no silent fallback to a plain answer).</span><span class="ro">Un model (Claude Sonnet 5, efort ridicat) · 5 moduri · 3 întrebări · 1 rulare per celulă, plus 3 replicate pentru consilium_sequential la sarcina de cod + capcană · notate automat față de o cheie de răspuns fixă · 2026-07-06/07.<br>Pipeline-ul de deliberare e verificat că rulează efectiv la fiecare rulare consilium (fără revenire silențioasă la un răspuns simplu).</span>
   </footer>
 
 </div>

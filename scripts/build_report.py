@@ -238,6 +238,14 @@ def build(bundle: dict) -> dict:
             {"step": "aggregate",   "scheme": aggregate.get("scheme", "?"), "result": aggregate},
         ],
     }
+    # Persist Control's declared falsifier so mark_outcome.py --auto-suggest can
+    # read it back when the outcome is scored later (consumer wired 2026-07-07;
+    # senate run 2026-07-07_011914 required consumer-first).
+    _control_step = report["deliberation_log"][1]
+    if "strongest_objection" in control:
+        _control_step["strongest_objection"] = control["strongest_objection"]
+    if "no_blocking_defect_attested" in control:
+        _control_step["no_blocking_defect_attested"] = control["no_blocking_defect_attested"]
     if "telemetry" in bundle:
         report["telemetry"] = bundle["telemetry"]
     if "deliberation_quality" in bundle:
