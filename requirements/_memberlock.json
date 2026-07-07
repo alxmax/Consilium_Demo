@@ -49,9 +49,6 @@
     "CONSILIUM-LENS-SENTINEL-001": {
       "prompts/voices/sentinel_lens.md": "2050e06a45f0c3fe785b1651edabcee68454908a1fe8142557ea81804fcbb0d9"
     },
-    "CONSILIUM-LENS-VERIFIER-001": {
-      "prompts/voices/verifier_lens.md": "71a36800508b0965fbbc6d27e920b42977e03da8d8b745d9c7081b60b6282e48"
-    },
     "CONSILIUM-LOG-FEEDBACK-001": {
       "scripts/log_feedback.py": "a5d05c527d594273bd4075d83e4dee044de2cf9ab089ea50df1c073fa0152633"
     },
@@ -60,12 +57,6 @@
     },
     "CONSILIUM-MEMORY-001": {
       "scripts/memory.py": "60c43e3ad26e91954e1bda4631ecd9496a37d912a9f9d3489bb8b2d66c7f0f87"
-    },
-    "CONSILIUM-MODE-DIALECTIC-001": {
-      "modes/dialectic.md": "f66c1957bd1eea90bf3d39a44c0d8dd3c964de6a09d3575f5a336ef7caa758de"
-    },
-    "CONSILIUM-MODE-SEQUENTIAL-001": {
-      "modes/sequential.md": "3f05a66c069b309acf5c8133e6dc1c1ae98f1eb199ed31887807abe16312b602"
     },
     "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001": {
       "modes/skeptic_on_chosen.md": "b242a6be5185a8942fdcaef5c4f24dda0d68c526205f39ee207af3f4b367f60a"
@@ -97,9 +88,6 @@
     },
     "CONSILIUM-UTILS-001": {
       "scripts/utils.py": "c5533818d454b0f6d4bf76aca5b5a7d0bb49c02bb04e6b329749f4839e9c131b"
-    },
-    "CONSILIUM-VALIDATE-REPORT-001": {
-      "scripts/validate_report.py": "3efae3e88a4a57137ba4785ccf188c62ce76ba79aea70d25f56d30dc5556ca2c"
     },
     "CONSILIUM-VALIDATE-SKEPTIC-001": {
       "scripts/validate_skeptic.py": "683c1bf3de2282961d985a53d8bd2de9caf4b78805a515e05b09b6cde64ef910"

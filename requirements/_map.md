@@ -1,7 +1,7 @@
 ---
-generated: 2026-07-07 18:21
-nodes: 44
-edges: 53
+generated: 2026-07-07 23:22
+nodes: 45
+edges: 58
 ---
 
 # Requirement Map
@@ -34,6 +34,7 @@ graph LR
     CONSILIUM_MARK_OUTCOME_001["mark_outcome<br><small>CONSILIUM-MARK-OUTCOME-001</small>"]
     CONSILIUM_MEMORY_001["memory<br><small>CONSILIUM-MEMORY-001</small>"]
     CONSILIUM_MODE_DIALECTIC_001["dialectic mode<br><small>CONSILIUM-MODE-DIALECTIC-001</small>"]
+    CONSILIUM_MODE_LENS_001["opt-in personality-lens ladder ('--lens')<br><small>CONSILIUM-MODE-LENS-001</small>"]
     CONSILIUM_MODE_SEQUENTIAL_001["sequential mode<br><small>CONSILIUM-MODE-SEQUENTIAL-001</small>"]
     CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001["skeptic_on_chosen flag<br><small>CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001</small>"]
     CONSILIUM_MODE_TRIAS_001["trias mode<br><small>CONSILIUM-MODE-TRIAS-001</small>"]
@@ -66,6 +67,10 @@ graph LR
   CONSILIUM_INFER_PIPELINE_001 --> CONSILIUM_IMPLEMENT_PIPELINE_001
   CONSILIUM_MODE_DIALECTIC_001 --> CONSILIUM_MODE_SEQUENTIAL_001
   CONSILIUM_MODE_DIALECTIC_001 --> CONSILIUM_VOICE_SKEPTIC_001
+  CONSILIUM_MODE_LENS_001 --> CONSILIUM_LENS_ESSENTIALIST_001
+  CONSILIUM_MODE_LENS_001 --> CONSILIUM_LENS_VERIFIER_001
+  CONSILIUM_MODE_LENS_001 --> CONSILIUM_MODE_SEQUENTIAL_001
+  CONSILIUM_MODE_LENS_001 --> CONSILIUM_MODE_DIALECTIC_001
   CONSILIUM_MODE_SEQUENTIAL_001 --> CONSILIUM_VOICE_GENERATOR_001
   CONSILIUM_MODE_SEQUENTIAL_001 --> CONSILIUM_VOICE_CONTROL_001
   CONSILIUM_MODE_SEQUENTIAL_001 --> CONSILIUM_VOICE_CONSERVATOR_001
@@ -176,8 +181,8 @@ graph LR
   f_prompts_voices_sentinel_lens_md_39["prompts/voices/sentinel_lens.md:39"]
   CONSILIUM_LENS_SENTINEL_001 -->|implements| f_prompts_voices_sentinel_lens_md_39
   CONSILIUM_LENS_VERIFIER_001["verifier lens<br><small>CONSILIUM-LENS-VERIFIER-001</small>"]
-  f_prompts_voices_verifier_lens_md_39["prompts/voices/verifier_lens.md:39"]
-  CONSILIUM_LENS_VERIFIER_001 -->|implements| f_prompts_voices_verifier_lens_md_39
+  f_prompts_voices_verifier_lens_md_51["prompts/voices/verifier_lens.md:51"]
+  CONSILIUM_LENS_VERIFIER_001 -->|implements| f_prompts_voices_verifier_lens_md_51
   CONSILIUM_LOG_FEEDBACK_001["log_feedback<br><small>CONSILIUM-LOG-FEEDBACK-001</small>"]
   f_scripts_log_feedback_py_43["scripts/log_feedback.py:43"]
   CONSILIUM_LOG_FEEDBACK_001 -->|implements| f_scripts_log_feedback_py_43
@@ -190,11 +195,22 @@ graph LR
   f_scripts_memory_py_35["scripts/memory.py:35"]
   CONSILIUM_MEMORY_001 -->|implements| f_scripts_memory_py_35
   CONSILIUM_MODE_DIALECTIC_001["dialectic mode<br><small>CONSILIUM-MODE-DIALECTIC-001</small>"]
-  f_modes_dialectic_md_47["modes/dialectic.md:47"]
-  CONSILIUM_MODE_DIALECTIC_001 -->|implements| f_modes_dialectic_md_47
+  f_modes_dialectic_md_57["modes/dialectic.md:57"]
+  CONSILIUM_MODE_DIALECTIC_001 -->|implements| f_modes_dialectic_md_57
+  CONSILIUM_MODE_LENS_001["opt-in personality-lens ladder ('--lens')<br><small>CONSILIUM-MODE-LENS-001</small>"]
+  f_modes_dialectic_md_60["modes/dialectic.md:60"]
+  CONSILIUM_MODE_LENS_001 -->|implements| f_modes_dialectic_md_60
+  f_modes_sequential_md_93["modes/sequential.md:93"]
+  CONSILIUM_MODE_LENS_001 -->|implements| f_modes_sequential_md_93
+  f_prompts_voices_verifier_lens_md_53["prompts/voices/verifier_lens.md:53"]
+  CONSILIUM_MODE_LENS_001 -->|implements| f_prompts_voices_verifier_lens_md_53
+  f_scripts_test_lens_bias_py_177["scripts/test_lens_bias.py:177"]
+  CONSILIUM_MODE_LENS_001 -->|tested-by| f_scripts_test_lens_bias_py_177
+  f_scripts_validate_report_py_605["scripts/validate_report.py:605"]
+  CONSILIUM_MODE_LENS_001 -->|implements| f_scripts_validate_report_py_605
   CONSILIUM_MODE_SEQUENTIAL_001["sequential mode<br><small>CONSILIUM-MODE-SEQUENTIAL-001</small>"]
-  f_modes_sequential_md_70["modes/sequential.md:70"]
-  CONSILIUM_MODE_SEQUENTIAL_001 -->|implements| f_modes_sequential_md_70
+  f_modes_sequential_md_90["modes/sequential.md:90"]
+  CONSILIUM_MODE_SEQUENTIAL_001 -->|implements| f_modes_sequential_md_90
   CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001["skeptic_on_chosen flag<br><small>CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001</small>"]
   f_modes_skeptic_on_chosen_md_69["modes/skeptic_on_chosen.md:69"]
   CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 -->|implements| f_modes_skeptic_on_chosen_md_69
@@ -301,7 +317,7 @@ _Area-level coupling: one box per area (N caps), arrow A->B = some capability in
 
 ```mermaid
 graph LR
-  a_CONSILIUM["CONSILIUM<br><small>43 caps</small>"]
+  a_CONSILIUM["CONSILIUM<br><small>44 caps</small>"]
   a_misc["misc<br><small>1 caps</small>"]
   a_misc --> a_CONSILIUM
   style a_CONSILIUM stroke-width:3px

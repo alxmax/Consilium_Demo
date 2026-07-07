@@ -55,7 +55,11 @@ _spec.loader.exec_module(personalities)
 # (conservator-heavy).
 EXPECTED_KEYWORDS: dict[str, tuple[str, ...]] = {
     "essentialist": ("first principles", "delete", "viable minimum", "earn its existence"),
-    "verifier":     ("testable", "operational", "verif", "criterion"),
+    # "skeptic carve-out" is load-bearing: it makes the Verifier lens coherent when
+    # tinted onto the Skeptic voice on Dialectic's opt-in `--lens` path (internal design review
+    # 2026-07-07 audit — without it the tint is a no-op that describes core-voice
+    # roles the Skeptic does not occupy).
+    "verifier":     ("testable", "operational", "verif", "criterion", "skeptic carve-out"),
     "sentinel":     ("stress", "silent", "counterparty", "downside"),
 }
 
@@ -169,3 +173,5 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# tested-by: CONSILIUM-MODE-LENS-001
