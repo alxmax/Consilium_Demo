@@ -21,7 +21,8 @@ When applying your voice's role:
 
 This lens biases your perception; it does not change your role. You still
 perform your voice's standard job (Generator generates, Control verifies,
-Conservator assesses risk) — but through the Verifier's perspective.
+Conservator assesses risk, **Skeptic challenges the chosen answer**) — but
+through the Verifier's perspective.
 
 **Control carve-out.** Demanding testability must not stall the verdict: an
 unverifiable claim lowers your confidence and becomes a named condition — it is
@@ -32,8 +33,21 @@ and `meta_recommendation` only — the numerical formula
 (`net_concern = mean(diff_size, scope_drift, regression_risk, reversibility)`)
 is anchored and must not shift because a claim is merely well-phrased.
 
+**Skeptic carve-out.** When this lens is applied to the **Skeptic** voice — the
+Dialectic opt-in `--lens` path, where the Verifier lens *tints the post-hoc
+challenger* rather than a core voice — your job stays the Skeptic's: challenge
+the chosen answer and name a concrete objection. The Verifier tint means your
+objection must be **falsifiable** — name the test, command, or observation that
+would confirm the defect you raise, and the one that would clear it. Do NOT
+fabricate a constraint to force an objection: an unfalsifiable worry is
+`can_object: false` with a named low-confidence caveat, exactly as `skeptic.md`
+requires. You do not change the Skeptic's return schema, only sharpen its
+evidence standard.
+
 Your voice output will be re-weighted by the personality's aggregator weights —
 focus on shifting perception through your role's lens, not on inflating or
 deflating numerical scores directly.
 
 <!-- implements: CONSILIUM-LENS-VERIFIER-001 -->
+
+<!-- implements: CONSILIUM-MODE-LENS-001 -->

@@ -274,6 +274,7 @@ At each dispatch (voice), immediately after return, accumulate in the bundle:
 - Sum tokens + latency per voice if there are retries on the same dispatch.
 - `telemetry.mode` ← canonical label (`"sequential"`, `"trias"` etc. — from `## Dispatch defaults`).
 - `telemetry.dispatch_count` ← total dispatches (including retries).
+- `telemetry.lens_applied` (optional) ← present ONLY on an opt-in `--lens` run: `{decider: <name>, skeptic?: <name>}`. Absent on default (no-lens) runs. For Dialectic's rung `decider` and `skeptic` must differ (`validate_report.py` enforces it). See the `--lens` flag below + `modes/sequential.md` / `modes/dialectic.md`.
 - `telemetry.consilium_version` / `telemetry.consilium_ref` ← repo version provenance, stamped automatically by `build_report.py` (and by the two hand-built templates above). `consilium_version` = `git describe --tags --always --dirty` (display); `consilium_ref` = the committed HEAD sha or `""` on a dirty/unknown tree (the resolvable diff operand). Lets any run be reproduced via `git checkout` — see `scripts/version.py`.
 
 Why mandatory: a run without telemetry is invisible to cost analysis and per-mode comparisons (the measured tokens-per-dispatch snapshot in the architecture explainer was built from this telemetry).
@@ -520,8 +521,8 @@ Each mode has its own `.md` file in `modes/` with YAML frontmatter (`name`, `sub
 
 | Mode | File | Subagents | Cost | Conf. floor |
 |---|---|---|---|---|
-| Sequential (default) | [modes/sequential.md](modes/sequential.md) | 0 | 1× | 0.70 |
-| Dialectic | [modes/dialectic.md](modes/dialectic.md) | 1 | 1.33× | 0.75 |
+| Sequential (default) | [modes/sequential.md](modes/sequential.md) | 1 | 1× | 0.70 |
+| Dialectic | [modes/dialectic.md](modes/dialectic.md) | 2 | 1.33× | 0.75 |
 | Trias | [modes/trias.md](modes/trias.md) | 4 (worst: 7) | 2.67× | 0.80 |
 | skeptic_on_chosen (flag) | [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md) | +1 over base | base+1 | N/A |
 
@@ -529,7 +530,7 @@ Each mode has its own `.md` file in `modes/` with YAML frontmatter (`name`, `sub
 
 ## Dialectic mode (opt-in)
 
-Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI gate) injected into voice inputs. `telemetry.mode: "dialectic"`. **Full workflow: [modes/dialectic.md](modes/dialectic.md).**
+Sequential (1 dispatched sub-agent) + 1 Skeptic sub-agent — 2 total. Code-context (language, files, test suite, CI gate) injected into voice inputs. `telemetry.mode: "dialectic"`. **Full workflow: [modes/dialectic.md](modes/dialectic.md).**
 
 ## Trias mode (high-stakes opt-in)
 
@@ -538,6 +539,10 @@ Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI 
 ## Skeptic-on-chosen mode (`skeptic_on_chosen`)
 
 Cross-cutting flag — +1 Skeptic sub-agent over any base mode post-hoc. Auto-triggers when `confidence < 0.70` (strictly less than 0.70; the Trias 2-0 canonical value and the Sequential floor are both at 0.70 and are passing). Advisory by default; `--skeptic-can-override` for opt-in. **Full workflow: [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md).**
+
+## Personality lens (`--lens <name>`, composable flag, opt-in — default OFF)
+
+Off by default. Prepends a Trias personality lens (`essentialist` | `verifier` | `sentinel`) to a mode's voices: **Sequential** gets 1 lens on Generator→Conservator→Control; **Dialectic** (`--lens essentialist`) gets Essentialist on the decider and *tints the Skeptic with the Verifier lens* (its Skeptic carve-out) — decider ≠ skeptic. No new sub-agent (dispatch count unchanged), but lens text adds **~18% per-voice prompt tokens** (not free) → OFF by default, honoring the cost constraint. Records `telemetry.lens_applied`. **Value is unproven** (Trias 0/6 on the saturated corpus); default-on is gated on a discriminator pilot. Governing review: an internal design review 2026-07-07 (verdict MODIFY, the internal design review 2026-07-07_220734). Full spec: [modes/sequential.md](modes/sequential.md), [modes/dialectic.md](modes/dialectic.md).
 
 ## Routing boundary
 
@@ -552,7 +557,7 @@ When to escalate beyond a standard Consilium mode:
 
 ## Sequential mode (default)
 
-Default mode. Generator → Conservator → Control run in-context. 0 sub-agent dispatches, 1× cost. **Full reference: [modes/sequential.md](modes/sequential.md).**
+Default mode. Generator → Conservator → Control run together inside 1 dispatched sub-agent call, which returns the three raw voice outputs unchanged; the orchestrator aggregates and implements in its own fresh context. 1 sub-agent dispatch, 1× cost (baseline, by definition — see `modes/sequential.md` "Accepted tradeoffs" for what this figure doesn't currently measure). **Full reference: [modes/sequential.md](modes/sequential.md).**
 
 Key veto triggers (inline for quick reference during Steps 2–5):
 

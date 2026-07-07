@@ -63,6 +63,7 @@ docs/superpowers/specs/
 # kept on disk but not published. (History still contains it — full scrub is the
 # separate clean-public-history task.)
 TODO.md
+experiments/New phase senat/
 .tmp_backup/
 
 # Benchmark harness — regenerable run artifacts (analog of runs/), local only

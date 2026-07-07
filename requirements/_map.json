@@ -745,6 +745,7 @@
         "CONSILIUM-PERSONALITIES-001"
       ],
       "used_by": [
+        "CONSILIUM-MODE-LENS-001",
         "CONSILIUM-MODE-TRIAS-001"
       ],
       "satisfies": [],
@@ -835,6 +836,7 @@
         "CONSILIUM-PERSONALITIES-001"
       ],
       "used_by": [
+        "CONSILIUM-MODE-LENS-001",
         "CONSILIUM-MODE-TRIAS-001"
       ],
       "satisfies": [],
@@ -842,7 +844,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/verifier_lens.md:39"
+          "loc": "prompts/voices/verifier_lens.md:51"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1029,17 +1031,87 @@
         "CONSILIUM-MODE-SEQUENTIAL-001",
         "CONSILIUM-VOICE-SKEPTIC-001"
       ],
+      "used_by": [
+        "CONSILIUM-MODE-LENS-001"
+      ],
+      "satisfies": [],
+      "satisfied_by": [],
+      "members": [
+        {
+          "role": "implements",
+          "loc": "modes/dialectic.md:57"
+        }
+      ],
+      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
+      "milestone": "v1.0",
+      "priority": "",
+      "risks": []
+    },
+    {
+      "id": "CONSILIUM-MODE-LENS-001",
+      "layer": "feature",
+      "status": "confirmed",
+      "area": "CONSILIUM",
+      "title": "opt-in personality-lens ladder (`--lens`)",
+      "intent": "WHY: lets a caller graduate the cheaper modes toward Trias's lens structure without paying the cost on every run. Off by default so the default path's cost is unchanged (lens text adds ~18% per-voice prompt tokens); lens value over lens-free deliberation is empirically unproven (Trias 0/6 on a saturated corpus), so default-on is withheld pending a discriminator pilot. Shipped opt-in over two 2026-07-07 internal design-review rounds (verdict MODIFY).",
+      "contract": [
+        "The `--lens <name>` flag is composable over Sequential and Dialectic and is **OFF by default**; a run without it applies no lens and its cost is unchanged.",
+        "On **Sequential**, `--lens essentialist` prepends `prompts/voices/essentialist_lens.md` over Generator → Conservator → Control.",
+        "On **Dialectic**, `--lens essentialist` puts the Essentialist lens on the decider (the Sequential voices) and **tints the Skeptic with the Verifier lens** via the Verifier lens's Skeptic carve-out — complementary roles, not a vote. No new prompt file is introduced (the \"B / tint\" mechanism); the two lenses must differ (`decider != skeptic`).",
+        "A lensed run shall record `telemetry.lens_applied` as `{decider: <name>, skeptic?: <name>}`; a default (no-lens) run shall omit the field.",
+        "`validate_report.py` shall reject a report whose `telemetry.lens_applied` is malformed, names a lens that is not a known personality, or (Dialectic) has `decider == skeptic`.",
+        "The mechanism shall not change any voice's return schema, the sub-agent dispatch count, or the `cost_multiplier` of either mode."
+      ],
+      "verify": [
+        "None — default-on is intentionally out of scope until a discriminator pilot (n≥10–20, non-saturated oracle-validated corpus) shows a win."
+      ],
+      "notes": [],
+      "current_impl": [
+        "modes/sequential.md",
+        "modes/dialectic.md",
+        "prompts/voices/verifier_lens.md",
+        "scripts/validate_report.py",
+        "scripts/test_lens_bias.py"
+      ],
+      "acc": [],
+      "accept": "AC-1\n  Given  a Dialectic report whose telemetry.lens_applied has decider == skeptic (e.g. both \"verifier\")\n  When   validate_report._validate_telemetry runs\n  Then   it returns a problem stating decider and skeptic must differ\n\nAC-2\n  Given  prompts/voices/verifier_lens.md\n  When   scripts/test_lens_bias.py runs\n  Then   it asserts the \"skeptic carve-out\" keyword is present (the Verifier lens is coherent when tinted onto the Skeptic voice)\n\nAC-3\n  Given  a telemetry.lens_applied naming a lens that is not a known personality (e.g. \"essentailist\")\n  When   validate_report._validate_telemetry runs\n  Then   it returns a problem naming the valid personality lenses",
+      "input": "",
+      "output": "",
+      "desc": "",
+      "deps": [
+        "CONSILIUM-LENS-ESSENTIALIST-001",
+        "CONSILIUM-LENS-VERIFIER-001",
+        "CONSILIUM-MODE-SEQUENTIAL-001",
+        "CONSILIUM-MODE-DIALECTIC-001",
+        "CONSILIUM-VALIDATE-REPORT-001"
+      ],
       "used_by": [],
       "satisfies": [],
       "satisfied_by": [],
       "members": [
         {
           "role": "implements",
-          "loc": "modes/dialectic.md:47"
+          "loc": "modes/dialectic.md:60"
+        },
+        {
+          "role": "implements",
+          "loc": "modes/sequential.md:93"
+        },
+        {
+          "role": "implements",
+          "loc": "prompts/voices/verifier_lens.md:53"
+        },
+        {
+          "role": "tested-by",
+          "loc": "scripts/test_lens_bias.py:177"
+        },
+        {
+          "role": "implements",
+          "loc": "scripts/validate_report.py:605"
         }
       ],
-      "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
-      "milestone": "v1.0",
+      "test_exempt": null,
+      "milestone": "v1.8",
       "priority": "",
       "risks": []
     },
@@ -1083,6 +1155,7 @@
       ],
       "used_by": [
         "CONSILIUM-MODE-DIALECTIC-001",
+        "CONSILIUM-MODE-LENS-001",
         "CONSILIUM-MODE-TRIAS-001",
         "CONSILIUM-SUBAGENT-001"
       ],
@@ -1091,7 +1164,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "modes/sequential.md:70"
+          "loc": "modes/sequential.md:90"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -1764,6 +1837,7 @@
         "CONSILIUM-UTILS-001"
       ],
       "used_by": [
+        "CONSILIUM-MODE-LENS-001",
         "SKILL-RUN-CONSILIUM-001"
       ],
       "satisfies": [],
@@ -2333,6 +2407,26 @@
     [
       "CONSILIUM-MODE-DIALECTIC-001",
       "CONSILIUM-VOICE-SKEPTIC-001"
+    ],
+    [
+      "CONSILIUM-MODE-LENS-001",
+      "CONSILIUM-LENS-ESSENTIALIST-001"
+    ],
+    [
+      "CONSILIUM-MODE-LENS-001",
+      "CONSILIUM-LENS-VERIFIER-001"
+    ],
+    [
+      "CONSILIUM-MODE-LENS-001",
+      "CONSILIUM-MODE-SEQUENTIAL-001"
+    ],
+    [
+      "CONSILIUM-MODE-LENS-001",
+      "CONSILIUM-MODE-DIALECTIC-001"
+    ],
+    [
+      "CONSILIUM-MODE-LENS-001",
+      "CONSILIUM-VALIDATE-REPORT-001"
     ],
     [
       "CONSILIUM-MODE-SEQUENTIAL-001",

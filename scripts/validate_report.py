@@ -149,6 +149,34 @@ def _validate_telemetry(telemetry: object) -> list[str]:
             problems.append("telemetry.dispatch_count must be a non-negative int")
     if "mode" in telemetry and not isinstance(telemetry["mode"], str):
         problems.append("telemetry.mode must be a string")
+    # Optional opt-in `--lens` provenance. Absent on default (no-lens) runs. When
+    # present it records which personality lens tinted which role; for the Dialectic
+    # rung the decider and skeptic lenses MUST differ (runtime enforcement of the
+    # `decider != skeptic` contract — an internal design review, 2026-07-07 — decider != skeptic).
+    lens = telemetry.get("lens_applied")
+    if lens is not None:
+        if not isinstance(lens, dict):
+            problems.append("telemetry.lens_applied must be a JSON object when present")
+        else:
+            decider = lens.get("decider")
+            if not isinstance(decider, str) or not decider.strip():
+                problems.append("telemetry.lens_applied.decider must be a non-empty string")
+            elif decider.strip() not in NAMES:
+                problems.append(
+                    f"telemetry.lens_applied.decider must be a known personality lens {sorted(NAMES)} (got {decider!r})"
+                )
+            skeptic = lens.get("skeptic")
+            if skeptic is not None:
+                if not isinstance(skeptic, str) or not skeptic.strip():
+                    problems.append("telemetry.lens_applied.skeptic must be a non-empty string when present")
+                elif skeptic.strip() not in NAMES:
+                    problems.append(
+                        f"telemetry.lens_applied.skeptic must be a known personality lens {sorted(NAMES)} (got {skeptic!r})"
+                    )
+                elif isinstance(decider, str) and skeptic.strip() == decider.strip():
+                    problems.append(
+                        "telemetry.lens_applied.decider and .skeptic must differ (decider != skeptic)"
+                    )
     return problems
 
 
@@ -573,3 +601,5 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# implements: CONSILIUM-MODE-LENS-001
