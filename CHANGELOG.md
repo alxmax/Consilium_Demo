@@ -4,6 +4,15 @@ All notable changes to Consilium are recorded here, following
 [Keep a Changelog](https://keepachangelog.com/). This project is source-available
 under the Business Source License 1.1 (see `LICENSE`).
 
+## [1.7.0] — 2026-07-07
+
+### Changed
+- **Sequential's deliberation now runs as one dispatched sub-agent** (`subagents: 0 → 1`), mirroring the atomic unit Trias already uses per personality: Generator → Conservator → Control still run in a single shared context (unchanged internally — `strip_context.py` and Generator's turn-1 blindness still apply), but that context is now the sub-agent's own, not the orchestrator's. The sub-agent returns the three raw voice outputs (`generator_out`, `control_out`, `conservator_out`) **unmodified** — `aggregate_sequential()` is untouched. Dialectic inherits this automatically (`subagents: 1 → 2`, its own definition — "Sequential + Skeptic" — unchanged).
+- Real wall-clock instrumentation for Sequential's dispatch (`telemetry.voices.sequential_dispatch.latency_ms`), replacing the previously-hardcoded `0` for in-context voices.
+- `docs/architecture/src/modes.jsx` data fields updated to match (subagent counts, isolation description); the animated walkthrough step-by-step diagram for Sequential still depicts the pre-dispatch layout and has not been reworked to show a separate sub-agent box — tracked as a follow-up, not blocking.
+
+**Provenance — shipped over a same-day MODIFY verdict, by explicit user override.** An independent design-review audit examined this exact change twice, same day, and returned MODIFY both times (design review runs `2026-07-07_122758`, split verdict round 1; `2026-07-07_123517`, MODIFY round 2 after focal cross-examination) — concerns: unmeasured benefit magnitude, a likely net cost increase from losing prompt-cache warmth in a freshly dispatched sub-agent, and an invalid citation of Trias's atomic-dispatch precedent (Trias isolates personalities to protect voting integrity; Sequential has no vote to protect). The user reviewed both verdicts and instructed an explicit override. Implementation then ran through Trias (3 personalities + post-vote Skeptic) for the *how*, not the *whether*: the Skeptic caught and this release fixes a real correctness gap the review had not named — an earlier draft would have had the sub-agent return only `{chosen_approach, rationale, confidence}`, which would have silently disabled `aggregate_sequential()`'s entire veto cascade (BLOCK/REWORK/SHORT-CIRCUIT/ESCALATE never firing for Sequential again). All accepted tradeoffs are documented in `modes/sequential.md` § Accepted tradeoffs, not silently absorbed.
+
 ## [1.6.0] — 2026-07-07
 
 ### Added
