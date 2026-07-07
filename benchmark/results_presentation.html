@@ -105,7 +105,7 @@
     <div class="tldr">
       <p class="t"><span class="en">In one line</span><span class="ro">Pe scurt</span></p>
       <p class="p"><span class="en">On the one genuinely hard question, deliberation won — every single run.</span><span class="ro">La singura întrebare cu adevărat grea, deliberarea a câștigat — la fiecare rulare.</span></p>
-      <p class="s"><span class="en"><b>Every deliberation run answered the trick question correctly (5/5 across the three consilium modes); both single-pass modes fell for the trap (0/2).</b> Same model — the difference is the process, not the model.</span><span class="ro"><b>Fiecare rulare cu deliberare a răspuns corect la întrebarea-capcană (5/5 pe cele trei moduri consilium); ambele moduri fără deliberare au căzut în capcană (0/2).</b> Același model — diferența e procesul, nu modelul.</span></p>
+      <p class="s"><span class="en"><b>Every deliberation run answered the trick question correctly (3/3 across the three consilium modes); both single-pass modes fell for the trap (0/2).</b> Same model — the difference is the process, not the model.</span><span class="ro"><b>Fiecare rulare cu deliberare a răspuns corect la întrebarea-capcană (3/3 pe cele trei moduri consilium); ambele moduri fără deliberare au căzut în capcană (0/2).</b> Același model — diferența e procesul, nu modelul.</span></p>
     </div>
   </header>
 
@@ -135,12 +135,12 @@
   <!-- TRICK QUESTION -->
   <section>
     <h2><span class="en">The question that separated them</span><span class="ro">Întrebarea care le-a despărțit</span></h2>
-    <p class="lead"><span class="en">A trick question: the obvious answer is a trap. consilium_sequential was tried 3 times; every other mode once. A filled dot = got it right; a hollow red dot = fell for the trap.</span><span class="ro">O întrebare-capcană: răspunsul evident e o capcană. consilium_sequential a fost încercat de 3 ori; celelalte moduri o dată. Bulină plină = corect; cerc roșu gol = a căzut în capcană.</span></p>
+    <p class="lead"><span class="en">A trick question: the obvious answer is a trap. Each mode was tried once this batch. A filled dot = got it right; a hollow red dot = fell for the trap.</span><span class="ro">O întrebare-capcană: răspunsul evident e o capcană. Fiecare mod a fost încercat o dată în acest batch. Bulină plină = corect; cerc roșu gol = a căzut în capcană.</span></p>
 
     <p class="grp"><span class="en">Deliberation modes</span><span class="ro">Moduri cu deliberare</span></p>
     <div class="modes">
       <div class="mrow"><span class="nm">consilium_sequential</span>
-        <span class="dots"><i class="dot y"></i><i class="dot y"></i><i class="dot y"></i></span><span class="rate hi">3/3</span></div>
+        <span class="dots"><i class="dot y"></i></span><span class="rate hi">1/1</span></div>
       <div class="mrow"><span class="nm">consilium_dialectic</span>
         <span class="dots"><i class="dot y"></i></span><span class="rate hi">1/1</span></div>
       <div class="mrow"><span class="nm">consilium_trias</span>
@@ -159,7 +159,7 @@
   <!-- SCORECARD -->
   <section>
     <h2><span class="en">All three questions</span><span class="ro">Toate cele trei întrebări</span></h2>
-    <p class="lead"><span class="en">On correctness, two of the three are too easy — every mode solves them — so only the trick question separates the modes by <em>answer</em>. On the math puzzle, where everyone is right, the real difference is <b style="color:var(--ink)">speed</b>: deliberation takes minutes, a plain answer takes seconds.</span><span class="ro">La corectitudine, două din trei sunt prea ușoare — toate modurile le rezolvă — deci doar întrebarea-capcană separă modurile după <em>răspuns</em>. La problema de mate, unde toți au dreptate, diferența reală e <b style="color:var(--ink)">viteza</b>: deliberarea ia minute, un răspuns simplu ia secunde.</span></p>
+    <p class="lead"><span class="en">On correctness, two of the three are too easy — every mode solves them — so only the trick question separates the modes by <em>answer</em>. On the math puzzle, where everyone is right, <b style="color:var(--ink)">wall-clock isn't the whole cost story</b>: trias and dialectic dispatch their sub-agents in parallel, so they land close to single-pass wait time even though (see below) they still burn far more API spend per run.</span><span class="ro">La corectitudine, două din trei sunt prea ușoare — toate modurile le rezolvă — deci doar întrebarea-capcană separă modurile după <em>răspuns</em>. La problema de mate, unde toți au dreptate, <b style="color:var(--ink)">timpul de așteptare nu spune tot despre cost</b>: trias și dialectic își dispecerizează sub-agenții în paralel, deci ajung aproape de timpul de așteptare al unui răspuns simplu, deși (vezi mai jos) consumă în continuare mult mai mult buget API per rulare.</span></p>
     <table>
       <thead><tr>
         <th class="m"><span class="en">Mode</span><span class="ro">Mod</span></th>
@@ -169,15 +169,15 @@
       </tr></thead>
       <tbody>
         <tr><td class="m">consilium_sequential</td>
-          <td><span class="ic ok">✓</span><small><span class="en">60 · 2 of 3 runs (1 hit the $3 cap)</span><span class="ro">60 · 2 din 3 rulări (1 a atins plafonul de $3)</span></small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~5.6m</span><small><span class="en">✓ solved</span><span class="ro">✓ rezolvat</span></small></td></tr>
+          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~1.5m</span><small><span class="en">✓ solved</span><span class="ro">✓ rezolvat</span></small></td></tr>
         <tr><td class="m">consilium_dialectic</td>
-          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~6.4m</span><small>✓</small></td></tr>
+          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time fast">~31s</span><small>✓</small></td></tr>
         <tr><td class="m">consilium_trias</td>
-          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time slow">~5.3m</span><small>✓</small></td></tr>
+          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic ok">✓</span><small>100</small></td><td><span class="time fast">~43s</span><small>✓</small></td></tr>
         <tr><td class="m">superpowers</td>
-          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic no">✗</span><small><span class="en">wrong</span><span class="ro">greșit</span></small></td><td><span class="time fast">~33s</span><small>✓</small></td></tr>
+          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic no">✗</span><small><span class="en">wrong</span><span class="ro">greșit</span></small></td><td><span class="time fast">~45s</span><small>✓</small></td></tr>
         <tr><td class="m">sonnet_bare <small>baseline</small></td>
-          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic no">✗</span><small><span class="en">wrong</span><span class="ro">greșit</span></small></td><td><span class="time fast">~33s</span><small>✓</small></td></tr>
+          <td><span class="ic ok">✓</span><small>60</small></td><td><span class="ic no">✗</span><small><span class="en">wrong</span><span class="ro">greșit</span></small></td><td><span class="time fast">~32s</span><small>✓</small></td></tr>
       </tbody>
     </table>
     <p class="easy" style="margin-top:12px"><span class="en">✓ = solved · ✗ = wrong answer (graded the same way for everyone) · math column shows solve time (all modes got 100)</span><span class="ro">✓ = rezolvat · ✗ = răspuns greșit (notat la fel pentru toți) · coloana mate arată timpul de rezolvare (toate modurile au luat 100)</span></p>
@@ -188,28 +188,27 @@
     <h2><span class="en">What it costs</span><span class="ro">Cât costă</span></h2>
     <p class="lead"><span class="en">Deliberation isn't free — it runs many more steps. Average cost per question:</span><span class="ro">Deliberarea nu e gratis — rulează mult mai mulți pași. Cost mediu per întrebare:</span></p>
     <div class="cost">
-      <div class="crow"><span class="nm">consilium_trias</span><div class="bar" style="width:100%"></div><span class="v">$2.36</span></div>
-      <div class="crow"><span class="nm">consilium_sequential</span><div class="bar" style="width:99%"></div><span class="v">$2.35</span></div>
-      <div class="crow"><span class="nm">consilium_dialectic</span><div class="bar" style="width:92%"></div><span class="v">$2.18</span></div>
-      <div class="crow"><span class="nm">superpowers</span><div class="bar lo" style="width:11%"></div><span class="v">$0.26</span></div>
-      <div class="crow"><span class="nm">sonnet_bare</span><div class="bar lo" style="width:11%"></div><span class="v">$0.26</span></div>
+      <div class="crow"><span class="nm">consilium_trias</span><div class="bar" style="width:100%"></div><span class="v">$2.03</span></div>
+      <div class="crow"><span class="nm">consilium_dialectic</span><div class="bar" style="width:98%"></div><span class="v">$1.99</span></div>
+      <div class="crow"><span class="nm">consilium_sequential</span><div class="bar" style="width:71%"></div><span class="v">$1.45</span></div>
+      <div class="crow"><span class="nm">superpowers</span><div class="bar lo" style="width:14%"></div><span class="v">$0.28</span></div>
+      <div class="crow"><span class="nm">sonnet_bare</span><div class="bar lo" style="width:13%"></div><span class="v">$0.26</span></div>
     </div>
-    <p class="lead" style="margin-top:18px"><span class="en"><b style="color:var(--ink)">Deliberation costs ~9× more.</b> Worth it on a hard question where a quick answer slips — overkill on easy ones.</span><span class="ro"><b style="color:var(--ink)">Deliberarea costă de ~9× mai mult.</b> Merită la o întrebare grea unde răspunsul rapid greșește — inutil la cele ușoare.</span></p>
+    <p class="lead" style="margin-top:18px"><span class="en"><b style="color:var(--ink)">Deliberation costs 5.6×–7.9× more.</b> Worth it on a hard question where a quick answer slips — overkill on easy ones.</span><span class="ro"><b style="color:var(--ink)">Deliberarea costă de 5,6×–7,9× mai mult.</b> Merită la o întrebare grea unde răspunsul rapid greșește — inutil la cele ușoare.</span></p>
   </section>
 
   <!-- HONEST -->
   <section>
     <h2><span class="en">Being honest about it</span><span class="ro">Sincer despre limite</span></h2>
     <ul class="lim">
-      <li><span class="en"><b>Mostly 1 try per mode</b> — only consilium_sequential got 3 tries (on the coding task and the trick question); every other cell is a single run. The trick-question direction is consistent (5/5 deliberation vs 0/2 single-pass), but a textbook claim wants ~15 tries per mode.</span><span class="ro"><b>În mare parte 1 încercare per mod</b> — doar consilium_sequential a avut 3 încercări (la sarcina de cod și la întrebarea-capcană); restul celulelor au o singură rulare. Direcția la întrebarea-capcană e consistentă (5/5 cu deliberare vs 0/2 fără), dar o afirmație riguroasă cere ~15 încercări per mod.</span></li>
+      <li><span class="en"><b>n=1 per cell</b> — this is a single fresh batch across all 15 cells (5 modes × 3 tasks), no replicates. A prior batch showed real run-to-run noise on the coding task (the same sequential configuration once hit the $3 budget cap and twice passed cleanly) — that variance isn't re-measured here, so any single cell could flip on a re-run. A textbook claim wants ~15 tries per mode.</span><span class="ro"><b>n=1 per celulă</b> — acesta e un singur batch proaspăt pe toate cele 15 celule (5 moduri × 3 sarcini), fără replicate. Un batch anterior a arătat zgomot real între rulări la sarcina de cod (aceeași configurație sequential a atins o dată plafonul de $3 și a trecut curat de două ori) — variația asta nu e remăsurată aici, deci orice celulă ar putea da alt rezultat la o rerulare. O afirmație riguroasă cere ~15 încercări per mod.</span></li>
       <li><span class="en"><b>Only one question was hard enough to matter</b> — the other two are at ceiling; more genuinely tricky questions are needed.</span><span class="ro"><b>Doar o întrebare a fost suficient de grea</b> — celelalte două sunt la maxim; e nevoie de mai multe întrebări cu adevărat dificile.</span></li>
-      <li><span class="en"><b>Run-to-run noise is real</b> — on the coding task, the exact same sequential configuration hit the $3 budget cap once and passed cleanly twice. At n=1, that variance is larger than most differences between modes.</span><span class="ro"><b>Zgomotul între rulări e real</b> — la sarcina de cod, exact aceeași configurație sequential a atins o dată plafonul de $3 și a trecut curat de două ori. La n=1, variația asta e mai mare decât majoritatea diferențelor dintre moduri.</span></li>
-      <li><span class="en"><b>Two prompt versions are mixed in the sequential replicates</b> — its third run used the newer v1.5–1.6 voice prompts (treated as one bundled change; no separate attribution), the rest the prior version. Scores were identical either way, so no quality claim is made for the newer prompts.</span><span class="ro"><b>Replicatele sequential amestecă două versiuni de prompturi</b> — a treia rulare a folosit prompturile de voce v1.5–1.6 (tratate ca o singură schimbare-pachet; fără atribuire separată), restul versiunea anterioară. Scorurile au fost identice, deci nu se face nicio afirmație de calitate pentru prompturile noi.</span></li>
+      <li><span class="en"><b>Wall-clock isn't total compute</b> — trias and dialectic dispatch sub-agents in parallel, so what a user waits for (wall-clock) can be far shorter than the total API time spent across sub-agents. Example: trias's coding run finished in 2m23s wall-clock but consumed 8m59s of aggregate API time. Cost reflects the real total; the solve-time column does not.</span><span class="ro"><b>Timpul de așteptare nu e tot computul</b> — trias și dialectic își dispecerizează sub-agenții în paralel, deci ce așteaptă un utilizator (wall-clock) poate fi mult mai scurt decât timpul API total consumat de sub-agenți. Exemplu: rularea trias la sarcina de cod s-a terminat în 2m23s wall-clock dar a consumat 8m59s de timp API cumulat. Costul reflectă totalul real; coloana de timp de rezolvare nu.</span></li>
     </ul>
   </section>
 
   <footer>
-    <span class="en">One model (Claude Sonnet 5, high effort) · 5 modes · 3 questions · 1 run per cell, plus 3 replicates for consilium_sequential on the code + trick tasks · graded automatically against a fixed answer key · 2026-07-06/07.<br>The deliberation pipeline is verified to actually run on every consilium run (no silent fallback to a plain answer).</span><span class="ro">Un model (Claude Sonnet 5, efort ridicat) · 5 moduri · 3 întrebări · 1 rulare per celulă, plus 3 replicate pentru consilium_sequential la sarcina de cod + capcană · notate automat față de o cheie de răspuns fixă · 2026-07-06/07.<br>Pipeline-ul de deliberare e verificat că rulează efectiv la fiecare rulare consilium (fără revenire silențioasă la un răspuns simplu).</span>
+    <span class="en">One model (Claude Sonnet 5, high effort) · 5 modes · 3 questions · 1 run per cell (single fresh batch, no replicates) · graded automatically against a fixed answer key · 2026-07-07.<br>The deliberation pipeline is verified to actually run on every consilium run (no silent fallback to a plain answer).</span><span class="ro">Un model (Claude Sonnet 5, efort ridicat) · 5 moduri · 3 întrebări · 1 rulare per celulă (batch unic proaspăt, fără replicate) · notate automat față de o cheie de răspuns fixă · 2026-07-07.<br>Pipeline-ul de deliberare e verificat că rulează efectiv la fiecare rulare consilium (fără revenire silențioasă la un răspuns simplu).</span>
   </footer>
 
 </div>
