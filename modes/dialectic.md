@@ -1,16 +1,16 @@
 ---
 name: dialectic
-subagents: 2
+subagents: 1
 cost_multiplier: 1.33
 confidence_floor: 0.75
 models: sonnet
 dispatch_count: 4
-description: Sequential (now 1 dispatched sub-agent) + 1 Skeptic sub-agent. Code-specialized context injection. Opt-in.
+description: Sequential + 1 Skeptic sub-agent. Code-specialized context injection. Opt-in.
 ---
 
 # Dialectic mode (opt-in)
 
-**Mechanics:** Standard Sequential (Generator→Conservator→Control, dispatched as one sub-agent — see `modes/sequential.md` for that architecture and its accepted tradeoffs) with code-specific context injected into the voice inputs, followed by `skeptic_on_chosen`. Cost: 1.33× Sequential (1× Sequential + 1/3 for Skeptic sub-agent) — unchanged by Sequential's move to sub-agent dispatch, since the multiplier is relative to Sequential's own baseline. `subagents: 2` (Sequential's dispatch + the Skeptic's dispatch) — inherited automatically from Sequential's architecture change; nothing in Dialectic's own definition needed to change beyond this frontmatter value. No new prompt files — context is injected via the voice input fields.
+**Mechanics:** Standard Sequential (Generator→Conservator→Control) with code-specific context injected into the voice inputs, followed by `skeptic_on_chosen`. Cost: 1.33× Sequential (1× Sequential + 1/3 for Skeptic sub-agent). No new prompt files — context is injected via the voice input fields.
 
 **Old Dialectic (Pass1+Pass2) removed.** The Pass-1+Pass-2 merge script and `*_pass2.md` prompts have been deleted (see git history).
 
