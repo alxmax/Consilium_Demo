@@ -1,5 +1,5 @@
 ---
-generated: 2026-07-07 10:00
+generated: 2026-07-07 15:07
 nodes: 44
 edges: 53
 ---
@@ -193,8 +193,8 @@ graph LR
   f_modes_dialectic_md_47["modes/dialectic.md:47"]
   CONSILIUM_MODE_DIALECTIC_001 -->|implements| f_modes_dialectic_md_47
   CONSILIUM_MODE_SEQUENTIAL_001["sequential mode<br><small>CONSILIUM-MODE-SEQUENTIAL-001</small>"]
-  f_modes_sequential_md_70["modes/sequential.md:70"]
-  CONSILIUM_MODE_SEQUENTIAL_001 -->|implements| f_modes_sequential_md_70
+  f_modes_sequential_md_84["modes/sequential.md:84"]
+  CONSILIUM_MODE_SEQUENTIAL_001 -->|implements| f_modes_sequential_md_84
   CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001["skeptic_on_chosen flag<br><small>CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001</small>"]
   f_modes_skeptic_on_chosen_md_69["modes/skeptic_on_chosen.md:69"]
   CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 -->|implements| f_modes_skeptic_on_chosen_md_69

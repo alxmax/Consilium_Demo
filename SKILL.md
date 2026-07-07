@@ -520,8 +520,8 @@ Each mode has its own `.md` file in `modes/` with YAML frontmatter (`name`, `sub
 
 | Mode | File | Subagents | Cost | Conf. floor |
 |---|---|---|---|---|
-| Sequential (default) | [modes/sequential.md](modes/sequential.md) | 0 | 1× | 0.70 |
-| Dialectic | [modes/dialectic.md](modes/dialectic.md) | 1 | 1.33× | 0.75 |
+| Sequential (default) | [modes/sequential.md](modes/sequential.md) | 1 | 1× | 0.70 |
+| Dialectic | [modes/dialectic.md](modes/dialectic.md) | 2 | 1.33× | 0.75 |
 | Trias | [modes/trias.md](modes/trias.md) | 4 (worst: 7) | 2.67× | 0.80 |
 | skeptic_on_chosen (flag) | [modes/skeptic_on_chosen.md](modes/skeptic_on_chosen.md) | +1 over base | base+1 | N/A |
 
@@ -529,7 +529,7 @@ Each mode has its own `.md` file in `modes/` with YAML frontmatter (`name`, `sub
 
 ## Dialectic mode (opt-in)
 
-Sequential + 1 Skeptic sub-agent. Code-context (language, files, test suite, CI gate) injected into voice inputs. `telemetry.mode: "dialectic"`. **Full workflow: [modes/dialectic.md](modes/dialectic.md).**
+Sequential (1 dispatched sub-agent) + 1 Skeptic sub-agent — 2 total. Code-context (language, files, test suite, CI gate) injected into voice inputs. `telemetry.mode: "dialectic"`. **Full workflow: [modes/dialectic.md](modes/dialectic.md).**
 
 ## Trias mode (high-stakes opt-in)
 
@@ -552,7 +552,7 @@ When to escalate beyond a standard Consilium mode:
 
 ## Sequential mode (default)
 
-Default mode. Generator → Conservator → Control run in-context. 0 sub-agent dispatches, 1× cost. **Full reference: [modes/sequential.md](modes/sequential.md).**
+Default mode. Generator → Conservator → Control run together inside 1 dispatched sub-agent call, which returns the three raw voice outputs unchanged; the orchestrator aggregates and implements in its own fresh context. 1 sub-agent dispatch, 1× cost (baseline, by definition — see `modes/sequential.md` "Accepted tradeoffs" for what this figure doesn't currently measure). **Full reference: [modes/sequential.md](modes/sequential.md).**
 
 Key veto triggers (inline for quick reference during Steps 2–5):
 
