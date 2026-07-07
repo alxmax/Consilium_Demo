@@ -4,6 +4,49 @@ All notable changes to Consilium are recorded here, following
 [Keep a Changelog](https://keepachangelog.com/). This project is source-available
 under the Business Source License 1.1 (see `LICENSE`).
 
+## [1.6.0] — 2026-07-07
+
+### Added
+- Declared falsifier on the chosen approach, **consumer-first** (design review
+  `2026-07-07_011914-consilium-falsifier-round2-control-voice`, MODIFY 0/8/1
+  — implement-now rejected; this ships the review-revised trim instead of the
+  original clause): (1) `build_report.py` now persists Control's
+  `strongest_objection` + `no_blocking_defect_attested` into the run JSON's
+  control step — previously emitted mid-deliberation but never persisted;
+  (2) `mark_outcome.py --auto-suggest` reads the declared falsifier
+  (`strongest_objection.reason`) from the run JSON as the default `--reason`
+  when scoring an outcome (explicit `--reason` wins; degrades gracefully on
+  pre-1.6.0 runs); (3) `prompts/voices/control.md` Q5 amendment: when
+  `no_blocking_defect_attested: true`, `strongest_objection.reason` must
+  carry a falsifiable exit-claim about the likely-chosen candidate — an
+  observable external to the verdict; verdict-restatement invalid.
+  Red→green tests in `test_build_report.py` and `test_feedback_html.py`.
+  **Measurement protocol (declared before landing):** 1.5.0 + 1.6.0 are one
+  bundled treatment for all benchmarking purposes; no separate attribution
+  of effects to either round. **Unvalidated for quality** — same discipline
+  as 1.5.0, no quality-improvement claim made.
+
+## [1.5.0] — 2026-07-07
+
+### Added
+- Prompt-only discipline transplant from an internal design-review framework
+  into the 3 core voices (`prompts/voices/generator.md`, `conservator.md`, `control.md`):
+  a Conservator silent-failure question (Q6), a merged Control rule requiring
+  `strongest_objection` to be a testable claim anchored to a declared
+  `hidden_assumptions` premise, a materiality/polite-retreat discipline on all
+  three voices, and a `## Limits` disjointness section per voice. No JSON
+  schema change, no new dispatches, no `aggregator.py`/`validate_report.py`
+  edits — purely additive prompt text. Per design review run
+  `2026-07-06_093007` (GO_WITH_CONDITIONS) and the trimmed spec from its
+  reviewers' cross-questioning (the final blocking condition). `test_lens_bias.py` (4/4), `test_vote_degeneracy.py` (4/4), and
+  `run_evals.py` (65/0) are identical before and after — zero verdict
+  inversions. Manually verified on one qualitative example (not part of the
+  scored corpus) that the new clauses produce the intended behavior: Q6 names
+  the silent-failure mode explicitly instead of it surfacing scattered/implicit
+  elsewhere, and `strongest_objection` cites a numbered premise instead of a
+  free-floating claim. **Unvalidated for quality** — n=1, manual, no claim of
+  improved deliberation quality is made or implied by this change.
+
 ## [Unreleased]
 
 - Aggregator gate: reject `generator.preferred` not among the candidate ids (#464).

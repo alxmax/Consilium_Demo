@@ -135,6 +135,25 @@ class TestBuildFull(unittest.TestCase):
         report = build(self._base_bundle(aggregate={"chosen": None, "scheme": "sequential"}))
         self.assertIsNone(report["chosen_approach"])
 
+    def test_control_step_passes_through_strongest_objection(self):
+        bundle = self._base_bundle(control={
+            "verdicts": [{"id": "A", "valid": True, "issues": []}],
+            "strongest_objection": {"target_id": None,
+                                    "reason": "wrong if weekly transactions < 40 for 4 weeks"},
+            "no_blocking_defect_attested": True,
+        })
+        report = build(bundle)
+        control_step = next(s for s in report["deliberation_log"] if s["step"] == "control")
+        self.assertEqual(control_step["strongest_objection"]["reason"],
+                         "wrong if weekly transactions < 40 for 4 weeks")
+        self.assertTrue(control_step["no_blocking_defect_attested"])
+
+    def test_control_step_omits_strongest_objection_when_absent(self):
+        report = build(self._base_bundle())
+        control_step = next(s for s in report["deliberation_log"] if s["step"] == "control")
+        self.assertNotIn("strongest_objection", control_step)
+        self.assertNotIn("no_blocking_defect_attested", control_step)
+
 
 class TestVoiceScores(unittest.TestCase):
     def test_voice_scores_for_chosen_candidate(self):

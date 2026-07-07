@@ -85,6 +85,24 @@ def _load_run_map(runs_dir: Path) -> dict[str, str]:
         return {}
 
 
+def _falsifier_from_run(run_file: Path) -> str | None:
+    """Read Control's declared falsifier (strongest_objection.reason) from a
+    persisted run report's deliberation_log. Returns None when the file is
+    unreadable or the field is absent (pre-1.6.0 runs)."""
+    try:
+        data = json.loads(run_file.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    for step in data.get("deliberation_log") or []:
+        if isinstance(step, dict) and step.get("step") == "control":
+            so = step.get("strongest_objection")
+            if isinstance(so, dict):
+                reason = so.get("reason")
+                if isinstance(reason, str) and reason.strip():
+                    return reason.strip()
+    return None
+
+
 def _annotate_note(note: str, reason: str | None, outcome: str = "") -> str:
     parts = [p.strip() for p in note.split(";") if p.strip()]
     if outcome == "PEND_HEADLESS":
@@ -117,12 +135,30 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--benchmark", action="store_true",
         help="required when --outcome PEND_HEADLESS; marks entry as headless benchmark run")
     ap.add_argument("--reason", default=None, help="short string appended to note as outcome_reason=...")
+    ap.add_argument("--auto-suggest", action="store_true",
+        help="when --reason is omitted, read Control's declared falsifier "
+             "(strongest_objection.reason) from the run JSON and use it as the reason")
     ap.add_argument("--dry-run", action="store_true", help="print matched rows; don't write")
     args = ap.parse_args(argv)
 
     if not args.run_path and not (args.date and args.chosen):
         print("mark_outcome: provide --run-path OR (--date AND --chosen)", file=sys.stderr)
         return 1
+
+    # Consumer for the declared falsifier (design review 2026-07-07_011914:
+    # consumer-first). Explicit --reason always wins; auto-suggest only fills
+    # the gap, and degrades gracefully on runs that predate the field.
+    if args.auto_suggest and not args.reason and args.run_path:
+        run_file = Path(args.run_path)
+        if not run_file.exists():
+            fb_dir = Path(args.feedback).parent if args.feedback else FEEDBACK_PATH.parent
+            run_file = fb_dir / "runs" / Path(args.run_path).name
+        falsifier = _falsifier_from_run(run_file)
+        if falsifier:
+            args.reason = f"falsifier: {falsifier}"
+            print(f"auto-suggest: using declared falsifier as reason: {falsifier}")
+        else:
+            print("auto-suggest: no declared falsifier in run file; proceeding without reason")
 
     if args.outcome == "PEND_HEADLESS" and not args.benchmark:
         print("mark_outcome: --outcome PEND_HEADLESS requires --benchmark flag", file=sys.stderr)

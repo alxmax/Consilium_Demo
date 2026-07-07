@@ -1971,7 +1971,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/conservator.md:208"
+          "loc": "prompts/voices/conservator.md:218"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -2019,7 +2019,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/control.md:121"
+          "loc": "prompts/voices/control.md:131"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -2067,7 +2067,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "prompts/voices/generator.md:139"
+          "loc": "prompts/voices/generator.md:147"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",

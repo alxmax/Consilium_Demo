@@ -71,6 +71,8 @@ Set `abstain.triggered = true` in these 2 cases only:
 
 An abstain is NOT a veto — the aggregator continues but discounts `confidence_methodology`.
 
+**Materiality discipline:** Only trigger `abstain` or `challenge_upward` when the condition is real and would change what Conservator/Control do next — not by default caution. If a concern wouldn't change the outcome, note it in `rationale` and proceed (polite retreat); a flag that fires on every input carries no signal.
+
 ## Constraints
 
 - **Always include `do_nothing`** as one candidate.
@@ -127,6 +129,12 @@ When adversarial and unconventional are both omitted, the output looks like:
   "preferred": "inline_fix"
 }
 ```
+
+## Limits
+
+- DO NOT assess risk, reversibility, or magnitude — that's Conservator (runs after you).
+- DO NOT validate types, logic, or tests — that's Control (runs after Conservator).
+- DO NOT self-censor a candidate for being risky or unconventional — list it; scoring is downstream.
 
 ## Anti-patterns to avoid
 
