@@ -4565,17 +4565,17 @@ const TRICK_RESULTS = [
 ];
 
 const SCORECARD = [
-  { name: 'consilium_sequential', code: '✓ 60/60', trick: '✓ 100', math: '~5.7 min' },
-  { name: 'consilium_dialectic',  code: '✓ 60/60', trick: '✓ 100', math: '~7.3 min' },
-  { name: 'consilium_trias',      code: '— timed out', trick: '✓ 100', math: '~9.2 min' },
+  { name: 'consilium_sequential', code: '✓ 60/60', trick: '✗ wrong', math: '~2.8 min' },
+  { name: 'consilium_dialectic',  code: '— budget exhausted', trick: '✓ 100', math: '~5.1 min' },
+  { name: 'consilium_trias',      code: '✓ 60/60', trick: '✓ 100', math: '~6.6 min' },
   { name: 'superpowers',          code: '✓ 60/60', trick: '✗ wrong', math: '~42 s' },
   { name: 'sonnet_bare',          code: '✓ 60/60', trick: '✗ wrong', math: '~38 s' },
 ];
 
 const COST_ROWS = [
-  { name: 'consilium_trias',      cost: 1.63, tag: 'consilium' },
-  { name: 'consilium_dialectic',  cost: 1.51, tag: 'consilium' },
-  { name: 'consilium_sequential', cost: 1.30, tag: 'consilium' },
+  { name: 'consilium_trias',      cost: 2.49, tag: 'consilium' },
+  { name: 'consilium_dialectic',  cost: 2.35, tag: 'consilium' },
+  { name: 'consilium_sequential', cost: 2.26, tag: 'consilium' },
   { name: 'superpowers',          cost: 0.30, tag: 'baseline' },
   { name: 'sonnet_bare',          cost: 0.30, tag: 'baseline' },
 ];
@@ -4583,7 +4583,7 @@ const COST_ROWS = [
 function BenchResults() {
   return (
     <div style={{ marginTop: 40 }}>
-      <h3 className="h-sub" style={{ fontSize: 20 }}>Measured results — 2026-06-24 snapshot</h3>
+      <h3 className="h-sub" style={{ fontSize: 20 }}>Measured results — Consilium rows: 2026-07-08 · baseline rows: 2026-06-24 snapshot</h3>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, margin: '6px 0 18px', maxWidth: 760 }}>
         Two of the three tasks are at ceiling — every mode solves them — so correctness only separates the modes on the trick question, where the obvious answer is a trap. There, the same model flips from mostly-wrong to almost-always-right purely by deliberating. The price is cost and wall-clock.
       </p>
@@ -4649,7 +4649,7 @@ function BenchResults() {
         ))}
       </div>
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)', margin: '0 0 22px' }}>
-        ✓ = solved · ✗ = wrong answer (graded identically for every mode) · — = exceeded the 15-minute limit. Trias dispatches its sub-agents one at a time and runs out of clock on the coding task — a real cost/speed limit, not a quality result.
+        ✓ = solved · ✗ = wrong answer (graded identically for every mode) · — = halted before finishing. Dialectic hit the $3/task budget cap mid-run on the coding task in the 2026-07-08 spot-check — a real cost limit, not a quality result; Trias finished the same task cleanly this time.
       </p>
 
       {/* Cost */}
@@ -4666,7 +4666,7 @@ function BenchResults() {
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5, color: r.tag === 'consilium' ? 'var(--ink)' : 'var(--ink-3)' }}>{r.name}</span>
             <div style={{ background: 'var(--paper-2)', height: 16, borderRadius: 2 }}>
               <div style={{
-                height: '100%', width: `${(r.cost / 1.63) * 100}%`,
+                height: '100%', width: `${(r.cost / Math.max(...COST_ROWS.map((x) => x.cost))) * 100}%`,
                 background: r.tag === 'consilium' ? 'var(--signal)' : 'var(--ink-3)',
                 opacity: r.tag === 'consilium' ? 1 : 0.45,
                 borderRadius: 2,
@@ -4677,13 +4677,13 @@ function BenchResults() {
         ))}
       </div>
       <p className="body-prose" style={{ color: 'var(--ink-2)', fontSize: 14, margin: '0 0 22px', maxWidth: 760 }}>
-        <strong>Deliberation costs ~4–5× the single-pass baselines</strong> ($1.30–$1.63 vs $0.30 per task) and takes minutes where a plain answer takes seconds. Worth it where a quick answer quietly slips; overkill on tasks the base model already solves — which is exactly why the skill defaults to the cheapest mode and a scope gate, escalating on stake rather than difficulty. (These per-task ratios compress section 07's pure dispatch multipliers — e.g. Trias ≈ 2.67× Sequential per <em>deliberation</em>: every benchmark task also carries the same task-solving work in every mode, and deliberation is the increment on top.)
+        <strong>Deliberation costs ~7.5–8.3× the single-pass baselines</strong> ($2.26–$2.49 vs $0.30 per task) and takes minutes where a plain answer takes seconds. Worth it where a quick answer quietly slips; overkill on tasks the base model already solves — which is exactly why the skill defaults to the cheapest mode and a scope gate, escalating on stake rather than difficulty. (These per-task ratios compress section 07's pure dispatch multipliers — e.g. Trias ≈ 2.67× Sequential per <em>deliberation</em>: every benchmark task also carries the same task-solving work in every mode, and deliberation is the increment on top.)
       </p>
 
       <div className="note">
         <span className="note__label">Honest limits</span>
         <span>
-          Small n (4 graded tries per mode) — the direction is consistent, but a rigorous claim wants ~15. Only one task is hard enough to discriminate; the other two sit at ceiling. Trias's coding-task timeout is a real operational cost of sequential sub-agent dispatch. One model (Sonnet 4.6, high effort) throughout — the benchmark isolates the <em>process</em>, not the model. And these figures are a dated, hand-transcribed snapshot of the benchmark report — the CI drift gate (section 12) pins this page's mode invariants, not this snapshot.
+          Small n — the trick-question dot matrix above is still the 2026-06-24 snapshot (4 tries per mode); the scorecard and cost rows for the three consilium modes are a fresher but single-rep (n=1) spot-check from 2026-07-08, so treat those three numbers as directional, not averaged. Baseline rows (superpowers, sonnet_bare) are unchanged from 2026-06-24. Only one task is hard enough to discriminate; the other two sit at ceiling. One model (Sonnet 4.6, high effort) throughout — the benchmark isolates the <em>process</em>, not the model. These figures are a hand-transcribed snapshot of the benchmark report — the CI drift gate (section 12) pins this page's mode invariants, not this snapshot.
         </span>
       </div>
     </div>
