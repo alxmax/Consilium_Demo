@@ -152,7 +152,7 @@ def _validate_telemetry(telemetry: object) -> list[str]:
     # Optional opt-in `--lens` provenance. Absent on default (no-lens) runs. When
     # present it records which personality lens tinted which role; for the Dialectic
     # rung the decider and skeptic lenses MUST differ (runtime enforcement of the
-    # `decider != skeptic` contract — an internal design review, 2026-07-07 — decider != skeptic).
+    # `decider != skeptic` contract — Senate 2026-07-07 audit, Dimon condition).
     lens = telemetry.get("lens_applied")
     if lens is not None:
         if not isinstance(lens, dict):
@@ -280,11 +280,11 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     # Alias resolution — collapsed 2026-05-17.  The live dispatcher no longer
     # emits these names; historical runs/*.json may still carry them.
     # Dated removal milestones (enforced by scripts/check_doc_drift.py):
-    #   parallel_skeptic, dialectic_skeptic → remove after 2026-08-17 (3mo post-collapse)
+    #   parallel_skeptic, dialectic_skeptic → remove after 2026-11-17 (extended 2026-08-18)
     #   trias_split → remove after 2026-08-21 (3mo post-deprecation)
     _LEGACY_MODE_ALIASES: dict[str, str] = {
-        "parallel_skeptic": "skeptic_on_chosen",   # remove after 2026-08-17
-        "dialectic_skeptic": "skeptic_on_chosen",  # remove after 2026-08-17
+        "parallel_skeptic": "skeptic_on_chosen",   # remove after 2026-11-17
+        "dialectic_skeptic": "skeptic_on_chosen",  # remove after 2026-11-17
         "trias_split": "trias",                    # remove after 2026-08-21
     }
     mode = _LEGACY_MODE_ALIASES.get(mode.strip(), mode.strip())

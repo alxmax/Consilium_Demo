@@ -12,7 +12,7 @@
       "scripts/build_report.py": "639fed450113788f6fb3b2ea0bbeb4e92fcb7ded1b176560e19008c0e37ea5a2"
     },
     "CONSILIUM-CHECK-DOC-DRIFT-001": {
-      "scripts/check_doc_drift.py": "8ae889bacc110be82cdf1db3c85d6b119382fd86efe26ac4ad8da5fb7f2c2ea1"
+      "scripts/check_doc_drift.py": "af4b550fe025b9ffa6bd4bcdef0b9438d0a57891dee8d61198c52de8e3506497"
     },
     "CONSILIUM-CHECK-PUBLIC-LEAK-001": {
       "scripts/check_public_leak.py": "a0efa717766035be459f65c38c562abe1b5df1df61a78945f37bb057211e5872"
