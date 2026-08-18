@@ -432,8 +432,10 @@ def check_confidence_floor_completeness() -> list[str]:
 
 REMOVAL_MILESTONES: dict[str, str] = {
     # alias -> dated removal milestone (ISO date). Removed after that date.
-    "parallel_skeptic": "2026-08-17",   # collapsed 2026-05-17, +3mo
-    "dialectic_skeptic": "2026-08-17",  # collapsed 2026-05-17, +3mo
+    # parallel_skeptic/dialectic_skeptic: original 2026-08-17 milestone passed
+    # with no removal work scheduled — extended 2026-08-18, +3mo.
+    "parallel_skeptic": "2026-11-17",
+    "dialectic_skeptic": "2026-11-17",
     "trias_split": "2026-08-21",        # deprecated 2026-05-21, +3mo
 }
 
