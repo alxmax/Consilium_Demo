@@ -3,9 +3,11 @@ milestone: v1.0
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-GENERATOR-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: []
+satisfies: [ARCH-CONSILIUM-VOICES-001]
 ---
 
 # generator voice
@@ -14,11 +16,13 @@ depends_on: []
 
 ## WHAT — Contract (normative)
 
-- The voice shall emit a JSON object containing a `candidates` array of 3–5 entries, each with the fields `id`, `summary`, `sketch`, `rationale`, and `downside_estimate`; it shall always include a candidate with `id: "do_nothing"`.
-- The voice shall include a candidate named `adversarial_<short_id>` when the change touches shared/core code or a function with more than 3 external callers, or emit `adversarial_skipped` with a reason when that condition is not met.
-- The voice shall emit `challenge_upward.triggered: true` (with a one-line reason) when the input itself carries heavy risk markers — specifically when it contains 3+ risk terms (e.g. "irreversible", "permanent", "drop", "migration") or when the fallback scenario implies more than 10% of capital or more than 1 month of recovery while reading as routine. The flag is forwarded into Conservator's input (Conservator runs next) to raise its scrutiny — a one-way signal forward, not a re-run.
-- The voice shall emit `fallback_scenario` and `coverage_check`; if no fallback can be articulated after 2 attempts, it shall emit `abstain.triggered: true` with `reason: "goal_undefined"`.
-- The `unconventional_*` candidate shall be included unless `adversarial_*` varies on a non-scope axis (mechanism, timing, or abstraction level), or the change is mechanically trivial. Scope overlap alone does NOT justify omitting `unconventional_*`; this rule prevents silent candidate duplication and is normative.
+- The voice emits a JSON object containing a `candidates` array of 3–5 entries, each with the fields `id`, `summary`, `sketch`, `rationale`, and `downside_estimate`; it always includes a candidate with `id: "do_nothing"`.
+- The voice includes a candidate named `adversarial_<short_id>` when the change touches shared/core code or a function with more than 3 external callers, or emits `adversarial_skipped` with a reason when that condition is not met.
+- The voice emits `challenge_upward.triggered: true` (with a one-line reason) when the input itself carries heavy risk markers — specifically when it contains 3+ risk terms (e.g. "irreversible", "permanent", "drop", "migration") or when the fallback scenario implies more than 10% of capital or more than 1 month of recovery while reading as routine. The flag is forwarded into Conservator's input (Conservator runs next) to raise its scrutiny — a one-way signal forward, not a re-run.
+- The voice emits `fallback_scenario` and `coverage_check`; if no fallback can be articulated after 2 attempts, it emits `abstain.triggered: true` with `reason: "goal_undefined"`.
+- The `unconventional_*` candidate is included unless `adversarial_*` varies on a non-scope axis, or the change is mechanically trivial.
+- A non-scope axis is one of: mechanism, timing, abstraction level.
+- Scope overlap alone does NOT justify omitting `unconventional_*`; this rule prevents silent candidate duplication and is normative.
 - The voice-score handicap (0.5) applied to `adversarial_*` and `do_nothing` candidates is applied downstream by `build_report.py`. The Generator does not self-verify this handicap; the cross-component dependency is documented here to make the contract explicit to future editors. The Generator output schema has no per-candidate score field, so a Generator output cannot override this handicap.
 - The external-caller threshold (>3 callers) is a heuristic self-assessment from the input context; the Generator has no file access and cannot perform static analysis. The 3-caller rule is a prompt-level instruction, not a mechanically enforced count.
 - "Mechanically trivial" (the `unconventional_*` omission condition) is intentionally undefined; the Generator exercises discretion, with a one-line doc fix as the canonical example. It does not overlap with Conservator's `meta_recommendation: scale_down` — the Generator does not receive `meta_recommendation` as input.

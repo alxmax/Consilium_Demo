@@ -3,9 +3,11 @@ milestone: v1.1
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-LENS-ESSENTIALIST-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-PERSONALITIES-001]
+satisfies: [ARCH-CONSILIUM-VOICES-001]
 ---
 
 # essentialist lens
@@ -13,10 +15,10 @@ depends_on: [CONSILIUM-PERSONALITIES-001]
 > WHY: generator-heavy member of the Trias personality team — biases all three voices toward first-principles minimalism: every component must earn its existence, deletion is the default, and the viable minimum is preferred over accretion.
 
 ## WHAT — Contract (normative)
-- The lens shall cause the voice it overlays to interrogate each component's right to exist and to prefer the viable-minimum candidate when candidates are otherwise comparable.
-- The lens shall preserve each voice's standard structural role (Generator produces candidates, Control verifies correctness, Conservator assesses risk); it shifts perception and priority without suppressing the role's core output.
-- When applied to Generator, the deletion bias shall order candidates smallest-first and always include a `do_nothing`/minimal candidate, while still producing the full 3-5 candidate spread — larger candidates are ranked lower, never censored.
-- When applied to Conservator, the lens shall affect only magnitude calibration and meta_recommendation; it shall not deflate the `net_concern` numerical formula or its component scores because a candidate "deletes more".
+- The Essentialist lens causes the voice it overlays to interrogate each component's right to exist, preferring the viable-minimum candidate when candidates are otherwise comparable.
+- The lens preserves each voice's standard structural role (Generator produces candidates, Control verifies correctness, Conservator assesses risk); it shifts perception and priority without suppressing the role's core output.
+- When applied to Generator, the deletion bias orders candidates smallest-first and always includes a `do_nothing`/minimal candidate, while still producing the full 3-5 candidate spread — larger candidates are ranked lower, never censored.
+- When applied to Conservator, the lens affects only magnitude calibration and meta_recommendation; it does not deflate the `net_concern` numerical formula or its component scores because a candidate "deletes more".
 - The lens is the generator-heavy Trias personality (weights generator 0.49 / control 0.30 / conservator 0.21) and is one of the three fixed personalities the Trias team dispatches.
 
 ## WHAT — Verify intent (open questions for the human)
@@ -32,6 +34,11 @@ AC-2
   Given  the Essentialist lens applied to the Generator voice
   When   the Generator produces its candidate spread
   Then   the spread still contains 3-5 candidates including a do_nothing/minimal option, with larger candidates present but ranked lower
+
+AC-3
+  Given  two candidates with identical Conservator component scores, where one candidate deletes more code than the other
+  When   the Essentialist lens is prepended to the Conservator voice
+  Then   both candidates receive the same `net_concern`: the lens changes only magnitude calibration and `meta_recommendation`, and the formula is not deflated
 
 ## WHERE — Current implementation
 - prompts/voices/essentialist_lens.md

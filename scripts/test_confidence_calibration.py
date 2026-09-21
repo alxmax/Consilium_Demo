@@ -7,6 +7,7 @@ Stdlib-only, no test runner — run directly:
 Tests the pure logic (records -> bins -> verdict) on synthetic entry lists,
 plus the HTML path end-to-end via a temp FEEDBACK file.
 """
+# tested-by: CONSILIUM-CONFIDENCE-CALIBRATION-001
 from __future__ import annotations
 
 import importlib.util

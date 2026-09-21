@@ -848,7 +848,7 @@ function GreenGateSection() {
     },
     {
       name: 'Requirements gate',
-      cmd: 'reqmap.py gate --strict + map --check',
+      cmd: 'reqmap.py gate --strict',
       desc: 'Every requirement in requirements/ is checked against the code that claims to implement it (member-file hashes), and the published requirement map must be fresh — stale map or lock fails the gate.',
     },
     {

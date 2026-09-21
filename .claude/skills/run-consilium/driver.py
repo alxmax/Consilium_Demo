@@ -27,7 +27,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 PY = [sys.executable, "-X", "utf8"]
 ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8",
-       # reqmap map --check needs the public-repo override (memory: omitting it fails CI)
+       # reqmap gate's map-freshness check needs the public-repo override (memory: omitting it fails CI)
        "REQMAP_REPO": os.environ.get("REQMAP_REPO", "alxmax/Consilium_Demo")}
 
 # Baseline of known-failing run_evals scenarios treated as pre-existing (not a
@@ -118,7 +118,6 @@ def smoke():
     # the reqmap steps are the recurring red-CI cause after requirement edits).
     failures += run("check_public_leak.py", script("check_public_leak.py")).returncode != 0
     failures += run("reqmap gate --strict", script("reqmap.py") + ["gate", "--strict"]).returncode != 0
-    failures += run("reqmap map --check", script("reqmap.py") + ["map", "--check"]).returncode != 0
     failures += run("architecture build --check",
                     PY + [str(REPO / "docs" / "architecture" / "build.py"), "--check"]).returncode != 0
 

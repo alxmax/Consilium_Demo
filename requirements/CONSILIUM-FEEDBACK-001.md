@@ -2,43 +2,49 @@
 milestone: v1.0
 id: CONSILIUM-FEEDBACK-001
 status: confirmed
+level: code
 layer: bus
-owner: auto
+owner: alxmax
 test_exempt: "file I/O wrapper with no isolated pure-function surface"
 depends_on: [CONSILIUM-UTILS-001]
 risk: 1
+satisfies: [ARCH-CONSILIUM-LEARNING-001]
 ---
 
 # feedback
 
 > Canonical FEEDBACK.html parser + a human-readable stats report over logged outcomes.
 
-## Input
-- `.consilium/FEEDBACK.html`: the append-only HTML journal of logged deliberation outcomes (path from `utils.FEEDBACK_PATH`)
-- `.consilium/runs/*.json`: deliberation run files, read only when `--runs` flag is passed
-- CLI flags: `--recent N`, `--runs`
-
 ## Description
-Provides the canonical HTML parser for FEEDBACK.html and a human-readable stats report over logged deliberation outcomes. The `parse_feedback` function is a shared utility imported by `priors.py`, `log_feedback.py`, `efficiency.py`, and deprecated scripts; it supports three HTML row layouts (attribute-based with `data-field`, and two legacy positional cell-count variants) for backward compatibility. Layout precedence is strict: attribute-based (`data-field`) is tried first; positional fallback only applies when no `data-field` attributes are found, matched by exact cell count (8 → 7 → 6 → skip). Rows with an unrecognized `outcome` field are dropped entirely — they are excluded from both the total count and all outcome stats. The success-rate denominator is `OK + BAD + OVR` only; both `PEND` and `PEND_HEADLESS` are excluded. When invoked as a CLI tool it prints total logged uses, per-outcome counts, overall success rate excluding pending entries, recent overrides, and optionally a breakdown of runs-on-disk by aggregation scheme. It exists to give the developer a fast, human-readable health check on the skill's real-world usefulness without opening the HTML journal manually.
 
-## Output
-- stdout: multi-line stats report (total uses, outcome breakdown, success rate, recent overrides, optional run scheme counts)
-- exit code 0 always
+Every line in this section is binding.
 
-## WHAT — Contract
-- `parse_feedback` shall parse `.consilium/FEEDBACK.html` supporting three row layouts in strict precedence order: attribute-based (`data-field`) first, then 8-cell positional (Trias), 7-cell positional (previous), 6-cell positional (legacy); rows with unrecognized `outcome` values shall be silently dropped.
-- Shall return an empty list without error when FEEDBACK.html does not exist.
-- The success-rate denominator shall be `OK + BAD + OVR` only; `PEND` and `PEND_HEADLESS` shall be excluded from the rate calculation.
+- `parse_feedback` parses `.consilium/FEEDBACK.html`, supporting three HTML row layouts for backward compatibility: attribute-based (`data-field`), and two legacy positional cell-count variants.
+- Layout precedence is strict: attribute-based (`data-field`) is tried first; positional fallback applies only when no `data-field` attributes are found, matched by exact cell count in order 8-cell (Trias) -> 7-cell (previous) -> 6-cell (legacy) -> skip.
+- Rows with an unrecognized `outcome` field are dropped entirely, excluded from both the total count and all outcome stats.
+- `parse_feedback` returns an empty list without error when `.consilium/FEEDBACK.html` does not exist.
+- The success-rate denominator is `OK + BAD + OVR` only; `PEND` and `PEND_HEADLESS` are excluded from the rate calculation.
+- `parse_feedback` is a shared utility imported by `priors.py`, `log_feedback.py`, `efficiency.py`, and deprecated scripts.
+- As a CLI tool, `feedback.py` prints to stdout: total logged uses, per-outcome counts, overall success rate excluding pending entries, recent overrides, and (with `--runs`) a breakdown of runs-on-disk by aggregation scheme.
+- Exit code is 0 always.
 
-## WHAT — Verify intent
+## Verify intent
+
 - None - all questions resolved.
 
-## Acceptance (= tests)
-- `parse_feedback` returns an empty list without error when FEEDBACK.html does not exist.
-- `parse_feedback` correctly parses all three row layouts (8-cell Trias, 7-cell previous, 6-cell legacy) and attribute-based `data-field` rows.
-- Rows whose `outcome` field is not one of `OK`, `BAD`, `OVR`, `PEND`, `PEND_HEADLESS` are silently skipped.
-- With `--recent N`, only the last N entries are included in the report stats.
-- With `--runs`, the report includes a per-aggregation-scheme breakdown from `.consilium/runs/*.json`, tolerating both legacy `aggregation.scheme` and current `deliberation_log[step=aggregate].scheme` shapes.
+## Cases
+
+- **CASE-1** — Given `.consilium/FEEDBACK.html` does not exist, when `parse_feedback` is called, then it returns an empty list without error.
+- **CASE-2** — Given FEEDBACK.html containing all three row layouts (8-cell Trias, 7-cell previous, 6-cell legacy) and attribute-based `data-field` rows, when `parse_feedback` runs, then it correctly parses all of them.
+- **CASE-3** — Given a row whose `outcome` field is not one of `OK`, `BAD`, `OVR`, `PEND`, `PEND_HEADLESS`, when `parse_feedback` runs, then the row is silently skipped.
+- **CASE-4** — Given `--recent N` is passed, when the report is generated, then only the last N entries are included in the report stats.
+- **CASE-5** — Given `--runs` is passed, when the report is generated, then it includes a per-aggregation-scheme breakdown from `.consilium/runs/*.json`, tolerating both legacy `aggregation.scheme` and current `deliberation_log[step=aggregate].scheme` shapes.
+
+## Context (non-binding)
+
+**Notes** — Input: `.consilium/FEEDBACK.html` (path from `utils.FEEDBACK_PATH`); `.consilium/runs/*.json` read only when `--runs` is passed. Exists to give the developer a human-readable health check on the skill's real-world usefulness without opening the HTML journal manually.
+
+**Current implementation** — `scripts/feedback.py`.
 
 ## Why test_exempt
 

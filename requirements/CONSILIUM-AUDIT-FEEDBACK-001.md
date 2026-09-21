@@ -1,11 +1,13 @@
 ---
 id: CONSILIUM-AUDIT-FEEDBACK-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-FEEDBACK-001, CONSILIUM-UTILS-001]
 risk: 1
 test_exempt: integration-only — depends on live FEEDBACK.html + runs/; acceptance-tested via --dry-run and manual backfill
+satisfies: [ARCH-CONSILIUM-LEARNING-001]
 ---
 
 # Orphan run detection and PEND backfill
@@ -14,11 +16,11 @@ test_exempt: integration-only — depends on live FEEDBACK.html + runs/; accepta
 
 ## WHAT — Contract
 
-- Without flags, shall list orphan runs (runs with no FEEDBACK.html row) and exit 0.
-- With `--backfill`, shall append one PEND row per orphan to `FEEDBACK.html` using the same note-derivation as `log_feedback.py`.
-- Shall never overwrite an existing row — a run is considered matched if any row shares the same date AND chosen_approach prefix.
-- With `--dry-run`, shall print the rows that would be appended without writing.
-- Backfill outcome shall always be PEND (never retroactively OK); the user closes them via the standard PEND→OK/BAD prompt at the next step 0.
+- Without flags, `audit_feedback.py` lists orphan runs (runs with no FEEDBACK.html row) and exits 0.
+- With `--backfill`, `audit_feedback.py` appends one PEND row per orphan to `FEEDBACK.html`, using the same note-derivation as `log_feedback.py`.
+- `audit_feedback.py` never overwrites an existing row — a run is considered matched if any row shares the same date AND chosen_approach prefix.
+- With `--dry-run`, `audit_feedback.py` prints the rows that would be appended without writing.
+- Backfill outcome is always PEND (never retroactively OK); the user closes them via the standard PEND→OK/BAD prompt at the next step 0.
 
 ## WHAT — Verify intent (open questions for the human)
 

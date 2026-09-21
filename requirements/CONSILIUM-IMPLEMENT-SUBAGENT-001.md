@@ -2,10 +2,12 @@
 milestone: v1.1
 id: CONSILIUM-IMPLEMENT-SUBAGENT-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-IMPLEMENT-PIPELINE-001, CONSILIUM-SUBAGENT-001]
 test_exempt: "agent spec document — behavioral contract validated by Step 7 auto-dispatch integration and implement-subagent smoke tests"
+satisfies: [ARCH-CONSILIUM-IMPLEMENT-001]
 ---
 
 # consilium-implement-subagent
@@ -13,11 +15,13 @@ test_exempt: "agent spec document — behavioral contract validated by Step 7 au
 > WHY: Post-deliberation implementation vehicle that translates a GO Consilium report into written code + tests. Keeps implementation work out of the orchestrator context, enforces disjoint-path ownership between Coder and Test Writer, and gates output with Red→Green test verification.
 
 ## WHAT — Contract (normative)
-- The system shall provide a `consilium-implement-subagent` agent that, given a GO Consilium deliberation report, executes the Coder → (Test Writer ∥ Reviewer) pipeline and returns a JSON file manifest — NOT a `.consilium/runs/` deliberation report.
+- The system provides a `consilium-implement-subagent` agent that, given a GO Consilium deliberation report, executes the Coder → (Test Writer ∥ Reviewer) pipeline and returns a JSON file manifest — NOT a `.consilium/runs/` deliberation report.
 - Pipeline sequence: (1) Coder writes implementation files; (2) Test Writer and Reviewer are dispatched in parallel on the written code; (3) Red→Green gate verifies tests are RED against a stub and GREEN against the real implementation.
-- The subagent shall enforce disjoint-path ownership: Coder writes implementation files; Test Writer writes `test_*` files only; Reviewer writes nothing.
-- If the Coder or Test Writer returns malformed or non-JSON output, the subagent shall retry that dispatch once; on second failure it shall abort and return `{"error": "subagent_json_invalid", "role": "<coder|test_writer>"}`. It shall never proceed on an empty or fabricated manifest.
-- The subagent shall not re-run the deliberation; `chosen_approach` from the input report is the fixed spec (resolved by `build_plan` to the full candidate object when the generator step is present in `deliberation_log`; optional Coder fan-out targets are derived from the chosen candidate's `sketch` — reports carry no `files_touched[]` field).
+- The subagent enforces disjoint-path ownership: Coder writes implementation files; Test Writer writes `test_*` files only; Reviewer writes nothing.
+- If the Coder or Test Writer returns malformed or non-JSON output, the subagent retries that dispatch once.
+- On a second failure, the subagent aborts and returns `{"error": "subagent_json_invalid", "role": "<coder|test_writer>"}`.
+- The subagent never proceeds on an empty or fabricated manifest.
+- The subagent does not re-run the deliberation; `chosen_approach` from the input report is the fixed spec (resolved by `build_plan` to the full candidate object when the generator step is present in `deliberation_log`; optional Coder fan-out targets are derived from the chosen candidate's `sketch` — reports carry no `files_touched[]` field).
 - Output contract: strict JSON with `files_written`, `test_files_written`, `gate` (red_ok, green_ok, gate_passed), `gate_rejected`, `review`, `blocked`, `blocked_reason`.
 
 ## WHAT — Verify intent

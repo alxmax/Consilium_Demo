@@ -1,10 +1,12 @@
 ---
 id: CONSILIUM-INFER-PIPELINE-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-IMPLEMENT-PIPELINE-001, CONSILIUM-UTILS-001]
 risk: 1
+satisfies: [ARCH-CONSILIUM-IMPLEMENT-001]
 ---
 
 # Infer implementation pipeline steps
@@ -13,13 +15,13 @@ risk: 1
 
 ## WHAT — Contract
 
-- Shall read a deliberation JSON (from `--input` or stdin) and look up `(magnitude, reversibility)` in the step table to return an ordered list from `{implement, compile, review, test}`.
-- With `--dry-run`, shall print inferred steps and exit 0 without confirmation or execution.
-- With `--yes`, shall skip the confirmation prompt (CI/headless mode).
-- Shall exit 1 when the user declines or the inference produces no steps.
-- Shall exit 2 on invalid JSON or missing required fields.
-- When `chosen_approach` is `do_nothing` or `skipped`, shall exit 1 with a clear message (no steps to infer).
-- Shall also expose `recommend_implement_mode(report)` — returns `"pipeline"` for regression-risk quadrants (`moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), else `"single_shot"`.
+- `infer_pipeline.py` reads a deliberation JSON (from `--input` or stdin) and looks up `(magnitude, reversibility)` in the step table, returning an ordered list from `{implement, compile, review, test}`.
+- With `--dry-run`, it prints the inferred steps and exits 0 without confirmation or execution.
+- With `--yes`, it skips the confirmation prompt (CI/headless mode).
+- `infer_pipeline.py` exits 1 when the user declines or the inference produces no steps.
+- `infer_pipeline.py` exits 2 on invalid JSON or missing required fields.
+- When `chosen_approach` is `do_nothing` or `skipped`, it exits 1 with a clear message (no steps to infer).
+- `infer_pipeline.py` also exposes `recommend_implement_mode(report)`, which returns `"pipeline"` for regression-risk quadrants (`moderate×irreversible`, `high×{partial,irreversible}`, `critical×any`), else `"single_shot"`.
 
 ## WHAT — Verify intent (open questions for the human)
 

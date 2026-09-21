@@ -51,7 +51,6 @@ python .claude/skills/run-consilium/driver.py shot       # screenshot docs/archi
 [PASS] check_doc_drift.py  (exit 0)
 [PASS] check_public_leak.py  (exit 0)
 [PASS] reqmap gate --strict  (exit 0)
-[PASS] reqmap map --check  (exit 0)
 [PASS] architecture build --check  (exit 0)
 [PASS] run_evals.py (regression scenarios)  (exit 0)
 [PASS] build_report.py | validate_report.py  (exit 0)

@@ -281,17 +281,17 @@ def _validate_telemetry_required(report: dict) -> list[str]:
     # emits these names; historical runs/*.json may still carry them.
     # Dated removal milestones (enforced by scripts/check_doc_drift.py):
     #   parallel_skeptic, dialectic_skeptic → remove after 2026-11-17 (extended 2026-08-18)
-    #   trias_split → remove after 2026-08-21 (3mo post-deprecation)
+    #   trias_split → removed 2026-09-21 (milestone reached); historical runs now
+    #   validate as an unknown open-string mode, without the per-voice check.
     _LEGACY_MODE_ALIASES: dict[str, str] = {
         "parallel_skeptic": "skeptic_on_chosen",   # remove after 2026-11-17
         "dialectic_skeptic": "skeptic_on_chosen",  # remove after 2026-11-17
-        "trias_split": "trias",                    # remove after 2026-08-21
     }
     mode = _LEGACY_MODE_ALIASES.get(mode.strip(), mode.strip())
     # All modes that dispatch multiple voices require per-voice telemetry for
     # cost roll-up across runs/. parallel_skeptic/dialectic_skeptic
     # are resolved via _LEGACY_MODE_ALIASES above before this check.
-    # Legacy aliases (trias_split/parallel_skeptic/dialectic_skeptic) are resolved
+    # Legacy aliases (parallel_skeptic/dialectic_skeptic) are resolved
     # to canonical names by _LEGACY_MODE_ALIASES above, so only canonical names are
     # reachable here.
     _MULTI_VOICE_MODES = frozenset({

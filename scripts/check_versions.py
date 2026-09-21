@@ -10,7 +10,7 @@ Two independent axes are checked:
   - semver  — canonical source is .claude-plugin/plugin.json `version`.
               Every occurrence in .claude-plugin/marketplace.json must equal it
               (top-level `version` + each `plugins[].version`).
-  - engine  — MAP_ENGINE_VERSION in scripts/reqmap.py is an ISO date with a
+  - engine  — MAP_ENGINE_VERSION in scripts/reqmap_engine/__init__.py is an ISO date with a
               different purpose (staleness compare); it is only sanity-checked for
               valid YYYY-MM-DD shape, with an optional `.N` (N>=1) same-day revision
               suffix, never compared against the semver.
@@ -35,7 +35,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PLUGIN_JSON = REPO_ROOT / ".claude-plugin" / "plugin.json"
 MARKETPLACE_JSON = REPO_ROOT / ".claude-plugin" / "marketplace.json"
-REQMAP_PY = REPO_ROOT / "scripts" / "reqmap.py"
+# engine >= 8.0.0 keeps MAP_ENGINE_VERSION in the package, not the reqmap.py CLI
+ENGINE_VERSION_PY = REPO_ROOT / "scripts" / "reqmap_engine" / "__init__.py"
 
 # line-anchored so a docstring/comment mention before the real assignment can't win
 MAP_ENGINE_RE = re.compile(r'^MAP_ENGINE_VERSION\s*=\s*"([^"]+)"', re.M)
@@ -100,13 +101,13 @@ def main(argv=None) -> int:
 
     # Engine version is a separate axis — only validate it is a real ISO date.
     try:
-        text = REQMAP_PY.read_text(encoding="utf-8")
+        text = ENGINE_VERSION_PY.read_text(encoding="utf-8")
     except OSError as e:
-        print(f"ERROR  cannot read {REQMAP_PY.relative_to(REPO_ROOT)}: {e}")
+        print(f"ERROR  cannot read {ENGINE_VERSION_PY.relative_to(REPO_ROOT)}: {e}")
         return 2
     m = MAP_ENGINE_RE.search(text)
     if not m:
-        errors.append("  reqmap.py: MAP_ENGINE_VERSION not found")
+        errors.append("  reqmap_engine/__init__.py: MAP_ENGINE_VERSION not found")
         engine = None
     else:
         engine = m.group(1)
@@ -122,7 +123,7 @@ def main(argv=None) -> int:
         if sep and not (rev.isdigit() and int(rev) >= 1):
             valid = False
         if not valid:
-            errors.append(f"  reqmap.py: MAP_ENGINE_VERSION {engine!r} is not a valid YYYY-MM-DD date "
+            errors.append(f"  reqmap_engine/__init__.py: MAP_ENGINE_VERSION {engine!r} is not a valid YYYY-MM-DD date "
                           f"with an optional .N (N>=1) same-day revision")
 
     if errors:

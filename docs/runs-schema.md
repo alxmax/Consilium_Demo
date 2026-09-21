@@ -96,8 +96,8 @@ fields are marked **REQUIRED**; the rest are recommended but not blocking.
   optional counters. `telemetry.mode` is an open string — historical
   `parallel` runs stay readable (see `_MULTI_VOICE_MODES` in
   `validate_report.py`); legacy names `parallel_skeptic` /
-  `dialectic_skeptic` / `trias_split` are normalized via
-  `_LEGACY_MODE_ALIASES`.
+  `dialectic_skeptic` are normalized via `_LEGACY_MODE_ALIASES`
+  (`trias_split` was removed from it on 2026-09-21).
 - **`chosen_approach`** can be `null` legitimately when `aggregator.py`
   with `conservative_override` vetoes every candidate. In that case
   `deliberation_log[aggregate].result` should carry `retry_suggested`.

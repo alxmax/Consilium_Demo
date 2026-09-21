@@ -2,46 +2,54 @@
 milestone: v1.1
 id: CONSILIUM-RUN-EVALS-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 test_exempt: "subprocess-based eval harness — acceptance gated by run_evals.py itself in CI"
 depends_on: []
 risk: 1
+satisfies: [ARCH-CONSILIUM-REPO-GATES-001]
 ---
 
 # run_evals
 
 > Subprocess-based regression harness over evals/scenarios.json; CI gate.
 
-## Input
-- `evals/scenarios.json` (default) or a custom path via `--scenarios`
-- `--filter <substring>`: optional name filter applied to scenario list
-- Each scenario's `stdin_json` field is serialised and piped to the target script
-- Each scenario's `env` field is merged into the subprocess environment
-
 ## Description
-Regression harness for all deterministic scripts in the Consilium pipeline. It reads a `scenarios.json` corpus, spawns each scenario's named tool as a subprocess, and verifies exit code, stdout (either as a JSON subset-match or a plain-text substring match), and stderr substrings against declared expectations. A pre-flight linter (`lint_validate_report_fixtures`) checks every `validate_report` fixture for the required `pipeline_executed` field and ensures bypass-chosen fixtures set it to `false`, catching fixture/validator drift at corpus level before any scenario runs. The script exits non-zero if any scenario fails, making it suitable as a CI gate.
 
-## Output
-- PASS/FAIL lines to stderr for each scenario
-- Summary line `<N> passed, <M> failed` to stderr
-- exit code 0 when all scenarios pass; 1 when any fail; 2 on load or corpus errors
+Every line in this section is binding.
 
-## WHAT — Contract
-- Shall read `evals/scenarios.json` (or `--scenarios` override), spawn each scenario's named script as a subprocess, and verify exit code, stdout (JSON subset-match or text substring), and stderr substrings against declared expectations.
-- Shall run a pre-flight linter before any scenario: every `validate_report` fixture must carry `pipeline_executed`, and bypass-chosen fixtures must set it to `false`; corpus violations shall exit 2 before any scenario runs.
-- Shall exit 0 when all scenarios pass, 1 when any fail, and 2 on load or corpus errors.
+- `run_evals.py` is the regression harness for all deterministic scripts in the Consilium pipeline.
+- `run_evals.py` reads a `scenarios.json` corpus: `evals/scenarios.json` by default, or the path given by `--scenarios`.
+- `--filter <substring>` optionally restricts execution to scenarios whose name matches the substring.
+- For each scenario, `run_evals.py` spawns the scenario's named tool as a subprocess. The scenario's `stdin_json` field is serialised and piped to the subprocess; the scenario's `env` field is merged into the subprocess environment.
+- `run_evals.py` verifies each subprocess's exit code against the scenario's declared expectation.
+- `run_evals.py` verifies stdout against the scenario's declared expectation, as either a JSON subset-match or a plain-text substring match.
+- `run_evals.py` verifies stderr against the scenario's declared substring expectations.
+- A pre-flight linter (`lint_validate_report_fixtures`) runs before any scenario. The linter checks every `validate_report` fixture for the required `pipeline_executed` field, and ensures bypass-chosen fixtures set it to `false`.
+- A corpus violation found by the pre-flight linter exits 2 before any scenario runs.
+- PASS/FAIL lines print to stderr for each scenario.
+- A summary line `<N> passed, <M> failed` prints to stderr.
+- Exit code is 0 when all scenarios pass, 1 when any fail, and 2 on load or corpus errors.
 
-## WHAT — Verify intent
+## Verify intent
+
 - None - all questions resolved.
 
-## Acceptance (= tests)
-- Running `python scripts/run_evals.py` against the committed `evals/scenarios.json` exits 0 with every scenario reporting PASS.
-- Introducing a scenario with `expect_exit=0` but without `pipeline_executed` in `stdin_json` causes the script to exit 2 with a descriptive corpus error before running any scenario.
-- A scenario with a bypass-chosen `chosen_approach` and `pipeline_executed=true` triggers the corpus pre-flight and exits 2.
-- The `--filter` flag restricts execution to only matching scenario names, and an empty match set exits 2 with `no scenarios matched`.
-- A scenario that fails its `expect_stdout_subset` check prints a human-readable mismatch message to stderr and exits 1.
+## Cases
+
+- **CASE-1** — Given the committed `evals/scenarios.json`, when `python scripts/run_evals.py` runs, then it exits 0 with every scenario reporting PASS.
+- **CASE-2** — Given a scenario with `expect_exit=0` but no `pipeline_executed` in `stdin_json`, when the pre-flight linter runs, then it exits 2 with a descriptive corpus error before any scenario runs.
+- **CASE-3** — Given a scenario with a bypass-chosen `chosen_approach` and `pipeline_executed=true`, when the pre-flight linter runs, then it exits 2.
+- **CASE-4** — Given the `--filter` flag, when it is applied, then execution is restricted to matching scenario names; an empty match set exits 2 with `no scenarios matched`.
+- **CASE-5** — Given a scenario that fails its `expect_stdout_subset` check, when it runs, then a human-readable mismatch message prints to stderr and the harness exits 1.
 
 ## Why test_exempt
 
 `run_evals.py` is a subprocess orchestrator — it runs multiple Python scripts as child processes against fixture JSON and collects exit codes. Unit-testing it would require mocking every subprocess call, which tests the mock harness rather than the actual harness behavior. The harness is self-validating: running `python scripts/run_evals.py` in CI IS the acceptance test — all scenarios from `evals/scenarios.json` must pass, and the script itself exits non-zero if any fail.
+
+## Context (non-binding)
+
+**Notes** — The non-zero exit on any scenario failure is what makes the harness suitable as a CI gate.
+
+**Current implementation** — `scripts/run_evals.py`

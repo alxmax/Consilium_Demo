@@ -2,39 +2,51 @@
 milestone: v1.0
 id: CONSILIUM-IMPLEMENT-PIPELINE-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-UTILS-001]
 risk: 1
+satisfies: [ARCH-CONSILIUM-IMPLEMENT-001]
 ---
 
 # implement_pipeline
 
 > Turns a deliberation report into an implementation dispatch plan; optionally verifies the red->green gate.
 
-## Input
-- Deliberation report JSON - via `--input <path>` or stdin
-- CLI flags: `--dry-run`, `--verify-gate`, `--test-cmd`, `--target`, `--stub-marker`
-
 ## Description
-Turns a completed Consilium deliberation report into a structured implementation dispatch plan (Coder -> Test Writer || Reviewer) and optionally verifies the red->green test gate. In planning mode it extracts `chosen_approach`, `success_criterion`, and `verification` from the report — resolving `chosen_approach` to the full candidate object `{id, summary, sketch, rationale}` from the generator step of `deliberation_log` when present (bare id + `chosen_resolved: false` otherwise), so the Coder receives the sketch its input contract promises —, maps the three roles to their prompt files, and emits a JSON plan for the orchestrating agent to consume; it is a planner, not a dispatcher - the `consilium-implement-subagent.md` agent performs actual sub-agent calls. In gate-verification mode it runs the real test suite (expect GREEN / exit 0) and then rewrites the target file with stub bodies (a heuristic line-scanner that inserts `raise NotImplementedError` after each `def`/`async def`) to confirm the suite fails RED, restoring the original in a `finally` block regardless of outcome. The script exits 1 for `do_nothing`/`skipped` chosen approaches and 2 for malformed input.
 
-## Output
-- stdout (plan mode): human-readable plan summary followed by `{"plan": ...}` JSON
-- stdout (gate mode): `{"red_ok": bool, "green_ok": bool, "gate_passed": bool}` JSON
-- exit code 0 on success/dry-run/gate passed, 1 on no-pipeline or gate failure, 2 on bad input
+Every line in this section is binding.
 
-## WHAT — Verify intent
+- In planning mode, `implement_pipeline.py` turns a completed deliberation report into a structured implementation dispatch plan: Coder -> Test Writer || Reviewer.
+- Planning mode extracts `chosen_approach`, `success_criterion`, and `verification` from the report.
+- Planning mode resolves `chosen_approach` to the full candidate object `{id, summary, sketch, rationale}` from the generator step of `deliberation_log` when present; otherwise it falls back to the bare id with `chosen_resolved: false`. This ensures the Coder receives the sketch its input contract promises.
+- Planning mode maps the three roles (Coder, Test Writer, Reviewer) to their prompt files and emits a JSON plan for the orchestrating agent to consume.
+- The script is a planner, not a dispatcher: `agents/consilium-implement-subagent.md` performs the actual sub-agent calls.
+- In gate-verification mode (`--verify-gate`), the script runs the real test suite, expecting GREEN (exit 0).
+- Gate-verification mode then rewrites the target file with stub bodies — a heuristic line-scanner that inserts `raise NotImplementedError` after each `def`/`async def` — to confirm the suite fails RED.
+- The stub heuristic appends the stub marker as a new line after the `def`/`async def` header; it does not replace an existing `pass` or `...` body, and nested functions each receive their own stub insertion.
+- Gate-verification mode restores the original target file content in a `finally` block regardless of outcome.
+- The script exits 1 for `do_nothing`/`skipped` chosen approaches, and 2 for malformed input.
+- Exit code 1 is shared between `do_nothing`/`skipped` (no pipeline) and gate failure; the caller reads stdout to distinguish the two cases — this collapse is intentional and documented in the script's module docstring.
+- stdout in plan mode is a human-readable plan summary followed by `{"plan": ...}` JSON; stdout in gate mode is `{"red_ok": bool, "green_ok": bool, "gate_passed": bool}` JSON.
+- Exit code is 0 on success, dry-run, or gate passed; 1 on no-pipeline or gate failure; 2 on bad input.
+- The plan JSON schema (`spec`, `sequence`, `roles`, `rules`) is defined entirely by `build_plan()` in this script; the subagent handoff contract lives in `agents/consilium-implement-subagent.md` and is not part of this requirement.
+
+## Verify intent
+
 - None - all questions resolved.
 
-## Contract
-- The stub heuristic appends the stub marker as a new line after the `def`/`async def` header; it does not replace an existing `pass` or `...` body. Nested functions each receive their own stub insertion. This is intentional: the gate only needs the suite to go RED, not a clean AST rewrite.
-- Exit code 1 is shared between `do_nothing`/`skipped` (no pipeline) and gate failure. The caller must read stdout to distinguish the two cases. This collapse is intentional and documented in the script's module docstring.
-- The plan JSON schema (`spec`, `sequence`, `roles`, `rules`) is defined entirely by `build_plan()` in this script. The subagent handoff contract lives in `agents/consilium-implement-subagent.md` and is not part of this requirement.
+## Cases
 
-## Acceptance (= tests)
-- Given a report with a non-empty `chosen_approach`, `build_plan` returns a dict with `spec`, `sequence`, `roles`, and `rules` keys, and each role lists whether its prompt file exists. `spec.chosen_approach` is the full generator candidate object when resolvable from `deliberation_log` (with `spec.chosen_resolved: true`), else the bare id with `chosen_resolved: false`.
-- Given `chosen_approach` of `do_nothing` or `skipped`, the script prints a message and exits 1.
-- In `--verify-gate` mode, `gate_passed` is `true` only when the real suite passes (exit 0) AND the stubbed suite fails (exit non-0).
-- The `verify_red_green` function always restores the original target file content, even when the test command raises or the stubbed run crashes.
-- Omitting `--test-cmd` or `--target` with `--verify-gate` causes exit 2 with an error message to stderr.
+- **CASE-1** — Given a report with a non-empty `chosen_approach`, when `build_plan` runs, then it returns a dict with `spec`, `sequence`, `roles`, `rules` keys, each role lists whether its prompt file exists, and `spec.chosen_approach` is the full generator candidate object with `chosen_resolved: true` when resolvable from `deliberation_log`, else the bare id with `chosen_resolved: false`.
+- **CASE-2** — Given `chosen_approach` is `do_nothing` or `skipped`, when the script runs, then it prints a message and exits 1.
+- **CASE-3** — Given `--verify-gate` mode, when the script runs, then `gate_passed` is `true` only if the real suite passes (exit 0) and the stubbed suite fails (exit non-0).
+- **CASE-4** — Given `--verify-gate` mode, when the test command raises or the stubbed run crashes, then `verify_red_green` always restores the original target file content.
+- **CASE-5** — Given `--verify-gate` without `--test-cmd` or `--target`, when the script runs, then it exits 2 with an error message to stderr.
+
+## Context (non-binding)
+
+**Notes** — Input: deliberation report JSON via `--input <path>` or stdin; CLI flags `--dry-run`, `--verify-gate`, `--test-cmd`, `--target`, `--stub-marker`. The gate only needs the suite to go RED, not a clean AST rewrite — hence the line-scanner heuristic rather than an AST rewrite.
+
+**Current implementation** — `scripts/implement_pipeline.py`.

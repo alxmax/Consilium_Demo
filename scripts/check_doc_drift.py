@@ -286,6 +286,7 @@ def _extract_jsx_array_names(jsx_text: str, array_marker: str) -> set[str]:
     return {m.lower() for m in re.findall(r"name:\s*'([^']+)'", block)}
 
 
+# implements: CONSILIUM-CHECK-DOC-DRIFT-EXPLAINER-001
 def check_trias_personality_name_parity() -> list[str]:
     """personalities.py is the SSOT for the 3 Trias personality names; the explainer
     (trias.jsx LENSES, modes.jsx's StageTrias personalities array) and the full-
@@ -436,7 +437,6 @@ REMOVAL_MILESTONES: dict[str, str] = {
     # with no removal work scheduled — extended 2026-08-18, +3mo.
     "parallel_skeptic": "2026-11-17",
     "dialectic_skeptic": "2026-11-17",
-    "trias_split": "2026-08-21",        # deprecated 2026-05-21, +3mo
 }
 
 
@@ -601,11 +601,12 @@ def _parse_ci_named_steps(ci_yaml_text: str) -> list[tuple[str, str]]:
     return steps
 
 
+# implements: CONSILIUM-CHECK-DOC-DRIFT-EXPLAINER-001
 def _ci_checks_completeness_failures(ci_yaml_text: str, extras_jsx_text: str) -> list[str]:
     """Pure comparison: every non-test ci.yml step must have a matching CI_CHECKS card
     (by exact scripts/*.py or build.py basename) or an explicit
     ALLOWED_OUT_OF_SCOPE_CI_STEPS entry. Matches on the script's basename, not the full
-    run-line, so 2 steps sharing one script (e.g. reqmap.py gate --strict / map --check)
+    run-line, so 2 steps sharing one script (e.g. a `gate` and a `sync --check` step on one script)
     correctly resolve to 1 card. Skeptic finding, 2026-07-06 Trias self-audit: free-text
     substring matching on the full run-line either false-fails on that already-correct
     grouping, or (matching only bare filenames) is too loose to catch a real drift."""
@@ -780,6 +781,7 @@ def check_trias_spec_alignment() -> list[str]:
 # ---------------------------------------------------------------------------
 
 
+# implements: CONSILIUM-CHECK-DOC-DRIFT-EXPLAINER-001
 def check_implement_pipeline_spec_alignment() -> list[str]:
     """modes/implement_pipeline.md's `subagents`/`cost_multiplier` frontmatter must be
     stated explicitly in extras.jsx's ImplementSection GATE_ITEMS -- mirrors
