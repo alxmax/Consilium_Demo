@@ -1,5 +1,5 @@
 {
-  "_schema": 1,
+  "_schema": 2,
   "members": {
     "CONSILIUM-AGGREGATOR-001": {
       "modes/aggregator_schemes.md": "3b9c587ac70ae315afafe0b0e10549f4eb3e6b5e9d3553108ff8166a510b5dfa",
@@ -11,18 +11,18 @@
     "CONSILIUM-BUILD-REPORT-001": {
       "scripts/build_report.py": "639fed450113788f6fb3b2ea0bbeb4e92fcb7ded1b176560e19008c0e37ea5a2"
     },
-    "CONSILIUM-CHECK-DOC-DRIFT-001": {
-      "scripts/check_doc_drift.py": "af4b550fe025b9ffa6bd4bcdef0b9438d0a57891dee8d61198c52de8e3506497"
-    },
     "CONSILIUM-CHECK-PUBLIC-LEAK-001": {
       "scripts/check_public_leak.py": "a0efa717766035be459f65c38c562abe1b5df1df61a78945f37bb057211e5872"
     },
     "CONSILIUM-CHECK-VERSIONS-001": {
-      "scripts/check_versions.py": "6a33796e5f7c1bb1a4f187ca35f6ee0f6ba1454f6bfdfc0b4295826a29179d36"
+      "scripts/check_versions.py": "1b935cdeab63f0fb5b30d06dd9a0c5c9095189e3b8b4697e2089fc5d15e70630"
     },
     "CONSILIUM-CONFIDENCE-001": {
       "modes/confidence.md": "c58466f4da12e9a8b0619a75882cea08d98377e146b0350257d837311408f40f",
       "scripts/confidence.py": "4ecbb37b7fb61b536c831e0805d394362945ebef9a28ad178b2e3cf9a760bf0f"
+    },
+    "CONSILIUM-CONFIDENCE-CALIBRATION-001": {
+      "scripts/confidence_calibration.py": "880e608e679bf10c820a995079e32f0cdff42ab8802512b6b4be399c83380869"
     },
     "CONSILIUM-FEEDBACK-001": {
       "scripts/feedback.py": "073f08b627f1ec904f845f132862e4c91c004b2db332c719996ce3c0bd457615"
@@ -62,7 +62,7 @@
       "modes/skeptic_on_chosen.md": "b242a6be5185a8942fdcaef5c4f24dda0d68c526205f39ee207af3f4b367f60a"
     },
     "CONSILIUM-MODE-TRIAS-001": {
-      "modes/trias.md": "7ed3cf69d47f6f73978a446452847a0242d496a507acfbe1656403fd76965843"
+      "modes/trias.md": "1ea1a28a77d4b53ca2d0ca326fb787bc859dec1cd9dc0275c0e727da324e2536"
     },
     "CONSILIUM-PRIORS-001": {
       "scripts/priors.py": "9b7592faa1f7548cae47695a02cd539ef986730a29320b73397c8a836db59f70"
@@ -114,7 +114,7 @@
       "scripts/vote_degeneracy.py": "e40c81b625f824c98b76e52dfc387935359dbbf12deb612ca9e90bd5486b20a8"
     },
     "SKILL-RUN-CONSILIUM-001": {
-      ".claude/skills/run-consilium/driver.py": "71b9e9950674069104c896609938eeb296104d763407e0f4087bde6fe9218efa"
+      ".claude/skills/run-consilium/driver.py": "1fcab6427ac7fcb8b4b4cc81caa04af33dc234d9c8e38741deaf196ecad8d709"
     }
   }
 }

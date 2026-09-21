@@ -3,9 +3,11 @@ milestone: v1.0
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-CONSERVATOR-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: []
+satisfies: [ARCH-CONSILIUM-VOICES-001]
 ---
 
 # conservator voice
@@ -14,10 +16,11 @@ depends_on: []
 
 ## WHAT — Contract (normative)
 
-- The voice shall emit a `scores` array where each entry carries `regression_risk` (with `reversibility`, `magnitude`, and `net_concern`), `counterparty_risks`, `bias_check`, `meta_recommendation`, and `tokens_budget` (with `generator` and `control` fields); the `id` field must be preserved verbatim from the input.
-- The voice shall compute `net_concern` using the defined formula (`mean` of the four component scores, with `reversibility_score > 0.7` floored to `max(net_concern, reversibility_score)`) and document any unanchored score components in `notes`.
-- The voice shall set `irreversibility_flag: true` for any candidate where `reversibility = irreversible` and explicit user consent is not documented in the input, signaling the aggregator to BLOCK before finalizing. This is the backstop behind the pre-dispatch consent gate (`scope_gate.consent_required`, Step 1.6) — it catches irreversible commitments visible only in the candidates, which a path/text pre-check cannot see.
-- For any candidate with `net_concern >= 0.3`, the voice shall emit either a `rollback_recipe` (2–5 concrete human-executable steps) or, when rollback is structurally impossible, replace it with `mitigation_steps` and set `irreversible: true` at the candidate level.
+- The voice emits a `scores` array where each entry preserves the `id` field verbatim from the input.
+- Each `scores` entry carries the following fields: `regression_risk` (`reversibility`, `magnitude`, `net_concern`), `counterparty_risks`, `bias_check`, `meta_recommendation`, `tokens_budget` (`generator`, `control`).
+- The voice computes `net_concern` using the defined formula (`mean` of the four component scores, with `reversibility_score > 0.7` floored to `max(net_concern, reversibility_score)`), and documents any unanchored score components in `notes`.
+- The voice sets `irreversibility_flag: true` for any candidate where `reversibility = irreversible` and explicit user consent is not documented in the input, signaling the aggregator to BLOCK before finalizing. This is the backstop behind the pre-dispatch consent gate (`scope_gate.consent_required`, Step 1.6) — it catches irreversible commitments visible only in the candidates, which a path/text pre-check cannot see.
+- For any candidate with `net_concern >= 0.3`, the voice emits either a `rollback_recipe` (2–5 concrete human-executable steps) or, when rollback is structurally impossible, replaces it with `mitigation_steps` and sets `irreversible: true` at the candidate level.
 - The mitigation cap (max two mitigations, total ≤ −0.20, second mitigation capped at −0.05 remaining budget) is discipline-based with no automated schema enforcement. Compliance is audited through `notes` documentation of applied mitigation values.
 - When `meta_recommendation: "scale_down"` is set, the token budget is unconditionally overridden to 300 regardless of magnitude×reversibility. The Conservator's runtime judgment overrides pre-computed classifications; no floor exists for high/critical magnitude by design.
 

@@ -25,6 +25,7 @@ Usage:
     python scripts/confidence_calibration.py --gate 0.7 --margin 0.15 --json
     python scripts/confidence_calibration.py --feedback path/to/FEEDBACK.html
 """
+# implements: CONSILIUM-CONFIDENCE-CALIBRATION-001
 from __future__ import annotations
 
 import argparse

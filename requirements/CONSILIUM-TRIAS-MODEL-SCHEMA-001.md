@@ -2,10 +2,12 @@
 milestone: v1.1
 id: CONSILIUM-TRIAS-MODEL-SCHEMA-001
 status: confirmed
+level: code
 layer: bus
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-PERSONALITIES-001, CONSILIUM-MODE-TRIAS-001]
 risk: 1
+satisfies: [ARCH-CONSILIUM-MODES-001]
 ---
 
 # trias-model-assignment
@@ -13,10 +15,10 @@ risk: 1
 > Trias uniform model assignment: all 3 personalities (essentialist, verifier, sentinel) use sonnet. No per-personality schema workarounds needed.
 
 ## WHAT — Contract (normative)
-- `scripts/personalities.py` shall expose a `PERSONALITIES` list where every entry carries a `model` field whose value controls which Claude model tier the Trias orchestrator dispatches for that sub-agent.
-- Model assignments shall be uniform: essentialist → `sonnet`, verifier → `sonnet`, sentinel → `sonnet`.
-- No personality entry shall carry `schema_less: True`. All personalities use standard StructuredOutput dispatch.
-- The `personalities.py` CLI shall emit a valid JSON array of exactly 3 objects, each with at minimum a `model` field, for use by the Trias orchestrator at runtime.
+- `scripts/personalities.py` exposes a `PERSONALITIES` list where every entry carries a `model` field whose value controls which Claude model tier the Trias orchestrator dispatches for that sub-agent.
+- Model assignments are uniform: essentialist → `sonnet`, verifier → `sonnet`, sentinel → `sonnet`.
+- No personality entry carries `schema_less: True`; all personalities use standard StructuredOutput dispatch.
+- The `personalities.py` CLI emits a valid JSON array of exactly 3 objects, each with at minimum a `model` field, for use by the Trias orchestrator at runtime.
 
 ## WHAT — Verify intent
 - None — all questions resolved.

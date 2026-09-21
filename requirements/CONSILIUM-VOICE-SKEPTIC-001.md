@@ -3,9 +3,11 @@ milestone: v1.0
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-SKEPTIC-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: []
+satisfies: [ARCH-CONSILIUM-VOICES-001]
 ---
 
 # skeptic voice
@@ -14,11 +16,12 @@ depends_on: []
 
 ## WHAT — Contract (normative)
 
-- The voice shall emit either `can_object: true` (with a populated `objection` object containing `concrete_concerns`, optional `quoted_scenario`, `failure_mode`, and `addressable`) or `can_object: false` (with `objection: null` and a one-sentence `notes` explaining the absence of objection); it shall never fabricate a concern that does not appear in `success_criterion` or stated context.
-- When `can_object: true`, the voice shall supply at least 2 entries in `concrete_concerns` OR at least 1 non-null `quoted_scenario`; any output that meets neither threshold is rejected by the orchestrator's validation gate and discarded silently.
-- The voice shall classify `failure_mode` as exactly one of `correctness`, `goal_fit`, `verification_inadequate`, or `meta_scope_mismatch`; if `failure_mode` is `goal_fit`, `concrete_concerns` must contain a direct quote or reference from `success_criterion`.
-- The voice shall set `addressable` to `in_place`, `requires_redesign`, or `unaddressable`; `unaddressable` must be used only when no redesign can resolve the concern.
-- Validation failure (output rejected by orchestrator gate) results in silent discard: the chosen candidate ships unchanged, no warning is emitted, and the system falls back to the base deliberation result as if the Skeptic had not run. This is a deliberate conservative fallback.
+- The voice emits either `can_object: true`, with a populated `objection` object, or `can_object: false`, with `objection: null` and a one-sentence `notes` explaining the absence of objection.
+- The machine-checkable shape of the output is owned by [[CONSILIUM-VALIDATE-SKEPTIC-001]]: required fields, minimum evidence, allowed values. This requirement does not restate it.
+- The voice never fabricates a concern that does not appear in `success_criterion` or stated context.
+- The voice picks exactly one `failure_mode`, the one that names why the chosen candidate fails.
+- The voice uses `addressable: unaddressable` only when no redesign can resolve the concern.
+- Output that the validation gate rejects is discarded silently: the chosen candidate ships unchanged, no warning is emitted, and the base deliberation result stands as if the Skeptic had not run. This is a deliberate conservative fallback.
 - `meta_scope_mismatch` is a self-assessed heuristic gate with no external oracle; all three conditions (correct answer, trivially-human-resolvable, cost exceeds decision value) are necessarily evaluated by the voice itself because they require contextual judgment that no deterministic external check can provide.
 
 ## WHAT — Verify intent (open questions for the human)

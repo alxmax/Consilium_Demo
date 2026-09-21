@@ -1,10 +1,12 @@
 ---
 id: CONSILIUM-VOTE-DEGENERACY-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: []
 risk: 1
+satisfies: [ARCH-CONSILIUM-MODES-001]
 ---
 
 # Trias vote degeneracy measurement
@@ -13,13 +15,13 @@ risk: 1
 
 ## WHAT — Contract
 
-- Shall scan `.consilium/runs/*.json` for genuine Trias runs (mode field = `"trias"` or `"trias_split"` exactly) and tally vote-pattern distribution.
-- Shall report `vote_degenerate: true` if 3-0 unanimity rate > threshold (default 0.85) and n ≥ min-n (default 20); `"insufficient"` when n < min-n; `false` otherwise.
-- A 2-0 pattern (one personality all-vetoed) shall be counted as `veto_rate`, not folded into unanimity.
-- Shall be read-only — no modification to runs, prompts, or pipeline.
-- With `--json`, shall emit machine-readable output.
+- `vote_degeneracy.py` scans `.consilium/runs/*.json` for genuine Trias runs (mode field = `"trias"` or `"trias_split"` exactly) and tallies vote-pattern distribution.
+- `vote_degeneracy.py` reports `vote_degenerate: true` if the 3-0 unanimity rate exceeds the threshold (default 0.85) and n ≥ min-n (default 20); `"insufficient"` when n < min-n; `false` otherwise.
+- A 2-0 pattern (one personality all-vetoed) is counted as `veto_rate`, not folded into unanimity.
+- `vote_degeneracy.py` is read-only: it performs no modification to runs, prompts, or pipeline.
+- With `--json`, `vote_degeneracy.py` emits machine-readable output.
 - `--runs-dir` overrides the default corpus directory; `--min-n` and `--degenerate-threshold` are configurable.
-- The default threshold of 0.85 is calibration-provisional; it shall be revisited once n ≥ min-n genuine Trias runs exist. The `insufficient` verdict already defers judgment until that corpus exists.
+- The default threshold of 0.85 is calibration-provisional; it is revisited once n ≥ min-n genuine Trias runs exist. The `insufficient` verdict already defers judgment until that corpus exists.
 
 ## WHAT — Verify intent (open questions for the human)
 

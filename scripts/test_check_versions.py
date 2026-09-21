@@ -23,7 +23,7 @@ def _setup(d, plugin_ver="1.4.0", market_ver="1.4.0", plug_ver="1.4.0",
            engine="2026-06-26.1", plugins=None):
     d = Path(d)
     (d / ".claude-plugin").mkdir(parents=True, exist_ok=True)
-    (d / "scripts").mkdir(parents=True, exist_ok=True)
+    (d / "scripts" / "reqmap_engine").mkdir(parents=True, exist_ok=True)
     plugin_obj = {} if plugin_ver is None else {"version": plugin_ver}
     (d / ".claude-plugin" / "plugin.json").write_text(
         json.dumps(plugin_obj), encoding="utf-8")
@@ -31,23 +31,23 @@ def _setup(d, plugin_ver="1.4.0", market_ver="1.4.0", plug_ver="1.4.0",
         plugins = [{"name": "consilium", "version": plug_ver, "source": "./"}]
     (d / ".claude-plugin" / "marketplace.json").write_text(
         json.dumps({"version": market_ver, "plugins": plugins}), encoding="utf-8")
-    (d / "scripts" / "reqmap.py").write_text(
+    (d / "scripts" / "reqmap_engine" / "__init__.py").write_text(
         'MAP_ENGINE_VERSION = "{}"\n'.format(engine), encoding="utf-8")
     return d
 
 
 class CheckVersions(unittest.TestCase):
     def _run(self, d):
-        saved = (CV.REPO_ROOT, CV.PLUGIN_JSON, CV.MARKETPLACE_JSON, CV.REQMAP_PY)
+        saved = (CV.REPO_ROOT, CV.PLUGIN_JSON, CV.MARKETPLACE_JSON, CV.ENGINE_VERSION_PY)
         CV.REPO_ROOT = Path(d)
         CV.PLUGIN_JSON = Path(d) / ".claude-plugin" / "plugin.json"
         CV.MARKETPLACE_JSON = Path(d) / ".claude-plugin" / "marketplace.json"
-        CV.REQMAP_PY = Path(d) / "scripts" / "reqmap.py"
+        CV.ENGINE_VERSION_PY = Path(d) / "scripts" / "reqmap_engine" / "__init__.py"
         try:
             with redirect_stdout(io.StringIO()):
                 return CV.main([])
         finally:
-            CV.REPO_ROOT, CV.PLUGIN_JSON, CV.MARKETPLACE_JSON, CV.REQMAP_PY = saved
+            CV.REPO_ROOT, CV.PLUGIN_JSON, CV.MARKETPLACE_JSON, CV.ENGINE_VERSION_PY = saved
 
     def test_aligned_passes(self):
         with tempfile.TemporaryDirectory() as d:
@@ -77,7 +77,7 @@ class CheckVersions(unittest.TestCase):
     def test_docstring_mention_before_assignment_is_ignored(self):
         with tempfile.TemporaryDirectory() as d:
             _setup(d)
-            (Path(d) / "scripts" / "reqmap.py").write_text(
+            (Path(d) / "scripts" / "reqmap_engine" / "__init__.py").write_text(
                 '"""example: MAP_ENGINE_VERSION = "not-a-date" """\n'
                 'MAP_ENGINE_VERSION = "2026-06-26.1"\n', encoding="utf-8")
             self.assertEqual(self._run(d), 0)  # unanchored regex matched the docstring -> 1
@@ -94,16 +94,16 @@ class CheckVersions(unittest.TestCase):
     def test_fix_propagates_canonical_version(self):
         with tempfile.TemporaryDirectory() as d:
             _setup(d, market_ver="1.0.0", plug_ver="1.0.0")
-            saved = (CV.REPO_ROOT, CV.PLUGIN_JSON, CV.MARKETPLACE_JSON, CV.REQMAP_PY)
+            saved = (CV.REPO_ROOT, CV.PLUGIN_JSON, CV.MARKETPLACE_JSON, CV.ENGINE_VERSION_PY)
             CV.REPO_ROOT = Path(d)
             CV.PLUGIN_JSON = Path(d) / ".claude-plugin" / "plugin.json"
             CV.MARKETPLACE_JSON = Path(d) / ".claude-plugin" / "marketplace.json"
-            CV.REQMAP_PY = Path(d) / "scripts" / "reqmap.py"
+            CV.ENGINE_VERSION_PY = Path(d) / "scripts" / "reqmap_engine" / "__init__.py"
             try:
                 with redirect_stdout(io.StringIO()):
                     rc = CV.main(["--fix"])
             finally:
-                CV.REPO_ROOT, CV.PLUGIN_JSON, CV.MARKETPLACE_JSON, CV.REQMAP_PY = saved
+                CV.REPO_ROOT, CV.PLUGIN_JSON, CV.MARKETPLACE_JSON, CV.ENGINE_VERSION_PY = saved
             self.assertEqual(rc, 0)
             market = json.loads((Path(d) / ".claude-plugin" / "marketplace.json").read_text())
             self.assertEqual(market["version"], "1.4.0")

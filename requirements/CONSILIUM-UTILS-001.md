@@ -2,46 +2,51 @@
 milestone: v1.0
 id: CONSILIUM-UTILS-001
 status: confirmed
+level: code
 layer: bus
-owner: auto
+owner: alxmax
 depends_on: []
 risk: 0
+satisfies: [ARCH-CONSILIUM-REPORT-001]
 ---
 
 # utils
 
 > Shared stdlib-only utilities: canonical paths, atomic writes, stdin JSON, headless detection.
 
-## Input
-- No CLI input for the module itself; individual functions accept:
-  - `load_json_stdin`: reads from stdin
-  - `atomic_write_text(path, content)`: file path + string content
-  - `issue_penalty(severity)`: issue dict
-  - `validate_keys(data, keys)`: data dict + required-keys list
-- Environment variable `CLAUDE_HEADLESS` (read by `is_headless`)
-
 ## Description
-Shared stdlib-only utilities that every other Consilium script imports instead of defining its own copies. It centralises the three canonical filesystem paths (`DATA_DIR`, `RUNS_DIR`, `FEEDBACK_PATH`) so their definitions exist in exactly one place. Beyond path constants, it provides: `force_utf8_streams` (Windows cp1252 safety), `is_headless` (headless-orchestrator detection for Step-0 through Step-7 flow-control), `load_json_stdin` (stdin read + parse with a clear error on empty or malformed input), `atomic_write_text` (crash-safe write via same-filesystem rename + fsync, critical for the FEEDBACK journal), `issue_penalty` (severity -> float score penalty lookup for Control issues), and `validate_keys` (dict schema assertion). The module exists to eliminate copy-paste divergence across scripts and to give each script a clean, importable API surface.
 
-## Output
-- No files written or stdout produced by the module itself; side effects are produced by its callers
-- `atomic_write_text` writes atomically to the caller-supplied path using a sibling `.tmp` file; a read-only parent directory raises `OSError` (propagates to caller); the temp file is always deleted on any error, so no stale `.tmp` accumulates across crashes
-- `load_json_stdin` exits with code 2 on empty stdin or JSON parse failure
-- `validate_keys` raises `ValueError` on schema violation; callers map that to exit 1 or 2
+Every line in this section is binding.
 
-## WHAT — Contract
-- Shall provide canonical path constants `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolved relative to the repo root (not CWD), two levels above `scripts/utils.py`.
-- `atomic_write_text` shall write via a sibling `.tmp` file with fsync and rename; stale `.tmp` files shall not persist on any error path.
-- `is_headless` shall return `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty shall return `False`.
-- `load_json_stdin` shall exit code 2 on empty stdin or invalid JSON.
-- `issue_penalty` shall return `0.05` for `low`, `0.15` for `medium` (or missing severity), and `0.30` for `high`.
+- `scripts/utils.py` provides shared stdlib-only utilities that every other Consilium script imports instead of defining its own copies.
+- `DATA_DIR` resolves to `.consilium/`, relative to the repo root.
+- `RUNS_DIR` resolves to `.consilium/runs/`, relative to the repo root.
+- `FEEDBACK_PATH` resolves to `.consilium/FEEDBACK.html`, relative to the repo root.
+- The repo root is derived from `Path(__file__).resolve().parent.parent` — two levels above `scripts/utils.py` — so path resolution is CWD-independent and does not break when a script runs from outside the repo.
+- `atomic_write_text(path, content)` writes the given string content to `path` atomically, through a sibling `.tmp` file with fsync and rename.
+- A read-only parent directory makes `atomic_write_text` raise `OSError`, which propagates to the caller.
+- `atomic_write_text` deletes the temp file on any error path, so no stale `.tmp` file persists across crashes.
+- `load_json_stdin` reads and parses JSON from stdin.
+- `load_json_stdin` exits code 2 on empty stdin or a parse failure.
+- `issue_penalty(severity)` returns a float score penalty for an issue dict's severity: `0.05` for `low`, `0.15` for `medium` or a missing severity, `0.30` for `high`.
+- `validate_keys(data, keys)` checks a data dict against a required-keys list and raises `ValueError` on a schema violation; callers map that to exit 1 or 2.
+- `is_headless()` reads the `CLAUDE_HEADLESS` environment variable and returns `True` only when it equals the string `'1'`; any other value, including `'true'`, `'0'`, or empty, returns `False`.
+- `force_utf8_streams` guards script stdout/stderr against Windows cp1252 encoding errors.
 
-## WHAT — Verify intent (open questions for the human)
+## Verify intent
+
 - None - all questions resolved.
 
-## Acceptance (= tests)
-- `DATA_DIR`, `RUNS_DIR`, and `FEEDBACK_PATH` resolve to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` respectively, relative to the repo root; the repo root is derived from `Path(__file__).resolve().parent.parent` (two levels above `scripts/utils.py`), so paths are CWD-independent and never break silently when a script is invoked from outside the repo.
-- `atomic_write_text` leaves the original file intact when a write is interrupted mid-way (no truncated or stale `.tmp` files persist on error).
-- `is_headless` returns `True` only when `CLAUDE_HEADLESS` equals the string `'1'`; any other value including `'true'`, `'0'`, or empty returns `False`.
-- `load_json_stdin` prints a usage hint to stderr and exits 2 on empty stdin; exits 2 with an error message on invalid JSON.
-- `issue_penalty` returns `0.05` for severity `low`, `0.15` for `medium` or missing severity, and `0.30` for `high`.
+## Cases
+
+- **CASE-1** — Given a script imports `DATA_DIR`, `RUNS_DIR`, or `FEEDBACK_PATH` from any working directory, when the constants resolve, then they point to `.consilium/`, `.consilium/runs/`, and `.consilium/FEEDBACK.html` under the repo root (derived from `Path(__file__).resolve().parent.parent`, two levels above `scripts/utils.py`).
+- **CASE-2** — Given `atomic_write_text` is interrupted mid-write, when the write fails, then the original file is left intact and no truncated or stale `.tmp` file persists.
+- **CASE-3** — Given `CLAUDE_HEADLESS` is unset or holds any value other than `'1'` (including `'true'` or `'0'`), when `is_headless` runs, then it returns `False`; given it equals `'1'`, then it returns `True`.
+- **CASE-4** — Given empty stdin or invalid JSON, when `load_json_stdin` runs, then it prints a diagnostic message to stderr and exits code 2.
+- **CASE-5** — Given a severity of `low`, `medium`, a missing severity, or `high`, when `issue_penalty` runs, then it returns `0.05`, `0.15`, `0.15`, or `0.30` respectively.
+
+## Context (non-binding)
+
+**Notes** — The module's functions have no CLI entry point of their own; each function is called directly by importer scripts (`load_json_stdin` reads stdin, `atomic_write_text(path, content)` takes a file path and string content, `issue_penalty(severity)` takes an issue dict, `validate_keys(data, keys)` takes a data dict and a required-keys list).
+
+**Current implementation** — `scripts/utils.py`.

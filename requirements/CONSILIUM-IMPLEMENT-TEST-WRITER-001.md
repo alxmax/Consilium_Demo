@@ -2,9 +2,11 @@
 milestone: v1.1
 id: CONSILIUM-IMPLEMENT-TEST-WRITER-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-IMPLEMENT-PIPELINE-001]
+satisfies: [ARCH-CONSILIUM-IMPLEMENT-001]
 ---
 
 # implement-test-writer
@@ -12,9 +14,9 @@ depends_on: [CONSILIUM-IMPLEMENT-PIPELINE-001]
 > WHY: Separates test authorship from implementation to enable parallel execution and to enforce the Red→Green gate independently. The Test Writer owns test_* files exclusively; implementation files are never touched by this role.
 
 ## WHAT — Contract (normative)
-- The Test Writer voice shall write `test_*` files only (disjoint-path rule); it shall never write or edit implementation files.
-- Every test emitted shall satisfy the Red→Green gate: `fails_on_empty_impl` shall be true for each test — meaning the test must fail against a `raise NotImplementedError` stub and pass against the real implementation. A test that passes against the stub is not pinning behavior and is rejected.
-- Test Writer output shall be strict JSON containing `test_files_written[]` (each entry has `path` and `covers`), `tests[]` (each entry has `name`, `targets_symbol`, `behavior_pinned`, `fails_on_empty_impl`, `why`), and `uncoverable[]`.
+- The Test Writer writes `test_*` files only (disjoint-path rule); the Test Writer never writes or edits implementation files.
+- Every test emitted satisfies the Red→Green gate: `fails_on_empty_impl` is true for each test — the test fails against a `raise NotImplementedError` stub and passes against the real implementation. A test that passes against the stub is not pinning behavior, and is rejected.
+- Test Writer output is strict JSON containing `test_files_written[]` (each entry has `path` and `covers`), `tests[]` (each entry has `name`, `targets_symbol`, `behavior_pinned`, `fails_on_empty_impl`, `why`), and `uncoverable[]`.
 - Malformed or non-JSON output is a hard failure; the implement-subagent retries once, then aborts.
 
 ## WHAT — Verify intent

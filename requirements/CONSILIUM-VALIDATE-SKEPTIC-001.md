@@ -2,58 +2,48 @@
 milestone: v1.1
 id: CONSILIUM-VALIDATE-SKEPTIC-001
 status: confirmed
+level: code
 layer: bus
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-VOICE-SKEPTIC-001, CONSILIUM-UTILS-001]
 risk: 2
+satisfies: [ARCH-CONSILIUM-REPORT-001]
 ---
 
 # validate_skeptic
 
 > Describes observed behavior, verified against scripts/validate_skeptic.py source.
 
-## Input
-- A Skeptic voice output JSON on stdin (produced by the Skeptic voice per `prompts/voices/skeptic.md`)
-
 ## Description
-Structural validation gate for Skeptic output. Enforces the machine-checkable
-subset of the gate described in `prompts/voices/skeptic.md` and
-`modes/skeptic_on_chosen.md` — shape and evidence rules only, not semantic
-correctness. A verdict that fails this gate is discarded and the original
-`chosen` is shipped unchallenged.
 
-Rules enforced:
-- `can_object` must be a bool
-- `can_object=false` → `objection` must be null/absent
-- `can_object=true` → `objection` is an object with:
-  - `concrete_concerns`: list of strings; `quoted_scenario`: str or null
-  - Evidence gate: ≥2 non-empty `concrete_concerns` OR a non-empty `quoted_scenario`
-  - `failure_mode` in `{correctness, goal_fit, verification_inadequate, meta_scope_mismatch}`
-  - `addressable` in `{in_place, requires_redesign, unaddressable}`
-  - `failure_mode=goal_fit` → at least one `concrete_concern` references `"success_criterion"`
+Every line in this section is binding.
 
-## Output
-- Exit 0 — verdict is well-formed; orchestrator may apply it
-- Exit 1 — invalid; each problem printed to stderr; orchestrator ships original chosen
-- Exit 2 — malformed JSON input
+- `validate_skeptic.py` reads a Skeptic voice output JSON from stdin, produced by the Skeptic voice per `prompts/voices/skeptic.md`.
+- `validate_skeptic.py` is a structural validation gate for Skeptic output, enforcing the machine-checkable subset of the gate described in `prompts/voices/skeptic.md` and `modes/skeptic_on_chosen.md` — shape and evidence rules only, not semantic correctness.
+- A verdict that fails this gate is discarded, and the original `chosen` candidate ships unchallenged.
+- `can_object` is validated as a bool; the gate exits 1 if it is missing or non-bool.
+- `can_object=false` requires `objection` to be null or absent; a non-null `objection` is an error.
+- `can_object=true` requires `objection` to be an object with `concrete_concerns` (a list of strings) and `quoted_scenario` (a string or null).
+- The evidence gate rejects the verdict unless it has at least 2 non-empty `concrete_concerns`, or a non-empty `quoted_scenario`.
+- `failure_mode` is validated against the allowed set `{correctness, goal_fit, verification_inadequate, meta_scope_mismatch}`.
+- `addressable` is validated against the allowed set `{in_place, requires_redesign, unaddressable}`.
+- `failure_mode=goal_fit` requires at least one `concrete_concern` to reference the substring `"success_criterion"`.
+- Exit 0 means the verdict is well-formed and the orchestrator may apply it; exit 1 means the verdict is invalid, with each problem printed to stderr and the orchestrator shipping the original `chosen`; exit 2 means the JSON input is malformed.
 
-## WHAT — Verify intent
+## Verify intent
+
 - None — all questions resolved.
 
-## WHAT — Contract
-- Shall validate `can_object` as a bool; exit 1 if missing or non-bool.
-- `can_object=false` shall require `objection` null or absent; presence of a non-null `objection` is an error.
-- `can_object=true` shall require `objection` with `concrete_concerns` (list) and `quoted_scenario` (str or null).
-- Evidence gate shall reject if fewer than 2 non-empty `concrete_concerns` AND `quoted_scenario` is empty/null.
-- `failure_mode` and `addressable` shall be validated against their allowed value sets.
-- `failure_mode=goal_fit` shall require at least one `concrete_concern` containing the substring `"success_criterion"`.
-- Shall exit 0 on valid, 1 on invalid (problems to stderr), 2 on malformed JSON.
+## Cases
 
-## Acceptance (= tests)
-- `can_object=false` with null objection exits 0
-- `can_object=true` with ≥2 concrete_concerns exits 0
-- `can_object=true` with only a non-empty quoted_scenario exits 0
-- `can_object=true` with 0 concrete_concerns and null quoted_scenario exits 1 (evidence gate)
-- `failure_mode=goal_fit` without "success_criterion" in any concern exits 1
-- Unknown `failure_mode` value exits 1
-- Malformed JSON exits 2
+- **CASE-1** — Given `can_object=false` with a null `objection`, when `validate_skeptic.py` runs, then it exits 0.
+- **CASE-2** — Given `can_object=true` with 2 or more `concrete_concerns`, when `validate_skeptic.py` runs, then it exits 0.
+- **CASE-3** — Given `can_object=true` with only a non-empty `quoted_scenario`, when `validate_skeptic.py` runs, then it exits 0.
+- **CASE-4** — Given `can_object=true` with 0 `concrete_concerns` and a null `quoted_scenario`, when `validate_skeptic.py` runs, then it exits 1 (evidence gate).
+- **CASE-5** — Given `failure_mode=goal_fit` without `"success_criterion"` referenced in any concern, when `validate_skeptic.py` runs, then it exits 1.
+- **CASE-6** — Given an unknown `failure_mode` value, when `validate_skeptic.py` runs, then it exits 1.
+- **CASE-7** — Given malformed JSON input, when `validate_skeptic.py` runs, then it exits 2.
+
+## Context (non-binding)
+
+**Current implementation** — `scripts/validate_skeptic.py`.

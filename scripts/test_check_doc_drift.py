@@ -9,6 +9,7 @@ exercised by running the real gate in CI, per its own docstring.
 Run: python scripts/test_check_doc_drift.py
 """
 # tested-by: CONSILIUM-CHECK-DOC-DRIFT-001
+# tested-by: CONSILIUM-CHECK-DOC-DRIFT-EXPLAINER-001
 import sys
 import unittest
 from pathlib import Path
@@ -78,7 +79,7 @@ class CiChecksCompleteness(unittest.TestCase):
         self.assertEqual(cdd._ci_checks_completeness_failures(ci, _extras(EXTRAS_CARD)), [])
 
     def test_two_steps_sharing_one_script_resolve_to_one_card(self):
-        # Mirrors the real reqmap.py gate --strict / map --check pair sharing one card --
+        # Two steps sharing one script under different flags resolve to one card --
         # the Skeptic's finding: matching must be by script basename, not full run-line.
         ci = _ci(
             "      - name: Widget gate strict\n"

@@ -2,41 +2,48 @@
 milestone: v1.0
 id: CONSILIUM-STRIP-CONTEXT-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-UTILS-001]
 risk: 1
+satisfies: [ARCH-CONSILIUM-REPORT-001]
 ---
 
 # strip_context
 
 > Projects each voice's output down to the minimum fields the next voice needs (anti-contamination).
 
-## Input
-- stdin (default) or `--input <file>`: JSON object for `--for control` or `--for conservator` modes; plain text for `--truncate-text` mode
-- `--for control`: expects Generator output JSON with a `candidates` array
-- `--for conservator`: expects combined JSON with `candidates` (Generator) and `verdicts` (Control) arrays
-- `--truncate-text <MAX_TOKENS>`: maximum token budget (integer), approximated as 4 chars/token
-
 ## Description
-Reduces cross-voice context contamination in the sequential deliberation pipeline by projecting each voice's output down to the minimum fields the next voice needs. In `--for control` mode it strips Generator candidates to only `id`, `summary`, and `sketch`, removing rationale fields that would rhetorically bias Control's technical validation. In `--for conservator` mode it intersects valid Control verdicts with Generator candidates, keeping only `id`/`summary`/`sketch` and discarding Control's issue descriptions that would bias Conservator's risk scoring. The `--truncate-text` mode is used by Trias orchestration to cap raw conversation context sent to each personality sub-agent to a configurable token budget, appending a truncation marker when the text is cut.
 
-## Output
-- JSON object to stdout (`--for control` or `--for conservator`): stripped candidate or verdict list
-- Plain text to stdout (`--truncate-text`): possibly truncated text with optional marker appended
-- exit code 0 on success; non-zero on argument or JSON parse errors
+Every line in this section is binding.
 
-## WHAT — Contract
-- `--for control`: shall strip Generator candidates to `id`, `summary`, and `sketch` only, removing all fields that would rhetorically bias Control's technical validation.
-- `--for conservator`: shall intersect valid Control verdicts with Generator candidates, dropping candidates with no valid Control verdict; output shall contain only `id`, `summary`, and `sketch` — Control `issues` and `notes` shall be excluded.
-- `--truncate-text MAX_TOKENS`: shall truncate text to `MAX_TOKENS × 4` characters and append the truncation marker `_TRUNCATION_MARKER` when cut; shall return the text unchanged when under budget.
+- `strip_context.py` reduces cross-voice context contamination in the sequential deliberation pipeline by projecting each voice's output down to the minimum fields the next voice needs.
+- Input is stdin by default, or `--input <file>`; it expects JSON for `--for control` / `--for conservator` modes, and plain text for `--truncate-text` mode.
+- `--for control` expects Generator output JSON with a `candidates` array. It strips candidates to `id`, `summary`, and `sketch` only, removing rationale fields that would rhetorically bias Control's technical validation.
+- `--for conservator` expects combined JSON with `candidates` (Generator) and `verdicts` (Control) arrays. It intersects valid Control verdicts with Generator candidates, dropping candidates with no valid Control verdict.
+- `--for conservator` output contains only `id`, `summary`, and `sketch`; Control's `issues` and `notes` fields are excluded so they cannot bias Conservator's risk scoring.
+- `--truncate-text <MAX_TOKENS>` caps raw text to a token budget (an integer), approximated as 4 chars/token.
+- `--truncate-text` is used by Trias orchestration to cap raw conversation context sent to each personality sub-agent.
+- `--truncate-text` truncates text to `MAX_TOKENS x 4` characters and appends the truncation marker `_TRUNCATION_MARKER` when the text is cut; text under budget is returned unchanged.
+- Output for `--for control` / `--for conservator` is a JSON object to stdout: the stripped candidate or verdict list.
+- Output for `--truncate-text` is plain text to stdout: the possibly truncated text with the optional marker appended.
+- Exit code is 0 on success; non-zero on argument or JSON parse errors.
 
-## WHAT — Verify intent
+## Verify intent
+
 - None - all questions resolved.
 
-## Acceptance (= tests)
-- Running `--for control` on a Generator output strips the `rationale` field from all candidates and keeps only `id`, `summary`, and `sketch`.
-- Running `--for conservator` drops any candidate whose matching Control verdict has `valid=false` or has no matching Control verdict at all (excluded, not an error).
-- Running `--for conservator` excludes Control's `issues` and `notes` fields from the output.
-- Running `--truncate-text 15000` on text shorter than 60000 characters returns the text unchanged with no marker.
-- Running `--truncate-text 15000` on text exceeding 60000 characters truncates at 60000 chars and appends the truncation marker `"\n\n[... context truncated to ~{tokens} tokens for Trias sub-agent ...]"` (defined as `_TRUNCATION_MARKER` in `strip_context.py`; not shared with other scripts).
+## Cases
+
+- **CASE-1** — Given a Generator output JSON, when `--for control` runs, then the `rationale` field is stripped from all candidates and only `id`, `summary`, and `sketch` remain.
+- **CASE-2** — Given a candidate whose matching Control verdict has `valid=false` or has no matching Control verdict, when `--for conservator` runs, then that candidate is dropped (excluded, not an error).
+- **CASE-3** — Given a Control verdict with `issues` and `notes` fields, when `--for conservator` runs, then those fields are excluded from the output.
+- **CASE-4** — Given text shorter than 60000 characters, when `--truncate-text 15000` runs, then the text is returned unchanged with no marker.
+- **CASE-5** — Given text exceeding 60000 characters, when `--truncate-text 15000` runs, then the text is truncated at 60000 characters and the marker `"\n\n[... context truncated to ~{tokens} tokens for Trias sub-agent ...]"` (`_TRUNCATION_MARKER`, defined in `strip_context.py`, not shared with other scripts) is appended.
+
+## Context (non-binding)
+
+**Notes** — None beyond the Description above.
+
+**Current implementation** — `scripts/strip_context.py`

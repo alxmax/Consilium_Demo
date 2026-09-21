@@ -4,6 +4,11 @@ All notable changes to Consilium are recorded here, following
 [Keep a Changelog](https://keepachangelog.com/). This project is source-available
 under the Business Source License 1.1 (see `LICENSE`).
 
+## [1.8.1] — 2026-09-21
+
+### Removed
+- **`trias_split` legacy mode alias.** Its dated removal milestone (2026-08-21) had passed, which turned the `legacy_mode_milestone` doc-drift check red on `main`. `validate_report.py` no longer maps `trias_split` to `trias`; historical `trias_split` runs still validate, because `telemetry.mode` is an open string, but they skip the per-voice telemetry check. `vote_degeneracy.py` still counts them as Trias runs.
+
 ## [1.8.0] — 2026-07-07
 
 ### Added

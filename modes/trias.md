@@ -187,11 +187,11 @@ Rationale: design audit 2026-05-26 (Reviewer 6) flagged that the 6th/7th cascade
 - Strict conservatism required (aggregated Trias is −18% Conservator)
 - Obvious bugfix — Sequential blind is enough
 
-## trias_split — DEPRECATED
+## trias_split — REMOVED
 
 `trias_split` is no longer a user-selectable mode. With Trias reduced from 9 to 3 sub-agents at the time of deprecation (since grown to 6 with the per-personality Skeptic challenge, 4× Sequential), `trias_split`'s 3.3× cost advantage over the old 9× Trias no longer exists — both are now effectively the same cost tier. Use standard `trias` instead.
 
-`validate_report.py` maps legacy `trias_split` runs to `trias` via `_LEGACY_MODE_ALIASES` for telemetry backward-compat.
+The `_LEGACY_MODE_ALIASES` entry that mapped legacy `trias_split` runs to `trias` was removed on 2026-09-21, when its dated milestone passed. Historical `trias_split` runs still validate: `telemetry.mode` is an open string, so they just skip the per-voice telemetry check.
 
 <!-- implements: CONSILIUM-MODE-TRIAS-001 -->
 

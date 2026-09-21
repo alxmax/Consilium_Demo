@@ -1,0 +1,205 @@
+{
+  "_schema": 1,
+  "accepted": {
+    "ARCH-CONSILIUM-IMPLEMENT-001": {
+      "hash": "8da9671b3f60",
+      "reason": "confirm SYS/ARCH/calibration; wikilink ARCH children"
+    },
+    "ARCH-CONSILIUM-LEARNING-001": {
+      "hash": "10e7cdeae913",
+      "reason": "confirm SYS/ARCH/calibration; wikilink ARCH children"
+    },
+    "ARCH-CONSILIUM-MODES-001": {
+      "hash": "c449ed0d3724",
+      "reason": "confirm SYS/ARCH/calibration; wikilink ARCH children"
+    },
+    "ARCH-CONSILIUM-REPO-GATES-001": {
+      "hash": "02c912ef9b9c",
+      "reason": "confirm SYS/ARCH/calibration; wikilink ARCH children"
+    },
+    "ARCH-CONSILIUM-REPORT-001": {
+      "hash": "c6c0ef5bea6f",
+      "reason": "confirm SYS/ARCH/calibration; wikilink ARCH children"
+    },
+    "ARCH-CONSILIUM-VOICES-001": {
+      "hash": "b976f2753670",
+      "reason": "confirm SYS/ARCH/calibration; wikilink ARCH children"
+    },
+    "CONSILIUM-AGGREGATOR-001": {
+      "hash": "749c82dbe716",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-AUDIT-FEEDBACK-001": {
+      "hash": "e2ff75f09957",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-BUILD-REPORT-001": {
+      "hash": "c94d920a8f98",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-CHECK-DOC-DRIFT-001": {
+      "hash": "b82c7e09d89b",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-CHECK-PUBLIC-LEAK-001": {
+      "hash": "55e2336ec45c",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-CHECK-VERSIONS-001": {
+      "hash": "c38414be3dbf",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-CONFIDENCE-001": {
+      "hash": "388c5bbc3c77",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-FEEDBACK-001": {
+      "hash": "8a3702719466",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-IMPLEMENT-CODER-001": {
+      "hash": "d7a832cad39c",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-IMPLEMENT-PIPELINE-001": {
+      "hash": "59788dcbe446",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-IMPLEMENT-SUBAGENT-001": {
+      "hash": "744d92fed773",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-IMPLEMENT-TEST-WRITER-001": {
+      "hash": "46dc065304c9",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-INFER-PIPELINE-001": {
+      "hash": "85c814c8f476",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-LENS-ESSENTIALIST-001": {
+      "hash": "48e427c416d9",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-LENS-SENTINEL-001": {
+      "hash": "d846d5b120de",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-LENS-VERIFIER-001": {
+      "hash": "2485780ccabf",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-LOG-FEEDBACK-001": {
+      "hash": "0b184803a0cd",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-MARK-OUTCOME-001": {
+      "hash": "46f496d5433b",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-MEMORY-001": {
+      "hash": "fc68ac288c26",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-MODE-DIALECTIC-001": {
+      "hash": "add71aa57c0c",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-MODE-LENS-001": {
+      "hash": "4be71c7cb86b",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-MODE-SEQUENTIAL-001": {
+      "hash": "ab9d5466bfd5",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001": {
+      "hash": "0125c38bd0b3",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-MODE-TRIAS-001": {
+      "hash": "fcae66281eac",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-PERSONALITIES-001": {
+      "hash": "c1e099421b2d",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-PRIORS-001": {
+      "hash": "b989df36e305",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-RENDER-FEEDBACK-HTML-001": {
+      "hash": "e679f0713963",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-RENDER-IMPL-PREVIEW-001": {
+      "hash": "a01cfca68fcc",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-RUN-EVALS-001": {
+      "hash": "fc3c9e216799",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-SCOPE-GATE-001": {
+      "hash": "b39f52f5028f",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-STRIP-CONTEXT-001": {
+      "hash": "e08b3a69d73f",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-SUBAGENT-001": {
+      "hash": "e1955851dbd6",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-TRIAS-MODEL-SCHEMA-001": {
+      "hash": "ff06dc0ebcfc",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-UTILS-001": {
+      "hash": "4fc662c3b60b",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-VALIDATE-REPORT-001": {
+      "hash": "1c84b371d725",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-VALIDATE-SKEPTIC-001": {
+      "hash": "d4275b0607da",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-VERSION-001": {
+      "hash": "b1554b02d6fb",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-VOCABULARY-MAP-001": {
+      "hash": "251bc8cdb9b9",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-VOICE-CONSERVATOR-001": {
+      "hash": "2d5d70ffd024",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-VOICE-CONTROL-001": {
+      "hash": "d1ceefa6124a",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-VOICE-GENERATOR-001": {
+      "hash": "333b0496f48f",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-VOICE-SKEPTIC-001": {
+      "hash": "9939614d9ee6",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "CONSILIUM-VOTE-DEGENERACY-001": {
+      "hash": "a758538f0972",
+      "reason": "sync dev PRs #501-#506 into demo"
+    },
+    "SKILL-RUN-CONSILIUM-001": {
+      "hash": "c365da752e46",
+      "reason": "sync dev PRs #501-#506 into demo"
+    }
+  }
+}

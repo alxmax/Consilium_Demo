@@ -1,7 +1,9 @@
 ---
-generated: 2026-08-18 11:11
-nodes: 45
-edges: 58
+generated: 2026-09-21
+engine: 2026-09-21.1
+nodes: 56
+edges: 105
+design pass-rate: 3% (1/29 source files without a design candidate)
 ---
 
 # Requirement Map
@@ -12,15 +14,25 @@ _Capabilities grouped by area; thick border = bus; arrows = `depends_on`. Edges 
 
 ```mermaid
 graph LR
+  subgraph sg_ARCH["ARCH"]
+    ARCH_CONSILIUM_IMPLEMENT_001["Implementation pipeline<br><small>ARCH-CONSILIUM-IMPLEMENT-001</small>"]
+    ARCH_CONSILIUM_LEARNING_001["Learning loop: feedback journal, outcomes and priors<br><small>ARCH-CONSILIUM-LEARNING-001</small>"]
+    ARCH_CONSILIUM_MODES_001["Deliberation modes<br><small>ARCH-CONSILIUM-MODES-001</small>"]
+    ARCH_CONSILIUM_REPO_GATES_001["Repository gates<br><small>ARCH-CONSILIUM-REPO-GATES-001</small>"]
+    ARCH_CONSILIUM_REPORT_001["Report pipeline: aggregate, score, assemble, validate<br><small>ARCH-CONSILIUM-REPORT-001</small>"]
+    ARCH_CONSILIUM_VOICES_001["Deliberation voices and personality lenses<br><small>ARCH-CONSILIUM-VOICES-001</small>"]
+  end
   subgraph sg_CONSILIUM["CONSILIUM"]
     CONSILIUM_AGGREGATOR_001["aggregator<br><small>CONSILIUM-AGGREGATOR-001</small>"]
     CONSILIUM_AUDIT_COUNTER_001["Silent parallel audit counter<br><small>CONSILIUM-AUDIT-COUNTER-001</small>"]
     CONSILIUM_AUDIT_FEEDBACK_001["Orphan run detection and PEND backfill<br><small>CONSILIUM-AUDIT-FEEDBACK-001</small>"]
     CONSILIUM_BUILD_REPORT_001["build_report<br><small>CONSILIUM-BUILD-REPORT-001</small>"]
     CONSILIUM_CHECK_DOC_DRIFT_001["check_doc_drift<br><small>CONSILIUM-CHECK-DOC-DRIFT-001</small>"]
+    CONSILIUM_CHECK_DOC_DRIFT_EXPLAINER_001["check_doc_drift — explainer parity checks<br><small>CONSILIUM-CHECK-DOC-DRIFT-EXPLAINER-001</small>"]
     CONSILIUM_CHECK_PUBLIC_LEAK_001["check_public_leak<br><small>CONSILIUM-CHECK-PUBLIC-LEAK-001</small>"]
     CONSILIUM_CHECK_VERSIONS_001["check_versions<br><small>CONSILIUM-CHECK-VERSIONS-001</small>"]
     CONSILIUM_CONFIDENCE_001["confidence<br><small>CONSILIUM-CONFIDENCE-001</small>"]
+    CONSILIUM_CONFIDENCE_CALIBRATION_001["confidence_calibration<br><small>CONSILIUM-CONFIDENCE-CALIBRATION-001</small>"]
     CONSILIUM_FEEDBACK_001["feedback<br><small>CONSILIUM-FEEDBACK-001</small>"]
     CONSILIUM_IMPLEMENT_CODER_001["implement-coder<br><small>CONSILIUM-IMPLEMENT-CODER-001</small>"]
     CONSILIUM_IMPLEMENT_PIPELINE_001["implement_pipeline<br><small>CONSILIUM-IMPLEMENT-PIPELINE-001</small>"]
@@ -58,9 +70,49 @@ graph LR
     CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small>"]
     CONSILIUM_VOTE_DEGENERACY_001["Trias vote degeneracy measurement<br><small>CONSILIUM-VOTE-DEGENERACY-001</small>"]
   end
+  subgraph sg_SYS["SYS"]
+    SYS_CONSILIUM_IMPLEMENT_001["A verified implementation from a GO verdict<br><small>SYS-CONSILIUM-IMPLEMENT-001</small>"]
+    SYS_CONSILIUM_INTEGRITY_001["A repository that stays consistent with itself<br><small>SYS-CONSILIUM-INTEGRITY-001</small>"]
+    SYS_CONSILIUM_VERDICT_001["A trustworthy verdict on a change before it is committed<br><small>SYS-CONSILIUM-VERDICT-001</small>"]
+  end
   subgraph sg_misc["misc"]
     SKILL_RUN_CONSILIUM_001["run-consilium driver<br><small>SKILL-RUN-CONSILIUM-001</small>"]
   end
+  ARCH_CONSILIUM_IMPLEMENT_001 --> CONSILIUM_IMPLEMENT_PIPELINE_001
+  ARCH_CONSILIUM_IMPLEMENT_001 --> CONSILIUM_IMPLEMENT_CODER_001
+  ARCH_CONSILIUM_IMPLEMENT_001 --> CONSILIUM_IMPLEMENT_TEST_WRITER_001
+  ARCH_CONSILIUM_IMPLEMENT_001 --> CONSILIUM_IMPLEMENT_SUBAGENT_001
+  ARCH_CONSILIUM_IMPLEMENT_001 --> CONSILIUM_INFER_PIPELINE_001
+  ARCH_CONSILIUM_LEARNING_001 --> CONSILIUM_LOG_FEEDBACK_001
+  ARCH_CONSILIUM_LEARNING_001 --> CONSILIUM_MARK_OUTCOME_001
+  ARCH_CONSILIUM_LEARNING_001 --> CONSILIUM_MEMORY_001
+  ARCH_CONSILIUM_LEARNING_001 --> CONSILIUM_PRIORS_001
+  ARCH_CONSILIUM_LEARNING_001 --> CONSILIUM_AUDIT_FEEDBACK_001
+  ARCH_CONSILIUM_LEARNING_001 --> CONSILIUM_CONFIDENCE_CALIBRATION_001
+  ARCH_CONSILIUM_MODES_001 --> CONSILIUM_MODE_SEQUENTIAL_001
+  ARCH_CONSILIUM_MODES_001 --> CONSILIUM_MODE_DIALECTIC_001
+  ARCH_CONSILIUM_MODES_001 --> CONSILIUM_MODE_TRIAS_001
+  ARCH_CONSILIUM_MODES_001 --> CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001
+  ARCH_CONSILIUM_MODES_001 --> CONSILIUM_MODE_LENS_001
+  ARCH_CONSILIUM_MODES_001 --> CONSILIUM_VOTE_DEGENERACY_001
+  ARCH_CONSILIUM_REPO_GATES_001 --> CONSILIUM_CHECK_DOC_DRIFT_001
+  ARCH_CONSILIUM_REPO_GATES_001 --> CONSILIUM_CHECK_DOC_DRIFT_EXPLAINER_001
+  ARCH_CONSILIUM_REPO_GATES_001 --> CONSILIUM_CHECK_PUBLIC_LEAK_001
+  ARCH_CONSILIUM_REPO_GATES_001 --> CONSILIUM_CHECK_VERSIONS_001
+  ARCH_CONSILIUM_REPO_GATES_001 --> CONSILIUM_RUN_EVALS_001
+  ARCH_CONSILIUM_REPO_GATES_001 --> SKILL_RUN_CONSILIUM_001
+  ARCH_CONSILIUM_REPORT_001 --> CONSILIUM_AGGREGATOR_001
+  ARCH_CONSILIUM_REPORT_001 --> CONSILIUM_CONFIDENCE_001
+  ARCH_CONSILIUM_REPORT_001 --> CONSILIUM_BUILD_REPORT_001
+  ARCH_CONSILIUM_REPORT_001 --> CONSILIUM_STRIP_CONTEXT_001
+  ARCH_CONSILIUM_REPORT_001 --> CONSILIUM_SCOPE_GATE_001
+  ARCH_CONSILIUM_VOICES_001 --> CONSILIUM_VOICE_GENERATOR_001
+  ARCH_CONSILIUM_VOICES_001 --> CONSILIUM_VOICE_CONTROL_001
+  ARCH_CONSILIUM_VOICES_001 --> CONSILIUM_VOICE_CONSERVATOR_001
+  ARCH_CONSILIUM_VOICES_001 --> CONSILIUM_VOICE_SKEPTIC_001
+  ARCH_CONSILIUM_VOICES_001 --> CONSILIUM_LENS_ESSENTIALIST_001
+  ARCH_CONSILIUM_VOICES_001 --> CONSILIUM_LENS_VERIFIER_001
+  ARCH_CONSILIUM_VOICES_001 --> CONSILIUM_LENS_SENTINEL_001
   CONSILIUM_IMPLEMENT_CODER_001 --> CONSILIUM_IMPLEMENT_PIPELINE_001
   CONSILIUM_IMPLEMENT_SUBAGENT_001 --> CONSILIUM_IMPLEMENT_PIPELINE_001
   CONSILIUM_IMPLEMENT_TEST_WRITER_001 --> CONSILIUM_IMPLEMENT_PIPELINE_001
@@ -101,214 +153,51 @@ graph LR
 
 ## Requirement-to-Code
 
-_Each requirement → its code; arrow label = role (`implements` / `tested-by`). Red = confirmed but no code linked (a gap); grey = baseline/draft, not linked yet (expected)._
+_Each system/architecture requirement → its code; arrow label = role (`implements` / `tested-by`). Red = confirmed but no code linked (a gap); grey = baseline/draft, not linked yet (expected). Code-level requirements are omitted here (see the viewer)._
 
 ```mermaid
 graph LR
-  CONSILIUM_AGGREGATOR_001["aggregator<br><small>CONSILIUM-AGGREGATOR-001</small>"]
-  f_modes_aggregator_schemes_md_55["modes/aggregator_schemes.md:55"]
-  CONSILIUM_AGGREGATOR_001 -->|implements| f_modes_aggregator_schemes_md_55
-  f_scripts_aggregator_py_34["scripts/aggregator.py:34"]
-  CONSILIUM_AGGREGATOR_001 -->|implements| f_scripts_aggregator_py_34
-  f_scripts_test_round2_py_7["scripts/test_round2.py:7"]
-  CONSILIUM_AGGREGATOR_001 -->|tested-by| f_scripts_test_round2_py_7
+  ARCH_CONSILIUM_IMPLEMENT_001["Implementation pipeline<br><small>ARCH-CONSILIUM-IMPLEMENT-001</small>"]
+  f_docs_architecture_html_4["docs/architecture.html:4"]
+  ARCH_CONSILIUM_IMPLEMENT_001 -->|generated-from| f_docs_architecture_html_4
+  f_docs_architecture_index_html_4["docs/architecture/index.html:4"]
+  ARCH_CONSILIUM_IMPLEMENT_001 -->|generated-from| f_docs_architecture_index_html_4
+  ARCH_CONSILIUM_LEARNING_001["Learning loop: feedback journal, outcomes and priors<br><small>ARCH-CONSILIUM-LEARNING-001</small>"]
+  f_docs_architecture_html_4["docs/architecture.html:4"]
+  ARCH_CONSILIUM_LEARNING_001 -->|generated-from| f_docs_architecture_html_4
+  f_docs_architecture_index_html_4["docs/architecture/index.html:4"]
+  ARCH_CONSILIUM_LEARNING_001 -->|generated-from| f_docs_architecture_index_html_4
+  ARCH_CONSILIUM_MODES_001["Deliberation modes<br><small>ARCH-CONSILIUM-MODES-001</small>"]
+  f_docs_architecture_html_4["docs/architecture.html:4"]
+  ARCH_CONSILIUM_MODES_001 -->|generated-from| f_docs_architecture_html_4
+  f_docs_architecture_index_html_4["docs/architecture/index.html:4"]
+  ARCH_CONSILIUM_MODES_001 -->|generated-from| f_docs_architecture_index_html_4
+  ARCH_CONSILIUM_REPO_GATES_001["Repository gates<br><small>ARCH-CONSILIUM-REPO-GATES-001</small>"]
+  f_docs_architecture_html_4["docs/architecture.html:4"]
+  ARCH_CONSILIUM_REPO_GATES_001 -->|generated-from| f_docs_architecture_html_4
+  f_docs_architecture_index_html_4["docs/architecture/index.html:4"]
+  ARCH_CONSILIUM_REPO_GATES_001 -->|generated-from| f_docs_architecture_index_html_4
+  ARCH_CONSILIUM_REPORT_001["Report pipeline: aggregate, score, assemble, validate<br><small>ARCH-CONSILIUM-REPORT-001</small>"]
+  f_docs_architecture_html_4["docs/architecture.html:4"]
+  ARCH_CONSILIUM_REPORT_001 -->|generated-from| f_docs_architecture_html_4
+  f_docs_architecture_index_html_4["docs/architecture/index.html:4"]
+  ARCH_CONSILIUM_REPORT_001 -->|generated-from| f_docs_architecture_index_html_4
+  ARCH_CONSILIUM_VOICES_001["Deliberation voices and personality lenses<br><small>ARCH-CONSILIUM-VOICES-001</small>"]
+  f_docs_architecture_html_4["docs/architecture.html:4"]
+  ARCH_CONSILIUM_VOICES_001 -->|generated-from| f_docs_architecture_html_4
+  f_docs_architecture_index_html_4["docs/architecture/index.html:4"]
+  ARCH_CONSILIUM_VOICES_001 -->|generated-from| f_docs_architecture_index_html_4
   CONSILIUM_AUDIT_COUNTER_001["Silent parallel audit counter<br><small>CONSILIUM-AUDIT-COUNTER-001</small>"]
   style CONSILIUM_AUDIT_COUNTER_001 fill:#eee,stroke:#bbb,color:#888
-  CONSILIUM_AUDIT_FEEDBACK_001["Orphan run detection and PEND backfill<br><small>CONSILIUM-AUDIT-FEEDBACK-001</small>"]
-  f_scripts_audit_feedback_py_29["scripts/audit_feedback.py:29"]
-  CONSILIUM_AUDIT_FEEDBACK_001 -->|implements| f_scripts_audit_feedback_py_29
-  CONSILIUM_BUILD_REPORT_001["build_report<br><small>CONSILIUM-BUILD-REPORT-001</small>"]
-  f_scripts_build_report_py_42["scripts/build_report.py:42"]
-  CONSILIUM_BUILD_REPORT_001 -->|implements| f_scripts_build_report_py_42
-  f_scripts_test_build_report_py_11["scripts/test_build_report.py:11"]
-  CONSILIUM_BUILD_REPORT_001 -->|tested-by| f_scripts_test_build_report_py_11
-  f_scripts_test_version_py_104["scripts/test_version.py:104"]
-  CONSILIUM_BUILD_REPORT_001 -->|tested-by| f_scripts_test_version_py_104
-  CONSILIUM_CHECK_DOC_DRIFT_001["check_doc_drift<br><small>CONSILIUM-CHECK-DOC-DRIFT-001</small>"]
-  f_scripts_check_doc_drift_py_25["scripts/check_doc_drift.py:25"]
-  CONSILIUM_CHECK_DOC_DRIFT_001 -->|implements| f_scripts_check_doc_drift_py_25
-  f_scripts_test_check_doc_drift_py_11["scripts/test_check_doc_drift.py:11"]
-  CONSILIUM_CHECK_DOC_DRIFT_001 -->|tested-by| f_scripts_test_check_doc_drift_py_11
-  CONSILIUM_CHECK_PUBLIC_LEAK_001["check_public_leak<br><small>CONSILIUM-CHECK-PUBLIC-LEAK-001</small>"]
-  f_scripts_check_public_leak_py_15["scripts/check_public_leak.py:15"]
-  CONSILIUM_CHECK_PUBLIC_LEAK_001 -->|implements| f_scripts_check_public_leak_py_15
-  f_scripts_test_public_leak_py_12["scripts/test_public_leak.py:12"]
-  CONSILIUM_CHECK_PUBLIC_LEAK_001 -->|tested-by| f_scripts_test_public_leak_py_12
-  CONSILIUM_CHECK_VERSIONS_001["check_versions<br><small>CONSILIUM-CHECK-VERSIONS-001</small>"]
-  f_scripts_check_versions_py_25["scripts/check_versions.py:25"]
-  CONSILIUM_CHECK_VERSIONS_001 -->|implements| f_scripts_check_versions_py_25
-  f_scripts_test_check_versions_py_8["scripts/test_check_versions.py:8"]
-  CONSILIUM_CHECK_VERSIONS_001 -->|tested-by| f_scripts_test_check_versions_py_8
-  CONSILIUM_CONFIDENCE_001["confidence<br><small>CONSILIUM-CONFIDENCE-001</small>"]
-  f_modes_confidence_md_60["modes/confidence.md:60"]
-  CONSILIUM_CONFIDENCE_001 -->|implements| f_modes_confidence_md_60
-  f_scripts_confidence_py_57["scripts/confidence.py:57"]
-  CONSILIUM_CONFIDENCE_001 -->|implements| f_scripts_confidence_py_57
-  f_scripts_test_confidence_py_11["scripts/test_confidence.py:11"]
-  CONSILIUM_CONFIDENCE_001 -->|tested-by| f_scripts_test_confidence_py_11
-  CONSILIUM_FEEDBACK_001["feedback<br><small>CONSILIUM-FEEDBACK-001</small>"]
-  f_scripts_feedback_py_12["scripts/feedback.py:12"]
-  CONSILIUM_FEEDBACK_001 -->|implements| f_scripts_feedback_py_12
-  CONSILIUM_IMPLEMENT_CODER_001["implement-coder<br><small>CONSILIUM-IMPLEMENT-CODER-001</small>"]
-  f_prompts_implement_coder_md_54["prompts/implement/coder.md:54"]
-  CONSILIUM_IMPLEMENT_CODER_001 -->|implements| f_prompts_implement_coder_md_54
-  f_scripts_test_implement_pipeline_py_7["scripts/test_implement_pipeline.py:7"]
-  CONSILIUM_IMPLEMENT_CODER_001 -->|tested-by| f_scripts_test_implement_pipeline_py_7
-  CONSILIUM_IMPLEMENT_PIPELINE_001["implement_pipeline<br><small>CONSILIUM-IMPLEMENT-PIPELINE-001</small>"]
-  f_modes_implement_pipeline_md_86["modes/implement_pipeline.md:86"]
-  CONSILIUM_IMPLEMENT_PIPELINE_001 -->|implements| f_modes_implement_pipeline_md_86
-  f_scripts_implement_pipeline_py_34["scripts/implement_pipeline.py:34"]
-  CONSILIUM_IMPLEMENT_PIPELINE_001 -->|implements| f_scripts_implement_pipeline_py_34
-  f_scripts_test_implement_pipeline_py_6["scripts/test_implement_pipeline.py:6"]
-  CONSILIUM_IMPLEMENT_PIPELINE_001 -->|tested-by| f_scripts_test_implement_pipeline_py_6
-  CONSILIUM_IMPLEMENT_SUBAGENT_001["consilium-implement-subagent<br><small>CONSILIUM-IMPLEMENT-SUBAGENT-001</small>"]
-  f_agents_consilium_implement_subagent_md_165["agents/consilium-implement-subagent.md:165"]
-  CONSILIUM_IMPLEMENT_SUBAGENT_001 -->|implements| f_agents_consilium_implement_subagent_md_165
-  CONSILIUM_IMPLEMENT_TEST_WRITER_001["implement-test-writer<br><small>CONSILIUM-IMPLEMENT-TEST-WRITER-001</small>"]
-  f_prompts_implement_test_writer_md_60["prompts/implement/test_writer.md:60"]
-  CONSILIUM_IMPLEMENT_TEST_WRITER_001 -->|implements| f_prompts_implement_test_writer_md_60
-  f_scripts_test_implement_pipeline_py_8["scripts/test_implement_pipeline.py:8"]
-  CONSILIUM_IMPLEMENT_TEST_WRITER_001 -->|tested-by| f_scripts_test_implement_pipeline_py_8
-  CONSILIUM_INFER_PIPELINE_001["Infer implementation pipeline steps<br><small>CONSILIUM-INFER-PIPELINE-001</small>"]
-  f_scripts_infer_pipeline_py_29["scripts/infer_pipeline.py:29"]
-  CONSILIUM_INFER_PIPELINE_001 -->|implements| f_scripts_infer_pipeline_py_29
-  f_scripts_test_implement_mode_py_8["scripts/test_implement_mode.py:8"]
-  CONSILIUM_INFER_PIPELINE_001 -->|tested-by| f_scripts_test_implement_mode_py_8
-  CONSILIUM_LENS_ESSENTIALIST_001["essentialist lens<br><small>CONSILIUM-LENS-ESSENTIALIST-001</small>"]
-  f_prompts_voices_essentialist_lens_md_37["prompts/voices/essentialist_lens.md:37"]
-  CONSILIUM_LENS_ESSENTIALIST_001 -->|implements| f_prompts_voices_essentialist_lens_md_37
-  CONSILIUM_LENS_SENTINEL_001["sentinel lens<br><small>CONSILIUM-LENS-SENTINEL-001</small>"]
-  f_prompts_voices_sentinel_lens_md_39["prompts/voices/sentinel_lens.md:39"]
-  CONSILIUM_LENS_SENTINEL_001 -->|implements| f_prompts_voices_sentinel_lens_md_39
-  CONSILIUM_LENS_VERIFIER_001["verifier lens<br><small>CONSILIUM-LENS-VERIFIER-001</small>"]
-  f_prompts_voices_verifier_lens_md_51["prompts/voices/verifier_lens.md:51"]
-  CONSILIUM_LENS_VERIFIER_001 -->|implements| f_prompts_voices_verifier_lens_md_51
-  CONSILIUM_LOG_FEEDBACK_001["log_feedback<br><small>CONSILIUM-LOG-FEEDBACK-001</small>"]
-  f_scripts_log_feedback_py_43["scripts/log_feedback.py:43"]
-  CONSILIUM_LOG_FEEDBACK_001 -->|implements| f_scripts_log_feedback_py_43
-  f_scripts_test_log_feedback_py_10["scripts/test_log_feedback.py:10"]
-  CONSILIUM_LOG_FEEDBACK_001 -->|tested-by| f_scripts_test_log_feedback_py_10
-  CONSILIUM_MARK_OUTCOME_001["mark_outcome<br><small>CONSILIUM-MARK-OUTCOME-001</small>"]
-  f_scripts_mark_outcome_py_33["scripts/mark_outcome.py:33"]
-  CONSILIUM_MARK_OUTCOME_001 -->|implements| f_scripts_mark_outcome_py_33
-  CONSILIUM_MEMORY_001["memory<br><small>CONSILIUM-MEMORY-001</small>"]
-  f_scripts_memory_py_35["scripts/memory.py:35"]
-  CONSILIUM_MEMORY_001 -->|implements| f_scripts_memory_py_35
-  CONSILIUM_MODE_DIALECTIC_001["dialectic mode<br><small>CONSILIUM-MODE-DIALECTIC-001</small>"]
-  f_modes_dialectic_md_57["modes/dialectic.md:57"]
-  CONSILIUM_MODE_DIALECTIC_001 -->|implements| f_modes_dialectic_md_57
-  CONSILIUM_MODE_LENS_001["opt-in personality-lens ladder ('--lens')<br><small>CONSILIUM-MODE-LENS-001</small>"]
-  f_modes_dialectic_md_60["modes/dialectic.md:60"]
-  CONSILIUM_MODE_LENS_001 -->|implements| f_modes_dialectic_md_60
-  f_modes_sequential_md_93["modes/sequential.md:93"]
-  CONSILIUM_MODE_LENS_001 -->|implements| f_modes_sequential_md_93
-  f_prompts_voices_verifier_lens_md_53["prompts/voices/verifier_lens.md:53"]
-  CONSILIUM_MODE_LENS_001 -->|implements| f_prompts_voices_verifier_lens_md_53
-  f_scripts_test_lens_bias_py_177["scripts/test_lens_bias.py:177"]
-  CONSILIUM_MODE_LENS_001 -->|tested-by| f_scripts_test_lens_bias_py_177
-  f_scripts_validate_report_py_605["scripts/validate_report.py:605"]
-  CONSILIUM_MODE_LENS_001 -->|implements| f_scripts_validate_report_py_605
-  CONSILIUM_MODE_SEQUENTIAL_001["sequential mode<br><small>CONSILIUM-MODE-SEQUENTIAL-001</small>"]
-  f_modes_sequential_md_90["modes/sequential.md:90"]
-  CONSILIUM_MODE_SEQUENTIAL_001 -->|implements| f_modes_sequential_md_90
-  CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001["skeptic_on_chosen flag<br><small>CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001</small>"]
-  f_modes_skeptic_on_chosen_md_69["modes/skeptic_on_chosen.md:69"]
-  CONSILIUM_MODE_SKEPTIC_ON_CHOSEN_001 -->|implements| f_modes_skeptic_on_chosen_md_69
-  CONSILIUM_MODE_TRIAS_001["trias mode<br><small>CONSILIUM-MODE-TRIAS-001</small>"]
-  f_modes_trias_md_196["modes/trias.md:196"]
-  CONSILIUM_MODE_TRIAS_001 -->|implements| f_modes_trias_md_196
-  CONSILIUM_PERSONALITIES_001["personalities<br><small>CONSILIUM-PERSONALITIES-001</small>"]
-  f_scripts_personalities_py_19["scripts/personalities.py:19"]
-  CONSILIUM_PERSONALITIES_001 -->|implements| f_scripts_personalities_py_19
-  f_scripts_test_lens_bias_py_31["scripts/test_lens_bias.py:31"]
-  CONSILIUM_PERSONALITIES_001 -->|tested-by| f_scripts_test_lens_bias_py_31
-  CONSILIUM_PRIORS_001["priors<br><small>CONSILIUM-PRIORS-001</small>"]
-  f_scripts_priors_py_32["scripts/priors.py:32"]
-  CONSILIUM_PRIORS_001 -->|implements| f_scripts_priors_py_32
-  f_scripts_test_priors_py_10["scripts/test_priors.py:10"]
-  CONSILIUM_PRIORS_001 -->|tested-by| f_scripts_test_priors_py_10
-  CONSILIUM_RENDER_FEEDBACK_HTML_001["render_feedback_html<br><small>CONSILIUM-RENDER-FEEDBACK-HTML-001</small>"]
-  f_scripts_render_feedback_html_py_11["scripts/render_feedback_html.py:11"]
-  CONSILIUM_RENDER_FEEDBACK_HTML_001 -->|implements| f_scripts_render_feedback_html_py_11
-  f_scripts_test_feedback_html_py_6["scripts/test_feedback_html.py:6"]
-  CONSILIUM_RENDER_FEEDBACK_HTML_001 -->|tested-by| f_scripts_test_feedback_html_py_6
-  CONSILIUM_RENDER_IMPL_PREVIEW_001["render_impl_preview<br><small>CONSILIUM-RENDER-IMPL-PREVIEW-001</small>"]
-  f_scripts_render_impl_preview_py_28["scripts/render_impl_preview.py:28"]
-  CONSILIUM_RENDER_IMPL_PREVIEW_001 -->|implements| f_scripts_render_impl_preview_py_28
-  f_scripts_test_render_impl_preview_py_12["scripts/test_render_impl_preview.py:12"]
-  CONSILIUM_RENDER_IMPL_PREVIEW_001 -->|tested-by| f_scripts_test_render_impl_preview_py_12
-  CONSILIUM_RUN_EVALS_001["run_evals<br><small>CONSILIUM-RUN-EVALS-001</small>"]
-  f_scripts_run_evals_py_23["scripts/run_evals.py:23"]
-  CONSILIUM_RUN_EVALS_001 -->|implements| f_scripts_run_evals_py_23
-  CONSILIUM_SCOPE_GATE_001["scope_gate<br><small>CONSILIUM-SCOPE-GATE-001</small>"]
-  f_scripts_probe_change_py_187["scripts/probe_change.py:187"]
-  CONSILIUM_SCOPE_GATE_001 -->|implements| f_scripts_probe_change_py_187
-  f_scripts_scope_gate_py_70["scripts/scope_gate.py:70"]
-  CONSILIUM_SCOPE_GATE_001 -->|implements| f_scripts_scope_gate_py_70
-  f_scripts_test_consent_gate_py_18["scripts/test_consent_gate.py:18"]
-  CONSILIUM_SCOPE_GATE_001 -->|tested-by| f_scripts_test_consent_gate_py_18
-  f_scripts_test_probe_change_py_75["scripts/test_probe_change.py:75"]
-  CONSILIUM_SCOPE_GATE_001 -->|tested-by| f_scripts_test_probe_change_py_75
-  f_scripts_test_scope_gate_py_11["scripts/test_scope_gate.py:11"]
-  CONSILIUM_SCOPE_GATE_001 -->|tested-by| f_scripts_test_scope_gate_py_11
-  CONSILIUM_STRIP_CONTEXT_001["strip_context<br><small>CONSILIUM-STRIP-CONTEXT-001</small>"]
-  f_scripts_strip_context_py_46["scripts/strip_context.py:46"]
-  CONSILIUM_STRIP_CONTEXT_001 -->|implements| f_scripts_strip_context_py_46
-  f_scripts_test_strip_context_py_10["scripts/test_strip_context.py:10"]
-  CONSILIUM_STRIP_CONTEXT_001 -->|tested-by| f_scripts_test_strip_context_py_10
-  CONSILIUM_SUBAGENT_001["consilium-subagent<br><small>CONSILIUM-SUBAGENT-001</small>"]
-  f_agents_consilium_subagent_md_111["agents/consilium-subagent.md:111"]
-  CONSILIUM_SUBAGENT_001 -->|implements| f_agents_consilium_subagent_md_111
-  CONSILIUM_TRIAS_MODEL_SCHEMA_001["trias-model-assignment<br><small>CONSILIUM-TRIAS-MODEL-SCHEMA-001</small>"]
-  f_scripts_personalities_py_20["scripts/personalities.py:20"]
-  CONSILIUM_TRIAS_MODEL_SCHEMA_001 -->|implements| f_scripts_personalities_py_20
-  f_scripts_test_trias_model_schema_py_12["scripts/test_trias_model_schema.py:12"]
-  CONSILIUM_TRIAS_MODEL_SCHEMA_001 -->|tested-by| f_scripts_test_trias_model_schema_py_12
-  CONSILIUM_UTILS_001["utils<br><small>CONSILIUM-UTILS-001</small>"]
-  f_scripts_test_utils_py_10["scripts/test_utils.py:10"]
-  CONSILIUM_UTILS_001 -->|tested-by| f_scripts_test_utils_py_10
-  f_scripts_utils_py_6["scripts/utils.py:6"]
-  CONSILIUM_UTILS_001 -->|implements| f_scripts_utils_py_6
-  CONSILIUM_VALIDATE_REPORT_001["validate_report<br><small>CONSILIUM-VALIDATE-REPORT-001</small>"]
-  f_scripts_test_round2_py_8["scripts/test_round2.py:8"]
-  CONSILIUM_VALIDATE_REPORT_001 -->|tested-by| f_scripts_test_round2_py_8
-  f_scripts_validate_report_py_50["scripts/validate_report.py:50"]
-  CONSILIUM_VALIDATE_REPORT_001 -->|implements| f_scripts_validate_report_py_50
-  CONSILIUM_VALIDATE_SKEPTIC_001["validate_skeptic<br><small>CONSILIUM-VALIDATE-SKEPTIC-001</small>"]
-  f_scripts_test_skeptic_py_11["scripts/test_skeptic.py:11"]
-  CONSILIUM_VALIDATE_SKEPTIC_001 -->|tested-by| f_scripts_test_skeptic_py_11
-  f_scripts_validate_skeptic_py_41["scripts/validate_skeptic.py:41"]
-  CONSILIUM_VALIDATE_SKEPTIC_001 -->|implements| f_scripts_validate_skeptic_py_41
-  CONSILIUM_VERSION_001["version<br><small>CONSILIUM-VERSION-001</small>"]
-  f_scripts_test_version_py_103["scripts/test_version.py:103"]
-  CONSILIUM_VERSION_001 -->|tested-by| f_scripts_test_version_py_103
-  f_scripts_version_py_126["scripts/version.py:126"]
-  CONSILIUM_VERSION_001 -->|implements| f_scripts_version_py_126
-  CONSILIUM_VOCABULARY_MAP_001["vocabulary_map<br><small>CONSILIUM-VOCABULARY-MAP-001</small>"]
-  f_scripts_test_round2_py_9["scripts/test_round2.py:9"]
-  CONSILIUM_VOCABULARY_MAP_001 -->|tested-by| f_scripts_test_round2_py_9
-  f_scripts_vocabulary_map_py_10["scripts/vocabulary_map.py:10"]
-  CONSILIUM_VOCABULARY_MAP_001 -->|implements| f_scripts_vocabulary_map_py_10
-  CONSILIUM_VOICE_CONSERVATOR_001["conservator voice<br><small>CONSILIUM-VOICE-CONSERVATOR-001</small>"]
-  f_prompts_voices_conservator_md_218["prompts/voices/conservator.md:218"]
-  CONSILIUM_VOICE_CONSERVATOR_001 -->|implements| f_prompts_voices_conservator_md_218
-  CONSILIUM_VOICE_CONTROL_001["control voice<br><small>CONSILIUM-VOICE-CONTROL-001</small>"]
-  f_prompts_voices_control_md_131["prompts/voices/control.md:131"]
-  CONSILIUM_VOICE_CONTROL_001 -->|implements| f_prompts_voices_control_md_131
-  CONSILIUM_VOICE_GENERATOR_001["generator voice<br><small>CONSILIUM-VOICE-GENERATOR-001</small>"]
-  f_prompts_voices_generator_md_147["prompts/voices/generator.md:147"]
-  CONSILIUM_VOICE_GENERATOR_001 -->|implements| f_prompts_voices_generator_md_147
-  CONSILIUM_VOICE_SKEPTIC_001["skeptic voice<br><small>CONSILIUM-VOICE-SKEPTIC-001</small>"]
-  f_prompts_voices_skeptic_md_139["prompts/voices/skeptic.md:139"]
-  CONSILIUM_VOICE_SKEPTIC_001 -->|implements| f_prompts_voices_skeptic_md_139
-  CONSILIUM_VOTE_DEGENERACY_001["Trias vote degeneracy measurement<br><small>CONSILIUM-VOTE-DEGENERACY-001</small>"]
-  f_scripts_test_vote_degeneracy_py_11["scripts/test_vote_degeneracy.py:11"]
-  CONSILIUM_VOTE_DEGENERACY_001 -->|tested-by| f_scripts_test_vote_degeneracy_py_11
-  f_scripts_vote_degeneracy_py_32["scripts/vote_degeneracy.py:32"]
-  CONSILIUM_VOTE_DEGENERACY_001 -->|implements| f_scripts_vote_degeneracy_py_32
-  SKILL_RUN_CONSILIUM_001["run-consilium driver<br><small>SKILL-RUN-CONSILIUM-001</small>"]
-  f__claude_skills_run_consilium_driver_py_19[".claude/skills/run-consilium/driver.py:19"]
-  SKILL_RUN_CONSILIUM_001 -->|implements| f__claude_skills_run_consilium_driver_py_19
+  SYS_CONSILIUM_IMPLEMENT_001["A verified implementation from a GO verdict<br><small>SYS-CONSILIUM-IMPLEMENT-001</small>"]
+  style SYS_CONSILIUM_IMPLEMENT_001 fill:#fee,stroke:#c66
+  SYS_CONSILIUM_INTEGRITY_001["A repository that stays consistent with itself<br><small>SYS-CONSILIUM-INTEGRITY-001</small>"]
+  style SYS_CONSILIUM_INTEGRITY_001 fill:#fee,stroke:#c66
+  SYS_CONSILIUM_VERDICT_001["A trustworthy verdict on a change before it is committed<br><small>SYS-CONSILIUM-VERDICT-001</small>"]
+  f_docs_architecture_html_4["docs/architecture.html:4"]
+  SYS_CONSILIUM_VERDICT_001 -->|generated-from| f_docs_architecture_html_4
+  f_docs_architecture_index_html_4["docs/architecture/index.html:4"]
+  SYS_CONSILIUM_VERDICT_001 -->|generated-from| f_docs_architecture_index_html_4
 ```
 
 ## Dependency Map
@@ -317,8 +206,12 @@ _Area-level coupling: one box per area (N caps), arrow A->B = some capability in
 
 ```mermaid
 graph LR
-  a_CONSILIUM["CONSILIUM<br><small>44 caps</small>"]
+  a_ARCH["ARCH<br><small>6 caps</small>"]
+  a_CONSILIUM["CONSILIUM<br><small>46 caps</small>"]
+  a_SYS["SYS<br><small>3 caps</small>"]
   a_misc["misc<br><small>1 caps</small>"]
+  a_ARCH --> a_CONSILIUM
+  a_ARCH --> a_misc
   a_misc --> a_CONSILIUM
   style a_CONSILIUM stroke-width:3px
 ```
@@ -329,5 +222,14 @@ _Requirements needing attention: red = unimplemented (confirmed, no code); orang
 
 ```mermaid
 graph LR
-  ok["No risk signals detected"]
+  subgraph sg_misc["misc"]
+    CONSILIUM_CONFIDENCE_CALIBRATION_001["confidence_calibration<br><small>CONSILIUM-CONFIDENCE-CALIBRATION-001</small><br>unverified-intent"]
+  end
+  style CONSILIUM_CONFIDENCE_CALIBRATION_001 fill:#fff9c4,stroke:#aa0,color:#550
 ```
+
+### Risk Table
+
+| ID | status | members | dependents | risks | recommendation |
+| --- | --- | --- | --- | --- | --- |
+| CONSILIUM-CONFIDENCE-CALIBRATION-001 | confirmed | 2 | 1 | unverified-intent | Has open `## Verify intent` question(s): run `reqmap.py sync`, resolve each in `requirements/_findings.md`, then fold the answer into the Contract or delete the bullet. |

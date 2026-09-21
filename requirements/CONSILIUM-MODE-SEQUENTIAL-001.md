@@ -3,9 +3,11 @@ milestone: v1.0
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-MODE-SEQUENTIAL-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-VOICE-GENERATOR-001, CONSILIUM-VOICE-CONTROL-001, CONSILIUM-VOICE-CONSERVATOR-001, CONSILIUM-AGGREGATOR-001]
+satisfies: [ARCH-CONSILIUM-MODES-001]
 ---
 
 # sequential mode
@@ -13,11 +15,11 @@ depends_on: [CONSILIUM-VOICE-GENERATOR-001, CONSILIUM-VOICE-CONTROL-001, CONSILI
 > WHY: Run Generator, Conservator, and Control in a single shared context window — the cheapest deliberation path, used by default when no higher mode is warranted.
 
 ## WHAT — Contract (normative)
-- The mode shall dispatch exactly three voices — Generator, then Conservator, then Control — in that fixed order within a single context window, with no external sub-agent dispatch (0 sub-agents, 1× baseline cost). Generator runs first, blind to risk framing (anti-anchoring), and self-scales its depth from the change's blast radius.
-- The irreversibility consent gate shall run **pre-dispatch** (Step 1.6), before Generator, keyed on `scope_gate.consent_required` (a sensitive/irreversible path or an undeterminable change; fail-safe — uncertainty requires consent). Conservator's `irreversibility_flag` is the backstop for what a path/text pre-check cannot see.
-- Before each voice runs (Steps 2–4), the prior voice's prompt shall be stripped from context via `strip_context.py`; model in-context memory is not cleared — this is a known deliberate limitation documented in the mode spec.
-- The aggregator shall apply an 8-component veto cascade (`aggregate_sequential()`) producing one of seven routing outcomes: BLOCK (irreversibility), BLOCK (glossary_fail), REWORK, SHORT-CIRCUIT (scale_down — skips Control only, Generator already ran), ADAPT_EXTENDED (scale_up), ESCALATE, or AGGREGATE; the resulting report shall carry a `confidence` value derived from the veto outcome.
-- When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, the orchestrator shall surface an **advisory** recommendation to upgrade to Trias (never auto-triggered — the user selects it explicitly). The former auto-parallel cross-check and 1-in-20 silent parallel audit were removed with Parallel mode (PR #454, 2026-06-26).
+- The mode dispatches exactly three voices — Generator, then Conservator, then Control — in that fixed order within a single context window, with no external sub-agent dispatch (0 sub-agents, 1× baseline cost). Generator runs first, blind to risk framing (anti-anchoring), and self-scales its depth from the change's blast radius.
+- The irreversibility consent gate runs **pre-dispatch** (Step 1.6), before Generator, keyed on `scope_gate.consent_required` (a sensitive/irreversible path or an undeterminable change; fail-safe — uncertainty requires consent). Conservator's `irreversibility_flag` is the backstop for what a path/text pre-check cannot see.
+- Before each voice runs (Steps 2–4), the prior voice's prompt is stripped from context via `strip_context.py`; model in-context memory is not cleared — this is a known deliberate limitation documented in the mode spec.
+- The aggregator applies an 8-component veto cascade (`aggregate_sequential()`) producing one of seven routing outcomes: BLOCK (irreversibility), BLOCK (glossary_fail), REWORK, SHORT-CIRCUIT (scale_down — skips Control only, Generator already ran), ADAPT_EXTENDED (scale_up), ESCALATE, or AGGREGATE; the resulting report carries a `confidence` value derived from the veto outcome.
+- When Conservator emits `magnitude: critical` AND `reversibility: irreversible`, the orchestrator surfaces an **advisory** recommendation to upgrade to Trias (never auto-triggered — the user selects it explicitly). The former auto-parallel cross-check and 1-in-20 silent parallel audit were removed with Parallel mode (PR #454, 2026-06-26).
 - The `confidence_floor: 0.70` in mode metadata is advisory — it represents the threshold below which Sequential mode confidence is flagged as "WEAK" in the `check_mode_floor` output. It is NOT a hard gate blocking report emission; a below-floor result still produces a complete report, with the floor surfaced in the confidence field's `outcome_hint`.
 
 ## WHAT — Verify intent (open questions for the human)

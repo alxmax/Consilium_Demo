@@ -3,9 +3,11 @@ milestone: v1.0
 test_exempt: "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests"
 id: CONSILIUM-VOICE-CONTROL-001
 status: confirmed
+level: code
 layer: feature
-owner: auto
+owner: alxmax
 depends_on: []
+satisfies: [ARCH-CONSILIUM-VOICES-001]
 ---
 
 # control voice
@@ -14,11 +16,12 @@ depends_on: []
 
 ## WHAT — Contract (normative)
 
-- The voice shall emit a `glossary` object with 2–5 operationally-defined terms specific to the current deliberation; if it cannot define a key term after 3 attempts it shall set `glossary_fail: true` and document all 3 attempts in `glossary_attempts`, which signals the aggregator to BLOCK and request reformulation.
-- The voice shall emit a `verdicts` array containing one entry per candidate; each verdict must include `id`, `valid` (boolean), `confidence_in_verdict` (`high` | `medium` | `low`), `issues` (with `category`, `detail`, `severity` per entry), and `tests_to_write` (1–4 concrete test stubs for every `valid: true` candidate that is not `do_nothing`).
-- The voice shall check goal-fit first and, if the candidate does not address `success_criterion`, mark `valid: false` with `category: "logic"` and skip all remaining checks for that candidate.
-- The voice shall emit a `disagreements` array classifying any substantive conflict between voices as `substantial` (different answer → REWORK) or `terminological` (same answer, different words → note and continue).
-- When the voice cannot verify a signature without reading a file and file access fails, the `unverifiable — file not accessible` marker in the verdict is the intended degradation signal. This is transparent and recorded in verdicts visible to the aggregator and report; no harder signal is required.
+- The voice emits a `glossary` object with 2–5 operationally-defined terms specific to the current deliberation; if it cannot define a key term after 3 attempts, it sets `glossary_fail: true` and documents all 3 attempts in `glossary_attempts`, which signals the aggregator to BLOCK and request reformulation.
+- The voice emits a `verdicts` array containing one entry per candidate; each verdict includes `id`, `valid` (boolean), `confidence_in_verdict` (`high` | `medium` | `low`), `issues` (with `category`, `detail`, `severity` per entry), and `tests_to_write` (1–4 concrete test stubs for every `valid: true` candidate that is not `do_nothing`).
+- The voice checks goal-fit first and, if the candidate does not address `success_criterion`, marks `valid: false` with `category: "logic"` and skips all remaining checks for that candidate.
+- The voice emits a `disagreements` array classifying any substantive conflict between voices as `substantial` (different answer → REWORK) or `terminological` (same answer, different words → note and continue).
+- The voice cannot always verify a signature without reading a file; when file access fails in that situation, the `unverifiable — file not accessible` marker in the verdict is the intended degradation signal.
+- This degradation is transparent: the marker is recorded in verdicts visible to the aggregator and the report, and no harder signal is required.
 - The 3-entry cap on `hidden_assumptions` and the self-assessed selection criterion are by design. Control is a deliberative voice, not a formal verifier; the design intentionally trusts the voice to surface the most consequential assumptions.
 
 ## WHAT — Verify intent (open questions for the human)

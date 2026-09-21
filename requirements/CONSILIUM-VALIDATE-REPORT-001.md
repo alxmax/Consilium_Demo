@@ -2,51 +2,50 @@
 milestone: v1.0
 id: CONSILIUM-VALIDATE-REPORT-001
 status: confirmed
+level: code
 layer: bus
-owner: auto
+owner: alxmax
 depends_on: [CONSILIUM-PERSONALITIES-001, CONSILIUM-UTILS-001]
 risk: 2  # REVIEW
+satisfies: [ARCH-CONSILIUM-REPORT-001]
 ---
 
 # validate_report
 
 > Describes observed behavior, verified against scripts/validate_report.py source.
 
-## Input
-- A deliberation report JSON on stdin (produced by `build_report.py`)
-
 ## Description
-Constitution Principle #4 gate. Validates report *shape*, not deliberation
-*substance* — confirms that required fields exist and are well-formed.
 
-Checks enforced:
-- `success_criterion` and `verification` are non-empty strings
-- `chosen_approach` is present and either a non-empty string or JSON null; missing field is an error, explicit null is accepted (occurs on conservative-override veto AND Trias null-vote-patterns); no distinction is made between intentional and unintentional nulls
-- if `skipped: true`, `skip_reason` is a non-empty string
-- `deliberation_log` contains an aggregate step whose `result` is a dict (not a string narrative); for non-bypassed reports, `generator` and `control` steps must also be present; `conservator` step presence is NOT enforced (only validated under `--strict-round2`)
-- `telemetry` is present for non-skipped reports and carries a non-empty `mode` string
-- telemetry counts (`tokens_in`, `tokens_out`, `latency_ms`) must be non-negative ints (strict: `isinstance(v, int)` — float values such as `1500.0` are rejected); each count field is optional per voice
+Every line in this section is binding.
 
-Reports manually assembled outside `build_report.py` are rejected — this gate
-catches shape drift (e.g. aggregate.result as a narrative string).
+- `validate_report.py` reads a deliberation report JSON from stdin, produced by `build_report.py`.
+- `validate_report.py` validates report *shape*, not deliberation *substance* — confirming required fields exist and are well-formed. This is the Constitution Principle #4 gate.
+- `success_criterion` and `verification` are required to be non-empty strings.
+- `chosen_approach` is present and is either a non-empty string or JSON null.
+- A missing `chosen_approach` field is an error; an explicit null is accepted.
+- Explicit null occurs on a conservative-override veto or on a Trias null-vote pattern; the gate makes no distinction between an intentional and an unintentional null.
+- `skipped: true` requires `skip_reason` to be a non-empty string.
+- `deliberation_log` contains an aggregate step whose `result` is a dict, not a string narrative.
+- For non-bypassed reports, `deliberation_log` also requires the `generator` and `control` steps to be present.
+- `deliberation_log`'s `conservator` step presence is not enforced, except when `--strict-round2` is set.
+- `telemetry` is present for non-skipped reports and carries a non-empty `mode` string.
+- Telemetry count fields (`tokens_in`, `tokens_out`, `latency_ms`) are non-negative ints, checked strictly via `isinstance(v, int)`; a float value such as `1500.0` is rejected.
+- Each telemetry count field is optional per voice.
+- Reports assembled manually outside `build_report.py` are rejected by this gate, which catches shape drift such as `aggregate.result` written as a narrative string.
+- Exit 0 means the report is valid; exit 1 means validation failed, with each problem printed to stderr; exit 2 means the JSON input is malformed.
 
-## Output
-- Exit 0 — report is valid
-- Exit 1 — validation failed; each problem printed to stderr
-- Exit 2 — malformed JSON input
+## Verify intent
 
-## WHAT — Contract
-- Shall validate report shape only (not deliberation substance): `success_criterion` and `verification` are non-empty strings; `chosen_approach` is present (explicit null accepted, missing field is an error); `telemetry` carries a non-empty `mode` for non-skipped reports.
-- `deliberation_log` shall contain `generator`, `control`, and an aggregate step with `result` as a dict (not a string) for non-bypassed reports; `conservator` step presence is not enforced unless `--strict-round2` is set.
-- Telemetry count fields (`tokens_in`, `tokens_out`, `latency_ms`) shall be non-negative `int`; float values such as `1500.0` shall be rejected.
-- Shall exit 0 on valid, 1 on validation failure (each problem printed to stderr), 2 on malformed JSON.
-
-## WHAT — Verify intent
 - None - all questions resolved.
 
-## Acceptance (= tests)
-- Valid reports (from `.consilium/runs/*.json`) exit 0
-- Missing `success_criterion` causes exit 1 with a message naming the field
-- `skipped: true` without `skip_reason` causes exit 1
-- Missing `telemetry.mode` on a non-skipped report causes exit 1
-- Malformed JSON exits 2
+## Cases
+
+- **CASE-1** — Given a valid report from `.consilium/runs/*.json`, when `validate_report.py` runs, then it exits 0.
+- **CASE-2** — Given a report missing `success_criterion`, when `validate_report.py` runs, then it exits 1 with a message naming the field.
+- **CASE-3** — Given `skipped: true` without `skip_reason`, when `validate_report.py` runs, then it exits 1.
+- **CASE-4** — Given a non-skipped report missing `telemetry.mode`, when `validate_report.py` runs, then it exits 1.
+- **CASE-5** — Given malformed JSON input, when `validate_report.py` runs, then it exits 2.
+
+## Context (non-binding)
+
+**Current implementation** — `scripts/validate_report.py`.

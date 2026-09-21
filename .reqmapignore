@@ -1,5 +1,7 @@
 scripts/reqmap.py
 # Bundled viewer template — generated artifact, never a member (see reqmap.py init default)
+# Vendored engine package (plugin v8 split reqmap.py into CLI + package) — carries its own implements: tags
+scripts/reqmap_engine/**
 scripts/_map_viewer.html
 # Plugin demo/reference map — contains foreign requirement IDs that cause dangling-ref errors
 docs/requirements-map.html
@@ -14,5 +16,8 @@ scripts/fix_benchmark_pendings.py
 .consilium/**
 docs/architecture/src/**
 docs/architecture/build.py
+# Complete-architecture poster: generator + its generated output (poster dropped in a 2026-07-03 backlog review)
+scripts/make_full_architecture.py
+docs/consilium_full.html
 # Legacy map viewer from Consilium_Demo public repo — generated artifact with stale tags
 docs/map.html
