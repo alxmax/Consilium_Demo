@@ -13,8 +13,8 @@ Reads a deliberation report (JSON) from stdin. Exits 0 iff:
 SCOPE: this validator checks report *shape*, not deliberation *substance* —
 it confirms the fields exist and are well-formed, not that the voices did
 rigorous, non-vacuous work. Substance-level checking has no enforced gate
-(meta_critic.py is advisory and, as of 2026-05-24, trimmed to a single
-conservator_spread heuristic). This is a known, accepted gap — see TODO.md.
+(the advisory meta-critic step was retired and deleted). This is a known,
+accepted gap — see TODO.md.
 
 The null chosen_approach case is legitimate: conservative_override with
 veto_threshold can produce chosen: null when every candidate is vetoed
@@ -46,15 +46,21 @@ On failure, prints each problem to stderr and exits 1. Malformed JSON exits 2.
 CLI:
     cat runs/2026-05-11_1500_foo.json | python scripts/validate_report.py
     python scripts/validate_report.py < report.json
+    python scripts/validate_report.py --all .consilium/runs               # sweep; exit 1 if any fail
+    python scripts/validate_report.py --all .consilium/runs --quarantine  # move failures to _invalid/
 """
 # implements: CONSILIUM-VALIDATE-REPORT-001
 
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
+import shutil
 import statistics
 import sys
+from pathlib import Path
 
 from personalities import NAMES
 from utils import force_utf8_streams
@@ -545,6 +551,42 @@ def _strict_substance_problems(report: dict) -> list[str]:
     return problems
 
 
+QUARANTINE_DIR = "_invalid"
+
+
+def sweep(runs_dir: Path, quarantine: bool = False) -> int:
+    """Validate every run in runs_dir; report failures, optionally quarantine them.
+
+    Dot-files (.run_path_map.json) are bookkeeping, not runs. Quarantined files
+    move to runs_dir/_invalid/, outside the top-level *.json glob that priors.py
+    and feedback.py read, so an invalid run stops feeding their statistics.
+    """
+    files = sorted(f for f in runs_dir.glob("*.json") if not f.name.startswith("."))
+    failed: list[tuple[Path, str]] = []
+    for f in files:
+        try:
+            report = json.loads(f.read_text(encoding="utf-8-sig"))
+        except json.JSONDecodeError as exc:
+            failed.append((f, f"invalid JSON: {exc}"))
+            continue
+        if not isinstance(report, dict):
+            failed.append((f, "report must be a JSON object"))
+            continue
+        with contextlib.redirect_stderr(io.StringIO()):  # mute advisory latency warnings
+            problems = validate(report)
+        if problems:
+            failed.append((f, problems[0]))
+    for f, problem in failed:
+        print(f"FAIL {f.name}: {problem}")
+        if quarantine:
+            dest = runs_dir / QUARANTINE_DIR
+            dest.mkdir(exist_ok=True)
+            shutil.move(str(f), str(dest / f.name))
+    moved = f", moved to {QUARANTINE_DIR}/" if quarantine and failed else ""
+    print(f"checked {len(files)}, ok {len(files) - len(failed)}, fail {len(failed)}{moved}")
+    return 1 if failed and not quarantine else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     force_utf8_streams()
     ap = argparse.ArgumentParser(description=__doc__)
@@ -569,7 +611,14 @@ def main(argv: list[str] | None = None) -> int:
         help="promote substance heuristics (empty candidates/verdicts, missing tests_to_write, "
              "Conservator score uniformity) from advisory warnings to blocking errors",
     )
+    ap.add_argument("--all", metavar="RUNS_DIR", default=None,
+        help="validate every run in RUNS_DIR instead of one report; exit 1 if any fail")
+    ap.add_argument("--quarantine", action="store_true",
+        help="with --all: move failing runs to RUNS_DIR/_invalid/ so priors stop reading them")
     args = ap.parse_args(argv)
+
+    if args.all:
+        return sweep(Path(args.all), quarantine=args.quarantine)
 
     try:
         report = json.load(args.input)

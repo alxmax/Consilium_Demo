@@ -153,6 +153,37 @@ def run_tests(verbose: bool) -> int:
     else:
         passes.append("personality weight vectors are distinct")
 
+    # telemetry.lens_applied runtime contract (validate_report.py): on a Dialectic
+    # --lens run the decider and Skeptic lenses must differ, and only known lenses
+    # are accepted. A missing field is the valid default — the ladder is opt-in.
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import validate_report  # noqa: E402
+
+    def _lens_problems(lens_applied: object) -> list[str]:
+        report = {
+            "success_criterion": "x", "verification": "y", "chosen_approach": "a",
+            "pipeline_executed": True,
+            "deliberation_log": [
+                {"step": "generator", "candidates": [{"id": "a"}]},
+                {"step": "aggregate", "result": {"chosen": "a"}},
+            ],
+            "telemetry": {"mode": "dialectic"},
+        }
+        if lens_applied is not None:
+            report["telemetry"]["lens_applied"] = lens_applied
+        return [p for p in validate_report.validate(report) if "lens_applied" in p]
+
+    lens_cases = [
+        ("decider == skeptic is rejected", {"decider": "essentialist", "skeptic": "essentialist"}, True),
+        ("unknown decider lens is rejected", {"decider": "pioneer"}, True),
+        ("non-object lens_applied is rejected", "essentialist", True),
+        ("decider != skeptic is accepted", {"decider": "essentialist", "skeptic": "verifier"}, False),
+        ("absent lens_applied (default, opt-in) is accepted", None, False),
+    ]
+    for label, value, should_fail in lens_cases:
+        got_fail = bool(_lens_problems(value))
+        (passes if got_fail == should_fail else failures).append(f"lens_applied: {label}")
+
     if verbose:
         for line in passes:
             print(f"PASS {line}")

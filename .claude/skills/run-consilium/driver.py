@@ -88,7 +88,6 @@ def smoke():
         "test_round2.py",
         "test_feedback_html.py",
         "test_lens_bias.py",
-        "test_meta_critic_trim.py",
         "test_implement_pipeline.py",
         "test_probe_change.py",
         "test_version.py",

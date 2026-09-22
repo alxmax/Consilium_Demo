@@ -987,7 +987,8 @@
   "args": [
    "--dry-run",
    "--outcome",
-   "OK"
+   "OK",
+   "--confirmed"
   ],
   "stdin_json": {
    "success_criterion": "any criterion",
@@ -1030,6 +1031,7 @@
    "--dry-run",
    "--outcome",
    "OK",
+   "--confirmed",
    "--force-override"
   ],
   "stdin_json": {
@@ -1072,7 +1074,8 @@
   "args": [
    "--dry-run",
    "--outcome",
-   "OK"
+   "OK",
+   "--confirmed"
   ],
   "stdin_json": {
    "success_criterion": "any criterion",
@@ -1106,6 +1109,47 @@
   "expect_stdout_contains": [
    "OK",
    "approach_a"
+  ]
+ },
+ {
+  "name": "log_feedback/rejects --outcome OK without --confirmed",
+  "tool": "scripts/log_feedback.py",
+  "args": [
+   "--dry-run",
+   "--outcome",
+   "OK"
+  ],
+  "stdin_json": {
+   "success_criterion": "any criterion",
+   "verification": "any step",
+   "chosen_approach": "approach_a",
+   "confidence": 0.72,
+   "telemetry": {
+    "mode": "parallel"
+   },
+   "deliberation_log": [
+    {
+     "step": "generator",
+     "candidates": [
+      {
+       "id": "approach_a"
+      },
+      {
+       "id": "do_nothing"
+      }
+     ]
+    },
+    {
+     "step": "aggregate",
+     "result": {
+      "vetoed": []
+     }
+    }
+   ]
+  },
+  "expect_exit": 1,
+  "expect_stderr_contains": [
+   "--confirmed"
   ]
  },
  {
@@ -1541,214 +1585,6 @@
   }
  },
  {
-  "name": "meta_critic/healthy bundle emits no flags",
-  "tool": "scripts/deprecated/meta_critic.py",
-  "args": [],
-  "stdin_json": {
-   "generator": {
-    "candidates": [
-     {
-      "id": "a",
-      "summary": "rewrite parser iterative approach",
-      "sketch": "for token in tokens state transition compute result accumulator"
-     },
-     {
-      "id": "b",
-      "summary": "memoize recursive function calls",
-      "sketch": "wrap with lru_cache decorator input parameters cache invalidation"
-     },
-     {
-      "id": "c",
-      "summary": "parallel worker threads partition",
-      "sketch": "pool map process chunk partitions merge results ordered"
-     }
-    ]
-   },
-   "control": {
-    "verdicts": [
-     {
-      "id": "a",
-      "issues": [
-       {
-        "category": "logic",
-        "detail": "potential off-by-one in state transition at scripts/parser.py:42 when input is empty"
-       }
-      ]
-     },
-     {
-      "id": "b",
-      "issues": [
-       {
-        "category": "tests",
-        "detail": "tests/test_cache_invalidation.py needs update for new memo signature"
-       }
-      ]
-     }
-    ]
-   },
-   "conservator": {
-    "scores": [
-     {
-      "id": "a",
-      "risk_score": 0.25
-     },
-     {
-      "id": "b",
-      "risk_score": 0.55
-     },
-     {
-      "id": "c",
-      "risk_score": 0.8
-     }
-    ]
-   }
-  },
-  "expect_exit": 0,
-  "expect_stdout_subset": {
-   "deliberation_quality": {
-    "flags": []
-   }
-  }
- },
- {
-  "name": "meta_critic/paraphrasing generator triggers divergence flag",
-  "tool": "scripts/deprecated/meta_critic.py",
-  "args": [],
-  "stdin_json": {
-   "generator": {
-    "candidates": [
-     {
-      "id": "a",
-      "summary": "validation logic added new",
-      "sketch": "validation logic added new approach"
-     },
-     {
-      "id": "b",
-      "summary": "new validation logic added",
-      "sketch": "validation new logic added approach"
-     },
-     {
-      "id": "c",
-      "summary": "logic validation new added",
-      "sketch": "validation logic new added approach"
-     }
-    ]
-   },
-   "control": {
-    "verdicts": []
-   },
-   "conservator": {
-    "scores": [
-     {
-      "id": "a",
-      "risk_score": 0.3
-     },
-     {
-      "id": "b",
-      "risk_score": 0.4
-     }
-    ]
-   }
-  },
-  "expect_exit": 0,
-  "expect_stdout_contains": [
-   "conservator_spread"
-  ],
-  "_comment": "generator_divergence removed in 2026-05-24 trim; scenario updated to check spread is still present"
- },
- {
-  "name": "meta_critic/empty issues yields non-zero spread (control_concreteness removed)",
-  "tool": "scripts/deprecated/meta_critic.py",
-  "args": [],
-  "stdin_json": {
-   "generator": {
-    "candidates": [
-     {
-      "id": "alpha",
-      "summary": "first distinct option",
-      "sketch": "completely different approach number one"
-     },
-     {
-      "id": "beta",
-      "summary": "second different option",
-      "sketch": "another approach using parallel mechanism"
-     }
-    ]
-   },
-   "control": {
-    "verdicts": [
-     {
-      "id": "alpha",
-      "valid": true,
-      "issues": []
-     },
-     {
-      "id": "beta",
-      "valid": true,
-      "issues": []
-     }
-    ]
-   },
-   "conservator": {
-    "scores": [
-     {
-      "id": "alpha",
-      "risk_score": 0.2
-     },
-     {
-      "id": "beta",
-      "risk_score": 0.7
-     }
-    ]
-   }
-  },
-  "expect_exit": 0,
-  "expect_stdout_subset": {
-   "deliberation_quality": {
-    "conservator_spread": 0.5,
-    "flags": []
-   }
-  }
- },
- {
-  "name": "meta_critic/single conservator score yields spread null",
-  "tool": "scripts/deprecated/meta_critic.py",
-  "args": [],
-  "stdin_json": {
-   "generator": {
-    "candidates": [
-     {
-      "id": "alpha",
-      "summary": "distinct approach one",
-      "sketch": "completely different mechanism"
-     },
-     {
-      "id": "beta",
-      "summary": "distinct approach two",
-      "sketch": "another orthogonal mechanism"
-     }
-    ]
-   },
-   "control": {
-    "verdicts": []
-   },
-   "conservator": {
-    "scores": [
-     {
-      "id": "alpha",
-      "risk_score": 0.5
-     }
-    ]
-   }
-  },
-  "expect_exit": 0,
-  "expect_stdout_subset": {
-   "deliberation_quality": {
-    "conservator_spread": null
-   }
-  }
- },
- {
   "name": "build_report/passes through deliberation_quality when present",
   "tool": "scripts/build_report.py",
   "args": [],
@@ -1881,7 +1717,7 @@
   }
  },
  {
-  "name": "priors/weighted_bad_rate exceeds bad_rate when confirmed BAD present",
+  "name": "priors/rates count only [confirmed] rows",
   "note": "Synthetic fixture: validates code-path coverage only, not semantic correctness. The static HTML in evals/fixtures/ exercises priors.py parsing/arithmetic; it does not assert that the weighting heuristic is the right one.",
   "tool": "scripts/priors.py",
   "args": [
@@ -1899,8 +1735,10 @@
     "BAD": 1,
     "OK": 1
    },
-   "bad_rate": 0.5,
-   "weighted_bad_rate": 0.6666666666666666
+   "bad_rate": 1.0,
+   "rated_count": 1,
+   "confirmed_count": 1,
+   "unconfirmed_count": 1
   }
  },
  {

@@ -17,9 +17,10 @@ description: Cross-cutting flag — +1 Skeptic sub-agent over any base mode post
 
 ## When to use
 
+**Not a trigger: confidence.** The former `confidence < 0.70` auto-trigger was removed: confidence does not predict outcomes (64 `[confirmed]` FEEDBACK outcomes: Brier 0.163 vs 0.085 for the base rate; OK-rate 0.92 at ≥ 0.7 vs 0.90 below; `scripts/confidence_calibration.py` returns `FALLBACK_A`).
+
 **Auto-trigger conditions** (any is sufficient):
-- Confidence ∈ `[0.0, 0.70)` — classic trigger (strictly less than 0.70; confidence == 0.70 does NOT trigger — it is the Sequential floor and the Trias 2-0 canonical value, both considered passing)
-- Confidence > 0.7 BUT `Conservator.net_concern` > 0.7 — high-conf/high-concern discrepancy is worth probing: `trigger_reason: "high_conf_high_concern"`
+- `Conservator.net_concern` > 0.7 on the chosen — a high-concern winner is worth probing: `trigger_reason: "high_concern"`
 - `chosen_approach` coincides with a `BAD` outcome from `FEEDBACK.html` (last 30 days, substring match on label): `trigger_reason: "similar_to_recent_bad"` — Reviewer 9-lite for classic modes
 - `irreversibility_flag: true` — existing consent gate, Skeptic adds object-level check: `trigger_reason: "irreversibility_gate"`
 
@@ -30,7 +31,7 @@ description: Cross-cutting flag — +1 Skeptic sub-agent over any base mode post
 
 ## Workflow
 1. Run the full base mode (any: Sequential / Dialectic / Trias) → produces `chosen`, `confidence`, intermediate report
-2. If `confidence < 0.70` (auto) or the `--skeptic-on-chosen` flag is active, dispatch 1 Sonnet 5 sub-agent with `prompts/voices/skeptic.md` inline + minimal input:
+2. If an auto-trigger condition above holds or the `--skeptic-on-chosen` flag is active, dispatch 1 Sonnet 5 sub-agent with `prompts/voices/skeptic.md` inline + minimal input:
    ```
    chosen: <id, summary, sketch, rationale>
    success_criterion: <the testable sentence>
@@ -60,7 +61,7 @@ Summary table:
 | `unaddressable / meta_scope_mismatch` | mark `misapplied` | mark `misapplied` |
 
 ## Skip if
-- Confidence ≥ 0.70 and the `--skeptic-on-chosen` flag is not manually active — the Skeptic has no structural motivation to find anything
+- No auto-trigger condition holds and the `--skeptic-on-chosen` flag is not active
 - `chosen` is null (all candidates vetoed) — there is no chosen to challenge
 - Diff is intrinsically high-stakes (auth, migrations, security) — use full Trias with justified cost
 

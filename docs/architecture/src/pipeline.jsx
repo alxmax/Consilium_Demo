@@ -4,7 +4,7 @@ const STEPS = [
   {
     id: '0', name: 'bootstrap',
     title: 'Bootstrap',
-    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (override_rate: fraction of runs where the chosen answer was later overridden; veto_rate: fraction where Conservator hard-vetoed all candidates; recurring_keywords: terms that appear repeatedly in chosen approaches). Two signals block until resolved: stale_pendings (PEND outcomes > 2 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 30% of recent runs still PEND), is a soft alert only.',
+    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (stale PEND rows to close, runs never logged, a matching prior run, and a confirmed-only bad_rate that Conservator sees via --memory-summary). Two signals block until resolved: stale_pendings (PEND outcomes > 2 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 30% of recent runs still PEND), is a soft alert only.',
     plain: 'Wakes up. Reads each voice\'s job description and checks what worked last time — did Conservator keep vetoing? Did past runs tend to end up pending? That context shapes the upcoming deliberation.',
     inputs: ['prompts/voices/*.md', 'runs/*.json', 'FEEDBACK.html'],
     outputs: ['soft priors', 'stale_pendings prompt?'],
@@ -54,20 +54,11 @@ const STEPS = [
   {
     id: '5b', name: 'confidence',
     title: 'Confidence',
-    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Separately, when confidence ∈ [0.0, 0.70) — strictly below 0.70 — the skeptic_on_chosen mechanism auto-triggers (if composed) and the Step 5d retry fires; 0.70 itself (the sequential floor and the Trias 2-0 value) passes. This threshold is fixed regardless of mode.',
+    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Confidence is advisory: on confirmed outcomes it does not predict success, so it no longer triggers the Skeptic (that is opt-in via --skeptic-on-chosen). Below 0.70 the Step 5d retry still fires as a cheap heuristic; 0.70 itself passes.',
     plain: 'How confident are the voices in the winner? Each mode has a floor — if it falls below, that\'s a signal (not a hard stop). The more a mode costs, the higher its expected confidence bar.',
     inputs: ['ranking', 'voice variances', 'mode'],
     outputs: ['confidence ∈ [0, 1]', 'below_floor: bool'],
     scripts: ['confidence.py'],
-  },
-  {
-    id: '5c', name: 'meta-critic',
-    title: 'Meta-critic (retired)',
-    desc: 'Retired 2026-05-25 — moved to scripts/deprecated/. Advisory only; never blocked. Trimmed to a single conservator_spread heuristic (generator_divergence + control_concreteness removed, 0/163 fires). The substance-validation gap is now an accepted known limitation.',
-    plain: 'Used to grade deliberation quality (advisory). Retired — kept for reference only.',
-    inputs: ['voice outputs'],
-    outputs: ['deliberation_quality.flags'],
-    scripts: ['scripts/deprecated/meta_critic.py'],
   },
   {
     id: '5d', name: 'retry',

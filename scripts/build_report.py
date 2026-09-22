@@ -249,8 +249,8 @@ def build(bundle: dict) -> dict:
     if "telemetry" in bundle:
         report["telemetry"] = bundle["telemetry"]
     if "deliberation_quality" in bundle:
-        # Advisory block from meta_critic.py — flags shallow deliberations
-        # (generator paraphrasing, control speculation, conservator shrugging).
+        # Legacy advisory block (its producer, the meta-critic step, is deleted);
+        # still passed through so older bundles round-trip.
         report["deliberation_quality"] = bundle["deliberation_quality"]
     # Trias mode: pass through team/personalities/vote_pattern/dissent/abstained
     # fields when present in the bundle. These come from the orchestrator after
@@ -271,10 +271,6 @@ def build(bundle: dict) -> dict:
             report["dissent"] = aggregate["dissent"]
         if "abstained" in aggregate:
             report["abstained"] = aggregate["abstained"]
-    # Pass through auto_escalated flag when orchestrator triggered a Dialectic re-run
-    # because Sequential confidence dropped below 0.6 (SKILL.md §Step 5b).
-    if bundle.get("auto_escalated") is True:
-        report["auto_escalated"] = True
     return _stamp_provenance(report)
 
 

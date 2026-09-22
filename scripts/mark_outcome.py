@@ -108,6 +108,9 @@ def _annotate_note(note: str, reason: str | None, outcome: str = "") -> str:
     if outcome == "PEND_HEADLESS":
         if "benchmark_headless" not in parts:
             parts.append("benchmark_headless")
+    elif outcome in ("PEND", "CLOSED_UNVERIFIED"):
+        # Not a verified outcome: drop any stale marker instead of adding one.
+        parts = [p for p in parts if p != CONFIRMED_MARKER]
     else:
         if CONFIRMED_MARKER not in parts:
             parts.append(CONFIRMED_MARKER)
@@ -128,9 +131,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--chosen", default=None, help="match by chosen id (with --date)")
     ap.add_argument(
         "--outcome",
-        choices=("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS"),
+        choices=("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS", "CLOSED_UNVERIFIED"),
         required=True,
-        help="new outcome value; PEND_HEADLESS requires --benchmark flag",
+        help="new outcome value; OK/BAD/OVR get the [confirmed] marker; CLOSED_UNVERIFIED closes a PEND without evidence (stale cleanup); PEND_HEADLESS requires --benchmark flag",
     )
     ap.add_argument("--benchmark", action="store_true",
         help="required when --outcome PEND_HEADLESS; marks entry as headless benchmark run")

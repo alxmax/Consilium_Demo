@@ -174,28 +174,28 @@ INVARIANTS = [
         "rationale": "The cascade table's scale_down row is a second, independent statement of the short-circuit contract. Under Generator-first it skips Control only, and the trivial-direct report must carry pipeline_executed: false (validate_report.py rejects it otherwise).",
     },
     {
-        "id": "explainer_skeptic_band_strict_modes",
+        "id": "explainer_skeptic_not_confidence_triggered_modes",
         "file": "docs/architecture/src/modes.jsx",
-        "required": r"\[0\.0,\s*0\.70\)",
-        "forbidden": r"\[0\.0,\s*0\.7\]",
-        "source": "SKILL.md:536 — auto-trigger is strictly < 0.70; 0.70 (Trias 2-0 value, Sequential floor) passes; audit 2026-07-02",
-        "rationale": "The closed-interval form [0.0, 0.7] includes exactly the boundary value the system emits by construction; the explainer must use the half-open band so a 0.70 run is documented as passing.",
+        "required": r"--skeptic-on-chosen",
+        "forbidden": r"\[0\.0,\s*0\.70?[\])]",
+        "source": "confidence does not predict outcomes on [confirmed] FEEDBACK rows (Brier 0.163 vs 0.085 base rate, n=64); the confidence auto-trigger was removed 2026-09-22",
+        "rationale": "The explainer must not describe a confidence band that fires the Skeptic; it is opt-in via --skeptic-on-chosen (plus non-confidence triggers).",
     },
     {
-        "id": "explainer_skeptic_band_strict_pipeline",
+        "id": "explainer_skeptic_not_confidence_triggered_pipeline",
         "file": "docs/architecture/src/pipeline.jsx",
-        "required": r"\[0\.0,\s*0\.70\)",
-        "forbidden": r"\[0\.0,\s*0\.7\]",
-        "source": "SKILL.md:536 — auto-trigger is strictly < 0.70; audit 2026-07-02",
-        "rationale": "Same band pin as explainer_skeptic_band_strict_modes, for the confidence-step description in pipeline.jsx.",
+        "required": r"--skeptic-on-chosen",
+        "forbidden": r"\[0\.0,\s*0\.70?[\])]",
+        "source": "confidence does not predict outcomes on [confirmed] FEEDBACK rows (Brier 0.163 vs 0.085 base rate, n=64); the confidence auto-trigger was removed 2026-09-22",
+        "rationale": "The explainer must not describe a confidence band that fires the Skeptic; it is opt-in via --skeptic-on-chosen (plus non-confidence triggers).",
     },
     {
-        "id": "explainer_skeptic_band_strict_voices",
+        "id": "explainer_skeptic_not_confidence_triggered_voices",
         "file": "docs/architecture/src/voices.jsx",
-        "required": r"\[0\.0,\s*0\.70\)",
-        "forbidden": r"\[0\.0,\s*0\.7\]",
-        "source": "SKILL.md:536 — auto-trigger is strictly < 0.70; audit 2026-07-02",
-        "rationale": "Same band pin as explainer_skeptic_band_strict_modes, for the Skeptic card in voices.jsx.",
+        "required": r"--skeptic-on-chosen",
+        "forbidden": r"\[0\.0,\s*0\.70?[\])]",
+        "source": "confidence does not predict outcomes on [confirmed] FEEDBACK rows (Brier 0.163 vs 0.085 base rate, n=64); the confidence auto-trigger was removed 2026-09-22",
+        "rationale": "The explainer must not describe a confidence band that fires the Skeptic; it is opt-in via --skeptic-on-chosen (plus non-confidence triggers).",
     },
 ]
 
@@ -566,6 +566,55 @@ def check_referenced_scripts_exist() -> list[str]:
     return failures
 
 
+# Literal prompts/voices|modes|agents/<name>.md paths, plus bare `<name>_lens.md`
+# (SKILL.md names lenses without their directory). Placeholders like
+# modes/<mode>.md never match because '<' is outside the class.
+_CONTRACT_REF_RE = re.compile(r"(?<![\w/\-.])(?:prompts/voices|modes|agents)/[A-Za-z0-9_\-]+\.md")
+_LENS_REF_RE = re.compile(r"(?<![\w/\-.])([a-z]+_lens\.md)")
+
+
+def check_referenced_contracts_exist() -> list[str]:
+    """Every voice/mode/agent prompt a normative doc references must exist.
+
+    Origin: SKILL.md Step 0 kept naming pioneer/architect/steward_lens.md after
+    PR #482 replaced them with essentialist/verifier/sentinel — the orchestrator
+    was told to read files that no longer existed, and referenced_script_exists
+    did not see it because it only covers scripts/*.py.
+    """
+    failures: list[str] = []
+    doc_files = list(SCRIPT_REF_DOCS) + sorted(
+        str(p.relative_to(REPO_ROOT)).replace("\\", "/")
+        for d in ("modes", "agents", "prompts/voices")
+        for p in (REPO_ROOT / d).glob("*.md")
+    )
+    for rel in doc_files:
+        content = _read(rel)
+        refs = set(_CONTRACT_REF_RE.findall(content))
+        refs |= {f"prompts/voices/{name}" for name in _LENS_REF_RE.findall(content)}
+        for ref in sorted(refs):
+            if not (REPO_ROOT / ref).exists():
+                failures.append(
+                    f"[referenced_contract_exists] {rel}: references {ref} which does not exist\n"
+                    f"  fix: point the reference at the current prompt file, or remove it"
+                )
+    return failures
+
+
+# SKILL.md is loaded on every deliberation, so its size is a per-run token cost.
+# Reference material belongs in docs/skill-reference.md, linked from the step.
+SKILL_MD_MAX_BYTES = 32_000
+
+
+def check_skill_md_size() -> list[str]:
+    size = len(_read("SKILL.md").encode("utf-8"))
+    if size <= SKILL_MD_MAX_BYTES:
+        return []
+    return [
+        f"[skill_md_size] SKILL.md is {size:,} bytes (ceiling {SKILL_MD_MAX_BYTES:,})\n"
+        f"  fix: move reference material to docs/skill-reference.md and link it from the step"
+    ]
+
+
 # ---------------------------------------------------------------------------
 # CI_CHECKS <-> ci.yml completeness (2026-07-06 Trias self-audit finding)
 # ---------------------------------------------------------------------------
@@ -895,6 +944,8 @@ def main() -> int:
     all_failures.extend(check_legacy_mode_milestone())
     all_failures.extend(check_test_suite_coverage())
     all_failures.extend(check_referenced_scripts_exist())
+    all_failures.extend(check_referenced_contracts_exist())
+    all_failures.extend(check_skill_md_size())
     all_failures.extend(check_ci_checks_completeness())
     all_failures.extend(check_implement_pipeline_spec_alignment())
 

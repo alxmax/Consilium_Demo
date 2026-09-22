@@ -51,4 +51,4 @@ simulation and 4/7 in real reruns** — better than any other mode tested there.
 **Scope caveat (n=1):** these figures come from a single problem instance;
 generalizability is unconfirmed until ≥3 distinct problems are tested.
 
-Cross-reference: SKILL.md → "Skill maintenance → Benchmarking discipline".
+Cross-reference: `docs/skill-reference.md` → "Skill maintenance → Benchmarking discipline".

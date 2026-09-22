@@ -5,8 +5,8 @@ const MODES = [
     id: 'seq_blind',
     name: 'Sequential — blind',
     tag: 'DEFAULT',
-    plain: 'One dispatched sub-agent plays all three voices in order, inside its own context. A small script strips each voice\'s output before passing it to the next — so each voice sees only what it needs. The sub-agent returns the three raw voice outputs unchanged; the orchestrator aggregates and implements in a fresh context. If confidence < 0.60 after the pipeline, the orchestrator automatically re-runs with Dialectic.',
-    desc: 'A single dispatched sub-agent plays Generator → Conservator → Control sequentially, inside its own context. Generator runs first, blind to risk framing (anti-anchoring), self-scaling its depth from the change\'s blast radius. Between voices, scripts/strip_context.py trims each handoff to what the next voice needs — e.g. Conservator receives Generator\'s candidates as id/summary/sketch, without the full rationale. The irreversibility consent gate runs pre-dispatch (Step 1.6), before Generator. The sub-agent returns generator_out/control_out/conservator_out unchanged; aggregate_sequential() consumes them exactly as before. Auto-escalation: if confidence < 0.60 at Step 5b, the orchestrator re-runs the full pipeline with --mode dialectic — no user action required. The Dialectic result is the final output; the report carries auto_escalated: true. If Dialectic also < 0.60, no further escalation fires. (2026-07-07: moved from in-context to dispatched — accepted tradeoffs, incl. an unmeasured cache-cost risk, are documented in modes/sequential.md.) Optional lens (opt-in, default OFF): --lens essentialist prepends the Essentialist personality lens over the three voices; it adds ~18% prompt tokens so it is off by default, and its value is empirically unproven (gated on a discriminator pilot). Records telemetry.lens_applied.',
+    plain: 'One dispatched sub-agent plays all three voices in order, inside its own context. A small script strips each voice\'s output before passing it to the next — so each voice sees only what it needs. The sub-agent returns the three raw voice outputs unchanged; the orchestrator aggregates and implements in a fresh context.',
+    desc: 'A single dispatched sub-agent plays Generator → Conservator → Control sequentially, inside its own context. Generator runs first, blind to risk framing (anti-anchoring), self-scaling its depth from the change\'s blast radius. Between voices, scripts/strip_context.py trims each handoff to what the next voice needs — e.g. Conservator receives Generator\'s candidates as id/summary/sketch, without the full rationale. The irreversibility consent gate runs pre-dispatch (Step 1.6), before Generator. The sub-agent returns generator_out/control_out/conservator_out unchanged; aggregate_sequential() consumes them exactly as before. (2026-07-07: moved from in-context to dispatched — accepted tradeoffs, incl. an unmeasured cache-cost risk, are documented in modes/sequential.md.) Optional lens (opt-in, default OFF): --lens essentialist prepends the Essentialist personality lens over the three voices; it adds ~18% prompt tokens so it is off by default, and its value is empirically unproven (gated on a discriminator pilot). Records telemetry.lens_applied.',
     use: 'most deliberations — fast, with a chinese wall via context stripping',
     cost: '1× (baseline)',
     isolation: 'dispatched sub-agent + context strip inside',
@@ -42,7 +42,7 @@ const MODES = [
     name: 'Skeptic-on-chosen',
     tag: 'FLAG',
     plain: 'A composable flag, not a standalone mode. Adds one Skeptic sub-agent to any base mode that challenges the chosen answer after aggregation. Auto-fires when the system isn\'t sure.',
-    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.0, 0.70) — strictly below 0.70; 0.70 itself passes. Manual trigger: --skeptic-on-chosen.',
+    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Opt-in via --skeptic-on-chosen, or auto on high Conservator concern, a similar recent BAD outcome, or irreversibility. Confidence is not a trigger: it does not predict outcomes.',
     use: 'whenever you want a focal challenger post-hoc',
     cost: 'base +1 (≈1.33× of a 3-voice base)',
     isolation: '+1 isolated Skeptic',
@@ -74,7 +74,7 @@ const WALKTHROUGHS = {
         nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'active', agg: 'idle' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl'] },
       { id: '7', name: 'aggregate', caption: 'Aggregator applies conservative_override. Veto if Conservator scored risk > 0.8.',
         nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg', 'gen_agg', 'cons_agg'] },
-      { id: '8', name: 'done', caption: 'Winner chosen. Report written to runs/. Outcome logged to FEEDBACK.html. (If confidence < 0.60, the orchestrator re-runs the full pipeline with Dialectic automatically.)',
+      { id: '8', name: 'done', caption: 'Winner chosen. Report written to runs/. Outcome logged to FEEDBACK.html.',
         nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg', 'gen_agg', 'cons_agg', 'agg_out'] },
     ],
   },
@@ -122,9 +122,9 @@ const WALKTHROUGHS = {
     steps: [
       { id: '1', name: 'base mode', caption: 'Any base mode (Sequential, Trias, etc.) runs and produces a chosen + confidence.',
         nodes: { base: 'active', conf: 'idle', skp: 'idle', out: 'idle' }, arrows: [] },
-      { id: '2', name: 'confidence', caption: 'Confidence gate checks the score after aggregation.',
+      { id: '2', name: 'trigger', caption: 'Trigger check after aggregation: the --skeptic-on-chosen flag, high Conservator concern, a similar recent BAD, or irreversibility.',
         nodes: { base: 'done', conf: 'active', skp: 'idle', out: 'idle' }, arrows: ['base_conf'] },
-      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.0, 0.70) — strictly below the 0.70 trust floor — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
+      { id: '3', name: 'dispatch', caption: 'If a trigger holds, the Skeptic is dispatched. Confidence alone never fires it — it does not predict outcomes.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
       { id: '4', name: 'skeptic', caption: 'Skeptic receives only the chosen answer — never candidates, never verdicts. Tries to find a concrete failure mode.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
@@ -199,7 +199,7 @@ function ModesSection() {
           {[
             ['Obvious bugfix, or diff ≤ 15 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
             ['Any other PR-level review', 'Sequential', 'default review — escalate to Trias if critical + irreversible'],
-            ['A chosen answer came back shaky (confidence < 0.70) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
+            ['One nagging concern about the chosen answer', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
             ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three Sonnet personalities with different lens weights, settled by vote'],
           ].map(([when, mode, why]) => (
             <div key={mode + when} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(150px, 0.8fr) 1.2fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--rule)', fontSize: 13, alignItems: 'baseline' }}>
@@ -584,7 +584,7 @@ function StageSkeptic({ step }) {
 
       <WArrow d="M 180 160 L 250 160" state={has('base_conf') ? 'done' : 'idle'} />
       <WArrow d="M 380 160 L 458 154" state={has('conf_skp') ? (ns.skp === 'active' ? 'active' : 'done') : 'idle'} dashed
-        label="conf ∈ [0.0, 0.70)" labelX={420} labelY={138} />
+        label="trigger" labelX={420} labelY={138} />
       <WArrow d="M 600 154 L 620 154" state={has('skp_out') ? 'done' : 'idle'} />
     </svg>
   );

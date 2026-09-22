@@ -216,5 +216,48 @@ class ImplementPipelineSpecAlignment(unittest.TestCase):
             cdd._read = orig
 
 
+class ReferencedContractsExist(unittest.TestCase):
+    def test_real_repo_files_pass_clean(self):
+        self.assertEqual(cdd.check_referenced_contracts_exist(), [])
+
+    def test_stale_lens_name_detected(self):
+        real = cdd._read("SKILL.md")
+        stale = real.replace("`essentialist_lens.md`", "`pioneer_lens.md`")
+        self.assertNotEqual(stale, real)
+        orig = cdd._read
+        cdd._read = lambda rel: stale if rel == "SKILL.md" else orig(rel)
+        try:
+            fails = cdd.check_referenced_contracts_exist()
+            self.assertTrue(any("prompts/voices/pioneer_lens.md" in f for f in fails))
+        finally:
+            cdd._read = orig
+
+    def test_missing_mode_path_detected(self):
+        real = cdd._read("SKILL.md")
+        stale = real + "\nSee `modes/parallel.md`.\n"
+        orig = cdd._read
+        cdd._read = lambda rel: stale if rel == "SKILL.md" else orig(rel)
+        try:
+            fails = cdd.check_referenced_contracts_exist()
+            self.assertTrue(any("modes/parallel.md" in f for f in fails))
+        finally:
+            cdd._read = orig
+
+
+class SkillMdSize(unittest.TestCase):
+    def test_real_skill_md_under_ceiling(self):
+        self.assertEqual(cdd.check_skill_md_size(), [])
+
+    def test_oversized_skill_md_detected(self):
+        orig = cdd._read
+        cdd._read = lambda rel: "x" * (cdd.SKILL_MD_MAX_BYTES + 1) if rel == "SKILL.md" else orig(rel)
+        try:
+            fails = cdd.check_skill_md_size()
+        finally:
+            cdd._read = orig
+        self.assertEqual(len(fails), 1)
+        self.assertIn("skill_md_size", fails[0])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

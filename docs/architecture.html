@@ -5288,7 +5288,7 @@ function VoicesSection() {
               </div>
             </div>
             <p className="skeptic-card__desc">
-              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Auto-triggers when post-aggregation <code>confidence ∈ [0.0, 0.70)</code> — strictly below 0.70; 0.70 itself passes. Sees <strong>only the chosen answer</strong> — never the other candidates, never the verdicts — and tries to find a concrete failure scenario: a missing test case, a crash on an edge input, a performance cliff. If it can't find one, <code>can_object: false</code>. Advisory by default; can change the chosen answer only with <code>--skeptic-can-override</code>.
+              Doesn't run by default. Composed on top of any base mode as <code>skeptic_on_chosen</code>. Opt-in via <code>--skeptic-on-chosen</code>, or auto on high Conservator concern, a similar recent BAD outcome, or irreversibility — never on confidence alone, which does not predict outcomes. Sees <strong>only the chosen answer</strong> — never the other candidates, never the verdicts — and tries to find a concrete failure scenario: a missing test case, a crash on an edge input, a performance cliff. If it can't find one, <code>can_object: false</code>. Advisory by default; can change the chosen answer only with <code>--skeptic-can-override</code>.
             </p>
             <div className="skeptic-card__io">
               <div><span className="io-tag">in</span> chosen approach + context</div>
@@ -5505,7 +5505,7 @@ function TwoLayerSection() {
             <div className="two-layer__bits">
               <div className="two-layer__bit">3 voices, run in fixed order</div>
               <div className="two-layer__bit">strip_context.py walls each handoff</div>
-              <div className="two-layer__bit">auto-escalates to Dialectic below 0.60 confidence</div>
+              <div className="two-layer__bit">low confidence: one retry, then you decide</div>
               <div className="two-layer__bit">no sub-agents by default</div>
             </div>
           </div>
@@ -5539,7 +5539,7 @@ const STEPS = [
   {
     id: '0', name: 'bootstrap',
     title: 'Bootstrap',
-    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (override_rate: fraction of runs where the chosen answer was later overridden; veto_rate: fraction where Conservator hard-vetoed all candidates; recurring_keywords: terms that appear repeatedly in chosen approaches). Two signals block until resolved: stale_pendings (PEND outcomes > 2 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 30% of recent runs still PEND), is a soft alert only.',
+    desc: 'Reads each voice\'s contract from prompts/voices/ and runs priors.py to pull soft priors from past runs — signals derived from FEEDBACK.html history that describe what happened before (stale PEND rows to close, runs never logged, a matching prior run, and a confirmed-only bad_rate that Conservator sees via --memory-summary). Two signals block until resolved: stale_pendings (PEND outcomes > 2 days without a decision) and missing_feedback_runs (completed runs not yet logged). A third, pend_pressure (> 30% of recent runs still PEND), is a soft alert only.',
     plain: 'Wakes up. Reads each voice\'s job description and checks what worked last time — did Conservator keep vetoing? Did past runs tend to end up pending? That context shapes the upcoming deliberation.',
     inputs: ['prompts/voices/*.md', 'runs/*.json', 'FEEDBACK.html'],
     outputs: ['soft priors', 'stale_pendings prompt?'],
@@ -5589,20 +5589,11 @@ const STEPS = [
   {
     id: '5b', name: 'confidence',
     title: 'Confidence',
-    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Separately, when confidence ∈ [0.0, 0.70) — strictly below 0.70 — the skeptic_on_chosen mechanism auto-triggers (if composed) and the Step 5d retry fires; 0.70 itself (the sequential floor and the Trias 2-0 value) passes. This threshold is fixed regardless of mode.',
+    desc: 'Derives a score from inter-voice agreement and the gap to the runner-up. Mode confidence floor: sequential=0.70, dialectic=0.75, trias=0.80. The floor is advisory — a below-floor result still emits a complete report; it is logged as WEAK in FEEDBACK.html so you can see if a mode is consistently underperforming. The floors rise with mode cost: expensive modes should earn higher confidence to justify the price. Confidence is advisory: on confirmed outcomes it does not predict success, so it no longer triggers the Skeptic (that is opt-in via --skeptic-on-chosen). Below 0.70 the Step 5d retry still fires as a cheap heuristic; 0.70 itself passes.',
     plain: 'How confident are the voices in the winner? Each mode has a floor — if it falls below, that\'s a signal (not a hard stop). The more a mode costs, the higher its expected confidence bar.',
     inputs: ['ranking', 'voice variances', 'mode'],
     outputs: ['confidence ∈ [0, 1]', 'below_floor: bool'],
     scripts: ['confidence.py'],
-  },
-  {
-    id: '5c', name: 'meta-critic',
-    title: 'Meta-critic (retired)',
-    desc: 'Retired 2026-05-25 — moved to scripts/deprecated/. Advisory only; never blocked. Trimmed to a single conservator_spread heuristic (generator_divergence + control_concreteness removed, 0/163 fires). The substance-validation gap is now an accepted known limitation.',
-    plain: 'Used to grade deliberation quality (advisory). Retired — kept for reference only.',
-    inputs: ['voice outputs'],
-    outputs: ['deliberation_quality.flags'],
-    scripts: ['scripts/deprecated/meta_critic.py'],
   },
   {
     id: '5d', name: 'retry',
@@ -6046,8 +6037,8 @@ const MODES = [
     id: 'seq_blind',
     name: 'Sequential — blind',
     tag: 'DEFAULT',
-    plain: 'One dispatched sub-agent plays all three voices in order, inside its own context. A small script strips each voice\'s output before passing it to the next — so each voice sees only what it needs. The sub-agent returns the three raw voice outputs unchanged; the orchestrator aggregates and implements in a fresh context. If confidence < 0.60 after the pipeline, the orchestrator automatically re-runs with Dialectic.',
-    desc: 'A single dispatched sub-agent plays Generator → Conservator → Control sequentially, inside its own context. Generator runs first, blind to risk framing (anti-anchoring), self-scaling its depth from the change\'s blast radius. Between voices, scripts/strip_context.py trims each handoff to what the next voice needs — e.g. Conservator receives Generator\'s candidates as id/summary/sketch, without the full rationale. The irreversibility consent gate runs pre-dispatch (Step 1.6), before Generator. The sub-agent returns generator_out/control_out/conservator_out unchanged; aggregate_sequential() consumes them exactly as before. Auto-escalation: if confidence < 0.60 at Step 5b, the orchestrator re-runs the full pipeline with --mode dialectic — no user action required. The Dialectic result is the final output; the report carries auto_escalated: true. If Dialectic also < 0.60, no further escalation fires. (2026-07-07: moved from in-context to dispatched — accepted tradeoffs, incl. an unmeasured cache-cost risk, are documented in modes/sequential.md.) Optional lens (opt-in, default OFF): --lens essentialist prepends the Essentialist personality lens over the three voices; it adds ~18% prompt tokens so it is off by default, and its value is empirically unproven (gated on a discriminator pilot). Records telemetry.lens_applied.',
+    plain: 'One dispatched sub-agent plays all three voices in order, inside its own context. A small script strips each voice\'s output before passing it to the next — so each voice sees only what it needs. The sub-agent returns the three raw voice outputs unchanged; the orchestrator aggregates and implements in a fresh context.',
+    desc: 'A single dispatched sub-agent plays Generator → Conservator → Control sequentially, inside its own context. Generator runs first, blind to risk framing (anti-anchoring), self-scaling its depth from the change\'s blast radius. Between voices, scripts/strip_context.py trims each handoff to what the next voice needs — e.g. Conservator receives Generator\'s candidates as id/summary/sketch, without the full rationale. The irreversibility consent gate runs pre-dispatch (Step 1.6), before Generator. The sub-agent returns generator_out/control_out/conservator_out unchanged; aggregate_sequential() consumes them exactly as before. (2026-07-07: moved from in-context to dispatched — accepted tradeoffs, incl. an unmeasured cache-cost risk, are documented in modes/sequential.md.) Optional lens (opt-in, default OFF): --lens essentialist prepends the Essentialist personality lens over the three voices; it adds ~18% prompt tokens so it is off by default, and its value is empirically unproven (gated on a discriminator pilot). Records telemetry.lens_applied.',
     use: 'most deliberations — fast, with a chinese wall via context stripping',
     cost: '1× (baseline)',
     isolation: 'dispatched sub-agent + context strip inside',
@@ -6083,7 +6074,7 @@ const MODES = [
     name: 'Skeptic-on-chosen',
     tag: 'FLAG',
     plain: 'A composable flag, not a standalone mode. Adds one Skeptic sub-agent to any base mode that challenges the chosen answer after aggregation. Auto-fires when the system isn\'t sure.',
-    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Auto-triggers when confidence ∈ [0.0, 0.70) — strictly below 0.70; 0.70 itself passes. Manual trigger: --skeptic-on-chosen.',
+    desc: 'Layered on top of any base mode. Adds +1 Skeptic sub-agent that receives only the chosen answer. Advisory by default; can override with --skeptic-can-override. Opt-in via --skeptic-on-chosen, or auto on high Conservator concern, a similar recent BAD outcome, or irreversibility. Confidence is not a trigger: it does not predict outcomes.',
     use: 'whenever you want a focal challenger post-hoc',
     cost: 'base +1 (≈1.33× of a 3-voice base)',
     isolation: '+1 isolated Skeptic',
@@ -6115,7 +6106,7 @@ const WALKTHROUGHS = {
         nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'active', agg: 'idle' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl'] },
       { id: '7', name: 'aggregate', caption: 'Aggregator applies conservative_override. Veto if Conservator scored risk > 0.8.',
         nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'active' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg', 'gen_agg', 'cons_agg'] },
-      { id: '8', name: 'done', caption: 'Winner chosen. Report written to runs/. Outcome logged to FEEDBACK.html. (If confidence < 0.60, the orchestrator re-runs the full pipeline with Dialectic automatically.)',
+      { id: '8', name: 'done', caption: 'Winner chosen. Report written to runs/. Outcome logged to FEEDBACK.html.',
         nodes: { orch: 'done', cons: 'done', gen: 'done', ctl: 'done', agg: 'done' }, arrows: ['orch_gen', 'gen_cons', 'cons_ctl', 'ctl_agg', 'gen_agg', 'cons_agg', 'agg_out'] },
     ],
   },
@@ -6163,9 +6154,9 @@ const WALKTHROUGHS = {
     steps: [
       { id: '1', name: 'base mode', caption: 'Any base mode (Sequential, Trias, etc.) runs and produces a chosen + confidence.',
         nodes: { base: 'active', conf: 'idle', skp: 'idle', out: 'idle' }, arrows: [] },
-      { id: '2', name: 'confidence', caption: 'Confidence gate checks the score after aggregation.',
+      { id: '2', name: 'trigger', caption: 'Trigger check after aggregation: the --skeptic-on-chosen flag, high Conservator concern, a similar recent BAD, or irreversibility.',
         nodes: { base: 'done', conf: 'active', skp: 'idle', out: 'idle' }, arrows: ['base_conf'] },
-      { id: '3', name: 'auto-trigger', caption: 'If confidence ∈ [0.0, 0.70) — strictly below the 0.70 trust floor — the Skeptic auto-fires. Manual via --skeptic-on-chosen.',
+      { id: '3', name: 'dispatch', caption: 'If a trigger holds, the Skeptic is dispatched. Confidence alone never fires it — it does not predict outcomes.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
       { id: '4', name: 'skeptic', caption: 'Skeptic receives only the chosen answer — never candidates, never verdicts. Tries to find a concrete failure mode.',
         nodes: { base: 'done', conf: 'done', skp: 'active', out: 'idle' }, arrows: ['base_conf', 'conf_skp'] },
@@ -6240,7 +6231,7 @@ function ModesSection() {
           {[
             ['Obvious bugfix, or diff ≤ 15 lines / 1 file', 'Sequential', 'the scope gate usually skips deliberation entirely'],
             ['Any other PR-level review', 'Sequential', 'default review — escalate to Trias if critical + irreversible'],
-            ['A chosen answer came back shaky (confidence < 0.70) with one nagging concern', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
+            ['One nagging concern about the chosen answer', 'Dialectic + skeptic_on_chosen', 'focal post-hoc challenge on exactly that answer'],
             ['2+ plausible architectural approaches, no clear winner', 'Trias', 'three Sonnet personalities with different lens weights, settled by vote'],
           ].map(([when, mode, why]) => (
             <div key={mode + when} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(150px, 0.8fr) 1.2fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid var(--rule)', fontSize: 13, alignItems: 'baseline' }}>
@@ -6625,7 +6616,7 @@ function StageSkeptic({ step }) {
 
       <WArrow d="M 180 160 L 250 160" state={has('base_conf') ? 'done' : 'idle'} />
       <WArrow d="M 380 160 L 458 154" state={has('conf_skp') ? (ns.skp === 'active' ? 'active' : 'done') : 'idle'} dashed
-        label="conf ∈ [0.0, 0.70)" labelX={420} labelY={138} />
+        label="trigger" labelX={420} labelY={138} />
       <WArrow d="M 600 154 L 620 154" state={has('skp_out') ? 'done' : 'idle'} />
     </svg>
   );
@@ -6970,11 +6961,9 @@ function LoopSection() {
         <h3 className="h-sub" style={{ marginTop: 24, fontSize: 16 }}>The signals priors.py computes</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 12 }}>
           {[
-            { k: 'override_rate', v: 'how often the human overrode the chosen answer — a standing humility signal on the aggregator' },
-            { k: 'veto_rate', v: 'how often Conservator vetoed every candidate — flags task types where the skill keeps stalling' },
             { k: 'recurring keywords', v: 'task labels that keep reappearing, so a repeat decision can reuse a prior authoritative run (passthrough)' },
             { k: 'stale_pendings', v: 'PEND rows older than 2 days — the next run pauses to ask you to close them before deliberating' },
-            { k: 'weighted_bad_rate', v: 'BAD outcomes, with production-confirmed ones (mark_outcome.py) weighted 2× over a subjective first impression' },
+            { k: 'bad_rate', v: 'share of BAD outcomes, counted only over rows confirmed by evidence (mark_outcome.py) — a first impression logged right after the deliberation does not count' },
             { k: 'pend_pressure', v: 'share of recent runs left unresolved — a soft alert, never a block' },
           ].map((s) => (
             <div key={s.k} style={{ padding: '12px 16px', border: '1px solid var(--rule)', borderRadius: 4, background: 'var(--paper)' }}>
@@ -6987,7 +6976,7 @@ function LoopSection() {
         <div className="note" style={{ marginTop: 24 }}>
           <span className="note__label">Confidence floors — the per-mode self-check</span>
           <span>
-            The other half of calibration runs <em>inside</em> a single deliberation. Each mode has a confidence floor it is expected to clear — <strong>Sequential 0.70 · Dialectic 0.75 · Trias 0.80</strong>. A run that lands below its floor is logged <code>WEAK</code>: a recorded signal that the mode didn't earn its cost on that task. No single WEAK run changes behaviour; the value is the accumulated rate, which becomes meaningful after ~10 runs per mode and tells you whether a pricier mode is actually buying confidence. Sequential also auto-escalates to Dialectic when confidence &lt; 0.60 — distinct from the 0.70 floor: the floor flags a weak-but-kept result; the &lt; 0.60 threshold fires a full mode re-run before the report is written.
+            The other half of calibration runs <em>inside</em> a single deliberation. Each mode has a confidence floor it is expected to clear — <strong>Sequential 0.70 · Dialectic 0.75 · Trias 0.80</strong>. A run that lands below its floor is logged <code>WEAK</code>: a recorded signal that the mode didn't earn its cost on that task. No single WEAK run changes behaviour; the value is the accumulated rate, which becomes meaningful after ~10 runs per mode and tells you whether a pricier mode is actually buying confidence.
           </span>
         </div>
 

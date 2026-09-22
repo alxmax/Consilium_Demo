@@ -174,7 +174,7 @@ function TwoLayerSection() {
             <div className="two-layer__bits">
               <div className="two-layer__bit">3 voices, run in fixed order</div>
               <div className="two-layer__bit">strip_context.py walls each handoff</div>
-              <div className="two-layer__bit">auto-escalates to Dialectic below 0.60 confidence</div>
+              <div className="two-layer__bit">low confidence: one retry, then you decide</div>
               <div className="two-layer__bit">no sub-agents by default</div>
             </div>
           </div>

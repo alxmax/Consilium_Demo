@@ -101,9 +101,6 @@ fields are marked **REQUIRED**; the rest are recommended but not blocking.
 - **`chosen_approach`** can be `null` legitimately when `aggregator.py`
   with `conservative_override` vetoes every candidate. In that case
   `deliberation_log[aggregate].result` should carry `retry_suggested`.
-- **`deliberation_log[aggregate].result`** is what `scripts/priors.py`
-  inspects to compute `conservator_veto_rate` — if you change its shape,
-  update the `_run_had_veto` helper in `scripts/priors.py` to match.
 - **`skeptic_challenges_count`** / **`post_vote_skeptic_used`** (Trias only,
   optional). The 2026-06-19 skeptic-lever redesign replaced the 3 per-personality
   pre-vote Skeptics with one post-vote `skeptic_on_chosen`. `post_vote_skeptic_used`

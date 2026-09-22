@@ -11,7 +11,7 @@ arrive expecting an Observe–Think–Act–Learn shape — without prescribing 
 | OTAL phase | Alias | Step(s) | Script(s) that implement the phase |
 |---|---|---|---|
 | **Observe** | **EXPLORE** | Step 0 + Step 1 | `priors.py` (reads `FEEDBACK.html` + `runs/*.json`); orchestrator gathers context from the codebase |
-| **Think**   | — | Steps 2–5     | `aggregator.py`, `confidence.py`, `meta_critic.py` (retired); Generator → Conservator → Control voices |
+| **Think**   | — | Steps 2–5     | `aggregator.py`, `confidence.py`; Generator → Conservator → Control voices |
 | **Act**     | **COMMIT** | Step 6 + Step 7 | `validate_report.py`, `build_report.py` (write `.consilium/runs/<file>.json`); `infer_pipeline.py` (write code) |
 | **Learn**   | — | Step 6 final action + retroactive | `log_feedback.py` (append to `FEEDBACK.html`); `mark_outcome.py` (retroactive `[confirmed]` weighting) |
 
@@ -40,8 +40,8 @@ arrive expecting an Observe–Think–Act–Learn shape — without prescribing 
     │    ┌────────────────────▼───────────────────────┐
     │    │  LEARN      (Step 6 final + retroactive)   │
     │    │  log_feedback.py → FEEDBACK.html           │
-    │    │  mark_outcome.py — 2× weight when          │
-    │    │  [confirmed] by production reality         │
+    │    │  mark_outcome.py — [confirmed] rows are    │
+    │    │  the only ones priors.py rates             │
     │    └────────────────────┬───────────────────────┘
     │                         │
     └─────────────────────────┘
@@ -66,7 +66,7 @@ readers don't assume an unwired feedback channel exists.
 beyond Step 5d's single retry, does not name a meta-controller, and does not authorize
 voices or aggregator to cite "OTAL step X" as ground for new behavior. If a future
 proposal seeks behavioral iteration triggers (e.g. firing a second pass on
-`meta_critic.generator_divergence < 0.4`), that requires its own design audit with
+a meta-critic `generator_divergence < 0.4`), that requires its own design audit with
 empirical pilot data — `generator_divergence` had zero labeled triggering events in
 `runs/`, so any threshold would be uncalibrated. A dynamic meta-controller is
 explicitly out of scope: its TODO precondition (item #16) was dropped in triage, and

@@ -44,7 +44,6 @@ python .claude/skills/run-consilium/driver.py shot       # screenshot docs/archi
 [PASS] test_feedback_html.py  (exit 0)
 [PASS] test_lens_bias.py  (exit 0)
 [PASS] test_vote_degeneracy.py  (exit 0)
-[PASS] test_meta_critic_trim.py  (exit 0)
 [PASS] test_implement_mode.py  (exit 0)
 [PASS] test_implement_pipeline.py  (exit 0)
 [... every scripts/test_*.py suite — abbreviated; the drift gate keeps the full list in lockstep ...]

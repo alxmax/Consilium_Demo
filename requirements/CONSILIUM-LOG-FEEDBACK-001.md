@@ -23,7 +23,7 @@ Every line in this section is binding.
 - Before appending, it checks for duplicates using a 16-character SHA-256 fingerprint keyed on `date|chosen|context|run_id`.
 - If the existing row has the same `run_path` but a different outcome (e.g., PEND->OK), the row is upgraded in place rather than duplicated.
 - The sidecar `.run_path_map.json` is updated on every real write so `efficiency.py` and `audit_feedback.py` can later join outcomes to telemetry by run path.
-- The `--outcome OK` path enforces a 0.70 confidence threshold gate, requiring `--force-override` to bypass.
+- `--outcome OK` requires `--confirmed` (the verification passed or the user confirmed the result), which adds the `[confirmed]` marker; it also enforces a 0.70 confidence threshold gate, requiring `--force-override` to bypass.
 - stdout is a `date | context | chosen | outcome | note` summary line (or `skipped (duplicate): ...` on exit 3).
 - `.consilium/FEEDBACK.html` is updated atomically with the new or upgraded row; `.consilium/runs/.run_path_map.json` is updated with the new fingerprint->run_path entry.
 - Exit code is 0 on success, 1 on validation error or confidence gate rejection, 2 on malformed JSON or missing required args, 3 on duplicate entry skipped.
@@ -44,6 +44,7 @@ Every line in this section is binding.
 - **CASE-2** — Given the same report is appended twice with the same `--run-path` and the same `--outcome`, when the second call runs, then it exits 3 and does not add a duplicate row.
 - **CASE-3** — Given the same report is appended twice with the same `--run-path` but a different outcome (e.g. PEND then OK), when the second call runs, then it upgrades the existing row in place and exits 0.
 - **CASE-4** — Given `--outcome OK` with a report whose `confidence` is below 0.70, when the script runs without `--force-override`, then it exits 1 with an error message.
+- **CASE-4b** — Given `--outcome OK` without `--confirmed`, when the script runs, then it exits 1 and writes nothing.
 - **CASE-5** — Given `--outcome OVR` without `--override-target`, when the script runs, then it exits 2 with an error message to stderr.
 
 ## Context (non-binding)

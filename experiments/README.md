@@ -27,4 +27,4 @@ Write-up-urile sunt consolidate per problemă (run-uri + corigendum într-un sin
 - per-mode result (mode, chosen, confidence, vote pattern unde aplicabil)
 - comentariu / corigendum atunci când rezultatele s-au inversat
 
-Cross-reference: SKILL.md → "Skill maintenance → Benchmarking discipline".
+Cross-reference: `docs/skill-reference.md` → "Skill maintenance → Benchmarking discipline".
