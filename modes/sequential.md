@@ -70,10 +70,6 @@ The 8 design components (per spec): vocabulary_map, length_targets, priority_vet
 - **Missing mandatory fields (e.g. `candidates` empty):** raise a warning in the terminal, skip the aggregator and emit a skipped report with `skip_reason: "voice output incomplete after retry"`.
 - **strip_context.py** runs inside the dispatched sub-agent's own turn sequence (Steps 3-4) — it strips the prior voice's prompt between Generator/Conservator/Control turns. Trias's per-personality isolation and Dialectic's Skeptic dispatch are a different, coarser-grained isolation (whole-dispatch, not within-dispatch) and don't use it for that purpose.
 
-## Low-confidence auto-escalation
-
-When `confidence < 0.6` after Sequential completes, the orchestrator automatically re-runs with `--mode dialectic` — no user action required. The Dialectic result is the final output; the Sequential run is discarded. The report carries `auto_escalated: true` (passed in the bundle before `build_report.py`). One escalation level: if Dialectic also < 0.6, no further escalation fires. See SKILL.md §Step 5b for the full contract.
-
 ## Optional personality lens (`--lens`, opt-in, default OFF)
 
 By default Sequential runs **no lens** — the cost-safe baseline. A lens adds ~18% per-voice prompt tokens, so it is applied only on explicit request (this keeps the default path's cost unchanged). When invoked with `--lens essentialist`, prepend `prompts/voices/essentialist_lens.md` to each voice prompt (Generator→Conservator→Control), biasing perception toward first-principles minimalism. Record `telemetry.lens_applied: {"decider": "essentialist"}`; omit the field on a default no-lens run.

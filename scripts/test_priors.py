@@ -23,9 +23,7 @@ from priors import (
     _is_confirmed,
     _outcome_counts,
     _rates,
-    _run_had_veto,
     _top_keywords,
-    _veto_rate,
     find_missing_feedback_runs,
     find_stale_pendings,
     parse_runs,
@@ -73,30 +71,20 @@ class TestIsConfirmed(unittest.TestCase):
 class TestRates(unittest.TestCase):
     def test_empty_entries(self):
         result = _rates([])
-        self.assertIsNone(result["override_rate"])
         self.assertIsNone(result["bad_rate"])
         self.assertEqual(result["rated_count"], 0)
 
     def test_only_pending_entries(self):
         entries = [{"outcome": "PEND", "note": ""}, {"outcome": "PEND", "note": ""}]
         result = _rates(entries)
-        self.assertIsNone(result["override_rate"])
+        self.assertIsNone(result["bad_rate"])
         self.assertEqual(result["rated_count"], 0)
-
-    def test_simple_override_rate(self):
-        entries = [
-            {"outcome": "OK", "note": ""},
-            {"outcome": "OVR", "note": ""},
-            {"outcome": "BAD", "note": ""},
-        ]
-        result = _rates(entries)
-        self.assertAlmostEqual(result["override_rate"], 1.0 / 3.0)
 
     def test_bad_rate(self):
         entries = [
-            {"outcome": "OK", "note": ""},
-            {"outcome": "BAD", "note": ""},
-            {"outcome": "BAD", "note": ""},
+            {"outcome": "OK", "note": CONFIRMED_MARKER},
+            {"outcome": "BAD", "note": CONFIRMED_MARKER},
+            {"outcome": "BAD", "note": CONFIRMED_MARKER},
         ]
         result = _rates(entries)
         self.assertAlmostEqual(result["bad_rate"], 2.0 / 3.0)
@@ -110,68 +98,18 @@ class TestRates(unittest.TestCase):
         result = _rates(entries)
         self.assertEqual(result["confirmed_count"], 2)
 
-
-class TestRunHadVeto(unittest.TestCase):
-    def test_no_deliberation_log(self):
-        self.assertFalse(_run_had_veto({}))
-
-    def test_aggregate_with_vetoed_list(self):
-        run = {"deliberation_log": [{"step": "aggregate", "result": {"vetoed": ["A"]}}]}
-        self.assertTrue(_run_had_veto(run))
-
-    def test_aggregate_with_empty_vetoed_list(self):
-        run = {"deliberation_log": [{"step": "aggregate", "result": {"vetoed": []}}]}
-        self.assertFalse(_run_had_veto(run))
-
-    def test_aggregate_with_chosen_none(self):
-        run = {"deliberation_log": [{"step": "aggregate", "result": {"chosen": None}}]}
-        self.assertTrue(_run_had_veto(run))
-
-    def test_aggregate_with_chosen_value(self):
-        run = {"deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]}
-        self.assertFalse(_run_had_veto(run))
-
-
-class TestVetoRate(unittest.TestCase):
-    def test_empty_runs(self):
-        result = _veto_rate([])
-        self.assertIsNone(result["conservator_veto_rate"])
-        self.assertEqual(result["runs_seen"], 0)
-
-    def test_no_vetoes(self):
-        runs = [
-            {"chosen_approach": "A", "deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]},
-            {"chosen_approach": "B", "deliberation_log": [{"step": "aggregate", "result": {"chosen": "B"}}]},
+    def test_unconfirmed_rows_excluded_from_rates(self):
+        # Self-assigned OK rows (no marker) must not dilute the rates.
+        entries = [
+            {"outcome": "OK", "note": "auto"},
+            {"outcome": "OK", "note": "auto"},
+            {"outcome": "BAD", "note": f"broke prod {CONFIRMED_MARKER}"},
         ]
-        result = _veto_rate(runs)
-        self.assertEqual(result["conservator_veto_rate"], 0.0)
-
-    def test_mixed_vetoes(self):
-        runs = [
-            {"chosen_approach": "A", "deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]},
-            {"chosen_approach": None, "deliberation_log": [{"step": "aggregate", "result": {"vetoed": ["X"]}}]},
-        ]
-        result = _veto_rate(runs)
-        self.assertAlmostEqual(result["conservator_veto_rate"], 0.5)
-
-    def test_excludes_non_report_artifacts(self):
-        # B3: the .run_path_map.json sidecar (a flat str->str dict) and Trias
-        # personality sub-runs lack chosen_approach — they must NOT inflate the
-        # denominator. Only the one canonical report counts.
-        runs = [
-            {"chosen_approach": "A", "deliberation_log": [{"step": "aggregate", "result": {"chosen": "A"}}]},
-            {"fingerprint-1": "runs/x.json", "fingerprint-2": "runs/y.json"},  # sidecar shape
-            {"personality": "essentialist", "chose": "A"},  # trias sub-run
-        ]
-        result = _veto_rate(runs)
-        self.assertEqual(result["runs_seen"], 1)
-        self.assertEqual(result["conservator_veto_rate"], 0.0)
-
-    def test_all_non_reports_returns_none(self):
-        runs = [{"personality": "essentialist", "chose": "A"}, {"sidecar": "x"}]
-        result = _veto_rate(runs)
-        self.assertIsNone(result["conservator_veto_rate"])
-        self.assertEqual(result["runs_seen"], 0)
+        result = _rates(entries)
+        self.assertEqual(result["rated_count"], 1)
+        self.assertEqual(result["rated_count"], result["confirmed_count"])
+        self.assertEqual(result["unconfirmed_count"], 2)
+        self.assertAlmostEqual(result["bad_rate"], 1.0)
 
 
 class TestTopKeywords(unittest.TestCase):

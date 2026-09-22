@@ -47,8 +47,6 @@ jobs:
         run: python scripts/test_feedback_html.py
       - name: Trias lens-bias contract tests
         run: python scripts/test_lens_bias.py
-      - name: Meta-critic trim tests
-        run: python scripts/test_meta_critic_trim.py
       - name: Step-7 implement-pipeline (red-green) tests
         run: python scripts/test_implement_pipeline.py
       - name: probe_change path-decode (security-gate) tests

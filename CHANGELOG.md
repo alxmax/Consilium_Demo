@@ -4,6 +4,53 @@ All notable changes to Consilium are recorded here, following
 [Keep a Changelog](https://keepachangelog.com/). This project is source-available
 under the Business Source License 1.1 (see `LICENSE`).
 
+## [1.12.0] — 2026-09-22
+
+### Removed
+- **Automatic Sequential → Dialectic re-run at confidence < 0.6.** It re-ran the whole pipeline in Dialectic with no confirmation, on a signal that does not predict outcomes: on `[confirmed]` FEEDBACK rows the OK-rate is 0.86 below 0.6 (n=21) against 0.93 / 0.92 above (n=30 / n=13) — about one or two extra failures, not significant — and no measurement showed the re-run improves results. Low confidence now gets the Step 5d retry and the Step 6 override prompt, which also suggests rerunning with `--mode dialectic` / `--skeptic-on-chosen`. `build_report.py` no longer passes `auto_escalated` through (historical runs keep the field; nothing requires or rejects it). SKILL.md, `modes/sequential.md`, README, the explainer and the poster no longer describe the re-run; the poster's confidence arrow is relabelled as the Step 5d retry it draws.
+
+### Fixed
+- README's worked example still said a low-confidence run auto-fires a Skeptic, which 1.11.0 removed.
+
+## [1.11.0] — 2026-09-22
+
+### Changed
+- **Confidence is advisory; it no longer auto-dispatches the Skeptic.** Measured on the 64 `[confirmed]` FEEDBACK outcomes, confidence does not predict success: Brier 0.163 against 0.085 for simply predicting the base rate, and an OK-rate of 0.92 at confidence ≥ 0.7 against 0.90 below (`scripts/confidence_calibration.py` on all 273 labelled rows already returned `FALLBACK_A`). The `confidence < 0.70` trigger of `skeptic_on_chosen` is removed; the flag is opt-in (`--skeptic-on-chosen`) plus its non-confidence triggers — high Conservator concern (`trigger_reason: "high_concern"`, formerly gated on confidence > 0.7), a similar recent BAD, irreversibility. The Step 5d retry, the Step 6 override prompt, the mode floors and the `< 0.6` Dialectic escalation keep their thresholds as heuristics. The three explainer drift invariants that pinned the `[0.0, 0.70)` band now forbid it and require `--skeptic-on-chosen`.
+- **Trias cost figure cited.** SKILL.md and `modes/trias.md` now state that the cost multipliers are sub-agent-count estimates and that Trias's 2.67× was token-checked only as a 4-vs-6 spawn ratio on n=2 problems (`experiments/trias-6to4-cost-2026-06-19.md`); its absolute cost against Sequential is unmeasured.
+
+### Removed
+- **`priors.py` outputs no consumer read:** `override_rate`, `conservator_veto_rate` (with `runs_seen` and the `_run_had_veto` / `_veto_rate` helpers) and `top_note_keywords` in the JSON. The Conservator's `--memory-summary` (counts, confirmed `bad_rate`, recurring keywords, prior match) is unchanged.
+
+## [1.10.0] — 2026-09-22
+
+### Changed
+- **A run is OK only on evidence.** Step 6 now logs every run as PEND: confidence measures agreement between voices, not whether the choice worked, yet 281 of 297 rated FEEDBACK rows were OK assigned from `confidence >= 0.7` alone (78 carry `[confirmed]`). A row becomes OK or BAD through `mark_outcome.py` once the report's `verification` passes or reality refutes it; `log_feedback.py --outcome OK` now requires `--confirmed` and adds the marker.
+- **`priors.py` rates only `[confirmed]` rows.** `override_rate` / `bad_rate` ignore self-assigned outcomes (`rated_count == confirmed_count`); a new `unconfirmed_count` reports how many were left out. `weighted_bad_rate` and its 2× weight are removed — with only confirmed rows counted, the weighting had nothing left to weigh.
+- **Headless detection is explicit.** `priors.py` no longer treats a non-tty stdin as headless — under Claude Code's Bash tool stdin is never a tty, so every interactive session silently suppressed `stale_pendings` and `missing_feedback_runs`. Headless is now `--headless`, `CONSILIUM_HEADLESS=1` or `CLAUDE_HEADLESS=1`.
+
+### Added
+- **`CLOSED_UNVERIFIED` outcome** (`mark_outcome.py`): closes a stale PEND with no evidence either way; excluded from every rate and never marked `[confirmed]`.
+- **`validate_report.py --all <runs_dir> [--quarantine]`**: sweeps every run (dot-files skipped), prints each failure and a `checked / ok / fail` summary; `--quarantine` moves failures to `<runs_dir>/_invalid/`, outside the glob `priors.py` reads.
+
+### Fixed
+- `feedback.parse_runs` read `.run_path_map.json` as if it were a run.
+
+## [1.9.0] — 2026-09-22
+
+### Changed
+- **SKILL.md trimmed from 58,231 to 30,041 bytes** (Sequential load path — SKILL.md + `modes/sequential.md` + 3 voices — 13,082 → 9,450 words, −28%). The workflow and every runtime rule stay in SKILL.md; reference material the orchestrator does not need on every run (calibration caveats, the Step 6 interception contract, retroactive-outcome details, the Step 7 lookup table and pipeline benchmark, headless rationale, feedback storage details, skill maintenance, the script table) moved verbatim to the new `docs/skill-reference.md`, linked from the step that uses it. Per-mode sections collapsed into one Modes list under the mode table; the removed Parallel section is reduced to one line.
+
+### Added
+- **`skill_md_size` doc-drift invariant**: `check_doc_drift.py` fails when SKILL.md exceeds 32,000 bytes. Covered by `scripts/test_check_doc_drift.py`.
+
+## [1.8.2] — 2026-09-22
+
+### Fixed
+- **Stale Trias lens names in SKILL.md Step 0.** It still told the orchestrator to read `pioneer_lens.md` / `architect_lens.md` / `steward_lens.md`, which were replaced by `essentialist_lens.md` / `verifier_lens.md` / `sentinel_lens.md` in PR #482. New `referenced_contract_exists` invariant in `check_doc_drift.py`: every `prompts/voices/`, `modes/` and `agents/` `.md` path (and bare `<name>_lens.md`) referenced by a normative doc must exist. Covered by `scripts/test_check_doc_drift.py`.
+
+### Removed
+- **Retired meta-critic step (Step 5c).** `scripts/deprecated/meta_critic.py` (retired 2026-05-25), its suite `test_meta_critic_trim.py`, its CI step and driver entry, and its 4 `evals/scenarios.json` cases (run_evals 65 → 61). `build_report.py` still passes a legacy `deliberation_quality` block through so older bundles round-trip.
+
 ## [1.8.1] — 2026-09-21
 
 ### Removed

@@ -263,7 +263,7 @@ def test_log_feedback_appends_html_entry():
         result = subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "log_feedback.py"),
              "--feedback", str(feedback_path),
-             "--outcome", "OK"],
+             "--outcome", "OK", "--confirmed"],
             input=json.dumps(report).encode("utf-8"),
             capture_output=True,
             check=False,
@@ -295,6 +295,7 @@ def test_log_feedback_dedup_skips_duplicate():
             sys.executable, str(ROOT / "scripts" / "log_feedback.py"),
             "--feedback", str(feedback_path),
             "--outcome", "OK",
+            "--confirmed",
             "--force-override",
         ]
         input_bytes = json.dumps(report).encode("utf-8")
@@ -336,11 +337,72 @@ def test_log_feedback_upgrades_pend_in_place():
         r2 = subprocess.run(base + ["--outcome", "PEND_HEADLESS"], input=inp, capture_output=True, check=False)
         assert r2.returncode == 3, f"expected exit 3 (duplicate), got {r2.returncode}"
         # Same run, NEW outcome -> upgrade in place (exit 0, no new row).
-        r3 = subprocess.run(base + ["--outcome", "OK", "--force-override"], input=inp, capture_output=True, check=False)
+        r3 = subprocess.run(base + ["--outcome", "OK", "--confirmed", "--force-override"], input=inp, capture_output=True, check=False)
         assert r3.returncode == 0, f"in-place upgrade failed: {r3.stderr.decode()}"
         parsed = feedback.parse_feedback(feedback_path)
         assert len(parsed) == 1, f"expected 1 row after in-place upgrade, got {len(parsed)}"
         assert parsed[0]["outcome"] == "OK", f"expected OK after upgrade, got {parsed[0]['outcome']}"
+
+
+def test_log_feedback_ok_requires_confirmed():
+    """OK is a verified outcome: without --confirmed log_feedback refuses it and
+    writes nothing; with --confirmed the row carries the [confirmed] marker."""
+    import subprocess
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import feedback  # noqa: E402
+
+    report = {
+        "success_criterion": "confirmed-gate test",
+        "chosen_approach": "approach_c",
+        "confidence": 0.9,
+        "telemetry": {"mode": "sequential"},
+        "deliberation_log": [],
+    }
+    with tempfile.TemporaryDirectory() as td:
+        feedback_path = Path(td) / "FEEDBACK.html"
+        base = [sys.executable, str(ROOT / "scripts" / "log_feedback.py"),
+                "--feedback", str(feedback_path), "--outcome", "OK"]
+        inp = json.dumps(report).encode("utf-8")
+        r1 = subprocess.run(base, input=inp, capture_output=True, check=False)
+        assert r1.returncode == 1, f"expected exit 1 without --confirmed, got {r1.returncode}"
+        assert b"--confirmed" in r1.stderr
+        assert not feedback_path.exists(), "a refused OK must not write the file"
+        r2 = subprocess.run(base + ["--confirmed"], input=inp, capture_output=True, check=False)
+        assert r2.returncode == 0, f"stderr: {r2.stderr.decode()}"
+        parsed = feedback.parse_feedback(feedback_path)
+        assert len(parsed) == 1 and parsed[0]["outcome"] == "OK"
+        assert "[confirmed]" in parsed[0]["note"]
+
+
+def test_mark_outcome_closed_unverified_round_trips():
+    """CLOSED_UNVERIFIED closes a PEND without the [confirmed] marker, and the row
+    survives a later append (an unknown outcome would be dropped by the parser)."""
+    import subprocess
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import feedback  # noqa: E402
+
+    with tempfile.TemporaryDirectory() as td:
+        feedback_path = Path(td) / "FEEDBACK.html"
+        e = rfh.Entry(date="2026-05-20", context="stale", chosen="approach_s",
+                      outcome="PEND", note="3 cand, conf=0.80")
+        feedback_path.write_text(rfh.render([e], runs_dir=Path(td) / "runs"), encoding="utf-8")
+        r = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "mark_outcome.py"),
+             "--feedback", str(feedback_path), "--date", "2026-05-20",
+             "--chosen", "approach_s", "--outcome", "CLOSED_UNVERIFIED"],
+            capture_output=True, check=False,
+        )
+        assert r.returncode == 0, f"stderr: {r.stderr.decode()}"
+        report = {"success_criterion": "next run", "chosen_approach": "approach_n",
+                  "confidence": 0.8, "telemetry": {"mode": "sequential"}, "deliberation_log": []}
+        r2 = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "log_feedback.py"), "--feedback", str(feedback_path)],
+            input=json.dumps(report).encode("utf-8"), capture_output=True, check=False,
+        )
+        assert r2.returncode == 0, f"stderr: {r2.stderr.decode()}"
+        parsed = feedback.parse_feedback(feedback_path)
+        assert [p["outcome"] for p in parsed] == ["CLOSED_UNVERIFIED", "PEND"], parsed
+        assert "[confirmed]" not in parsed[0]["note"]
 
 
 def test_mark_outcome_happy_path():

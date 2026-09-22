@@ -78,7 +78,7 @@ and writes a canonical JSON report to disk (string fields trimmed for length, al
 }
 ```
 
-The chosen approach beat `do_nothing` and a plausible-but-weaker alternative — and the rejected options stay on record *with the reason they lost*. Confidence `0.57` is below the auto-escalation threshold (`0.60`): the orchestrator would silently re-run with Dialectic and return the stronger result. It is also below the Sequential floor (`0.70`), which auto-fires a Skeptic sub-agent on the chosen answer. Every run lands in `.consilium/runs/` (local, gitignored) and feeds the priors of the next deliberation.
+The chosen approach beat `do_nothing` and a plausible-but-weaker alternative — and the rejected options stay on record *with the reason they lost*. Confidence `0.57` is below the Sequential floor (`0.70`): the orchestrator retries once with the evidence that would separate the top two candidates, then asks you whether to keep the choice, pick an alternative, or rerun with Dialectic or the Skeptic. Confidence is advisory — it does not predict outcomes, so nothing re-runs automatically. Every run lands in `.consilium/runs/` (local, gitignored) and feeds the priors of the next deliberation.
 
 ## Pipeline trace
 
@@ -130,10 +130,10 @@ consilium/
 
 | Mode | Cost | What it adds |
 |------|------|--------------|
-| **Sequential** (default) | 1× | Generator → Conservator → Control in one context (Generator runs first, blind to risk framing). Auto-escalates to Dialectic when confidence < 0.60 |
+| **Sequential** (default) | 1× | Generator → Conservator → Control in one context (Generator runs first, blind to risk framing). Low confidence triggers one retry and an override prompt, never an automatic re-run |
 | **Dialectic** | 1.33× | Sequential + a Skeptic sub-agent on the chosen answer, with code-context injection |
 | **Trias** | ~2.67× | 3 personalities (Essentialist / Verifier / Sentinel), each running its own Sequential pass as a sub-agent, then a majority vote, then one post-vote Skeptic sub-agent on the winner |
-| **`skeptic_on_chosen`** | base +1 | Composable flag over any mode — a focal Skeptic challenges the chosen answer. Auto-triggers when `confidence ∈ [0.0, 0.70)` |
+| **`skeptic_on_chosen`** | base +1 | Composable flag over any mode — a focal Skeptic challenges the chosen answer. Opt-in (`--skeptic-on-chosen`) or on high Conservator concern — not on confidence |
 
 For changes that are both `critical` and `irreversible`, select **Trias** explicitly — there is no automatic escalation. All dispatched voices run on Sonnet; the orchestrator runs on Opus.
 

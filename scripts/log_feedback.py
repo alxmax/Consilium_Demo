@@ -12,10 +12,11 @@ Auto-fill rules:
 - data    : today's date in ISO format
 - context : success_criterion truncated to 60 chars (with `...`)
 - chosen  : chosen_approach (or literal "null" / "skipped")
-- outcome : controlled by --outcome flag (default PEND). The Step 6
-            workflow in SKILL.md drives this: confidence >= 0.7 -> OK,
+- outcome : controlled by --outcome flag (default PEND). A deliberation's
+            outcome is unknown when it is logged, so Step 6 logs PEND;
+            OK needs --confirmed (verification passed / user confirmed),
             confidence < 0.7 + user picks alt -> OVR with --override-target,
-            confidence < 0.7 + user says no -> OK, skip / null -> PEND.
+            headless -> PEND_HEADLESS. PEND rows close later via mark_outcome.py.
 - note    : auto-derived from report shape, max 80 chars:
             * skipped report      -> "skipped: <skip_reason>"
             * all-vetoed (chosen=null) -> "all vetoed; relaxed=<X>"
@@ -34,7 +35,7 @@ Otherwise exits 0 and prints the appended entry summary to stdout.
 
 CLI:
     cat runs/<file>.json | python scripts/log_feedback.py
-    cat runs/<file>.json | python scripts/log_feedback.py --outcome OK
+    cat runs/<file>.json | python scripts/log_feedback.py --outcome OK --confirmed
     cat runs/<file>.json | python scripts/log_feedback.py --outcome OVR \\
         --override-target alt_b --user-note "preferred safer rollback"
     python scripts/log_feedback.py --feedback path/to/FEEDBACK.html < report.json
@@ -58,6 +59,7 @@ CONTEXT_MAX = 60
 NOTE_MAX = 80
 HEADER_LINES = ()  # legacy MD header no longer used
 RUN_PATH_MAP = ".run_path_map.json"
+CONFIRMED_MARKER = "[confirmed]"  # same marker mark_outcome.py writes; priors.py rates only these rows
 
 
 def _fingerprint(date_str: str, chosen: str, context: str, run_id: str | None = None) -> str:
@@ -140,6 +142,7 @@ def build_entry(
     outcome: str = "PEND",
     override_target: str | None = None,
     user_note: str | None = None,
+    confirmed: bool = False,
 ) -> dict:
     sc = report.get("success_criterion")
     if not isinstance(sc, str) or not sc.strip():
@@ -164,6 +167,8 @@ def build_entry(
         extras.append(f"override={_clean(override_target)}")
     if user_note and user_note.strip():
         extras.append(_clean(user_note))
+    if confirmed:
+        extras.append(CONFIRMED_MARKER)
     note = "; ".join([auto_note] + extras) if extras else auto_note
 
     return {
@@ -321,6 +326,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--run-path", default=None, help="relative path to runs/*.json for drill-down (e.g. runs/2026-05-12_foo.json)")
     ap.add_argument("--force-override", action="store_true",
         help="allow --outcome OK even when confidence < 0.70 (use when user has confirmed the pick despite low confidence)")
+    ap.add_argument("--confirmed", action="store_true",
+        help="the outcome was verified (the verification command passed, or the user confirmed it worked); "
+             "required for --outcome OK; adds the [confirmed] marker")
     args = ap.parse_args(argv)
 
     if args.outcome == "OVR" and not args.override_target:
@@ -331,6 +339,14 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(report, dict):
         print("log_feedback.py: report must be a JSON object", file=sys.stderr)
         return 2
+
+    if args.outcome == "OK" and not args.confirmed:
+        print(
+            "log_feedback: --outcome OK is a verified outcome — pass --confirmed once the "
+            "verification passed; otherwise log PEND (default) and close it later with mark_outcome.py",
+            file=sys.stderr,
+        )
+        return 1
 
     if args.outcome == "OK":
         conf = report.get("confidence")
@@ -350,6 +366,7 @@ def main(argv: list[str] | None = None) -> int:
             outcome=args.outcome,
             override_target=args.override_target,
             user_note=args.user_note,
+            confirmed=args.confirmed,
         )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)

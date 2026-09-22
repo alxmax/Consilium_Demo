@@ -14,13 +14,22 @@ import re
 
 
 def _builder_path():
-    cache = os.path.join(os.path.expanduser("~"), ".claude", "plugins",
-                         "cache", "requirement-manager", "requirement-manager")
-    hits = glob.glob(os.path.join(cache, "*", "skills",
-                                  "excalidraw-diagram", "scripts"))
+    # The builder ships in the excalidraw-diagram plugin (formerly bundled in
+    # requirement-manager); look in every Claude profile's plugin cache.
+    home = os.path.expanduser("~")
+    hits = []
+    for profile in glob.glob(os.path.join(home, ".claude*")):
+        cache = os.path.join(profile, "plugins", "cache")
+        for plugin in ("excalidraw-diagram", "requirement-manager"):
+            hits += glob.glob(os.path.join(cache, plugin, plugin, "*", "skills",
+                                           "excalidraw-diagram", "scripts"))
+    # This script uses the 1.x Scene API (title(..., size=...)); excalidraw-diagram
+    # 2.x replaced it, so only a 1.x builder (or requirement-manager's bundle) fits.
+    hits = [h for h in hits if "requirement-manager" in h
+            or re.search(r"excalidraw-diagram[\\/]1\.\d+\.\d+[\\/]", h)]
     if not hits:
         raise RuntimeError(
-            "excalidraw-diagram skill not found — run: /plugin install requirement-manager"
+            "excalidraw-diagram 1.x builder not found — install excalidraw-diagram 1.x"
         )
     def _ver(p):
         m = re.search(r"(\d+)\.(\d+)\.(\d+)", p)
@@ -135,11 +144,11 @@ s.route_under(pipe[1], pipe[6], label="skip (trivial)", drop=80)
 # Bypass: scale_down — Conservator signals trivial, skip Control
 s.route_under(pipe[3], pipe[5], label="scale_down", drop=50)
 # Retry: low confidence loops back to Generator (once)
-s.route_under(pipe[5], pipe[2], label="conf<0.6: escalate\nto Dialectic", drop=155)
+s.route_under(pipe[5], pipe[2], label="conf<0.7: retry\nonce", drop=155)
 
 s.label(
     "Consent gate (Step 1.6) fires BEFORE Generator.  "
-    "scale_down short-circuits Control.  Low confidence auto-escalates Sequential -> Dialectic at conf < 0.6.",
+    "scale_down short-circuits Control.  Low confidence retries once, then asks; nothing re-runs automatically.",
     80, y + 305, size=12,
 )
 
@@ -193,7 +202,7 @@ s.lane([dispatch_box, pgroup, vote_box, skeptic_box],
 skep_y = tri_y + 248
 s.box(
     "skeptic_on_chosen  — composable flag over any base mode (+1 Skeptic sub-agent).\n"
-    "Auto-triggers when confidence in [0.0, 0.7]. Advisory by default; --skeptic-can-override allows override.",
+    "Opt-in, or on high Conservator concern; never on confidence. Advisory; --skeptic-can-override allows override.",
     120, skep_y, w=960, h=68, fill="skeptic", font_size=12,
 )
 
@@ -295,7 +304,7 @@ s.glossary([
     ("Sequential", "Generator -> Conservator -> Control in a single context"),
     ("Dialectic", "Sequential + one Skeptic sub-agent challenging the chosen answer"),
     ("Trias", "3 blind personalities (Essentialist/Verifier/Sentinel) + team vote + 1 post-vote Skeptic"),
-    ("skeptic_on_chosen", "composable flag: Skeptic sub-agent auto-triggers at confidence in [0.0,0.7]"),
+    ("skeptic_on_chosen", "composable flag: Skeptic sub-agent, opt-in or on high Conservator concern"),
     ("scale_down", "Conservator meta_recommendation -> skip Control (trivial / low-risk change)"),
     ("lazy routing", "Trias downgrades by magnitude: low/med->Sequential, high->Dialectic, critical->Trias"),
     ("priors.py", "loads FEEDBACK.html outcome history + memory context into Conservator at Step 0"),

@@ -277,8 +277,9 @@ class TestCandidateById(unittest.TestCase):
         self.assertIsNone(_candidate_by_id([], "A"))
 
 
-class TestAutoEscalated(unittest.TestCase):
-    def _bundle(self, auto_escalated=None):
+class TestLowConfidenceSuggestion(unittest.TestCase):
+    def test_low_confidence_suggestion_never_emitted(self):
+        # Regression: old advisory hint must not appear for any confidence/mode
         b = {
             "success_criterion": "test",
             "verification": "verify",
@@ -286,26 +287,9 @@ class TestAutoEscalated(unittest.TestCase):
             "control": {"verdicts": [{"id": "A", "valid": True, "issues": []}]},
             "conservator": {"scores": [{"id": "A", "regression_risk": {"net_concern": 0.2}}]},
             "aggregate": {"chosen": "A", "scheme": "sequential"},
-            "confidence": {"confidence": 0.80},
-            "telemetry": {"mode": "dialectic"},
+            "confidence": {"confidence": 0.40},
+            "telemetry": {"mode": "sequential"},
         }
-        if auto_escalated is not None:
-            b["auto_escalated"] = auto_escalated
-        return b
-
-    def test_auto_escalated_true_passes_through(self):
-        report = build(self._bundle(auto_escalated=True))
-        self.assertTrue(report.get("auto_escalated"))
-
-    def test_auto_escalated_absent_when_not_in_bundle(self):
-        report = build(self._bundle())
-        self.assertNotIn("auto_escalated", report)
-
-    def test_low_confidence_suggestion_never_emitted(self):
-        # Regression: old advisory hint must not appear for any confidence/mode
-        b = self._bundle()
-        b["confidence"] = {"confidence": 0.40}
-        b["telemetry"] = {"mode": "sequential"}
         report = build(b)
         self.assertNotIn("low_confidence_suggestion", report)
 

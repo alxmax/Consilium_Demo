@@ -843,11 +843,11 @@
         },
         {
           "role": "implements",
-          "loc": "scripts/check_doc_drift.py:604"
+          "loc": "scripts/check_doc_drift.py:653"
         },
         {
           "role": "implements",
-          "loc": "scripts/check_doc_drift.py:784"
+          "loc": "scripts/check_doc_drift.py:833"
         },
         {
           "role": "tested-by",
@@ -1696,7 +1696,7 @@
         "Before appending, it checks for duplicates using a 16-character SHA-256 fingerprint keyed on `date|chosen|context|run_id`.",
         "If the existing row has the same `run_path` but a different outcome (e.g., PEND->OK), the row is upgraded in place rather than duplicated.",
         "The sidecar `.run_path_map.json` is updated on every real write so `efficiency.py` and `audit_feedback.py` can later join outcomes to telemetry by run path.",
-        "The `--outcome OK` path enforces a 0.70 confidence threshold gate, requiring `--force-override` to bypass.",
+        "`--outcome OK` requires `--confirmed` (the verification passed or the user confirmed the result), which adds the `[confirmed]` marker; it also enforces a 0.70 confidence threshold gate, requiring `--force-override` to bypass.",
         "stdout is a `date | context | chosen | outcome | note` summary line (or `skipped (duplicate): ...` on exit 3).",
         "`.consilium/FEEDBACK.html` is updated atomically with the new or upgraded row; `.consilium/runs/.run_path_map.json` is updated with the new fingerprint->run_path entry.",
         "Exit code is 0 on success, 1 on validation error or confidence gate rejection, 2 on malformed JSON or missing required args, 3 on duplicate entry skipped.",
@@ -1717,9 +1717,10 @@
         "**CASE-2** — Given the same report is appended twice with the same `--run-path` and the same `--outcome`, when the second call runs, then it exits 3 and does not add a duplicate row.",
         "**CASE-3** — Given the same report is appended twice with the same `--run-path` but a different outcome (e.g. PEND then OK), when the second call runs, then it upgrades the existing row in place and exits 0.",
         "**CASE-4** — Given `--outcome OK` with a report whose `confidence` is below 0.70, when the script runs without `--force-override`, then it exits 1 with an error message.",
+        "**CASE-4b** — Given `--outcome OK` without `--confirmed`, when the script runs, then it exits 1 and writes nothing.",
         "**CASE-5** — Given `--outcome OVR` without `--override-target`, when the script runs, then it exits 2 with an error message to stderr."
       ],
-      "accept": "- **CASE-1** — Given a report with a valid `success_criterion` and `chosen_approach`, when `log_feedback.py` runs, then it produces a new `<tr>` row in FEEDBACK.html with the correct date, truncated context, and derived note.\n- **CASE-2** — Given the same report is appended twice with the same `--run-path` and the same `--outcome`, when the second call runs, then it exits 3 and does not add a duplicate row.\n- **CASE-3** — Given the same report is appended twice with the same `--run-path` but a different outcome (e.g. PEND then OK), when the second call runs, then it upgrades the existing row in place and exits 0.\n- **CASE-4** — Given `--outcome OK` with a report whose `confidence` is below 0.70, when the script runs without `--force-override`, then it exits 1 with an error message.\n- **CASE-5** — Given `--outcome OVR` without `--override-target`, when the script runs, then it exits 2 with an error message to stderr.",
+      "accept": "- **CASE-1** — Given a report with a valid `success_criterion` and `chosen_approach`, when `log_feedback.py` runs, then it produces a new `<tr>` row in FEEDBACK.html with the correct date, truncated context, and derived note.\n- **CASE-2** — Given the same report is appended twice with the same `--run-path` and the same `--outcome`, when the second call runs, then it exits 3 and does not add a duplicate row.\n- **CASE-3** — Given the same report is appended twice with the same `--run-path` but a different outcome (e.g. PEND then OK), when the second call runs, then it upgrades the existing row in place and exits 0.\n- **CASE-4** — Given `--outcome OK` with a report whose `confidence` is below 0.70, when the script runs without `--force-override`, then it exits 1 with an error message.\n- **CASE-4b** — Given `--outcome OK` without `--confirmed`, when the script runs, then it exits 1 and writes nothing.\n- **CASE-5** — Given `--outcome OVR` without `--override-target`, when the script runs, then it exits 2 with an error message to stderr.",
       "input": "",
       "output": "",
       "desc": "",
@@ -1743,7 +1744,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "scripts/log_feedback.py:43"
+          "loc": "scripts/log_feedback.py:44"
         },
         {
           "role": "tested-by",
@@ -2017,7 +2018,7 @@
         },
         {
           "role": "implements",
-          "loc": "modes/sequential.md:93"
+          "loc": "modes/sequential.md:89"
         },
         {
           "role": "implements",
@@ -2025,11 +2026,11 @@
         },
         {
           "role": "tested-by",
-          "loc": "scripts/test_lens_bias.py:177"
+          "loc": "scripts/test_lens_bias.py:208"
         },
         {
           "role": "implements",
-          "loc": "scripts/validate_report.py:605"
+          "loc": "scripts/validate_report.py:654"
         }
       ],
       "test_exempt": null,
@@ -2069,10 +2070,10 @@
         "AC-1 — Given a deliberation request with no explicit mode flag and no critical/irreversible trigger When  the mode runs Then  exactly three voices are invoked in the order Generator → Conservator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade",
         "AC-2 — Given a deliberation request where Conservator (running second) emits `meta_recommendation: scale_down` When  the mode runs Then  Control is skipped (Generator has already run), the report contains `chosen_approach: \"trivial-direct\"`, `confidence: 0.85`, and `pipeline_executed: false`",
         "AC-3 — Given a deliberation request where Control emits `glossary_fail: true` When  the aggregator runs Then  the routing outcome is BLOCK (glossary_fail) and the user is asked to reformulate with operational terms before any chosen approach is emitted",
-        "AC-4 — Given a completed Sequential deliberation where `confidence < 0.6` When  the orchestrator checks confidence at Step 5b Then  it automatically re-runs the full pipeline with `--mode dialectic`; the Dialectic result (with `auto_escalated: true` in the report) is the final output; no further auto-escalation fires if Dialectic confidence is also < 0.6",
+        "AC-4 — Given a completed Sequential deliberation where `confidence < 0.6` When  the orchestrator checks confidence at Step 5b Then  no automatic re-run fires; the Step 5d retry and the Step 6 override prompt (which suggests `--mode dialectic` / `--skeptic-on-chosen`) are the only low-confidence responses",
         "AC-5 — Given a deliberation request whose diff touches a sensitive/irreversible path (scope_gate `consent_required: true`) When  the mode runs in an interactive (non-headless) context Then  the orchestrator requests explicit user consent BEFORE dispatching Generator; no voice output exists in context when consent is requested (the consent gate is pre-dispatch, not post-generation)"
       ],
-      "accept": "AC-1\n  Given a deliberation request with no explicit mode flag and no critical/irreversible trigger\n  When  the mode runs\n  Then  exactly three voices are invoked in the order Generator → Conservator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade\n\nAC-2\n  Given a deliberation request where Conservator (running second) emits `meta_recommendation: scale_down`\n  When  the mode runs\n  Then  Control is skipped (Generator has already run), the report contains `chosen_approach: \"trivial-direct\"`, `confidence: 0.85`, and `pipeline_executed: false`\n\nAC-3\n  Given a deliberation request where Control emits `glossary_fail: true`\n  When  the aggregator runs\n  Then  the routing outcome is BLOCK (glossary_fail) and the user is asked to reformulate with operational terms before any chosen approach is emitted\n\nAC-4\n  Given a completed Sequential deliberation where `confidence < 0.6`\n  When  the orchestrator checks confidence at Step 5b\n  Then  it automatically re-runs the full pipeline with `--mode dialectic`; the Dialectic result (with `auto_escalated: true` in the report) is the final output; no further auto-escalation fires if Dialectic confidence is also < 0.6\n\nAC-5\n  Given a deliberation request whose diff touches a sensitive/irreversible path (scope_gate `consent_required: true`)\n  When  the mode runs in an interactive (non-headless) context\n  Then  the orchestrator requests explicit user consent BEFORE dispatching Generator; no voice output exists in context when consent is requested (the consent gate is pre-dispatch, not post-generation)",
+      "accept": "AC-1\n  Given a deliberation request with no explicit mode flag and no critical/irreversible trigger\n  When  the mode runs\n  Then  exactly three voices are invoked in the order Generator → Conservator → Control in a single context window, no sub-agents are dispatched, and the report carries a `confidence` value and a routing outcome from the veto cascade\n\nAC-2\n  Given a deliberation request where Conservator (running second) emits `meta_recommendation: scale_down`\n  When  the mode runs\n  Then  Control is skipped (Generator has already run), the report contains `chosen_approach: \"trivial-direct\"`, `confidence: 0.85`, and `pipeline_executed: false`\n\nAC-3\n  Given a deliberation request where Control emits `glossary_fail: true`\n  When  the aggregator runs\n  Then  the routing outcome is BLOCK (glossary_fail) and the user is asked to reformulate with operational terms before any chosen approach is emitted\n\nAC-4\n  Given a completed Sequential deliberation where `confidence < 0.6`\n  When  the orchestrator checks confidence at Step 5b\n  Then  no automatic re-run fires; the Step 5d retry and the Step 6 override prompt (which suggests `--mode dialectic` / `--skeptic-on-chosen`) are the only low-confidence responses\n\nAC-5\n  Given a deliberation request whose diff touches a sensitive/irreversible path (scope_gate `consent_required: true`)\n  When  the mode runs in an interactive (non-headless) context\n  Then  the orchestrator requests explicit user consent BEFORE dispatching Generator; no voice output exists in context when consent is requested (the consent gate is pre-dispatch, not post-generation)",
       "input": "",
       "output": "",
       "desc": "",
@@ -2102,7 +2103,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "modes/sequential.md:90"
+          "loc": "modes/sequential.md:86"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -2120,7 +2121,7 @@
       "intent": "WHY: Compose a focused post-hoc Skeptic challenge on the chosen approach over any base mode — catching implicit constraints and high-concern discrepancies that the base deliberation may have missed.",
       "contract": [
         "The flag dispatches exactly 1 Skeptic sub-agent (using `prompts/voices/skeptic.md`) after the base mode produces `chosen` and `confidence`; the flag is composable over any base mode (Sequential, Dialectic, Trias) and adds +1 sub-agent to whichever base was used.",
-        "The flag auto-triggers when any of the following are true: `confidence ∈ [0.0, 0.70)`; `confidence > 0.7` AND `Conservator.net_concern > 0.7` (`trigger_reason: \"high_conf_high_concern\"`); `chosen_approach` matches a BAD outcome from FEEDBACK.html in the last 30 days (`trigger_reason: \"similar_to_recent_bad\"`); or `irreversibility_flag: true` (`trigger_reason: \"irreversibility_gate\"`). It may also be activated manually via `--skeptic-on-chosen`.",
+        "The flag auto-triggers when any of the following are true: `Conservator.net_concern > 0.7` on the chosen (`trigger_reason: \"high_concern\"`); `chosen_approach` matches a BAD outcome from FEEDBACK.html in the last 30 days (`trigger_reason: \"similar_to_recent_bad\"`); or `irreversibility_flag: true` (`trigger_reason: \"irreversibility_gate\"`). It may also be activated manually via `--skeptic-on-chosen`. Confidence alone never triggers it: on `[confirmed]` outcomes confidence does not predict success.",
         "The Skeptic sub-agent receives only `chosen` (id, summary, sketch, rationale), `success_criterion`, and `verification`; it does not receive other candidates, scores, or deliberation logs.",
         "An objection counts only when it passes the validation gate owned by [[CONSILIUM-VALIDATE-SKEPTIC-001]]; a rejected objection is dropped, and the original chosen ships unchanged.",
         "The Skeptic's verdict is advisory by default (`chosen` is not replaced); `chosen` is replaced only when `--skeptic-can-override` is active AND the Skeptic produces `addressable: requires_redesign`.",
@@ -2162,7 +2163,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "modes/skeptic_on_chosen.md:69"
+          "loc": "modes/skeptic_on_chosen.md:70"
         }
       ],
       "test_exempt": "prompt/mode document — acceptance validated by deliberation integration runs, not unit tests",
@@ -2336,10 +2337,9 @@
         "CLI flags control the read: `--n N` sets the recent-slice size (default 10); `--no-runs` skips the runs/ directory; `--feedback-file` overrides the FEEDBACK.html path; `--runs-dir` overrides the runs/ directory path.",
         "`recent` holds the last N FEEDBACK entries, newest first.",
         "`counts` tallies outcomes (OK / BAD / OVR / PEND) over the recent slice.",
-        "`override_rate`, `bad_rate`, and `weighted_bad_rate` are risk indicators derived from the recent slice.",
-        "`conservator_veto_rate` is the fraction of runs with at least one vetoed candidate. It counts only runs where `deliberation_log[step=aggregate].result.vetoed` is non-empty or `chosen` is `None`; Sequential BLOCK/REWORK outcomes are intentionally excluded — this is by design, not a bug to fix.",
-        "`weighted_bad_rate` shares its denominator with `bad_rate` (OK+BAD+OVR). Rows whose note contains `[confirmed]` receive weight 2.0; unconfirmed rows receive weight 1.0. Production-verified outcomes dominate subjective ratings as a result.",
-        "`top_note_keywords` lists the top-5 alpha tokens (length >= 4) from recent notes.",
+        "`bad_rate` is a risk indicator derived from the `[confirmed]` rows of the recent slice (also surfaced to Conservator via `--memory-summary`); `unconfirmed_count` counts the OK/BAD/OVR rows left out.",
+        "Rates count only rows whose note carries `[confirmed]`, so `rated_count == confirmed_count`. Outcomes assigned at log time without evidence do not move the rates.",
+        "Headless mode is set only by explicit signals (`--headless`, `CONSILIUM_HEADLESS=1`, `CLAUDE_HEADLESS=1`); a non-tty stdin does not imply headless.",
         "`stale_pendings` lists FEEDBACK rows still PEND and older than `STALE_PEND_DAYS`. `STALE_PEND_DAYS = 2` is hardcoded, reduced from 7, and not CLI-configurable; entries older than 2 days surface at step 0 for retrospective close.",
         "`missing_feedback_runs` lists `runs/` files with no matching FEEDBACK row.",
         "Exit code is non-zero on a parse error."
@@ -2351,11 +2351,11 @@
       "current_impl": [],
       "acc": [
         "**CASE-1** — Given a valid `FEEDBACK.html` and `runs/` directory, when `python scripts/priors.py` runs, then it completes without error.",
-        "**CASE-2** — Given the `--no-runs` flag, when `priors.py` runs, then `conservator_veto_rate` and `missing_feedback_runs` are suppressed from the output.",
+        "**CASE-2** — Given the `--no-runs` flag, when `priors.py` runs, then `missing_feedback_runs` is suppressed from the output.",
         "**CASE-3** — Given FEEDBACK entries with outcome PEND older than `STALE_PEND_DAYS`, when `priors.py` runs, then those entries appear in `stale_pendings`.",
         "**CASE-4** — Given `runs/` files with no matching FEEDBACK row, when `priors.py` runs, then those files appear in `missing_feedback_runs`."
       ],
-      "accept": "- **CASE-1** — Given a valid `FEEDBACK.html` and `runs/` directory, when `python scripts/priors.py` runs, then it completes without error.\n- **CASE-2** — Given the `--no-runs` flag, when `priors.py` runs, then `conservator_veto_rate` and `missing_feedback_runs` are suppressed from the output.\n- **CASE-3** — Given FEEDBACK entries with outcome PEND older than `STALE_PEND_DAYS`, when `priors.py` runs, then those entries appear in `stale_pendings`.\n- **CASE-4** — Given `runs/` files with no matching FEEDBACK row, when `priors.py` runs, then those files appear in `missing_feedback_runs`.",
+      "accept": "- **CASE-1** — Given a valid `FEEDBACK.html` and `runs/` directory, when `python scripts/priors.py` runs, then it completes without error.\n- **CASE-2** — Given the `--no-runs` flag, when `priors.py` runs, then `missing_feedback_runs` is suppressed from the output.\n- **CASE-3** — Given FEEDBACK entries with outcome PEND older than `STALE_PEND_DAYS`, when `priors.py` runs, then those entries appear in `stale_pendings`.\n- **CASE-4** — Given `runs/` files with no matching FEEDBACK row, when `priors.py` runs, then those files appear in `missing_feedback_runs`.",
       "input": "",
       "output": "",
       "desc": "",
@@ -2377,7 +2377,7 @@
       "members": [
         {
           "role": "implements",
-          "loc": "scripts/priors.py:32"
+          "loc": "scripts/priors.py:28"
         },
         {
           "role": "tested-by",
@@ -3001,7 +3001,7 @@
         },
         {
           "role": "implements",
-          "loc": "scripts/validate_report.py:50"
+          "loc": "scripts/validate_report.py:52"
         }
       ],
       "test_exempt": null,
@@ -3275,7 +3275,7 @@
       "notes": [
         "`confidence_in_verdict: low` is advisory only — the aggregator does not automatically discount verdicts marked `low`, so a technically `valid: true` / `low` verdict can influence the final recommendation without the reader realizing the validation was speculative. This is intentional: `low` is a transparency signal prompting the reader to treat the verdict as speculative, not a veto mechanism. The design choice is to surface speculation honestly rather than suppress it.",
         "In Sequential mode all three voices (Generator → Conservator → Control) produce their outputs before the aggregator evaluates them. A `glossary_fail` is therefore detected post-hoc by the aggregator; Control always runs last (after Generator and Conservator) with access to Generator's candidates. (The irreversibility consent BLOCK, by contrast, fires pre-dispatch at Step 1.6, before Generator.) AC-2 reflects this correctly.",
-        "No retrospective signal exists to detect cases where the 3-entry cap on `hidden_assumptions` caused a critical assumption to be dropped. The deprecated `meta_critic.py` provides a `control_speculation_flag` for thin verdicts but has no analogous mechanism for dropped assumptions. This is a known, accepted gap."
+        "No retrospective signal exists to detect cases where the 3-entry cap on `hidden_assumptions` caused a critical assumption to be dropped. This is a known, accepted gap."
       ],
       "current_impl": [
         "prompts/voices/control.md"
@@ -4400,15 +4400,45 @@
     },
     {
       "month": "2026-09",
-      "count": 1,
+      "count": 6,
       "first": "2026-09-21",
-      "last": "2026-09-21",
+      "last": "2026-09-22",
       "versions": [
-        "v1.8.1"
+        "v1.8.1",
+        "v1.10.0",
+        "v1.11.0",
+        "v1.12.0",
+        "v1.8.2",
+        "v1.9.0"
       ],
-      "landmark": "v1.8.1",
+      "landmark": "v1.12.0",
       "headline": "",
       "entries": [
+        {
+          "version": "v1.9.0",
+          "date": "2026-09-22",
+          "headline": ""
+        },
+        {
+          "version": "v1.8.2",
+          "date": "2026-09-22",
+          "headline": ""
+        },
+        {
+          "version": "v1.12.0",
+          "date": "2026-09-22",
+          "headline": ""
+        },
+        {
+          "version": "v1.11.0",
+          "date": "2026-09-22",
+          "headline": ""
+        },
+        {
+          "version": "v1.10.0",
+          "date": "2026-09-22",
+          "headline": ""
+        },
         {
           "version": "v1.8.1",
           "date": "2026-09-21",
@@ -4730,7 +4760,7 @@
         "file": "scripts/build_report.py",
         "line": 194,
         "name": "build",
-        "detail": "`build` is 85 lines (over 80)"
+        "detail": "`build` is 81 lines (over 80)"
       },
       {
         "pillar": "standards",
@@ -4746,7 +4776,7 @@
         "file": "scripts/check_doc_drift.py",
         "line": 1,
         "name": "check_doc_drift.py",
-        "detail": "913 lines (over 500)"
+        "detail": "964 lines (over 500)"
       },
       {
         "pillar": "standards",
@@ -4754,7 +4784,7 @@
         "file": "scripts/check_doc_drift.py",
         "line": 86,
         "name": "check_doc_drift.py",
-        "detail": "33 line(s) wider than 100 columns, first at line 86"
+        "detail": "35 line(s) wider than 100 columns, first at line 86"
       },
       {
         "pillar": "standards",
@@ -4762,7 +4792,7 @@
         "file": "scripts/check_doc_drift.py",
         "line": 208,
         "name": "check_text_invariants",
-        "detail": "3 public definition(s) without a docstring: check_text_invariants, check_ci_checks_completeness, main"
+        "detail": "4 public definition(s) without a docstring: check_text_invariants, check_skill_md_size, check_ci_checks_completeness, main"
       },
       {
         "pillar": "abstraction",
@@ -4770,13 +4800,13 @@
         "file": "scripts/check_doc_drift.py",
         "line": 208,
         "name": "check",
-        "detail": "11 top-level functions start with `check`: check_ci_checks_completeness, check_confidence_floor_completeness, check_implement_pipeline_spec_alignment, check_legacy_mode_milestone, check_referenced_scripts_exist, check_test_suite_coverage"
+        "detail": "13 top-level functions start with `check`: check_ci_checks_completeness, check_confidence_floor_completeness, check_implement_pipeline_spec_alignment, check_legacy_mode_milestone, check_referenced_contracts_exist, check_referenced_scripts_exist"
       },
       {
         "pillar": "abstraction",
         "kind": "long-function",
         "file": "scripts/check_doc_drift.py",
-        "line": 675,
+        "line": 724,
         "name": "check_trias_spec_alignment",
         "detail": "`check_trias_spec_alignment` is 101 lines (over 80)"
       },
@@ -4856,7 +4886,7 @@
         "pillar": "abstraction",
         "kind": "deep-nesting",
         "file": "scripts/feedback.py",
-        "line": 50,
+        "line": 52,
         "name": "parse_feedback",
         "detail": "`parse_feedback` nests 5 levels deep (over 4)"
       },
@@ -4864,7 +4894,7 @@
         "pillar": "standards",
         "kind": "missing-docstring",
         "file": "scripts/feedback.py",
-        "line": 50,
+        "line": 52,
         "name": "parse_feedback",
         "detail": "4 public definition(s) without a docstring: parse_feedback, parse_runs, report, main"
       },
@@ -4872,9 +4902,9 @@
         "pillar": "standards",
         "kind": "line-too-long",
         "file": "scripts/feedback.py",
-        "line": 77,
+        "line": 79,
         "name": "feedback.py",
-        "detail": "2 line(s) wider than 100 columns, first at line 77"
+        "detail": "2 line(s) wider than 100 columns, first at line 79"
       },
       {
         "pillar": "standards",
@@ -4920,15 +4950,15 @@
         "pillar": "standards",
         "kind": "line-too-long",
         "file": "scripts/log_feedback.py",
-        "line": 54,
+        "line": 55,
         "name": "log_feedback.py",
-        "detail": "19 line(s) wider than 100 columns, first at line 54"
+        "detail": "22 line(s) wider than 100 columns, first at line 55"
       },
       {
         "pillar": "standards",
         "kind": "missing-docstring",
         "file": "scripts/log_feedback.py",
-        "line": 101,
+        "line": 103,
         "name": "truncate",
         "detail": "4 public definition(s) without a docstring: truncate, derive_note, build_entry, main"
       },
@@ -4936,7 +4966,7 @@
         "pillar": "abstraction",
         "kind": "long-function",
         "file": "scripts/log_feedback.py",
-        "line": 179,
+        "line": 184,
         "name": "append_entry",
         "detail": "`append_entry` is 127 lines (over 80)"
       },
@@ -4946,13 +4976,13 @@
         "file": "scripts/mark_outcome.py",
         "line": 29,
         "name": "mark_outcome.py",
-        "detail": "10 line(s) wider than 100 columns, first at line 29"
+        "detail": "11 line(s) wider than 100 columns, first at line 29"
       },
       {
         "pillar": "abstraction",
         "kind": "long-function",
         "file": "scripts/mark_outcome.py",
-        "line": 122,
+        "line": 125,
         "name": "main",
         "detail": "`main` is 128 lines (over 80)"
       },
@@ -4960,7 +4990,7 @@
         "pillar": "standards",
         "kind": "missing-docstring",
         "file": "scripts/mark_outcome.py",
-        "line": 122,
+        "line": 125,
         "name": "main",
         "detail": "1 public definition(s) without a docstring: main"
       },
@@ -5008,15 +5038,15 @@
         "pillar": "standards",
         "kind": "line-too-long",
         "file": "scripts/priors.py",
-        "line": 132,
+        "line": 116,
         "name": "priors.py",
-        "detail": "13 line(s) wider than 100 columns, first at line 132"
+        "detail": "12 line(s) wider than 100 columns, first at line 116"
       },
       {
         "pillar": "standards",
         "kind": "missing-docstring",
         "file": "scripts/priors.py",
-        "line": 234,
+        "line": 186,
         "name": "find_stale_pendings",
         "detail": "3 public definition(s) without a docstring: find_stale_pendings, build_priors, main"
       },
@@ -5024,7 +5054,7 @@
         "pillar": "encapsulation",
         "kind": "global-state",
         "file": "scripts/priors.py",
-        "line": 370,
+        "line": 320,
         "name": "main",
         "detail": "`main` writes module state: FEEDBACK, RUNS"
       },
@@ -5122,29 +5152,29 @@
         "file": "scripts/validate_report.py",
         "line": 1,
         "name": "validate_report.py",
-        "detail": "606 lines (over 500)"
-      },
-      {
-        "pillar": "abstraction",
-        "kind": "prefix-family",
-        "file": "scripts/validate_report.py",
-        "line": 81,
-        "name": "validate",
-        "detail": "7 top-level functions start with `validate`: _validate_deliberation_log, _validate_pipeline_executed, _validate_regression_risk, _validate_sequential_fields, _validate_telemetry, _validate_telemetry_required"
+        "detail": "655 lines (over 500)"
       },
       {
         "pillar": "standards",
         "kind": "line-too-long",
         "file": "scripts/validate_report.py",
-        "line": 82,
+        "line": 49,
         "name": "validate_report.py",
-        "detail": "18 line(s) wider than 100 columns, first at line 82"
+        "detail": "20 line(s) wider than 100 columns, first at line 49"
+      },
+      {
+        "pillar": "abstraction",
+        "kind": "prefix-family",
+        "file": "scripts/validate_report.py",
+        "line": 87,
+        "name": "validate",
+        "detail": "7 top-level functions start with `validate`: _validate_deliberation_log, _validate_pipeline_executed, _validate_regression_risk, _validate_sequential_fields, _validate_telemetry, _validate_telemetry_required"
       },
       {
         "pillar": "abstraction",
         "kind": "deep-nesting",
         "file": "scripts/validate_report.py",
-        "line": 126,
+        "line": 132,
         "name": "_validate_telemetry",
         "detail": "`_validate_telemetry` nests 6 levels deep (over 4)"
       },
@@ -5152,7 +5182,7 @@
         "pillar": "abstraction",
         "kind": "deep-nesting",
         "file": "scripts/validate_report.py",
-        "line": 328,
+        "line": 334,
         "name": "_validate_trias",
         "detail": "`_validate_trias` nests 6 levels deep (over 4)"
       },
@@ -5160,7 +5190,7 @@
         "pillar": "standards",
         "kind": "missing-docstring",
         "file": "scripts/validate_report.py",
-        "line": 398,
+        "line": 404,
         "name": "validate",
         "detail": "2 public definition(s) without a docstring: validate, main"
       },
@@ -5168,7 +5198,7 @@
         "pillar": "abstraction",
         "kind": "deep-nesting",
         "file": "scripts/validate_report.py",
-        "line": 493,
+        "line": 499,
         "name": "_strict_substance_problems",
         "detail": "`_strict_substance_problems` nests 5 levels deep (over 4)"
       },

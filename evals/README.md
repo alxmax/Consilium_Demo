@@ -8,8 +8,7 @@ candidate?).
 **Scope.** Eval covers only deterministic scripts — every tool referenced in
 `evals/scenarios.json` (currently: `aggregator.py`, `confidence.py`,
 `validate_report.py`, `build_report.py`, `log_feedback.py`, `priors.py`,
-`scope_gate.py`, `personalities.py`, `strip_context.py`, `memory.py`,
-`scripts/deprecated/meta_critic.py`).
+`scope_gate.py`, `personalities.py`, `strip_context.py`, `memory.py`).
 LLM-driven voice prompts (`prompts/*.md`) are not testable here — that needs
 a separate replay harness with golden voice outputs (deferred).
 

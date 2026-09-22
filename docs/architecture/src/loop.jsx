@@ -31,11 +31,9 @@ function LoopSection() {
         <h3 className="h-sub" style={{ marginTop: 24, fontSize: 16 }}>The signals priors.py computes</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 12 }}>
           {[
-            { k: 'override_rate', v: 'how often the human overrode the chosen answer — a standing humility signal on the aggregator' },
-            { k: 'veto_rate', v: 'how often Conservator vetoed every candidate — flags task types where the skill keeps stalling' },
             { k: 'recurring keywords', v: 'task labels that keep reappearing, so a repeat decision can reuse a prior authoritative run (passthrough)' },
             { k: 'stale_pendings', v: 'PEND rows older than 2 days — the next run pauses to ask you to close them before deliberating' },
-            { k: 'weighted_bad_rate', v: 'BAD outcomes, with production-confirmed ones (mark_outcome.py) weighted 2× over a subjective first impression' },
+            { k: 'bad_rate', v: 'share of BAD outcomes, counted only over rows confirmed by evidence (mark_outcome.py) — a first impression logged right after the deliberation does not count' },
             { k: 'pend_pressure', v: 'share of recent runs left unresolved — a soft alert, never a block' },
           ].map((s) => (
             <div key={s.k} style={{ padding: '12px 16px', border: '1px solid var(--rule)', borderRadius: 4, background: 'var(--paper)' }}>
@@ -48,7 +46,7 @@ function LoopSection() {
         <div className="note" style={{ marginTop: 24 }}>
           <span className="note__label">Confidence floors — the per-mode self-check</span>
           <span>
-            The other half of calibration runs <em>inside</em> a single deliberation. Each mode has a confidence floor it is expected to clear — <strong>Sequential 0.70 · Dialectic 0.75 · Trias 0.80</strong>. A run that lands below its floor is logged <code>WEAK</code>: a recorded signal that the mode didn't earn its cost on that task. No single WEAK run changes behaviour; the value is the accumulated rate, which becomes meaningful after ~10 runs per mode and tells you whether a pricier mode is actually buying confidence. Sequential also auto-escalates to Dialectic when confidence &lt; 0.60 — distinct from the 0.70 floor: the floor flags a weak-but-kept result; the &lt; 0.60 threshold fires a full mode re-run before the report is written.
+            The other half of calibration runs <em>inside</em> a single deliberation. Each mode has a confidence floor it is expected to clear — <strong>Sequential 0.70 · Dialectic 0.75 · Trias 0.80</strong>. A run that lands below its floor is logged <code>WEAK</code>: a recorded signal that the mode didn't earn its cost on that task. No single WEAK run changes behaviour; the value is the accumulated rate, which becomes meaningful after ~10 runs per mode and tells you whether a pricier mode is actually buying confidence.
           </span>
         </div>
 

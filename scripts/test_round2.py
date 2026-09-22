@@ -359,5 +359,28 @@ class TestValidateTriasTrigger(unittest.TestCase):
         )
 
 
+class ValidateReportSweep(unittest.TestCase):
+    """validate_report.py --all: sweep a runs dir, skip dot-files, quarantine failures."""
+
+    def test_sweep_counts_skips_dotfiles_and_quarantines(self):
+        import contextlib, io, json, tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as td:
+            runs = Path(td)
+            (runs / "bad.json").write_text(json.dumps({"success_criterion": "x"}), encoding="utf-8")
+            (runs / "broken.json").write_text("{not json", encoding="utf-8")
+            (runs / ".run_path_map.json").write_text("{}", encoding="utf-8")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                rc = validate_report.sweep(runs)
+            self.assertEqual(rc, 1)
+            self.assertIn("checked 2, ok 0, fail 2", out.getvalue())
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = validate_report.sweep(runs, quarantine=True)
+            self.assertEqual(rc, 0)
+            self.assertEqual(sorted(p.name for p in (runs / "_invalid").iterdir()), ["bad.json", "broken.json"])
+            self.assertEqual([p.name for p in runs.glob("*.json")], [".run_path_map.json"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -9,7 +9,7 @@
       "scripts/audit_feedback.py": "2c15916c1d03174bde7aa4a71c499316c4a05a028e84d26c661ae34b3d4aae0f"
     },
     "CONSILIUM-BUILD-REPORT-001": {
-      "scripts/build_report.py": "639fed450113788f6fb3b2ea0bbeb4e92fcb7ded1b176560e19008c0e37ea5a2"
+      "scripts/build_report.py": "94e8625fe721b492220b06fb1d22627da7179522a76b128d36e595b0800a8956"
     },
     "CONSILIUM-CHECK-PUBLIC-LEAK-001": {
       "scripts/check_public_leak.py": "a0efa717766035be459f65c38c562abe1b5df1df61a78945f37bb057211e5872"
@@ -25,7 +25,7 @@
       "scripts/confidence_calibration.py": "880e608e679bf10c820a995079e32f0cdff42ab8802512b6b4be399c83380869"
     },
     "CONSILIUM-FEEDBACK-001": {
-      "scripts/feedback.py": "073f08b627f1ec904f845f132862e4c91c004b2db332c719996ce3c0bd457615"
+      "scripts/feedback.py": "daa8ce25370a5e54078aba9f2d1028bec1d8d4bb7183e8a1f393ed86b56b0532"
     },
     "CONSILIUM-IMPLEMENT-CODER-001": {
       "prompts/implement/coder.md": "c038feb961f0d5c071d700facbb5356d4a1bc99018dc8d8eaac55c19f45b0369"
@@ -50,25 +50,25 @@
       "prompts/voices/sentinel_lens.md": "2050e06a45f0c3fe785b1651edabcee68454908a1fe8142557ea81804fcbb0d9"
     },
     "CONSILIUM-LOG-FEEDBACK-001": {
-      "scripts/log_feedback.py": "a5d05c527d594273bd4075d83e4dee044de2cf9ab089ea50df1c073fa0152633"
+      "scripts/log_feedback.py": "78c556128881ace7aeb5411a77b2035fae1ba64f8b5b191881077a0c0f3c0bdf"
     },
     "CONSILIUM-MARK-OUTCOME-001": {
-      "scripts/mark_outcome.py": "a19c9f13cf345c7b0c0280e57426aacabf9304f04038908aaedd50667e4eb556"
+      "scripts/mark_outcome.py": "bfb105119610bd8508e2d3947218d18bea9f7465de218bcce28f034f2fe5cbe4"
     },
     "CONSILIUM-MEMORY-001": {
       "scripts/memory.py": "60c43e3ad26e91954e1bda4631ecd9496a37d912a9f9d3489bb8b2d66c7f0f87"
     },
     "CONSILIUM-MODE-SKEPTIC-ON-CHOSEN-001": {
-      "modes/skeptic_on_chosen.md": "b242a6be5185a8942fdcaef5c4f24dda0d68c526205f39ee207af3f4b367f60a"
+      "modes/skeptic_on_chosen.md": "5a8720bd03ddca30e230dc81a753f656abcd1ae525c6ababcaf24b8614de07ac"
     },
     "CONSILIUM-MODE-TRIAS-001": {
-      "modes/trias.md": "1ea1a28a77d4b53ca2d0ca326fb787bc859dec1cd9dc0275c0e727da324e2536"
+      "modes/trias.md": "afc10ce4a3e56891729cc7f92fe5010938464735c79dbda2aff29f3bd78a9a6c"
     },
     "CONSILIUM-PRIORS-001": {
-      "scripts/priors.py": "9b7592faa1f7548cae47695a02cd539ef986730a29320b73397c8a836db59f70"
+      "scripts/priors.py": "b99b33d67b4e2f3ec921d03ab7e615380609bee3e9a68bb4ef3aebdc4eb7df6f"
     },
     "CONSILIUM-RENDER-FEEDBACK-HTML-001": {
-      "scripts/render_feedback_html.py": "f80c5856cc8098b038b6122e0a4edb1d1ef0914875c9c4b7e8aae56b10744238"
+      "scripts/render_feedback_html.py": "01c510b0704950ee45f4beb24d71ad60468dd67ae4cc117c0d9ea133af904143"
     },
     "CONSILIUM-RENDER-IMPL-PREVIEW-001": {
       "scripts/render_impl_preview.py": "73b7d705541e722f0573f76a411bc68001ed4cd9cbb6dc298c907f8ec2d73d62"
@@ -84,7 +84,7 @@
       "scripts/strip_context.py": "5446605fd5c825962b484da0759700e7d219969e906d86daae7d292c502d9762"
     },
     "CONSILIUM-SUBAGENT-001": {
-      "agents/consilium-subagent.md": "44eaf8b9dea769650895660ce00caa6f13e4481161dc8824ade32ebda187a52a"
+      "agents/consilium-subagent.md": "cb70f5ebe4542c2b3db68d5ae6de8c2d403122bc9063fac7649f4b6235a6703a"
     },
     "CONSILIUM-UTILS-001": {
       "scripts/utils.py": "c5533818d454b0f6d4bf76aca5b5a7d0bb49c02bb04e6b329749f4839e9c131b"
@@ -114,7 +114,7 @@
       "scripts/vote_degeneracy.py": "e40c81b625f824c98b76e52dfc387935359dbbf12deb612ca9e90bd5486b20a8"
     },
     "SKILL-RUN-CONSILIUM-001": {
-      ".claude/skills/run-consilium/driver.py": "1fcab6427ac7fcb8b4b4cc81caa04af33dc234d9c8e38741deaf196ecad8d709"
+      ".claude/skills/run-consilium/driver.py": "0f6fda06b0b746df06600fd9e5396197f9ded6005e4236aef37693b119c6ccc5"
     }
   }
 }

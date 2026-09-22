@@ -50,7 +50,7 @@ AC-3
 AC-4
   Given a completed Sequential deliberation where `confidence < 0.6`
   When  the orchestrator checks confidence at Step 5b
-  Then  it automatically re-runs the full pipeline with `--mode dialectic`; the Dialectic result (with `auto_escalated: true` in the report) is the final output; no further auto-escalation fires if Dialectic confidence is also < 0.6
+  Then  no automatic re-run fires; the Step 5d retry and the Step 6 override prompt (which suggests `--mode dialectic` / `--skeptic-on-chosen`) are the only low-confidence responses
 
 AC-5
   Given a deliberation request whose diff touches a sensitive/irreversible path (scope_gate `consent_required: true`)

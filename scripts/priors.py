@@ -7,13 +7,9 @@ so the parsing stays single-source.
 Signals computed:
 - recent: last N FEEDBACK entries (newest first; N defaults to 10)
 - counts: outcome tally over the recent slice
-- override_rate: OVR / (OK + BAD + OVR), PEND excluded
-- bad_rate: BAD / (OK + BAD + OVR)
-- weighted_bad_rate: BAD weighted by ``[confirmed]`` marker in note
-  (outcome confirmed by production = 2x weight vs subjective rating)
-- conservator_veto_rate: from runs/*.json, fraction of runs whose aggregation
-  vetoed at least one candidate (or chose None)
-- top_note_keywords: top 5 alpha tokens (len >= 4, lowercased) from recent notes
+- bad_rate: BAD / (OK + BAD + OVR), over ``[confirmed]`` rows only
+- unconfirmed_count: OK/BAD/OVR rows without the marker — self-assigned at
+  log time, excluded from the rates
 - stale_pendings: up to STALE_PEND_CAP entries from the *full* FEEDBACK list
   (not just recent) whose outcome is PEND and whose date is older than
   STALE_PEND_DAYS — surfaces entries needing retrospective close at step 0
@@ -74,11 +70,11 @@ STOPWORDS = {
 STALE_PEND_DAYS = 2
 STALE_PEND_CAP = 5
 CONFIRMED_MARKER = "[confirmed]"
-# Outcome rows whose note carries CONFIRMED_MARKER reflect production reality
-# (the chosen approach was applied and observed), not the user's gut feeling
-# right after deliberation. weighted_bad_rate gives them this much more weight
-# than subjective rows in the same window.
-CONFIRMED_WEIGHT = 2.0
+# Outcome rows whose note carries CONFIRMED_MARKER reflect reality (the chosen
+# approach was applied and verified), not an impression logged right after the
+# deliberation. Rates are computed from these rows only: most historical OK rows
+# were auto-assigned from confidence >= 0.7, which measures agreement, not outcome.
+_RATED = ("OK", "BAD", "OVR")
 
 
 def _rel_or_str(path: Path) -> str:
@@ -98,34 +94,22 @@ def _is_confirmed(entry: dict) -> bool:
 
 
 def _rates(entries: list[dict]) -> dict:
-    counts = _outcome_counts(entries)
-    rated = counts.get("OK", 0) + counts.get("BAD", 0) + counts.get("OVR", 0)
+    rated_rows = [e for e in entries if e["outcome"] in _RATED and _is_confirmed(e)]
+    unconfirmed = sum(1 for e in entries if e["outcome"] in _RATED and not _is_confirmed(e))
+    rated = len(rated_rows)
     if not rated:
         return {
-            "override_rate": None,
             "bad_rate": None,
-            "weighted_bad_rate": None,
             "rated_count": 0,
             "confirmed_count": 0,
+            "unconfirmed_count": unconfirmed,
         }
-    confirmed = sum(1 for e in entries if _is_confirmed(e))
-    # weighted_bad: confirmed BAD counts 2x toward numerator and denominator
-    # so confirmed outcomes dominate over subjective ones when present.
-    num = 0.0
-    den = 0.0
-    for e in entries:
-        if e["outcome"] not in ("OK", "BAD", "OVR"):
-            continue
-        w = CONFIRMED_WEIGHT if _is_confirmed(e) else 1.0
-        den += w
-        if e["outcome"] == "BAD":
-            num += w
+    counts = _outcome_counts(rated_rows)
     return {
-        "override_rate": counts.get("OVR", 0) / rated,
         "bad_rate": counts.get("BAD", 0) / rated,
-        "weighted_bad_rate": (num / den) if den else None,
         "rated_count": rated,
-        "confirmed_count": confirmed,
+        "confirmed_count": rated,
+        "unconfirmed_count": unconfirmed,
     }
 
 
@@ -187,38 +171,6 @@ def find_missing_feedback_runs(runs_dir: Path, feedback_entries: list[dict], cap
         if len(missing) >= cap:
             break
     return missing
-
-
-def _run_had_veto(run: dict) -> bool:
-    # The aggregate result is a dict under deliberation_log[step=aggregate].result
-    # (build_report). A veto shows as a non-empty `vetoed` list or chosen == None
-    # (all candidates vetoed). The old run["aggregation"] top-level key never
-    # existed, and the result-as-string check never fired on the real dict shape —
-    # so conservator_veto_rate was permanently 0.
-    for step in run.get("deliberation_log", []):
-        if not isinstance(step, dict) or step.get("step") != "aggregate":
-            continue
-        result = step.get("result")
-        if not isinstance(result, dict):
-            continue
-        if result.get("vetoed"):
-            return True
-        if "chosen" in result and result["chosen"] is None:
-            return True
-    return False
-
-
-def _veto_rate(runs: list[dict]) -> dict:
-    # Only canonical reports can register a veto. Non-report artifacts under runs/
-    # — the .run_path_map.json sidecar, Trias personality sub-runs — lack
-    # `chosen_approach` (a field validate_report requires on every real report) and
-    # would otherwise inflate the denominator and deflate the rate. Mirror the
-    # filter find_missing_feedback_runs already applies (audit B3).
-    reports = [r for r in runs if isinstance(r, dict) and "chosen_approach" in r]
-    if not reports:
-        return {"conservator_veto_rate": None, "runs_seen": 0}
-    vetoed = sum(1 for r in reports if _run_had_veto(r))
-    return {"conservator_veto_rate": vetoed / len(reports), "runs_seen": len(reports)}
 
 
 def _top_keywords(entries: list[dict], k: int = 5) -> list[str]:
@@ -315,9 +267,9 @@ def get_memory_summary(label: str | None = None, n: int = 10) -> str | None:
     rates = _rates(recent)
     lines: list[str] = []
     ok, bad, ovr, pend = counts.get("OK", 0), counts.get("BAD", 0), counts.get("OVR", 0), counts.get("PEND", 0)
-    wbr = rates.get("weighted_bad_rate")
-    wbr_str = f", weighted_bad_rate={wbr:.2f}" if wbr is not None else ""
-    lines.append(f"[Prior runs: last {len(recent)} outcomes — OK={ok}, BAD={bad}, OVR={ovr}, PEND={pend}{wbr_str}]")
+    br = rates.get("bad_rate")
+    br_str = f", confirmed bad_rate={br:.2f} (n={rates['rated_count']})" if br is not None else ""
+    lines.append(f"[Prior runs: last {len(recent)} outcomes — OK={ok}, BAD={bad}, OVR={ovr}, PEND={pend}{br_str}]")
     if label is not None:
         match = _find_prior_match(label, entries)
         if match:
@@ -346,14 +298,12 @@ def build_priors(n: int = 10, include_runs: bool = True, headless: bool = False,
         "counts": counts,
         **_rates(recent),
         "pend_pressure": round(pend_pressure, 2),
-        "top_note_keywords": _top_keywords(recent),
         "stale_pendings": find_stale_pendings(entries),
     }
     if include_runs:
         runs = parse_runs(RUNS)
         out["source"]["runs_path"] = _rel_or_str(RUNS)
         out["source"]["runs_total"] = len(runs)
-        out.update(_veto_rate(runs))
         out["missing_feedback_runs"] = find_missing_feedback_runs(RUNS, entries)
         drift = _prompt_drift(RUNS)
         if drift:
@@ -385,7 +335,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.runs_dir:
         RUNS = Path(args.runs_dir).resolve()
 
-    _headless = (args.headless or (not sys.stdin.isatty()) or (os.environ.get("CONSILIUM_HEADLESS") == "1")) and os.environ.get("CONSILIUM_HEADLESS") != "0"
+    # Explicit signals only. stdin is never a tty under Claude Code's Bash tool, so
+    # an isatty() check marked every interactive session headless and silently
+    # suppressed stale_pendings / missing_feedback_runs.
+    _headless = (
+        args.headless
+        or os.environ.get("CONSILIUM_HEADLESS") == "1"
+        or os.environ.get("CLAUDE_HEADLESS") == "1"
+    ) and os.environ.get("CONSILIUM_HEADLESS") != "0"
     if args.memory_summary:
         summary = get_memory_summary(label=args.label, n=args.n)
         if summary:

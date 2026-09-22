@@ -29,7 +29,9 @@ ROOT = Path(__file__).resolve().parent.parent
 FEEDBACK = FEEDBACK_PATH
 RUNS = RUNS_DIR
 
-OUTCOMES = ("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS")
+# CLOSED_UNVERIFIED: a PEND closed without evidence either way (stale cleanup,
+# external project) — kept out of every rate, like PEND.
+OUTCOMES = ("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS", "CLOSED_UNVERIFIED")
 
 ROW_RE = re.compile(
     r'<tr[^>]*class="entry"[^>]*>(?P<body>.*?)</tr>',
@@ -104,7 +106,7 @@ def parse_feedback(path: Path) -> list[dict]:
             else:
                 continue
 
-        if outcome not in ("OK", "BAD", "OVR", "PEND", "PEND_HEADLESS"):
+        if outcome not in OUTCOMES:
             continue
         entries.append({
             "date": date,
@@ -122,6 +124,8 @@ def parse_runs(path: Path) -> list[dict]:
     if not path.exists():
         return runs
     for f in sorted(path.glob("*.json")):
+        if f.name.startswith("."):
+            continue  # .run_path_map.json is bookkeeping, not a run
         try:
             # utf-8-sig so a BOM-prefixed run (PS 5.1 pipe) parses instead of
             # raising JSONDecodeError and being silently dropped from priors.
@@ -167,7 +171,7 @@ def report(entries: list[dict], runs: list[dict] | None = None) -> str:
 def _run_scheme(run: dict) -> str:
     """Read the aggregation scheme from a run, tolerating both the legacy
     top-level ``aggregation`` shape and the current ``deliberation_log``
-    step shape (matches what priors.py:_run_had_veto walks)."""
+    step shape."""
     agg = run.get("aggregation")
     if isinstance(agg, dict) and agg.get("scheme"):
         return agg["scheme"]
